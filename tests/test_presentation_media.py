@@ -4,7 +4,7 @@ import sqlite3
 import pytest
 from tests.presentation_helpers import sample_document
 
-from app.files.svg import normalize_svg, tint_svg
+from app.capabilities.asset_store.svg import normalize_svg, tint_svg
 from app.main import app
 from app.schemas.presentation_workshop import PresentationDocument
 from db.migrations.versions.r0058_presentation_media import SQL

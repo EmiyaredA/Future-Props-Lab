@@ -1,10 +1,10 @@
 import pytest
 from pydantic import ValidationError
 
-from app.accounts.passwords import hash_password, validate_password, verify_password
-from app.accounts.security import new_management_api_key
-from app.core.config import Settings
-from app.core.outbound_urls import (
+from app.capabilities.identity.passwords import hash_password, validate_password, verify_password
+from app.capabilities.identity.security import new_management_api_key
+from app.runtime.config import Settings
+from app.runtime.outbound_urls import (
     normalize_provider_base_url,
     normalize_provider_websocket_url,
 )

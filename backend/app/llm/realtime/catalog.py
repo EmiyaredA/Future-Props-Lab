@@ -3,8 +3,6 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.credentials import decrypt_secret
-from app.core.tenant_context import bind_workspace
 from app.llm.providers.realtime.constants import (
     SENSEAUDIO_DEFAULT_VOICE,
     SENSEAUDIO_VOICE_PRESETS,
@@ -22,6 +20,8 @@ from app.llm.providers.realtime.constants import (
 )
 from app.llm.providers.realtime.contracts import ResolvedRealtimeModel
 from app.models import ModelEntry, ModelProvider
+from app.orm import bind_workspace
+from app.runtime.credentials import decrypt_secret
 from app.schemas.realtime_voice import (
     RealtimeNumberParameterOut,
     RealtimeVoiceMicrophoneOut,

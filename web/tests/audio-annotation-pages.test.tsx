@@ -50,7 +50,7 @@ function renderPage(onOpen = vi.fn()) {
   });
   render(
     <QueryClientProvider client={client}>
-      <AudioAnnotationProjectsPage onBack={vi.fn()} onOpen={onOpen} />
+      <AudioAnnotationProjectsPage onOpen={onOpen} />
     </QueryClientProvider>,
   );
   return onOpen;
@@ -119,4 +119,21 @@ test("imports portable transcription JSON after explicitly selecting its audio",
     ),
   );
   expect(onOpen).toHaveBeenCalledWith("imported-project");
+});
+
+test("annotation editor page owns viewport height outside StudioShell", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { resolve } = await import("node:path");
+  const css = readFileSync(
+    resolve(
+      "src/features/audio-annotation/audio-annotation-foundation.css",
+    ),
+    "utf8",
+  );
+  expect(css).toMatch(
+    /\.annotation-editor-page\s*\{[^}]*height:\s*100dvh/s,
+  );
+  expect(css).toMatch(
+    /\.studio-main\s+\.annotation-editor-page\s*\{[^}]*height:\s*100%/s,
+  );
 });

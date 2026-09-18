@@ -294,6 +294,7 @@ test("duplicates a time range for assigning another overlapping speaker", () => 
       speaker_id: null,
       speaker_ids: [],
       emotion: null,
+      speaker_emotions: [],
       text: "",
       status: "draft",
     },
@@ -321,6 +322,8 @@ test("creates overlapping segments and only clamps bounds to the audio", () => {
     end_ms: 1_175,
     speaker_id: null,
     speaker_ids: [],
+    emotion: null,
+    speaker_emotions: [],
     text: "",
     language: null,
     localized_texts: [],
@@ -332,6 +335,8 @@ test("creates overlapping segments and only clamps bounds to the audio", () => {
     end_ms: 1_300,
     speaker_id: null,
     speaker_ids: [],
+    emotion: null,
+    speaker_emotions: [],
     text: "",
     language: null,
     localized_texts: [],
@@ -419,7 +424,7 @@ test("exports versioned JSON and speaker-prefixed SRT", () => {
     speakers,
     segments,
   });
-  expect(parseProjectFile(exported)).toBe(exported);
+  expect(parseProjectFile(exported)).toStrictEqual(exported);
   expect(exported.project.source.original_filename).toBe("interview.wav");
   expect(buildSrt(segments, speakers)).toContain(
     "00:00:00,000 --> 00:00:01,000\n主持人：第一句",

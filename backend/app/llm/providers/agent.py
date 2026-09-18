@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from app.agents.harness.contracts import (
+from app.capabilities.agents.harness.contracts import (
     AgentMessage,
     ModelAdapter,
     ModelEvent,
@@ -16,9 +16,9 @@ from app.agents.harness.contracts import (
     ToolSpec,
     Usage,
 )
-from app.core.outbound_urls import require_safe_provider_base_url
 from app.demo_runtime.runtime import mock_transport
 from app.llm.providers.streaming import _data_lines, _integer
+from app.runtime.outbound_urls import require_safe_provider_base_url
 
 __all__ = [
     "AgentMessage",

@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.core.config import get_settings
+from app.capabilities.asset_store import AssetStorage
 from app.deps import SessionDep, WorkspaceDep
-from app.files import AssetStorage
 from app.presentation_workshop.exports import export_project
 from app.presentation_workshop.projects import PresentationError, Presentations
+from app.runtime.config import get_settings
 from app.schemas.presentation_workshop import (
     PresentationExportIn,
     PresentationProjectIn,

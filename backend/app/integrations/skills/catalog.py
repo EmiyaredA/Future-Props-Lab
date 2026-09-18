@@ -9,11 +9,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import get_settings
-from app.core.tenant_context import require_workspace_id
-from app.core.time import iso_utc, utc_now
-from app.files.incoming import IncomingFile
+from app.capabilities.asset_store.incoming import IncomingFile
 from app.integrations.common import (
     DuplicateIntegrationError,
     IntegrationNotFoundError,
@@ -21,6 +17,10 @@ from app.integrations.common import (
 )
 from app.integrations.skills.archive import SkillArchiveStorage, StagedSkillArchive
 from app.models import SkillIntegration, SkillVersion
+from app.orm import require_workspace_id
+from app.runtime.config import get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.integrations import (
     SkillCatalogOut,
     SkillOut,

@@ -123,20 +123,12 @@ test("opens the internal video frame exporter and records usage", async () => {
   expect(recordToolUse).toHaveBeenCalledWith("video-frame-exporter");
 });
 
-test("opens the internal audio annotation workspace and records usage", async () => {
-  const user = userEvent.setup();
-  const { onOpenInternal } = renderPage();
-  await screen.findByText("还没有收藏工具");
-
-  await user.click(screen.getByRole("button", { name: "打开录音分段标注" }));
-  expect(onOpenInternal).toHaveBeenCalledWith("/tools/audio-annotation");
-  expect(recordToolUse).toHaveBeenCalledWith("audio-annotation");
-});
-
-test("does not present first-party features as tool cards", async () => {
+test("does not present first-party applications or features as tool cards", async () => {
   renderPage();
   await screen.findByText("还没有收藏工具");
 
+  expect(screen.queryByRole("button", { name: "打开录音分段标注" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "打开录音标注工坊" })).toBeNull();
   expect(screen.queryByRole("button", { name: "打开模型测试" })).toBeNull();
   expect(screen.queryByRole("button", { name: "打开模型服务" })).toBeNull();
   expect(screen.queryByRole("button", { name: "打开模型调用日志" })).toBeNull();

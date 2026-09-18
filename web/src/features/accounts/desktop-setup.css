@@ -10,7 +10,7 @@
   display: block;
 }
 
-.auth-card .desktop-setup-password > input {
+.desktop-setup-field .desktop-setup-password > input {
   padding-right: 52px;
 }
 

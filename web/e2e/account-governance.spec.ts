@@ -181,7 +181,7 @@ test("内部只读角色浏览各工坊且不产生业务写入", async ({ page,
     "/apps/thought-workshop",
     "/apps/galgame-workshop",
     "/apps/video-editor",
-    "/tools/audio-annotation",
+    "/apps/audio-annotation",
   ]) {
     await view.goto(path);
     await expect(

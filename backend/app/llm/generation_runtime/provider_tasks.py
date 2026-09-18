@@ -5,7 +5,6 @@ from typing import Any
 
 import httpx
 
-from app.core.outbound_urls import require_safe_provider_base_url
 from app.llm.generation_runtime.media import GenerationMaterializationError
 from app.llm.providers import (
     create_image_task,
@@ -22,6 +21,7 @@ from app.llm.providers._senseaudio import (
     sanitize_provider_message,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError, upload_temporary_media
+from app.runtime.outbound_urls import require_safe_provider_base_url
 
 MAX_PROVIDER_CONTENT_BYTES = 64 * 1024 * 1024
 

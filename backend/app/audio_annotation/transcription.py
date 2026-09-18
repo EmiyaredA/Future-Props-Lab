@@ -8,11 +8,8 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audio_annotation.projects import MIN_SEGMENT_MS, AudioAnnotationError
-from app.core.credentials import decrypt_secret
-from app.files.incoming import IncomingFile
-from app.llm.call_logs.credentials import CredentialSnapshot
-from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
-from app.llm.transcription import (
+from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.transcription import (
     max_transcription_input_bytes,
     model_supports_transcription,
     resolve_parameters,
@@ -20,7 +17,10 @@ from app.llm.transcription import (
     resolve_transcription_target_language,
     safe_transcription_error,
 )
+from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
 from app.models import AudioAnnotationProject, LlmCallLog, ModelEntry, ModelProvider
+from app.runtime.credentials import decrypt_secret
 from app.schemas.audio_annotation import AudioAnnotationSegmentTranscriptionOut
 from app.schemas.transcription import ModelTestTranscriptionParametersIn
 

@@ -4,7 +4,6 @@ import httpx
 import pytest
 from sqlalchemy import delete, update
 
-from app.core.db import SessionLocal
 from app.main import app
 from app.models import (
     GalgameProjectAssetReference,
@@ -12,6 +11,7 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
+from app.runtime.db import SessionLocal
 
 
 def playable_story() -> dict:

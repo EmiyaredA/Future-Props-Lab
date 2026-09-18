@@ -9,21 +9,21 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.concurrency.polling_runner import PollingTaskRunner
-from app.core.config import Settings, get_settings
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace, require_workspace_id
-from app.core.time import utc_now
-from app.files.digests import sha256_file
-from app.files.library import AssetLibrary
-from app.files.storage import AssetStorage
-from app.media_rendering.render_engine import RenderCancelled, render_document
+from app.capabilities.asset_store.digests import sha256_file
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.models import (
     VideoEditorAssetMetadata,
     VideoEditorProject,
     VideoEditorTask,
     VisualAsset,
 )
+from app.orm import bind_workspace, require_workspace_id
+from app.runtime.config import Settings, get_settings
+from app.runtime.db import SessionLocal
+from app.runtime.polling_runner import PollingTaskRunner
+from app.runtime.time import utc_now
 from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.media import probe_media
 from app.video_editor.rendering import PRESETS

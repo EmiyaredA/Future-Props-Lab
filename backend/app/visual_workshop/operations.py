@@ -1,6 +1,6 @@
-from app.concurrency.entity_edits import edit
-from app.concurrency.operation_receipts import record, replay
-from app.concurrency.revisions import RevisionConflictError
+from app.runtime.entity_edits import edit
+from app.runtime.operation_receipts import record, replay
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.visual_workshop import VisualCanvasDocumentOut, VisualCanvasDocumentPutIn
 from app.visual_workshop.canvas import VisualCanvasDocuments
 

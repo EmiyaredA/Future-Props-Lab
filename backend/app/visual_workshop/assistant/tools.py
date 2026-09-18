@@ -8,7 +8,7 @@ from uuid import uuid4
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import or_, select
 
-from app.agents.harness import (
+from app.capabilities.agents.harness import (
     AgentDefinition,
     ContextFragment,
     Observation,
@@ -16,14 +16,14 @@ from app.agents.harness import (
     ToolBinding,
     ToolExecutionContext,
 )
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
 from app.models import (
     VisualAsset,
     VisualGenerationTask,
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.orm import bind_workspace
+from app.runtime.db import SessionLocal
 from app.schemas.visual_workshop import (
     GenerationTaskCreateIn,
     VisualCanvasDocumentPutIn,

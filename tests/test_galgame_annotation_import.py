@@ -9,8 +9,6 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
 from app.galgame_workshop.annotation_import_runner import GalgameAnnotationImportRunner
 from app.galgame_workshop.readiness import GalgameReadiness
 from app.main import app
@@ -19,6 +17,8 @@ from app.models import (
     GalgameAssetMetadata,
     GalgameWorkshopProject,
 )
+from app.orm import bind_workspace
+from app.runtime.db import SessionLocal
 from app.schemas.galgame_workshop import GalgameStoryReportIssue
 
 

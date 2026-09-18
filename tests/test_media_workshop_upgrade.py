@@ -7,9 +7,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.accounts.principal import StudioPrincipal
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
+from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.llm.generation_runtime.media import generated_type
 from app.llm.providers.senseaudio_audio import (
@@ -24,6 +22,8 @@ from app.models import (
     VisualAsset,
     VisualWorkshopProject,
 )
+from app.orm import bind_workspace
+from app.runtime.db import SessionLocal
 
 
 async def _reset_projects() -> None:

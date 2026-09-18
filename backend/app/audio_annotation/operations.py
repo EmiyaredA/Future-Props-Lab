@@ -1,9 +1,9 @@
 from copy import deepcopy
 
 from app.audio_annotation.projects import AudioAnnotationProjects
-from app.concurrency.entity_edits import edit, find
-from app.concurrency.operation_receipts import OperationError, record, replay
-from app.concurrency.revisions import RevisionConflictError
+from app.runtime.entity_edits import edit, find
+from app.runtime.operation_receipts import OperationError, record, replay
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.audio_annotation import AudioAnnotationDocumentOut, AudioAnnotationDocumentPutIn
 
 

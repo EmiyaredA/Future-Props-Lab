@@ -7,8 +7,6 @@ from pydantic import ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.time import iso_utc, utc_now
 from app.models import (
     VideoEditorAssetMetadata,
     VideoEditorOperationBatch,
@@ -16,6 +14,8 @@ from app.models import (
     VideoEditorTimeline,
     VisualAsset,
 )
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.video_editor import (
     VideoEditorClip,
     VideoEditorTimelineBatchIn,

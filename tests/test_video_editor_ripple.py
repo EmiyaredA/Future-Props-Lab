@@ -9,9 +9,9 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from app.core.db import SessionLocal
 from app.main import app
 from app.models import VideoEditorTask
+from app.runtime.db import SessionLocal
 from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineBatchIn
 from app.video_editor.errors import VideoEditorValidationError
 from app.video_editor.runner import VideoEditorRunner

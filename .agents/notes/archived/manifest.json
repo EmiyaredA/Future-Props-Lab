@@ -1,6 +1,7 @@
 {
   "version": 1,
   "files": {
-    "archived/feature/2026-09-14-live-development-protected-data.md": "sha256:b3dc1a03fe1ee0dc71d61d92ddff7618bb8538a6b8982f764935dd87f4bfca45"
+    "archived/feature/2026-09-14-live-development-protected-data.md": "sha256:b3dc1a03fe1ee0dc71d61d92ddff7618bb8538a6b8982f764935dd87f4bfca45",
+    "archived/testing/2026-08-23-architecture-gates-and-empty-size-baseline.md": "sha256:c21ca76ca9d619e6307998d7e2fdd95ed260873e86ed63fafd1d2cf031ea8f45"
   }
 }

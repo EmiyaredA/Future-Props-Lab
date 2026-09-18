@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.core.time import iso_utc
 from app.models import VisualGenerationBatch
+from app.runtime.time import iso_utc
 from app.schemas.visual_generation import GenerationBatchOut
 
 

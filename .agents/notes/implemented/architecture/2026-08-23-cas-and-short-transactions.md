@@ -22,5 +22,5 @@ Status: implemented
 
 ## Verification
 
-`backend/app/concurrency/` 拥有公共原语；账号、项目、画布和文档测试覆盖冲突行为。
+`backend/app/runtime/` 拥有公共原语；账号、项目、画布和文档测试覆盖冲突行为。
 

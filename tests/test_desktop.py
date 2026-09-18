@@ -19,7 +19,7 @@ from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from app.core.desktop import DESKTOP_HEADER, DesktopTransport
+from app.runtime.desktop import DESKTOP_HEADER, DesktopTransport
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "desktop-test-credential-" * 3

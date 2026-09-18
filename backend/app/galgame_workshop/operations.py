@@ -1,7 +1,7 @@
-from app.concurrency.entity_edits import edit, find
-from app.concurrency.operation_receipts import OperationError, record, replay
-from app.concurrency.revisions import RevisionConflictError
 from app.galgame_workshop.story import GalgameStoryDocuments
+from app.runtime.entity_edits import edit, find
+from app.runtime.operation_receipts import OperationError, record, replay
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.galgame_workshop import GalgameStoryDocumentOut, GalgameStoryDocumentPutIn
 
 

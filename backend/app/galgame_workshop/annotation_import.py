@@ -5,11 +5,9 @@ import asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings, get_settings
-from app.core.time import iso_utc
-from app.files import AssetError
-from app.files.digests import sha256_file
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store import AssetError
+from app.capabilities.asset_store.digests import sha256_file
+from app.capabilities.asset_store.storage import AssetStorage
 from app.galgame_workshop.story import GalgameStoryDocuments
 from app.models import (
     AudioAnnotationDocument,
@@ -19,6 +17,8 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.time import iso_utc
 from app.schemas.audio_annotation import AudioAnnotationSegment, AudioAnnotationSpeaker
 from app.schemas.galgame_workshop import (
     GalgameAnnotationImportIn,

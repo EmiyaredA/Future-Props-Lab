@@ -8,12 +8,6 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import get_settings
-from app.core.credentials import decrypt_secret, encrypt_secret
-from app.core.secret_hints import encrypted_secret_hint
-from app.core.tenant_context import require_workspace_id
-from app.core.time import iso_utc, utc_now
 from app.integrations.checks import list_recent_checks, record_check
 from app.integrations.common import (
     DuplicateIntegrationError,
@@ -23,6 +17,12 @@ from app.integrations.common import (
 )
 from app.integrations.mcp.client import McpDiscoveryClient, OfficialMcpDiscoveryClient
 from app.models import IntegrationCheck, McpDiscoveredTool, McpIntegration
+from app.orm import require_workspace_id
+from app.runtime.config import get_settings
+from app.runtime.credentials import decrypt_secret, encrypt_secret
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.secret_hints import encrypted_secret_hint
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.integrations import (
     IntegrationOverviewOut,
     McpCatalogOut,

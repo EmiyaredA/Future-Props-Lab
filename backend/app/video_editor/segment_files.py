@@ -9,10 +9,10 @@ from zipfile import ZIP_STORED, ZipFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings
-from app.files.library import AssetError
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.storage import AssetStorage
 from app.models import VisualAsset
+from app.runtime.config import Settings
 from app.video_editor.errors import VideoEditorNotFoundError
 from app.video_editor.segment_exports import VideoEditorSegmentExports
 

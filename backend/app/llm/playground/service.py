@@ -7,9 +7,6 @@ from uuid import uuid4
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import Settings, get_settings
-from app.core.time import iso_utc, utc_now
 from app.llm.catalog.service import ResourceNotFoundError
 from app.llm.playground.attachments import (
     AttachmentError,
@@ -28,6 +25,9 @@ from app.models import (
     ModelTestTool,
     ModelTestToolCall,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.model_test import (
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,

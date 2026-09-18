@@ -3,16 +3,16 @@ from pathlib import Path
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.concurrency.operation_receipts import OperationError, fingerprint
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import get_settings
-from app.core.time import utc_now
-from app.files.assets import VisualAssets
+from app.capabilities.asset_store.assets import VisualAssets
+from app.capabilities.transcription import max_transcription_input_bytes
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, LocalInput, root
 from app.llm.inference.catalog import get_model, normalize_parameters
-from app.llm.call_logs.credentials import CredentialSnapshot
-from app.llm.transcription import max_transcription_input_bytes
 from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
+from app.runtime.config import get_settings
+from app.runtime.operation_receipts import OperationError, fingerprint
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import utc_now
 from app.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
 
 ACTIVE = ("queued", "submitting", "pending", "processing", "running")

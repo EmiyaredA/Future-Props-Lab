@@ -5,13 +5,13 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.accounts.errors import AccountError
-from app.accounts.principal import StudioPrincipal
-from app.accounts.runtime_quotas import acquire, attach, recover_admissions, release
-from app.core.db import SessionLocal
+from app.capabilities.identity.errors import AccountError
+from app.capabilities.identity.principal import StudioPrincipal
+from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
 from app.main import app
 from app.models import ModelTestGenerationTask
 from app.models.runtime_admission import RuntimeAdmission
+from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account
 
 pytestmark = pytest.mark.real_auth

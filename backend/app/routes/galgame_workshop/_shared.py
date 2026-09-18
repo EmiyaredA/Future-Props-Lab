@@ -5,9 +5,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
-from app.core.config import get_settings
+from app.capabilities.asset_store import AssetError
 from app.deps import SessionDep
-from app.files import AssetError
 from app.galgame_workshop.asr import GalgameAsrService
 from app.galgame_workshop.assets import GalgameProjectAssets
 from app.galgame_workshop.errors import (
@@ -23,6 +22,7 @@ from app.galgame_workshop.projects import (
 )
 from app.galgame_workshop.readiness import GalgameReadiness
 from app.galgame_workshop.story import GalgameStoryDocuments
+from app.runtime.config import get_settings
 from app.schemas.galgame_workshop import (
     GalgameAsrSettingsOut,
     GalgameAsrSettingsPatchIn,

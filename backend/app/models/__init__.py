@@ -11,7 +11,6 @@ from app.models.audio_annotation import (
     AudioAnnotationProject,
     AudioAnnotationWaveform,
 )
-from app.models.base import Base
 from app.models.call_log import LlmCallLog
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
 from app.models.galgame_workshop import (
@@ -73,6 +72,7 @@ from app.models.visual_workshop import (
     VisualWorkshopProject,
 )
 from app.models.workspace import Workspace
+from app.runtime.orm_base import Base
 
 __all__ = [
     "ThoughtNote",

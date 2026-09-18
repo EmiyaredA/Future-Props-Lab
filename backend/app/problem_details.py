@@ -5,8 +5,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
-from app.accounts.error_views import error_detail
-from app.concurrency.revisions import RevisionConflictError
+from app.capabilities.identity.error_views import error_detail
+from app.runtime.revisions import RevisionConflictError
 
 
 def problem(

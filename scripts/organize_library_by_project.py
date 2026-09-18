@@ -25,6 +25,13 @@ from future_props_lab.errors import RevisionConflict  # noqa: E402
 
 SHARED_FOLDER = "共享素材"
 UNREFERENCED_FOLDER = "未引用"
+ASSET_REFERENCE_KEYS = {
+    "assetId",
+    "asset_id",
+    "fileId",
+    "file_id",
+    "cover_asset_id",
+}
 APP_LABELS = {
     "visual": "视觉",
     "galgame": "Galgame",
@@ -112,9 +119,7 @@ def collect_asset_ids_from_json(node) -> set[str]:
     def walk(value) -> None:
         if isinstance(value, dict):
             for key, child in value.items():
-                if key in {"assetId", "asset_id", "fileId", "file_id", "cover_asset_id"} and isinstance(
-                    child, str
-                ):
+                if key in ASSET_REFERENCE_KEYS and isinstance(child, str):
                     if child:
                         found.add(child)
                 else:
@@ -164,7 +169,9 @@ def scan_annotation(client: Client, consumers: dict[str, list[Consumer]]) -> Non
         add_consumer(consumers, project.asset_id, consumer)
 
 
-def scan_presentation(client: Client, consumers: dict[str, list[Consumer]], gaps: list[str]) -> None:
+def scan_presentation(
+    client: Client, consumers: dict[str, list[Consumer]], gaps: list[str]
+) -> None:
     try:
         listing = client.presentation.list_projects()
     except Exception as exc:  # noqa: BLE001 — agent may deny this surface
@@ -260,11 +267,7 @@ def assign_files(
     existing_root_folders: list,
 ) -> list[Assignment]:
     project_folder_names = sorted(
-        {
-            consumer.folder_name
-            for linked in consumers.values()
-            for consumer in linked
-        }
+        {consumer.folder_name for linked in consumers.values() for consumer in linked}
     )
     assignments: list[Assignment] = []
     for asset in root_files:
@@ -366,7 +369,9 @@ def move_asset(client: Client, assignment: Assignment, folder_id: str) -> None:
                 revision = int(current["revision"])
             else:
                 refreshed = client.files.list_files()
-                match = next((item for item in refreshed.items if item.id == assignment.asset_id), None)
+                match = next(
+                    (item for item in refreshed.items if item.id == assignment.asset_id), None
+                )
                 if match is None:
                     raise
                 revision = match.revision
@@ -416,9 +421,7 @@ def main() -> int:
     client = open_client(development=args.development)
     try:
         library_folders = [
-            folder
-            for folder in client.files.list_file_folders().items
-            if folder.parent_id is None
+            folder for folder in client.files.list_file_folders().items if folder.parent_id is None
         ]
         root_files = [
             asset
@@ -446,7 +449,10 @@ def main() -> int:
             folder_id = ensure_library_folder(client, assignment.folder_name, folder_cache)
             move_asset(client, assignment, folder_id)
             moved += 1
-            print(f"moved {moved}/{len(assignments)}: {assignment.display_name} -> {assignment.folder_name}")
+            print(
+                f"moved {moved}/{len(assignments)}: "
+                f"{assignment.display_name} -> {assignment.folder_name}"
+            )
 
         remaining = client.files.list_files().items
         print(f"完成：移动 {moved} 个文件；根目录剩余文件 {len(remaining)} 个")

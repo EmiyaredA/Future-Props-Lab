@@ -194,12 +194,7 @@ h1 {
   margin: 10px 0 0;
   color: var(--text-strong);
   font-family:
-    "Songti SC",
-    "Noto Serif SC",
-    "STSong",
-    "Songti TC",
-    Georgia,
-    serif;
+    "Songti SC", "Noto Serif SC", "STSong", "Songti TC", Georgia, serif;
   font-size: clamp(28px, 4.2vw, 36px);
   font-weight: 700;
   letter-spacing: 0.04em;

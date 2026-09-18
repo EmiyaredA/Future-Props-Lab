@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.accounts.desktop_setup import (
+from app.console.governance.desktop_setup import (
     DesktopAlreadyInitialized,
     setup_account,
     setup_required,

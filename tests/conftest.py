@@ -28,11 +28,11 @@ def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
     if request.node.get_closest_marker("real_auth") or "app.main" not in sys.modules:
         yield
         return
-    from app.accounts.platform_policy import CAPABILITIES
-    from app.accounts.principal import StudioPrincipal
-    from app.core.tenant_context import bind_workspace
+    from app.capabilities.identity.principal import StudioPrincipal
+    from app.console.governance.platform_policy import CAPABILITIES
     from app.deps import SessionDep, require_studio_auth
     from app.main import app
+    from app.orm import bind_workspace
     from app.routes.model_capacity import model_capacity
 
     async def principal(session: SessionDep) -> StudioPrincipal:

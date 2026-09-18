@@ -25,10 +25,10 @@ Status: implemented
 ## Consequences
 
 - **收益**：Tab 文案与数据源一致；公共库引用与跨项目复制不再混用同一标签。
-- **代价与已知上限**：跨项目 Tab 需要额外加载项目列表；侧栏三 Tab 字号略缩以适应 336px 宽度。生成侧仍有「其他项目 / 公共库」子切换，与素材库三 Tab 并存。
+- **代价与已知上限**：跨项目 Tab 需要额外加载项目列表；侧栏三 Tab 字号略缩以适应 336px 宽度。生成侧仍有「其他项目 / 公共库」子切换，与素材库三 Tab 并存。总文件写能力（建夹/上传公共库）见 [总文件 Tab 可管理公共库](2026-09-18-library-tab-manage.md)。
 
 ## Verification
 
 - `web/tests/visual-workshop-canvas-assistant.test.tsx`：三 Tab 切换文案。
-- `web/e2e/applications-workshop.spec.ts`：点「总文件」断言公共库空态；素材页可见「跨项目」「总文件」。
+- `web/e2e/applications-workshop.spec.ts`：点「总文件」可见「添加素材」与公共库空态；素材页可见「跨项目」「总文件」。
 - `npm run verify-notes`。

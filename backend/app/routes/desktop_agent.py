@@ -4,8 +4,8 @@ import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.accounts.desktop_agent import MANIFEST, AgentError, DesktopAgent, allows_agent
-from app.accounts.desktop_ui import open_resource, ui_request
+from app.console.governance.desktop_agent import MANIFEST, AgentError, DesktopAgent, allows_agent
+from app.console.governance.desktop_ui import open_resource, ui_request
 from app.deps import SessionDep, authenticate_studio_request, client_ip
 from app.routes.desktop import require_desktop
 from app.schemas.desktop_agent import (

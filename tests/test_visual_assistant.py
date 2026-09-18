@@ -10,14 +10,14 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete, select
 
-from app.agents.harness import approval_broker
-from app.agents.harness.approval import ApprovalResolution
-from app.core.config import get_settings
-from app.core.credentials import encrypt_secret
-from app.core.db import SessionLocal
+from app.capabilities.agents.harness import approval_broker
+from app.capabilities.agents.harness.approval import ApprovalResolution
 from app.llm.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from app.main import app
 from app.models import LlmCallLog, ModelEntry, ModelProvider, VisualAsset
+from app.runtime.config import get_settings
+from app.runtime.credentials import encrypt_secret
+from app.runtime.db import SessionLocal
 from app.schemas.visual_workshop import VisualAssistantSendIn
 from app.visual_workshop.assistant import VisualAssistantConversations
 from app.visual_workshop.assistant import stream as assistant_stream

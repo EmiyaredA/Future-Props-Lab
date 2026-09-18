@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":4,"title":"角色与操作权限","lead":"区分空间成员关系与平台管理权限。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/accounts/principal.py"]} -->
+<!-- docs: {"group":"account","order":4,"title":"角色与操作权限","lead":"区分空间成员关系与平台管理权限。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
 
 # 角色与操作权限
 

@@ -6,12 +6,12 @@ import json
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError, require_revision_write
-from app.core.time import iso_utc, utc_now
-from app.files.library import AssetError
-from app.media_rendering.evaluator import timeline_duration_us, visual_gaps
-from app.media_rendering.presets import RENDER_PRESETS
+from app.capabilities.asset_store.library import AssetError
+from app.capabilities.media_rendering.evaluator import timeline_duration_us, visual_gaps
+from app.capabilities.media_rendering.presets import RENDER_PRESETS
 from app.models import VideoEditorAssetMetadata, VideoEditorTask, VideoEditorTimeline
+from app.runtime.revisions import RevisionConflictError, require_revision_write
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.video_editor import (
     VideoEditorRenderCreateIn,
     VideoEditorRenderIssue,

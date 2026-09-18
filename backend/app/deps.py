@@ -8,11 +8,10 @@ from fastapi import Depends, HTTPException, Request, WebSocket, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.accounts.permissions import role_scopes
-from app.accounts.platform_policy import apply_policy
-from app.accounts.principal import StudioPrincipal
-from app.accounts.route_permissions import route_permission
-from app.accounts.security import (
+from app.capabilities.identity.permissions import role_scopes
+from app.capabilities.identity.principal import StudioPrincipal
+from app.capabilities.identity.route_permissions import route_permission
+from app.capabilities.identity.security import (
     CSRF_COOKIE,
     REAUTH_MINUTES,
     SESSION_ACTIVITY_WRITE_SECONDS,
@@ -20,12 +19,13 @@ from app.accounts.security import (
     SESSION_IDLE_HOURS,
     hash_secret,
 )
-from app.accounts.workspaces import active_membership, owner_membership, resolve_access
-from app.core.config import get_settings
-from app.core.db import get_session
-from app.core.tenant_context import bind_workspace
-from app.core.time import utc_now
+from app.console.governance.platform_policy import apply_policy
+from app.console.governance.workspaces import active_membership, owner_membership, resolve_access
 from app.models import AuthSession, ManagementApiKey, User, Workspace
+from app.orm import bind_workspace
+from app.runtime.config import get_settings
+from app.runtime.db import get_session
+from app.runtime.time import utc_now
 
 
 async def db_session():

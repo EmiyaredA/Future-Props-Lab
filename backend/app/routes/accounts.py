@@ -5,7 +5,9 @@ from datetime import timedelta
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 
-from app.accounts.profile import (
+from app.capabilities.identity.rate_limit import allow_attempt, clear_attempts
+from app.capabilities.identity.security import CSRF_COOKIE, SESSION_ABSOLUTE_DAYS, SESSION_COOKIE
+from app.console.governance.profile import (
     apply_avatar,
     avatar_path,
     avatar_url,
@@ -13,9 +15,7 @@ from app.accounts.profile import (
     stage_avatar,
     update_profile,
 )
-from app.accounts.rate_limit import allow_attempt, clear_attempts
-from app.accounts.security import CSRF_COOKIE, SESSION_ABSOLUTE_DAYS, SESSION_COOKIE
-from app.accounts.service import (
+from app.console.governance.service import (
     AccountError,
     audit_page,
     change_password,
@@ -118,7 +118,7 @@ def _key_out(key) -> ApiKeyOut:
 
 
 def _set_cookies(response: Response, token: str, csrf: str) -> None:
-    from app.core.config import get_settings
+    from app.runtime.config import get_settings
 
     secure = get_settings().auth_cookie_secure
     max_age = int(timedelta(days=SESSION_ABSOLUTE_DAYS).total_seconds())
@@ -143,7 +143,7 @@ def _set_cookies(response: Response, token: str, csrf: str) -> None:
 
 
 def _clear_cookies(response: Response) -> None:
-    from app.core.config import get_settings
+    from app.runtime.config import get_settings
 
     secure = get_settings().auth_cookie_secure
     response.delete_cookie(SESSION_COOKIE, path="/", secure=secure, samesite="lax")
@@ -196,8 +196,8 @@ async def login(request: Request, response: Response, session: SessionDep, body:
 
 
 async def _login_out(session, user, workspace, auth_session):
-    from app.accounts.platform_policy import apply_policy
-    from app.accounts.principal import StudioPrincipal
+    from app.capabilities.identity.principal import StudioPrincipal
+    from app.console.governance.platform_policy import apply_policy
 
     principal = await apply_policy(
         session,

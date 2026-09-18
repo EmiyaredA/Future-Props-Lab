@@ -8,12 +8,8 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.concurrency.polling_runner import PollingTaskRunner
-from app.core.config import Settings, get_settings
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
-from app.core.time import utc_now
-from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
+from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from app.capabilities.media_rendering.image_grid import render_image_grid
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
     GenerationTaskContext,
@@ -29,13 +25,17 @@ from app.llm.generation_runtime import (
     upload_temporary_reference,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError
-from app.media_rendering.image_grid import render_image_grid
 from app.models import (
     VisualAsset,
     VisualCanvasDocument,
     VisualGenerationBatch,
     VisualGenerationTask,
 )
+from app.orm import bind_workspace
+from app.runtime.config import Settings, get_settings
+from app.runtime.db import SessionLocal
+from app.runtime.polling_runner import PollingTaskRunner
+from app.runtime.time import utc_now
 from app.visual_workshop.generation import ACTIVE_TASK_STATUSES
 
 MaterializationError = GenerationMaterializationError

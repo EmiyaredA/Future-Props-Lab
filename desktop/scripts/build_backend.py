@@ -24,7 +24,7 @@ def run(*args: str, **kwargs) -> str:
 def required_assets() -> None:
     paths = [
         *list((ROOT / "web/public").rglob("*")),
-        *list((ROOT / "backend/app/media_rendering/assets").rglob("*")),
+        *list((ROOT / "backend/app/capabilities/media_rendering/assets").rglob("*")),
     ]
     missing = []
     for file in paths:
@@ -192,9 +192,15 @@ def main() -> None:
         "--add-data",
         f"{notices}:third-party",
         "--add-data",
-        f"{ROOT / 'backend/app/media_rendering/assets'}:app/media_rendering/assets",
+        (
+            f"{ROOT / 'backend/app/capabilities/media_rendering/assets'}"
+            ":app/capabilities/media_rendering/assets"
+        ),
         "--add-data",
-        f"{ROOT / 'backend/app/accounts/desktop_agent_operations.json'}:app/accounts",
+        (
+            f"{ROOT / 'backend/app/console/governance/desktop_agent_operations.json'}"
+            ":app/console/governance"
+        ),
     ]
     docs = [ROOT / "README.md", ROOT / "CONTRIBUTING.md", ROOT / "docs/assets/MANIFEST.md"]
     for folder in ("architecture", "operations", "reference"):

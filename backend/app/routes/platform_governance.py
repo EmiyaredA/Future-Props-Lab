@@ -4,17 +4,17 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
-from app.accounts.cross_workspace_logs import (
+from app.capabilities.identity.rate_limit import allow_attempt
+from app.console.governance.cross_workspace_logs import (
     cross_workspace_logs,
     cross_workspace_stats,
     log_workspaces,
 )
-from app.accounts.developer_docs import developer_documents
-from app.accounts.platform_policy import CAPABILITIES, default_policy, read_setting
-from app.accounts.platform_settings import write_setting
-from app.accounts.project_certification import certify_project
-from app.accounts.rate_limit import allow_attempt
-from app.accounts.registration import (
+from app.console.governance.developer_docs import developer_documents
+from app.console.governance.platform_policy import CAPABILITIES, default_policy, read_setting
+from app.console.governance.platform_settings import write_setting
+from app.console.governance.project_certification import certify_project
+from app.console.governance.registration import (
     change_invite,
     create_invite,
     invite_page,

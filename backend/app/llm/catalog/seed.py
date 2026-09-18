@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.ids import new_id
 from app.llm.catalog.metadata import categories_for_provider
 from app.models import ModelCatalogState, ModelEntry, ModelProvider
+from app.runtime.ids import new_id
 
 
 @dataclass(frozen=True)

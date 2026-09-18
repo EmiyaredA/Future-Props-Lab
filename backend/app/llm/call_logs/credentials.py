@@ -3,15 +3,26 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.accounts.principal import StudioPrincipal
 from app.models.accounts import ManagementApiKey
+from app.runtime.db import SessionLocal
 
 SESSION_AUTH = "session"
 MANAGEMENT_API_KEY_AUTH = "management_api_key"
 SESSION_FILTER = "session"
+
+
+class CallerCredential(Protocol):
+    """The caller attributes a call log credential snapshot reads."""
+
+    @property
+    def auth_kind(self) -> str: ...
+
+    @property
+    def api_key_id(self) -> str | None: ...
 
 
 @dataclass(frozen=True)
@@ -30,7 +41,7 @@ class CredentialSnapshot:
 
 
 async def snapshot_from_principal(
-    session: AsyncSession, principal: StudioPrincipal | None
+    session: AsyncSession, principal: CallerCredential | None
 ) -> CredentialSnapshot:
     if principal is None:
         return CredentialSnapshot()
@@ -48,6 +59,14 @@ async def snapshot_from_principal(
         api_key_name=key.name,
         api_key_prefix=key.key_prefix,
     )
+
+
+async def snapshot_caller_credential(
+    principal: CallerCredential | None,
+) -> CredentialSnapshot:
+    """Read the snapshot in its own short session for socket entry points."""
+    async with SessionLocal() as session:
+        return await snapshot_from_principal(session, principal)
 
 
 def snapshot_from_row(row) -> CredentialSnapshot:

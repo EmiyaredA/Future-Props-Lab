@@ -8,7 +8,7 @@ Status: implemented
 
 ## Decision
 
-Electron 持有短路径 Unix Socket 和私有启动协议；配对请求只在内存中等待，Agent 操作由 `accounts/desktop_agent_operations.json` 白名单登记，并复用 Management API Key 授权。
+Electron 持有短路径 Unix Socket 和私有启动协议；配对请求只在内存中等待，Agent 操作由 `console/governance/desktop_agent_operations.json` 白名单登记，并复用 Management API Key 授权。
 
 ## Alternatives considered
 

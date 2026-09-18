@@ -8,23 +8,23 @@ from uuid import uuid4
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.concurrency.task_admission import TaskAdmission
-from app.core.config import Settings, get_settings
-from app.core.time import iso_utc
-from app.files.incoming import IncomingFile
-from app.files.policy import ALLOWED_FILES, looks_like
-from app.files.storage import AssetStorage
-from app.llm.call_logs.credentials import CredentialSnapshot
-from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
-from app.llm.transcription import (
+from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.policy import ALLOWED_FILES, looks_like
+from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.transcription import (
     TranscriptionParameterError,
     max_transcription_input_bytes,
     model_supports_transcription,
     parameter_capabilities,
     resolve_parameters,
 )
+from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
 from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, VisualAsset
+from app.runtime.config import Settings, get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.task_admission import TaskAdmission
+from app.runtime.time import iso_utc
 from app.schemas.model_test import (
     ModelTestTranscriptionCreateIn,
     ModelTestTranscriptionOptionListOut,

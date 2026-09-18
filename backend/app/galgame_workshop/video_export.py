@@ -9,10 +9,9 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings, get_settings
-from app.core.time import iso_utc, utc_now
-from app.files import AssetError
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store import AssetError
+from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.galgame_workshop.story import GalgameStoryDocuments
 from app.galgame_workshop.video_compiler import COMPILER_VERSION, compile_galgame_render_plan
 from app.galgame_workshop.video_dialogue import dialogue_renderer_issue
@@ -24,7 +23,6 @@ from app.galgame_workshop.video_export_planning import (
     _plan_route,
 )
 from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
-from app.media_rendering.frame_renderer import render_plan_frame
 from app.models import (
     GalgameAssetMetadata,
     GalgameStorySnapshot,
@@ -32,6 +30,8 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.galgame_workshop import (
     GalgameVideoExportChoiceOut,
     GalgameVideoExportCreateIn,

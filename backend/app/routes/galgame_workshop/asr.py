@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
+from app.capabilities.asset_store import AssetError
 from app.deps import SessionDep
-from app.files import AssetError
 from app.galgame_workshop.asr import GalgameAsrService
 from app.routes.galgame_workshop._shared import _asset_error
 from app.routes.model_capacity import task_admission

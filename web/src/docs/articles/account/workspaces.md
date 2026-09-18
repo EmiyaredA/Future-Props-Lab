@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":1,"title":"浏览与切换工作空间","lead":"在自己可访问的工作空间之间切换。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/accounts/principal.py"]} -->
+<!-- docs: {"group":"account","order":1,"title":"浏览与切换工作空间","lead":"在自己可访问的工作空间之间切换。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
 
 # 浏览与切换工作空间
 

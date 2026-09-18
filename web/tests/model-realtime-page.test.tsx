@@ -134,7 +134,7 @@ test("renders the hands-free realtime voice workspace without native selects", a
     ).toHaveTextContent("气质学姐 · 开心"),
   );
   expect(screen.getByRole("button", { name: "开始通话" })).toBeEnabled();
-  expect(screen.getByRole("button", { name: "选择测试工具" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: /选择测试工具/ })).toBeEnabled();
   expect(screen.getByText(/输入 16 kHz pcm_s16le/)).toBeInTheDocument();
   expect(screen.getByText(/输出 24 kHz pcm_s16le/)).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /开场白/ })).toBeInTheDocument();

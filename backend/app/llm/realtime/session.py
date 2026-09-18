@@ -9,9 +9,7 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from app.core.db import SessionLocal
-from app.core.ids import new_id
-from app.core.tenant_context import bind_workspace
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.playground.test_tools import (
     TestToolSelectionError,
     load_selected_tool_snapshots,
@@ -35,8 +33,10 @@ from app.llm.providers.realtime.contracts import RealtimeProviderUnavailableErro
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_realtime_model
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
-from app.llm.call_logs.credentials import CredentialSnapshot
 from app.models import LlmCallLog
+from app.orm import bind_workspace
+from app.runtime.db import SessionLocal
+from app.runtime.ids import new_id
 
 PERMISSION_RECHECK_SECONDS = 5
 

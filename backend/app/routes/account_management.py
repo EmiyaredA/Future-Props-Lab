@@ -2,15 +2,15 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from app.accounts.error_views import error_detail
-from app.accounts.management import (
+from app.capabilities.identity.error_views import error_detail
+from app.console.governance.management import (
     account_page,
     reset_account_password,
     update_account,
 )
-from app.accounts.provisioning import create_managed_account, create_workspace
-from app.accounts.service import AccountError
-from app.accounts.workspaces import list_workspaces, require_workspace_governance
+from app.console.governance.provisioning import create_managed_account, create_workspace
+from app.console.governance.service import AccountError
+from app.console.governance.workspaces import list_workspaces, require_workspace_governance
 from app.deps import SessionDep, client_ip
 from app.routes.accounts import _account_out, _audit_response, _browser_auth, _platform_auth
 from app.routes.workspaces import _workspace_out

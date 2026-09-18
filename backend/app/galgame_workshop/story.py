@@ -6,8 +6,6 @@ from pydantic import ValidationError
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.time import iso_utc, utc_now
 from app.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
     GalgameStoryDocumentNotFoundError,
@@ -20,6 +18,8 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.galgame_workshop import (
     GalgameStoryBranchBlock,
     GalgameStoryCallFragmentBlock,

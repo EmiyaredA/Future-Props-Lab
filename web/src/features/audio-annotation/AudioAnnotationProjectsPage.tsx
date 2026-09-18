@@ -3,12 +3,10 @@ import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   CheckCircle2,
-  Clock3,
   FileJson,
   FileMusic,
-  MoreHorizontal,
+  Maximize2,
   Pencil,
   Plus,
   Search,
@@ -37,7 +35,7 @@ import type {
 } from "@features/audio-annotation/types";
 import { audioAnnotationQueryKeys } from "@features/audio-annotation/queryKeys";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import "@app/layout/workshop-shell.css";
+import { ProjectLibraryCard } from "@shared/ui/project-library";
 import "@features/audio-annotation/audio-annotation.css";
 import "./audio-annotation-compact.css";
 
@@ -294,10 +292,8 @@ function ProjectDialog({
 }
 
 export function AudioAnnotationProjectsPage({
-  onBack,
   onOpen,
 }: {
-  onBack: () => void;
   onOpen: (projectId: string) => void;
 }) {
   const client = useQueryClient();
@@ -361,15 +357,10 @@ export function AudioAnnotationProjectsPage({
   };
 
   return (
-    <section className="page annotation-projects-page">
+    <section className="page workshop-page workshop-projects-page annotation-projects-page">
       <WorkshopAppChrome
         showThemeToggle={false}
-        eyebrow={
-          <button type="button" className="annotation-back" onClick={onBack}>
-            <ArrowLeft aria-hidden /> 返回工具导航
-          </button>
-        }
-        title="录音分段标注"
+        title="我的标注任务"
         description="管理 Workspace 中的录音切分、说话人和逐段文本。"
         actions={
           <div className="annotation-project-actions">
@@ -402,13 +393,15 @@ export function AudioAnnotationProjectsPage({
         }
       />
 
-      <div className="annotation-project-summary">
-        <span>
-          <strong>{summary.projects}</strong> 个任务
-        </span>
-        <span>
-          <strong>{summary.segments}</strong> 个片段
-        </span>
+      <div className="workshop-toolbar workshop-toolbar-simple annotation-projects-toolbar">
+        <div className="annotation-project-stats" aria-label="任务统计">
+          <span>
+            <strong>{summary.projects}</strong> 个任务
+          </span>
+          <span>
+            <strong>{summary.segments}</strong> 个片段
+          </span>
+        </div>
         <label>
           <Search aria-hidden />
           <input
@@ -430,78 +423,87 @@ export function AudioAnnotationProjectsPage({
         pending={projectsQuery.isLoading}
         onRetry={projectsQuery.refetch}
       />
-      <div className="annotation-project-grid">
-        {projects.map((project) => {
-          const progress = project.segment_count
-            ? Math.round(
-                (project.reviewed_segment_count / project.segment_count) * 100,
-              )
-            : 0;
-          return (
-            <article className="annotation-project-card" key={project.id}>
-              <button
-                type="button"
-                className="annotation-project-open"
-                onClick={() => onOpen(project.id)}
-                aria-label={`打开${project.title}`}
+      {projects.length ? (
+        <div className="workshop-project-grid">
+          {projects.map((project) => {
+            const progress = project.segment_count
+              ? Math.round(
+                  (project.reviewed_segment_count / project.segment_count) *
+                    100,
+                )
+              : 0;
+            return (
+              <ProjectLibraryCard
+                key={project.id}
+                project={{
+                  id: project.id,
+                  title: project.title,
+                  updated_at: project.updated_at,
+                }}
+                cover="audio"
+                coverTitle={formatDuration(project.duration_ms)}
+                coverDescription={`${project.segment_count} 个片段 · 点击进入标注`}
+                description={project.original_filename}
+                metadata={
+                  <span
+                    className={`workshop-status ${
+                      progress === 100 ? "completed" : "draft"
+                    }`}
+                  >
+                    {progress}% 已校对
+                  </span>
+                }
+                onOpen={() => onOpen(project.id)}
               >
-                <span className="annotation-project-icon">
-                  <FileMusic aria-hidden />
-                </span>
-                <span className="annotation-project-copy">
-                  <strong>{project.title}</strong>
-                  <small>{project.original_filename}</small>
-                </span>
-              </button>
-              <div className="annotation-project-meta">
-                <span>
-                  <Clock3 aria-hidden /> {formatDuration(project.duration_ms)}
-                </span>
-                <span>{project.segment_count} 个片段</span>
-                <span>{bytes(project.byte_size)}</span>
-              </div>
-              <div className="annotation-project-progress">
-                <i style={{ width: `${progress}%` }} />
-                <span>{progress}% 已校对</span>
-              </div>
-              <div className="annotation-project-card-actions">
-                <button
-                  type="button"
-                  aria-label={`重命名${project.title}`}
-                  onClick={() => {
-                    setRenaming(project);
-                    setRenameValue(project.title);
-                  }}
-                >
-                  <Pencil aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`删除${project.title}`}
-                  onClick={() => setDeleting(project)}
-                >
-                  <Trash2 aria-hidden />
-                </button>
-                <MoreHorizontal aria-hidden />
-              </div>
-            </article>
-          );
-        })}
-        {!projectsQuery.isLoading && !projects.length ? (
-          <div className="annotation-projects-empty">
-            <FileMusic aria-hidden />
-            <strong>还没有录音标注任务</strong>
-            <span>上传录音或从文件库选择一段音频开始。</span>
-            <button
-              className="btn primary"
-              type="button"
-              onClick={() => setDialogOpen(true)}
-            >
-              新建第一个任务
-            </button>
-          </div>
-        ) : null}
-      </div>
+                <div className="workshop-project-primary-actions">
+                  <button type="button" onClick={() => onOpen(project.id)}>
+                    <Maximize2 aria-hidden />
+                    打开
+                  </button>
+                </div>
+                <div className="workshop-project-secondary-actions">
+                  <button
+                    type="button"
+                    aria-label={`重命名${project.title}`}
+                    title="重命名"
+                    onClick={() => {
+                      setRenaming(project);
+                      setRenameValue(project.title);
+                    }}
+                  >
+                    <Pencil aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    aria-label={`删除${project.title}`}
+                    title="删除"
+                    onClick={() => setDeleting(project)}
+                  >
+                    <Trash2 aria-hidden />
+                  </button>
+                </div>
+              </ProjectLibraryCard>
+            );
+          })}
+        </div>
+      ) : !projectsQuery.isLoading ? (
+        <div className="workshop-state workshop-empty">
+          <span className="workshop-empty-icon">
+            <Plus aria-hidden />
+          </span>
+          <strong>还没有录音标注任务</strong>
+          <p>上传录音或从文件库选择一段音频开始。</p>
+          <button
+            className="workshop-primary"
+            type="button"
+            onClick={() => setDialogOpen(true)}
+          >
+            <Plus aria-hidden />
+            新建第一个任务
+          </button>
+        </div>
+      ) : null}
 
       <ProjectDialog
         open={dialogOpen}

@@ -12,12 +12,6 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.credentials import decrypt_secret, encrypt_secret
-from app.core.outbound_urls import require_safe_integration_http_url
-from app.core.secret_hints import encrypted_secret_hint
-from app.core.tenant_context import require_workspace_id
-from app.core.time import iso_utc, utc_now
 from app.demo_runtime.runtime import TOOL_BASE_URL, tool_reply
 from app.integrations.checks import list_recent_checks, record_check
 from app.integrations.common import (
@@ -26,6 +20,12 @@ from app.integrations.common import (
     redact_sensitive,
 )
 from app.models import IntegrationCheck, ToolApiIntegration
+from app.orm import require_workspace_id
+from app.runtime.credentials import decrypt_secret, encrypt_secret
+from app.runtime.outbound_urls import require_safe_integration_http_url
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.secret_hints import encrypted_secret_hint
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.integrations import (
     IntegrationOverviewOut,
     ToolApiCatalogOut,

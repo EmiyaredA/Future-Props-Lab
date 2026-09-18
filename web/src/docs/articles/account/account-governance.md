@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":8,"title":"平台管理员账号治理","lead":"创建普通账号、管理状态和重置密码。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/accounts/principal.py"]} -->
+<!-- docs: {"group":"account","order":8,"title":"平台管理员账号治理","lead":"创建普通账号、管理状态和重置密码。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
 
 # 平台管理员账号治理
 

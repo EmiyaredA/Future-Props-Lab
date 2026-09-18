@@ -22,5 +22,5 @@ Future Props Lab 使用单进程、单机 SQLite 作为唯一持久化真源，�
 
 ## Verification
 
-数据库入口、桌面数据根和 Workspace 过滤分别位于 `backend/app/core/`、`desktop/` 和 `backend/app/accounts/`；运行 `npm run db:migrate:check` 与相关隔离测试。
+数据库入口、桌面数据根和 Workspace 过滤分别位于 `backend/app/runtime/`、`desktop/` 和 `backend/app/console/governance/`；运行 `npm run db:migrate:check` 与相关隔离测试。
 

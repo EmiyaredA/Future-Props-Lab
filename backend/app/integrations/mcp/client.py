@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-from app.core.config import Settings
-from app.core.outbound_urls import require_safe_integration_http_url
+from app.runtime.config import Settings
+from app.runtime.outbound_urls import require_safe_integration_http_url
 
 
 @dataclass(frozen=True)

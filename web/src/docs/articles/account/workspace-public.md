@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":2,"title":"空间信息与公开展台","lead":"设置空间名称，并了解公开作品的可见范围。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/accounts/principal.py"]} -->
+<!-- docs: {"group":"account","order":2,"title":"空间信息与公开展台","lead":"设置空间名称，并了解公开作品的可见范围。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
 
 # 空间信息与公开展台
 

@@ -190,11 +190,7 @@ function StudioChrome({
     loadSecondaryCollapsed,
   );
 
-  const toolsActive =
-    page === "tools" ||
-    page === "video-frame-exporter" ||
-    page === "audio-annotation-projects" ||
-    page === "audio-annotation-editor";
+  const toolsActive = page === "tools" || page === "video-frame-exporter";
   const integrationsActive = page.startsWith("integrations-");
   const infrastructurePages: StudioPage[] = [
     "model-test",

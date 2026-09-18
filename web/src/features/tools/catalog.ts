@@ -7,7 +7,6 @@ import {
   Diff,
   Film,
   MessageSquareText,
-  Mic2,
   Palette,
   PlugZap,
   Regex,
@@ -44,15 +43,6 @@ export const TOOL_CATEGORIES: Array<{
 export const POPULAR_TAGS = ["JSON", "接口", "Token", "编码", "转换"];
 
 export const TOOLS: ToolDefinition[] = [
-  {
-    id: "audio-annotation",
-    name: "录音分段标注",
-    description: "切分录音并配置说话人与逐段内容",
-    category: "data",
-    tags: ["音频", "录音", "标注", "字幕", "转换"],
-    icon: Mic2,
-    target: { kind: "internal", path: "/tools/audio-annotation" },
-  },
   {
     id: "video-frame-exporter",
     name: "视频帧导出",

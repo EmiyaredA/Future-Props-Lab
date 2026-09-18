@@ -18,6 +18,7 @@ import { useStudioSession } from "@app/StudioSession";
 import { galgameSpeakerImportSource } from "@app/integrations/galgameSpeakerImport";
 import {
   APPLICATION_DEFINITIONS,
+  AUDIO_ANNOTATION_MODULE,
   PRESENTATION_WORKSHOP_MODULE,
   THOUGHT_WORKSHOP_MODULE,
   GALGAME_WORKSHOP_MODULE,
@@ -25,6 +26,7 @@ import {
   VIDEO_EDITOR_MODULE,
 } from "@app/applicationRegistry";
 import {
+  isAudioAnnotationPage,
   isGalgameWorkshopPage,
   isThoughtWorkshopPage,
   isVisualWorkshopPage,
@@ -71,20 +73,10 @@ const VideoFrameExporterPage = lazy(() =>
     default: module.VideoFrameExporterPage,
   })),
 );
-const AudioAnnotationProjectsPage = lazy(() =>
-  import("@features/audio-annotation/AudioAnnotationProjectsPage").then(
-    (module) => ({
-      default: module.AudioAnnotationProjectsPage,
-    }),
-  ),
+const AudioAnnotationProjectsPage = lazy(
+  AUDIO_ANNOTATION_MODULE.pages.projects,
 );
-const AudioAnnotationEditorPage = lazy(() =>
-  import("@features/audio-annotation/AudioAnnotationEditorPage").then(
-    (module) => ({
-      default: module.AudioAnnotationEditorPage,
-    }),
-  ),
-);
+const AudioAnnotationEditorPage = lazy(AUDIO_ANNOTATION_MODULE.pages.editor);
 const ModelTestPage = lazy(() =>
   import("@features/models/conversation").then((module) => ({
     default: module.ModelTestPage,
@@ -146,6 +138,14 @@ export default function App() {
   useEffect(() => {
     if (window.location.pathname === "/")
       window.history.replaceState({}, "", "/home");
+    if (window.location.pathname.startsWith("/tools/audio-annotation")) {
+      const current = parseRoute();
+      window.history.replaceState(
+        {},
+        "",
+        pathFor(current.page, current.projectId, current.documentId),
+      );
+    }
     const pop = () => {
       const next = parseRoute();
       if (
@@ -408,6 +408,37 @@ export default function App() {
     );
   }
 
+  if (page === "audio-annotation-editor" && route.projectId)
+    return (
+      <PageBoundary>
+        <AudioAnnotationEditorPage
+          projectId={route.projectId}
+          workspaceId={me.workspace.id}
+          onBack={() => navigate("audio-annotation-projects")}
+          registerNavigationGuard={registerNavigationGuard}
+          speakerImportSource={galgameSpeakerImportSource}
+        />
+      </PageBoundary>
+    );
+
+  if (isAudioAnnotationPage(page))
+    return (
+      <WorkshopShell
+        module={AUDIO_ANNOTATION_MODULE}
+        page={page}
+        navigate={(next) => navigate(next as WorkshopPage)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          <AudioAnnotationProjectsPage
+            onOpen={(projectId) =>
+              navigate("audio-annotation-editor", projectId)
+            }
+          />
+        </PageBoundary>
+      </WorkshopShell>
+    );
+
   if (isVideoEditorPage(page)) {
     return (
       <WorkshopShell
@@ -547,21 +578,6 @@ export default function App() {
           />
         ) : page === "video-frame-exporter" ? (
           <VideoFrameExporterPage onBack={() => navigate("tools")} />
-        ) : page === "audio-annotation-projects" ? (
-          <AudioAnnotationProjectsPage
-            onBack={() => navigate("tools")}
-            onOpen={(projectId) =>
-              navigate("audio-annotation-editor", projectId)
-            }
-          />
-        ) : page === "audio-annotation-editor" && route.projectId ? (
-          <AudioAnnotationEditorPage
-            projectId={route.projectId}
-            workspaceId={me.workspace.id}
-            onBack={() => navigate("audio-annotation-projects")}
-            registerNavigationGuard={registerNavigationGuard}
-            speakerImportSource={galgameSpeakerImportSource}
-          />
         ) : page === "model-test" ? (
           <ModelTestPage
             initialModelId={catalogTestModel}

@@ -5,14 +5,14 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import delete, select, update
 
-from app.core.db import SessionLocal
-from app.core.tenant_context import (
+from app.llm.call_logs.service import CallLogService
+from app.models import LlmCallLog
+from app.orm import (
     TenantScopeError,
     bind_workspace,
     require_workspace_id,
 )
-from app.llm.call_logs.service import CallLogService
-from app.models import LlmCallLog
+from app.runtime.db import SessionLocal
 
 
 def _log(log_id: str, workspace_id: str, *, model: str) -> LlmCallLog:

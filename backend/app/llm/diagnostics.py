@@ -7,11 +7,11 @@ import httpx
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.credentials import decrypt_secret
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.catalog.service import ModelCatalogService, ResourceNotFoundError
 from app.llm.providers import invoke_diagnostic
 from app.models import LlmCallLog, ModelProvider
+from app.runtime.credentials import decrypt_secret
 from app.schemas.model_service import TestModelOut
 
 

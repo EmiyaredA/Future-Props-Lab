@@ -260,11 +260,46 @@ test("switches file layouts, remembers the choice, and imports a library file", 
   expect(container.querySelector(".file-items")).toHaveClass("list");
   expect(window.localStorage.getItem("fpl_file_browser_view")).toBe("list");
 
+  expect(screen.getByRole("button", { name: "新建文件夹" })).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "导入" }));
   await waitFor(() =>
     expect(importFile).toHaveBeenCalledWith("project-1", "file-1"),
   );
   expect(await screen.findByText("已导入当前项目")).toBeInTheDocument();
+});
+
+test("manages the shared library while importing from the library tab", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getFolders).mockResolvedValue({ items: [] });
+  vi.mocked(getFiles).mockResolvedValue({ items: [] });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <AssetBrowser projectId="project-1" importSource="library" compact />
+    </QueryClientProvider>,
+  );
+  expect(
+    await screen.findByText("文件管理中还没有文件"),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "上传第一个文件" }),
+  ).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "添加素材" }));
+  await user.click(screen.getByRole("menuitem", { name: "新建文件夹" }));
+  expect(
+    screen.getByRole("dialog", { name: "新建文件夹" }),
+  ).toBeInTheDocument();
+  await user.type(
+    screen.getByRole("textbox", { name: "文件夹名称" }),
+    "公共灵感",
+  );
+  await user.click(screen.getByRole("button", { name: "创建文件夹" }));
+  await waitFor(() =>
+    expect(createFolder).toHaveBeenCalledWith("公共灵感", undefined, undefined),
+  );
 });
 
 test("uses the compact asset controls without losing upload and folder actions", async () => {

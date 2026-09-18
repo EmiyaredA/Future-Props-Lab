@@ -1,3 +1,4 @@
+import itertools
 import json
 import sqlite3
 
@@ -11,20 +12,16 @@ from db.migrations.runner import connect_database
 def test_presentation_migration_is_additive_and_references_cascade(tmp_path, monkeypatch):
     database = tmp_path / "presentation-migration.db"
     with monkeypatch.context() as before:
+        # Everything from the presentation workshop onward stays pending, so later
+        # migrations keep their ordered prerequisites instead of a hand-kept list.
         before.setattr(
             runner,
             "MIGRATIONS",
             tuple(
-                m
-                for m in runner.MIGRATIONS
-                if m.migration_id
-                not in {
-                    "0056_presentation_workshop",
-                    "0057_presentation_styles",
-                    "0058_presentation_media",
-                    "0059_project_operations",
-                    "0060_model_inference",
-                }
+                itertools.takewhile(
+                    lambda m: m.migration_id != "0056_presentation_workshop",
+                    runner.MIGRATIONS,
+                )
             ),
         )
         apply_migrations(database)

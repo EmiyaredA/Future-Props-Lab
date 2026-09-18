@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from app.audio_annotation.operations import apply_operations as annotation_operations
 from app.audio_annotation.projects import AudioAnnotationError
-from app.concurrency.operation_receipts import OperationError
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
@@ -15,6 +14,7 @@ from app.galgame_workshop.errors import (
 from app.galgame_workshop.operations import apply_operations as galgame_operations
 from app.presentation_workshop.operations import apply_operations as presentation_operations
 from app.presentation_workshop.projects import PresentationError
+from app.runtime.operation_receipts import OperationError
 from app.schemas.annotation_operations import AnnotationOperationsIn
 from app.schemas.audio_annotation import AudioAnnotationDocumentOut
 from app.schemas.galgame_operations import GalgameOperationsIn

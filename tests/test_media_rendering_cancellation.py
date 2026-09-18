@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from app.media_rendering.render_engine import (
+from app.capabilities.media_rendering.render_engine import (
     RenderCancelled,
     _read_exact,
     _terminate_process_group,

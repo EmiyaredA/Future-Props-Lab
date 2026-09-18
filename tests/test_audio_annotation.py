@@ -8,16 +8,16 @@ import httpx
 import pytest
 
 from app.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
-from app.core.config import get_settings
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
-from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
-from app.llm.transcription.support import (
+from app.capabilities.transcription.support import (
     resolve_transcription_language,
     resolve_transcription_target_language,
 )
+from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
 from app.main import app
 from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, Workspace
+from app.orm import bind_workspace
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal
 
 
 def wav_bytes(seconds: float = 1.0) -> bytes:

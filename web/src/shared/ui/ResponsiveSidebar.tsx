@@ -43,7 +43,7 @@ export function SidebarCollapseToggle() {
 export function ResponsiveSidebarProvider({
   children,
   label,
-  routeKey: _routeKey,
+  routeKey,
   collapsible = false,
   storageKey = "future-props-sidebar-collapsed",
   defaultCollapsed = false,
@@ -82,6 +82,8 @@ export function ResponsiveSidebarProvider({
     media.addEventListener("change", sync);
     return () => media.removeEventListener("change", sync);
   }, []);
+  // Callers pass routeKey so the shell can remount with key={routeKey} when needed.
+  void routeKey;
   const railCompact = Boolean(collapsible && (collapsed || narrow));
   const layout = useMemo(
     () => ({
@@ -93,6 +95,9 @@ export function ResponsiveSidebarProvider({
       expand: () => updateCollapsed(false),
       toggleCollapsed: () => updateCollapsed(!collapsed),
     }),
+    // updateCollapsed closes over the latest collapsed/narrow; listing it would
+    // recreate the layout object on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
     [collapsed, railCompact, narrow, collapsible, label],
   );
   return (

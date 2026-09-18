@@ -6,8 +6,8 @@ import {
   useLogWorkspaceScope,
   useCrossWorkspaceLogQueries,
   accountQueryKeys,
+  listApiKeys,
 } from "@features/accounts";
-import { listApiKeys } from "@features/accounts/api";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
   batchDeleteLogs,

@@ -6,9 +6,7 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.core.config import get_settings
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.files import (
+from app.capabilities.asset_store import (
     AssetError,
     AssetStorage,
     ProjectFolderError,
@@ -16,6 +14,8 @@ from app.files import (
     VisualAssets,
     open_project_folder,
 )
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.runtime.config import get_settings
 from app.schemas.files import (
     VisualAssetImportIn,
     VisualAssetListOut,

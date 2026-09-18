@@ -839,7 +839,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     ]
     assert "senseaudio-vl-1.0-260319" not in all_slugs
     assert len(all_slugs) == 15
-    assert revision == (13,)
+    assert revision == (14,)
     assert stored_categories == {
         "[]",
         '["speech_recognition"]',
@@ -854,7 +854,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (13,)
+        ).fetchone() == (14,)
         assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (25,)
 
 

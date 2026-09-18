@@ -3,14 +3,14 @@ from copy import deepcopy
 import httpx
 import pytest
 
-from app.core.config import get_settings
-from app.core.db import SessionLocal
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
 from app.models import (
     GalgameAssetMetadata,
     VisualAsset,
 )
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal
 from app.schemas.galgame_workshop import GalgameStoryProject
 
 

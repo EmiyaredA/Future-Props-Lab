@@ -8,7 +8,7 @@ Status: implemented
 
 ## Decision
 
-账号治理由 `accounts/` 拥有，平台策略、Workspace 角色、密钥范围和敏感数据投影分层计算；跨空间访问必须由治理用例显式授权。
+账号治理由 `console/governance/` 拥有，平台策略、Workspace 角色、密钥范围和敏感数据投影分层计算；跨空间访问必须由治理用例显式授权。
 
 ## Alternatives considered
 

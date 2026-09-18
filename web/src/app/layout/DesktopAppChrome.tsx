@@ -32,7 +32,11 @@ export function DesktopAppChrome() {
     void bridge.developmentStatus().then((value) => {
       if (active) setDev(value);
     });
-    return bridge.onDevelopmentState?.((value) => setDev(value));
+    const unsubscribe = bridge.onDevelopmentState?.((value) => setDev(value));
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }, [bridge]);
 
   if (!bridge) return null;

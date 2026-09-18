@@ -9,10 +9,10 @@ import httpx
 import pytest
 from sqlalchemy import delete, select
 
-from app.core.db import SessionLocal
 from app.llm.providers import DiagnosticResult
 from app.main import app
 from app.models import LlmCallLog, ModelProvider
+from app.runtime.db import SessionLocal
 from db.migrations.registry import LATEST_MIGRATION_ID
 
 

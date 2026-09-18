@@ -7,8 +7,11 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
+from app.capabilities.transcription.parameters import (
+    TranscriptionParameterError,
+    parameter_capabilities,
+    resolve_parameters,
+)
 from app.llm.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
@@ -19,13 +22,10 @@ from app.llm.providers.transcription import (
     TranscriptSegment,
     TranscriptWord,
 )
-from app.llm.transcription.parameters import (
-    TranscriptionParameterError,
-    parameter_capabilities,
-    resolve_parameters,
-)
 from app.main import app
 from app.models import ModelTestTranscriptionTask, Workspace
+from app.orm import bind_workspace
+from app.runtime.db import SessionLocal
 from app.schemas.model_test import ModelTestTranscriptionParametersIn
 
 

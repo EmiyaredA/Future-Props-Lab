@@ -8,7 +8,7 @@ from io import BytesIO
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy import select
 
-from app.files.policy import download_filename
+from app.capabilities.asset_store.policy import download_filename
 from app.llm.providers import ImageInput
 from app.models import VisualAsset, VisualProjectAssetReference
 from app.schemas.visual_workshop import (

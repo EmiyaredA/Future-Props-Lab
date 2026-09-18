@@ -4,13 +4,12 @@ from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, WebSocket
 
-from app.accounts.errors import AccountError
-from app.accounts.runtime_quotas import acquire, release
-from app.core.config import get_settings
-from app.core.db import SessionLocal
+from app.capabilities.identity.errors import AccountError
+from app.console.governance.runtime_quotas import acquire, release
 from app.deps import SessionDep, StudioAuth, resolve_studio_websocket_principal
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.llm.call_logs.credentials import snapshot_caller_credential
 from app.llm.realtime import list_realtime_models, run_realtime_model_test
+from app.runtime.config import get_settings
 from app.schemas.realtime_voice import RealtimeVoiceOptionsOut
 
 router = APIRouter(tags=["model-test"])
@@ -77,8 +76,7 @@ async def realtime_socket(websocket: WebSocket) -> None:
 
     websocket.send_json = projected_send
     try:
-        async with SessionLocal() as session:
-            credential = await snapshot_from_principal(session, principal)
+        credential = await snapshot_caller_credential(principal)
         await run_realtime_model_test(
             websocket,
             workspace_id=workspace_id,

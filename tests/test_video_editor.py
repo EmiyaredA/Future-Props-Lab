@@ -14,9 +14,9 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from app.core.db import SessionLocal
 from app.main import app
 from app.models import VideoEditorProject
+from app.runtime.db import SessionLocal
 from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.evaluator import FrameSource, TimelineFrameRenderer, property_at, visual_gaps
 from app.video_editor.render_engine import render_document
@@ -524,7 +524,8 @@ def test_video_editor_text_layer_keeps_large_chinese_glyph_bottom_padding() -> N
         }
     )
     font_path = (
-        Path(__file__).parents[1] / "backend/app/media_rendering/assets/NotoSansSC-Medium.ttf"
+        Path(__file__).parents[1]
+        / "backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"
     )
     renderer = TimelineFrameRenderer(
         document,

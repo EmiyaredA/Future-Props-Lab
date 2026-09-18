@@ -34,7 +34,7 @@ export function VisualWorkshopAssetsPage({
       <WorkshopAppChrome
         eyebrow="项目资源"
         title="项目素材库"
-        description="管理本项目素材，从其他项目复制导入，或引用文件管理中的公共文件。"
+        description="管理本项目素材与总文件公共库，从其他项目复制导入，或引用文件管理中的公共文件。"
         actions={
           <div className="workshop-header-actions">
             <button onClick={onProjects}>

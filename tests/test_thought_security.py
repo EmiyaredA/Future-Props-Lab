@@ -9,10 +9,10 @@ from sqlalchemy import select
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 from tests.thought_helpers import delete_note
 
-from app.core.db import SessionLocal
 from app.llm.providers.streaming import TextDelta
 from app.main import app
 from app.models import LlmCallLog
+from app.runtime.db import SessionLocal
 from app.thought_workshop.assistant import PreparedWriting, writing_events
 
 ROOT = "/v1/thought-workshop"

@@ -12,8 +12,8 @@ try:
 except ImportError:  # pragma: no cover - dependency is required in production
     TinyTag = None  # type: ignore[assignment]
 
-from app.core.time import iso_utc
 from app.models import GalgameAssetMetadata, VisualAsset
+from app.runtime.time import iso_utc
 from app.schemas.galgame_workshop import GalgameProjectAssetOut
 
 CATEGORY_DIRECTORIES = {

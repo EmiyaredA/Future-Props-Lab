@@ -8,8 +8,8 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import delete
 
-from app.core.db import SessionLocal
 from app.models import LlmCallLog
+from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account
 
 pytestmark = pytest.mark.real_auth

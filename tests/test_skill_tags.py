@@ -7,11 +7,11 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.accounts.principal import StudioPrincipal
-from app.core.config import get_settings
-from app.core.tenant_context import bind_workspace
+from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
+from app.orm import bind_workspace
+from app.runtime.config import get_settings
 
 
 def skill_zip(name: str, description: str = "Tag fixture") -> bytes:

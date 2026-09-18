@@ -5,8 +5,8 @@ from typing import Any
 
 import httpx
 
-from app.core.outbound_urls import require_safe_provider_base_url
 from app.demo_runtime.runtime import mock_transport
+from app.runtime.outbound_urls import require_safe_provider_base_url
 
 PROMPT = "Reply with exactly OK."
 

@@ -5,7 +5,6 @@ from datetime import datetime
 from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.time import iso_utc
 from app.llm.call_logs.query import log_conditions, today_stats
 from app.llm.call_logs.reproduction import (
     ReproductionBundle,
@@ -13,6 +12,7 @@ from app.llm.call_logs.reproduction import (
     reproduction_support,
 )
 from app.models import LlmCallLog, ModelEntry, ModelProvider
+from app.runtime.time import iso_utc
 from app.schemas.call_log import (
     CallLogListItem,
     CallLogListOut,

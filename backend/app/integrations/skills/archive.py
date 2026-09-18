@@ -11,9 +11,9 @@ from uuid import uuid4
 
 import yaml
 
-from app.core.config import Settings
-from app.files.incoming import IncomingFile
+from app.capabilities.asset_store.incoming import IncomingFile
 from app.integrations.common import IntegrationValidationError
+from app.runtime.config import Settings
 
 SKILL_MD_MAX_BYTES = 256 * 1024
 

@@ -8,10 +8,10 @@ from pathlib import Path
 import mistune
 from sqlalchemy import select
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import get_settings
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.storage import AssetStorage
 from app.models import VisualAsset
+from app.runtime.config import get_settings
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.thought_conversion import ThoughtMarkdownOut
 from app.schemas.thought_document import file_ids
 from app.thought_workshop.errors import ThoughtError

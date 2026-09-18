@@ -1,13 +1,13 @@
 from sqlalchemy import select
 
-from app.concurrency.operation_receipts import OperationError
-from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
-from app.llm.transcription import (
+from app.capabilities.transcription import (
     model_supports_transcription,
     parameter_capabilities,
     resolve_parameters,
 )
+from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.models import ModelEntry, ModelProvider
+from app.runtime.operation_receipts import OperationError
 from app.schemas.model_inference import InferenceModelOut, InferenceOptionsOut, InferenceTextIn
 from app.schemas.transcription import ModelTestTranscriptionParametersIn
 from app.schemas.visual_workshop import (

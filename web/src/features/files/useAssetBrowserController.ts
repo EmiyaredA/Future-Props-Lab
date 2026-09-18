@@ -91,20 +91,21 @@ export function useAssetBrowserController({
   const [previewFile, setPreviewFile] = useState<ManagedFile>();
   const [editor, setEditor] = useState<FileEditor>(null);
   const [editorError, setEditorError] = useState("");
-  const importing = Boolean(importSource);
+  const canManage = importSource !== "cross-project";
+  const showImport = Boolean(importSource) && Boolean(projectId);
   const browseAllCross = importSource === "cross-project" && !browseProjectId;
   const sourceReady =
     importSource !== "cross-project"
       ? true
-      : !sourceProjectsLoading &&
-        (browseAllCross || Boolean(browseProjectId));
+      : !sourceProjectsLoading && (browseAllCross || Boolean(browseProjectId));
   const sourceProjectId =
     importSource === "library"
       ? undefined
       : importSource === "cross-project"
         ? browseProjectId
         : projectId;
-  const libraryMode = !projectId && !importing;
+  const libraryMode = !projectId && !importSource;
+  const includeReferences = !importSource;
   const mediaKindFilter = kind === "all" ? undefined : kind;
   const foldersQuery = useQuery({
     queryKey: fileQueryKeys.folders(sourceProjectId),
@@ -118,7 +119,7 @@ export function useAssetBrowserController({
       query,
       mediaKind: mediaKindFilter,
       sort,
-      includeReferences: !importing,
+      includeReferences,
     }),
     queryFn: () =>
       getFiles({
@@ -127,7 +128,7 @@ export function useAssetBrowserController({
         query,
         mediaKind: mediaKindFilter,
         sort,
-        includeReferences: !importing,
+        includeReferences,
       }),
     enabled: sourceReady && !browseAllCross,
   });
@@ -516,7 +517,7 @@ export function useAssetBrowserController({
     });
   };
   const hasItems = childFolders.length > 0 || files.length > 0;
-  const showContent = hasItems || (!compact && !importing);
+  const showContent = hasItems || (!compact && canManage);
   const noMatches = !hasItems && Boolean(query.trim() || kind !== "all");
 
   const editorTitle = editor
@@ -601,7 +602,8 @@ export function useAssetBrowserController({
     act,
     upload,
     archiveTransfer,
-    importing,
+    canManage,
+    showImport,
     importSource,
     browseAllCross,
     sourceReady,

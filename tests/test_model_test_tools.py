@@ -6,7 +6,7 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.agents.harness import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
+from app.capabilities.agents.harness import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from app.main import app
 
 

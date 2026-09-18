@@ -6,12 +6,12 @@ import httpx
 import pytest
 from sqlalchemy import delete, select
 
-from app.core.config import get_settings
-from app.core.db import SessionLocal
-from app.files.layout_migration import reconcile_project_trash
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.layout_migration import reconcile_project_trash
+from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
 from app.models import GalgameWorkshopProject, VisualAsset, VisualWorkshopProject
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal
 
 
 async def _reset() -> None:

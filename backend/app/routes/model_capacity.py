@@ -3,11 +3,11 @@
 from fastapi import Depends, HTTPException, Request
 from pydantic import ValidationError
 
-from app.accounts.route_permissions import route_permission
-from app.accounts.runtime_quotas import acquire, admit_spawned_tasks, attach, release
-from app.concurrency.operation_receipts import OperationError
+from app.capabilities.identity.route_permissions import route_permission
+from app.console.governance.runtime_quotas import acquire, admit_spawned_tasks, attach, release
 from app.deps import SessionDep, StudioAuth
 from app.llm.inference.tasks import InferenceTasks
+from app.runtime.operation_receipts import OperationError
 from app.schemas.model_inference import InferenceTaskIn
 
 

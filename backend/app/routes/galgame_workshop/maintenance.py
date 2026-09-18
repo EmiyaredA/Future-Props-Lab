@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from app.capabilities.asset_store import AssetError
 from app.deps import SessionDep
-from app.files import AssetError
 from app.galgame_workshop.portrait_maintenance import GalgamePortraitMaintenance
 from app.routes.galgame_workshop._shared import _asset_error
 from app.schemas.galgame_workshop import (

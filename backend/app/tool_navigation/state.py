@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.time import iso_utc, utc_now
 from app.models import ToolNavigationItem
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.tool_navigation import ToolNavigationItemOut, ToolNavigationStateOut
 
 

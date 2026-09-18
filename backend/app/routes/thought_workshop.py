@@ -4,11 +4,11 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.core.config import get_settings
+from app.capabilities.asset_store.library import AssetError, AssetLibrary
+from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.files.library import AssetError, AssetLibrary
-from app.files.project_snapshots import ProjectSnapshotError
 from app.llm.call_logs.credentials import snapshot_from_principal
+from app.runtime.config import get_settings
 from app.schemas.thought_history import ThoughtHistoryDetail, ThoughtHistoryList
 from app.schemas.thought_knowledge import (
     KnowledgeBaseIn,

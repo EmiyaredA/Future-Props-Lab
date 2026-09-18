@@ -5,8 +5,8 @@ from uuid import uuid4
 
 from sqlalchemy import update
 
-from app.core.time import utc_now
 from app.models import VisualCanvasDocument, VisualGenerationBatch
+from app.runtime.time import utc_now
 from app.schemas.visual_generation import GenerationBatchOut, ImageCompositionCreateIn
 from app.visual_workshop.generation_common import GenerationError, generation_batch_out
 

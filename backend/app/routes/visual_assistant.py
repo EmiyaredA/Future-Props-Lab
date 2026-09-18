@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
-from app.agents.harness.approval import (
+from app.capabilities.agents.harness.approval import (
     ApprovalConflictError,
     ApprovalNotFoundError,
     approval_broker,

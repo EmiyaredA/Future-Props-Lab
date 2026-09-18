@@ -4,8 +4,8 @@ from uuid import uuid4
 
 from sqlalchemy import update
 
-from app.core.time import utc_now
 from app.models import VisualCanvasDocument
+from app.runtime.time import utc_now
 from app.visual_workshop.generation_common import GenerationError
 
 

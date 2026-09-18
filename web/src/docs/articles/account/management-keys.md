@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":7,"title":"管理 API Key","lead":"为自动化访问创建绑定当前空间的密钥。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/accounts/principal.py"]} -->
+<!-- docs: {"group":"account","order":7,"title":"管理 API Key","lead":"为自动化访问创建绑定当前空间的密钥。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
 
 # 管理 API Key
 

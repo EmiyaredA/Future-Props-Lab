@@ -5,12 +5,12 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.accounts.permissions import role_permissions, role_scopes
-from app.accounts.principal import StudioPrincipal
-from app.accounts.provisioning import create_account
-from app.accounts.route_permissions import ROUTE_PERMISSIONS
-from app.core.db import SessionLocal
+from app.capabilities.identity.permissions import role_permissions, role_scopes
+from app.capabilities.identity.principal import StudioPrincipal
+from app.capabilities.identity.route_permissions import ROUTE_PERMISSIONS
+from app.console.governance.provisioning import create_account
 from app.main import app
+from app.runtime.db import SessionLocal
 
 pytestmark = pytest.mark.real_auth
 

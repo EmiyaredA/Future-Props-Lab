@@ -6,15 +6,15 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
-from app.core.config import get_settings
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.files import (
+from app.capabilities.asset_store import (
     AssetError,
     AssetStorage,
     ProjectFolderError,
     ProjectSnapshotError,
     open_project_folder,
 )
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.runtime.config import get_settings
 from app.schemas.project_snapshots import ProjectFolderOpenOut
 from app.schemas.video_editor import (
     VideoEditorAssetImportIn,

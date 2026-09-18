@@ -210,9 +210,9 @@ test("creates and edits an audio annotation task", async ({
       }),
     });
   });
-  await page.goto("/tools");
-  await page.getByRole("button", { name: "打开录音分段标注" }).click();
-  await expect(page).toHaveURL(/\/tools\/audio-annotation$/);
+  await page.goto("/apps/audio-annotation");
+  await expect(page).toHaveURL(/\/apps\/audio-annotation$/);
+  await expect(page.getByText("录音标注工坊")).toBeVisible();
 
   await page.getByRole("button", { name: "新建任务" }).click();
   await page.getByLabel("上传录音文件").setInputFiles({
@@ -228,7 +228,7 @@ test("creates and edits an audio annotation task", async ({
   ).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "创建并打开" }).click();
 
-  await expect(page).toHaveURL(/\/tools\/audio-annotation\/.+$/);
+  await expect(page).toHaveURL(/\/apps\/audio-annotation\/projects\/.+$/);
   await expect(
     page.getByRole("complementary", { name: "片段编辑器" }),
   ).toBeVisible();
@@ -368,7 +368,7 @@ test("creates and edits an audio annotation task", async ({
     page.getByRole("alertdialog", { name: "离开并放弃未保存内容？" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "取消", exact: true }).click();
-  await expect(page).toHaveURL(/\/tools\/audio-annotation\/.+$/);
+  await expect(page).toHaveURL(/\/apps\/audio-annotation\/projects\/.+$/);
 
   await page.setViewportSize({ width: 900, height: 800 });
   await expect(page.locator(".annotation-editor-grid")).toHaveCSS(

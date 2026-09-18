@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.galgame_workshop.video_actor_compiler import compile_actor_clips
 from app.galgame_workshop.video_compiler_events import (
     apply_event,
@@ -31,7 +32,6 @@ from app.galgame_workshop.video_lip_sync import (
     LipSyncSchedule,
     build_lip_sync_schedule,
 )
-from app.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.schemas.video_editor import VideoEditorTimelineDocument
 
 COMPILER_VERSION = "galgame-render-plan-v3"

@@ -10,18 +10,19 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.accounts.model_template_sync import ModelTemplateSyncRunner
-from app.accounts.profile import reconcile_profile_avatars
-from app.accounts.runtime_quotas import recover_admissions
-from app.accounts.service import AccountError
-from app.concurrency.polling_runner import RunnerSupervisor
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import get_settings
-from app.core.db import SessionLocal, engine
-from app.files.layout_migration import reconcile_project_trash, reconcile_snapshot_imports
-from app.files.library_folder_archive import cleanup_library_folder_archive_staging
-from app.files.project_snapshots import cleanup_snapshot_staging
-from app.files.storage import AssetStorage
+import app.orm  # noqa: F401 — register tenant listeners
+from app.api import api_router
+from app.capabilities.asset_store.layout_migration import (
+    reconcile_project_trash,
+    reconcile_snapshot_imports,
+)
+from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
+from app.capabilities.asset_store.storage import AssetStorage
+from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
+from app.console.governance.model_template_sync import ModelTemplateSyncRunner
+from app.console.governance.profile import reconcile_profile_avatars
+from app.console.governance.runtime_quotas import recover_admissions
+from app.console.governance.service import AccountError
 from app.galgame_workshop.annotation_import_runner import GalgameAnnotationImportRunner
 from app.galgame_workshop.asr import GalgameAsrRunner
 from app.galgame_workshop.video_export_runner import GalgameVideoExportRunner
@@ -38,7 +39,10 @@ from app.problem_details import (
     storage_operational_error_handler,
     validation_exception_handler,
 )
-from app.routes import api_router
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal, engine
+from app.runtime.polling_runner import RunnerSupervisor
+from app.runtime.revisions import RevisionConflictError
 from app.video_editor.runner import VideoEditorRunner
 from app.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
 from app.visual_workshop.generation_runner import VisualGenerationRunner

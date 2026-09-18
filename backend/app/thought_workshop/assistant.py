@@ -8,12 +8,12 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from app.core.credentials import decrypt_secret
-from app.core.db import SessionLocal
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.providers import stream_text_completion
 from app.llm.providers.streaming import ChatMessageInput
 from app.models import LlmCallLog, ModelEntry, ModelProvider
+from app.runtime.credentials import decrypt_secret
+from app.runtime.db import SessionLocal
 from app.schemas.thought_workshop import ThoughtAssistantIn, ThoughtModelOut
 from app.thought_workshop.notes import Notes, ThoughtError
 

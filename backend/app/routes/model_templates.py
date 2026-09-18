@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Request
 
-from app.accounts.model_template_sync import job_view, preview_sync, recent_jobs, start_sync
-from app.accounts.model_templates import get_template, save_template
+from app.console.governance.model_template_sync import (
+    job_view,
+    preview_sync,
+    recent_jobs,
+    start_sync,
+)
+from app.console.governance.model_templates import get_template, save_template
 from app.deps import SessionDep, client_ip
 from app.routes.accounts import _platform_auth
 from app.schemas.model_templates import (

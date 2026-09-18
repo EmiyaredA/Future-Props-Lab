@@ -7,19 +7,24 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.core.config import get_settings
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.files import (
+from app.capabilities.asset_store import (
     AssetError,
     AssetStorage,
-    LibraryFolderArchive,
-    LibraryFolderArchiveError,
     ProjectFolderError,
     VisualAssets,
     download_filename,
     open_library_folder,
 )
-from app.files.layout_migration import LayoutMigrationBusyError, StorageLayoutMigration
+from app.capabilities.asset_store.layout_migration import (
+    LayoutMigrationBusyError,
+    StorageLayoutMigration,
+)
+from app.console.file_library import (
+    LibraryFolderArchive,
+    LibraryFolderArchiveError,
+)
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.runtime.config import get_settings
 from app.schemas.files import (
     LibraryFolderImportOut,
     StorageLayoutMigrationOut,
@@ -313,7 +318,7 @@ async def download_file(
 
 @router.post("/files/svg/preview", response_model=SvgPreviewOut)
 async def preview_svg(body: SvgPreviewIn, _workspace_id: WorkspaceDep) -> SvgPreviewOut:
-    from app.files.svg import normalize_svg
+    from app.capabilities.asset_store.svg import normalize_svg
 
     try:
         return SvgPreviewOut(**normalize_svg(body.svg))

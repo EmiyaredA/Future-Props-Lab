@@ -8,10 +8,10 @@ from typing import Any, Protocol
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.core.credentials import decrypt_secret
-from app.core.tenant_context import bind_workspace, require_workspace_id
-from app.core.time import utc_now
 from app.models import ModelProvider
+from app.orm import bind_workspace, require_workspace_id
+from app.runtime.credentials import decrypt_secret
+from app.runtime.time import utc_now
 
 SUBMISSION_INTERRUPTED_MESSAGE = "应用在提交供应商任务期间中断；为避免重复计费，请重新生成"
 

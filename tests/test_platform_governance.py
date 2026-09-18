@@ -5,10 +5,10 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from app.accounts.model_template_sync import ModelTemplateSyncRunner
-from app.core.db import SessionLocal
+from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.main import app
 from app.models import ModelProvider, User
+from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account
 
 pytestmark = pytest.mark.real_auth

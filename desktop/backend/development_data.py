@@ -30,7 +30,7 @@ def verify_lease(root: Path, fd: int):
 
 
 def check_data(root: Path, live: bool = False) -> None:
-    from app.core.config import Settings
+    from app.runtime.config import Settings
     from db.migrations.registry import MIGRATIONS
     from db.migrations.runner import migration_checksum
     from fpl_config import read_config

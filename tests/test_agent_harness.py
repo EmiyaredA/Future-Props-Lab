@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from app.agents.harness import (
+from app.capabilities.agents.harness import (
     AgentDefinition,
     AgentEvent,
     AgentHarness,

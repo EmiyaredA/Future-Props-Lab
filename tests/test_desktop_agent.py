@@ -13,7 +13,7 @@ import httpx
 import pytest
 from tests.test_desktop import TOKEN, DesktopServer, initialize, login
 
-from app.accounts.desktop_agent import MANIFEST, AgentError, DesktopAgent, allows_agent
+from app.console.governance.desktop_agent import MANIFEST, AgentError, DesktopAgent, allows_agent
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "sdk/python/src"))

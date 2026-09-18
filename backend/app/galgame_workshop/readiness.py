@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.storage import AssetStorage
 from app.galgame_workshop.assets import GalgameProjectAssets
 from app.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from app.galgame_workshop.story import GalgameStoryDocuments, build_route_report
 from app.models import GalgameAssetMetadata
+from app.runtime.config import Settings
 from app.schemas.galgame_workshop import (
     GalgameStoryReportIssue,
     GalgameStoryRouteReportOut,

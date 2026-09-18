@@ -41,7 +41,7 @@ export function CanvasAssetsDrawer({
       <header>
         <div className="canvas-assets-title">
           <strong>素材库</strong>
-          <span title="管理本项目素材，或从其他项目与文件管理导入">
+          <span title="管理本项目与总文件公共库，或从其他项目导入">
             <CircleQuestionMark aria-hidden />
           </span>
         </div>

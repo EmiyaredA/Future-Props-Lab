@@ -5,11 +5,9 @@ from pathlib import Path, PurePosixPath
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import Settings
-from app.files import AssetError, AssetLibrary, IncomingFile
-from app.files.policy import GALGAME_EXTENSIONS
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store import AssetError, AssetLibrary, IncomingFile
+from app.capabilities.asset_store.policy import GALGAME_EXTENSIONS
+from app.capabilities.asset_store.storage import AssetStorage
 from app.galgame_workshop.asset_analysis import GalgameAssetAnalysisMixin
 from app.galgame_workshop.asset_support import (
     CATEGORY_DIRECTORIES,
@@ -27,6 +25,8 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
+from app.runtime.config import Settings
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.galgame_workshop import (
     GalgameAssetBatchUploadOut,
     GalgameAssetImportPreviewItem,

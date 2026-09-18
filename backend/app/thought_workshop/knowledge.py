@@ -5,10 +5,10 @@ from datetime import UTC
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
 from app.models.defaults import utc_now
 from app.models.files import VisualAsset
 from app.models.thought_workshop import ThoughtKnowledgeBase, ThoughtNote
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.thought_document import empty_document
 from app.schemas.thought_knowledge import KnowledgeBaseIn, KnowledgeBaseOut, KnowledgeBasePut
 from app.thought_workshop.errors import ThoughtError

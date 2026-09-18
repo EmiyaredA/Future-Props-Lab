@@ -11,13 +11,13 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.time import iso_utc, utc_now
 from app.models import (
     ModelTestConversationToolBinding,
     ModelTestTool,
     ModelTestToolCall,
 )
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.model_test_tools import (
     ModelTestToolCallOut,
     ModelTestToolCatalogOut,

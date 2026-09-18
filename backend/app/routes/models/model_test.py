@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
-from app.core.config import get_settings
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.catalog.service import ResourceNotFoundError
@@ -17,6 +16,7 @@ from app.llm.playground.service import (
     RegenerateUnavailableError,
 )
 from app.llm.playground.stream import generation_events
+from app.runtime.config import get_settings
 from app.schemas.model_test import (
     ModelTestAttachmentListOut,
     ModelTestConversationCreateIn,

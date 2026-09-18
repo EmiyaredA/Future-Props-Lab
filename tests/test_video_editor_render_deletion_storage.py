@@ -5,9 +5,7 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.core.config import get_settings
-from app.core.db import SessionLocal
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
 from app.models import (
     VideoEditorAssetMetadata,
@@ -17,6 +15,8 @@ from app.models import (
     VisualAsset,
     Workspace,
 )
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal
 
 
 async def seed(*, status="completed", kind="render", workspace="default", reference=None):

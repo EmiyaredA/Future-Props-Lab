@@ -111,7 +111,8 @@ export function AssetBrowser({
     act,
     upload,
     archiveTransfer,
-    importing,
+    canManage,
+    showImport,
     importSource: resolvedImportSource,
     browseAllCross,
     sourceReady,
@@ -196,23 +197,24 @@ export function AssetBrowser({
         : projectId
           ? "项目素材"
           : "全部文件";
-  const sourceProjectFilter = resolvedImportSource === "cross-project" ? (
-    <>
-      <span>来源项目</span>
-      <CustomSelect
-        ariaLabel="来源项目"
-        className="file-filter-select"
-        value={browseProjectId ?? ""}
-        disabled={sourceProjectsLoading || noSourceProjects}
-        onChange={(value) => onBrowseProjectIdChange?.(value)}
-        options={
-          noSourceProjects
-            ? [{ value: "", label: "暂无其他项目", disabled: true }]
-            : sourceProjectOptions
-        }
-      />
-    </>
-  ) : null;
+  const sourceProjectFilter =
+    resolvedImportSource === "cross-project" ? (
+      <>
+        <span>来源项目</span>
+        <CustomSelect
+          ariaLabel="来源项目"
+          className="file-filter-select"
+          value={browseProjectId ?? ""}
+          disabled={sourceProjectsLoading || noSourceProjects}
+          onChange={(value) => onBrowseProjectIdChange?.(value)}
+          options={
+            noSourceProjects
+              ? [{ value: "", label: "暂无其他项目", disabled: true }]
+              : sourceProjectOptions
+          }
+        />
+      </>
+    ) : null;
 
   return (
     <section className={`file-browser${compact ? " is-compact" : ""}`}>
@@ -270,7 +272,7 @@ export function AssetBrowser({
                     </div>
                   ) : null}
                 </div>
-                {!importing ? (
+                {canManage ? (
                   <div className="file-compact-menu">
                     <button
                       type="button"
@@ -378,7 +380,7 @@ export function AssetBrowser({
                   </small>
                 ) : null}
               </div>
-              {!importing ? (
+              {canManage ? (
                 <div className="file-primary-actions">
                   {libraryMode ? (
                     <>
@@ -487,7 +489,7 @@ export function AssetBrowser({
           </>
         )}
       </div>
-      {!importing ? (
+      {canManage ? (
         <input
           ref={fileInput}
           hidden
@@ -601,6 +603,7 @@ export function AssetBrowser({
       {noSourceProjects || !sourceReady ? (
         <FileEmptyState
           importSource={resolvedImportSource}
+          canManage={canManage}
           noSourceProjects={noSourceProjects}
           filtered={false}
           busy={false}
@@ -612,7 +615,7 @@ export function AssetBrowser({
         <div className="file-empty">文件暂时无法读取，请稍后重试。</div>
       ) : showContent ? (
         <div className={`file-items ${view}`}>
-          {!compact && !importing ? (
+          {!compact && canManage ? (
             <article className="file-upload-card">
               <button
                 type="button"
@@ -668,7 +671,7 @@ export function AssetBrowser({
                     打开 <FolderOpen aria-hidden />
                   </span>
                 </div>
-                {!importing ? (
+                {canManage ? (
                   <ItemActionMenu
                     id={`file-menu-${menuKey}`}
                     label={folder.name}
@@ -739,7 +742,7 @@ export function AssetBrowser({
                   <time dateTime={file.updated_at}>
                     {relativeUpdatedAt(file.updated_at)}
                   </time>
-                  {importing && projectId ? (
+                  {showImport ? (
                     <button
                       type="button"
                       className="file-item-primary-action"
@@ -761,7 +764,7 @@ export function AssetBrowser({
                     </button>
                   )}
                 </div>
-                {!importing ? (
+                {canManage ? (
                   <ItemActionMenu
                     id={`file-menu-${menuKey}`}
                     label={fileDisplayName(file)}
@@ -808,6 +811,7 @@ export function AssetBrowser({
       ) : (
         <FileEmptyState
           importSource={resolvedImportSource}
+          canManage={canManage}
           noSourceProjects={noSourceProjects}
           filtered={!!query.trim() || kind !== "all"}
           busy={upload.isPending}

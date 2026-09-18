@@ -10,10 +10,10 @@ from PIL import Image, UnidentifiedImageError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings
-from app.core.time import iso_utc
-from app.files.incoming import IncomingFile
+from app.capabilities.asset_store.incoming import IncomingFile
 from app.models import ModelTestAttachment, ModelTestConversation
+from app.runtime.config import Settings
+from app.runtime.time import iso_utc
 from app.schemas.model_test import ModelTestAttachmentListOut, ModelTestAttachmentOut
 
 MAX_ATTACHMENTS_PER_MESSAGE = 5

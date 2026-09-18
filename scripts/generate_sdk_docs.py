@@ -60,7 +60,7 @@ def auth_for(path):
 
 
 def permission_map():
-    tree = ast.parse((ROOT / "backend/app/accounts/route_permissions.py").read_text())
+    tree = ast.parse((ROOT / "backend/app/capabilities/identity/route_permissions.py").read_text())
     for node in tree.body:
         if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "OPERATIONS":
             return {

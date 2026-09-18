@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
-from app.accounts.error_views import error_detail
-from app.accounts.member_roles import update_member_role
-from app.accounts.permissions import role_permissions
-from app.accounts.service import AccountError
-from app.accounts.workspaces import (
+from app.capabilities.identity.error_views import error_detail
+from app.capabilities.identity.permissions import role_permissions
+from app.console.governance.member_roles import update_member_role
+from app.console.governance.service import AccountError
+from app.console.governance.workspaces import (
     act_on_invitation,
     create_invitation,
     invitation_views,

@@ -22,5 +22,5 @@ Status: implemented
 
 ## Verification
 
-入口位于 `backend/app/accounts/principal.py`、`backend/app/deps.py` 和 `WorkspaceDep`；运行 Workspace、账号和后台任务隔离测试。
+入口位于 `backend/app/capabilities/identity/principal.py`、`backend/app/deps.py` 和 `WorkspaceDep`；运行 Workspace、账号和后台任务隔离测试。
 

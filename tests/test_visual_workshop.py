@@ -4,11 +4,8 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-import app.files.assets as asset_module
-from app.core.config import get_settings
-from app.core.credentials import encrypt_secret
-from app.core.db import SessionLocal
-from app.files.storage import AssetStorage
+import app.capabilities.asset_store.assets as asset_module
+from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
 from app.models import (
     ModelEntry,
@@ -21,6 +18,9 @@ from app.models import (
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.runtime.config import get_settings
+from app.runtime.credentials import encrypt_secret
+from app.runtime.db import SessionLocal
 
 
 @pytest.mark.asyncio

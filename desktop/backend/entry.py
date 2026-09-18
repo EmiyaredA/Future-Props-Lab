@@ -17,7 +17,7 @@ from cryptography.fernet import Fernet
 
 
 def prepare_configuration(data_root: Path, loaded: dict | None = None):
-    from app.core.config import Settings
+    from app.runtime.config import Settings
     from fpl_config import read_config
     from fpl_config.migration import convert_legacy, encode, publish
 
@@ -74,15 +74,15 @@ def launch() -> None:
     for name in list(os.environ):
         if name.startswith("FPL_") or name == "CORS_ORIGINS":
             os.environ.pop(name)
-    from app.core.config import configure_desktop
+    from app.runtime.config import configure_desktop
 
     loaded = {} if inherited is not None else None
     configure_desktop(prepare_configuration(args.data_dir, loaded))
     import uvicorn
 
-    from app.core.desktop import attach_desktop
     from app.main import app
     from app.routes.desktop_agent import configure_agent
+    from app.runtime.desktop import attach_desktop
 
     attach_desktop(
         app,

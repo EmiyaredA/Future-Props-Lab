@@ -50,14 +50,14 @@ export const GROUPS: DocsGroup[] = [
     context: "thought",
     parent: "apps-overview",
   },
-  { id: "tools", title: "工具导航", section: "工具" },
   {
     id: "annotation",
-    title: "录音分段标注",
-    section: "工具",
+    title: "录音标注工坊",
+    section: "应用",
     context: "annotation",
-    parent: "tools-overview",
+    parent: "apps-overview",
   },
+  { id: "tools", title: "工具导航", section: "工具" },
   {
     id: "frames",
     title: "视频帧导出",

@@ -7,13 +7,8 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from tinytag import TinyTag
 
-from app.concurrency.operation_receipts import forget
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import get_settings
-from app.core.ids import new_id
-from app.core.time import iso_utc, utc_now
-from app.files.library import AssetError, AssetLibrary
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.library import AssetError, AssetLibrary
+from app.capabilities.asset_store.storage import AssetStorage
 from app.models import (
     AudioAnnotationDocument,
     AudioAnnotationProject,
@@ -21,6 +16,11 @@ from app.models import (
     ModelTestTranscriptionTask,
     VisualAsset,
 )
+from app.runtime.config import get_settings
+from app.runtime.ids import new_id
+from app.runtime.operation_receipts import forget
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.audio_annotation import (
     AudioAnnotationCustomEmotion,
     AudioAnnotationDocumentOut,

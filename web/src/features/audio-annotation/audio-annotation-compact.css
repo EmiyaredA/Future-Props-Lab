@@ -1,7 +1,4 @@
 @media (max-width: 1200px) {
-  .annotation-project-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .annotation-editor-page {
     height: auto;
     max-height: none;
@@ -59,16 +56,12 @@
   .annotation-project-actions button {
     white-space: nowrap;
   }
-  .annotation-project-summary {
+  .annotation-projects-page .annotation-projects-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .annotation-project-stats {
     flex-wrap: wrap;
     gap: 12px;
-  }
-  .annotation-project-summary label {
-    width: 100%;
-    min-width: 0;
-  }
-  .annotation-project-grid {
-    grid-template-columns: minmax(0, 1fr);
   }
   .annotation-editor-page .annotation-waveform-meta {
     flex-wrap: wrap;

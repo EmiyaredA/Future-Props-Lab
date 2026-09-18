@@ -3,18 +3,18 @@ from __future__ import annotations
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.operation_receipts import forget
-from app.concurrency.project_records import (
+from app.capabilities.asset_store import AssetStorage
+from app.capabilities.asset_store.svg import normalize_svg
+from app.models.defaults import utc_now
+from app.models.files import VisualAsset
+from app.models.presentation_workshop import PresentationAssetReference, PresentationProject
+from app.runtime.config import get_settings
+from app.runtime.operation_receipts import forget
+from app.runtime.project_records import (
     delete_revisioned_project,
     load_workspace_project,
     patch_revisioned_project,
 )
-from app.core.config import get_settings
-from app.files import AssetStorage
-from app.files.svg import normalize_svg
-from app.models.defaults import utc_now
-from app.models.files import VisualAsset
-from app.models.presentation_workshop import PresentationAssetReference, PresentationProject
 from app.schemas.presentation_workshop import (
     PresentationDocument,
     PresentationProjectIn,

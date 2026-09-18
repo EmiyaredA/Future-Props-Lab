@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
+from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.video_frames import export_frames
 from app.deps import SessionDep, WorkspaceDep
-from app.files.library import AssetError
-from app.files.video_frames import export_frames
 from app.schemas.video_frames import VideoFramesIn
 
 router = APIRouter(tags=["file-management"])

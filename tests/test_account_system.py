@@ -5,11 +5,9 @@ import httpx
 import pytest
 from sqlalchemy import func, select
 
-from app.accounts.passwords import normalize_username
-from app.accounts.provisioning import create_account
-from app.accounts.security import hash_secret
-from app.core.db import SessionLocal
-from app.core.time import utc_now
+from app.capabilities.identity.passwords import normalize_username
+from app.capabilities.identity.security import hash_secret
+from app.console.governance.provisioning import create_account
 from app.main import app
 from app.models import (
     AuthSession,
@@ -20,6 +18,8 @@ from app.models import (
     Workspace,
     WorkspaceMembership,
 )
+from app.runtime.db import SessionLocal
+from app.runtime.time import utc_now
 
 
 async def create_test_account(*, platform_admin: bool = False) -> tuple[str, str]:
@@ -51,7 +51,9 @@ async def test_account_provisioning_rolls_back_when_catalog_seed_fails(
     async def fail_seed(_session, _workspace_id: str) -> bool:
         raise RuntimeError("seed failed")
 
-    monkeypatch.setattr("app.accounts.provisioning.ensure_workspace_model_catalog", fail_seed)
+    monkeypatch.setattr(
+        "app.console.governance.provisioning.ensure_workspace_model_catalog", fail_seed
+    )
     async with SessionLocal() as session:
         with pytest.raises(RuntimeError, match="seed failed"):
             await create_account(

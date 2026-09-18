@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.accounts.principal import StudioPrincipal
+from app.capabilities.identity.principal import StudioPrincipal
 
 
 class IntegrationNotFoundError(Exception):

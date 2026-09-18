@@ -8,7 +8,7 @@ Status: implemented
 
 ## Decision
 
-后端采用功能模块优先结构。`routes/` 只处理认证、请求校验、功能调用和响应映射；查询、事务和业务规则留在所属能力包，不新增通用 `services/`、`domain/` 或 `product/` 层。
+后端采用功能模块优先结构。`routes/` 只处理认证、请求校验、功能调用和响应映射；查询、事务和业务规则留在所属能力包，不新增通用 `services/`、`domain/` 或 `product/` 层。共享基础设施与跨 App 能力的目录边界见 [backend runtime/capabilities cutover](./2026-09-18-backend-runtime-capabilities-cutover.md)。
 
 ## Alternatives considered
 

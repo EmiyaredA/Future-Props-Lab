@@ -9,16 +9,8 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.concurrency.polling_runner import PollingTaskRunner
-from app.concurrency.revisions import RevisionConflictError
-from app.concurrency.task_admission import TaskAdmission
-from app.core.config import Settings, get_settings
-from app.core.credentials import decrypt_secret
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
-from app.core.time import iso_utc, utc_now
-from app.files import AssetError
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store import AssetError
+from app.capabilities.asset_store.storage import AssetStorage
 from app.galgame_workshop.story import GalgameStoryDocuments
 from app.llm.providers._senseaudio import SenseAudioProviderError
 from app.llm.providers.senseaudio_asr import (
@@ -34,6 +26,14 @@ from app.models import (
     ModelProvider,
     VisualAsset,
 )
+from app.orm import bind_workspace
+from app.runtime.config import Settings, get_settings
+from app.runtime.credentials import decrypt_secret
+from app.runtime.db import SessionLocal
+from app.runtime.polling_runner import PollingTaskRunner
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.task_admission import TaskAdmission
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.galgame_workshop import (
     GalgameAsrSettingsOut,
     GalgameAsrSettingsPatchIn,

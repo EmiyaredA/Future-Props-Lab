@@ -12,7 +12,7 @@ Status: implemented
 - 导出 `GET /v1/file-library/folder-exports`：生成可读相对路径 ZIP（显示名 + 逻辑目录），包级上限复用 `project_snapshot_max_*`。
 - 导入两条：`POST .../folder-archive-imports`（ZIP）与 `POST .../folder-entry-imports`（`files` + `relative_paths`，供 webkitdirectory）。
 - 同名文件夹 merge；文件允许同名；超深度/不支持类型/不安全路径进入 `skipped`，允许部分成功。
-- 磁盘仍按 `storage_key` 扁平落盘；实现位于 `files/library_folder_archive.py`，权限分别为 `content.read` / `content.write`；Agent 通道默认不开放。
+- 磁盘仍按 `storage_key` 扁平落盘；实现位于 `console/file_library/library_folder_archive.py`，权限分别为 `content.read` / `content.write`；Agent 通道默认不开放。
 
 ## Alternatives considered
 

@@ -4,9 +4,6 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.credentials import encrypt_secret
-from app.core.secret_hints import encrypted_secret_hint
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.catalog.supplier_records import get_supplier, list_suppliers
 from app.models import (
@@ -19,6 +16,9 @@ from app.models import (
 )
 from app.models.model_inference import ModelInferenceTask
 from app.models.platform_governance import PlatformSetting
+from app.runtime.credentials import encrypt_secret
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.secret_hints import encrypted_secret_hint
 from app.schemas.model_service import (
     ModelCatalogOut,
     ModelCategoryListOut,

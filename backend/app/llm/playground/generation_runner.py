@@ -8,11 +8,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.concurrency.polling_runner import PollingTaskRunner
-from app.core.config import Settings, get_settings
-from app.core.db import SessionLocal
-from app.core.time import utc_now
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.call_logs.credentials import snapshot_from_row
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
@@ -36,6 +32,10 @@ from app.models import (
     ModelTestGenerationTask,
     VisualAsset,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.db import SessionLocal
+from app.runtime.polling_runner import PollingTaskRunner
+from app.runtime.time import utc_now
 
 ModelTestMaterializationError = GenerationMaterializationError
 _assert_public_https = assert_public_https

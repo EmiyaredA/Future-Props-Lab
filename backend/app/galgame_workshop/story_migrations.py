@@ -6,10 +6,10 @@ from typing import Literal
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.time import utc_now
 from app.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from app.galgame_workshop.story import GalgameStoryDocuments, normalize_story_document
 from app.models import GalgameStoryDocument, GalgameWorkshopProject
+from app.runtime.time import utc_now
 from app.schemas.galgame_workshop import (
     GalgameStoryDocumentOut,
     GalgameStoryDocumentPutIn,

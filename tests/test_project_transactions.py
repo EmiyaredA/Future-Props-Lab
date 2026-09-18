@@ -5,10 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from app.concurrency.revisions import RevisionConflictError, require_revision_write
-from app.core.config import Settings
-from app.files.project_transactions import creating_project_layout, deleting_project_layout
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.project_transactions import (
+    creating_project_layout,
+    deleting_project_layout,
+)
+from app.capabilities.asset_store.storage import AssetStorage
+from app.runtime.config import Settings
+from app.runtime.revisions import RevisionConflictError, require_revision_write
 
 
 class FakeSession:

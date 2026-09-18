@@ -11,8 +11,6 @@ from typing import Any
 from websockets.asyncio.client import connect
 from websockets.exceptions import InvalidStatus
 
-from app.core.ids import new_id
-from app.core.outbound_urls import require_safe_provider_websocket_url
 from app.llm.providers.realtime.constants import (
     SENSEAUDIO_PCM_FRAME_BYTES,
     SENSEAUDIO_PCM_FRAME_SECONDS,
@@ -25,6 +23,8 @@ from app.llm.providers.realtime.contracts import (
     RealtimeProviderUnavailableError,
     ResolvedRealtimeModel,
 )
+from app.runtime.ids import new_id
+from app.runtime.outbound_urls import require_safe_provider_websocket_url
 
 
 class SenseAudioRealtimeBridge:

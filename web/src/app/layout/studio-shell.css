@@ -183,6 +183,19 @@
   min-height: 0;
 }
 
+/* Pages that manage their own scrolling instead of the main panel's. */
+.studio-main:has(.annotation-editor-page),
+.studio-main:has(.model-test-page) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studio-main:has(.annotation-editor-page) > .annotation-editor-page {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 @media (max-width: 1200px) {
   .studio-shell {
     --studio-shell-gutter: 6px;

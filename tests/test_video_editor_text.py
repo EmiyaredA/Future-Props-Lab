@@ -8,12 +8,17 @@ import pytest
 from PIL import Image, ImageChops
 from pydantic import ValidationError
 
-from app.core.db import SessionLocal
+from app.capabilities.media_rendering.contracts import RenderPlan
+from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
+from app.capabilities.media_rendering.frame_renderer import render_plan_frame
+from app.capabilities.media_rendering.text_layer import (
+    FONT_ROOT,
+    load_text_font,
+    render_text_layer,
+    wrap_text,
+)
 from app.main import app
-from app.media_rendering.contracts import RenderPlan
-from app.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
-from app.media_rendering.frame_renderer import render_plan_frame
-from app.media_rendering.text_layer import FONT_ROOT, load_text_font, render_text_layer, wrap_text
+from app.runtime.db import SessionLocal
 from app.schemas.video_editor import (
     VideoEditorClip,
     VideoEditorTimelineBatchIn,

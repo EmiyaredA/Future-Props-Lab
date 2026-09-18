@@ -10,8 +10,6 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete, func, select
 
-from app.core.credentials import encrypt_secret
-from app.core.db import SessionLocal
 from app.llm.playground.service import ModelTestService
 from app.llm.playground.stream import generation_events
 from app.llm.providers import TextDelta
@@ -24,6 +22,8 @@ from app.models import (
     ModelTestConversation,
     ModelTestMessage,
 )
+from app.runtime.credentials import encrypt_secret
+from app.runtime.db import SessionLocal
 from app.schemas.model_test import ModelTestConversationCreateIn
 
 

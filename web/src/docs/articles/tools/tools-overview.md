@@ -10,10 +10,10 @@
 
 ## 收藏与入口
 
-收藏用于在工具导航中快速找到常用条目。打开“录音分段标注”或“视频帧导出”进入内置工具；其他网站使用外部链接。
+收藏用于在工具导航中快速找到常用条目。打开“视频帧导出”进入内置工具；其他网站使用外部链接。
 
 ## 选择教程
 
-- [录音分段标注](/docs.html?page=annotation-overview)：切分录音、整理说话人和文本。
 - [视频帧导出](/docs.html?page=frames-overview)：定位视频时间点并下载图片。
 - [内置与外部工具区别](/docs.html?page=tools-boundaries)：了解数据处理位置。
+- [录音标注工坊](/docs.html?page=annotation-overview)：切分录音、整理说话人和文本，现已归入应用。

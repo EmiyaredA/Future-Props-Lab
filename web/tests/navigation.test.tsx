@@ -112,6 +112,10 @@ test("uses home as the default and parses deep application routes", () => {
   expect(parsePage("/files")).toBe("files");
   expect(parsePage("/tools")).toBe("tools");
   expect(parsePage("/tools/video-frame-exporter")).toBe("video-frame-exporter");
+  expect(parsePage("/apps/audio-annotation")).toBe("audio-annotation-projects");
+  expect(parsePage("/apps/audio-annotation/projects/project-1")).toBe(
+    "audio-annotation-editor",
+  );
   expect(parsePage("/tools/audio-annotation")).toBe(
     "audio-annotation-projects",
   );
@@ -125,9 +129,9 @@ test("uses home as the default and parses deep application routes", () => {
   expect(pathFor("home")).toBe("/home");
   expect(pathFor("tools")).toBe("/tools");
   expect(pathFor("video-frame-exporter")).toBe("/tools/video-frame-exporter");
-  expect(pathFor("audio-annotation-projects")).toBe("/tools/audio-annotation");
+  expect(pathFor("audio-annotation-projects")).toBe("/apps/audio-annotation");
   expect(pathFor("audio-annotation-editor", "project-1")).toBe(
-    "/tools/audio-annotation/project-1",
+    "/apps/audio-annotation/projects/project-1",
   );
   expect(pathFor("files")).toBe("/files");
   expect(pathFor("integrations-tool-apis")).toBe("/integrations/tool-apis");
@@ -360,12 +364,12 @@ test("renders the video editor shell from its module configuration", () => {
   );
 });
 
-test("renders and searches the documentation center", () => {
+test("renders and searches the documentation center", async () => {
   window.history.replaceState({}, "", "/docs.html");
   vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
   render(<DocsApp />);
   expect(
-    screen.getByRole("heading", { name: "欢迎使用未来道具研究所" }),
+    await screen.findByRole("heading", { name: "欢迎使用未来道具研究所" }),
   ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "返回 Studio" })).toHaveAttribute(
     "href",
@@ -399,7 +403,7 @@ test("renders and searches the documentation center", () => {
   expect(directory).not.toHaveClass("open");
 });
 
-test("opens documentation deep links and follows browser navigation", () => {
+test("opens documentation deep links and follows browser navigation", async () => {
   window.history.replaceState(
     {},
     "",
@@ -407,7 +411,7 @@ test("opens documentation deep links and follows browser navigation", () => {
   );
   render(<DocsApp />);
   expect(
-    screen.getByRole("heading", { name: "视频生成", level: 1 }),
+    await screen.findByRole("heading", { name: "视频生成", level: 1 }),
   ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "四种输入方式" })).toHaveAttribute(
     "href",
@@ -421,7 +425,7 @@ test("opens documentation deep links and follows browser navigation", () => {
   ).toBeInTheDocument();
 });
 
-test("includes the video editor delivery guide in documentation search", () => {
+test("includes the video editor delivery guide in documentation search", async () => {
   window.history.replaceState({}, "", "/docs.html");
   render(<DocsApp />);
   const results = openDocsSearch();
@@ -434,7 +438,7 @@ test("includes the video editor delivery guide in documentation search", () => {
   expect(link).toBeInTheDocument();
   fireEvent.click(link);
   expect(
-    screen.getByRole("heading", { name: "项目与快照", level: 1 }),
+    await screen.findByRole("heading", { name: "项目与快照", level: 1 }),
   ).toBeInTheDocument();
   expect(window.location.search).toBe("?page=video-editor-projects");
 });

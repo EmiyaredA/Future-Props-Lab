@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from sqlalchemy import func, select, update
 
-from app.agents.harness import AgentEvent
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
-from app.core.time import iso_utc, utc_now
+from app.capabilities.agents.harness import AgentEvent
 from app.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
     VisualAssistantMessage,
 )
+from app.orm import bind_workspace
+from app.runtime.db import SessionLocal
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.visual_workshop import VisualAssistantActionOut
 
 ACTIVE_ACTION_STATUSES = ("proposed", "waiting_approval", "running")

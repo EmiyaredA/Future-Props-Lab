@@ -8,7 +8,7 @@ Status: implemented
 
 ## Decision
 
-确定性时间线画面和视频渲染归 `backend/app/media_rendering/`；Galgame 直接导出不依赖视频编辑器，只有显式的视频编辑器交接用例可以跨功能调用共享渲染契约。
+确定性时间线画面和视频渲染归 `backend/app/capabilities/media_rendering/`；Galgame 直接导出不依赖视频编辑器，只有显式的视频编辑器交接用例可以跨功能调用共享渲染契约。
 
 ## Alternatives considered
 
@@ -22,5 +22,5 @@ Status: implemented
 
 ## Verification
 
-渲染实现位于 `backend/app/media_rendering/`；运行媒体渲染和 Galgame/视频交接测试。
+渲染实现位于 `backend/app/capabilities/media_rendering/`；运行媒体渲染和 Galgame/视频交接测试。
 

@@ -11,11 +11,7 @@ import pytest
 from fastapi import UploadFile
 from sqlalchemy import delete
 
-from app.accounts.principal import StudioPrincipal
-from app.core.config import get_settings
-from app.core.db import SessionLocal
-from app.core.outbound_urls import require_safe_integration_http_url
-from app.core.tenant_context import bind_workspace
+from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.integrations.common import IntegrationValidationError
 from app.integrations.mcp import McpCatalog
@@ -36,6 +32,10 @@ from app.models import (
     SkillVersion,
     ToolApiIntegration,
 )
+from app.orm import bind_workspace
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal
+from app.runtime.outbound_urls import require_safe_integration_http_url
 from app.schemas.integrations import McpCreateIn, ToolApiCreateIn
 
 

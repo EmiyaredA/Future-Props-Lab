@@ -57,10 +57,6 @@
   line-height: 1;
   text-align: center;
 }
-.sidebar-footer:has(.workspace-trigger) {
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
 .account-menu .account-identity-avatar,
 .account-popover .account-identity-avatar,
 .management-account-cell .account-identity-avatar,

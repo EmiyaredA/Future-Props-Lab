@@ -6,14 +6,14 @@ import os
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import get_settings
-from app.files.storage import AssetStorage
-from app.media_rendering.contracts import RenderCaptureFrame, RenderPlan
-from app.media_rendering.evaluator import timeline_duration_us
-from app.media_rendering.frame_renderer import render_plan_frame
-from app.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
+from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
+from app.capabilities.media_rendering.evaluator import timeline_duration_us
+from app.capabilities.media_rendering.frame_renderer import render_plan_frame
+from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
 from app.models import VideoEditorTimeline, VisualAsset
+from app.runtime.config import get_settings
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.video_editor.projects import VideoEditorProjects

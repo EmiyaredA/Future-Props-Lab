@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, status
 
-from app.core.config import get_settings
+from app.capabilities.asset_store import AssetError
 from app.deps import SessionDep, WorkspaceDep
-from app.files import AssetError
 from app.galgame_workshop.annotation_import import GalgameAnnotationImports
 from app.routes.galgame_workshop._shared import _asset_error
+from app.runtime.config import get_settings
 from app.schemas.galgame_workshop import (
     GalgameAnnotationImportIn,
     GalgameAnnotationImportPreviewOut,

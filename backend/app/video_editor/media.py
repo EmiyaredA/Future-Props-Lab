@@ -10,19 +10,19 @@ from uuid import uuid4
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import Settings, get_settings
-from app.core.time import iso_utc, utc_now
-from app.files.incoming import IncomingFile
-from app.files.library import AssetLibrary
-from app.files.policy import VIDEO_EDITABLE_EXTENSIONS
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
+from app.capabilities.asset_store.storage import AssetStorage
 from app.models import (
     VideoEditorAssetMetadata,
     VideoEditorTask,
     VideoEditorTimeline,
     VisualAsset,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.video_editor import (
     VideoEditorAssetImportIn,
     VideoEditorAssetListOut,

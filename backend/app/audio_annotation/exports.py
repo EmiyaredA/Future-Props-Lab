@@ -5,9 +5,9 @@ from pathlib import Path
 
 from app.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
 from app.audio_annotation.transcription import AudioAnnotationTranscription
-from app.concurrency.revisions import RevisionConflictError
-from app.core.time import iso_utc, utc_now
-from app.media_rendering.audio_clip import extract_wav
+from app.capabilities.media_rendering.audio_clip import extract_wav
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 
 
 def timestamp(ms):

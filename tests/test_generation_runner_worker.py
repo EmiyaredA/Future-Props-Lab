@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from app.concurrency.polling_runner import PollingTaskRunner, RunnerSupervisor
+from app.runtime.polling_runner import PollingTaskRunner, RunnerSupervisor
 
 
 class ScriptedRunner(PollingTaskRunner):

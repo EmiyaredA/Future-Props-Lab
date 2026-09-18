@@ -154,7 +154,7 @@ async def clean_up_created_notes():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("asset_kind", ["image", "attachment"])
 async def test_import_rolls_back_records_and_staged_files(monkeypatch, asset_kind):
-    from app.files.library import AssetLibrary
+    from app.capabilities.asset_store.library import AssetLibrary
     from app.thought_workshop.notes import Notes, ThoughtError
 
     staged = []

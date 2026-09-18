@@ -3,8 +3,6 @@ from __future__ import annotations
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.time import iso_utc, utc_now
 from app.models import (
     VisualAsset,
     VisualCanvasDocument,
@@ -12,6 +10,8 @@ from app.models import (
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.visual_workshop import (
     VisualCanvasDocumentOut,
     VisualCanvasDocumentPutIn,

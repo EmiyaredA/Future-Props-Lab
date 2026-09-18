@@ -3,8 +3,6 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.time import utc_now
 from app.models import (
     VideoEditorAssetMetadata,
     VideoEditorTask,
@@ -13,6 +11,8 @@ from app.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,
 )
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import utc_now
 from app.schemas.video_editor import (
     VideoEditorSegmentExportCreateIn,
     VideoEditorTaskListOut,

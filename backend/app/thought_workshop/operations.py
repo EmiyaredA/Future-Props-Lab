@@ -1,7 +1,7 @@
 from copy import deepcopy
 
-from app.concurrency.operation_receipts import OperationError, record, replay
-from app.concurrency.revisions import RevisionConflictError
+from app.runtime.operation_receipts import OperationError, record, replay
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.thought_workshop import ThoughtNoteOut, ThoughtNotePut
 from app.thought_workshop.notes import Notes, note_out
 

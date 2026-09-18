@@ -2,10 +2,10 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings
-from app.files.incoming import IncomingFile
-from app.files.library import AssetLibrary
-from app.files.policy import ATTACHMENT_EXTENSIONS
+from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
+from app.runtime.config import Settings
 from app.schemas.thought_workshop import ThoughtAttachmentOut
 
 

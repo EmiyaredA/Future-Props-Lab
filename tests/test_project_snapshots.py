@@ -11,21 +11,21 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-import app.files.project_folders as folder_module
-from app.accounts.principal import StudioPrincipal
-from app.core.config import get_settings
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
+import app.capabilities.asset_store.project_folders as folder_module
+from app.capabilities.asset_store.layout_migration import reconcile_snapshot_imports
+from app.capabilities.asset_store.project_folders import open_project_folder
+from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
-from app.files.layout_migration import reconcile_snapshot_imports
-from app.files.project_folders import open_project_folder
-from app.files.storage import AssetStorage
 from app.main import app
 from app.models import (
     GalgameWorkshopProject,
     VideoEditorProject,
     VisualWorkshopProject,
 )
+from app.orm import bind_workspace
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal
 
 
 async def _reset_projects() -> None:
@@ -361,6 +361,8 @@ async def test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members() 
             "size": "1024x1024",
             "seed": None,
             "image_count": 1,
+            "grid_output": None,
+            "grid_size": None,
             "reference_asset_id": None,
             "prompt_reference_names": {},
         }
@@ -533,7 +535,7 @@ async def test_open_library_folder_uses_library_root_and_requires_browser_sessio
         monkeypatch.setattr(
             AssetStorage,
             "target_root",
-            lambda self, **_kwargs: missing,
+            lambda _self, **_kwargs: missing,
         )
         absent = await client.post("/v1/file-storage/open-folder")
         assert absent.status_code == 409

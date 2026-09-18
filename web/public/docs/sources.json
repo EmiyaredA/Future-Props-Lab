@@ -361,7 +361,7 @@
     "theme": "dark",
     "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
-    "sha256": "c19ae74e4ae3582e35bdbe1e7094b514afdee4001fbe54a621fce380b1dffd00"
+    "sha256": "a365e925aec2fccfb428d035eaf050efe6e365348a4954b4c90db38f02ac0c2d"
   },
   {
     "file": "video-editor-timeline.jpg",
@@ -375,7 +375,7 @@
     "theme": "dark",
     "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
-    "sha256": "2e5941e9021fa6d0510a914fd1c34daa950a8aed94d3ff8e0aa4987cb6162cbb"
+    "sha256": "ba37f33a7e219472fd2b75211b7481844f9e280bfcb67482cbedb07fcc137c87"
   },
   {
     "file": "video-render-preflight.jpg",

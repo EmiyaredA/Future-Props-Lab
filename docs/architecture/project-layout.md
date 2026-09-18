@@ -15,12 +15,11 @@ Future-Props-Lab/
 │   ├── main.py        # FastAPI 装配、生命周期与健康探针
 │   ├── deps.py        # HTTP/WebSocket 会话、Studio 鉴权与 WorkspaceDep
 │   ├── problem_details.py # 统一协议错误映射
-│   ├── accounts/      # 账号、Session、审计、API Key、Workspace 与公开投影
-│   ├── concurrency/   # revision/CAS、Workspace 项目记录原语与通用单进程轮询 Runner 生命周期
-│   ├── core/          # 配置、数据库与密钥基础设施
-│   ├── files/         # IncomingFile、文件策略、显式 Workspace 落盘、项目事务与旧布局迁移
-│   ├── media_rendering/ # 供应商/业务无关的 RenderPlan、帧求值、源时间/变速滤镜、视频渲染与取消控制
-│   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
+│   ├── api.py         # `/v1` router 装配入口
+│   ├── orm.py         # mapper 聚合与 Workspace 租户登记
+│   ├── runtime/       # 配置、数据库、CAS/轮询原语与 ORM Base（无业务语义）
+│   ├── capabilities/  # 有契约的共享能力：identity、asset_store、agents、media_rendering、transcription
+│   ├── console/       # Studio 治理与库级文件用例：governance、file_library
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
@@ -74,7 +73,7 @@ Future-Props-Lab/
 
 ## 目录与依赖边界
 
-- `fpl_config/` 只拥有配置格式与文件转换。`core/config.py` 将 TOML 和进程环境映射到 Settings；
+- `fpl_config/` 只拥有配置格式与文件转换。`runtime/config.py` 将 TOML 和进程环境映射到 Settings；
   `db/migrations/runner.py` 使用同一格式解析数据库路径，不依赖运行时 `app`。
   `scripts/migrate_config.py` 仅转换配置，不访问数据库；桌面入口在数据锁内执行旧配置一次性转换。
 
@@ -85,11 +84,11 @@ Future-Props-Lab/
   `app/DesktopDevelopmentHost.tsx` 只处理热加载查询刷新与未保存保护；应用更新与新建窗口入口在
   App 顶栏（`layout/DesktopAppChrome.tsx`），系统菜单栏不放这些自定义项；窗口标题仍可显示开发状态摘要。
   `src/agent.ts` 拥有本地 Unix Socket 转发及连接描述，`backend/cli_entry.py` 仅启动独立 SDK CLI。
-  `accounts/desktop_agent.py` 拥有短期配对，`desktop_ui.py` 校验打开资源的归属，Agent 操作白名单
-  在 `accounts/desktop_agent_operations.json`；`routes/desktop_agent.py` 只承担 `/v1/desktop` 协议边界。
+  `console/governance/desktop_agent.py` 拥有短期配对，`desktop_ui.py` 校验打开资源的归属，Agent 操作白名单
+  在 `console/governance/desktop_agent_operations.json`；`routes/desktop_agent.py` 只承担 `/v1/desktop` 协议边界。
   `sdk/python/src/future_props_lab/desktop.py` 负责发现和配对，`cli.py` 提供 `fpl` 命令。
   `app/DesktopAgentHost.tsx` 负责授权通知、外部更新提示及受保护导航，账号设置拥有接入开关。
-  `accounts/desktop_setup.py` 复用账号开通用例；`core/desktop.py` 只负责桌面凭据和静态托管。
+  `console/governance/desktop_setup.py` 复用账号开通用例；`runtime/desktop.py` 只负责桌面凭据和静态托管。
   `web/src/features/accounts/DesktopSetupGate.tsx` 拥有首用表单，`platform/desktop.ts` 只定义固定桥接。
   桌面版配置和数据规则见 [macOS 桌面构建](../operations/desktop-macos.md)。
 
@@ -105,10 +104,10 @@ Future-Props-Lab/
 - 后端采用功能模块优先结构。`main.py` 负责装配，`routes/` 只负责认证、请求校验、调用功能
   边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
   `llm/catalog/`、`llm/playground/`、`llm/call_logs/` 等所属能力负责。
-- `accounts/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、Workspace、
-  Owner 成员关系、审计事件与新 Workspace 模型目录在同一事务内提交或回滚。`accounts/service.py`
+- `console/governance/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、Workspace、
+  Owner 成员关系、审计事件与新 Workspace 模型目录在同一事务内提交或回滚。`console/governance/service.py`
   不依赖模型目录实现。
-- `accounts/permissions.py` 拥有固定角色与密钥范围交集，`route_permissions.py` 显式登记业务操作。
+- `capabilities/identity/permissions.py` 拥有固定角色与密钥范围交集，`capabilities/identity/route_permissions.py` 显式登记业务操作。
   `governance_transactions.py` 在短写事务中重验操作者并执行 CAS；`management.py`、`member_roles.py`
   分别拥有平台身份与成员授权，`errors.py` 和 `error_views.py` 定义领域错误与安全快照。
   `routes/account_management.py` 只适配管理查询、创建和审计协议。
@@ -118,14 +117,14 @@ Future-Props-Lab/
   `app/layout/StudioGlobalHeader`，中台外壳、统计与列表样式留在账号功能内。
   `platform/auth/` 提供有效权限 Context，`app/ReadOnlyRoutes.tsx` 只装配各业务模块自有
   的只读浏览入口，不挂载编辑控制器。共享预览和下载展示归属 `shared/ui/ReadOnlyMedia.tsx`。
-- `agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
+- `capabilities/agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
   Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；`phases.py` 原子化上下文编译、
   模型回合、工具提案、执行与审批阶段并保持事件顺序；不拥有项目数据，也不提供通用
   `/v1/agents` 管理接口。`llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
   定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
 - `llm/playground/` 拥有模型测试会话、测试工具、调用快照与流式结算。测试工具只执行 Workspace 内的
-  确定性 Mock，不接入网络或外部系统；选择工具的文本会话复用 `agents/harness/`，未选择工具的会话
+  确定性 Mock，不接入网络或外部系统；选择工具的文本会话复用 `capabilities/agents/harness/`，未选择工具的会话
   继续使用原单轮流式路径。Web 的工具管理页面和对话工具控件归属 `features/models/tools/` 与
   `features/models/conversation/`，不把工具逻辑堆入应用壳或通用 UI。
 - `llm/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
@@ -142,12 +141,12 @@ Future-Props-Lab/
 - `audio_annotation/` 管理 Workspace 级录音标注任务，根项目直接保存 `workspace_id` 并引用
   公共文件库中的音频；说话人/片段文档与最多双声道的预计算波形分别使用独立 revision CAS，
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
-  映射归属 `llm/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
+  映射归属 `capabilities/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
   删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
-- 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊、
-  Galgame 工坊与视频剪辑工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
-  包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；
-  后端 `files/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
+- 应用目录同样由 Web 静态注册表维护，  应用最近访问记录只保存在浏览器本地。视觉创作工坊、
+  Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
+  包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
+  后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
   `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、Workspace 级旧 Story
@@ -155,13 +154,13 @@ Future-Props-Lab/
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
-  后端精确停帧和剪辑任务；`media_rendering/` 统一拥有 RenderPlan 契约、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
+  后端精确停帧和剪辑任务；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
   FFmpeg/Pillow 合成和取消控制。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
-  但只能通过 Galgame 工程素材 API 修改或删除。`files/document_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
+  但只能通过 Galgame 工程素材 API 修改或删除。`capabilities/asset_store/document_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
 - Galgame 视频导出按 `video_export_planning.py` 路线/片段/试片纯规划、`video_compiler.py`
   冻结 Story 到共享 `RenderPlan` 的编译、`video_compiler_events.py` 的绝对时间状态归约、
@@ -181,9 +180,9 @@ Future-Props-Lab/
 - 视觉助手对话生命周期与发送事务保留在 `visual_workshop/assistant/conversations.py`，附件权限、
   内容投影、图片编码和文档提取集中在同目录 `attachments.py`，避免会话持久化依赖具体媒体解析。
 - 版本化项目快照的 ZIP64 流式校验、临时文件清理和跨平台目录打开命令由
-  `files/project_snapshots.py` 与 `files/project_folders.py` 拥有；画布、Story 和时间线的
+  `capabilities/asset_store/project_snapshots.py` 与 `capabilities/asset_store/project_folders.py` 拥有；画布、Story 和时间线的
   类型化投影、ID 重映射与模型语义匹配仍位于三个所属工坊。
-- `concurrency/project_records.py` 只提供显式 Workspace 谓词下的项目加载、revision CAS 更新和删除
+- `runtime/project_records.py` 只提供显式 Workspace 谓词下的项目加载、revision CAS 更新和删除
   原语，不自动提交事务也不承载默认文档、就绪状态、快照投影或领域错误规则；三套工坊继续拥有各自
   用例。Web 的 `shared/ui/project-library/useProjectLibraryController.ts` 通过功能适配器统一项目列表、
   创建、改名、删除、快照导入导出、缓存和错误恢复，不依赖任何业务 feature。
@@ -232,7 +231,7 @@ Future-Props-Lab/
   `web/src/docs/` 拥有，文档中心配图仍由 `web/public/docs/` 拥有，SDK/API 文档生成入口为
   `scripts/generate_sdk_docs.py`，这些内容不能通过 Note 整理迁移或改写。
 - 根 `/health`、`/ready` 是无版本探针，其他业务路由由统一的 `/v1` router 注册。
-- `accounts/` 负责账号与 Workspace 用例；请求通过 Cookie Session 或绑定单一 Workspace 的
+- `console/governance/` 负责账号与 Workspace 用例；请求通过 Cookie Session 或绑定单一 Workspace 的
   Management API Key 生成 `StudioPrincipal`，`deps.WorkspaceDep` 只从该 Principal 派生租户 ID。
   业务模块不使用 ContextVar 或 `default` 回退；后台任务从持久任务记录恢复 Workspace，缺失归属
   立即失败。HTTP 上传在路由层适配为 `files.IncomingFile`，业务模块不依赖 FastAPI `UploadFile`；
@@ -255,7 +254,7 @@ Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共
 不属于内容版本；文件存储显式使用已鉴权 Workspace。
 集成中心前端的 `features/integrations/queryKeys.ts` 统一管理目录、详情、版本与工具列表缓存；
 `IntegrationInteractions.tsx` 和 `interaction.ts` 拥有草稿保护、外部更新与页面定位回执。
-桌面操作登记表逐项开放现有集成 API；目标校验归属 `accounts/desktop_ui.py`，不开放任意 URL
+桌面操作登记表逐项开放现有集成 API；目标校验归属 `console/governance/desktop_ui.py`，不开放任意 URL
 或系统命令。工具 API、MCP 和校验记录用例显式接收已鉴权 Workspace。
 
 Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。
@@ -276,7 +275,7 @@ schema migration 不执行文件 I/O。
 通过正式 `/v1` API 执行状态预检、受 Workspace 约束的批量 CAS 固化和单工程旧文件导入，不以
 schema migration 或直接数据库修改替代运行期迁移。工具单项状态通过幂等更新和原子 upsert 写入。图片/视频/音频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
-和模型测试复用 `concurrency/polling_runner.py` 的生命周期与并发控制，并由
+和模型测试复用 `runtime/polling_runner.py` 的生命周期与并发控制，并由
 `llm/generation_runtime/GenerationTaskDriver` 统一编排 queued、submitting、pending、processing
 与终态转换、重启恢复及安全失败；两者分别提供任务存取、调用日志、素材组装和结果落盘钩子。
 `submitting` 中断不会自动重提，以避免重复计费。`AsyncSession` 只能由单个异步任务
@@ -320,7 +319,7 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `knowledge.py`：知识库元数据、封面归属、首页创建、库级 revision/CAS、整库删除与恢复。
 - `directory.py`：库内嵌套文档树、移动排序、循环校验；移动正文归属时推进文档 revision。
 - `notes.py`：显式知识库归属下的正文读写、自动保存冲突快照、文件引用投影。
-- `attachments.py`：附件上传；公共类型与签名校验由 `files/policy.py` 拥有。
+- `attachments.py`：附件上传；公共类型与签名校验由 `capabilities/asset_store/policy.py` 拥有。
 - `portability.py` / `archive_structure.py`：v3 备份的预检、磁盘暂存、短事务与失败补偿。
 - `legacy_import.py`：唯一的 v1/v2 备份转换边界。生产读写没有旧笔记本模型、接口或默认知识库回退。
 - `schemas/thought_document.py`：无业务依赖的富文本允许列表、搜索文本与文件引用投影；正文保持 v2。
@@ -343,10 +342,10 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 ## 平台治理补充职责
 
-- `backend/app/accounts/platform_policy.py` 解析即时敏感策略；`platform_settings.py` 拥有平台配置 CAS；`registration.py` 拥有邀请码名额与注册事务。
-- `accounts/model_templates.py`、`model_template_sync.py` 拥有角色目录模板、预览与逐空间持久同步；`demo_services.py` 拥有固定测试服务治理与工作区接入。
-- `accounts/runtime_quotas.py` 拥有并发额度领取与恢复；`concurrency/task_admission.py` 只定义任务创建事务的归属回调类型；各功能用例在提交任务前调用它。
-- `accounts/developer_docs.py`、`cross_workspace_logs.py`、`project_certification.py` 分别拥有受保护文档、显式跨空间概况、官方认证。`ModelTemplateSyncItem` 和 `RuntimeAdmission` 属于平台治理记录，跨空间访问由这些正式用例显式校验，不使用业务自动租户过滤。
+- `backend/app/console/governance/platform_policy.py` 解析即时敏感策略；`platform_settings.py` 拥有平台配置 CAS；`registration.py` 拥有邀请码名额与注册事务。
+- `console/governance/model_templates.py`、`model_template_sync.py` 拥有角色目录模板、预览与逐空间持久同步；`demo_services.py` 拥有固定测试服务治理与工作区接入。
+- `console/governance/runtime_quotas.py` 拥有并发额度领取与恢复；`runtime/task_admission.py` 只定义任务创建事务的归属回调类型；各功能用例在提交任务前调用它。
+- `console/governance/developer_docs.py`、`cross_workspace_logs.py`、`project_certification.py` 分别拥有受保护文档、显式跨空间概况、官方认证。`ModelTemplateSyncItem` 和 `RuntimeAdmission` 属于平台治理记录，跨空间访问由这些正式用例显式校验，不使用业务自动租户过滤。
 - `backend/app/demo_runtime/runtime.py` 只实现应用进程内的固定 Mock 文本与演示工具运行时，不启动子进程；模型适配器和工具集成将明确的本地测试连接交给它。
 - `llm/catalog/defaults.py` 校验并保存当前工作区默认模型，与目录共用 CAS 版本。
 - `web/src/features/accounts/` 拥有七个管理页面、平台查询键、跨空间查询、邀请/模板/权限/服务表单与官方认证交互；应用壳仅负责路由装配。`features/models/catalog/WorkspaceDefaults.tsx` 拥有工作区默认用途弹窗。
@@ -354,7 +353,7 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 调用日志页面的工具栏、筛选抽屉和表格由 `web/src/features/models/logs/` 拥有；
 `features/accounts/useLogWorkspaceScope.ts` 对外提供授权工作区范围与只读概况查询，查询键归账号模块。
-`backend/app/accounts/cross_workspace_logs.py` 显式校验跨工作区范围；
+`backend/app/console/governance/cross_workspace_logs.py` 显式校验跨工作区范围；
 `llm/call_logs/query.py` 仅复用列表筛选谓词及 UTC 今日统计，不承担授权或跨空间事务。
 
 ## 演示工坊
@@ -389,7 +388,7 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 使用 `tests/fixtures/presentation_crop_cases.json` 共用测试向量。图片尺寸仅在读取素材后取得，
 不进入文稿结构；浏览器缩略图和放映共用渲染器，PPTX 使用经 EXIF 校正后的素材尺寸。
 
-图片与矢量素材的校验、预检与规范化归属公共 `backend/app/files/svg.py`，只支持受限自包含 SVG；
+图片与矢量素材的校验、预检与规范化归属公共 `backend/app/capabilities/asset_store/svg.py`，只支持受限自包含 SVG；
 `/v1/files/svg/preview` 不持久化，上传继续走公共文件用例。文件列表默认排除 SVG，文件管理与演示工坊显式启用。
 迁移 `0058_presentation_media` 只补齐确定性媒体外观缺省值，不改变文稿版本、revision 或更新时间。
 演示工坊前端的 `usePresentationMedia` 统一插入和替换素材，`PresentationImages` 拥有文件搜索与分页，
@@ -410,14 +409,14 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `sdk/python/operations.json`：受版本控制的 HTTP 操作到稳定 Python 方法名映射；`coverage.json` 记录契约与文档证据，不能替代业务闭环验收。
 - `scripts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。
 - `backend/app/llm/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`routes/model_inference.py` 只处理协议。
-- 工坊各自的 `operations.py` 拥有细粒度编辑校验与一次事务；`concurrency/operation_receipts.py` 仅提供持久化回执原语，`entity_edits.py` 仅提供纯列表编辑。
+- 工坊各自的 `operations.py` 拥有细粒度编辑校验与一次事务；`runtime/operation_receipts.py` 仅提供持久化回执原语，`entity_edits.py` 仅提供纯列表编辑。
 - `backend/app/models/model_inference.py` 与 `project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
 - `web/src/features/models/inference/`：调用日志页中的独立任务查询、下载、转存与结果落盘重试入口；缓存键归属 models/queryKeys.ts。
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
 - `backend/app/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/thought_conversion.py` 描述正式契约。
 - `backend/app/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
-- `backend/app/files/video_frames.py`：工作区文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`。
+- `backend/app/capabilities/asset_store/video_frames.py`：工作区文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
 - `skills/future-props-lab-automation/`：官方自动化 Agent Skill 包（根 `SKILL.md` 名 `future-props-lab-automation`）。叶子 skill 目录名必须等于 frontmatter `name`，可单独或组合安装；每个叶子内联「前置」与最小 `fpl` 示例。校验：`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。只指导通过 `fpl`/SDK 操作产品，不修改本仓库源码；见该处 `README.md`。
-- `backend/app/files/image_crop.py` 与 `schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存。
+- `backend/app/capabilities/asset_store/image_crop.py` 与 `schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存。

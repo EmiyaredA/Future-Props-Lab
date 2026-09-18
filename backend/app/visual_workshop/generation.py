@@ -5,11 +5,8 @@ from uuid import uuid4
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.task_admission import TaskAdmission
-from app.core.config import Settings, get_settings
-from app.core.time import iso_utc, utc_now
-from app.files import download_filename
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store import download_filename
+from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.models import (
     ModelEntry,
@@ -21,6 +18,9 @@ from app.models import (
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.task_admission import TaskAdmission
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.visual_generation import (
     GenerationBatchListOut,
     GenerationBatchOut,

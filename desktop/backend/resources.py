@@ -18,7 +18,7 @@ def check_resources() -> None:
 
     frozen = getattr(sys, "frozen", False)
     root = Path(sys._MEIPASS) if frozen else Path(__file__).resolve().parents[2]
-    assets = root / ("app" if frozen else "backend/app") / "media_rendering/assets"
+    assets = root / ("app" if frozen else "backend/app") / "capabilities/media_rendering/assets"
     image = Image.new("RGB", (320, 100), "white")
     font = ImageFont.truetype(str(assets / "NotoSansSC-Regular.ttf"), 24)
     ImageDraw.Draw(image).text((10, 10), "未来道具研究所", font=font, fill="black")

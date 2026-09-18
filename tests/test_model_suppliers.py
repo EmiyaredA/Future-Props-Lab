@@ -4,9 +4,9 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.accounts.provisioning import create_account
-from app.core.db import SessionLocal
+from app.console.governance.provisioning import create_account
 from app.main import app
+from app.runtime.db import SessionLocal
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
 
@@ -191,7 +191,7 @@ async def test_template_supplier_name_and_deletion_are_locked_in_workspace():
 
 
 async def test_template_sync_preserves_supplier_connection_model_ids_and_custom_configuration():
-    from app.accounts.model_template_sync import ModelTemplateSyncRunner
+    from app.console.governance.model_template_sync import ModelTemplateSyncRunner
     from test_workspace_governance import client_account
 
     admin, _, _, _ = await client_account(admin=True)

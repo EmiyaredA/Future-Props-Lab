@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
-from app.accounts.public_workspace import (
+from app.console.governance.public_workspace import (
     public_asset_content,
     public_projection,
     public_story,
 )
-from app.accounts.service import AccountError
+from app.console.governance.service import AccountError
 from app.deps import PublicStudioAuth, SessionDep
 from app.schemas.public_workspace import (
     PublicGalgameStoryOut,

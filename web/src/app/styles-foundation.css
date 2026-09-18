@@ -178,6 +178,11 @@
   margin-top: auto;
 }
 
+.sidebar-footer:has(.workspace-trigger) {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
 .sidebar-session-cards {
   display: grid;
   gap: 7px;

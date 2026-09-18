@@ -10,13 +10,11 @@ from threading import Event
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.core.config import Settings
-from app.core.time import utc_now
-from app.files.digests import sha256_file
-from app.files.library import AssetLibrary
-from app.files.storage import AssetStorage
-from app.media_rendering.render_engine import RenderCancelled
-from app.media_rendering.speed import audio_speed_filters
+from app.capabilities.asset_store.digests import sha256_file
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.media_rendering.render_engine import RenderCancelled
+from app.capabilities.media_rendering.speed import audio_speed_filters
 from app.models import (
     VideoEditorAssetMetadata,
     VideoEditorTask,
@@ -25,6 +23,8 @@ from app.models import (
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.runtime.config import Settings
+from app.runtime.time import utc_now
 from app.video_editor.media import probe_media
 from app.video_editor.segment_files import segment_filename
 

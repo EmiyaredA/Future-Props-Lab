@@ -8,7 +8,7 @@ import pytest
 from cryptography.fernet import Fernet
 from desktop.backend.entry import prepare_configuration
 
-from app.core.config import Settings
+from app.runtime.config import Settings
 from fpl_config import ConfigurationError, read_config
 from fpl_config.migration import convert_legacy, encode, publish
 

@@ -11,15 +11,9 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.concurrency.polling_runner import PollingTaskRunner
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import Settings, get_settings
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace, require_workspace_id
-from app.core.time import utc_now
-from app.files.digests import sha256_file
-from app.files.library import AssetLibrary
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.digests import sha256_file
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.storage import AssetStorage
 from app.galgame_workshop.annotation_import import GalgameAnnotationImports
 from app.galgame_workshop.readiness import GalgameReadiness
 from app.galgame_workshop.story import GalgameStoryDocuments
@@ -32,6 +26,12 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
+from app.orm import bind_workspace, require_workspace_id
+from app.runtime.config import Settings, get_settings
+from app.runtime.db import SessionLocal
+from app.runtime.polling_runner import PollingTaskRunner
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import utc_now
 from app.schemas.audio_annotation import AudioAnnotationSegment
 from app.schemas.galgame_workshop import (
     GalgameAnnotationImportIn,

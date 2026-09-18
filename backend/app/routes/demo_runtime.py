@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
-from app.accounts import demo_services as governance
+from app.console.governance import demo_services as governance
 from app.demo_runtime.runtime import completion, completion_sse, tool_reply
 from app.deps import SessionDep, StudioAuth, client_ip
 from app.routes.accounts import _browser_auth, _platform_auth

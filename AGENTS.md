@@ -37,14 +37,15 @@
 
 ## 应用与目录边界
 
-- `backend/app/` 采用功能模块优先结构。`main.py`、`deps.py`、`problem_details.py` 与
-  `routes/` 只负责应用装配和 HTTP/SSE 协议边界；`core/`、`concurrency/` 是基础设施；
-  `models/`、`schemas/` 只定义持久化与传输形状；公共文件规则归属 `files/`，业务规则归属
-  `llm/`、`visual_workshop/` 等具体功能包。
+- `backend/app/` 按垂直切片装配：`main.py`、`deps.py`、`problem_details.py`、`api.py` 与
+  `orm.py` 负责应用装配；`routes/` 只处理 HTTP/SSE 协议边界；无业务语义的基础设施归属
+  `runtime/`；有契约的共享能力归属 `capabilities/`；Studio 治理与库级文件用例归属
+  `console/`；`models/`、`schemas/` 仍定义持久化与传输形状；业务规则暂留
+  `llm/`、`visual_workshop/` 等功能包（后续再迁入 `apps/`）。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应。
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
-  在所属能力内按具体职责命名文件或子包，例如 `llm/catalog/`、`llm/playground/`。
+  在所属能力内按具体职责命名文件或子包，例如 `llm/catalog/`、`capabilities/asset_store/`。
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。
 - `desktop/` 只拥有 Electron 壳、私有启动协议和打包。桌面数据根为
   `~/Library/Application Support/Future Props Lab/`，隔离开发版为 `Future Props Lab Development/`；
@@ -61,7 +62,7 @@
   业务 API。正式打包不启用开发桥或开发网关，自动测试不得使用 live 数据。
 - 桌面 CLI/SDK 接入默认关闭。`agent/` 保存无密钥的连接描述和 `0600` 客户端凭据，目录为
   `0700`；短路径 Unix Socket 由 Electron 持有，私有启动 token 不得交给 SDK。Agent 通道只开放
-  `accounts/desktop_agent_operations.json` 明确登记的业务操作，新 API 默认拒绝。配对与界面请求
+  `console/governance/desktop_agent_operations.json` 明确登记的业务操作，新 API 默认拒绝。配对与界面请求
   只保存在内存，授权复用 Management API Key；不得通过 Agent 通道开放账号治理、密钥管理或系统命令。
   `fpl` 随 App 打包，独立 Python SDK 不依赖后端；自动化验收必须使用临时数据目录。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
@@ -82,24 +83,25 @@
   供应商原始事件。
 - 图片/视频后台任务的状态转换由 `llm/generation_runtime.GenerationTaskDriver` 唯一编排；各功能
   只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
-- 确定性时间线画面与视频渲染由 `backend/app/media_rendering/` 统一拥有；Galgame 直接导出不得
+- 确定性时间线画面与视频渲染由 `backend/app/capabilities/media_rendering/` 统一拥有；Galgame 直接导出不得
   依赖 `video_editor/` 实现，只有显式的视频编辑器交接用例可以跨功能调用。
-- ORM 的 ID/时间默认工厂由 `models/` 自有模块维护，`models` 不得反向依赖 `core`；生产 Python 包
+- ORM 的 ID/时间默认工厂由 `models/` 自有模块维护，`models` 只能依赖 `runtime.orm_base`；生产 Python 包
   不得形成强依赖环。Workspace 项目记录的加载、CAS 更新和删除原语可复用
-  `concurrency/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
+  `runtime/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
 - Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
   `schemas/galgame_workshop/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
-- 账号、Session、审计、Management API Key 与 Workspace 治理归属 `backend/app/accounts/`；
-  `StudioPrincipal` 是业务请求的唯一租户来源，业务 API 不接受客户端提交 `workspace_id`。
-  路由需要显式租户参数时使用 `WorkspaceDep`；不得新增 ContextVar、`default` 回退或其他环境式
-  Workspace 来源。业务文件用例依赖 `files.IncomingFile`，`UploadFile` 只能出现在路由适配层；
-  `AssetStorage` 的项目路径与写入方法必须显式传入 `workspace_id`。
-  根资源必须直接保存 `workspace_id`，子资源通过已校验的根资源继承；跨 Workspace 的 ID 一律
-  按不存在处理。后台执行器必须从任务记录恢复 Workspace，不能依赖请求上下文。
-- 固定 Workspace 权限由 `accounts/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
-  `accounts/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
+- 鉴权原语归属 `capabilities/identity/`；账号、Session、审计、Management API Key 与 Workspace 治理归属
+  `console/governance/`；`StudioPrincipal` 是业务请求的唯一租户来源，业务 API 不接受客户端提交
+  `workspace_id`。路由需要显式租户参数时使用 `WorkspaceDep`；不得新增 ContextVar、`default`
+  回退或其他环境式 Workspace 来源。业务文件用例依赖 `capabilities.asset_store.IncomingFile`，
+  `UploadFile` 只能出现在路由适配层；`AssetStorage` 的项目路径与写入方法必须显式传入
+  `workspace_id`。根资源必须直接保存 `workspace_id`，子资源通过已校验的根资源继承；跨 Workspace
+  的 ID 一律按不存在处理。后台执行器必须从任务记录恢复 Workspace，不能依赖请求上下文。
+- 固定 Workspace 权限由 `capabilities/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
+  `capabilities/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
   只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。
-- 平台模板同步项与运行额度记录属于账号治理，跨空间访问由 `accounts/` 显式校验；固定演示运行时 `demo_runtime/` 不得依赖账号治理或模型目录，治理入口仍在 `accounts/`。
+- 平台模板同步项与运行额度记录属于 `console/governance/`，跨空间访问由治理用例显式校验；固定演示运行时
+  `demo_runtime/` 不得依赖账号治理或模型目录，治理入口仍在 `console/governance/`。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
   写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、
@@ -154,10 +156,15 @@
 - 按改动范围运行 `npm test`、`npm run lint`、`npm run format:check`、
   `npm run contracts:check` 和 `npm run build`；缺少真实凭证时明确报告相关测试未执行，不得
   用真实供应商调用代替确定性测试。
-- 生产 Python 单文件上限 700 行、TS/TSX 上限 800 行、CSS 上限 600 行，测试文件上限 1200 行；
-  OpenAPI 等生成文件排除。历史超限基线只能下降不能增长，不得新增编号式 CSS 分片；构建预算脚本
-  只读产物，不得在构建后拆分或改写 CSS。`architecture_size_baseline.json` 的 production/tests
-  均保持空对象，不得重新增加尺寸豁免。
+- 单文件软上限：生产 Python 900 行、TS/TSX 1000 行、CSS 800 行，测试文件 1200 行；OpenAPI 等
+  生成文件排除。没有任何尺寸豁免机制，超限只能按语义拆分，不得为了过门禁做机械切片。
+- 真正约束体量的是目录预算：`web/src/apps|console` 与 `backend/app/apps|console|capabilities`
+  下每一层目录直接持有的源码不超过 6000 行，超出必须再分出命名子域。这些目录内的文件名不得带
+  `-foundation`、`-components`、`-interactions`、`-part\d*`、`-base`、`-extra`、`-misc` 后缀，
+  也不得出现只做转发的空壳 `@import` 样式。不得新增编号式 CSS 分片；构建预算脚本只读产物，
+  不得在构建后拆分或改写 CSS。
+- App 之间默认零互相依赖。唯一例外是视频剪辑向视觉创作工坊的片段交接，登记在
+  `tests/test_architecture.py` 的 `ALLOWED_APP_HANDOFFS`，且必须经目标 App 的公共入口。
 - 新增 Web 路由或独立 HTML 入口时，同步更新 `web/e2e/responsive-inventory.ts` 与相应适配用例；
   页面不得依靠根级隐藏横向溢出来通过检查，复杂区域使用明确的局部滚动和可点击操作入口。
 - 修复问题时先定位根因和同类风险；保留用户已有的未提交改动，不覆盖或顺手重写无关文件。

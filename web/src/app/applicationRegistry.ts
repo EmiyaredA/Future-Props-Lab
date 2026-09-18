@@ -1,3 +1,4 @@
+import { AUDIO_ANNOTATION_MODULE } from "@features/audio-annotation/module";
 import { PRESENTATION_WORKSHOP_MODULE } from "@features/presentation-workshop/module";
 import { THOUGHT_WORKSHOP_MODULE } from "@features/thought-workshop/module";
 import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
@@ -10,6 +11,7 @@ export const APPLICATION_MODULES = [
   VISUAL_WORKSHOP_MODULE,
   GALGAME_WORKSHOP_MODULE,
   VIDEO_EDITOR_MODULE,
+  AUDIO_ANNOTATION_MODULE,
 ] as const;
 
 export const APPLICATION_DEFINITIONS = APPLICATION_MODULES.map(
@@ -38,7 +40,12 @@ export function applicationPathFor(
   return undefined;
 }
 
-export { GALGAME_WORKSHOP_MODULE, VIDEO_EDITOR_MODULE, VISUAL_WORKSHOP_MODULE };
+export {
+  AUDIO_ANNOTATION_MODULE,
+  GALGAME_WORKSHOP_MODULE,
+  VIDEO_EDITOR_MODULE,
+  VISUAL_WORKSHOP_MODULE,
+};
 
 export { THOUGHT_WORKSHOP_MODULE };
 

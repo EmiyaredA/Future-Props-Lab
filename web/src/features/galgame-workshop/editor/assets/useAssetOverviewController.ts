@@ -158,7 +158,7 @@ export function useAssetOverviewController({
     summaryResizeCleanupRef.current?.();
     const target = event.currentTarget;
     const pointerId = event.pointerId;
-    target.setPointerCapture(pointerId);
+    target.setPointerCapture?.(pointerId);
     const startY = event.clientY;
     const startHeight =
       summaryRef.current?.getBoundingClientRect().height ??
@@ -191,8 +191,8 @@ export function useAssetOverviewController({
       globalThis.document.body.classList.remove(
         "galgame-assets-summary-resizing",
       );
-      if (target.hasPointerCapture(pointerId)) {
-        target.releasePointerCapture(pointerId);
+      if (target.hasPointerCapture?.(pointerId)) {
+        target.releasePointerCapture?.(pointerId);
       }
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", finish);

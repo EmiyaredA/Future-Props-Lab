@@ -5,16 +5,16 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import ValidationError
 
-from app.concurrency.operation_receipts import OperationError
+from app.capabilities.asset_store import AssetError
+from app.capabilities.transcription import TranscriptionParameterError
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.files import AssetError
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
 from app.llm.inference.tasks import InferenceTasks
 from app.llm.inference.text import events, prepare
-from app.llm.transcription import TranscriptionParameterError
 from app.routes.model_capacity import task_admission
+from app.runtime.operation_receipts import OperationError
 from app.schemas.model_inference import (
     InferenceAssetImportIn,
     InferenceAssetOut,

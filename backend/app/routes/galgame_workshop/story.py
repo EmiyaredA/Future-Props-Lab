@@ -5,7 +5,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Form, UploadFile
 
-from app.core.config import get_settings
 from app.deps import SessionDep, WorkspaceDep
 from app.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
@@ -17,6 +16,7 @@ from app.galgame_workshop.story import GalgameStoryDocuments
 from app.galgame_workshop.story_migrations import GalgameStoryMigrations
 from app.galgame_workshop.story_patches import GalgameStoryPatches
 from app.routes.galgame_workshop._shared import _invalid_story, _not_found
+from app.runtime.config import get_settings
 from app.schemas.galgame_workshop import (
     GalgameStoryDialoguePatchIn,
     GalgameStoryDialoguePatchOut,

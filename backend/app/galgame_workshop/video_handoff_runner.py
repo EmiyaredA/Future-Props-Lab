@@ -7,14 +7,9 @@ from pathlib import Path
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.concurrency.polling_runner import PollingTaskRunner
-from app.core.config import Settings, get_settings
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace, require_workspace_id
-from app.core.time import utc_now
-from app.files.library import AssetLibrary
-from app.files.policy import VIDEO_EDITABLE_EXTENSIONS
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
+from app.capabilities.asset_store.storage import AssetStorage
 from app.galgame_workshop.video_compiler import (
     COMPILER_VERSION,
     compile_galgame_render_plan,
@@ -32,6 +27,11 @@ from app.models import (
     VideoEditorTimeline,
     VisualAsset,
 )
+from app.orm import bind_workspace, require_workspace_id
+from app.runtime.config import Settings, get_settings
+from app.runtime.db import SessionLocal
+from app.runtime.polling_runner import PollingTaskRunner
+from app.runtime.time import utc_now
 
 
 class GalgameVideoEditorHandoffRunner(PollingTaskRunner):

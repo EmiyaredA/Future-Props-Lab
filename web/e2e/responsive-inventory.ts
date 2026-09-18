@@ -27,8 +27,6 @@ export const responsiveOwners = {
   "integrations-mcp": "shell",
   "integrations-skills": "shell",
   "video-frame-exporter": "shell",
-  "audio-annotation-projects": "shell",
-  "audio-annotation-editor": "editors",
   "model-test": "shell",
   "model-test-tools": "shell",
   "model-service": "shell",
@@ -49,6 +47,8 @@ export const responsiveOwners = {
   "video-editor-projects": "shell",
   "video-editor-editor": "editors",
   "video-editor-tasks": "shell",
+  "audio-annotation-projects": "shell",
+  "audio-annotation-editor": "editors",
 } satisfies Record<AppPage, "shell" | "editors" | "thought">;
 export const publicSurfaces = [
   "login",
@@ -72,7 +72,6 @@ export const staticPaths = [
   "/integrations/mcp",
   "/integrations/skills",
   "/tools/video-frame-exporter",
-  "/tools/audio-annotation",
   "/model-test",
   "/model-test-tools",
   "/model-service",
@@ -84,6 +83,7 @@ export const staticPaths = [
   "/apps/presentation-workshop",
   "/apps/video-editor",
   "/apps/video-editor/tasks",
+  "/apps/audio-annotation",
   "/docs.html",
 ];
 export const viewports = [

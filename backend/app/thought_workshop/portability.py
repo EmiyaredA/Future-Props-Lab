@@ -15,14 +15,14 @@ from uuid import uuid4
 from pydantic import ValidationError
 from sqlalchemy import select
 
-from app.core.config import Settings
-from app.files.incoming import IncomingFile
-from app.files.library import AssetLibrary
-from app.files.policy import ATTACHMENT_EXTENSIONS
-from app.files.project_snapshots import _validate_member
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
+from app.capabilities.asset_store.project_snapshots import _validate_member
+from app.capabilities.asset_store.storage import AssetStorage
 from app.models.files import VisualAsset
 from app.models.thought_workshop import ThoughtKnowledgeBase, ThoughtNote
+from app.runtime.config import Settings
 from app.schemas.thought_document import file_ids
 from app.schemas.thought_workshop import ThoughtImportOut, ThoughtNoteIn
 from app.thought_workshop.archive_structure import convert_v3_folders_to_notes, validate_structure

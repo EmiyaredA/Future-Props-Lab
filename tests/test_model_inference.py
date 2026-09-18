@@ -108,9 +108,9 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         # Replaying an existing receipt remains possible when no new quota slot is available.
         from types import SimpleNamespace
 
-        from app.core.db import SessionLocal
-        from app.core.tenant_context import bind_workspace
+        from app.orm import bind_workspace
         from app.routes.model_capacity import model_capacity
+        from app.runtime.db import SessionLocal
 
         async def no_capacity(*_args, **_kwargs):
             raise AssertionError("A replay must not acquire a new model quota slot")
@@ -346,9 +346,9 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
     from sqlalchemy.ext.asyncio import AsyncSession
     from tests.test_audio_annotation import wav_bytes
 
-    from app.core.db import SessionLocal
     from app.llm.inference.assets import root
     from app.models.model_inference import ModelInferenceAsset
+    from app.runtime.db import SessionLocal
 
     original_commit = AsyncSession.commit
 

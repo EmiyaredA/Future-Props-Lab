@@ -13,8 +13,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from starlette.websockets import WebSocketDisconnect
 
-from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
 from app.llm.playground.test_tools import (
     TestToolSelectionError as ToolSelectionError,
 )
@@ -33,6 +31,8 @@ from app.llm.realtime.session import TurnMetrics, _client_configuration, _write_
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
 from app.main import app
 from app.models import LlmCallLog, ModelTestTool, ModelTestToolCall
+from app.orm import bind_workspace
+from app.runtime.db import SessionLocal
 
 
 def _model() -> ResolvedRealtimeModel:
@@ -743,10 +743,15 @@ def test_realtime_websocket_accepts_authenticated_workspace(
 
     async def authenticated(*_args):
         return SimpleNamespace(
-            workspace_id="workspace-a", session_id="session-a", allows=lambda _permission: True
+            workspace_id="workspace-a",
+            session_id="session-a",
+            auth_kind="session",
+            api_key_id=None,
+            allows=lambda _permission: True,
         )
 
-    async def run(websocket, *, workspace_id: str, check_access):
+    async def run(websocket, *, workspace_id: str, check_access, credential):
+        assert credential.auth_kind == "session"
         await check_access()
         await websocket.send_json({"type": "workspace", "id": workspace_id})
         await websocket.close(code=1000)

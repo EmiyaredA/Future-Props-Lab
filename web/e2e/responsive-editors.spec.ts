@@ -83,7 +83,7 @@ test("editor surfaces and compact panels fit without replacing the workspace", a
     },
     {
       name: "audio-editor",
-      path: `/tools/audio-annotation/${audio.id}`,
+      path: `/apps/audio-annotation/projects/${audio.id}`,
       ready: ".annotation-editor-main",
     },
     {
@@ -159,7 +159,7 @@ test("editor surfaces and compact panels fit without replacing the workspace", a
   expect(problems).toEqual([]);
   for (const [path, card] of [
     ["/apps/galgame-workshop", ".workshop-project-card"],
-    ["/tools/audio-annotation", ".annotation-project-card"],
+    ["/apps/audio-annotation", ".annotation-project-card"],
   ]) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(path);

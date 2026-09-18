@@ -3,15 +3,15 @@ import base64
 from time import monotonic
 from uuid import uuid4
 
-from app.agents.harness.contracts import ImageInput
-from app.concurrency.operation_receipts import OperationError
-from app.core.credentials import decrypt_secret
-from app.core.db import SessionLocal
+from app.capabilities.agents.harness.contracts import ImageInput
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.models import LlmCallLog
+from app.runtime.credentials import decrypt_secret
+from app.runtime.db import SessionLocal
+from app.runtime.operation_receipts import OperationError
 from app.schemas.model_inference import InferenceTextEvent, InferenceTextOut
 
 

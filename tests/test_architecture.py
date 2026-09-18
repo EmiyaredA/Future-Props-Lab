@@ -1,19 +1,76 @@
 from __future__ import annotations
 
 import ast
-import json
 import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_APP = REPO_ROOT / "backend" / "app"
 WEB_SRC = REPO_ROOT / "web" / "src"
-SIZE_BASELINE = json.loads(
-    (REPO_ROOT / "tests" / "architecture_size_baseline.json").read_text(encoding="utf-8")
+
+# A long file only hurts the file it lives in, so the per-file gate is deliberately
+# loose. What has to stay reviewable is one directory level, which is why the
+# budget below governs bulk instead.
+SOURCE_SOFT_LIMITS = {".py": 900, ".ts": 1_000, ".tsx": 1_000, ".css": 800}
+TEST_SOFT_LIMIT = 1_200
+DIRECTORY_LINE_BUDGET = 6_000
+MECHANICAL_SHARD_PATTERN = re.compile(
+    r"-(?:foundation|components|interactions|part\d*|base|extra|misc)$"
 )
+# Roots the vertical slice restructure moves code into. The budget, naming and
+# barrel gates govern this structure; the roots being emptied keep the older
+# rules until their phase moves them.
+RESTRUCTURED_ROOTS = (
+    WEB_SRC / "apps",
+    WEB_SRC / "console",
+    BACKEND_APP / "apps",
+    BACKEND_APP / "console",
+    BACKEND_APP / "capabilities",
+)
+WEB_APP_UNITS = (
+    "audio-annotation",
+    "galgame-workshop",
+    "presentation-workshop",
+    "thought-workshop",
+    "video-editor",
+    "visual-workshop",
+)
+# The video editor hands finished segments to the visual workshop. That product
+# flow is the only reason one app may reach for another.
+ALLOWED_APP_HANDOFFS = {("video-editor", "visual-workshop")}
 
 FORBIDDEN_BACKEND_DIRECTORIES = {"domain", "platform", "product", "services"}
-ROUTE_FORBIDDEN_IMPORTS = ("app.core.db", "app.models", "db", "sqlalchemy")
+# Hard-cut legacy package roots from the runtime/capabilities restructure.
+REMOVED_BACKEND_PACKAGES = {
+    "accounts",
+    "agents",
+    "concurrency",
+    "core",
+    "files",
+    "media_rendering",
+}
+REMOVED_BACKEND_IMPORT_PREFIXES = (
+    "app.accounts",
+    "app.agents",
+    "app.concurrency",
+    "app.core",
+    "app.files",
+    "app.media_rendering",
+    "app.llm.transcription",
+)
+BUSINESS_BACKEND_PACKAGES = (
+    "audio_annotation",
+    "demo_runtime",
+    "galgame_workshop",
+    "integrations",
+    "llm",
+    "presentation_workshop",
+    "thought_workshop",
+    "tool_navigation",
+    "video_editor",
+    "visual_workshop",
+)
+ROUTE_FORBIDDEN_IMPORTS = ("app.runtime.db", "app.models", "db", "sqlalchemy")
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace", "websocket"}
 ROOT_PROBE_PATHS = {"/health", "/ready"}
 
@@ -30,6 +87,16 @@ FEATURE_SELECTOR_PATTERN = re.compile(
 
 def _python_files(root: Path) -> list[Path]:
     return sorted(path for path in root.rglob("*.py") if "__pycache__" not in path.parts)
+
+
+def _restructured_directories() -> list[Path]:
+    return sorted(
+        directory
+        for root in RESTRUCTURED_ROOTS
+        if root.is_dir()
+        for directory in [root, *root.rglob("*")]
+        if directory.is_dir() and "__pycache__" not in directory.parts
+    )
 
 
 def _python_imports(path: Path) -> set[str]:
@@ -99,7 +166,6 @@ def _resolve_web_module(source: Path, specifier: str) -> Path | None:
 
 
 def test_workspace_models_are_registered_for_tenant_scoping() -> None:
-    from app.core.tenant_context import TENANT_MODELS
     from app.models import (
         Base,
         ManagementApiKey,
@@ -109,6 +175,7 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
     )
     from app.models.model_templates import ModelTemplateSyncItem
     from app.models.runtime_admission import RuntimeAdmission
+    from app.orm import TENANT_MODELS
 
     account_governance_models = {
         ModelTemplateSyncItem,
@@ -172,7 +239,10 @@ def test_feature_query_keys_have_one_owner() -> None:
         ),
         WEB_SRC / "features" / "thought-workshop" / "queryKeys.ts": ('["thought-workshop"]',),
     }
-    allowed_route_metadata = {WEB_SRC / "features" / "visual-workshop" / "module.ts"}
+    allowed_route_metadata = {
+        WEB_SRC / "features" / "visual-workshop" / "module.ts",
+        WEB_SRC / "features" / "audio-annotation" / "module.ts",
+    }
     violations: list[str] = []
     for owner, literals in owners.items():
         for path in sorted((WEB_SRC / "features").rglob("*.ts*")):
@@ -236,7 +306,7 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
 
 
 def test_workspace_context_has_no_ambient_fallback() -> None:
-    source = (BACKEND_APP / "core" / "tenant_context.py").read_text(encoding="utf-8")
+    source = (BACKEND_APP / "orm.py").read_text(encoding="utf-8")
     assert "ContextVar" not in source
     assert "current_workspace_id" not in source
 
@@ -285,7 +355,7 @@ def test_generation_features_use_the_shared_task_driver() -> None:
 
 
 def test_secret_hints_and_provider_categories_have_one_owner() -> None:
-    hint_owner = BACKEND_APP / "core" / "secret_hints.py"
+    hint_owner = BACKEND_APP / "runtime" / "secret_hints.py"
     hint_violations = [
         _relative(path)
         for path in _python_files(BACKEND_APP)
@@ -297,7 +367,7 @@ def test_secret_hints_and_provider_categories_have_one_owner() -> None:
         if path.name != "metadata.py"
         and "def _categories_for_provider" in path.read_text(encoding="utf-8")
     ]
-    assert not hint_violations, "加密密钥提示只能由 core.secret_hints 生成：\n" + "\n".join(
+    assert not hint_violations, "加密密钥提示只能由 runtime.secret_hints 生成：\n" + "\n".join(
         hint_violations
     )
     assert not category_violations, "供应商默认类别只能由 catalog.metadata 定义：\n" + (
@@ -314,14 +384,16 @@ def test_backend_avoids_generic_abstract_layer_directories() -> None:
     assert not violations, "请按具体能力命名后端目录：\n" + "\n".join(violations)
 
 
-def test_models_do_not_depend_on_runtime_core() -> None:
+def test_models_only_depend_on_runtime_orm_base() -> None:
     violations = [
         f"{_relative(path)} imports {module}"
         for path in _python_files(BACKEND_APP / "models")
         for module in _python_imports(path)
-        if _matches_module(module, "app.core")
+        if _matches_module(module, "app.runtime") and module != "app.runtime.orm_base"
     ]
-    assert not violations, "ORM 模型不得反向依赖运行时 core：\n" + "\n".join(violations)
+    assert not violations, "ORM 模型只能依赖 runtime.orm_base，不得依赖其他 runtime 模块：\n" + (
+        "\n".join(violations)
+    )
 
 
 def test_backend_production_packages_have_no_dependency_cycles() -> None:
@@ -337,8 +409,16 @@ def test_backend_production_packages_have_no_dependency_cycles() -> None:
                 parts = module.split(".")
                 if len(parts) >= 2 and parts[0] == "app" and parts[1] in packages:
                     target = parts[1]
-                    if target != package:
-                        graph[package].add(target)
+                    if target == package:
+                        continue
+                    # Base lives in runtime.orm_base by design; that edge is not a package cycle.
+                    if (
+                        package == "models"
+                        and target == "runtime"
+                        and module == "app.runtime.orm_base"
+                    ):
+                        continue
+                    graph[package].add(target)
 
     visiting: list[str] = []
     visited: set[str] = set()
@@ -367,7 +447,7 @@ def test_backend_production_packages_have_no_dependency_cycles() -> None:
 def test_media_rendering_and_galgame_keep_feature_boundaries() -> None:
     shared_violations = [
         f"{_relative(path)} imports {module}"
-        for path in _python_files(BACKEND_APP / "media_rendering")
+        for path in _python_files(BACKEND_APP / "capabilities" / "media_rendering")
         for module in _python_imports(path)
         if _matches_module(module, "app.video_editor")
         or _matches_module(module, "app.galgame_workshop")
@@ -388,7 +468,7 @@ def test_media_rendering_and_galgame_keep_feature_boundaries() -> None:
 def test_agent_harness_is_provider_independent() -> None:
     violations = [
         f"{_relative(path)} imports {module}"
-        for path in _python_files(BACKEND_APP / "agents" / "harness")
+        for path in _python_files(BACKEND_APP / "capabilities" / "agents" / "harness")
         for module in _python_imports(path)
         if _matches_module(module, "app.llm.providers")
     ]
@@ -410,22 +490,61 @@ def test_transcription_consumers_do_not_depend_on_playground() -> None:
 
 
 def test_account_service_does_not_own_catalog_provisioning() -> None:
-    imports = _python_imports(BACKEND_APP / "accounts" / "service.py")
+    imports = _python_imports(BACKEND_APP / "console" / "governance" / "service.py")
     assert not any(_matches_module(module, "app.llm") for module in imports)
-    assert (BACKEND_APP / "accounts" / "provisioning.py").is_file()
+    assert (BACKEND_APP / "console" / "governance" / "provisioning.py").is_file()
 
 
 def test_public_files_have_independent_ownership() -> None:
     required = (
-        BACKEND_APP / "files" / "assets.py",
+        BACKEND_APP / "capabilities" / "asset_store" / "assets.py",
         BACKEND_APP / "models" / "files.py",
         BACKEND_APP / "schemas" / "files.py",
     )
-    assert all(path.is_file() for path in required), "公共文件能力必须由 app/files 拥有"
+    assert all(path.is_file() for path in required), (
+        "公共文件能力必须由 capabilities/asset_store 拥有"
+    )
     assert not (BACKEND_APP / "visual_workshop" / "assets.py").exists()
     for route_name in ("file_management.py", "visual_workshop.py"):
         imports = _python_imports(BACKEND_APP / "routes" / route_name)
         assert "app.visual_workshop.assets" not in imports
+
+
+def test_removed_backend_packages_are_gone() -> None:
+    remaining = sorted(name for name in REMOVED_BACKEND_PACKAGES if (BACKEND_APP / name).exists())
+    assert not remaining, "阶段 1 已删除的旧包不得残留：\n" + "\n".join(remaining)
+
+
+def test_removed_backend_import_prefixes_are_unused() -> None:
+    violations = [
+        f"{_relative(path)} imports {module}"
+        for path in _python_files(BACKEND_APP)
+        for module in _python_imports(path)
+        for prefix in REMOVED_BACKEND_IMPORT_PREFIXES
+        if _matches_module(module, prefix)
+    ]
+    assert not violations, "不得再导入已删除的旧包路径：\n" + "\n".join(violations)
+
+
+def test_capabilities_do_not_depend_on_business_packages() -> None:
+    violations = [
+        f"{_relative(path)} imports {module}"
+        for path in _python_files(BACKEND_APP / "capabilities")
+        for module in _python_imports(path)
+        for package in BUSINESS_BACKEND_PACKAGES
+        if _matches_module(module, f"app.{package}")
+    ]
+    assert not violations, "capabilities 不得依赖业务包：\n" + "\n".join(violations)
+
+
+def test_runtime_assembly_entrypoints_exist() -> None:
+    assert (BACKEND_APP / "runtime" / "orm_base.py").is_file()
+    assert (BACKEND_APP / "orm.py").is_file()
+    assert (BACKEND_APP / "api.py").is_file()
+    assert (BACKEND_APP / "capabilities" / "identity" / "principal.py").is_file()
+    assert (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").is_file()
+    assert (BACKEND_APP / "console" / "governance" / "workspaces.py").is_file()
+    assert (BACKEND_APP / "console" / "file_library" / "library_folder_archive.py").is_file()
 
 
 def test_visual_assistant_has_no_function_local_app_imports() -> None:
@@ -444,7 +563,7 @@ def test_visual_assistant_has_no_function_local_app_imports() -> None:
 
 
 def test_backend_business_packages_have_no_function_local_app_imports() -> None:
-    allowed_roots = {"routes", "schemas", "models", "core", "concurrency", "files"}
+    allowed_roots = {"routes", "schemas", "models", "runtime", "capabilities"}
     violations: list[str] = []
     for path in _python_files(BACKEND_APP):
         relative = path.relative_to(BACKEND_APP)
@@ -474,9 +593,9 @@ def test_backend_business_packages_have_no_function_local_app_imports() -> None:
 
 def test_legacy_asset_root_is_only_resolved_by_storage_boundary() -> None:
     allowed = {
-        BACKEND_APP / "core" / "config.py",
-        BACKEND_APP / "files" / "storage.py",
-        BACKEND_APP / "files" / "layout_migration.py",
+        BACKEND_APP / "runtime" / "config.py",
+        BACKEND_APP / "capabilities" / "asset_store" / "storage.py",
+        BACKEND_APP / "capabilities" / "asset_store" / "layout_migration.py",
     }
     violations = [
         _relative(path)
@@ -588,7 +707,7 @@ def test_workshop_shell_does_not_depend_on_feature_implementation_or_styles() ->
 
 
 def test_business_routes_are_mounted_under_v1() -> None:
-    routes_init = BACKEND_APP / "routes" / "__init__.py"
+    routes_init = BACKEND_APP / "api.py"
     routes_tree = ast.parse(routes_init.read_text(encoding="utf-8"), filename=str(routes_init))
     prefixes: list[str] = []
     for node in ast.walk(routes_tree):
@@ -631,12 +750,17 @@ def test_business_routes_are_mounted_under_v1() -> None:
 
 def test_documented_core_directories_exist() -> None:
     required = (
-        "backend/app/agents",
-        "backend/app/concurrency",
-        "backend/app/core",
-        "backend/app/files",
+        "backend/app/runtime",
+        "backend/app/capabilities",
+        "backend/app/capabilities/agents",
+        "backend/app/capabilities/asset_store",
+        "backend/app/capabilities/identity",
+        "backend/app/capabilities/media_rendering",
+        "backend/app/capabilities/transcription",
+        "backend/app/console",
+        "backend/app/console/file_library",
+        "backend/app/console/governance",
         "backend/app/llm",
-        "backend/app/media_rendering",
         "backend/app/models",
         "backend/app/routes",
         "backend/app/schemas",
@@ -703,8 +827,10 @@ def test_galgame_protocol_and_schema_modules_stay_split() -> None:
 
 def test_project_applications_have_modules_routes_and_storage_roots() -> None:
     registry = (WEB_SRC / "app" / "applicationRegistry.ts").read_text(encoding="utf-8")
-    settings = (BACKEND_APP / "core" / "config.py").read_text(encoding="utf-8")
-    storage = (BACKEND_APP / "files" / "storage.py").read_text(encoding="utf-8")
+    settings = (BACKEND_APP / "runtime" / "config.py").read_text(encoding="utf-8")
+    storage = (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").read_text(
+        encoding="utf-8"
+    )
     for application in ("visual-workshop", "galgame-workshop", "video-editor"):
         feature = WEB_SRC / "features" / application
         module = feature / "module.ts"
@@ -716,14 +842,26 @@ def test_project_applications_have_modules_routes_and_storage_roots() -> None:
         assert module.stem in registry or application.replace("-", "_").upper() in registry
 
 
-def test_source_modules_are_split_into_reviewable_files() -> None:
+def test_library_backed_applications_have_modules_and_routes() -> None:
+    """Apps that reuse the shared file library still need a module and public URL."""
+    registry = (WEB_SRC / "app" / "applicationRegistry.ts").read_text(encoding="utf-8")
+    tools_catalog = (WEB_SRC / "features" / "tools" / "catalog.ts").read_text(encoding="utf-8")
+    for application, export_name in (
+        ("presentation-workshop", "PRESENTATION_WORKSHOP_MODULE"),
+        ("audio-annotation", "AUDIO_ANNOTATION_MODULE"),
+    ):
+        feature = WEB_SRC / "features" / application
+        module = feature / "module.ts"
+        assert module.is_file(), f"{application} 缺少 feature module"
+        source = module.read_text(encoding="utf-8")
+        assert "supportsProjects: true" in source
+        assert f"/apps/{application}" in source
+        assert export_name in registry
+    assert 'id: "audio-annotation"' not in tools_catalog
+
+
+def test_source_files_stay_under_the_review_soft_limit() -> None:
     generated_root = WEB_SRC / "generated"
-    limits = {
-        ".py": 700,
-        ".ts": 800,
-        ".tsx": 800,
-        ".css": 600,
-    }
     oversized: list[str] = []
     for root in (
         BACKEND_APP,
@@ -734,22 +872,22 @@ def test_source_modules_are_split_into_reviewable_files() -> None:
         REPO_ROOT / "desktop/ui",
     ):
         for path in sorted(root.rglob("*")):
-            if not path.is_file() or path.suffix not in limits or _is_within(path, generated_root):
+            if (
+                not path.is_file()
+                or path.suffix not in SOURCE_SOFT_LIMITS
+                or _is_within(path, generated_root)
+            ):
                 continue
             line_count = len(path.read_text(encoding="utf-8").splitlines())
-            limit = limits[path.suffix]
-            if line_count <= limit:
-                continue
-            relative = _relative(path)
-            baseline = SIZE_BASELINE["production"].get(relative)
-            if baseline is None or line_count > baseline:
-                oversized.append(f"{relative}: {line_count} > {limit}")
-    assert not oversized, "生产源码超过硬上限，既有基线文件也不得继续增长：\n" + "\n".join(
-        oversized
+            limit = SOURCE_SOFT_LIMITS[path.suffix]
+            if line_count > limit:
+                oversized.append(f"{_relative(path)}: {line_count} > {limit}")
+    assert not oversized, (
+        "单文件超过可评审软上限，请按语义拆分而不是按行数机械切片：\n" + "\n".join(oversized)
     )
 
 
-def test_test_modules_are_split_into_reviewable_files() -> None:
+def test_test_files_stay_under_the_review_soft_limit() -> None:
     roots = (REPO_ROOT / "tests", REPO_ROOT / "web" / "tests", REPO_ROOT / "web" / "e2e")
     oversized: list[str] = []
     for root in roots:
@@ -757,14 +895,73 @@ def test_test_modules_are_split_into_reviewable_files() -> None:
             if path.suffix not in {".py", ".ts", ".tsx"}:
                 continue
             line_count = len(path.read_text(encoding="utf-8").splitlines())
-            if line_count <= 1_200:
+            if line_count > TEST_SOFT_LIMIT:
+                oversized.append(f"{_relative(path)}: {line_count} > {TEST_SOFT_LIMIT}")
+    assert not oversized, "测试文件超过可评审软上限，请按被测行为拆分：\n" + "\n".join(oversized)
+
+
+def test_restructured_directories_stay_within_the_line_budget() -> None:
+    """One directory level must stay reviewable, so bulk goes into named subdomains."""
+    oversized: list[str] = []
+    for directory in _restructured_directories():
+        total = sum(
+            len(path.read_text(encoding="utf-8").splitlines())
+            for path in directory.iterdir()
+            if path.is_file() and path.suffix in SOURCE_SOFT_LIMITS
+        )
+        if total > DIRECTORY_LINE_BUDGET:
+            oversized.append(f"{_relative(directory)}: {total} > {DIRECTORY_LINE_BUDGET}")
+    assert not oversized, (
+        "目录直接持有的行数超预算，请再分出命名子域而不是继续平铺：\n" + "\n".join(oversized)
+    )
+
+
+def test_restructured_files_use_semantic_names() -> None:
+    violations = [
+        _relative(path)
+        for directory in _restructured_directories()
+        for path in sorted(directory.iterdir())
+        if path.is_file()
+        and path.suffix in SOURCE_SOFT_LIMITS
+        and MECHANICAL_SHARD_PATTERN.search(path.stem)
+    ]
+    assert not violations, "文件名不得使用机械分片后缀，请按它承担的职责命名：\n" + "\n".join(
+        violations
+    )
+
+
+def test_restructured_styles_have_no_empty_shell_barrels() -> None:
+    violations: list[str] = []
+    for directory in _restructured_directories():
+        for path in sorted(directory.glob("*.css")):
+            lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
+            body = [line for line in lines if line and not line.startswith("/*")]
+            if body and len(body) < 10 and all(line.startswith("@import") for line in body):
+                violations.append(_relative(path))
+    assert not violations, (
+        "样式不得只做转发的空壳 barrel，请让引用方直接导入真实样式：\n" + "\n".join(violations)
+    )
+
+
+def test_apps_only_cross_each_other_through_declared_handoffs() -> None:
+    """An app that silently imports another app cannot be deleted on its own."""
+    violations: list[str] = []
+    for app in WEB_APP_UNITS:
+        for path in sorted((WEB_SRC / "features" / app).rglob("*")):
+            if path.suffix not in {".ts", ".tsx"}:
                 continue
-            relative = _relative(path)
-            baseline = SIZE_BASELINE["tests"].get(relative)
-            if baseline is None or line_count > baseline:
-                oversized.append(f"{relative}: {line_count} > 1200")
-    assert not oversized, "测试文件超过硬上限，既有基线文件也不得继续增长：\n" + "\n".join(
-        oversized
+            for specifier in _web_imports(path):
+                matched = re.match(r"@features/([^/]+)", specifier)
+                if matched is None:
+                    continue
+                target = matched.group(1)
+                if target == app or target not in WEB_APP_UNITS:
+                    continue
+                if (app, target) in ALLOWED_APP_HANDOFFS and specifier == f"@features/{target}":
+                    continue
+                violations.append(f"{_relative(path)} imports {specifier}")
+    assert not violations, "App 之间只能通过已登记的交接用例并经公共入口互相依赖：\n" + "\n".join(
+        violations
     )
 
 

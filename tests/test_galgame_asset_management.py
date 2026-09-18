@@ -9,8 +9,6 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from app.core.credentials import encrypt_secret
-from app.core.db import SessionLocal
 from app.galgame_workshop import asset_analysis as asset_analysis_module
 from app.galgame_workshop.asr import GalgameAsrRunner
 from app.galgame_workshop.assets import normalize_import_filename
@@ -22,6 +20,8 @@ from app.models import (
     ModelEntry,
     ModelProvider,
 )
+from app.runtime.credentials import encrypt_secret
+from app.runtime.db import SessionLocal
 from app.schemas.galgame_workshop import GalgameStoryProject
 
 

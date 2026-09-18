@@ -8,9 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings
-from app.core.ids import new_id
-from app.files import (
+from app.capabilities.asset_store import (
     AssetStorage,
     ExportedProjectSnapshot,
     IncomingFile,
@@ -20,8 +18,8 @@ from app.files import (
     move_staged_asset,
     stage_project_snapshot,
 )
-from app.files.project_transactions import importing_project_layout
-from app.files.storage import TARGET_STORAGE_VERSION
+from app.capabilities.asset_store.project_transactions import importing_project_layout
+from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
 from app.models import (
     ModelEntry,
     ModelProvider,
@@ -32,6 +30,8 @@ from app.models import (
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.runtime.config import Settings
+from app.runtime.ids import new_id
 from app.schemas.project_snapshots import ProjectSnapshotImportWarning
 from app.schemas.visual_workshop import (
     VisualCanvasDocumentPutIn,

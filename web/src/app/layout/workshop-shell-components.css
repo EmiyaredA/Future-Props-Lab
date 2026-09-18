@@ -271,6 +271,21 @@
     );
 }
 
+.workshop-project-cover.audio {
+  color: var(--accent);
+  background:
+    radial-gradient(
+      circle at 18% 18%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 36%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--accent-soft) 88%, var(--surface)),
+      var(--surface-soft)
+    );
+}
+
 .workshop-project-cover::before {
   position: absolute;
   inset: 0;

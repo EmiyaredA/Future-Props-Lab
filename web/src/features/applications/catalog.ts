@@ -32,6 +32,9 @@ export const APPLICATION_TAGS = [
   "AI创作",
   "剧本",
   "角色",
+  "音频",
+  "标注",
+  "语音识别",
 ];
 
 export function categoryLabel(category: ApplicationCategory): string {

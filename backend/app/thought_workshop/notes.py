@@ -5,9 +5,7 @@ from pathlib import Path
 from sqlalchemy import Text, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.operation_receipts import forget
-from app.concurrency.revisions import RevisionConflictError
-from app.files.policy import ATTACHMENT_EXTENSIONS
+from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.models.defaults import utc_now
 from app.models.files import VisualAsset
 from app.models.thought_workshop import (
@@ -15,6 +13,8 @@ from app.models.thought_workshop import (
     ThoughtNote,
     ThoughtNoteAsset,
 )
+from app.runtime.operation_receipts import forget
+from app.runtime.revisions import RevisionConflictError
 from app.schemas.thought_document import attachment_nodes, document_text, file_ids, image_ids
 from app.schemas.thought_workshop import (
     ThoughtNoteIn,

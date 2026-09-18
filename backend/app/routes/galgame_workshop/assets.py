@@ -4,9 +4,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
-from app.core.config import get_settings
+from app.capabilities.asset_store import AssetError
 from app.deps import SessionDep, WorkspaceDep
-from app.files import AssetError
 from app.galgame_workshop.assets import GalgameProjectAssets
 from app.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
@@ -15,6 +14,7 @@ from app.galgame_workshop.errors import (
 )
 from app.galgame_workshop.maintenance import GalgameMaintenance
 from app.routes.galgame_workshop._shared import _asset_error, _invalid_story, _not_found
+from app.runtime.config import get_settings
 from app.schemas.galgame_workshop import (
     GalgameAssetBatchUploadOut,
     GalgameAssetCategory,

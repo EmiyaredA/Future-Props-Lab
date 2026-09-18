@@ -11,11 +11,11 @@ from uuid import uuid4
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings, get_settings
-from app.core.time import iso_utc, utc_now
-from app.files.incoming import IncomingFile
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.storage import AssetStorage
 from app.models import ModelTestGenerationAsset, ModelTestGenerationTask, VisualAsset
+from app.runtime.config import Settings, get_settings
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
     ModelTestGenerationAssetBackfillStatusOut,

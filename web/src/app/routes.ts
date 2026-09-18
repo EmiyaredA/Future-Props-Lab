@@ -14,8 +14,6 @@ export type StudioPage =
   | "integrations-mcp"
   | "integrations-skills"
   | "video-frame-exporter"
-  | "audio-annotation-projects"
-  | "audio-annotation-editor"
   | "model-test"
   | "model-test-tools"
   | "model-service"
@@ -37,7 +35,9 @@ export type WorkshopPage =
   | "galgame-workshop-preview"
   | "video-editor-projects"
   | "video-editor-editor"
-  | "video-editor-tasks";
+  | "video-editor-tasks"
+  | "audio-annotation-projects"
+  | "audio-annotation-editor";
 
 export type VisualWorkshopPage = Extract<
   WorkshopPage,
@@ -48,6 +48,10 @@ export type GalgameWorkshopPage = Extract<
   `galgame-workshop-${string}`
 >;
 export type VideoEditorPage = Extract<WorkshopPage, `video-editor-${string}`>;
+export type AudioAnnotationPage = Extract<
+  WorkshopPage,
+  `audio-annotation-${string}`
+>;
 
 export type AppPage = StudioPage | WorkshopPage;
 
@@ -63,7 +67,8 @@ export function isWorkshopPage(page: AppPage): page is WorkshopPage {
     page.startsWith("thought-workshop-") ||
     page.startsWith("visual-workshop-") ||
     page.startsWith("galgame-workshop-") ||
-    page.startsWith("video-editor-")
+    page.startsWith("video-editor-") ||
+    page.startsWith("audio-annotation-")
   );
 }
 
@@ -81,6 +86,12 @@ export function isGalgameWorkshopPage(
 
 export function isVideoEditorPage(page: AppPage): page is VideoEditorPage {
   return page.startsWith("video-editor-");
+}
+
+export function isAudioAnnotationPage(
+  page: AppPage,
+): page is AudioAnnotationPage {
+  return page.startsWith("audio-annotation-");
 }
 
 export function parsePage(pathname = window.location.pathname): AppPage {
@@ -104,6 +115,17 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
     return { page: "management-accounts" };
   const application = matchApplicationPath(pathname);
   if (application) return application as AppRoute;
+  // Legacy tool URLs keep resolving so bookmarks and old agent opens still land.
+  const legacyAudioAnnotation = pathname.match(
+    /^\/tools\/audio-annotation\/([^/]+)\/?$/,
+  );
+  if (legacyAudioAnnotation)
+    return {
+      page: "audio-annotation-editor",
+      projectId: decodeURIComponent(legacyAudioAnnotation[1]),
+    };
+  if (pathname.startsWith("/tools/audio-annotation"))
+    return { page: "audio-annotation-projects" };
   if (pathname.startsWith("/apps")) return { page: "apps" };
   if (pathname.startsWith("/files")) return { page: "files" };
   if (pathname.startsWith("/integrations/mcp"))
@@ -114,13 +136,6 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
     return { page: "integrations-tool-apis" };
   if (pathname.startsWith("/tools/video-frame-exporter"))
     return { page: "video-frame-exporter" };
-  const audioAnnotation = pathname.match(
-    /^\/tools\/audio-annotation\/([^/]+)\/?$/,
-  );
-  if (audioAnnotation)
-    return { page: "audio-annotation-editor", projectId: audioAnnotation[1] };
-  if (pathname.startsWith("/tools/audio-annotation"))
-    return { page: "audio-annotation-projects" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
   const modelTestTool = pathname.match(/^\/model-test-tools\/([^/]+)\/?$/);
   if (modelTestTool)
@@ -141,8 +156,6 @@ export function pathFor(
 ): string {
   const applicationPath = applicationPathFor(page, projectId, documentId);
   if (applicationPath) return applicationPath;
-  if (page === "audio-annotation-editor" && projectId)
-    return `/tools/audio-annotation/${encodeURIComponent(projectId)}`;
   const paths: Record<AppPage, string> = {
     "presentation-workshop-projects": "/apps/presentation-workshop",
     "presentation-workshop-editor": "/apps/presentation-workshop",
@@ -164,8 +177,6 @@ export function pathFor(
     "integrations-mcp": "/integrations/mcp",
     "integrations-skills": "/integrations/skills",
     "video-frame-exporter": "/tools/video-frame-exporter",
-    "audio-annotation-projects": "/tools/audio-annotation",
-    "audio-annotation-editor": "/tools/audio-annotation",
     "model-test": "/model-test",
     "model-test-tools": projectId
       ? `/model-test-tools/${encodeURIComponent(projectId)}`
@@ -183,6 +194,8 @@ export function pathFor(
     "video-editor-projects": "/apps/video-editor",
     "video-editor-editor": "/apps/video-editor",
     "video-editor-tasks": "/apps/video-editor/tasks",
+    "audio-annotation-projects": "/apps/audio-annotation",
+    "audio-annotation-editor": "/apps/audio-annotation",
   };
   return paths[page];
 }

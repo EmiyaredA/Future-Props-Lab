@@ -6,14 +6,13 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.core.config import get_settings
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.files import (
+from app.capabilities.asset_store import (
     AssetStorage,
     ProjectFolderError,
     ProjectSnapshotError,
     open_project_folder,
 )
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
     GalgameWorkshopProjectNotFoundError,
@@ -21,6 +20,7 @@ from app.galgame_workshop.errors import (
 from app.galgame_workshop.projects import GalgameWorkshopProjects
 from app.galgame_workshop.snapshots import GalgameProjectSnapshots
 from app.routes.galgame_workshop._shared import _not_found
+from app.runtime.config import get_settings
 from app.schemas.galgame_workshop import (
     GalgameProjectSnapshotImportOut,
     GalgameWorkshopProjectCreateIn,

@@ -26,7 +26,7 @@
 - [工作空间与账号](/docs.html?page=workspaces)：切换空间、邀请成员、管理个人资料和会话。
 - [文件管理](/docs.html?page=files-overview)：上传、预览和整理共享文件。
 - [集成中心](/docs.html?page=integrations-overview)：管理工具 API、MCP 与 Skill。
-- [录音分段标注](/docs.html?page=annotation-overview)：切分音频、校对文本和导出字幕。
+- [录音标注工坊](/docs.html?page=annotation-overview)：切分音频、校对文本和导出字幕。
 - [视频帧导出](/docs.html?page=frames-overview)：在浏览器中定位画面并保存图片。
 
 ## 本地优先与自动保存 {#local-first}

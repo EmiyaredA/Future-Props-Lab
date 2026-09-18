@@ -7,8 +7,6 @@ from pydantic import ValidationError
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.time import iso_utc, utc_now
 from app.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
     GalgameStoryDocumentNotFoundError,
@@ -16,6 +14,8 @@ from app.galgame_workshop.errors import (
 )
 from app.galgame_workshop.story import GalgameStoryDocuments
 from app.models import GalgameStoryDocument, GalgameWorkshopProject
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.galgame_workshop import (
     GalgameStoryDialogueBlock,
     GalgameStoryDialogueEditIn,

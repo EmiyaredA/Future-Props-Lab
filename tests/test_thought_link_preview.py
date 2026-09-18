@@ -8,7 +8,7 @@ import httpx
 import pytest
 from tests.test_workspace_governance import client_account
 
-from app.accounts.route_permissions import ROUTE_PERMISSIONS
+from app.capabilities.identity.route_permissions import ROUTE_PERMISSIONS
 from app.main import app
 from app.thought_workshop import link_preview as preview
 

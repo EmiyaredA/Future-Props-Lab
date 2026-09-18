@@ -6,7 +6,7 @@ import sqlite3
 import pytest
 from pydantic import ValidationError
 
-from app.media_rendering.speed import audio_speed_filters, source_time_us
+from app.capabilities.media_rendering.speed import audio_speed_filters, source_time_us
 from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineBatchIn
 from app.video_editor.errors import VideoEditorValidationError
 from app.video_editor.timeline import apply_operations

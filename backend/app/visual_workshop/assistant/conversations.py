@@ -9,10 +9,7 @@ from pypdf import PdfReader
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
-from app.core.config import Settings, get_settings
-from app.core.time import iso_utc, utc_now
-from app.files.storage import AssetStorage
+from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.providers import ChatMessageInput
 from app.models import (
     ModelEntry,
@@ -25,6 +22,9 @@ from app.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 from app.schemas.visual_workshop import (
     VisualAssistantActionOut,
     VisualAssistantAssetOut,

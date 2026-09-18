@@ -15,7 +15,8 @@ export type ApplicationModule = {
     | "galgame-workshop"
     | "video-editor"
     | "thought-workshop"
-    | "presentation-workshop";
+    | "presentation-workshop"
+    | "audio-annotation";
   shellConfig: {
     className?: string;
     brandClassName?: string;

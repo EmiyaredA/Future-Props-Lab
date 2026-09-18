@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.time import iso_utc
 from app.models import IntegrationCheck
+from app.runtime.time import iso_utc
 from app.schemas.integrations import IntegrationCheckOut
 
 

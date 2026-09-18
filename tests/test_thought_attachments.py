@@ -10,8 +10,8 @@ from tests.test_account_system import create_test_account, login_and_change_pass
 from tests.test_thought_workshop import note_body
 from tests.thought_helpers import create_note, delete_note
 
-from app.core.config import get_settings
 from app.main import app
+from app.runtime.config import get_settings
 
 ROOT = "/v1/thought-workshop"
 

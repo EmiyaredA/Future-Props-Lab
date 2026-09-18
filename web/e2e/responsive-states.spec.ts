@@ -6,7 +6,7 @@ const remotePages = [
   "/integrations/tool-apis",
   "/integrations/mcp",
   "/integrations/skills",
-  "/tools/audio-annotation",
+  "/apps/audio-annotation",
   "/model-service",
   "/model-call-logs",
   "/model-test-tools",

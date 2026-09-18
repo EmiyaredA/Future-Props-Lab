@@ -33,9 +33,6 @@ describe("shared workshop sidebar", () => {
       expect(screen.getAllByRole("complementary")).toHaveLength(1);
       expect(screen.getByText(module.definition.name)).toBeVisible();
       expect(screen.getByText(module.shellConfig.backSubtitle)).toBeVisible();
-      expect(screen.getAllByRole("group", { name: "外观模式" })).toHaveLength(
-        1,
-      );
       const link = screen.getByRole("button", {
         name: item.label,
       });

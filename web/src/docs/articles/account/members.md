@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":3,"title":"成员与邀请","lead":"通过用户名邀请平台中已有账号加入空间。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/accounts/principal.py"]} -->
+<!-- docs: {"group":"account","order":3,"title":"成员与邀请","lead":"通过用户名邀请平台中已有账号加入空间。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
 
 # 成员与邀请
 
