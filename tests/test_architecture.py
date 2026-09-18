@@ -74,6 +74,7 @@ def _backend_route_files() -> list[Path]:
         BACKEND_APP / "routes",
         BACKEND_APP / "console" / "routes",
         BACKEND_APP / "llm" / "routes",
+        BACKEND_APP / "capabilities" / "asset_store" / "routes",
         *(BACKEND_APP / "apps").glob("*/routes"),
     ]
     files = [path for root in roots if root.is_dir() for path in _python_files(root)]
@@ -304,6 +305,7 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
         BACKEND_APP / "routes",
         BACKEND_APP / "console" / "routes",
         BACKEND_APP / "llm" / "routes",
+        BACKEND_APP / "capabilities" / "asset_store" / "routes",
         *(BACKEND_APP / "apps").glob("*/routes"),
     ]
     for path in _python_files(BACKEND_APP):

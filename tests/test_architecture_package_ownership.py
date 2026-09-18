@@ -176,5 +176,14 @@ def test_console_owns_routes_and_schemas() -> None:
     for name in console_schemas:
         assert (BACKEND_APP / "console" / "schemas" / name).is_file()
         assert not (BACKEND_APP / "schemas" / name).exists()
-    assert (BACKEND_APP / "routes" / "image_crop.py").is_file()
-    assert (BACKEND_APP / "routes" / "video_frames.py").is_file()
+    assert not (BACKEND_APP / "routes" / "image_crop.py").exists()
+    assert not (BACKEND_APP / "routes" / "video_frames.py").exists()
+
+
+def test_asset_store_owns_media_routes_and_schemas() -> None:
+    assert (BACKEND_APP / "capabilities" / "asset_store" / "routes" / "image_crop.py").is_file()
+    assert (BACKEND_APP / "capabilities" / "asset_store" / "routes" / "video_frames.py").is_file()
+    assert (BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "image_crop.py").is_file()
+    assert (BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "video_frames.py").is_file()
+    assert not (BACKEND_APP / "schemas" / "image_crop.py").exists()
+    assert not (BACKEND_APP / "schemas" / "video_frames.py").exists()

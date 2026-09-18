@@ -9,6 +9,7 @@ from app.apps.video_editor.routes import router as video_editor_router
 from app.apps.visual_workshop.routes import router as visual_workshop_router
 from app.apps.visual_workshop.routes.assistant import router as visual_assistant_router
 from app.apps.visual_workshop.routes.generation import router as visual_generation_router
+from app.capabilities.asset_store.routes import image_crop, video_frames
 from app.console.routes.account_management import router as management_router
 from app.console.routes.accounts import router as accounts_router
 from app.console.routes.desktop import router as desktop_router
@@ -35,7 +36,6 @@ from app.llm.routes.models import (
     model_test_transcription,
     suppliers,
 )
-from app.routes import image_crop, video_frames
 from app.tool_navigation.routes import router as tool_navigation_router
 
 api_router = APIRouter(prefix="/v1")

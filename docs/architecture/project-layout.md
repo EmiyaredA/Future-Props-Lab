@@ -18,7 +18,7 @@ Future-Props-Lab/
 │   ├── api.py         # `/v1` router 装配入口
 │   ├── orm.py         # mapper 聚合与 Workspace 租户登记
 │   ├── runtime/       # 配置、数据库、CAS/轮询原语与 ORM Base（无业务语义）
-│   ├── capabilities/  # 有契约的共享能力：identity、asset_store、agents、media_rendering、transcription
+│   ├── capabilities/  # 有契约的共享能力：identity、asset_store（含媒体 routes/schemas）、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理、库级文件用例；自有 routes/schemas（ORM 仍暂留顶层 models）
 │   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
@@ -26,7 +26,7 @@ Future-Props-Lab/
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
 │   ├── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 │   ├── models/        # 尚未迁出的持久化形状（files、账号、治理、model_templates 等）及其 ID/时间工厂
-│   ├── routes/        # 尚未迁入 capabilities 的 `/v1` 协议残留（image_crop / video_frames）
+│   ├── routes/        # 已清空业务协议；仅保留空包占位
 │   └── schemas/       # 尚未迁出的共享 Pydantic 契约（files、project_*、transcription 等）
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
@@ -411,8 +411,8 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
 - `backend/app/apps/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/conversion.py` 描述正式契约。
 - `backend/app/apps/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
-- `backend/app/capabilities/asset_store/video_frames.py`：工作区文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`。
+- `backend/app/capabilities/asset_store/video_frames.py`：工作区文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`；HTTP 适配在 `capabilities/asset_store/routes/video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
 - `skills/future-props-lab-automation/`：官方自动化 Agent Skill 包（根 `SKILL.md` 名 `future-props-lab-automation`）。叶子 skill 目录名必须等于 frontmatter `name`，可单独或组合安装；每个叶子内联「前置」与最小 `fpl` 示例。校验：`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。只指导通过 `fpl`/SDK 操作产品，不修改本仓库源码；见该处 `README.md`。
-- `backend/app/capabilities/asset_store/image_crop.py` 与 `schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存。
+- `backend/app/capabilities/asset_store/image_crop.py` 与 `capabilities/asset_store/schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存；HTTP 适配在 `capabilities/asset_store/routes/image_crop.py`。

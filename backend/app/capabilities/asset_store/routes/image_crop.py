@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, Response
 
 from app.capabilities.asset_store.image_crop import crop_image
 from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.schemas.image_crop import ImageCropIn
 from app.deps import SessionDep, WorkspaceDep
-from app.schemas.image_crop import ImageCropIn
 
 router = APIRouter(tags=["file-management"])
 
