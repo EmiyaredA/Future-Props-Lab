@@ -65,8 +65,9 @@
 }
 
 .file-compact-filter-popover .custom-select-menu button {
-  min-height: 30px;
-  padding: 0 8px;
+  min-height: 32px;
+  padding: 0 28px 0 10px;
+  justify-content: center;
   font-size: 10px;
   line-height: 1.2;
 }

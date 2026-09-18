@@ -277,21 +277,33 @@
 .file-move-select .custom-select-menu button {
   position: relative;
   min-height: 36px;
-  padding: 0 10px 0 28px;
-  justify-content: flex-start;
+  padding: 0 28px 0 10px;
+  justify-content: center;
   font-size: 10px;
+}
+
+.file-filter-select .custom-select-menu button > span,
+.file-move-select .custom-select-menu button > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-filter-select .custom-select-menu button.selected::after,
 .file-move-select .custom-select-menu button.selected::after {
   position: absolute;
-  left: 11px;
-  width: 4px;
-  height: 8px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  content: "";
-  transform: rotate(45deg);
+  top: 50%;
+  right: 10px;
+  left: auto;
+  width: auto;
+  height: auto;
+  border: 0;
+  content: "✓";
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  transform: translateY(-50%);
 }
 
 .file-view-toggle {
