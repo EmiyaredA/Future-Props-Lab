@@ -5,13 +5,12 @@ import pytest
 from sqlalchemy import delete
 
 import app.capabilities.asset_store.assets as asset_module
+from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
 from app.models import (
     ModelEntry,
     ModelProvider,
-    ThoughtKnowledgeBase,
-    ThoughtNote,
     VisualAsset,
     VisualAssetFolder,
     VisualGenerationTask,
@@ -438,6 +437,66 @@ async def test_visual_workshop_imports_library_references_and_project_copies(
         copied_content = await client.get(f"/v1/files/{imported[0]['id']}/content")
         assert copied_content.status_code == 200
         assert copied_content.content.endswith(b"second-project-image")
+
+
+@pytest.mark.asyncio
+async def test_file_library_imports_project_copies_with_display_names() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        source = (
+            await client.post(
+                "/v1/visual-workshop/projects",
+                json={"title": "公共库复制源", "kind": "canvas"},
+            )
+        ).json()
+        uploaded = await client.post(
+            "/v1/files",
+            data={"project_id": source["id"], "display_name": "原始海报"},
+            files={
+                "upload": (
+                    "poster.png",
+                    b"\x89PNG\r\n\x1a\nproject-to-library",
+                    "image/png",
+                )
+            },
+        )
+        assert uploaded.status_code == 200, uploaded.text
+        assert uploaded.json()["display_name"] == "原始海报"
+
+        folder = await client.post(
+            "/v1/file-folders",
+            json={"scope": "library", "name": "从项目收集"},
+        )
+        assert folder.status_code == 200, folder.text
+
+        imported = await client.post(
+            "/v1/file-library/asset-imports",
+            json={
+                "source_project_id": source["id"],
+                "asset_ids": [uploaded.json()["id"]],
+                "folder_id": folder.json()["id"],
+                "display_names": {uploaded.json()["id"]: "库内海报"},
+            },
+        )
+        assert imported.status_code == 200, imported.text
+        item = imported.json()["items"][0]
+        assert item["project_id"] is None
+        assert item["folder_id"] == folder.json()["id"]
+        assert item["display_name"] == "库内海报"
+        assert item["id"] != uploaded.json()["id"]
+        content = await client.get(f"/v1/files/{item['id']}/content")
+        assert content.status_code == 200
+        assert content.content.endswith(b"project-to-library")
+
+        wrong_scope = await client.post(
+            "/v1/file-library/asset-imports",
+            json={
+                "source_project_id": source["id"],
+                "asset_ids": [item["id"]],
+            },
+        )
+        assert wrong_scope.status_code == 422
+        assert wrong_scope.json()["code"] == "scope_mismatch"
 
 
 @pytest.mark.asyncio

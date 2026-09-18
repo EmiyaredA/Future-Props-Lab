@@ -7,14 +7,25 @@ from typing import Any
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
+from app.apps.audio_annotation.models import (
+    AudioAnnotationDocument,
+    AudioAnnotationProject,
+    AudioAnnotationWaveform,
+)
 from app.apps.presentation_workshop.models import (
     PresentationAssetReference,
     PresentationProject,
 )
+from app.apps.thought_workshop.models import (
+    ThoughtHistoryAsset,
+    ThoughtKnowledgeBase,
+    ThoughtNote,
+    ThoughtNoteAsset,
+    ThoughtNoteHistory,
+)
 
 # Importing app.models registers every mapped class on Base.metadata.
 from app.models import (  # noqa: F401
-    AudioAnnotationProject,
     GalgameAnnotationImportTask,
     GalgameAssetTranscriptionTask,
     GalgameVideoEditorHandoffTask,
@@ -34,32 +45,38 @@ from app.models import (  # noqa: F401
     ModelTestToolCall,
     ModelTestTranscriptionTask,
     SkillIntegration,
-    ThoughtKnowledgeBase,
-    ThoughtNote,
     ToolApiIntegration,
     ToolNavigationItem,
     VideoEditorOperationBatch,
     VideoEditorProject,
     VideoEditorTask,
-    VisualAsset,
-    VisualAssetFolder,
     VisualAssistantConversation,
     VisualGenerationBatch,
     VisualGenerationTask,
-    VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
 from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.models.project_operations import ProjectOperationReceipt
 from app.runtime.orm_base import Base
 
 # App-owned roots registered at assembly time so console must not import apps/.
 DESKTOP_UI_ROOTS: dict[str, type] = {
+    "annotation": AudioAnnotationProject,
+    "knowledge": ThoughtKnowledgeBase,
+    "note": ThoughtNote,
     "presentation": PresentationProject,
 }
 
 # Ensure reference mappers are registered on Base.metadata for capability queries.
-_ = PresentationAssetReference
+_ = (
+    PresentationAssetReference,
+    AudioAnnotationDocument,
+    AudioAnnotationWaveform,
+    ThoughtHistoryAsset,
+    ThoughtNoteAsset,
+    ThoughtNoteHistory,
+)
 
 TENANT_MODELS = (
     ModelInferenceAsset,

@@ -939,6 +939,10 @@
     "method": "create_file_folder",
     "resource": "files"
   },
+  "POST /v1/file-library/asset-imports": {
+    "method": "import_project_assets_to_library",
+    "resource": "files"
+  },
   "POST /v1/file-library/folder-archive-imports": {
     "method": "import_library_folder_archive",
     "resource": "files"

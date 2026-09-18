@@ -186,7 +186,7 @@ async def test_history_failure_rolls_back_document(monkeypatch):
             raise RuntimeError("isolated snapshot failure")
 
         with monkeypatch.context() as patch:
-            patch.setattr("app.thought_workshop.history.History.append", fail)
+            patch.setattr("app.apps.thought_workshop.history.History.append", fail)
             response = await c.put(
                 path, json={**note_body(note), "title": "不应保存", "expected_revision": 0}
             )

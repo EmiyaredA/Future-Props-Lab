@@ -20,7 +20,7 @@ export function VisualWorkshopAssetsPage({
   const mediaSourceProjects = useQuery({
     queryKey: visualWorkshopQueryKeys.projectsForMediaSource,
     queryFn: getVisualWorkshopProjects,
-    enabled: tab === "cross",
+    enabled: tab === "cross" || tab === "library",
   });
   const sourceProjects = useMemo(
     () =>
@@ -92,6 +92,8 @@ export function VisualWorkshopAssetsPage({
         <AssetBrowser
           importSource="library"
           projectId={projectId}
+          sourceProjects={sourceProjects}
+          sourceProjectsLoading={mediaSourceProjects.isLoading}
           onImported={() => setTab("project")}
         />
       )}

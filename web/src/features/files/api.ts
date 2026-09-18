@@ -95,6 +95,7 @@ export async function uploadManagedFile(
   file: File,
   projectId?: string,
   folderId?: string,
+  displayName?: string,
 ) {
   return unwrap(
     await api.POST("/v1/files", {
@@ -102,12 +103,15 @@ export async function uploadManagedFile(
         upload: file as unknown as string,
         project_id: projectId,
         folder_id: folderId,
+        display_name: displayName,
       },
       bodySerializer(body) {
         const form = new FormData();
         form.set("upload", file);
         if (body.project_id) form.set("project_id", body.project_id);
         if (body.folder_id) form.set("folder_id", body.folder_id);
+        if (body.display_name?.trim())
+          form.set("display_name", body.display_name.trim());
         return form;
       },
     }),
@@ -209,6 +213,24 @@ export async function importManagedFiles(
             ? options.sourceProjectId
             : undefined,
         asset_ids: options.assetIds,
+      },
+    }),
+  );
+}
+
+export async function importLibraryAssets(options: {
+  sourceProjectId: string;
+  assetIds: string[];
+  folderId?: string;
+  displayNames?: Record<string, string>;
+}) {
+  return unwrap(
+    await api.POST("/v1/file-library/asset-imports", {
+      body: {
+        source_project_id: options.sourceProjectId,
+        asset_ids: options.assetIds,
+        folder_id: options.folderId,
+        display_names: options.displayNames ?? {},
       },
     }),
   );

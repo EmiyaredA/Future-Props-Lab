@@ -9,11 +9,11 @@ from sqlalchemy import select
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 from tests.thought_helpers import delete_note
 
+from app.apps.thought_workshop.assistant import PreparedWriting, writing_events
 from app.llm.providers.streaming import TextDelta
 from app.main import app
 from app.models import LlmCallLog
 from app.runtime.db import SessionLocal
-from app.thought_workshop.assistant import PreparedWriting, writing_events
 
 ROOT = "/v1/thought-workshop"
 
@@ -92,7 +92,7 @@ async def test_assistant_stream_and_logs_use_normalized_events(monkeypatch):
         yield TextDelta(text="摘要")
         yield TextDelta(text="内容", prompt_tokens=8, completion_tokens=2, total_tokens=10)
 
-    monkeypatch.setattr("app.thought_workshop.assistant.stream_text_completion", fake)
+    monkeypatch.setattr("app.apps.thought_workshop.assistant.stream_text_completion", fake)
     request = prepared()
     result = b"".join([chunk async for chunk in writing_events(request)]).decode()
     assert '"type": "delta"' in result and '"type": "complete"' in result
@@ -113,7 +113,7 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         raise RuntimeError("secret-provider-token")
         yield TextDelta()
 
-    monkeypatch.setattr("app.thought_workshop.assistant.stream_text_completion", broken)
+    monkeypatch.setattr("app.apps.thought_workshop.assistant.stream_text_completion", broken)
     output = b"".join([chunk async for chunk in writing_events(prepared())]).decode()
     assert '"type": "error"' in output and "secret-provider-token" not in output
     entered = asyncio.Event()
@@ -123,7 +123,7 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         await asyncio.Event().wait()
         yield TextDelta()
 
-    monkeypatch.setattr("app.thought_workshop.assistant.stream_text_completion", pending)
+    monkeypatch.setattr("app.apps.thought_workshop.assistant.stream_text_completion", pending)
     request = prepared()
 
     async def consume():

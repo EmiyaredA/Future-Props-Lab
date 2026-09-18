@@ -48,6 +48,7 @@ class AssetLibrary:
         *,
         workspace_id: str,
         filename_override: str | None = None,
+        display_name: str | None = None,
         visual_project_id: str | None = None,
         galgame_project_id: str | None = None,
         video_editor_project_id: str | None = None,
@@ -67,6 +68,12 @@ class AssetLibrary:
         content_type = (upload.content_type or "application/octet-stream").lower()
         if content_type not in mime_types and content_type != "application/octet-stream":
             raise AssetError("文件扩展名与 MIME 类型不匹配", code="file_type_mismatch")
+        resolved_display = display_name_without_original_extension(
+            (display_name or "").strip() or filename,
+            filename,
+        )
+        if not resolved_display:
+            raise AssetError("显示名称不能为空", code="invalid_display_name")
 
         storage_key = uuid4().hex
         temp_path, final_path = self.storage.prepare_write(
@@ -116,7 +123,7 @@ class AssetLibrary:
                 video_editor_project_id=video_editor_project_id,
                 folder_id=folder_id,
                 original_filename=filename,
-                display_name=display_name_without_original_extension(filename, filename),
+                display_name=resolved_display,
                 storage_key=storage_key,
                 storage_version=TARGET_STORAGE_VERSION,
                 media_kind=media_kind,

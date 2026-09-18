@@ -104,6 +104,35 @@ class VisualAssetImportIn(BaseModel):
         return self
 
 
+class LibraryAssetImportIn(BaseModel):
+    source_project_id: str
+    asset_ids: list[str] = Field(min_length=1)
+    folder_id: str | None = None
+    display_names: dict[str, str] = Field(default_factory=dict)
+
+    @field_validator("asset_ids")
+    @classmethod
+    def asset_ids_are_unique(cls, value: list[str]) -> list[str]:
+        if len(value) != len(set(value)):
+            raise ValueError("asset_ids 不能包含重复项")
+        return value
+
+    @field_validator("display_names")
+    @classmethod
+    def display_names_are_clean(cls, value: dict[str, str]) -> dict[str, str]:
+        cleaned: dict[str, str] = {}
+        for asset_id, name in value.items():
+            cleaned[asset_id] = _clean_name(name)
+        return cleaned
+
+    @model_validator(mode="after")
+    def display_names_match_assets(self) -> LibraryAssetImportIn:
+        unknown = set(self.display_names) - set(self.asset_ids)
+        if unknown:
+            raise ValueError("display_names 只能包含 asset_ids 中的素材")
+        return self
+
+
 class VisualAssetPatchIn(BaseModel):
     expected_revision: int = Field(ge=0)
     display_name: str | None = Field(default=None, min_length=1, max_length=255)

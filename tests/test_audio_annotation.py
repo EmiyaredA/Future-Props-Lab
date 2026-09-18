@@ -7,7 +7,7 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
+from app.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
 from app.capabilities.transcription.support import (
     resolve_transcription_language,
     resolve_transcription_target_language,
@@ -469,7 +469,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
         return TranscriptionResult(text="  日本語の書き起こし。  ")
 
     monkeypatch.setattr(
-        "app.audio_annotation.transcription.transcribe_model_audio",
+        "app.apps.audio_annotation.transcription.transcribe_model_audio",
         fake_transcribe,
     )
     transport = httpx.ASGITransport(app=app)
@@ -575,7 +575,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             )
 
         monkeypatch.setattr(
-            "app.audio_annotation.transcription.transcribe_model_audio",
+            "app.apps.audio_annotation.transcription.transcribe_model_audio",
             incomplete_translation,
         )
         untranslated = await client.post(
@@ -597,7 +597,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             raise httpx.ReadTimeout("timed out")
 
         monkeypatch.setattr(
-            "app.audio_annotation.transcription.transcribe_model_audio",
+            "app.apps.audio_annotation.transcription.transcribe_model_audio",
             failing_transcribe,
         )
         failed = await client.post(
@@ -623,7 +623,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             return TranscriptionResult(text="   ")
 
         monkeypatch.setattr(
-            "app.audio_annotation.transcription.transcribe_model_audio",
+            "app.apps.audio_annotation.transcription.transcribe_model_audio",
             empty_transcribe,
         )
         empty = await client.post(

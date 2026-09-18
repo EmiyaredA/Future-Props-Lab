@@ -2225,6 +2225,17 @@
       },
       "Body_upload_file_v1_files_post": {
         "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
           "folder_id": {
             "anyOf": [
               {
@@ -13816,6 +13827,46 @@
           "expected_revision"
         ],
         "title": "KnowledgeNoteCreate",
+        "type": "object"
+      },
+      "LibraryAssetImportIn": {
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "display_names": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Display Names",
+            "type": "object"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "source_project_id": {
+            "title": "Source Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_project_id",
+          "asset_ids"
+        ],
+        "title": "LibraryAssetImportIn",
         "type": "object"
       },
       "LibraryFolderImportOut": {
@@ -29804,6 +29855,47 @@
           }
         },
         "summary": "Patch File Folder",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-library/asset-imports": {
+      "post": {
+        "operationId": "import_project_assets_to_library_v1_file_library_asset_imports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryAssetImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Project Assets To Library",
         "tags": [
           "file-management"
         ]

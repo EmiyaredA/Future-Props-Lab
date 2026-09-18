@@ -27,6 +27,10 @@ class Files:
         'Patch File Folder. PATCH /v1/file-folders/{folder_id}'
         return self._client._call('PATCH', '/v1/file-folders/{folder_id}', parameters=[('folder_id', 'path', folder_id)], body=body, media_type='application/json', response_type=models.VisualAssetFolderOut)
 
+    def import_project_assets_to_library(self, *, body: models.LibraryAssetImportIn | dict) -> models.VisualAssetListOut:
+        'Import Project Assets To Library. POST /v1/file-library/asset-imports'
+        return self._client._call('POST', '/v1/file-library/asset-imports', parameters=[], body=body, media_type='application/json', response_type=models.VisualAssetListOut)
+
     def import_library_folder_archive(self, *, body: models.Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post | dict, files: dict | list | None = None) -> models.LibraryFolderImportOut:
         'Import Library Folder Archive. POST /v1/file-library/folder-archive-imports'
         return self._client._call('POST', '/v1/file-library/folder-archive-imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.LibraryFolderImportOut)
@@ -106,6 +110,10 @@ class AsyncFiles:
     async def patch_file_folder(self, *, folder_id: str, body: models.VisualAssetFolderPatchIn | dict) -> models.VisualAssetFolderOut:
         'Patch File Folder. PATCH /v1/file-folders/{folder_id}'
         return await self._client._call('PATCH', '/v1/file-folders/{folder_id}', parameters=[('folder_id', 'path', folder_id)], body=body, media_type='application/json', response_type=models.VisualAssetFolderOut)
+
+    async def import_project_assets_to_library(self, *, body: models.LibraryAssetImportIn | dict) -> models.VisualAssetListOut:
+        'Import Project Assets To Library. POST /v1/file-library/asset-imports'
+        return await self._client._call('POST', '/v1/file-library/asset-imports', parameters=[], body=body, media_type='application/json', response_type=models.VisualAssetListOut)
 
     async def import_library_folder_archive(self, *, body: models.Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post | dict, files: dict | list | None = None) -> models.LibraryFolderImportOut:
         'Import Library Folder Archive. POST /v1/file-library/folder-archive-imports'

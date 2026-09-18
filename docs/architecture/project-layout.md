@@ -20,14 +20,12 @@ Future-Props-Lab/
 │   ├── runtime/       # 配置、数据库、CAS/轮询原语与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理与库级文件用例：governance、file_library
-│   ├── apps/          # 已垂直切片的产品 App（presentation_workshop 已迁入；其余按批次收拢）
+│   ├── apps/          # 已垂直切片的产品 App（presentation / audio_annotation / thought_workshop）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
-│   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
-│   ├── thought_workshop/ # Workspace 富文本笔记、图片引用、AI 写作与可移植备份
 │   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、片段交接与后台任务
 │   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂（App 迁出后逐步清空）
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；未迁入 App 的协议模块仍在此
@@ -138,7 +136,7 @@ Future-Props-Lab/
 - `integrations/` 拥有独立于工具导航的 Workspace 集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
-- `audio_annotation/` 管理 Workspace 级录音标注任务，根项目直接保存 `workspace_id` 并引用
+- `apps/audio_annotation/` 管理 Workspace 级录音标注任务，根项目直接保存 `workspace_id` 并引用
   公共文件库中的音频；说话人/片段文档与最多双声道的预计算波形分别使用独立 revision CAS，
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
   映射归属 `capabilities/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
@@ -306,15 +304,15 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 左侧留白布局和滚动定位；`document-outline.css` 拥有常驻目录及窄屏浮层样式。
 目录及临时展开折叠内容只属于界面状态，不写入正文或修改 revision。
 
-`thought_workshop/link_preview.py` 拥有匿名公网网页元数据读取及连接地址校验；
+`apps/thought_workshop/link_preview.py` 拥有匿名公网网页元数据读取及连接地址校验；
 `LinkPreviewCard`、`useLinkPreview` 与 `useLinkPreviewPosition` 在编辑和只读正文共用悬浮交互，
 样式归 `link-preview.css`。预览不进入正文或数据库，缓存键由 `queryKeys.ts` 按 Workspace 和 URL 管理。
 
-文档历史由 `thought_workshop/history.py` 拥有快照与分页，`history_archive.py` 拥有 v5 备份历史校验和重映射；`notes.py` 在正文 CAS 事务中记录与还原内容。迁移 `0049_thought_history` 为现有文档建立作者未知的历史起点，历史附件独立引用并参与公共文件删除保护。历史全部保留，文档永久删除时级联释放。
+文档历史由 `apps/thought_workshop/history.py` 拥有快照与分页，`history_archive.py` 拥有 v5 备份历史校验和重映射；`notes.py` 在正文 CAS 事务中记录与还原内容。迁移 `0049_thought_history` 为现有文档建立作者未知的历史起点，历史附件独立引用并参与公共文件删除保护。历史全部保留，文档永久删除时级联释放。
 
 Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责有界块对齐与文字差异，`HistoryDecorations` 仅在预览中叠加标记，`history.css` 拥有列表和修改痕迹样式。历史模式不修改编辑草稿，唯一历史缓存键仍由 `queryKeys.ts` 维护。
 
-`backend/app/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索、文件内容解析或独立权限系统。
+`backend/app/apps/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索、文件内容解析或独立权限系统。
 
 - `knowledge.py`：知识库元数据、封面归属、首页创建、库级 revision/CAS、整库删除与恢复。
 - `directory.py`：库内嵌套文档树、移动排序、循环校验；移动正文归属时推进文档 revision。
@@ -322,7 +320,7 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `attachments.py`：附件上传；公共类型与签名校验由 `capabilities/asset_store/policy.py` 拥有。
 - `portability.py` / `archive_structure.py`：v3 备份的预检、磁盘暂存、短事务与失败补偿。
 - `legacy_import.py`：唯一的 v1/v2 备份转换边界。生产读写没有旧笔记本模型、接口或默认知识库回退。
-- `schemas/thought_document.py`：无业务依赖的富文本允许列表、搜索文本与文件引用投影；正文保持 v2。
+- `schemas/document.py`：无业务依赖的富文本允许列表、搜索文本与文件引用投影；正文保持 v2。
 
 `web/src/features/thought-workshop/` 拥有知识库卡片、首页阅读与编辑、多级目录、保存队列、写作助手、格式转换与唯一 `queryKeys.ts`。`KnowledgeSidebar` 将库切换、搜索、直观筛选入口和独立滚动目录融入旧版侧栏；筛选结果在右侧显示，离开编辑器前沿用保存保护。`KnowledgeTree` 提供拖动与键盘菜单；旧笔记 URL 只根据文档 ID 跳转到包含知识库 ID 与文档 ID 的新地址。共享项目卡片的可选封面与元信息保持其他应用默认行为。
 
@@ -413,8 +411,8 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `backend/app/models/model_inference.py` 与 `project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
 - `web/src/features/models/inference/`：调用日志页中的独立任务查询、下载、转存与结果落盘重试入口；缓存键归属 models/queryKeys.ts。
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
-- `backend/app/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/thought_conversion.py` 描述正式契约。
-- `backend/app/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
+- `backend/app/apps/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/conversion.py` 描述正式契约。
+- `backend/app/apps/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
 - `backend/app/capabilities/asset_store/video_frames.py`：工作区文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。

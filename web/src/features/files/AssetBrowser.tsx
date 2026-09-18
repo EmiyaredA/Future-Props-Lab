@@ -12,6 +12,7 @@ import {
   FolderInput,
   FolderOpen,
   FolderPlus,
+  Folders,
   Grid2X2,
   List,
   LoaderCircle,
@@ -43,6 +44,10 @@ import {
   type AssetBrowserSourceProject,
   useAssetBrowserController,
 } from "@features/files/useAssetBrowserController";
+import {
+  LibrarySourcePickerDialog,
+  LibraryUploadStagingDialog,
+} from "@features/files/LibraryUploadDialogs";
 import "@features/files/files.css";
 
 export type { AssetViewMode } from "@features/files/AssetBrowserParts";
@@ -113,6 +118,7 @@ export function AssetBrowser({
     archiveTransfer,
     canManage,
     showImport,
+    libraryManage,
     importSource: resolvedImportSource,
     browseAllCross,
     sourceReady,
@@ -122,6 +128,10 @@ export function AssetBrowser({
     path,
     completedUploads,
     moveTargetOptions,
+    librarySourcePicker,
+    libraryStaging,
+    libraryStagingError,
+    libraryCommit,
     setView,
     openEditor,
     closeEditor,
@@ -129,6 +139,13 @@ export function AssetBrowser({
     updateEditorTarget,
     submitEditor,
     uploadFiles,
+    openLibrarySourcePicker,
+    closeLibrarySourcePicker,
+    closeLibraryStaging,
+    updateLibraryStagingName,
+    removeLibraryStagingItem,
+    acceptLibrarySourceSelection,
+    commitLibraryStaging,
     downloadFile,
     exportFolderArchive,
     importZipArchive,
@@ -301,7 +318,7 @@ export function AssetBrowser({
                         <button
                           type="button"
                           role="menuitem"
-                          disabled={upload.isPending}
+                          disabled={upload.isPending || libraryCommit.isPending}
                           onClick={() => {
                             setCompactAddOpen(false);
                             fileInput.current?.click();
@@ -312,8 +329,26 @@ export function AssetBrowser({
                           ) : (
                             <Upload aria-hidden />
                           )}
-                          上传文件
+                          {libraryManage ? "上传本地文件" : "上传文件"}
                         </button>
+                        {libraryManage && projectId ? (
+                          <>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => openLibrarySourcePicker("project")}
+                            >
+                              <FolderOpen aria-hidden /> 从本项目选取
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => openLibrarySourcePicker("cross")}
+                            >
+                              <Folders aria-hidden /> 从跨项目选取
+                            </button>
+                          </>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -420,6 +455,29 @@ export function AssetBrowser({
                   >
                     <FolderPlus aria-hidden /> 新建文件夹
                   </button>
+                  {libraryManage && projectId ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={upload.isPending || libraryCommit.isPending}
+                        onClick={() => fileInput.current?.click()}
+                      >
+                        <Upload aria-hidden /> 上传本地文件
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openLibrarySourcePicker("project")}
+                      >
+                        <FolderOpen aria-hidden /> 从本项目选取
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openLibrarySourcePicker("cross")}
+                      >
+                        <Folders aria-hidden /> 从跨项目选取
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -814,11 +872,17 @@ export function AssetBrowser({
           canManage={canManage}
           noSourceProjects={noSourceProjects}
           filtered={!!query.trim() || kind !== "all"}
-          busy={upload.isPending}
-          onUpload={() => fileInput.current?.click()}
+          busy={upload.isPending || libraryCommit.isPending}
+          onUpload={() => {
+            if (libraryManage && compact && projectId) {
+              setCompactAddOpen(true);
+              return;
+            }
+            fileInput.current?.click();
+          }}
         />
       )}
-      {act.isPending ? (
+      {act.isPending || libraryCommit.isPending ? (
         <div className="file-busy" role="status">
           正在处理…
         </div>
@@ -831,6 +895,33 @@ export function AssetBrowser({
               onDownload={() => {
                 void downloadFile(previewFile);
               }}
+            />,
+            document.body,
+          )
+        : null}
+      {librarySourcePicker && projectId
+        ? createPortal(
+            <LibrarySourcePickerDialog
+              mode={librarySourcePicker}
+              currentProjectId={projectId}
+              sourceProjects={sourceProjects ?? []}
+              sourceProjectsLoading={sourceProjectsLoading}
+              onClose={closeLibrarySourcePicker}
+              onConfirm={acceptLibrarySourceSelection}
+            />,
+            document.body,
+          )
+        : null}
+      {libraryStaging.length
+        ? createPortal(
+            <LibraryUploadStagingDialog
+              items={libraryStaging}
+              pending={libraryCommit.isPending}
+              error={libraryStagingError}
+              onClose={closeLibraryStaging}
+              onChangeName={updateLibraryStagingName}
+              onRemove={removeLibraryStagingItem}
+              onConfirm={commitLibraryStaging}
             />,
             document.body,
           )

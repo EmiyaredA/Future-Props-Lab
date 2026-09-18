@@ -26,7 +26,7 @@ export function CanvasAssetsDrawer({
   const mediaSourceProjects = useQuery({
     queryKey: visualWorkshopQueryKeys.projectsForMediaSource,
     queryFn: getVisualWorkshopProjects,
-    enabled: assetTab === "cross",
+    enabled: assetTab === "cross" || assetTab === "library",
   });
   const sourceProjects = useMemo(
     () =>
@@ -126,6 +126,8 @@ export function CanvasAssetsDrawer({
           compact
           importSource="library"
           projectId={projectId}
+          sourceProjects={sourceProjects}
+          sourceProjectsLoading={mediaSourceProjects.isLoading}
           viewMode={assetView}
           onViewModeChange={onAssetViewChange}
           onImported={() => onAssetTabChange("project")}

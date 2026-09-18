@@ -59,12 +59,10 @@ REMOVED_BACKEND_IMPORT_PREFIXES = (
     "app.llm.transcription",
 )
 BUSINESS_BACKEND_PACKAGES = (
-    "audio_annotation",
     "demo_runtime",
     "galgame_workshop",
     "integrations",
     "llm",
-    "thought_workshop",
     "tool_navigation",
     "video_editor",
     "visual_workshop",
@@ -295,9 +293,9 @@ def test_management_api_key_mutations_require_browser_session_auth() -> None:
 
 def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
     violations: list[str] = []
-    route_root = BACKEND_APP / "routes"
+    route_roots = [BACKEND_APP / "routes", *(BACKEND_APP / "apps").glob("*/routes")]
     for path in _python_files(BACKEND_APP):
-        if path.is_relative_to(route_root):
+        if any(_is_within(path, root) for root in route_roots if root.is_dir()):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
@@ -484,7 +482,7 @@ def test_transcription_consumers_do_not_depend_on_playground() -> None:
     violations = [
         f"{_relative(path)} imports {module}"
         for root in (
-            BACKEND_APP / "audio_annotation",
+            BACKEND_APP / "apps" / "audio_annotation",
             BACKEND_APP / "galgame_workshop",
         )
         for path in _python_files(root)
@@ -560,6 +558,37 @@ def test_presentation_workshop_lives_under_apps() -> None:
     assert not (BACKEND_APP / "routes" / "presentation_workshop.py").exists()
     assert not (BACKEND_APP / "schemas" / "presentation_workshop.py").exists()
     assert not (BACKEND_APP / "schemas" / "presentation_operations.py").exists()
+
+
+def test_audio_annotation_lives_under_apps() -> None:
+    assert (BACKEND_APP / "apps" / "audio_annotation" / "models.py").is_file()
+    assert (BACKEND_APP / "apps" / "audio_annotation" / "routes" / "__init__.py").is_file()
+    assert not (BACKEND_APP / "audio_annotation").exists()
+    assert not (BACKEND_APP / "models" / "audio_annotation.py").exists()
+    assert not (BACKEND_APP / "routes" / "audio_annotation.py").exists()
+    assert not (BACKEND_APP / "routes" / "annotation_exports.py").exists()
+    assert not (BACKEND_APP / "schemas" / "audio_annotation.py").exists()
+    assert not (BACKEND_APP / "schemas" / "annotation_operations.py").exists()
+
+
+def test_thought_workshop_lives_under_apps() -> None:
+    assert (BACKEND_APP / "apps" / "thought_workshop" / "models.py").is_file()
+    assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "__init__.py").is_file()
+    assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "conversion.py").is_file()
+    assert not (BACKEND_APP / "thought_workshop").exists()
+    assert not (BACKEND_APP / "models" / "thought_workshop.py").exists()
+    assert not (BACKEND_APP / "routes" / "thought_workshop.py").exists()
+    assert not (BACKEND_APP / "routes" / "thought_conversion.py").exists()
+    for schema_name in (
+        "thought_workshop.py",
+        "thought_document.py",
+        "thought_history.py",
+        "thought_knowledge.py",
+        "thought_link_preview.py",
+        "thought_operations.py",
+        "thought_conversion.py",
+    ):
+        assert not (BACKEND_APP / "schemas" / schema_name).exists()
 
 
 def test_runtime_assembly_entrypoints_exist() -> None:
@@ -796,6 +825,8 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/console/governance",
         "backend/app/apps",
         "backend/app/apps/presentation_workshop",
+        "backend/app/apps/audio_annotation",
+        "backend/app/apps/thought_workshop",
         "backend/app/llm",
         "backend/app/models",
         "backend/app/routes",

@@ -399,6 +399,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET /v1/file-library/folder-exports?folder_id=`：导出公共库当前子树为可读相对路径 ZIP（省略 `folder_id` 为库根；选中文件夹时 ZIP 顶层为该文件夹名）。包级上限复用项目快照配置；同目录同名文件以 `-2`/`-3` 消歧；空文件夹写入目录项。权限 `content.read`。
 - `POST /v1/file-library/folder-archive-imports`：multipart 上传 ZIP 与可选 `parent_folder_id`，按相对路径在公共库重建文件夹树并上传文件。同名文件夹 merge；不支持类型、超深度或不安全路径记入 `skipped`，允许部分成功。权限 `content.write`。
 - `POST /v1/file-library/folder-entry-imports`：multipart 多文件 `files` 与同序 `relative_paths`（及可选 `parent_folder_id`），用于本机选文件夹导入；规则与 ZIP 导入相同。权限 `content.write`。
+- `POST /v1/file-library/asset-imports`：把视觉项目内素材复制为 Workspace 公共库独立副本；JSON 含 `source_project_id`、`asset_ids`，可选 `folder_id` 与 `display_names`（按 asset_id 覆盖显示名）。权限 `content.write`。
 
 布局接口使用 Studio 鉴权；旧布局在完成前保持可读，新上传文件始终写入版本 2 项目目录。公共库导入导出只重建 DB 逻辑树，磁盘仍按 `storage_key` 扁平存储，不做 Finder 双向同步。
 
@@ -768,7 +769,7 @@ Data URI 或素材内容。
 
 - `GET/POST /v1/file-folders`：读取或创建文件管理/项目素材文件夹。
 - `PATCH/DELETE /v1/file-folders/{folder_id}`：CAS 改名、移动或递归删除文件夹。
-- `GET/POST /v1/files`：按项目、当前文件夹、搜索词、媒体类型和排序查询，或 multipart 上传单文件。
+- `GET/POST /v1/files`：按项目、当前文件夹、搜索词、媒体类型和排序查询，或 multipart 上传单文件（可选 Form `display_name` 覆盖显示名，扩展名仍按上传文件名）。
 - `PATCH/DELETE /v1/files/{asset_id}`：CAS 改名、移动或删除文件。
 - `GET /v1/files/{asset_id}/content`、`/download`：鉴权预览或下载原始内容；下载接口可传
   `download_name` 作为本次下载的显示名，服务端始终追加素材自身的真实后缀并清理路径字符。

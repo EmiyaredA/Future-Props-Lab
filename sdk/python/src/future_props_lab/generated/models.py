@@ -372,6 +372,7 @@ class Body_upload_attachments_v1_model_test_conversations__conversation_id__atta
     files: list[str] = Field(default=..., alias='files')
 
 class Body_upload_file_v1_files_post(WireModel):
+    display_name: str | None = Field(default=None, alias='display_name')
     folder_id: str | None = Field(default=None, alias='folder_id')
     project_id: str | None = Field(default=None, alias='project_id')
     upload: str = Field(default=..., alias='upload')
@@ -2088,6 +2089,12 @@ class KnowledgeNoteCreate(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     parent_id: str | None = Field(default=None, alias='parent_id')
     title: str = Field(default='未命名文档', alias='title', min_length=1, max_length=240)
+
+class LibraryAssetImportIn(WireModel):
+    asset_ids: list[str] = Field(default=..., alias='asset_ids', min_length=1)
+    display_names: dict[str, str] | None = Field(default=None, alias='display_names')
+    folder_id: str | None = Field(default=None, alias='folder_id')
+    source_project_id: str = Field(default=..., alias='source_project_id')
 
 class LibraryFolderImportOut(WireModel):
     created_files: int = Field(default=..., alias='created_files', ge=0.0)
@@ -4424,6 +4431,7 @@ KnowledgeBaseIn.model_rebuild()
 KnowledgeBaseOut.model_rebuild()
 KnowledgeBasePut.model_rebuild()
 KnowledgeNoteCreate.model_rebuild()
+LibraryAssetImportIn.model_rebuild()
 LibraryFolderImportOut.model_rebuild()
 LibraryFolderImportSkippedOut.model_rebuild()
 LinkClipsOperation.model_rebuild()

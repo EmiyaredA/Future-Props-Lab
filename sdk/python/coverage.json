@@ -497,6 +497,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/file-library/asset-imports",
+    "sdk": "client.files.import_project_assets_to_library",
+    "document": "/docs.html?page=sdk-reference-files#import-project-assets-to-library",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/file-library/folder-archive-imports",
     "sdk": "client.files.import_library_folder_archive",
     "document": "/docs.html?page=sdk-reference-files#import-library-folder-archive",

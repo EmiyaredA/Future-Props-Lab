@@ -11,6 +11,7 @@ import {
   getFiles,
   getFolders,
   importFile,
+  importLibraryAssets,
   patchFolder,
   patchManagedFile,
   uploadManagedFile,
@@ -28,6 +29,7 @@ vi.mock("@features/files/api", async () => {
     getFiles: vi.fn(),
     getFolders: vi.fn(),
     importFile: vi.fn(),
+    importLibraryAssets: vi.fn(),
     patchFolder: vi.fn(),
     patchManagedFile: vi.fn(),
     uploadManagedFile: vi.fn(),
@@ -288,6 +290,15 @@ test("manages the shared library while importing from the library tab", async ()
   ).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "添加素材" }));
+  expect(
+    screen.getByRole("menuitem", { name: "上传本地文件" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("menuitem", { name: "从本项目选取" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("menuitem", { name: "从跨项目选取" }),
+  ).toBeInTheDocument();
   await user.click(screen.getByRole("menuitem", { name: "新建文件夹" }));
   expect(
     screen.getByRole("dialog", { name: "新建文件夹" }),
@@ -300,6 +311,50 @@ test("manages the shared library while importing from the library tab", async ()
   await waitFor(() =>
     expect(createFolder).toHaveBeenCalledWith("公共灵感", undefined, undefined),
   );
+});
+
+test("stages local library uploads so the display name can be edited", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getFolders).mockResolvedValue({ items: [] });
+  vi.mocked(getFiles).mockResolvedValue({ items: [] });
+  vi.mocked(uploadManagedFile).mockResolvedValue(libraryFile);
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <AssetBrowser
+        projectId="project-1"
+        importSource="library"
+        compact
+        sourceProjects={[{ id: "project-2", title: "其他项目" }]}
+      />
+    </QueryClientProvider>,
+  );
+  expect(await screen.findByText("文件管理中还没有文件")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "添加素材" }));
+  await user.click(screen.getByRole("menuitem", { name: "上传本地文件" }));
+  const image = new File(["png"], "poster.png", { type: "image/png" });
+  await user.upload(screen.getByLabelText("选择要上传的文件"), image);
+
+  expect(
+    await screen.findByRole("dialog", { name: "确认上传并改名" }),
+  ).toBeInTheDocument();
+  const nameInput = screen.getByRole("textbox", { name: /显示名称/ });
+  expect(nameInput).toHaveValue("poster");
+  await user.clear(nameInput);
+  await user.type(nameInput, "库内海报");
+  await user.click(screen.getByRole("button", { name: "确认添加（1）" }));
+  await waitFor(() =>
+    expect(uploadManagedFile).toHaveBeenCalledWith(
+      image,
+      undefined,
+      undefined,
+      "库内海报",
+    ),
+  );
+  expect(importLibraryAssets).not.toHaveBeenCalled();
 });
 
 test("uses the compact asset controls without losing upload and folder actions", async () => {

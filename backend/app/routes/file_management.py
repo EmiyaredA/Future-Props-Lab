@@ -26,6 +26,7 @@ from app.console.file_library import (
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.runtime.config import get_settings
 from app.schemas.files import (
+    LibraryAssetImportIn,
     LibraryFolderImportOut,
     StorageLayoutMigrationOut,
     StorageLayoutStatusOut,
@@ -150,6 +151,18 @@ async def import_library_folder_entries(
         raise archive_http_error(exc) from None
 
 
+@router.post("/file-library/asset-imports", response_model=VisualAssetListOut)
+async def import_project_assets_to_library(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    body: LibraryAssetImportIn,
+) -> VisualAssetListOut:
+    try:
+        return await _assets(session, workspace_id).import_project_assets_to_library(body)
+    except AssetError as exc:
+        raise asset_http_error(exc) from None
+
+
 @router.get("/file-folders", response_model=VisualAssetFolderListOut)
 async def list_file_folders(
     session: SessionDep,
@@ -234,10 +247,14 @@ async def upload_file(
     upload: Annotated[UploadFile, File()],
     project_id: Annotated[str | None, Form()] = None,
     folder_id: Annotated[str | None, Form()] = None,
+    display_name: Annotated[str | None, Form()] = None,
 ) -> VisualAssetOut:
     try:
         return await _assets(session, workspace_id).upload(
-            upload, project_id=project_id, folder_id=folder_id
+            upload,
+            project_id=project_id,
+            folder_id=folder_id,
+            display_name=display_name,
         )
     except AssetError as exc:
         raise asset_http_error(exc) from None

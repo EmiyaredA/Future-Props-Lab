@@ -14,6 +14,7 @@ export {
   getFolders,
   getStorageLayoutStatus,
   importFile,
+  importLibraryAssets,
   importLibraryFolderArchive,
   importLibraryFolderEntries,
   importManagedFiles,

@@ -5,12 +5,9 @@ import time
 
 from app.console.governance.desktop_agent import AgentError
 from app.models import (
-    AudioAnnotationProject,
     GalgameWorkshopProject,
     McpIntegration,
     SkillIntegration,
-    ThoughtKnowledgeBase,
-    ThoughtNote,
     ToolApiIntegration,
     VideoEditorProject,
     VisualWorkshopProject,
@@ -21,9 +18,6 @@ ROOTS = {
     "visual": VisualWorkshopProject,
     "galgame": GalgameWorkshopProject,
     "video": VideoEditorProject,
-    "annotation": AudioAnnotationProject,
-    "note": ThoughtNote,
-    "knowledge": ThoughtKnowledgeBase,
     "skill": SkillIntegration,
     "mcp": McpIntegration,
     "tool-api": ToolApiIntegration,

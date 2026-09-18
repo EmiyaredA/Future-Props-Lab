@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends
 
+from app.apps.audio_annotation.routes import router as audio_annotation_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
+from app.apps.thought_workshop.routes import conversion as thought_conversion
+from app.apps.thought_workshop.routes import router as thought_workshop_router
 from app.deps import require_studio_auth
-from app.routes import annotation_exports, image_crop, thought_conversion, video_frames
+from app.routes import image_crop, video_frames
 from app.routes.account_management import router as management_router
 from app.routes.accounts import router as accounts_router
-from app.routes.audio_annotation import router as audio_annotation_router
 from app.routes.demo_runtime import call_router as demo_call_router
 from app.routes.demo_runtime import router as demo_runtime_router
 from app.routes.desktop import router as desktop_router
@@ -28,7 +30,6 @@ from app.routes.models import (
 )
 from app.routes.platform_governance import router as platform_governance_router
 from app.routes.public_workspace import router as public_workspace_router
-from app.routes.thought_workshop import router as thought_workshop_router
 from app.routes.tool_navigation import router as tool_navigation_router
 from app.routes.video_editor import router as video_editor_router
 from app.routes.visual_assistant import router as visual_assistant_router
@@ -114,10 +115,6 @@ api_router.include_router(
 
 api_router.include_router(
     model_inference_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
-)
-
-api_router.include_router(
-    annotation_exports.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 
 api_router.include_router(

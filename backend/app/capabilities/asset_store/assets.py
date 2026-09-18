@@ -21,16 +21,17 @@ from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.policy import display_name_without_original_extension
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
 from app.models import (
-    AudioAnnotationProject,
     GalgameProjectAssetReference,
     VisualAsset,
     VisualAssetFolder,
     VisualAssistantMessageAsset,
     VisualProjectAssetReference,
 )
+from app.runtime.orm_base import Base
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 from app.schemas.files import (
+    LibraryAssetImportIn,
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
     VisualAssetFolderOut,
@@ -225,12 +226,12 @@ class VisualAssets(VisualAssetContext):
                 )
         global_ids = [item.id for item in assets if item.project_id is None]
         if global_ids:
-            audio_annotation = await self.session.scalar(
-                select(AudioAnnotationProject.id)
-                .where(AudioAnnotationProject.asset_id.in_(global_ids))
+            audio_projects = Base.metadata.tables.get("audio_annotation_projects")
+            if audio_projects is not None and await self.session.scalar(
+                select(audio_projects.c.id)
+                .where(audio_projects.c.asset_id.in_(global_ids))
                 .limit(1)
-            )
-            if audio_annotation:
+            ):
                 raise AssetError(
                     "文件夹内有音频正在被录音标注任务使用，请先删除相关任务",
                     code="asset_in_use",
@@ -359,6 +360,7 @@ class VisualAssets(VisualAssetContext):
         *,
         project_id: str | None,
         folder_id: str | None,
+        display_name: str | None = None,
     ) -> VisualAssetOut:
         if project_id:
             await self._project(project_id)
@@ -368,6 +370,7 @@ class VisualAssets(VisualAssetContext):
             workspace_id=self.workspace_id,
             visual_project_id=project_id,
             folder_id=folder_id,
+            display_name=display_name,
         )
         return asset_out(row)
 
@@ -418,12 +421,10 @@ class VisualAssets(VisualAssetContext):
                 status=409,
             )
         if row.project_id is None:
-            audio_annotation = await self.session.scalar(
-                select(AudioAnnotationProject.id)
-                .where(AudioAnnotationProject.asset_id == asset_id)
-                .limit(1)
-            )
-            if audio_annotation:
+            audio_projects = Base.metadata.tables.get("audio_annotation_projects")
+            if audio_projects is not None and await self.session.scalar(
+                select(audio_projects.c.id).where(audio_projects.c.asset_id == asset_id).limit(1)
+            ):
                 raise AssetError(
                     "音频正在被录音标注任务使用，请先删除相关任务",
                     code="asset_in_use",
@@ -622,6 +623,86 @@ class VisualAssets(VisualAssetContext):
                 path.unlink(missing_ok=True)
             raise AssetError(
                 "跨项目素材复制失败",
+                code="asset_import_failed",
+                status=500,
+            ) from exc
+
+    async def import_project_assets_to_library(
+        self, body: LibraryAssetImportIn
+    ) -> VisualAssetListOut:
+        await self._project(body.source_project_id)
+        await self._validate_folder_scope(body.folder_id, None)
+        rows = (
+            (
+                await self.session.execute(
+                    select(VisualAsset).where(VisualAsset.id.in_(body.asset_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        by_id = {row.id: row for row in rows}
+        if len(by_id) != len(body.asset_ids):
+            raise AssetError("部分来源素材不存在", code="not_found", status=404)
+        ordered = [by_id[asset_id] for asset_id in body.asset_ids]
+        if any(not is_visual_project_asset(row, body.source_project_id) for row in ordered):
+            raise AssetError("素材不属于所选来源项目", code="scope_mismatch")
+
+        copied_paths: list[Path] = []
+        imported_rows: list[VisualAsset] = []
+        try:
+            for source in ordered:
+                source_path = self.storage.path_for(source)
+                if not source_path.is_file():
+                    raise AssetError("来源素材文件不存在", code="file_missing", status=404)
+                storage_key = uuid4().hex
+                temp_path, final_path = self.storage.prepare_write(
+                    storage_key,
+                    visual_project_id=None,
+                    galgame_project_id=None,
+                    video_editor_project_id=None,
+                    workspace_id=self.workspace_id,
+                )
+                try:
+                    shutil.copyfile(source_path, temp_path)
+                    os.replace(temp_path, final_path)
+                finally:
+                    temp_path.unlink(missing_ok=True)
+                copied_paths.append(final_path)
+                override = body.display_names.get(source.id)
+                imported = VisualAsset(
+                    workspace_id=self.workspace_id,
+                    project_id=None,
+                    galgame_project_id=None,
+                    folder_id=body.folder_id,
+                    original_filename=source.original_filename,
+                    display_name=display_name_without_original_extension(
+                        override or source.display_name,
+                        source.original_filename,
+                    ),
+                    storage_key=storage_key,
+                    storage_version=TARGET_STORAGE_VERSION,
+                    media_kind=source.media_kind,
+                    mime_type=source.mime_type,
+                    byte_size=source.byte_size,
+                )
+                imported_rows.append(imported)
+                self.session.add(imported)
+            await self.session.commit()
+            for imported in imported_rows:
+                await self.session.refresh(imported)
+            return VisualAssetListOut(items=[asset_out(row) for row in imported_rows])
+        except AssetError:
+            await self.session.rollback()
+            for path in copied_paths:
+                path.unlink(missing_ok=True)
+            raise
+        except Exception as exc:
+            await self.session.rollback()
+            for path in copied_paths:
+                path.unlink(missing_ok=True)
+            raise AssetError(
+                "项目素材复制到公共库失败",
                 code="asset_import_failed",
                 status=500,
             ) from exc

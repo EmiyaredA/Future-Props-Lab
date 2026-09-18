@@ -47,6 +47,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("PATCH", "/v1/file-folders/{folder_id}"),
         ("POST", "/v1/file-library/folder-archive-imports"),
         ("POST", "/v1/file-library/folder-entry-imports"),
+        ("POST", "/v1/file-library/asset-imports"),
         ("POST", "/v1/file-storage/open-folder"),
         ("POST", "/v1/files"),
         ("POST", "/v1/files/svg/preview"),

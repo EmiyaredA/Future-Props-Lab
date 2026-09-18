@@ -18,7 +18,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：首个可整体删除/替换的后端 App 形状落地；反向依赖解法可复用到后续批次。
-- **代价与已知上限**：其余 App 仍暂留顶层；`models/defaults.py` 仍被 App models 引用；`DESKTOP_UI_ROOTS` 需在每迁出一个 App 时于 `orm.py` 登记。
+- **代价与已知上限**：`video_editor` / `visual_workshop` / `galgame_workshop` 与 `llm/` 仍暂留顶层；`audio_annotation` 与 `thought_workshop` 已按同套路迁入（见同日 Note）；`models/defaults.py` 仍被 App models 引用；`DESKTOP_UI_ROOTS` 需在每迁出一个 App 时于 `orm.py` 登记。
 
 ## Verification
 

@@ -21,6 +21,7 @@ import {
   exportLibraryFolderArchive,
   getFiles,
   getFolders,
+  importLibraryAssets,
   importLibraryFolderArchive,
   importLibraryFolderEntries,
   patchFolder,
@@ -30,6 +31,12 @@ import {
   type ManagedFile,
   type MediaKind,
 } from "@features/files/api";
+import {
+  type LibrarySourcePickerMode,
+  type LibraryStagingItem,
+  stageLocalFiles,
+  stageProjectFiles,
+} from "@features/files/LibraryUploadDialogs";
 import {
   type AssetViewMode,
   type FileEditor,
@@ -91,8 +98,15 @@ export function useAssetBrowserController({
   const [previewFile, setPreviewFile] = useState<ManagedFile>();
   const [editor, setEditor] = useState<FileEditor>(null);
   const [editorError, setEditorError] = useState("");
+  const [librarySourcePicker, setLibrarySourcePicker] =
+    useState<LibrarySourcePickerMode>();
+  const [libraryStaging, setLibraryStaging] = useState<LibraryStagingItem[]>(
+    [],
+  );
+  const [libraryStagingError, setLibraryStagingError] = useState("");
   const canManage = importSource !== "cross-project";
   const showImport = Boolean(importSource) && Boolean(projectId);
+  const libraryManage = importSource === "library";
   const browseAllCross = importSource === "cross-project" && !browseProjectId;
   const sourceReady =
     importSource !== "cross-project"
@@ -199,36 +213,43 @@ export function useAssetBrowserController({
     },
   });
   const upload = useMutation({
-    mutationFn: async (files: File[]) => {
+    mutationFn: async (
+      files: Array<{ file: File; displayName?: string }>,
+    ) => {
       let succeeded = 0;
       let failed = 0;
-      for (const [index, file] of files.entries()) {
+      for (const [index, item] of files.entries()) {
         setUploads((current) =>
-          current.map((item, itemIndex) =>
-            itemIndex === index ? { ...item, status: "uploading" } : item,
+          current.map((entry, itemIndex) =>
+            itemIndex === index ? { ...entry, status: "uploading" } : entry,
           ),
         );
         try {
-          await uploadManagedFile(file, sourceProjectId, folderId);
+          await uploadManagedFile(
+            item.file,
+            sourceProjectId,
+            folderId,
+            item.displayName,
+          );
           succeeded += 1;
           setUploads((current) =>
-            current.map((item, itemIndex) =>
+            current.map((entry, itemIndex) =>
               itemIndex === index
-                ? { ...item, status: "success", error: undefined }
-                : item,
+                ? { ...entry, status: "success", error: undefined }
+                : entry,
             ),
           );
         } catch (error) {
           failed += 1;
           setUploads((current) =>
-            current.map((item, itemIndex) =>
+            current.map((entry, itemIndex) =>
               itemIndex === index
                 ? {
-                    ...item,
+                    ...entry,
                     status: "error",
                     error: error instanceof Error ? error.message : "上传失败",
                   }
-                : item,
+                : entry,
             ),
           );
         }
@@ -435,6 +456,11 @@ export function useAssetBrowserController({
     if (!selectedFiles?.length || upload.isPending) return;
     const selected = Array.from(selectedFiles);
     setNotice("");
+    if (libraryManage) {
+      setLibraryStagingError("");
+      setLibraryStaging(stageLocalFiles(selected));
+      return;
+    }
     setUploads(
       selected.map((file, index) => ({
         id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
@@ -442,7 +468,92 @@ export function useAssetBrowserController({
         status: "queued",
       })),
     );
-    upload.mutate(selected);
+    upload.mutate(selected.map((file) => ({ file })));
+  };
+  const openLibrarySourcePicker = (mode: LibrarySourcePickerMode) => {
+    setCompactAddOpen(false);
+    setLibraryStagingError("");
+    setLibrarySourcePicker(mode);
+  };
+  const closeLibrarySourcePicker = () => setLibrarySourcePicker(undefined);
+  const closeLibraryStaging = () => {
+    if (libraryCommit.isPending) return;
+    setLibraryStaging([]);
+    setLibraryStagingError("");
+  };
+  const updateLibraryStagingName = (key: string, displayName: string) => {
+    setLibraryStaging((current) =>
+      current.map((item) =>
+        item.key === key ? { ...item, displayName } : item,
+      ),
+    );
+  };
+  const removeLibraryStagingItem = (key: string) => {
+    setLibraryStaging((current) => current.filter((item) => item.key !== key));
+  };
+  const acceptLibrarySourceSelection = (
+    files: ManagedFile[],
+    sourceId: string,
+  ) => {
+    setLibrarySourcePicker(undefined);
+    setLibraryStagingError("");
+    setLibraryStaging(stageProjectFiles(files, sourceId));
+  };
+  const libraryCommit = useMutation({
+    mutationFn: async (items: LibraryStagingItem[]) => {
+      const locals = items.filter(
+        (item): item is Extract<LibraryStagingItem, { kind: "local" }> =>
+          item.kind === "local",
+      );
+      const projects = items.filter(
+        (item): item is Extract<LibraryStagingItem, { kind: "project" }> =>
+          item.kind === "project",
+      );
+      for (const item of locals) {
+        await uploadManagedFile(
+          item.file,
+          undefined,
+          folderId,
+          item.displayName.trim(),
+        );
+      }
+      const bySource = new Map<string, Extract<LibraryStagingItem, { kind: "project" }>[]>();
+      for (const item of projects) {
+        const group = bySource.get(item.sourceProjectId) ?? [];
+        group.push(item);
+        bySource.set(item.sourceProjectId, group);
+      }
+      for (const [sourceId, group] of bySource) {
+        await importLibraryAssets({
+          sourceProjectId: sourceId,
+          assetIds: group.map((item) => item.asset.id),
+          folderId,
+          displayNames: Object.fromEntries(
+            group.map((item) => [item.asset.id, item.displayName.trim()]),
+          ),
+        });
+      }
+      return items.length;
+    },
+    onSuccess: (count) => {
+      setLibraryStaging([]);
+      setLibraryStagingError("");
+      setNotice(`已添加到总文件 ${count} 个文件`);
+      refresh();
+    },
+    onError: (error) => {
+      setLibraryStagingError(
+        error instanceof Error ? error.message : "添加到总文件失败",
+      );
+    },
+  });
+  const commitLibraryStaging = () => {
+    if (!libraryStaging.length || libraryCommit.isPending) return;
+    if (libraryStaging.some((item) => !item.displayName.trim())) {
+      setLibraryStagingError("请填写每个文件的显示名称");
+      return;
+    }
+    libraryCommit.mutate(libraryStaging);
   };
   const downloadFile = async (file: ManagedFile) => {
     try {
@@ -604,6 +715,7 @@ export function useAssetBrowserController({
     archiveTransfer,
     canManage,
     showImport,
+    libraryManage,
     importSource,
     browseAllCross,
     sourceReady,
@@ -613,6 +725,10 @@ export function useAssetBrowserController({
     path,
     completedUploads,
     moveTargetOptions,
+    librarySourcePicker,
+    libraryStaging,
+    libraryStagingError,
+    libraryCommit,
     setView,
     openEditor,
     closeEditor,
@@ -620,6 +736,13 @@ export function useAssetBrowserController({
     updateEditorTarget,
     submitEditor,
     uploadFiles,
+    openLibrarySourcePicker,
+    closeLibrarySourcePicker,
+    closeLibraryStaging,
+    updateLibraryStagingName,
+    removeLibraryStagingItem,
+    acceptLibrarySourceSelection,
+    commitLibraryStaging,
     downloadFile,
     exportFolderArchive,
     importZipArchive,

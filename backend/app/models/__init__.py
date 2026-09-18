@@ -6,11 +6,6 @@ from app.models.accounts import (
     WorkspaceInvitation,
     WorkspaceMembership,
 )
-from app.models.audio_annotation import (
-    AudioAnnotationDocument,
-    AudioAnnotationProject,
-    AudioAnnotationWaveform,
-)
 from app.models.call_log import LlmCallLog
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
 from app.models.galgame_workshop import (
@@ -48,11 +43,6 @@ from app.models.model_test_tools import (
     ModelTestTool,
     ModelTestToolCall,
 )
-from app.models.thought_workshop import (
-    ThoughtKnowledgeBase,
-    ThoughtNote,
-    ThoughtNoteAsset,
-)
 from app.models.tool_navigation import ToolNavigationItem
 from app.models.video_editor import (
     VideoEditorAssetMetadata,
@@ -75,14 +65,8 @@ from app.models.workspace import Workspace
 from app.runtime.orm_base import Base
 
 __all__ = [
-    "ThoughtNote",
-    "ThoughtNoteAsset",
-    "ThoughtKnowledgeBase",
     "Base",
     "AuthSession",
-    "AudioAnnotationDocument",
-    "AudioAnnotationProject",
-    "AudioAnnotationWaveform",
     "GalgameStoryDocument",
     "GalgameAnnotationImportTask",
     "GalgameAssetMetadata",

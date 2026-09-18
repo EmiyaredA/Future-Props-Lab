@@ -1022,6 +1022,23 @@ export interface paths {
         patch: operations["patch_file_folder_v1_file_folders__folder_id__patch"];
         trace?: never;
     };
+    "/v1/file-library/asset-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Project Assets To Library */
+        post: operations["import_project_assets_to_library_v1_file_library_asset_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/file-library/folder-archive-imports": {
         parameters: {
             query?: never;
@@ -5586,6 +5603,8 @@ export interface components {
         };
         /** Body_upload_file_v1_files_post */
         Body_upload_file_v1_files_post: {
+            /** Display Name */
+            display_name?: string | null;
             /** Folder Id */
             folder_id?: string | null;
             /** Project Id */
@@ -9919,6 +9938,19 @@ export interface components {
              * @default 未命名文档
              */
             title: string;
+        };
+        /** LibraryAssetImportIn */
+        LibraryAssetImportIn: {
+            /** Asset Ids */
+            asset_ids: string[];
+            /** Display Names */
+            display_names?: {
+                [key: string]: string;
+            };
+            /** Folder Id */
+            folder_id?: string | null;
+            /** Source Project Id */
+            source_project_id: string;
         };
         /** LibraryFolderImportOut */
         LibraryFolderImportOut: {
@@ -17020,6 +17052,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualAssetFolderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_project_assets_to_library_v1_file_library_asset_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryAssetImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssetListOut"];
                 };
             };
             /** @description Validation Error */

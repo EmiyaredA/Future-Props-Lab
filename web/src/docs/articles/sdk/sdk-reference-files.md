@@ -20,6 +20,7 @@
 | [patch_file_folder](#patch-file-folder) | `PATCH /v1/file-folders/{folder_id}` |
 | [patch_file](#patch-file) | `PATCH /v1/files/{asset_id}` |
 | [create_file_folder](#create-file-folder) | `POST /v1/file-folders` |
+| [import_project_assets_to_library](#import-project-assets-to-library) | `POST /v1/file-library/asset-imports` |
 | [import_library_folder_archive](#import-library-folder-archive) | `POST /v1/file-library/folder-archive-imports` |
 | [import_library_folder_entries](#import-library-folder-entries) | `POST /v1/file-library/folder-entry-imports` |
 | [migrate_storage_layout](#migrate-storage-layout) | `POST /v1/file-storage/layout/migrate` |
@@ -260,6 +261,29 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## import_project_assets_to_library {#import-project-assets-to-library}
+
+`client.files.import_project_assets_to_library(...)`
+
+**接口**：`POST /v1/file-library/asset-imports`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | LibraryAssetImportIn | 是 |
+| `body.asset_ids` | 请求体 | array | 是 |
+| `body.display_names` | 请求体 | object | 否 |
+| `body.folder_id` | 请求体 | string / null | 否 |
+| `body.source_project_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VisualAssetListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## import_library_folder_archive {#import-library-folder-archive}
 
 `client.files.import_library_folder_archive(...)`
@@ -357,6 +381,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
 | `body` | multipart/form-data | Body_upload_file_v1_files_post | 是 |
+| `body.display_name` | 请求体 | string / null | 否 |
 | `body.folder_id` | 请求体 | string / null | 否 |
 | `body.project_id` | 请求体 | string / null | 否 |
 | `body.upload` | 请求体 | string | 是 |
