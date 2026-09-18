@@ -14,12 +14,12 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.runtime.config import Settings
-from app.runtime.time import iso_utc, utc_now
-from app.schemas.project_snapshots import (
+from app.capabilities.asset_store.schemas.project_snapshots import (
     ProjectSnapshotAssetManifest,
     ProjectSnapshotManifest,
 )
+from app.runtime.config import Settings
+from app.runtime.time import iso_utc, utc_now
 
 FORMAT_NAME = "future-props-project-snapshot"
 FORMAT_VERSION = 1

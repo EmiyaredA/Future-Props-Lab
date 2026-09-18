@@ -21,9 +21,7 @@ from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,
 )
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 

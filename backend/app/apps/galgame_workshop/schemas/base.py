@@ -28,7 +28,7 @@ from app.apps.galgame_workshop.schemas.project_content import (
 from app.apps.galgame_workshop.schemas.project_content import (
     GalgameStoryVariable as GalgameStoryVariable,
 )
-from app.schemas.project_snapshots import ProjectSnapshotImportWarning
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
 
 GalgameWorkshopProjectStatus = Literal["draft", "completed"]
 

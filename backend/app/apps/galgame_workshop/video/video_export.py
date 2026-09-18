@@ -44,9 +44,7 @@ from app.apps.galgame_workshop.video.video_lip_sync import prepare_audio_envelop
 from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings, get_settings
 from app.runtime.time import iso_utc, utc_now
 

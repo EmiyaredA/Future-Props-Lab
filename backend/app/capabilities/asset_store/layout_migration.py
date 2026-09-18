@@ -10,15 +10,15 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.digests import sha256_file
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.models import VisualAsset
-from app.orm import LAYOUT_PROJECT_MODELS
-from app.runtime.config import Settings
-from app.schemas.files import (
+from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.schemas.files import (
     StorageLayoutIssueOut,
     StorageLayoutMigrationOut,
     StorageLayoutStatusOut,
 )
+from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from app.orm import LAYOUT_PROJECT_MODELS
+from app.runtime.config import Settings
 
 _migration_lock = asyncio.Lock()
 

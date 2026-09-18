@@ -30,7 +30,7 @@ from app.capabilities.agents.harness import (
     ToolBinding,
     ToolExecutionContext,
 )
-from app.models import (
+from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )

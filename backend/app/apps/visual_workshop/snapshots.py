@@ -35,14 +35,14 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.models import (
+from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
     VisualProjectAssetReference,
 )
 from app.runtime.config import Settings
 from app.runtime.ids import new_id
-from app.schemas.project_snapshots import ProjectSnapshotImportWarning
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
 
 
 def _copy_title(title: str) -> str:

@@ -13,7 +13,7 @@ from sqlalchemy import select
 from app.capabilities.asset_store.library import AssetLibrary
 from app.main import app
 from app.apps.video_editor.models import VideoEditorTask
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.apps.video_editor import segment_files

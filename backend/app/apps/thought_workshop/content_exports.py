@@ -14,7 +14,7 @@ from app.apps.thought_workshop.notes import Notes, note_out
 from app.apps.thought_workshop.schemas.conversion import ThoughtMarkdownOut
 from app.apps.thought_workshop.schemas.document import file_ids
 from app.capabilities.asset_store.storage import AssetStorage
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
 

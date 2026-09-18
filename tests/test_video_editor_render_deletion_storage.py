@@ -16,9 +16,7 @@ from app.apps.video_editor.models import (
 from app.console.models import (
     Workspace,
 )
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 

@@ -21,9 +21,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorTimelineDocument,
     VideoEditorTimelineOut,
 )
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 

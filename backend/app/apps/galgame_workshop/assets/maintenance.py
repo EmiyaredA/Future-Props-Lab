@@ -9,7 +9,7 @@ from app.apps.galgame_workshop.schemas import (
 )
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from app.capabilities.asset_store import AssetError
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 
 
 class GalgameMaintenance:

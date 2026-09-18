@@ -32,9 +32,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStoryRouteReportOut,
 )
 from app.apps.galgame_workshop.story.story_flow import STORY_TERMINATOR_TYPES
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 

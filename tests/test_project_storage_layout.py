@@ -11,7 +11,7 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
 from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.apps.galgame_workshop.models import GalgameWorkshopProject
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 

@@ -25,7 +25,7 @@ from app.console.file_library import (
 )
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.runtime.config import get_settings
-from app.schemas.files import (
+from app.capabilities.asset_store.schemas.files import (
     LibraryAssetImportIn,
     LibraryFolderImportOut,
     StorageLayoutMigrationOut,
@@ -40,7 +40,7 @@ from app.schemas.files import (
     VisualAssetOut,
     VisualAssetPatchIn,
 )
-from app.schemas.project_snapshots import ProjectFolderOpenOut
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter(tags=["file-management"])
 

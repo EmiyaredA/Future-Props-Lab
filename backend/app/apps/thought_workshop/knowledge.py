@@ -15,7 +15,7 @@ from app.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBasePut,
 )
 from app.models.defaults import utc_now
-from app.models.files import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.revisions import RevisionConflictError
 
 

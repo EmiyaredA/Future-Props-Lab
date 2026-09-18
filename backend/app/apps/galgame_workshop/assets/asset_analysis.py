@@ -24,7 +24,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStoryVideoBlock,
 )
 from app.apps.galgame_workshop.story.story import normalize_story_document
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 
 
 class GalgameAssetAnalysisMixin:

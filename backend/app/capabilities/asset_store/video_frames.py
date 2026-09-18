@@ -7,10 +7,10 @@ from pathlib import Path
 from sqlalchemy import select
 
 from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.image_grid import render_image_grid
 from app.capabilities.media_rendering.video_frames import extract_frame
-from app.models import VisualAsset
 from app.runtime.config import get_settings
 
 

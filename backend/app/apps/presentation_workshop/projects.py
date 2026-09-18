@@ -15,7 +15,7 @@ from app.apps.presentation_workshop.schemas.document import (
 from app.capabilities.asset_store import AssetStorage
 from app.capabilities.asset_store.svg import normalize_svg
 from app.models.defaults import utc_now
-from app.models.files import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (

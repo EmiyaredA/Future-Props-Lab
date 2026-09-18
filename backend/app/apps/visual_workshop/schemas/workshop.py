@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.schemas.files import (
+from app.capabilities.asset_store.schemas.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
     VisualAssetFolderOut,
@@ -22,7 +22,7 @@ from app.llm.schemas.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
-from app.schemas.project_snapshots import ProjectSnapshotImportWarning
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
 
 __all__ = [
     "AudioGenerationTaskCreateIn",

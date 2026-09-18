@@ -31,9 +31,7 @@ from app.llm.models import (
 )
 from app.llm.playground.generation import ACTIVE_GENERATION_STATUSES
 from app.llm.providers.temporary_media import TemporaryMediaError
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner

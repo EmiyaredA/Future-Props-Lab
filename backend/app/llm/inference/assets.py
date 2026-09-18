@@ -9,7 +9,7 @@ from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.policy import ALLOWED_FILES, looks_like, validate_file_structure
 from app.llm.models.model_inference import ModelInferenceAsset
 from app.llm.schemas.model_inference import InferenceAssetOut
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 
 

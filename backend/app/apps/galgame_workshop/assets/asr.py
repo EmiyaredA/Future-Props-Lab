@@ -39,9 +39,7 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.orm import bind_workspace
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret

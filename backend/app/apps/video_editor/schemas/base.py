@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.schemas.project_snapshots import ProjectSnapshotImportWarning
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
 
 VideoEditorPreset = Literal["720p30", "1080p30", "720p60", "1080p60"]
 VideoEditorTaskStatus = Literal["queued", "running", "completed", "failed", "cancelled"]

@@ -15,7 +15,7 @@ from app.capabilities.media_rendering.contracts import RenderCaptureFrame, Rende
 from app.capabilities.media_rendering.evaluator import timeline_duration_us
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
 

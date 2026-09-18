@@ -31,9 +31,7 @@ from app.llm.generation_runtime import (
     upload_temporary_reference,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.orm import bind_workspace
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal

@@ -8,7 +8,7 @@ from app.console.governance.service import AccountError
 from app.console.models import (
     Workspace,
 )
-from app.models import (
+from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )

@@ -31,9 +31,7 @@ from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.storage import AssetStorage
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.orm import bind_workspace, require_workspace_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal

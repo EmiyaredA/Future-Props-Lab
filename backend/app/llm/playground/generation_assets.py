@@ -21,7 +21,7 @@ from app.llm.schemas.model_test import (
     ModelTestGenerationAssetListOut,
     ModelTestGenerationAssetOut,
 )
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings, get_settings
 from app.runtime.time import iso_utc, utc_now
 

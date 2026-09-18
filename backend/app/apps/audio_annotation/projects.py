@@ -33,9 +33,7 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.models import (
     ModelTestTranscriptionTask,
 )
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.ids import new_id
 from app.runtime.operation_receipts import forget

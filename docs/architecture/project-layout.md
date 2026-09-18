@@ -18,16 +18,16 @@ Future-Props-Lab/
 │   ├── api.py         # `/v1` router 装配入口
 │   ├── orm.py         # mapper 聚合与 Workspace 租户登记
 │   ├── runtime/       # 配置、数据库、CAS/轮询原语与 ORM Base（无业务语义）
-│   ├── capabilities/  # 有契约的共享能力：identity、asset_store（含媒体 routes/schemas）、agents、media_rendering、transcription
+│   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
 │   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具收藏与最近使用；自有 models/schemas/routes
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
 │   ├── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
-│   ├── models/        # 共享残留：VisualAsset*、project_operations、defaults（ID/时间工厂）
+│   ├── models/        # 共享残留：project_operations、defaults（ID/时间工厂）
 │   ├── routes/        # 已清空业务协议；仅保留空包占位
-│   └── schemas/       # 尚未迁出的共享 Pydantic 契约（files、project_*、transcription 等）
+│   └── schemas/       # 尚未迁出的共享 Pydantic 契约（project_operations、transcription）
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本

@@ -18,7 +18,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：console 自持 ORM+协议；顶层 models 缩小到真正共享形状。
-- **代价与已知上限**：`VisualAsset*` 与 `schemas/files` 仍在顶层；业务包/llm 可依赖 `app.console.models`。
+- **代价与已知上限**：`defaults` / `project_operations*` / `transcription` 仍在顶层；VisualAsset* 与 files 契约已收拢（见 `2026-09-18-asset-store-files-vertical-slice.md`）。
 
 ## Verification
 

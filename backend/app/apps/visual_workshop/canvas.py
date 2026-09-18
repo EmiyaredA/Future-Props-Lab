@@ -13,7 +13,7 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentPutIn,
     VisualCanvasNode,
 )
-from app.models import (
+from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )

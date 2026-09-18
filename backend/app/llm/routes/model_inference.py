@@ -27,7 +27,7 @@ from app.llm.schemas.model_inference import (
     InferenceTextOut,
 )
 from app.runtime.operation_receipts import OperationError
-from app.schemas.files import VisualAssetOut
+from app.capabilities.asset_store.schemas.files import VisualAssetOut
 
 router = APIRouter(prefix="/model-inference", tags=["model-inference"])
 

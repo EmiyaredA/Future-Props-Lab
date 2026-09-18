@@ -7,8 +7,8 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy import select
 
 from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.models import VisualAsset
 from app.runtime.config import get_settings
 
 

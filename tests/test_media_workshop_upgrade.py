@@ -23,9 +23,7 @@ from app.apps.video_editor.models import (
 from app.apps.visual_workshop.models import (
     VisualWorkshopProject,
 )
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
 

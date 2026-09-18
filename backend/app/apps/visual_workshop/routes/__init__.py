@@ -35,14 +35,14 @@ from app.capabilities.asset_store import (
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
-from app.schemas.files import (
+from app.capabilities.asset_store.schemas.files import (
     VisualAssetImportIn,
     VisualAssetListOut,
     VisualAssetOut,
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
-from app.schemas.project_snapshots import ProjectFolderOpenOut
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
 

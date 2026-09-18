@@ -39,12 +39,10 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.models import (
-    VisualAsset,
-)
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings
 from app.runtime.ids import new_id
-from app.schemas.project_snapshots import ProjectSnapshotImportWarning
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
 
 VALID_CATEGORIES = {
     "character",

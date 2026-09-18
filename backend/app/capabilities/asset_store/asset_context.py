@@ -2,8 +2,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
+from app.capabilities.asset_store.models import (
+    VisualAsset,
+    VisualAssetFolder,
+)
 from app.capabilities.asset_store.storage import AssetStorage
-from app.models import VisualAsset, VisualAssetFolder
 from app.runtime.config import Settings
 from app.runtime.orm_base import Base
 

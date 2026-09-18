@@ -28,7 +28,7 @@ from app.apps.thought_workshop.schemas.workshop import (
 )
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.models.defaults import utc_now
-from app.models.files import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.operation_receipts import forget
 from app.runtime.revisions import RevisionConflictError
 

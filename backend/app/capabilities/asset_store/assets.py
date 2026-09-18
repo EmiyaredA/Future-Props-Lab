@@ -18,17 +18,13 @@ from app.capabilities.asset_store.asset_scope import (
 from app.capabilities.asset_store.document_references import protect_document_references
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.policy import display_name_without_original_extension
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
-from app.models import (
+from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
     VisualProjectAssetReference,
 )
-from app.runtime.orm_base import Base
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import utc_now
-from app.schemas.files import (
+from app.capabilities.asset_store.policy import display_name_without_original_extension
+from app.capabilities.asset_store.schemas.files import (
     LibraryAssetImportIn,
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
@@ -41,6 +37,10 @@ from app.schemas.files import (
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
+from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
+from app.runtime.orm_base import Base
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import utc_now
 
 MAX_FOLDER_DEPTH = 5
 

@@ -1,7 +1,11 @@
+from app.capabilities.asset_store.models import (
+    VisualAsset,
+    VisualAssetFolder,
+    VisualProjectAssetReference,
+)
 from app.capabilities.asset_store.policy import display_name_without_original_extension
-from app.models import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
+from app.capabilities.asset_store.schemas.files import VisualAssetFolderOut, VisualAssetOut
 from app.runtime.time import iso_utc
-from app.schemas.files import VisualAssetFolderOut, VisualAssetOut
 
 
 def folder_out(row: VisualAssetFolder) -> VisualAssetFolderOut:

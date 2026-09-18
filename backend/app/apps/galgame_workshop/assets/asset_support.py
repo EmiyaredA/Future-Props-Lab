@@ -14,7 +14,7 @@ except ImportError:  # pragma: no cover - dependency is required in production
 
 from app.apps.galgame_workshop.models import GalgameAssetMetadata
 from app.apps.galgame_workshop.schemas import GalgameProjectAssetOut
-from app.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.time import iso_utc
 
 CATEGORY_DIRECTORIES = {

@@ -38,7 +38,7 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.models import (
+from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )

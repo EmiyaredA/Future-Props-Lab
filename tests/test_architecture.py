@@ -531,8 +531,8 @@ def test_account_service_does_not_own_catalog_provisioning() -> None:
 def test_public_files_have_independent_ownership() -> None:
     required = (
         BACKEND_APP / "capabilities" / "asset_store" / "assets.py",
-        BACKEND_APP / "models" / "files.py",
-        BACKEND_APP / "schemas" / "files.py",
+        BACKEND_APP / "capabilities" / "asset_store" / "models.py",
+        BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "files.py",
     )
     assert all(path.is_file() for path in required), (
         "公共文件能力必须由 capabilities/asset_store 拥有"
