@@ -24,7 +24,7 @@ from app.integrations.skills.archive import SkillArchiveStorage
 from app.integrations.skills.catalog import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
 from app.main import app
-from app.models import (
+from app.integrations.models import (
     IntegrationCheck,
     McpDiscoveredTool,
     McpIntegration,
@@ -36,7 +36,7 @@ from app.orm import bind_workspace
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.outbound_urls import require_safe_integration_http_url
-from app.schemas.integrations import McpCreateIn, ToolApiCreateIn
+from app.integrations.schemas import McpCreateIn, ToolApiCreateIn
 
 
 async def _clear_integrations() -> None:

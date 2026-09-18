@@ -4,17 +4,9 @@ import secrets
 import time
 
 from app.console.governance.desktop_agent import AgentError
-from app.models import (
-    McpIntegration,
-    SkillIntegration,
-    ToolApiIntegration,
-)
 from app.orm import DESKTOP_UI_ROOTS
 
 ROOTS = {
-    "skill": SkillIntegration,
-    "mcp": McpIntegration,
-    "tool-api": ToolApiIntegration,
     **DESKTOP_UI_ROOTS,
 }
 

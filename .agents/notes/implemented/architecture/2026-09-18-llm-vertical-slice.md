@@ -19,7 +19,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：llm 可整体审视/替换横向契约；顶层 models/routes/schemas 继续缩小。
-- **代价与已知上限**：`integrations`、`demo_runtime`、`tool_navigation` 与 console 顶层 routes 仍暂留；Web features 重排未做。
+- **代价与已知上限**：`integrations`、`demo_runtime`、`tool_navigation` 已按同套路收拢（见 `2026-09-18-integrations-toolnav-demo-vertical-slice.md`）；console 顶层 routes 仍暂留；Web features 重排未做。
 
 ## Verification
 

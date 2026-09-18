@@ -12,8 +12,10 @@ import {
   deleteModelTestTranscriptionTask,
   getLog,
   getLogs,
+  getModelTestConversation,
   getModelTestTranscriptionTasks,
   patchModelTestConversation,
+  streamModelTest,
   uploadModelTestTranscription,
 } from "@features/models/api";
 
@@ -631,6 +633,91 @@ test("renders persistent model test workspace with safe markdown", async () => {
   });
   expect(container.querySelector("select")).toBeNull();
   expect(container.querySelector("img")).toBeNull();
+});
+
+test("chat scroll area is scrollable and sticks to the bottom while streaming", async () => {
+  let detail = await vi.mocked(getModelTestConversation)();
+  vi.mocked(getModelTestConversation).mockImplementation(async () => detail);
+  vi.mocked(streamModelTest).mockImplementation(
+    async (_id, _body, _regenerate, _signal, onEvent) => {
+      detail = {
+        ...detail,
+        revision: detail.revision + 1,
+        messages: [
+          ...detail.messages,
+          {
+            id: "msg-user",
+            turn_id: "t-stream",
+            role: "user",
+            content: "跟滚测试",
+            model_slug: null,
+            status: "completed",
+            error_message: null,
+            created_at: "2026-08-03T00:01:00Z",
+          },
+          {
+            id: "msg-stream",
+            turn_id: "t-stream",
+            role: "assistant",
+            content: "",
+            model_slug: "model-x",
+            status: "pending",
+            error_message: null,
+            created_at: "2026-08-03T00:01:01Z",
+          },
+        ],
+      };
+      onEvent({
+        type: "start",
+        schema_version: 2,
+        sequence: 0,
+        payload: { assistant_message_id: "msg-stream" },
+      });
+      onEvent({
+        type: "delta",
+        schema_version: 2,
+        sequence: 1,
+        payload: { text: "第一段输出" },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      onEvent({
+        type: "delta",
+        schema_version: 2,
+        sequence: 2,
+        payload: { text: "第二段输出" },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    },
+  );
+
+  const user = userEvent.setup();
+  const { container } = renderWithQuery(<ModelTestPage />);
+  expect(await screen.findByText("安全 Markdown")).toBeInTheDocument();
+
+  const scroll = container.querySelector(".chat-scroll");
+  expect(scroll).toBeInstanceOf(HTMLDivElement);
+  expect(["auto", "scroll"]).toContain(getComputedStyle(scroll!).overflowY);
+
+  Object.defineProperty(scroll, "scrollHeight", {
+    configurable: true,
+    get: () => 2400,
+  });
+  Object.defineProperty(scroll, "clientHeight", {
+    configurable: true,
+    get: () => 400,
+  });
+  (scroll as HTMLDivElement).scrollTop = 0;
+
+  await user.type(
+    screen.getByPlaceholderText("输入要测试的问题"),
+    "跟滚测试",
+  );
+  await user.click(screen.getByRole("button", { name: "发送" }));
+
+  await waitFor(() => {
+    expect(screen.getByText(/第一段输出/)).toBeInTheDocument();
+    expect((scroll as HTMLDivElement).scrollTop).toBe(2400);
+  });
 });
 
 test("switches the shared model selector to an image generation test", async () => {

@@ -9,7 +9,10 @@ from app.apps.video_editor.routes import router as video_editor_router
 from app.apps.visual_workshop.routes import router as visual_workshop_router
 from app.apps.visual_workshop.routes.assistant import router as visual_assistant_router
 from app.apps.visual_workshop.routes.generation import router as visual_generation_router
+from app.demo_runtime.routes import call_router as demo_call_router
+from app.demo_runtime.routes import router as demo_runtime_router
 from app.deps import require_studio_auth
+from app.integrations.routes import router as integrations_router
 from app.llm.routes.model_capacity import ModelCapacity
 from app.llm.routes.model_inference import router as model_inference_router
 from app.llm.routes.model_templates import router as model_templates_router
@@ -26,17 +29,14 @@ from app.llm.routes.models import (
 from app.routes import image_crop, video_frames
 from app.routes.account_management import router as management_router
 from app.routes.accounts import router as accounts_router
-from app.routes.demo_runtime import call_router as demo_call_router
-from app.routes.demo_runtime import router as demo_runtime_router
 from app.routes.desktop import router as desktop_router
 from app.routes.desktop_agent import router as desktop_agent_router
 from app.routes.file_management import router as file_management_router
-from app.routes.integrations import router as integrations_router
 from app.routes.platform_governance import router as platform_governance_router
 from app.routes.public_workspace import router as public_workspace_router
-from app.routes.tool_navigation import router as tool_navigation_router
 from app.routes.workspaces import invitation_router
 from app.routes.workspaces import router as workspaces_router
+from app.tool_navigation.routes import router as tool_navigation_router
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(desktop_router)

@@ -52,6 +52,14 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.integrations.models import (
+    IntegrationCheck,
+    McpDiscoveredTool,
+    McpIntegration,
+    SkillIntegration,
+    SkillVersion,
+    ToolApiIntegration,
+)
 from app.llm.models import (
     LlmCallLog,
     ModelCatalogState,
@@ -66,16 +74,12 @@ from app.llm.models import (
     ModelTestTranscriptionTask,
 )
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
-from app.models import (
-    IntegrationCheck,
-    McpIntegration,
-    SkillIntegration,
-    ToolApiIntegration,
-    ToolNavigationItem,
-)
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
 from app.models.project_operations import ProjectOperationReceipt
 from app.runtime.orm_base import Base
+from app.tool_navigation.models import (
+    ToolNavigationItem,
+)
 
 # Catalog types for capabilities that must not import app.llm.
 CATALOG_MODELS: dict[str, type] = {
@@ -88,8 +92,11 @@ DESKTOP_UI_ROOTS: dict[str, type] = {
     "annotation": AudioAnnotationProject,
     "galgame": GalgameWorkshopProject,
     "knowledge": ThoughtKnowledgeBase,
+    "mcp": McpIntegration,
     "note": ThoughtNote,
     "presentation": PresentationProject,
+    "skill": SkillIntegration,
+    "tool-api": ToolApiIntegration,
     "video": VideoEditorProject,
     "visual": VisualWorkshopProject,
 }
@@ -145,6 +152,8 @@ _ = (
     GalgameProjectAssetReference,
     GalgameStoryDocument,
     GalgameStorySnapshot,
+    McpDiscoveredTool,
+    SkillVersion,
 )
 
 TENANT_MODELS = (

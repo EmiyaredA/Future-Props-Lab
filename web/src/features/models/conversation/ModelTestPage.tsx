@@ -101,6 +101,7 @@ export function ModelTestPage({
   const abortRef = useRef<AbortController | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const autoCreated = useRef(Boolean(initialModelId));
 
   const availableModels = useMemo(
@@ -215,6 +216,13 @@ export function ModelTestPage({
       setStoppedPreview(null);
     }
   }, [conversation, stoppedPreview]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      const scroll = chatScrollRef.current;
+      if (scroll) scroll.scrollTop = scroll.scrollHeight;
+    });
+  }, [activeId, conversation?.messages, streamedContent]);
 
   const updateLocal = (next: ModelTestConversation) => {
     queryClient.setQueryData(modelQueryKeys.conversation(next.id), next);
@@ -579,7 +587,7 @@ export function ModelTestPage({
                   <Trash2 aria-hidden />
                 </button>
               </div>
-              <div className="chat-scroll">
+              <div className="chat-scroll" ref={chatScrollRef}>
                 {visibleMessages.length ? (
                   visibleMessages.map((message) => {
                     const locallyStopped =

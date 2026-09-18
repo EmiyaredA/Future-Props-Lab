@@ -16,9 +16,7 @@ from app.integrations.common import (
 )
 from app.integrations.mcp import McpCatalog
 from app.integrations.projections import safe_validation_catalog
-from app.integrations.skills import SkillCatalog
-from app.integrations.tool_apis import ToolApiCatalog
-from app.schemas.integrations import (
+from app.integrations.schemas import (
     DeleteOut,
     McpCatalogOut,
     McpCreateIn,
@@ -38,6 +36,8 @@ from app.schemas.integrations import (
     ToolApiValidateIn,
     ToolApiValidationOut,
 )
+from app.integrations.skills import SkillCatalog
+from app.integrations.tool_apis import ToolApiCatalog
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 

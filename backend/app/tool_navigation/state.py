@@ -4,9 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import ToolNavigationItem
 from app.runtime.time import iso_utc, utc_now
-from app.schemas.tool_navigation import ToolNavigationItemOut, ToolNavigationStateOut
+from app.tool_navigation.models import ToolNavigationItem
+from app.tool_navigation.schemas import ToolNavigationItemOut, ToolNavigationStateOut
 
 
 def _item_out(row: ToolNavigationItem) -> ToolNavigationItemOut:

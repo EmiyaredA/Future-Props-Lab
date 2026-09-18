@@ -19,14 +19,8 @@ from app.integrations.common import (
     IntegrationNotFoundError,
     redact_sensitive,
 )
-from app.models import IntegrationCheck, ToolApiIntegration
-from app.orm import require_workspace_id
-from app.runtime.credentials import decrypt_secret, encrypt_secret
-from app.runtime.outbound_urls import require_safe_integration_http_url
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.secret_hints import encrypted_secret_hint
-from app.runtime.time import iso_utc, utc_now
-from app.schemas.integrations import (
+from app.integrations.models import IntegrationCheck, ToolApiIntegration
+from app.integrations.schemas import (
     IntegrationOverviewOut,
     ToolApiCatalogOut,
     ToolApiCreateIn,
@@ -34,6 +28,12 @@ from app.schemas.integrations import (
     ToolApiUpdateIn,
     ToolApiValidationOut,
 )
+from app.orm import require_workspace_id
+from app.runtime.credentials import decrypt_secret, encrypt_secret
+from app.runtime.outbound_urls import require_safe_integration_http_url
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.secret_hints import encrypted_secret_hint
+from app.runtime.time import iso_utc, utc_now
 
 PLACEHOLDER = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
 RESPONSE_LIMIT = 1024 * 1024

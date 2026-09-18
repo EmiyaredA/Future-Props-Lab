@@ -12,7 +12,9 @@
   min-height: 0;
   flex: 1;
   display: grid;
-  grid-template-columns: 270px minmax(520px, 1fr) 360px;
+  /* Prefer fixed side rails, but never force a min wider than the shell main pane
+     (viewport media queries cannot see the ~300px sidebar + gutters). */
+  grid-template-columns: minmax(0, 270px) minmax(0, 1fr) minmax(0, 360px);
   overflow: hidden;
   background: var(--surface);
 }
@@ -36,6 +38,7 @@
 }
 
 .generation-test-settings {
+  overflow-x: hidden;
   border-left: 1px solid var(--border);
 }
 
@@ -440,16 +443,19 @@
 }
 
 .generation-test-settings form {
+  min-width: 0;
   min-height: 0;
   padding: 16px;
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 15px;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
 .generation-test-settings form > label {
+  min-width: 0;
   display: grid;
   gap: 7px;
   color: var(--text);

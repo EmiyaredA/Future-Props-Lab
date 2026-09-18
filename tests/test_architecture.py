@@ -70,8 +70,17 @@ ROOT_PROBE_PATHS = {"/health", "/ready"}
 
 
 def _backend_route_files() -> list[Path]:
-    roots = [BACKEND_APP / "routes", *(BACKEND_APP / "apps").glob("*/routes")]
-    return sorted(path for root in roots if root.is_dir() for path in _python_files(root))
+    roots = [
+        BACKEND_APP / "routes",
+        BACKEND_APP / "llm" / "routes",
+        *(BACKEND_APP / "apps").glob("*/routes"),
+    ]
+    files = [path for root in roots if root.is_dir() for path in _python_files(root)]
+    for package in ("integrations", "tool_navigation", "demo_runtime"):
+        candidate = BACKEND_APP / package / "routes.py"
+        if candidate.is_file():
+            files.append(candidate)
+    return sorted(files)
 
 
 FROM_IMPORT_PATTERN = re.compile(r"\bfrom\s+[\"']([^\"']+)[\"']")
@@ -298,6 +307,9 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
     for path in _python_files(BACKEND_APP):
         if any(_is_within(path, root) for root in route_roots if root.is_dir()):
             continue
+        # Package-owned single-file route adapters (integrations / tool_navigation / demo_runtime).
+        if path.name == "routes.py" and path.parent.parent == BACKEND_APP:
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if not isinstance(node, ast.ImportFrom) or node.module != "fastapi":
@@ -410,8 +422,10 @@ def test_backend_production_packages_have_no_dependency_cycles() -> None:
     for package in packages:
         for path in _python_files(BACKEND_APP / package):
             # Protocol adapters may call into peer packages; they used to live in the
-            # exempted top-level routes/ tree. Ignore the same role under package routes/.
-            if "routes" in path.relative_to(BACKEND_APP / package).parts:
+            # exempted top-level routes/ tree. Ignore the same role under package routes/
+            # directories and package-root routes.py files.
+            rel = path.relative_to(BACKEND_APP / package)
+            if "routes" in rel.parts or rel.name == "routes.py":
                 continue
             for module in _python_imports(path):
                 parts = module.split(".")
@@ -683,6 +697,31 @@ def test_llm_owns_models_schemas_and_routes() -> None:
     assert not (BACKEND_APP / "routes" / "model_capacity.py").exists()
 
 
+def test_integrations_owns_models_schemas_and_routes() -> None:
+    assert (BACKEND_APP / "integrations" / "models.py").is_file()
+    assert (BACKEND_APP / "integrations" / "schemas.py").is_file()
+    assert (BACKEND_APP / "integrations" / "routes.py").is_file()
+    assert not (BACKEND_APP / "models" / "integrations.py").exists()
+    assert not (BACKEND_APP / "schemas" / "integrations.py").exists()
+    assert not (BACKEND_APP / "routes" / "integrations.py").exists()
+
+
+def test_tool_navigation_owns_models_schemas_and_routes() -> None:
+    assert (BACKEND_APP / "tool_navigation" / "models.py").is_file()
+    assert (BACKEND_APP / "tool_navigation" / "schemas.py").is_file()
+    assert (BACKEND_APP / "tool_navigation" / "routes.py").is_file()
+    assert not (BACKEND_APP / "models" / "tool_navigation.py").exists()
+    assert not (BACKEND_APP / "schemas" / "tool_navigation.py").exists()
+    assert not (BACKEND_APP / "routes" / "tool_navigation.py").exists()
+
+
+def test_demo_runtime_owns_schemas_and_routes() -> None:
+    assert (BACKEND_APP / "demo_runtime" / "schemas.py").is_file()
+    assert (BACKEND_APP / "demo_runtime" / "routes.py").is_file()
+    assert not (BACKEND_APP / "schemas" / "demo_runtime.py").exists()
+    assert not (BACKEND_APP / "routes" / "demo_runtime.py").exists()
+
+
 def test_runtime_assembly_entrypoints_exist() -> None:
     assert (BACKEND_APP / "runtime" / "orm_base.py").is_file()
     assert (BACKEND_APP / "orm.py").is_file()
@@ -923,6 +962,8 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/apps/visual_workshop",
         "backend/app/apps/galgame_workshop",
         "backend/app/llm",
+        "backend/app/integrations",
+        "backend/app/demo_runtime",
         "backend/app/models",
         "backend/app/routes",
         "backend/app/schemas",

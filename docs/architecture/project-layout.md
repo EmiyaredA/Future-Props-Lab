@@ -22,11 +22,12 @@ Future-Props-Lab/
 │   ├── console/       # Studio 治理与库级文件用例：governance、file_library
 │   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
-│   ├── tool_navigation/ # 工具收藏与最近使用状态规则
-│   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
-│   ├── models/        # 尚未迁出的持久化形状（files、账号、治理、integrations、model_templates 等）及其 ID/时间工厂
-│   ├── routes/        # 尚未迁入 App/llm 的 `/v1` HTTP/SSE 协议边界
-│   └── schemas/       # 尚未迁入 App/llm 的 Pydantic 契约
+│   ├── tool_navigation/ # 工具收藏与最近使用；自有 models/schemas/routes
+│   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
+│   ├── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
+│   ├── models/        # 尚未迁出的持久化形状（files、账号、治理、model_templates 等）及其 ID/时间工厂
+│   ├── routes/        # 尚未迁入 App/llm/业务包的 `/v1` HTTP/SSE 协议边界（主要为 console）
+│   └── schemas/       # 尚未迁入 App/llm/业务包的 Pydantic 契约
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本

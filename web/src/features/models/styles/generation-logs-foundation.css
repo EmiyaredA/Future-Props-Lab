@@ -7,7 +7,9 @@
 
 .generation-test-settings textarea,
 .generation-test-settings input[type="number"] {
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   border-color: var(--border);
   border-radius: 10px;
   background: var(--surface);
@@ -23,6 +25,11 @@
 
 .generation-test-settings input[type="number"] {
   min-height: 42px;
+}
+
+.custom-select.generation-parameter-select {
+  min-width: 0;
+  width: 100%;
 }
 
 .generation-parameter-select .custom-select-trigger {
@@ -280,7 +287,7 @@
     display: none;
   }
   .generation-test-grid {
-    grid-template-columns: 240px minmax(460px, 1fr) 330px;
+    grid-template-columns: minmax(0, 240px) minmax(0, 1fr) minmax(0, 330px);
   }
 }
 

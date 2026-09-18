@@ -15,19 +15,19 @@ from app.integrations.common import (
     IntegrationNotFoundError,
     IntegrationValidationError,
 )
-from app.integrations.skills.archive import SkillArchiveStorage, StagedSkillArchive
-from app.models import SkillIntegration, SkillVersion
-from app.orm import require_workspace_id
-from app.runtime.config import get_settings
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import iso_utc, utc_now
-from app.schemas.integrations import (
+from app.integrations.models import SkillIntegration, SkillVersion
+from app.integrations.schemas import (
     SkillCatalogOut,
     SkillOut,
     SkillTagsIn,
     SkillUpdateIn,
     SkillVersionOut,
 )
+from app.integrations.skills.archive import SkillArchiveStorage, StagedSkillArchive
+from app.orm import require_workspace_id
+from app.runtime.config import get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 
 
 def _version_out(row: SkillVersion) -> SkillVersionOut:

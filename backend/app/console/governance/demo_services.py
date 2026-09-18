@@ -14,9 +14,9 @@ from app.demo_runtime.runtime import (
     reinitialize,
     status,
 )
+from app.integrations.models import ToolApiIntegration
 from app.llm.catalog.service import ModelCatalogService
 from app.llm.models import ModelEntry, ModelProvider
-from app.models import ToolApiIntegration
 from app.runtime.credentials import encrypt_secret
 
 

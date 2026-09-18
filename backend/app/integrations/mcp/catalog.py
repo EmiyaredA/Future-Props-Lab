@@ -16,14 +16,12 @@ from app.integrations.common import (
     redact_structure,
 )
 from app.integrations.mcp.client import McpDiscoveryClient, OfficialMcpDiscoveryClient
-from app.models import IntegrationCheck, McpDiscoveredTool, McpIntegration
-from app.orm import require_workspace_id
-from app.runtime.config import get_settings
-from app.runtime.credentials import decrypt_secret, encrypt_secret
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.secret_hints import encrypted_secret_hint
-from app.runtime.time import iso_utc, utc_now
-from app.schemas.integrations import (
+from app.integrations.models import (
+    IntegrationCheck,
+    McpDiscoveredTool,
+    McpIntegration,
+)
+from app.integrations.schemas import (
     IntegrationOverviewOut,
     McpCatalogOut,
     McpCreateIn,
@@ -32,6 +30,12 @@ from app.schemas.integrations import (
     McpUpdateIn,
     McpValidationOut,
 )
+from app.orm import require_workspace_id
+from app.runtime.config import get_settings
+from app.runtime.credentials import decrypt_secret, encrypt_secret
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.secret_hints import encrypted_secret_hint
+from app.runtime.time import iso_utc, utc_now
 
 
 def _tool_out(row: McpDiscoveredTool) -> McpToolOut:

@@ -12,7 +12,7 @@ from app.integrations.tool_apis import ToolApiCatalog
 from app.main import app
 from app.runtime.db import SessionLocal
 from app.runtime.revisions import RevisionConflictError
-from app.schemas.integrations import McpCreateIn, McpUpdateIn, ToolApiCreateIn, ToolApiUpdateIn
+from app.integrations.schemas import McpCreateIn, McpUpdateIn, ToolApiCreateIn, ToolApiUpdateIn
 
 
 @pytest.mark.asyncio

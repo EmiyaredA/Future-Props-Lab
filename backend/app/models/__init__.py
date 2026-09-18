@@ -7,30 +7,14 @@ from app.models.accounts import (
     WorkspaceMembership,
 )
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
-from app.models.integrations import (
-    IntegrationCheck,
-    McpDiscoveredTool,
-    McpIntegration,
-    SkillIntegration,
-    SkillVersion,
-    ToolApiIntegration,
-)
-from app.models.tool_navigation import ToolNavigationItem
 from app.models.workspace import Workspace
 from app.runtime.orm_base import Base
 
 __all__ = [
     "Base",
     "AuthSession",
-    "IntegrationCheck",
     "ManagementApiKey",
-    "McpDiscoveredTool",
-    "McpIntegration",
     "SecurityAuditEvent",
-    "SkillIntegration",
-    "SkillVersion",
-    "ToolApiIntegration",
-    "ToolNavigationItem",
     "User",
     "VisualAsset",
     "VisualAssetFolder",

@@ -43,11 +43,12 @@
   文件用例归属 `console/`；已垂直切片的产品 App 归属 `apps/`（目前 `presentation_workshop`、
   `audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop`、`galgame_workshop`
   已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
+  `integrations/`、`tool_navigation/`、`demo_runtime/` 各自拥有 models/schemas/routes（demo 无独立 ORM）；
   `models/`、`schemas/`、`routes/` 仅保留尚未迁出的共享或治理残留（如 files、账号、
-  platform_governance、integrations、demo_runtime、tool_navigation）。
+  platform_governance、console 协议适配）。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
-  事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`
-  与 `llm/routes/` 遵守同一边界。
+  事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
+  `llm/routes/` 与各业务包 `routes.py` 遵守同一边界。
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
   在所属能力内按具体职责命名文件或子包，例如 `llm/catalog/`、`capabilities/asset_store/`。
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。

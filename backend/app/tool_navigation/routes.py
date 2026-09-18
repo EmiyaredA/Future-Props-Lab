@@ -3,12 +3,12 @@ from typing import Annotated
 from fastapi import APIRouter, Path
 
 from app.deps import SessionDep
-from app.schemas.tool_navigation import (
+from app.tool_navigation import ToolNavigationState
+from app.tool_navigation.schemas import (
     ToolFavoriteIn,
     ToolNavigationItemOut,
     ToolNavigationStateOut,
 )
-from app.tool_navigation import ToolNavigationState
 
 router = APIRouter(prefix="/tool-navigation", tags=["tool-navigation"])
 
