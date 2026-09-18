@@ -26,7 +26,6 @@ Future-Props-Lab/
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
 │   ├── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 │   ├── models/        # 共享残留：project_operations、defaults（ID/时间工厂）
-│   ├── routes/        # 已清空业务协议；仅保留空包占位
 │   └── schemas/       # 尚未迁出的共享 Pydantic 契约（project_operations、transcription）
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
@@ -97,7 +96,7 @@ Future-Props-Lab/
   角色模板草稿、保存及同步由 `features/accounts/` 拥有；共用编辑器不直接请求 API 或持有 revision。
   页面、连接布局和弹窗样式分别由 `model-catalog.css`、`catalog-connections.css`、
   `catalog-dialogs.css` 维护。只读模型服务复用同一目录，隐藏写操作。
-- 后端采用功能模块优先结构。`main.py` 负责装配，`routes/` 只负责认证、请求校验、调用功能
+- 后端采用功能模块优先结构。`main.py` 负责装配；各包 `routes/` 只负责认证、请求校验、调用功能
   边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
   `llm/catalog/`、`llm/playground/`、`llm/call_logs/` 等所属能力负责。
 - `console/governance/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、Workspace、
@@ -106,7 +105,7 @@ Future-Props-Lab/
 - `capabilities/identity/permissions.py` 拥有固定角色与密钥范围交集，`capabilities/identity/route_permissions.py` 显式登记业务操作。
   `governance_transactions.py` 在短写事务中重验操作者并执行 CAS；`management.py`、`member_roles.py`
   分别拥有平台身份与成员授权，`errors.py` 和 `error_views.py` 定义领域错误与安全快照。
-  `routes/account_management.py` 只适配管理查询、创建和审计协议。
+  `console/routes/account_management.py` 只适配管理查询、创建和审计协议。
 - `web/src/features/accounts/` 拥有管理中台三个页面、账号中心和空间面板；空间概览与独立成员/角色/审计管理、收到的邀请弹窗由该模块协调，视图状态与账号设置标签分离；查询键由 `queryKeys.ts`
   统一维护。`AccountMenu` 与 `WorkspaceTrigger` 分别提供账号和空间入口，`AccountWorkspacePanel`
   只装配弹窗；资料、安全表单与空间设置、成员授权分开维护。工作台顶栏及布局样式归属

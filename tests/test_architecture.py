@@ -71,7 +71,6 @@ ROOT_PROBE_PATHS = {"/health", "/ready"}
 
 def _backend_route_files() -> list[Path]:
     roots = [
-        BACKEND_APP / "routes",
         BACKEND_APP / "console" / "routes",
         BACKEND_APP / "llm" / "routes",
         BACKEND_APP / "capabilities" / "asset_store" / "routes",
@@ -302,7 +301,6 @@ def test_management_api_key_mutations_require_browser_session_auth() -> None:
 def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
     violations: list[str] = []
     route_roots = [
-        BACKEND_APP / "routes",
         BACKEND_APP / "console" / "routes",
         BACKEND_APP / "llm" / "routes",
         BACKEND_APP / "capabilities" / "asset_store" / "routes",
@@ -841,7 +839,6 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/integrations",
         "backend/app/demo_runtime",
         "backend/app/models",
-        "backend/app/routes",
         "backend/app/schemas",
         "backend/app/tool_navigation",
         "db/migrations/versions",

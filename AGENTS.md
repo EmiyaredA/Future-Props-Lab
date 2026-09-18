@@ -38,7 +38,7 @@
 ## 应用与目录边界
 
 - `backend/app/` 按垂直切片装配：`main.py`、`deps.py`、`problem_details.py`、`api.py` 与
-  `orm.py` 负责应用装配；顶层 `routes/` 已清空业务协议（仅保留空包占位）；无业务语义的基础设施归属
+  `orm.py` 负责应用装配；无业务语义的基础设施归属
   `runtime/`；有契约的共享能力归属 `capabilities/`（含 asset_store 自有 VisualAsset ORM、files 契约与媒体
   routes/schemas）；Studio
   治理与库级文件用例归属 `console/`（含自有 models/routes/schemas）；已垂直切片的产品 App 归属 `apps/`（目前
