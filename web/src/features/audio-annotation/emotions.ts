@@ -69,9 +69,7 @@ export function isPresetEmotion(value: string): boolean {
   return EMOTION_PRESETS.some((preset) => emotionKey(preset.value) === key);
 }
 
-export function normalizeCustomEmotions(
-  value: unknown,
-): CustomEmotionEntry[] {
+export function normalizeCustomEmotions(value: unknown): CustomEmotionEntry[] {
   if (!Array.isArray(value)) return [];
   const cleaned: CustomEmotionEntry[] = [];
   for (const [index, item] of value.entries()) {
@@ -92,8 +90,7 @@ export function normalizeCustomEmotions(
         : null;
     if (!name) continue;
     const color =
-      typeof record.color === "string" &&
-      /^#[0-9A-Fa-f]{6}$/.test(record.color)
+      typeof record.color === "string" && /^#[0-9A-Fa-f]{6}$/.test(record.color)
         ? record.color.toUpperCase()
         : EMOTION_COLORS[index % EMOTION_COLORS.length]!;
     cleaned.push({ name, color });

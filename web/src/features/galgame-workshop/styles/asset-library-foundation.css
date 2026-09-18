@@ -213,16 +213,25 @@
   touch-action: none;
 }
 
+.galgame-assets-summary-resizer::before {
+  position: absolute;
+  inset: -4px 0;
+  z-index: 1;
+  content: "";
+}
+
 .galgame-assets-summary-resizer::after {
   position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 2;
   width: 42px;
   height: 3px;
   border-radius: 999px;
   background: var(--gal-line-strong);
   content: "";
   transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .galgame-assets-summary-resizer:hover::after,

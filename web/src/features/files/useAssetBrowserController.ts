@@ -6,7 +6,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { fetchApiBlob } from "@platform/api/client";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import {
@@ -38,16 +43,29 @@ import {
 } from "@features/files/AssetBrowserParts";
 import { fileQueryKeys, invalidateFileScope } from "@features/files/queryKeys";
 
+export type AssetImportSource = "library" | "cross-project";
+
+export type AssetBrowserSourceProject = {
+  id: string;
+  title: string;
+};
+
 export function useAssetBrowserController({
   projectId,
   compact,
-  importMode,
+  importSource,
+  browseProjectId,
+  sourceProjects = [],
+  sourceProjectsLoading = false,
   viewMode,
   onViewModeChange,
 }: {
   projectId?: string;
   compact: boolean;
-  importMode: boolean;
+  importSource?: AssetImportSource;
+  browseProjectId?: string;
+  sourceProjects?: AssetBrowserSourceProject[];
+  sourceProjectsLoading?: boolean;
   viewMode?: AssetViewMode;
   onViewModeChange?: (view: AssetViewMode) => void;
 }) {
@@ -73,32 +91,96 @@ export function useAssetBrowserController({
   const [previewFile, setPreviewFile] = useState<ManagedFile>();
   const [editor, setEditor] = useState<FileEditor>(null);
   const [editorError, setEditorError] = useState("");
-  const sourceProjectId = importMode ? undefined : projectId;
-  const libraryMode = !projectId && !importMode;
+  const importing = Boolean(importSource);
+  const browseAllCross = importSource === "cross-project" && !browseProjectId;
+  const sourceReady =
+    importSource !== "cross-project"
+      ? true
+      : !sourceProjectsLoading &&
+        (browseAllCross || Boolean(browseProjectId));
+  const sourceProjectId =
+    importSource === "library"
+      ? undefined
+      : importSource === "cross-project"
+        ? browseProjectId
+        : projectId;
+  const libraryMode = !projectId && !importing;
+  const mediaKindFilter = kind === "all" ? undefined : kind;
   const foldersQuery = useQuery({
     queryKey: fileQueryKeys.folders(sourceProjectId),
     queryFn: () => getFolders(sourceProjectId),
+    enabled: sourceReady && !browseAllCross,
   });
   const filesQuery = useQuery({
     queryKey: fileQueryKeys.list({
       projectId: sourceProjectId,
       folderId,
       query,
-      mediaKind: kind === "all" ? undefined : kind,
+      mediaKind: mediaKindFilter,
       sort,
-      includeReferences: !importMode,
+      includeReferences: !importing,
     }),
     queryFn: () =>
       getFiles({
         projectId: sourceProjectId,
         folderId,
         query,
-        mediaKind: kind === "all" ? undefined : kind,
+        mediaKind: mediaKindFilter,
         sort,
-        includeReferences: !importMode,
+        includeReferences: !importing,
       }),
+    enabled: sourceReady && !browseAllCross,
+  });
+  const crossFolderQueries = useQueries({
+    queries: sourceProjects.map((project) => ({
+      queryKey: fileQueryKeys.folders(project.id),
+      queryFn: () => getFolders(project.id),
+      enabled: browseAllCross && sourceReady,
+    })),
+  });
+  const crossFolderScopes = useMemo(() => {
+    if (!browseAllCross || !sourceReady) return [];
+    return sourceProjects.flatMap((project, index) => {
+      const foldersResult = crossFolderQueries[index];
+      if (!foldersResult?.isSuccess) return [];
+      return [
+        undefined,
+        ...foldersResult.data.items.map((folder) => folder.id),
+      ].map((scopeFolderId) => ({
+        projectId: project.id,
+        folderId: scopeFolderId,
+      }));
+    });
+  }, [browseAllCross, crossFolderQueries, sourceProjects, sourceReady]);
+  const crossFileQueries = useQueries({
+    queries: crossFolderScopes.map((scope) => ({
+      queryKey: fileQueryKeys.list({
+        projectId: scope.projectId,
+        folderId: scope.folderId,
+        query,
+        mediaKind: mediaKindFilter,
+        sort,
+        includeReferences: false,
+      }),
+      queryFn: () =>
+        getFiles({
+          projectId: scope.projectId,
+          folderId: scope.folderId,
+          query,
+          mediaKind: mediaKindFilter,
+          sort,
+          includeReferences: false,
+        }),
+      enabled: browseAllCross && sourceReady,
+    })),
   });
   const refresh = () => {
+    if (browseAllCross) {
+      sourceProjects.forEach((project) => {
+        void invalidateFileScope(client, project.id, { folders: true });
+      });
+      return;
+    }
     void invalidateFileScope(client, sourceProjectId, { folders: true });
   };
   const act = useMutation({
@@ -171,14 +253,23 @@ export function useAssetBrowserController({
     onSettled: () => refresh(),
   });
   const folders = useMemo(
-    () => foldersQuery.data?.items ?? [],
-    [foldersQuery.data?.items],
+    () => (browseAllCross ? [] : (foldersQuery.data?.items ?? [])),
+    [browseAllCross, foldersQuery.data?.items],
   );
-  const files = useMemo(
-    () => filesQuery.data?.items ?? [],
-    [filesQuery.data?.items],
-  );
+  const files = useMemo(() => {
+    if (!browseAllCross) return filesQuery.data?.items ?? [];
+    const unique = new Map<string, ManagedFile>();
+    crossFileQueries.forEach((fileQuery) =>
+      fileQuery.data?.items.forEach((file) => unique.set(file.id, file)),
+    );
+    return [...unique.values()].sort((left, right) =>
+      sort === "name"
+        ? left.display_name.localeCompare(right.display_name, "zh-CN")
+        : Date.parse(right.updated_at) - Date.parse(left.updated_at),
+    );
+  }, [browseAllCross, crossFileQueries, filesQuery.data?.items, sort]);
   const childFolders = useMemo(() => {
+    if (browseAllCross) return [];
     const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
     return folders
       .filter((folder) =>
@@ -194,8 +285,21 @@ export function useAssetBrowserController({
           ? left.name.localeCompare(right.name, "zh-CN")
           : Date.parse(right.updated_at) - Date.parse(left.updated_at),
       );
-  }, [folderId, folders, query, sort]);
+  }, [browseAllCross, folderId, folders, query, sort]);
   const path = pathToFolder(folderId, folders);
+  const foldersLoading = browseAllCross
+    ? crossFolderQueries.some((item) => item.isLoading)
+    : foldersQuery.isLoading;
+  const filesLoading = browseAllCross
+    ? crossFolderScopes.length > 0 &&
+      crossFileQueries.some((item) => item.isLoading)
+    : filesQuery.isLoading;
+  const foldersFailed = browseAllCross
+    ? crossFolderQueries.some((item) => item.isError)
+    : foldersQuery.isError;
+  const filesFailed = browseAllCross
+    ? crossFileQueries.some((item) => item.isError)
+    : filesQuery.isError;
   const completedUploads = uploads.filter(
     (item) => item.status === "success" || item.status === "error",
   ).length;
@@ -219,6 +323,13 @@ export function useAssetBrowserController({
   useEffect(() => {
     window.localStorage.setItem(VIEW_KEY, view);
   }, [view]);
+
+  useEffect(() => {
+    setFolderId(undefined);
+    setQuery("");
+    setOpenMenu(undefined);
+    setPreviewFile(undefined);
+  }, [importSource, browseProjectId]);
 
   useEffect(() => {
     if (!compactFilterOpen && !compactAddOpen) return;
@@ -405,7 +516,7 @@ export function useAssetBrowserController({
     });
   };
   const hasItems = childFolders.length > 0 || files.length > 0;
-  const showContent = hasItems || (!compact && !importMode);
+  const showContent = hasItems || (!compact && !importing);
   const noMatches = !hasItems && Boolean(query.trim() || kind !== "all");
 
   const editorTitle = editor
@@ -483,11 +594,17 @@ export function useAssetBrowserController({
     setPreviewFile,
     editor,
     editorError,
-    foldersQuery,
-    filesQuery,
+    foldersLoading,
+    filesLoading,
+    foldersFailed,
+    filesFailed,
     act,
     upload,
     archiveTransfer,
+    importing,
+    importSource,
+    browseAllCross,
+    sourceReady,
     libraryMode,
     files,
     childFolders,

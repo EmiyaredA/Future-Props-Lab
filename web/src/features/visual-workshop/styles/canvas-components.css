@@ -373,10 +373,10 @@
 
 .canvas-assets-tabs {
   height: 46px;
-  padding: 0 15px;
+  padding: 0 12px;
   display: flex;
   align-items: flex-end;
-  gap: 24px;
+  gap: 14px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -387,8 +387,9 @@
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 720;
+  white-space: nowrap;
 }
 
 .canvas-assets-tabs button.active {

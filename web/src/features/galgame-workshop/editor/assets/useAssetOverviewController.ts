@@ -69,6 +69,8 @@ export function useAssetOverviewController({
   const workbenchRef = useRef<HTMLElement>(null);
   const summaryRef = useRef<HTMLElement>(null);
   const summaryResizeCleanupRef = useRef<(() => void) | undefined>(undefined);
+  const isSummaryResizingRef = useRef(false);
+  const summaryHeightRef = useRef<number | null>(loadSummaryHeight());
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AssetStatus>("all");
   const [kind, setKind] = useState<AssetDisplayKind | "all">("all");
@@ -119,14 +121,20 @@ export function useAssetOverviewController({
     [maximumSummaryHeight],
   );
 
-  useEffect(() => {
+  const persistSummaryHeight = useCallback((height: number | null) => {
     try {
-      if (summaryHeight === null) localStorage.removeItem(SUMMARY_HEIGHT_KEY);
-      else localStorage.setItem(SUMMARY_HEIGHT_KEY, String(summaryHeight));
+      if (height === null) localStorage.removeItem(SUMMARY_HEIGHT_KEY);
+      else localStorage.setItem(SUMMARY_HEIGHT_KEY, String(height));
     } catch {
       // Layout preferences are best-effort when storage is unavailable.
     }
-  }, [summaryHeight]);
+  }, []);
+
+  useEffect(() => {
+    summaryHeightRef.current = summaryHeight;
+    if (isSummaryResizingRef.current) return;
+    persistSummaryHeight(summaryHeight);
+  }, [persistSummaryHeight, summaryHeight]);
 
   useEffect(() => {
     const clampRememberedHeight = () =>
@@ -148,21 +156,44 @@ export function useAssetOverviewController({
     if (event.button !== 0 || window.innerWidth <= 900) return;
     event.preventDefault();
     summaryResizeCleanupRef.current?.();
+    const target = event.currentTarget;
+    const pointerId = event.pointerId;
+    target.setPointerCapture(pointerId);
     const startY = event.clientY;
     const startHeight =
       summaryRef.current?.getBoundingClientRect().height ??
       summaryHeight ??
       MIN_SUMMARY_HEIGHT;
+    isSummaryResizingRef.current = true;
     globalThis.document.body.classList.add("galgame-assets-summary-resizing");
 
-    const move = (pointer: PointerEvent) =>
-      setSummaryHeight(
-        clampSummaryHeight(startHeight + pointer.clientY - startY),
-      );
+    let frame = 0;
+    let latestY = startY;
+    const applyHeight = () => {
+      frame = 0;
+      setSummaryHeight(clampSummaryHeight(startHeight + latestY - startY));
+    };
+    const move = (pointer: PointerEvent) => {
+      latestY = pointer.clientY;
+      if (frame !== 0) return;
+      frame = requestAnimationFrame(applyHeight);
+    };
     const finish = () => {
+      if (frame !== 0) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+      const nextHeight = clampSummaryHeight(startHeight + latestY - startY);
+      summaryHeightRef.current = nextHeight;
+      setSummaryHeight(nextHeight);
+      isSummaryResizingRef.current = false;
+      persistSummaryHeight(nextHeight);
       globalThis.document.body.classList.remove(
         "galgame-assets-summary-resizing",
       );
+      if (target.hasPointerCapture(pointerId)) {
+        target.releasePointerCapture(pointerId);
+      }
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", finish);
       window.removeEventListener("pointercancel", finish);

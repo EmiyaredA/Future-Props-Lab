@@ -35,7 +35,9 @@ function EmotionHarness({
       />
       <output aria-label="当前情绪">
         {emotions.length
-          ? emotions.map((item) => `${item.speaker_id}:${item.emotion}`).join("|")
+          ? emotions
+              .map((item) => `${item.speaker_id}:${item.emotion}`)
+              .join("|")
           : "未标注"}
       </output>
       <output aria-label="自定义词库">

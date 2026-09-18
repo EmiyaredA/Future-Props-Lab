@@ -232,8 +232,7 @@ class AudioAnnotationProjects:
                     schema_version="1.0",
                     speakers=[speaker.model_dump(mode="json") for speaker in speakers],
                     custom_emotions=[
-                        emotion.model_dump(mode="json")
-                        for emotion in (custom_emotions or [])
+                        emotion.model_dump(mode="json") for emotion in (custom_emotions or [])
                     ],
                     segments=[segment.model_dump(mode="json") for segment in segments],
                 )

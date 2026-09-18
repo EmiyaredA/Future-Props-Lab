@@ -1,4 +1,9 @@
-export { AssetBrowser, type AssetViewMode } from "./AssetBrowser";
+export {
+  AssetBrowser,
+  type AssetViewMode,
+  type AssetImportSource,
+  type AssetBrowserSourceProject,
+} from "./AssetBrowser";
 export { FileManagementPage } from "./FileManagementPage";
 export {
   createFolder,

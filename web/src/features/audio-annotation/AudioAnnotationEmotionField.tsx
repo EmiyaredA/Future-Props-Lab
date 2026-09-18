@@ -11,10 +11,7 @@ import {
   mergeCustomEmotion,
   normalizeCustomEmotions,
 } from "./emotions";
-import {
-  applySpeakerEmotions,
-  type SpeakerEmotionEntry,
-} from "./model";
+import { applySpeakerEmotions, type SpeakerEmotionEntry } from "./model";
 import type { AudioAnnotationSpeaker } from "./types";
 
 export function AudioAnnotationEmotionField({
@@ -53,9 +50,7 @@ export function AudioAnnotationEmotionField({
     new Set(targetEmotions.map((item) => item.emotion)).size === 1
       ? targetEmotions[0]!.emotion
       : null;
-  const isCustom = Boolean(
-    sharedEmotion && !isPresetEmotion(sharedEmotion),
-  );
+  const isCustom = Boolean(sharedEmotion && !isPresetEmotion(sharedEmotion));
   const [customValue, setCustomValue] = useState(
     isCustom && sharedEmotion ? sharedEmotion : "",
   );
@@ -163,9 +158,7 @@ export function AudioAnnotationEmotionField({
       <AnnotationCollapsedSelect
         ariaLabel="选择片段情绪"
         emptyLabel={
-          activeTargets.length && targetEmotions.length
-            ? "多种情绪"
-            : "未标注"
+          activeTargets.length && targetEmotions.length ? "多种情绪" : "未标注"
         }
         options={options}
         value={sharedEmotion ?? ""}

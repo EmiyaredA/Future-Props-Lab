@@ -79,7 +79,7 @@ function renderBrowser() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <AssetBrowser projectId="project-1" importMode />
+      <AssetBrowser projectId="project-1" importSource="library" />
     </QueryClientProvider>,
   );
 }

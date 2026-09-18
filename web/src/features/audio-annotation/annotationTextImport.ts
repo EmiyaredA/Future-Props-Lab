@@ -75,12 +75,11 @@ export function prepareTextOnlyAnnotationImport(
     )
       throw new Error(`片段 ${index + 1} 的文本字段无效`);
 
-    const speakerIds =
-      segment.speaker_ids?.length
-        ? segment.speaker_ids
-        : segment.speaker_id
-          ? [segment.speaker_id]
-          : [];
+    const speakerIds = segment.speaker_ids?.length
+      ? segment.speaker_ids
+      : segment.speaker_id
+        ? [segment.speaker_id]
+        : [];
     let speakerEmotions = segmentSpeakerEmotions(segment);
     try {
       const importedEmotions = normalizeImportedSpeakerEmotions(

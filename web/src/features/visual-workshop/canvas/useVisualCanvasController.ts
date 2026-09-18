@@ -90,7 +90,9 @@ export function useVisualCanvasController({
   const [contextMenu, setContextMenu] = useState<ContextMenuState>();
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const [assetTab, setAssetTab] = useState<"project" | "library">("project");
+  const [assetTab, setAssetTab] = useState<"project" | "cross" | "library">(
+    "project",
+  );
   const [assetView, setAssetView] = useState<AssetViewMode>("list");
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState("");

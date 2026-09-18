@@ -31,8 +31,18 @@ import {
 import { fetchApiBlob } from "@platform/api/client";
 
 vi.mock("@features/files/AssetBrowser", () => ({
-  AssetBrowser: ({ importMode }: { importMode?: boolean }) => (
-    <div>{importMode ? "文件管理内容" : "项目素材内容"}</div>
+  AssetBrowser: ({
+    importSource,
+  }: {
+    importSource?: "library" | "cross-project";
+  }) => (
+    <div>
+      {importSource === "library"
+        ? "文件管理内容"
+        : importSource === "cross-project"
+          ? "跨项目内容"
+          : "项目素材内容"}
+    </div>
   ),
 }));
 vi.mock("@features/files/api", async () => {
@@ -294,8 +304,10 @@ test("zooms, opens project assets, and renames", async () => {
     "aria-pressed",
     "true",
   );
-  await user.click(screen.getByRole("tab", { name: "跨项目" }));
+  await user.click(screen.getByRole("tab", { name: "总文件" }));
   expect(screen.getByText("文件管理内容")).toBeInTheDocument();
+  await user.click(screen.getByRole("tab", { name: "跨项目" }));
+  expect(screen.getByText("跨项目内容")).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: /未命名项目/ }));
   const title = screen.getByDisplayValue("未命名项目");

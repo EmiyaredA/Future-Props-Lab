@@ -160,9 +160,7 @@ class AudioAnnotationSegment(BaseModel):
             ]
         if self.speaker_emotions:
             unique_emotions = {item.emotion for item in self.speaker_emotions}
-            self.emotion = (
-                next(iter(unique_emotions)) if len(unique_emotions) == 1 else None
-            )
+            self.emotion = next(iter(unique_emotions)) if len(unique_emotions) == 1 else None
         elif not speaker_ids:
             # keep segment-level emotion when no speakers are assigned
             pass
@@ -223,9 +221,7 @@ class AudioAnnotationDocumentPutIn(BaseModel):
     expected_revision: int = Field(ge=0)
     schema_version: Literal["1.0"] = "1.0"
     speakers: list[AudioAnnotationSpeaker] = Field(default_factory=list, max_length=64)
-    custom_emotions: list[AudioAnnotationCustomEmotion] = Field(
-        default_factory=list, max_length=64
-    )
+    custom_emotions: list[AudioAnnotationCustomEmotion] = Field(default_factory=list, max_length=64)
     segments: list[AudioAnnotationSegment] = Field(default_factory=list, max_length=5000)
 
     @field_validator("custom_emotions", mode="before")
@@ -295,9 +291,7 @@ class AudioAnnotationImportIn(BaseModel):
     asset_id: str = Field(min_length=1, max_length=36)
     schema_version: Literal["1.0"] = "1.0"
     speakers: list[AudioAnnotationSpeaker] = Field(default_factory=list, max_length=64)
-    custom_emotions: list[AudioAnnotationCustomEmotion] = Field(
-        default_factory=list, max_length=64
-    )
+    custom_emotions: list[AudioAnnotationCustomEmotion] = Field(default_factory=list, max_length=64)
     segments: list[AudioAnnotationSegment] = Field(default_factory=list, max_length=5000)
 
     @field_validator("custom_emotions", mode="before")

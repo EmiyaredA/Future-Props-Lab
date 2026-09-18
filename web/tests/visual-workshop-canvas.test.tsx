@@ -36,8 +36,18 @@ import {
 } from "./support/visual-workshop-canvas-fixtures";
 
 vi.mock("@features/files/AssetBrowser", () => ({
-  AssetBrowser: ({ importMode }: { importMode?: boolean }) => (
-    <div>{importMode ? "文件管理内容" : "项目素材内容"}</div>
+  AssetBrowser: ({
+    importSource,
+  }: {
+    importSource?: "library" | "cross-project";
+  }) => (
+    <div>
+      {importSource === "library"
+        ? "文件管理内容"
+        : importSource === "cross-project"
+          ? "跨项目内容"
+          : "项目素材内容"}
+    </div>
   ),
 }));
 vi.mock("@features/files/api", async () => {

@@ -8,21 +8,18 @@ import {
 } from "react";
 import {
   ArrowLeft,
-  CircleQuestionMark,
   Copy,
-  Grid2X2,
   Image,
-  List,
   Music,
   Pencil,
   Plus,
   RefreshCw,
   Trash2,
   Video,
-  X,
 } from "lucide-react";
-import { AssetBrowser, uploadManagedFile } from "@features/files";
+import { uploadManagedFile } from "@features/files";
 import { ProjectAssistantPanel } from "@features/visual-workshop/assistant/ProjectAssistantPanel";
+import { CanvasAssetsDrawer } from "@features/visual-workshop/canvas/CanvasAssetsDrawer";
 import { CanvasNodeInspector } from "@features/visual-workshop/canvas/CanvasNodeInspector";
 import { CanvasEdgeLayer } from "@features/visual-workshop/canvas/CanvasEdgeLayer";
 import {
@@ -614,84 +611,14 @@ export function VisualWorkshopCanvasView({
         />
       ) : null}
       {assetsOpen ? (
-        <aside className="canvas-assets-drawer" aria-label="项目素材库">
-          <header>
-            <div className="canvas-assets-title">
-              <strong>素材库</strong>
-              <span title="管理本项目素材，或从其他项目导入">
-                <CircleQuestionMark aria-hidden />
-              </span>
-            </div>
-            <div className="canvas-assets-header-actions">
-              <div
-                className="file-view-toggle"
-                role="group"
-                aria-label="文件视图"
-              >
-                <button
-                  type="button"
-                  aria-label="卡片视图"
-                  aria-pressed={assetView === "grid"}
-                  className={assetView === "grid" ? "active" : ""}
-                  onClick={() => setAssetView("grid")}
-                >
-                  <Grid2X2 aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  aria-label="列表视图"
-                  aria-pressed={assetView === "list"}
-                  className={assetView === "list" ? "active" : ""}
-                  onClick={() => setAssetView("list")}
-                >
-                  <List aria-hidden />
-                </button>
-              </div>
-              <button
-                className="canvas-assets-close"
-                aria-label="关闭素材库"
-                onClick={() => setAssetsOpen(false)}
-              >
-                <X aria-hidden />
-              </button>
-            </div>
-          </header>
-          <nav className="canvas-assets-tabs" role="tablist">
-            <button
-              className={assetTab === "project" ? "active" : ""}
-              role="tab"
-              aria-selected={assetTab === "project"}
-              onClick={() => setAssetTab("project")}
-            >
-              本项目
-            </button>
-            <button
-              className={assetTab === "library" ? "active" : ""}
-              role="tab"
-              aria-selected={assetTab === "library"}
-              onClick={() => setAssetTab("library")}
-            >
-              跨项目
-            </button>
-          </nav>
-          {assetTab === "project" ? (
-            <AssetBrowser
-              compact
-              projectId={projectId}
-              viewMode={assetView}
-              onViewModeChange={setAssetView}
-            />
-          ) : (
-            <AssetBrowser
-              compact
-              importMode
-              projectId={projectId}
-              viewMode={assetView}
-              onViewModeChange={setAssetView}
-              onImported={() => setAssetTab("project")}
-            />
-          )}
-        </aside>
+        <CanvasAssetsDrawer
+          projectId={projectId}
+          assetTab={assetTab}
+          onAssetTabChange={setAssetTab}
+          assetView={assetView}
+          onAssetViewChange={setAssetView}
+          onClose={() => setAssetsOpen(false)}
+        />
       ) : null}
       <ProjectAssistantPanel
         projectId={projectId}

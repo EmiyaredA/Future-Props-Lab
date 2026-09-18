@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { ArrowLeft, Boxes, FolderOpen } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Boxes, FolderOpen, Folders } from "lucide-react";
 import { AssetBrowser } from "@features/files";
+import { getVisualWorkshopProjects } from "@features/visual-workshop/api";
+import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 
 export function VisualWorkshopAssetsPage({
@@ -12,13 +15,26 @@ export function VisualWorkshopAssetsPage({
   onCanvas: () => void;
   onProjects: () => void;
 }) {
-  const [tab, setTab] = useState<"project" | "import">("project");
+  const [tab, setTab] = useState<"project" | "cross" | "library">("project");
+  const [crossSourceProjectId, setCrossSourceProjectId] = useState("");
+  const mediaSourceProjects = useQuery({
+    queryKey: visualWorkshopQueryKeys.projectsForMediaSource,
+    queryFn: getVisualWorkshopProjects,
+    enabled: tab === "cross",
+  });
+  const sourceProjects = useMemo(
+    () =>
+      mediaSourceProjects.data?.items.filter(
+        (project) => project.id !== projectId,
+      ) ?? [],
+    [mediaSourceProjects.data, projectId],
+  );
   return (
     <section className="workshop-page workshop-assets-page">
       <WorkshopAppChrome
         eyebrow="项目资源"
         title="项目素材库"
-        description="上传项目私有素材，或引用文件管理中的公共文件。"
+        description="管理本项目素材，从其他项目复制导入，或引用文件管理中的公共文件。"
         actions={
           <div className="workshop-header-actions">
             <button onClick={onProjects}>
@@ -43,19 +59,42 @@ export function VisualWorkshopAssetsPage({
         </button>
         <button
           role="tab"
-          aria-selected={tab === "import"}
-          className={tab === "import" ? "active" : ""}
-          onClick={() => setTab("import")}
+          aria-selected={tab === "cross"}
+          className={tab === "cross" ? "active" : ""}
+          onClick={() => setTab("cross")}
+        >
+          <Folders aria-hidden />
+          跨项目
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === "library"}
+          className={tab === "library" ? "active" : ""}
+          onClick={() => setTab("library")}
         >
           <Boxes aria-hidden />
-          从文件管理导入
+          总文件
         </button>
       </div>
-      <AssetBrowser
-        projectId={projectId}
-        importMode={tab === "import"}
-        onImported={() => setTab("project")}
-      />
+      {tab === "project" ? (
+        <AssetBrowser projectId={projectId} />
+      ) : tab === "cross" ? (
+        <AssetBrowser
+          importSource="cross-project"
+          projectId={projectId}
+          browseProjectId={crossSourceProjectId || undefined}
+          onBrowseProjectIdChange={setCrossSourceProjectId}
+          sourceProjects={sourceProjects}
+          sourceProjectsLoading={mediaSourceProjects.isLoading}
+          onImported={() => setTab("project")}
+        />
+      ) : (
+        <AssetBrowser
+          importSource="library"
+          projectId={projectId}
+          onImported={() => setTab("project")}
+        />
+      )}
     </section>
   );
 }

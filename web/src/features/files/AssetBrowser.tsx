@@ -1,4 +1,5 @@
 import { FileEmptyState } from "./FileEmptyState";
+import { AssetBrowserEditorDialog } from "./AssetBrowserEditorDialog";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { createPortal } from "react-dom";
 import {
@@ -16,12 +17,11 @@ import {
   LoaderCircle,
   Plus,
   Search,
-  Trash2,
   Upload,
   X,
 } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import { importFile } from "@features/files/api";
+import { importFile, importManagedFiles } from "@features/files/api";
 import { invalidateFileScope } from "@features/files/queryKeys";
 import {
   ACCEPT,
@@ -38,22 +38,38 @@ import {
   uploadStatusLabel,
 } from "@features/files/AssetBrowserParts";
 import { formatFileSize } from "@shared/lib/fileSize";
-import { useAssetBrowserController } from "@features/files/useAssetBrowserController";
+import {
+  type AssetImportSource,
+  type AssetBrowserSourceProject,
+  useAssetBrowserController,
+} from "@features/files/useAssetBrowserController";
 import "@features/files/files.css";
 
 export type { AssetViewMode } from "@features/files/AssetBrowserParts";
+export type {
+  AssetImportSource,
+  AssetBrowserSourceProject,
+} from "@features/files/useAssetBrowserController";
 
 export function AssetBrowser({
   projectId,
   compact = false,
-  importMode = false,
+  importSource,
+  browseProjectId,
+  onBrowseProjectIdChange,
+  sourceProjects,
+  sourceProjectsLoading = false,
   viewMode,
   onViewModeChange,
   onImported,
 }: {
   projectId?: string;
   compact?: boolean;
-  importMode?: boolean;
+  importSource?: AssetImportSource;
+  browseProjectId?: string;
+  onBrowseProjectIdChange?: (projectId: string) => void;
+  sourceProjects?: AssetBrowserSourceProject[];
+  sourceProjectsLoading?: boolean;
   viewMode?: AssetViewMode;
   onViewModeChange?: (view: AssetViewMode) => void;
   onImported?: () => void;
@@ -88,11 +104,17 @@ export function AssetBrowser({
     setPreviewFile,
     editor,
     editorError,
-    foldersQuery,
-    filesQuery,
+    foldersLoading,
+    filesLoading,
+    foldersFailed,
+    filesFailed,
     act,
     upload,
     archiveTransfer,
+    importing,
+    importSource: resolvedImportSource,
+    browseAllCross,
+    sourceReady,
     libraryMode,
     files,
     childFolders,
@@ -118,7 +140,10 @@ export function AssetBrowser({
   } = useAssetBrowserController({
     projectId,
     compact,
-    importMode,
+    importSource,
+    browseProjectId,
+    sourceProjects,
+    sourceProjectsLoading,
     viewMode,
     onViewModeChange,
   });
@@ -127,6 +152,67 @@ export function AssetBrowser({
     !!editor,
     false,
   );
+  const noSourceProjects =
+    resolvedImportSource === "cross-project" &&
+    !sourceProjectsLoading &&
+    (sourceProjects?.length ?? 0) === 0;
+  const filterActive =
+    kind !== "all" ||
+    (resolvedImportSource === "cross-project" && Boolean(browseProjectId));
+  const sourceProjectOptions = [
+    { value: "", label: "全部" },
+    ...(sourceProjects ?? []).map((project) => ({
+      value: project.id,
+      label: project.title,
+    })),
+  ];
+  const importFileToProject = async (file: {
+    id: string;
+    project_id: string | null;
+  }) => {
+    if (!projectId) return;
+    if (resolvedImportSource === "cross-project") {
+      const sourceId = browseProjectId || file.project_id || undefined;
+      if (!sourceId) return;
+      await importManagedFiles(projectId, {
+        sourceScope: "project",
+        sourceProjectId: sourceId,
+        assetIds: [file.id],
+      });
+    } else {
+      await importFile(projectId, file.id);
+    }
+    await invalidateFileScope(client, projectId);
+    onImported?.();
+    setNotice("已导入当前项目");
+  };
+  const rootBreadcrumbLabel =
+    resolvedImportSource === "library"
+      ? "文件管理"
+      : resolvedImportSource === "cross-project"
+        ? browseAllCross
+          ? "全部项目"
+          : "来源项目"
+        : projectId
+          ? "项目素材"
+          : "全部文件";
+  const sourceProjectFilter = resolvedImportSource === "cross-project" ? (
+    <>
+      <span>来源项目</span>
+      <CustomSelect
+        ariaLabel="来源项目"
+        className="file-filter-select"
+        value={browseProjectId ?? ""}
+        disabled={sourceProjectsLoading || noSourceProjects}
+        onChange={(value) => onBrowseProjectIdChange?.(value)}
+        options={
+          noSourceProjects
+            ? [{ value: "", label: "暂无其他项目", disabled: true }]
+            : sourceProjectOptions
+        }
+      />
+    </>
+  ) : null;
 
   return (
     <section className={`file-browser${compact ? " is-compact" : ""}`}>
@@ -147,7 +233,7 @@ export function AssetBrowser({
                 <div className="file-compact-menu">
                   <button
                     type="button"
-                    className={kind !== "all" ? "active" : ""}
+                    className={filterActive ? "active" : ""}
                     aria-label="筛选素材"
                     aria-haspopup="dialog"
                     aria-expanded={compactFilterOpen}
@@ -164,6 +250,7 @@ export function AssetBrowser({
                       role="dialog"
                       aria-label="素材筛选"
                     >
+                      {sourceProjectFilter}
                       <span>文件类型</span>
                       <CustomSelect
                         ariaLabel="文件类型"
@@ -183,7 +270,7 @@ export function AssetBrowser({
                     </div>
                   ) : null}
                 </div>
-                {!importMode ? (
+                {!importing ? (
                   <div className="file-compact-menu">
                     <button
                       type="button"
@@ -271,11 +358,7 @@ export function AssetBrowser({
               <div className="file-location">
                 <div className="file-breadcrumb" aria-label="文件路径">
                   <button type="button" onClick={() => setFolderId(undefined)}>
-                    {importMode
-                      ? "文件管理"
-                      : projectId
-                        ? "项目素材"
-                        : "全部文件"}
+                    {rootBreadcrumbLabel}
                   </button>
                   {path.map((folder) => (
                     <span key={folder.id}>
@@ -289,13 +372,13 @@ export function AssetBrowser({
                     </span>
                   ))}
                 </div>
-                {!foldersQuery.isLoading && !filesQuery.isLoading ? (
+                {!foldersLoading && !filesLoading ? (
                   <small>
                     {childFolders.length} 个文件夹 · {files.length} 个文件
                   </small>
                 ) : null}
               </div>
-              {!importMode ? (
+              {!importing ? (
                 <div className="file-primary-actions">
                   {libraryMode ? (
                     <>
@@ -348,6 +431,20 @@ export function AssetBrowser({
                   onChange={(event) => setQuery(event.target.value)}
                 />
               </label>
+              {resolvedImportSource === "cross-project" ? (
+                <CustomSelect
+                  ariaLabel="来源项目"
+                  className="file-filter-select"
+                  value={browseProjectId ?? ""}
+                  disabled={sourceProjectsLoading || noSourceProjects}
+                  onChange={(value) => onBrowseProjectIdChange?.(value)}
+                  options={
+                    noSourceProjects
+                      ? [{ value: "", label: "暂无其他项目", disabled: true }]
+                      : sourceProjectOptions
+                  }
+                />
+              ) : null}
               <CustomSelect
                 ariaLabel="文件类型"
                 className="file-filter-select"
@@ -390,7 +487,7 @@ export function AssetBrowser({
           </>
         )}
       </div>
-      {!importMode ? (
+      {!importing ? (
         <input
           ref={fileInput}
           hidden
@@ -501,13 +598,21 @@ export function AssetBrowser({
           </div>
         </section>
       ) : null}
-      {foldersQuery.isLoading || filesQuery.isLoading ? (
+      {noSourceProjects || !sourceReady ? (
+        <FileEmptyState
+          importSource={resolvedImportSource}
+          noSourceProjects={noSourceProjects}
+          filtered={false}
+          busy={false}
+          onUpload={() => undefined}
+        />
+      ) : foldersLoading || filesLoading || sourceProjectsLoading ? (
         <div className="file-empty">正在读取文件…</div>
-      ) : foldersQuery.isError || filesQuery.isError ? (
+      ) : foldersFailed || filesFailed ? (
         <div className="file-empty">文件暂时无法读取，请稍后重试。</div>
       ) : showContent ? (
         <div className={`file-items ${view}`}>
-          {!compact && !importMode ? (
+          {!compact && !importing ? (
             <article className="file-upload-card">
               <button
                 type="button"
@@ -563,7 +668,7 @@ export function AssetBrowser({
                     打开 <FolderOpen aria-hidden />
                   </span>
                 </div>
-                {!importMode ? (
+                {!importing ? (
                   <ItemActionMenu
                     id={`file-menu-${menuKey}`}
                     label={folder.name}
@@ -634,16 +739,13 @@ export function AssetBrowser({
                   <time dateTime={file.updated_at}>
                     {relativeUpdatedAt(file.updated_at)}
                   </time>
-                  {importMode && projectId ? (
+                  {importing && projectId ? (
                     <button
                       type="button"
                       className="file-item-primary-action"
                       onClick={() =>
                         act.mutate(async () => {
-                          await importFile(projectId, file.id);
-                          await invalidateFileScope(client, projectId);
-                          onImported?.();
-                          setNotice("已导入当前项目");
+                          await importFileToProject(file);
                         })
                       }
                     >
@@ -659,7 +761,7 @@ export function AssetBrowser({
                     </button>
                   )}
                 </div>
-                {!importMode ? (
+                {!importing ? (
                   <ItemActionMenu
                     id={`file-menu-${menuKey}`}
                     label={fileDisplayName(file)}
@@ -705,7 +807,8 @@ export function AssetBrowser({
         </div>
       ) : (
         <FileEmptyState
-          importing={importMode}
+          importSource={resolvedImportSource}
+          noSourceProjects={noSourceProjects}
           filtered={!!query.trim() || kind !== "all"}
           busy={upload.isPending}
           onUpload={() => fileInput.current?.click()}
@@ -729,139 +832,21 @@ export function AssetBrowser({
           )
         : null}
       {editor ? (
-        <div
-          className="file-dialog-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeEditor();
-          }}
-        >
-          <div
-            ref={fileDialog}
-            className="file-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={dialogTitleId}
-          >
-            <header>
-              <div>
-                <span>文件操作</span>
-                <h2 id={dialogTitleId}>{editorTitle}</h2>
-              </div>
-              <button
-                type="button"
-                aria-label={`关闭${editorTitle}`}
-                disabled={act.isPending}
-                onClick={closeEditor}
-              >
-                <X aria-hidden />
-              </button>
-            </header>
-            {editor.kind === "create-folder" ||
-            editor.kind === "rename-folder" ||
-            editor.kind === "rename-file" ? (
-              <form onSubmit={submitEditor}>
-                <label>
-                  <span>
-                    {editor.kind === "create-folder" ? "文件夹名称" : "新名称"}
-                  </span>
-                  <input
-                    autoFocus
-                    required
-                    maxLength={120}
-                    value={editor.name}
-                    onChange={(event) => updateEditorName(event.target.value)}
-                    placeholder="请输入名称"
-                  />
-                </label>
-                {editorError ? (
-                  <p className="file-dialog-error">{editorError}</p>
-                ) : null}
-                <div className="file-dialog-actions">
-                  <button
-                    type="button"
-                    disabled={act.isPending}
-                    onClick={closeEditor}
-                  >
-                    取消
-                  </button>
-                  <button
-                    className="primary"
-                    disabled={act.isPending || editorSubmitDisabled}
-                  >
-                    {act.isPending ? "处理中…" : editorSubmitLabel}
-                  </button>
-                </div>
-              </form>
-            ) : editor.kind === "move-folder" || editor.kind === "move-file" ? (
-              <form onSubmit={submitEditor}>
-                <label>
-                  <span>目标文件夹</span>
-                  <CustomSelect
-                    ariaLabel="目标文件夹"
-                    className="file-move-select"
-                    value={editor.target}
-                    options={moveTargetOptions}
-                    disabled={act.isPending}
-                    onChange={updateEditorTarget}
-                  />
-                </label>
-                <small>移动后可通过上方路径继续访问该内容。</small>
-                {editorError ? (
-                  <p className="file-dialog-error">{editorError}</p>
-                ) : null}
-                <div className="file-dialog-actions">
-                  <button
-                    type="button"
-                    disabled={act.isPending}
-                    onClick={closeEditor}
-                  >
-                    取消
-                  </button>
-                  <button
-                    className="primary"
-                    disabled={act.isPending || editorSubmitDisabled}
-                  >
-                    {act.isPending ? "处理中…" : editorSubmitLabel}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="file-delete-dialog">
-                <div className="file-delete-icon">
-                  <Trash2 aria-hidden />
-                </div>
-                <p>
-                  {editor.kind === "delete-folder"
-                    ? `删除“${editor.folder.name}”及其中全部文件和子文件夹后将无法恢复。`
-                    : editor.file.is_reference
-                      ? "只会从当前项目移除引用，文件管理中的源文件不会受到影响。"
-                      : `删除“${fileDisplayName(editor.file)}”后将无法恢复。`}
-                </p>
-                {editorError ? (
-                  <p className="file-dialog-error">{editorError}</p>
-                ) : null}
-                <div className="file-dialog-actions">
-                  <button
-                    type="button"
-                    disabled={act.isPending}
-                    onClick={closeEditor}
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    className="danger"
-                    disabled={act.isPending}
-                    onClick={() => submitEditor()}
-                  >
-                    {act.isPending ? "处理中…" : editorSubmitLabel}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <AssetBrowserEditorDialog
+          dialogRef={fileDialog}
+          dialogTitleId={dialogTitleId}
+          editor={editor}
+          editorTitle={editorTitle}
+          editorError={editorError}
+          editorSubmitLabel={editorSubmitLabel}
+          editorSubmitDisabled={editorSubmitDisabled}
+          pending={act.isPending}
+          moveTargetOptions={moveTargetOptions}
+          onClose={closeEditor}
+          onSubmit={submitEditor}
+          onUpdateName={updateEditorName}
+          onUpdateTarget={updateEditorTarget}
+        />
       ) : null}
     </section>
   );

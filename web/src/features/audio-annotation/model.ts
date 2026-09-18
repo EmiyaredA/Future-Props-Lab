@@ -106,7 +106,9 @@ export function applySpeakerEmotions(
   emotion: string | null;
 } {
   const allowed = new Set(segmentSpeakerIds(segment));
-  const targets = [...new Set(targetSpeakerIds.filter((id) => allowed.has(id)))];
+  const targets = [
+    ...new Set(targetSpeakerIds.filter((id) => allowed.has(id))),
+  ];
   const next = new Map(
     segmentSpeakerEmotions(segment)
       .filter((item) => allowed.has(item.speaker_id))
