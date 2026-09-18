@@ -19,9 +19,10 @@ from app.llm.generation_runtime import (
 )
 from app.llm.inference.assets import root
 from app.llm.inference.tasks import ACTIVE
+from app.llm.models import LlmCallLog
+from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.llm.providers.transcription import transcribe_model_audio
-from app.models import LlmCallLog, Workspace
-from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
+from app.models import Workspace
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner

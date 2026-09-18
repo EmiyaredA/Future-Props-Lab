@@ -9,10 +9,12 @@ from app.capabilities.identity.passwords import normalize_username
 from app.capabilities.identity.security import hash_secret
 from app.console.governance.provisioning import create_account
 from app.main import app
+from app.llm.models import (
+    ModelProvider,
+)
 from app.models import (
     AuthSession,
     ManagementApiKey,
-    ModelProvider,
     SecurityAuditEvent,
     User,
     Workspace,

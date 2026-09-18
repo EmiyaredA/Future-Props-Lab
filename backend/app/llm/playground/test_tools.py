@@ -11,14 +11,12 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import (
+from app.llm.models import (
     ModelTestConversationToolBinding,
     ModelTestTool,
     ModelTestToolCall,
 )
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import iso_utc, utc_now
-from app.schemas.model_test_tools import (
+from app.llm.schemas.model_test_tools import (
     ModelTestToolCallOut,
     ModelTestToolCatalogOut,
     ModelTestToolCreateIn,
@@ -28,6 +26,8 @@ from app.schemas.model_test_tools import (
     ModelTestToolPatchIn,
     ModelTestToolSummaryOut,
 )
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 
 
 class TestToolNotFoundError(Exception):

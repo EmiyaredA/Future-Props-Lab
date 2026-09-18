@@ -10,7 +10,7 @@ from app.llm.catalog.service import (
     ResourceNotFoundError,
 )
 from app.llm.diagnostics import DiagnosticCallError, test_model
-from app.schemas.model_service import (
+from app.llm.schemas.model_service import (
     DeleteMutationOut,
     ModelCatalogOut,
     ModelCategoryListOut,

@@ -24,12 +24,14 @@ from app.llm.generation_runtime import (
     submit_generation_task,
     upload_temporary_reference,
 )
-from app.llm.playground.generation import ACTIVE_GENERATION_STATUSES
-from app.llm.providers.temporary_media import TemporaryMediaError
-from app.models import (
+from app.llm.models import (
     LlmCallLog,
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
+)
+from app.llm.playground.generation import ACTIVE_GENERATION_STATUSES
+from app.llm.providers.temporary_media import TemporaryMediaError
+from app.models import (
     VisualAsset,
 )
 from app.runtime.config import Settings, get_settings

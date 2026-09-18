@@ -8,14 +8,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.catalog.service import ResourceNotFoundError
-from app.llm.playground.attachments import (
-    AttachmentError,
-    ModelTestAttachments,
-    attachment_out,
-)
-from app.llm.playground.test_tools import ModelTestTools, call_out, tool_snapshot
-from app.llm.providers import ChatMessageInput, ImageInput
-from app.models import (
+from app.llm.models import (
     ModelEntry,
     ModelProvider,
     ModelTestAttachment,
@@ -25,10 +18,14 @@ from app.models import (
     ModelTestTool,
     ModelTestToolCall,
 )
-from app.runtime.config import Settings, get_settings
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import iso_utc, utc_now
-from app.schemas.model_test import (
+from app.llm.playground.attachments import (
+    AttachmentError,
+    ModelTestAttachments,
+    attachment_out,
+)
+from app.llm.playground.test_tools import ModelTestTools, call_out, tool_snapshot
+from app.llm.providers import ChatMessageInput, ImageInput
+from app.llm.schemas.model_test import (
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,
     ModelTestConversationOut,
@@ -36,6 +33,9 @@ from app.schemas.model_test import (
     ModelTestConversationSummaryOut,
     ModelTestMessageOut,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import iso_utc, utc_now
 
 
 class ModelUnavailableError(Exception):

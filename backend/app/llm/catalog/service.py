@@ -6,19 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.catalog.supplier_records import get_supplier, list_suppliers
-from app.models import (
+from app.llm.models import (
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
     ModelTestGenerationTask,
 )
-from app.models.model_inference import ModelInferenceTask
-from app.models.platform_governance import PlatformSetting
-from app.runtime.credentials import encrypt_secret
-from app.runtime.orm_base import Base
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.secret_hints import encrypted_secret_hint
-from app.schemas.model_service import (
+from app.llm.models.model_inference import ModelInferenceTask
+from app.llm.schemas.model_service import (
     ModelCatalogOut,
     ModelCategoryListOut,
     ModelCategoryOut,
@@ -27,6 +22,11 @@ from app.schemas.model_service import (
     ProviderIn,
     ProviderOut,
 )
+from app.models.platform_governance import PlatformSetting
+from app.runtime.credentials import encrypt_secret
+from app.runtime.orm_base import Base
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.secret_hints import encrypted_secret_hint
 
 
 class ResourceNotFoundError(Exception):

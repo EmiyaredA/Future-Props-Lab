@@ -7,12 +7,12 @@ from app.capabilities.agents.harness.contracts import ImageInput
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model
+from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
-from app.models import LlmCallLog
+from app.llm.schemas.model_inference import InferenceTextEvent, InferenceTextOut
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
-from app.schemas.model_inference import InferenceTextEvent, InferenceTextOut
 
 
 async def prepare(session, workspace_id, body):

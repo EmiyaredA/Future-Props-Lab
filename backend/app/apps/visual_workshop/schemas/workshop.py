@@ -15,7 +15,7 @@ from app.schemas.files import (
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
-from app.schemas.generation_tasks import (
+from app.llm.schemas.generation_tasks import (
     AudioGenerationTaskCreateIn,
     GenerationTaskCreateIn,
     GenerationTaskStatus,

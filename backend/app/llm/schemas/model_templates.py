@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.schemas.model_service import ModelCapability, ModelCategory, ProviderIn, ProviderKind
+from app.llm.schemas.model_service import ModelCapability, ModelCategory, ProviderIn, ProviderKind
 
 PlatformRole = Literal["super_admin", "admin", "member"]
 

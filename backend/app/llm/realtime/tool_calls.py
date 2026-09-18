@@ -7,8 +7,8 @@ from typing import Any
 
 from sqlalchemy import select
 
+from app.llm.models import ModelTestTool, ModelTestToolCall
 from app.llm.playground.test_tools import TestToolResult, execute_test_tool
-from app.models import ModelTestTool, ModelTestToolCall
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now

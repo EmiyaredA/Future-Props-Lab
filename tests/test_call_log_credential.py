@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import delete
 
 from app.main import app
-from app.models import LlmCallLog
+from app.llm.models import LlmCallLog
 from app.runtime.db import SessionLocal
 
 

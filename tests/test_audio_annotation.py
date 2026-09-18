@@ -14,7 +14,8 @@ from app.capabilities.transcription.support import (
 )
 from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
 from app.main import app
-from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, Workspace
+from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
+from app.models import Workspace
 from app.orm import bind_workspace
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal

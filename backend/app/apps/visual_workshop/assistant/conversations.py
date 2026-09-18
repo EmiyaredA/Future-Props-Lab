@@ -35,9 +35,11 @@ from app.apps.visual_workshop.schemas.workshop import (
 )
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.providers import ChatMessageInput
-from app.models import (
+from app.llm.models import (
     ModelEntry,
     ModelProvider,
+)
+from app.models import (
     VisualAsset,
 )
 from app.runtime.config import Settings, get_settings

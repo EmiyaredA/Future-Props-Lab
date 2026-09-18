@@ -16,8 +16,7 @@ from app.llm.playground.service import (
     RegenerateUnavailableError,
 )
 from app.llm.playground.stream import generation_events
-from app.runtime.config import get_settings
-from app.schemas.model_test import (
+from app.llm.schemas.model_test import (
     ModelTestAttachmentListOut,
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,
@@ -26,6 +25,7 @@ from app.schemas.model_test import (
     ModelTestRegenerateIn,
     ModelTestSendIn,
 )
+from app.runtime.config import get_settings
 
 router = APIRouter(prefix="/model-test/conversations", tags=["model-test"])
 

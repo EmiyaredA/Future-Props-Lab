@@ -19,7 +19,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：阶段 2 产品 App 全部可整体删除/替换；`workshop_operations` 消失。
-- **代价与已知上限**：`llm/`、`integrations/`、`demo_runtime/`、`tool_navigation/` 仍暂留顶层。
+- **代价与已知上限**：`llm/` 已按垂直收拢迁入自身 models/schemas/routes（见 `2026-09-18-llm-vertical-slice.md`）；`integrations/`、`demo_runtime/`、`tool_navigation/` 仍暂留顶层。
 
 ## Verification
 

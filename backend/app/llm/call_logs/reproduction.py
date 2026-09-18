@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from app.models import LlmCallLog
+from app.llm.models import LlmCallLog
 
 
 class ReproductionUnavailableError(ValueError):

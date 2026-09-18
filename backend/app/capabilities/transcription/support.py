@@ -3,12 +3,15 @@ from __future__ import annotations
 import httpx
 
 from app.capabilities.transcription.parameters import parameter_capabilities
-from app.models import ModelEntry, ModelProvider
+from app.orm import CATALOG_MODELS
 
 # Keep SenseAudio limits local so capabilities/transcription does not import llm.
 MAX_ASR_FILE_BYTES = 10 * 1024 * 1024
 MAX_PRO_ASR_FILE_BYTES = 100 * 1024 * 1024
 SENSEAUDIO_ASR_KINDS = frozenset({"senseaudio_asr", "senseaudio_asr_pro"})
+
+ModelEntry = CATALOG_MODELS["entry"]
+ModelProvider = CATALOG_MODELS["provider"]
 
 
 def _max_asr_file_bytes(*, pro: bool = False) -> int:

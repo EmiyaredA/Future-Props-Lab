@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.llm.call_logs import CallLogService, ReproductionUnavailableError
-from app.schemas.call_log import (
+from app.llm.schemas.call_log import (
     BatchDeleteIn,
     CallLogListOut,
     CallLogOut,

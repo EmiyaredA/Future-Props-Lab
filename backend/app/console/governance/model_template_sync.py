@@ -15,7 +15,8 @@ from app.console.governance.model_templates import (
 )
 from app.console.governance.platform_policy import read_setting
 from app.console.governance.service import add_audit_event
-from app.models import ModelSupplier, User, Workspace, WorkspaceMembership
+from app.llm.models import ModelSupplier
+from app.models import User, Workspace, WorkspaceMembership
 from app.models.model_templates import ModelTemplateSyncItem as Item
 from app.models.model_templates import ModelTemplateSyncJob as Job
 from app.runtime.db import SessionLocal

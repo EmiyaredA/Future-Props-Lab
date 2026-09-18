@@ -3,7 +3,7 @@
 from sqlalchemy import select
 
 from app.llm.catalog.service import ModelCatalogService
-from app.models import ModelEntry, ModelProvider
+from app.llm.models import ModelEntry, ModelProvider
 from app.models.platform_governance import PlatformSetting
 
 

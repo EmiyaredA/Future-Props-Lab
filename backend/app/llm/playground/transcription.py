@@ -19,13 +19,9 @@ from app.capabilities.transcription import (
     resolve_parameters,
 )
 from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
-from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, VisualAsset
-from app.runtime.config import Settings, get_settings
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.task_admission import TaskAdmission
-from app.runtime.time import iso_utc
-from app.schemas.model_test import (
+from app.llm.schemas.model_test import (
     ModelTestTranscriptionCreateIn,
     ModelTestTranscriptionOptionListOut,
     ModelTestTranscriptionOptionOut,
@@ -36,6 +32,11 @@ from app.schemas.model_test import (
     ModelTestTranscriptionTaskListOut,
     ModelTestTranscriptionTaskOut,
 )
+from app.models import VisualAsset
+from app.runtime.config import Settings, get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.task_admission import TaskAdmission
+from app.runtime.time import iso_utc
 
 TRANSCRIPTION_EXTENSIONS = (".mp3", ".wav", ".m4a", ".ogg")
 TRANSCRIPTION_MIME_TYPES = tuple(

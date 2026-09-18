@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.model_supplier import ModelSupplier
-from app.schemas.model_supplier import ModelSupplierOut
+from app.llm.models.model_supplier import ModelSupplier
+from app.llm.schemas.model_supplier import ModelSupplierOut
 
 
 def supplier_out(row: ModelSupplier) -> ModelSupplierOut:

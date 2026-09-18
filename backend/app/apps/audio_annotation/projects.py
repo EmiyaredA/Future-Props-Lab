@@ -30,8 +30,10 @@ from app.apps.audio_annotation.schemas.document import (
 )
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.storage import AssetStorage
-from app.models import (
+from app.llm.models import (
     ModelTestTranscriptionTask,
+)
+from app.models import (
     VisualAsset,
 )
 from app.runtime.config import get_settings

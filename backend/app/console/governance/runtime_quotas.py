@@ -7,12 +7,9 @@ from app.console.governance.platform_policy import read_setting
 from app.models import (
     AuthSession,
     ManagementApiKey,
-    ModelTestGenerationTask,
-    ModelTestTranscriptionTask,
     User,
     WorkspaceMembership,
 )
-from app.models.model_inference import ModelInferenceTask
 from app.models.runtime_admission import RuntimeAdmission as Admission
 from app.orm import RUNTIME_QUOTA_TASK_MODELS
 from app.runtime.db import SessionLocal
@@ -20,9 +17,6 @@ from app.runtime.time import utc_now
 from app.schemas.platform_governance import RuntimeQuotas
 
 TASK_MODELS = {
-    "inference": ModelInferenceTask,
-    "model": ModelTestGenerationTask,
-    "transcription": ModelTestTranscriptionTask,
     **RUNTIME_QUOTA_TASK_MODELS,
 }
 ACTIVE = ("queued", "submitting", "pending", "processing", "running")

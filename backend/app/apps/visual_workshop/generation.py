@@ -34,9 +34,11 @@ from app.apps.visual_workshop.schemas.workshop import (
 from app.capabilities.asset_store import download_filename
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
-from app.models import (
+from app.llm.models import (
     ModelEntry,
     ModelProvider,
+)
+from app.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )

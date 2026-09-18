@@ -15,7 +15,7 @@ from app.apps.galgame_workshop.schemas import (
 )
 from app.capabilities.asset_store import AssetError
 from app.deps import SessionDep
-from app.routes.model_capacity import task_admission
+from app.llm.routes.model_capacity import task_admission
 
 router = APIRouter()
 

@@ -33,7 +33,7 @@ def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
     from app.deps import SessionDep, require_studio_auth
     from app.main import app
     from app.orm import bind_workspace
-    from app.routes.model_capacity import model_capacity
+    from app.llm.routes.model_capacity import model_capacity
 
     async def principal(session: SessionDep) -> StudioPrincipal:
         bind_workspace(session, "default")
@@ -55,7 +55,7 @@ def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
     async def capacity():
         yield
 
-    from app.routes.models import model_test_realtime
+    from app.llm.routes.models import model_test_realtime
 
     async def acquire_capacity(*_args, **_kwargs):
         return None

@@ -13,15 +13,20 @@ from app.capabilities.transcription import (
     safe_transcription_error,
 )
 from app.llm.call_logs.credentials import snapshot_from_row
+from app.llm.models import (
+    LlmCallLog,
+    ModelEntry,
+    ModelProvider,
+    ModelTestTranscriptionTask,
+)
 from app.llm.providers.transcription import transcribe_model_audio
-from app.models import LlmCallLog, ModelEntry, ModelProvider, ModelTestTranscriptionTask
+from app.llm.schemas.model_test import ModelTestTranscriptionResultDetailOut
 from app.orm import bind_workspace, require_workspace_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
-from app.schemas.model_test import ModelTestTranscriptionResultDetailOut
 
 
 class ModelTestTranscriptionRunner(PollingTaskRunner):

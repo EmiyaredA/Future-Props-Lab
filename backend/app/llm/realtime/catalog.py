@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.realtime.constants import (
     SENSEAUDIO_DEFAULT_VOICE,
     SENSEAUDIO_VOICE_PRESETS,
@@ -19,10 +20,7 @@ from app.llm.providers.realtime.constants import (
     VOICE_VAD_PRE_SPEECH_PAD_MS,
 )
 from app.llm.providers.realtime.contracts import ResolvedRealtimeModel
-from app.models import ModelEntry, ModelProvider
-from app.orm import bind_workspace
-from app.runtime.credentials import decrypt_secret
-from app.schemas.realtime_voice import (
+from app.llm.schemas.realtime_voice import (
     RealtimeNumberParameterOut,
     RealtimeVoiceMicrophoneOut,
     RealtimeVoiceModelOut,
@@ -31,6 +29,8 @@ from app.schemas.realtime_voice import (
     RealtimeVoicePlaybackOut,
     RealtimeVoiceVadOut,
 )
+from app.orm import bind_workspace
+from app.runtime.credentials import decrypt_secret
 
 
 class RealtimeModelUnavailableError(RuntimeError):

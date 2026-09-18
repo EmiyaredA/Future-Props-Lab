@@ -6,9 +6,9 @@ from app.llm.catalog.service import (
     ResourceNotFoundError,
 )
 from app.llm.catalog.supplier_records import get_supplier, supplier_out
-from app.models import ModelProvider
-from app.models.model_supplier import ModelSupplier
-from app.schemas.model_supplier import ModelSupplierIn, ModelSupplierOut
+from app.llm.models import ModelProvider
+from app.llm.models.model_supplier import ModelSupplier
+from app.llm.schemas.model_supplier import ModelSupplierIn, ModelSupplierOut
 
 
 class ManagedSupplierError(Exception):

@@ -30,7 +30,7 @@ from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.session import TurnMetrics, _client_configuration, _write_log
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
 from app.main import app
-from app.models import LlmCallLog, ModelTestTool, ModelTestToolCall
+from app.llm.models import LlmCallLog, ModelTestTool, ModelTestToolCall
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
 
@@ -717,7 +717,7 @@ def test_realtime_client_parameters_are_validated_and_normalized() -> None:
 
 
 def test_realtime_websocket_rejects_origin_and_auth(monkeypatch: pytest.MonkeyPatch) -> None:
-    import app.routes.models.model_test_realtime as route
+    import app.llm.routes.models.model_test_realtime as route
 
     async def unauthorized(*_args):
         raise HTTPException(401)
@@ -739,7 +739,7 @@ def test_realtime_websocket_rejects_origin_and_auth(monkeypatch: pytest.MonkeyPa
 def test_realtime_websocket_accepts_authenticated_workspace(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import app.routes.models.model_test_realtime as route
+    import app.llm.routes.models.model_test_realtime as route
 
     async def authenticated(*_args):
         return SimpleNamespace(

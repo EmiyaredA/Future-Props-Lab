@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.models import ModelEntry, ModelProvider
+from app.orm import CATALOG_MODELS
 from app.schemas.transcription import (
     ModelTestTranscriptionLanguageOptionOut,
     ModelTestTranscriptionParameterCapabilitiesOut,
     ModelTestTranscriptionParametersIn,
     ModelTestTranscriptionParametersOut,
 )
+
+ModelEntry = CATALOG_MODELS["entry"]
+ModelProvider = CATALOG_MODELS["provider"]
 
 OFFICIAL_LANGUAGES = (
     ("auto", "自动识别"),

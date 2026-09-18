@@ -21,7 +21,7 @@ from app.capabilities.transcription import (
 )
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
-from app.models import LlmCallLog, ModelEntry, ModelProvider
+from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.runtime.credentials import decrypt_secret
 from app.schemas.transcription import ModelTestTranscriptionParametersIn
 

@@ -9,10 +9,10 @@ from uuid import uuid4
 import httpx
 from sqlalchemy import update
 
+from app.llm.models import LlmCallLog, ModelTestConversation, ModelTestMessage
 from app.llm.playground.service import PreparedGeneration, message_out
 from app.llm.playground.tool_stream import tool_generation_events
 from app.llm.providers import stream_text_completion
-from app.models import LlmCallLog, ModelTestConversation, ModelTestMessage
 from app.orm import bind_workspace
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.catalog.metadata import categories_for_provider
-from app.models import ModelCatalogState, ModelEntry, ModelProvider
+from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider
 from app.runtime.ids import new_id
 
 

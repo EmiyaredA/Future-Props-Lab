@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from app.schemas.model_service import ProviderKind
+from app.llm.schemas.model_service import ProviderKind
 
 
 class RealtimeVoiceOptionOut(BaseModel):

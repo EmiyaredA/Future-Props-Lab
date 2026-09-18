@@ -10,7 +10,8 @@ from sqlalchemy import delete
 
 from app.llm.playground.generation_assets import GenerationAssetError, ModelTestGenerationAssets
 from app.main import app
-from app.models import ModelTestGenerationAsset, ModelTestGenerationTask, VisualAsset
+from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
+from app.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now

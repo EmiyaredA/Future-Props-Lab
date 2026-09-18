@@ -21,12 +21,12 @@ Future-Props-Lab/
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理与库级文件用例：governance、file_library
 │   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame）
-│   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
+│   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
-│   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂（App 迁出后逐步清空）
-│   ├── routes/        # `/v1` HTTP/SSE 协议边界；未迁入 App 的协议模块仍在此
-│   └── schemas/       # Pydantic 请求与响应形状；未迁入 App 的契约仍在此
+│   ├── models/        # 尚未迁出的持久化形状（files、账号、治理、integrations、model_templates 等）及其 ID/时间工厂
+│   ├── routes/        # 尚未迁入 App/llm 的 `/v1` HTTP/SSE 协议边界
+│   └── schemas/       # 尚未迁入 App/llm 的 Pydantic 契约
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -89,7 +89,7 @@ Future-Props-Lab/
 
 - `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供工作区限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
-  `routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
+  `llm/routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
 - `web/src/features/models/catalog/` 拥有受控 `ModelCatalogEditor`、目录分类、供应商树和三层表单；
   `ModelServicePage` 适配工作区 API、缓存和冲突恢复，`WorkspaceDefaults` 负责默认用途选择与保存。
   管理中台通过数据、动作和字段权限复用编辑器，
@@ -403,9 +403,9 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `sdk/python/`：可独立构建安装的 `future-props-lab-sdk`；`src/future_props_lab/generated/` 只保存生成模型和具名资源方法，其他模块拥有 HTTPX 通信、流、鉴权、实时语音和本地文档构建器。
 - `sdk/python/operations.json`：受版本控制的 HTTP 操作到稳定 Python 方法名映射；`coverage.json` 记录契约与文档证据，不能替代业务闭环验收。
 - `scripts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。
-- `backend/app/llm/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`routes/model_inference.py` 只处理协议。
+- `backend/app/llm/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`llm/routes/model_inference.py` 只处理协议。
 - 工坊各自的 `operations.py` 拥有细粒度编辑校验与一次事务；`runtime/operation_receipts.py` 仅提供持久化回执原语，`entity_edits.py` 仅提供纯列表编辑。
-- `backend/app/models/model_inference.py` 与 `project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
+- `backend/app/llm/models/model_inference.py` 与 `models/project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
 - `web/src/features/models/inference/`：调用日志页中的独立任务查询、下载、转存与结果落盘重试入口；缓存键归属 models/queryKeys.ts。
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
 - `backend/app/apps/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/conversion.py` 描述正式契约。

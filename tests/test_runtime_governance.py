@@ -9,7 +9,7 @@ from app.capabilities.identity.errors import AccountError
 from app.capabilities.identity.principal import StudioPrincipal
 from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
 from app.main import app
-from app.models import ModelTestGenerationTask
+from app.llm.models import ModelTestGenerationTask
 from app.models.runtime_admission import RuntimeAdmission
 from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account
@@ -171,7 +171,7 @@ async def test_demo_services_disabled_stream_tools_install_and_policy_reading():
 
 @pytest.mark.asyncio
 async def test_sensitive_diagnostics_and_official_mark_require_current_policy():
-    from app.models import LlmCallLog
+    from app.llm.models import LlmCallLog
 
     admin, *_ = await client_account(admin=True)
     member, _, _, workspace_id = await client_account()

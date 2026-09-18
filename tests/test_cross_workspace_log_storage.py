@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import delete
 
-from app.models import LlmCallLog
+from app.llm.models import LlmCallLog
 from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account
 

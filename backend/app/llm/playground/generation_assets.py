@@ -13,16 +13,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.storage import AssetStorage
-from app.models import ModelTestGenerationAsset, ModelTestGenerationTask, VisualAsset
-from app.runtime.config import Settings, get_settings
-from app.runtime.time import iso_utc, utc_now
-from app.schemas.model_test import (
+from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
+from app.llm.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
     ModelTestGenerationAssetBackfillStatusOut,
     ModelTestGenerationAssetCleanupOut,
     ModelTestGenerationAssetListOut,
     ModelTestGenerationAssetOut,
 )
+from app.models import VisualAsset
+from app.runtime.config import Settings, get_settings
+from app.runtime.time import iso_utc, utc_now
 
 MAX_DRAFT_ASSETS = 15
 DRAFT_TTL = timedelta(hours=24)

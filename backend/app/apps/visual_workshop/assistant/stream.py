@@ -27,7 +27,7 @@ from app.apps.visual_workshop.models import (
 )
 from app.capabilities.agents.harness import AgentEvent, AgentHarness, AgentMessage, RunStatus
 from app.llm.providers.agent import HttpAgentAdapter
-from app.models import (
+from app.llm.models import (
     LlmCallLog,
 )
 from app.orm import bind_workspace

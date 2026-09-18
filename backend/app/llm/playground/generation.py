@@ -6,22 +6,18 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.call_logs.credentials import CredentialSnapshot
-from app.llm.playground.generation_assets import (
-    GenerationAssetError,
-    ModelTestGenerationAssets,
-)
-from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
-from app.models import (
+from app.llm.models import (
     ModelEntry,
     ModelProvider,
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
 )
-from app.runtime.config import Settings, get_settings
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.task_admission import TaskAdmission
-from app.runtime.time import iso_utc, utc_now
-from app.schemas.model_test import (
+from app.llm.playground.generation_assets import (
+    GenerationAssetError,
+    ModelTestGenerationAssets,
+)
+from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
+from app.llm.schemas.model_test import (
     ModelTestGenerationCreateIn,
     ModelTestGenerationOptionListOut,
     ModelTestGenerationOptionOut,
@@ -30,6 +26,10 @@ from app.schemas.model_test import (
     ModelTestImageGenerationIn,
     ModelTestVideoGenerationIn,
 )
+from app.runtime.config import Settings, get_settings
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.task_admission import TaskAdmission
+from app.runtime.time import iso_utc, utc_now
 
 ACTIVE_GENERATION_STATUSES = ("queued", "submitting", "pending", "processing")
 

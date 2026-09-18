@@ -12,8 +12,8 @@ from app.llm.playground.generation_assets import (
     GenerationAssetError,
     ModelTestGenerationAssets,
 )
-from app.routes.model_capacity import task_admission
-from app.schemas.model_test import (
+from app.llm.routes.model_capacity import task_admission
+from app.llm.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
     ModelTestGenerationAssetBackfillStatusOut,
     ModelTestGenerationAssetCleanupOut,

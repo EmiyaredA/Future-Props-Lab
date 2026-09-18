@@ -8,7 +8,7 @@ from app.runtime.outbound_urls import (
     normalize_provider_base_url,
     normalize_provider_websocket_url,
 )
-from app.schemas.model_service import ProviderIn
+from app.llm.schemas.model_service import ProviderIn
 
 
 def test_secret_round_trip_does_not_store_plaintext() -> None:

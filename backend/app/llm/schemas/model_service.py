@@ -4,8 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.llm.schemas.model_supplier import ModelSupplierOut
 from app.runtime.outbound_urls import normalize_provider_base_url, normalize_provider_websocket_url
-from app.schemas.model_supplier import ModelSupplierOut
 
 ProviderKind = Literal[
     "openai",

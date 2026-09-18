@@ -12,9 +12,11 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
-from app.models import (
+from app.llm.models import (
     ModelEntry,
     ModelProvider,
+)
+from app.models import (
     VisualAsset,
     VisualAssetFolder,
     VisualProjectAssetReference,

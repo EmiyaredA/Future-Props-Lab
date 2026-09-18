@@ -13,9 +13,8 @@ from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
 from app.llm.inference.tasks import InferenceTasks
 from app.llm.inference.text import events, prepare
-from app.routes.model_capacity import task_admission
-from app.runtime.operation_receipts import OperationError
-from app.schemas.model_inference import (
+from app.llm.routes.model_capacity import task_admission
+from app.llm.schemas.model_inference import (
     InferenceAssetImportIn,
     InferenceAssetOut,
     InferenceOptionsOut,
@@ -27,6 +26,7 @@ from app.schemas.model_inference import (
     InferenceTextIn,
     InferenceTextOut,
 )
+from app.runtime.operation_receipts import OperationError
 from app.schemas.files import VisualAssetOut
 
 router = APIRouter(prefix="/model-inference", tags=["model-inference"])

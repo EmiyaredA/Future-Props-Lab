@@ -7,7 +7,8 @@ from sqlalchemy import select
 
 from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.main import app
-from app.models import ModelProvider, User
+from app.llm.models import ModelProvider
+from app.models import User
 from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account
 

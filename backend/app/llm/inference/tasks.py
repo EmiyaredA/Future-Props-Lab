@@ -8,12 +8,12 @@ from app.capabilities.transcription import max_transcription_input_bytes
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, LocalInput, root
 from app.llm.inference.catalog import get_model, normalize_parameters
-from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
+from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
+from app.llm.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError, fingerprint
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
-from app.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
 
 ACTIVE = ("queued", "submitting", "pending", "processing", "running")
 

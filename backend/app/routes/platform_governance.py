@@ -25,7 +25,7 @@ from app.console.governance.registration import (
 from app.deps import SessionDep, client_ip, require_recent_reauthentication
 from app.routes.accounts import _browser_auth, _login_out, _platform_auth, _set_cookies
 from app.schemas.accounts import AuthMeOut
-from app.schemas.call_log import CallLogStatsOut, CrossWorkspaceLogQuery
+from app.llm.schemas.call_log import CallLogStatsOut, CrossWorkspaceLogQuery
 from app.schemas.platform_governance import (
     CertificationIn,
     CertificationOut,

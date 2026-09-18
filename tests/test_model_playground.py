@@ -14,7 +14,7 @@ from app.llm.playground.service import ModelTestService
 from app.llm.playground.stream import generation_events
 from app.llm.providers import TextDelta
 from app.main import app
-from app.models import (
+from app.llm.models import (
     LlmCallLog,
     ModelEntry,
     ModelProvider,
@@ -24,7 +24,7 @@ from app.models import (
 )
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
-from app.schemas.model_test import ModelTestConversationCreateIn
+from app.llm.schemas.model_test import ModelTestConversationCreateIn
 
 
 def _events(body: str) -> list[dict]:

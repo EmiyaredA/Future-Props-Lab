@@ -23,10 +23,11 @@ from app.llm.providers.transcription import (
     TranscriptWord,
 )
 from app.main import app
-from app.models import ModelTestTranscriptionTask, Workspace
+from app.llm.models import ModelTestTranscriptionTask
+from app.models import Workspace
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
-from app.schemas.model_test import ModelTestTranscriptionParametersIn
+from app.llm.schemas.model_test import ModelTestTranscriptionParametersIn
 
 
 @pytest.mark.parametrize(

@@ -31,9 +31,11 @@ from app.capabilities.asset_store import (
 )
 from app.capabilities.asset_store.project_transactions import importing_project_layout
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
-from app.models import (
+from app.llm.models import (
     ModelEntry,
     ModelProvider,
+)
+from app.models import (
     VisualAsset,
     VisualAssetFolder,
     VisualProjectAssetReference,

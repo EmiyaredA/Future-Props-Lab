@@ -52,10 +52,8 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
-from app.models import (  # noqa: F401
-    IntegrationCheck,
+from app.llm.models import (
     LlmCallLog,
-    McpIntegration,
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
@@ -66,14 +64,24 @@ from app.models import (  # noqa: F401
     ModelTestTool,
     ModelTestToolCall,
     ModelTestTranscriptionTask,
+)
+from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
+from app.models import (
+    IntegrationCheck,
+    McpIntegration,
     SkillIntegration,
     ToolApiIntegration,
     ToolNavigationItem,
 )
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
-from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.models.project_operations import ProjectOperationReceipt
 from app.runtime.orm_base import Base
+
+# Catalog types for capabilities that must not import app.llm.
+CATALOG_MODELS: dict[str, type] = {
+    "entry": ModelEntry,
+    "provider": ModelProvider,
+}
 
 # App-owned roots registered at assembly time so console must not import apps/.
 DESKTOP_UI_ROOTS: dict[str, type] = {
@@ -102,9 +110,12 @@ PUBLIC_WORKSPACE_GALGAME_MODELS: dict[str, type] = {
     "story": GalgameStoryDocument,
 }
 
-# Runtime quota task kinds owned by migrated apps.
+# Runtime quota task kinds owned by migrated apps and llm.
 RUNTIME_QUOTA_TASK_MODELS: dict[str, type] = {
     "galgame_asr": GalgameAssetTranscriptionTask,
+    "inference": ModelInferenceTask,
+    "model": ModelTestGenerationTask,
+    "transcription": ModelTestTranscriptionTask,
     "visual": VisualGenerationTask,
 }
 
@@ -240,9 +251,11 @@ def bind_workspace(session: Any, workspace_id: str) -> None:
 
 __all__ = [
     "Base",
+    "CATALOG_MODELS",
     "CERTIFIABLE_PROJECT_ROOTS",
     "DESKTOP_UI_ROOTS",
     "LAYOUT_PROJECT_MODELS",
+    "PUBLIC_WORKSPACE_GALGAME_MODELS",
     "PUBLIC_WORKSPACE_PROJECT_MODELS",
     "RUNTIME_QUOTA_TASK_MODELS",
     "TENANT_MODELS",

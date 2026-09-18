@@ -18,7 +18,7 @@ from app.apps.visual_workshop.schemas.workshop import (
     GenerationTaskOut,
 )
 from app.deps import SessionDep
-from app.routes.model_capacity import task_admission
+from app.llm.routes.model_capacity import task_admission
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
 

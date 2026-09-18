@@ -8,8 +8,7 @@ from app.console.governance.model_template_sync import (
 )
 from app.console.governance.model_templates import get_template, save_template
 from app.deps import SessionDep, client_ip
-from app.routes.accounts import _platform_auth
-from app.schemas.model_templates import (
+from app.llm.schemas.model_templates import (
     PlatformRole,
     RoleModelTemplateIn,
     RoleModelTemplateOut,
@@ -17,6 +16,7 @@ from app.schemas.model_templates import (
     TemplateSyncIn,
     TemplateSyncJobOut,
 )
+from app.routes.accounts import _platform_auth
 
 router = APIRouter(prefix="/platform/model-service-templates", tags=["model-service-templates"])
 

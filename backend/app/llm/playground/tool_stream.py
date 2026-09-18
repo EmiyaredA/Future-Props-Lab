@@ -18,10 +18,15 @@ from app.capabilities.agents.harness import (
     RunStatus,
     ToolBinding,
 )
+from app.llm.models import (
+    LlmCallLog,
+    ModelTestConversation,
+    ModelTestMessage,
+    ModelTestToolCall,
+)
 from app.llm.playground.service import PreparedGeneration, message_out
 from app.llm.playground.test_tools import call_out, execute_test_tool, model_result_text
 from app.llm.providers.agent import HttpAgentAdapter
-from app.models import LlmCallLog, ModelTestConversation, ModelTestMessage, ModelTestToolCall
 from app.orm import bind_workspace
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal

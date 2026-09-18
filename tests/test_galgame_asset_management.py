@@ -19,7 +19,7 @@ from app.apps.galgame_workshop.models import (
 )
 from app.apps.galgame_workshop.schemas import GalgameStoryProject
 from app.main import app
-from app.models import (
+from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )

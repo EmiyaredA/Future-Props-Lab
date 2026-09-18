@@ -7,7 +7,7 @@ from sqlalchemy import event, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.llm.catalog.seed import seed_sayflow_text_catalog
-from app.models import ModelCatalogState, ModelEntry, ModelProvider
+from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider
 from db.migrations import apply_migrations
 
 EXPECTED_OPENAI_MODELS = (

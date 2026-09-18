@@ -8,7 +8,7 @@ from app.llm.playground.test_tools import (
     TestToolInUseError,
     TestToolNotFoundError,
 )
-from app.schemas.model_test_tools import (
+from app.llm.schemas.model_test_tools import (
     ModelTestToolCallOut,
     ModelTestToolCatalogOut,
     ModelTestToolCreateIn,

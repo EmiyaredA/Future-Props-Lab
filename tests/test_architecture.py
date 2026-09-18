@@ -290,7 +290,11 @@ def test_management_api_key_mutations_require_browser_session_auth() -> None:
 
 def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
     violations: list[str] = []
-    route_roots = [BACKEND_APP / "routes", *(BACKEND_APP / "apps").glob("*/routes")]
+    route_roots = [
+        BACKEND_APP / "routes",
+        BACKEND_APP / "llm" / "routes",
+        *(BACKEND_APP / "apps").glob("*/routes"),
+    ]
     for path in _python_files(BACKEND_APP):
         if any(_is_within(path, root) for root in route_roots if root.is_dir()):
             continue
@@ -405,6 +409,10 @@ def test_backend_production_packages_have_no_dependency_cycles() -> None:
     graph: dict[str, set[str]] = {package: set() for package in packages}
     for package in packages:
         for path in _python_files(BACKEND_APP / package):
+            # Protocol adapters may call into peer packages; they used to live in the
+            # exempted top-level routes/ tree. Ignore the same role under package routes/.
+            if "routes" in path.relative_to(BACKEND_APP / package).parts:
+                continue
             for module in _python_imports(path):
                 parts = module.split(".")
                 if len(parts) >= 2 and parts[0] == "app" and parts[1] in packages:
@@ -639,6 +647,40 @@ def test_galgame_workshop_lives_under_apps() -> None:
     assert not (BACKEND_APP / "schemas" / "galgame_workshop").exists()
     assert not (BACKEND_APP / "schemas" / "galgame_operations.py").exists()
     assert not (BACKEND_APP / "routes" / "workshop_operations.py").exists()
+
+
+def test_llm_owns_models_schemas_and_routes() -> None:
+    assert (BACKEND_APP / "llm" / "models" / "model_service.py").is_file()
+    assert (BACKEND_APP / "llm" / "schemas" / "model_service.py").is_file()
+    assert (BACKEND_APP / "llm" / "schemas" / "generation_tasks.py").is_file()
+    assert (BACKEND_APP / "llm" / "schemas" / "realtime_voice.py").is_file()
+    assert (BACKEND_APP / "llm" / "routes" / "models" / "catalog.py").is_file()
+    assert (BACKEND_APP / "llm" / "routes" / "model_inference.py").is_file()
+    for name in (
+        "model_service.py",
+        "model_supplier.py",
+        "model_test.py",
+        "model_test_tools.py",
+        "model_inference.py",
+        "call_log.py",
+    ):
+        assert not (BACKEND_APP / "models" / name).exists()
+    for name in (
+        "model_service.py",
+        "model_supplier.py",
+        "model_test.py",
+        "model_test_tools.py",
+        "model_inference.py",
+        "model_templates.py",
+        "call_log.py",
+        "generation_tasks.py",
+    ):
+        assert not (BACKEND_APP / "schemas" / name).exists()
+    assert not (BACKEND_APP / "schemas" / "realtime_voice.py").exists()
+    assert not (BACKEND_APP / "routes" / "models").exists()
+    assert not (BACKEND_APP / "routes" / "model_inference.py").exists()
+    assert not (BACKEND_APP / "routes" / "model_templates.py").exists()
+    assert not (BACKEND_APP / "routes" / "model_capacity.py").exists()
 
 
 def test_runtime_assembly_entrypoints_exist() -> None:

@@ -14,8 +14,8 @@ from app.console.governance.platform_policy import read_setting
 from app.console.governance.runtime_quotas import ACTIVE, TASK_MODELS
 from app.console.governance.service import add_audit_event
 from app.llm.catalog.metadata import categories_for_provider
-from app.models import ModelCatalogState, ModelEntry, ModelProvider
-from app.models.model_supplier import ModelSupplier
+from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider
+from app.llm.models.model_supplier import ModelSupplier
 from app.models.platform_governance import PlatformSetting
 from app.runtime.credentials import encrypt_secret
 from app.runtime.secret_hints import encrypted_secret_hint

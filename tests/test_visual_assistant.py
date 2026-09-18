@@ -14,7 +14,8 @@ from app.capabilities.agents.harness import approval_broker
 from app.capabilities.agents.harness.approval import ApprovalResolution
 from app.llm.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from app.main import app
-from app.models import LlmCallLog, ModelEntry, ModelProvider, VisualAsset
+from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
+from app.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal

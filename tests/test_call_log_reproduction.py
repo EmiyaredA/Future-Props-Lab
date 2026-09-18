@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from app.llm.call_logs.reproduction import build_reproduction_bundle
-from app.models import LlmCallLog
+from app.llm.models import LlmCallLog
 
 
 def _log(**overrides: object) -> LlmCallLog:

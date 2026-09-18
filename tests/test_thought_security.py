@@ -12,7 +12,7 @@ from tests.thought_helpers import delete_note
 from app.apps.thought_workshop.assistant import PreparedWriting, writing_events
 from app.llm.providers.streaming import TextDelta
 from app.main import app
-from app.models import LlmCallLog
+from app.llm.models import LlmCallLog
 from app.runtime.db import SessionLocal
 
 ROOT = "/v1/thought-workshop"

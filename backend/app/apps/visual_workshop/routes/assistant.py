@@ -27,7 +27,7 @@ from app.capabilities.agents.harness.approval import (
 )
 from app.deps import SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
-from app.routes.model_capacity import spawned_task_admission
+from app.llm.routes.model_capacity import spawned_task_admission
 
 router = APIRouter(
     prefix="/visual-workshop/projects/{project_id}/conversations",

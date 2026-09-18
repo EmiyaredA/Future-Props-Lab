@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import delete, select, update
 
 from app.llm.call_logs.service import CallLogService
-from app.models import LlmCallLog
+from app.llm.models import LlmCallLog
 from app.orm import (
     TenantScopeError,
     bind_workspace,

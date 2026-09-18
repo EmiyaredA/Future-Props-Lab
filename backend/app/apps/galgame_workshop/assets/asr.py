@@ -35,9 +35,11 @@ from app.llm.providers.senseaudio_asr import (
     SenseAudioAsrFileTooLarge,
 )
 from app.llm.providers.transcription import transcribe_model_audio
-from app.models import (
+from app.llm.models import (
     ModelEntry,
     ModelProvider,
+)
+from app.models import (
     VisualAsset,
 )
 from app.orm import bind_workspace

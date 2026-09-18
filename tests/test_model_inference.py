@@ -109,7 +109,7 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         from types import SimpleNamespace
 
         from app.orm import bind_workspace
-        from app.routes.model_capacity import model_capacity
+        from app.llm.routes.model_capacity import model_capacity
         from app.runtime.db import SessionLocal
 
         async def no_capacity(*_args, **_kwargs):
@@ -119,7 +119,7 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
             return body
 
         with monkeypatch.context() as limited:
-            limited.setattr("app.routes.model_capacity.acquire", no_capacity)
+            limited.setattr("app.llm.routes.model_capacity.acquire", no_capacity)
             async with SessionLocal() as session:
                 bind_workspace(session, "default")
                 request = SimpleNamespace(
@@ -347,7 +347,7 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
     from tests.test_audio_annotation import wav_bytes
 
     from app.llm.inference.assets import root
-    from app.models.model_inference import ModelInferenceAsset
+    from app.llm.models.model_inference import ModelInferenceAsset
     from app.runtime.db import SessionLocal
 
     original_commit = AsyncSession.commit

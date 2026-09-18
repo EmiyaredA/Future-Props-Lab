@@ -11,8 +11,8 @@ from app.llm.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
 )
-from app.routes.model_capacity import task_admission
-from app.schemas.model_test import (
+from app.llm.routes.model_capacity import task_admission
+from app.llm.schemas.model_test import (
     ModelTestTranscriptionCreateIn,
     ModelTestTranscriptionOptionListOut,
     ModelTestTranscriptionParametersIn,

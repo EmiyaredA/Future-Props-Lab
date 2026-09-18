@@ -9,8 +9,8 @@ from app.console.governance.runtime_quotas import acquire, release
 from app.deps import SessionDep, StudioAuth, resolve_studio_websocket_principal
 from app.llm.call_logs.credentials import snapshot_caller_credential
 from app.llm.realtime import list_realtime_models, run_realtime_model_test
+from app.llm.schemas.realtime_voice import RealtimeVoiceOptionsOut
 from app.runtime.config import get_settings
-from app.schemas.realtime_voice import RealtimeVoiceOptionsOut
 
 router = APIRouter(tags=["model-test"])
 

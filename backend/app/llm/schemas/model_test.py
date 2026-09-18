@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.schemas.model_test_tools import ModelTestToolCallOut, ModelTestToolSummaryOut
+from app.llm.schemas.model_test_tools import ModelTestToolCallOut, ModelTestToolSummaryOut
 from app.schemas.transcription import (
     ModelTestTranscriptionLanguageOptionOut as ModelTestTranscriptionLanguageOptionOut,
 )
