@@ -87,16 +87,24 @@
 .custom-select-menu button {
   width: 100%;
   min-height: 32px;
-  padding: 6px 8px;
+  padding: 0 8px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: flex-start;
   gap: 2px;
   border: 0;
   border-radius: 9px;
   background: transparent;
   color: var(--text);
+  line-height: 1.25;
   text-align: left;
+}
+
+.custom-select-menu button > span {
+  display: flex;
+  align-items: center;
+  min-height: 1.25em;
 }
 
 .custom-select-menu button:hover:not(:disabled),
