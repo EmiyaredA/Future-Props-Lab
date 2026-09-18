@@ -20,13 +20,11 @@ Future-Props-Lab/
 │   ├── runtime/       # 配置、数据库、CAS/轮询原语与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理与库级文件用例：governance、file_library
-│   ├── apps/          # 已垂直切片的产品 App（presentation / audio_annotation / thought_workshop）
+│   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
-│   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
-│   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、片段交接与后台任务
 │   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂（App 迁出后逐步清空）
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；未迁入 App 的协议模块仍在此
 │   └── schemas/       # Pydantic 请求与响应形状；未迁入 App 的契约仍在此
@@ -146,12 +144,12 @@ Future-Props-Lab/
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
   后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
-  `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
+  `apps/visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
   `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、Workspace 级旧 Story
   批量迁移与旧文件导入用例、剧情对话富文本、多人角色舞台演出、
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
-  `video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
+  `apps/video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
   后端精确停帧和剪辑任务；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
   FFmpeg/Pillow 合成和取消控制。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS

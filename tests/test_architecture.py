@@ -64,8 +64,6 @@ BUSINESS_BACKEND_PACKAGES = (
     "integrations",
     "llm",
     "tool_navigation",
-    "video_editor",
-    "visual_workshop",
 )
 ROUTE_FORBIDDEN_IMPORTS = ("app.runtime.db", "app.models", "db", "sqlalchemy")
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace", "websocket"}
@@ -345,7 +343,7 @@ def test_background_runner_lifecycle_is_not_owned_by_llm() -> None:
 def test_generation_features_use_the_shared_task_driver() -> None:
     runners = (
         BACKEND_APP / "llm" / "playground" / "generation_runner.py",
-        BACKEND_APP / "visual_workshop" / "generation_runner.py",
+        BACKEND_APP / "apps" / "visual_workshop" / "generation_runner.py",
     )
     violations = [
         _relative(path)
@@ -453,6 +451,7 @@ def test_media_rendering_and_galgame_keep_feature_boundaries() -> None:
         for path in _python_files(BACKEND_APP / "capabilities" / "media_rendering")
         for module in _python_imports(path)
         if _matches_module(module, "app.video_editor")
+        or _matches_module(module, "app.apps.video_editor")
         or _matches_module(module, "app.galgame_workshop")
     ]
     galgame_violations = [
@@ -461,6 +460,7 @@ def test_media_rendering_and_galgame_keep_feature_boundaries() -> None:
         if path.name not in {"video_handoff.py", "video_handoff_runner.py"}
         for module in _python_imports(path)
         if _matches_module(module, "app.video_editor")
+        or _matches_module(module, "app.apps.video_editor")
     ]
     violations = shared_violations + galgame_violations
     assert not violations, "共享渲染和 Galgame 直接导出不得依赖视频编辑器实现：\n" + "\n".join(
@@ -508,9 +508,18 @@ def test_public_files_have_independent_ownership() -> None:
         "公共文件能力必须由 capabilities/asset_store 拥有"
     )
     assert not (BACKEND_APP / "visual_workshop" / "assets.py").exists()
-    for route_name in ("file_management.py", "visual_workshop.py"):
-        imports = _python_imports(BACKEND_APP / "routes" / route_name)
+    for route_name in ("file_management.py",):
+        route = BACKEND_APP / "routes" / route_name
+        if not route.exists():
+            continue
+        imports = _python_imports(route)
         assert "app.visual_workshop.assets" not in imports
+        assert "app.apps.visual_workshop.assets" not in imports
+    visual_routes = BACKEND_APP / "apps" / "visual_workshop" / "routes" / "__init__.py"
+    assert visual_routes.is_file()
+    imports = _python_imports(visual_routes)
+    assert "app.visual_workshop.assets" not in imports
+    assert "app.apps.visual_workshop.assets" not in imports
 
 
 def test_removed_backend_packages_are_gone() -> None:
@@ -591,6 +600,34 @@ def test_thought_workshop_lives_under_apps() -> None:
         assert not (BACKEND_APP / "schemas" / schema_name).exists()
 
 
+def test_video_editor_lives_under_apps() -> None:
+    assert (BACKEND_APP / "apps" / "video_editor" / "models.py").is_file()
+    assert (BACKEND_APP / "apps" / "video_editor" / "routes" / "__init__.py").is_file()
+    assert not (BACKEND_APP / "video_editor").exists()
+    assert not (BACKEND_APP / "models" / "video_editor.py").exists()
+    assert not (BACKEND_APP / "routes" / "video_editor.py").exists()
+    assert not (BACKEND_APP / "schemas" / "video_editor").exists()
+
+
+def test_visual_workshop_lives_under_apps() -> None:
+    assert (BACKEND_APP / "apps" / "visual_workshop" / "models.py").is_file()
+    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "__init__.py").is_file()
+    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "assistant.py").is_file()
+    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "generation.py").is_file()
+    assert not (BACKEND_APP / "visual_workshop").exists()
+    assert not (BACKEND_APP / "models" / "visual_workshop.py").exists()
+    assert not (BACKEND_APP / "routes" / "visual_workshop.py").exists()
+    assert not (BACKEND_APP / "routes" / "visual_assistant.py").exists()
+    assert not (BACKEND_APP / "routes" / "visual_generation.py").exists()
+    for schema_name in (
+        "visual_workshop.py",
+        "visual_operations.py",
+        "visual_generation.py",
+        "visual_assistant.py",
+    ):
+        assert not (BACKEND_APP / "schemas" / schema_name).exists()
+
+
 def test_runtime_assembly_entrypoints_exist() -> None:
     assert (BACKEND_APP / "runtime" / "orm_base.py").is_file()
     assert (BACKEND_APP / "orm.py").is_file()
@@ -603,7 +640,7 @@ def test_runtime_assembly_entrypoints_exist() -> None:
 
 def test_visual_assistant_has_no_function_local_app_imports() -> None:
     violations: list[str] = []
-    for path in _python_files(BACKEND_APP / "visual_workshop" / "assistant"):
+    for path in _python_files(BACKEND_APP / "apps" / "visual_workshop" / "assistant"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for function in (
             node
@@ -827,13 +864,14 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/apps/presentation_workshop",
         "backend/app/apps/audio_annotation",
         "backend/app/apps/thought_workshop",
+        "backend/app/apps/video_editor",
+        "backend/app/apps/visual_workshop",
         "backend/app/llm",
         "backend/app/models",
         "backend/app/routes",
         "backend/app/schemas",
         "backend/app/galgame_workshop",
         "backend/app/tool_navigation",
-        "backend/app/visual_workshop",
         "db/migrations/versions",
         "docs/architecture",
         "docs/operations",

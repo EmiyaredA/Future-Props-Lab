@@ -9,7 +9,7 @@ from app.galgame_workshop.video_compiler import (
 )
 from app.galgame_workshop.video_dialogue import FONT_REGULAR
 from app.galgame_workshop.video_lip_sync import AudioEnvelope
-from app.video_editor.frames import render_plan_frame
+from app.apps.video_editor.frames import render_plan_frame
 
 
 def test_story_compiler_builds_layered_timeline_and_capture_frame() -> None:

@@ -13,10 +13,6 @@ from app.galgame_workshop.operations import apply_operations as galgame_operatio
 from app.runtime.operation_receipts import OperationError
 from app.schemas.galgame_operations import GalgameOperationsIn
 from app.schemas.galgame_workshop import GalgameStoryDocumentOut
-from app.schemas.visual_operations import VisualOperationsIn
-from app.schemas.visual_workshop import VisualCanvasDocumentOut
-from app.visual_workshop.canvas import VisualCanvasError
-from app.visual_workshop.operations import apply_operations as visual_operations
 
 router = APIRouter()
 
@@ -24,10 +20,7 @@ router = APIRouter()
 async def mapped(operation):
     try:
         return await operation
-    except (
-        OperationError,
-        VisualCanvasError,
-    ) as exc:
+    except OperationError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
     except ValidationError as exc:
         raise HTTPException(
@@ -37,17 +30,6 @@ async def mapped(operation):
         raise HTTPException(404, {"code": "not_found", "message": str(exc)}) from None
     except GalgameStoryDocumentInvalidError as exc:
         raise HTTPException(422, {"code": "invalid_story", "message": str(exc)}) from None
-
-
-@router.post(
-    "/visual-workshop/projects/{project_id}/canvas/operations",
-    response_model=VisualCanvasDocumentOut,
-    tags=["visual-workshop"],
-)
-async def apply_canvas_operations(
-    project_id: str, body: VisualOperationsIn, session: SessionDep, workspace_id: WorkspaceDep
-):
-    return await mapped(visual_operations(session, workspace_id, project_id, body))
 
 
 @router.post(

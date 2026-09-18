@@ -8,14 +8,16 @@ import app.capabilities.asset_store.assets as asset_module
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
+from app.apps.visual_workshop.models import (
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
 from app.models import (
     ModelEntry,
     ModelProvider,
     VisualAsset,
     VisualAssetFolder,
-    VisualGenerationTask,
     VisualProjectAssetReference,
-    VisualWorkshopProject,
 )
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret

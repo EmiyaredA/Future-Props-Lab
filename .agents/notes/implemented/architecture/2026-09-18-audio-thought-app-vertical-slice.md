@@ -18,7 +18,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：录音标注与思绪工坊成为可整体删除/替换的后端 App；presentation 验证过的反向依赖解法扩展到删除保护与桌面 UI 根登记。
-- **代价与已知上限**：`video_editor` / `visual_workshop` / `galgame_workshop` 与 `llm/` 仍暂留顶层；`workshop_operations` 仍托管 visual/galgame operations，待对应 App 迁入后再收回。导入备份时需在创建知识库前先 `flush` 暂存素材行，避免封面 FK 依赖排序失效。
+- **代价与已知上限**：`galgame_workshop` 与 `llm/` 仍暂留顶层；`video_editor` / `visual_workshop` 已按同套路迁入（见同日 Note）；导入备份时需在创建知识库前先 `flush` 暂存素材行，避免封面 FK 依赖排序失效。
 
 ## Verification
 

@@ -12,12 +12,13 @@ from sqlalchemy import select
 
 from app.capabilities.asset_store.library import AssetLibrary
 from app.main import app
-from app.models import VideoEditorTask, VisualAsset
+from app.apps.video_editor.models import VideoEditorTask
+from app.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
-from app.video_editor import segment_files
-from app.video_editor.runner import VideoEditorRunner
-from app.video_editor.segment_files import download_segments, segment_filename
+from app.apps.video_editor import segment_files
+from app.apps.video_editor.runner import VideoEditorRunner
+from app.apps.video_editor.segment_files import download_segments, segment_filename
 
 
 @pytest.fixture

@@ -9,7 +9,8 @@ from sqlalchemy import delete, select
 from app.capabilities.asset_store.layout_migration import reconcile_project_trash
 from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
-from app.models import GalgameWorkshopProject, VisualAsset, VisualWorkshopProject
+from app.apps.visual_workshop.models import VisualWorkshopProject
+from app.models import GalgameWorkshopProject, VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 

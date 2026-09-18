@@ -10,7 +10,10 @@ from pathlib import Path
 from PIL import Image, ImageColor
 
 from app.capabilities.media_rendering.text_layer import render_text_layer
-from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocument
+from app.capabilities.media_rendering.timeline_document import (
+    VideoEditorClip,
+    VideoEditorTimelineDocument,
+)
 
 
 def timeline_duration_us(document: VideoEditorTimelineDocument) -> int:

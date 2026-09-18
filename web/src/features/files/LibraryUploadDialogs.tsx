@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, LoaderCircle, Search, X } from "lucide-react";
 import { getFiles, type ManagedFile } from "@features/files/api";
 import {
+  AssetPreview,
   FileKindIcon,
   fileDisplayName,
   kindLabel,
@@ -35,6 +36,33 @@ export type LibraryStagingProject = {
 export type LibraryStagingItem = LibraryStagingLocal | LibraryStagingProject;
 
 export type LibrarySourcePickerMode = "project" | "cross";
+
+function localMediaKind(file: File) {
+  if (file.type.startsWith("video/")) return "video" as const;
+  if (file.type.startsWith("audio/")) return "audio" as const;
+  if (file.type.startsWith("image/")) return "image" as const;
+  return "document" as const;
+}
+
+function LocalFilePreview({ file }: { file: File }) {
+  const [url, setUrl] = useState<string>();
+  useEffect(() => {
+    if (!file.type.startsWith("image/")) {
+      setUrl(undefined);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+  return url ? (
+    <img src={url} alt="" />
+  ) : (
+    <span>
+      <FileKindIcon kind={localMediaKind(file)} />
+    </span>
+  );
+}
 
 function localBaseName(filename: string) {
   const index = filename.lastIndexOf(".");
@@ -213,7 +241,7 @@ export function LibrarySourcePickerDialog({
                     }
                   >
                     <span className={`file-item-preview ${file.media_kind}`}>
-                      <FileKindIcon kind={file.media_kind} />
+                      <AssetPreview file={file} />
                     </span>
                     <span className="file-item-copy">
                       <strong title={name}>{name}</strong>
@@ -301,21 +329,17 @@ export function LibraryUploadStagingDialog({
         <div className="library-upload-staging-list">
           {items.map((item) => (
             <label key={item.key} className="library-upload-staging-item">
-              <span className="file-item-preview">
+              <span
+                className={`file-item-preview ${
+                  item.kind === "local"
+                    ? localMediaKind(item.file)
+                    : item.asset.media_kind
+                }`}
+              >
                 {item.kind === "local" ? (
-                  <FileKindIcon
-                    kind={
-                      item.file.type.startsWith("video/")
-                        ? "video"
-                        : item.file.type.startsWith("audio/")
-                          ? "audio"
-                          : item.file.type.startsWith("image/")
-                            ? "image"
-                            : "document"
-                    }
-                  />
+                  <LocalFilePreview file={item.file} />
                 ) : (
-                  <FileKindIcon kind={item.asset.media_kind} />
+                  <AssetPreview file={item.asset} />
                 )}
               </span>
               <span className="library-upload-staging-fields">

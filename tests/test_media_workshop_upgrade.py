@@ -16,11 +16,15 @@ from app.llm.providers.senseaudio_audio import (
     get_music_task,
 )
 from app.main import app
-from app.models import (
+from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
     VideoEditorProject,
-    VisualAsset,
+)
+from app.apps.visual_workshop.models import (
     VisualWorkshopProject,
+)
+from app.models import (
+    VisualAsset,
 )
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal

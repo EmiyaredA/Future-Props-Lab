@@ -11,21 +11,21 @@ from app.models import (
     ModelTestGenerationTask,
     ModelTestTranscriptionTask,
     User,
-    VisualGenerationTask,
     WorkspaceMembership,
 )
 from app.models.model_inference import ModelInferenceTask
 from app.models.runtime_admission import RuntimeAdmission as Admission
+from app.orm import RUNTIME_QUOTA_TASK_MODELS
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now
 from app.schemas.platform_governance import RuntimeQuotas
 
 TASK_MODELS = {
     "inference": ModelInferenceTask,
-    "visual": VisualGenerationTask,
     "model": ModelTestGenerationTask,
     "transcription": ModelTestTranscriptionTask,
     "galgame_asr": GalgameAssetTranscriptionTask,
+    **RUNTIME_QUOTA_TASK_MODELS,
 }
 ACTIVE = ("queued", "submitting", "pending", "processing", "running")
 

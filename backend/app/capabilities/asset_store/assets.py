@@ -24,7 +24,6 @@ from app.models import (
     GalgameProjectAssetReference,
     VisualAsset,
     VisualAssetFolder,
-    VisualAssistantMessageAsset,
     VisualProjectAssetReference,
 )
 from app.runtime.orm_base import Base
@@ -213,10 +212,15 @@ class VisualAssets(VisualAssetContext):
         asset_ids = [item.id for item in assets]
         if asset_ids:
             await protect_document_references(self.session, asset_ids)
-            conversation_reference = await self.session.scalar(
-                select(VisualAssistantMessageAsset.id)
-                .where(VisualAssistantMessageAsset.asset_id.in_(asset_ids))
-                .limit(1)
+            message_assets = Base.metadata.tables.get("visual_assistant_message_assets")
+            conversation_reference = (
+                await self.session.scalar(
+                    select(message_assets.c.id)
+                    .where(message_assets.c.asset_id.in_(asset_ids))
+                    .limit(1)
+                )
+                if message_assets is not None
+                else None
             )
             if conversation_reference:
                 raise AssetError(
@@ -409,10 +413,15 @@ class VisualAssets(VisualAssetContext):
         row = await self._asset(asset_id)
         ensure_library_managed(row)
         await protect_document_references(self.session, [asset_id])
-        conversation_reference = await self.session.scalar(
-            select(VisualAssistantMessageAsset.id)
-            .where(VisualAssistantMessageAsset.asset_id == asset_id)
-            .limit(1)
+        message_assets = Base.metadata.tables.get("visual_assistant_message_assets")
+        conversation_reference = (
+            await self.session.scalar(
+                select(message_assets.c.id)
+                .where(message_assets.c.asset_id == asset_id)
+                .limit(1)
+            )
+            if message_assets is not None
+            else None
         )
         if conversation_reference:
             raise AssetError(

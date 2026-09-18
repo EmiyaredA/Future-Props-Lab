@@ -10,12 +10,12 @@ import pytest
 from sqlalchemy import select
 
 from app.main import app
-from app.models import VideoEditorTask
+from app.apps.video_editor.models import VideoEditorTask
 from app.runtime.db import SessionLocal
-from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineBatchIn
-from app.video_editor.errors import VideoEditorValidationError
-from app.video_editor.runner import VideoEditorRunner
-from app.video_editor.timeline import apply_operations
+from app.apps.video_editor.schemas import VideoEditorClip, VideoEditorTimelineBatchIn
+from app.apps.video_editor.errors import VideoEditorValidationError
+from app.apps.video_editor.runner import VideoEditorRunner
+from app.apps.video_editor.timeline import apply_operations
 
 
 def clip(clip_id, track="v", start=0, duration=4_000_003, group=None):
@@ -235,7 +235,7 @@ async def test_ripple_api_conflicts_collisions_and_restore_validation():
 
 @pytest.mark.asyncio
 async def test_media_duration_is_published_before_preview_encoding(monkeypatch):
-    from app.video_editor import runner as runner_module
+    from app.apps.video_editor import runner as runner_module
 
     started, release = threading.Event(), threading.Event()
     prepare = runner_module._prepare_media

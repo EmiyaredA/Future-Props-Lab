@@ -1,9 +1,11 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.storage import AssetStorage
-from app.models import VisualAsset, VisualAssetFolder, VisualWorkshopProject
+from app.models import VisualAsset, VisualAssetFolder
 from app.runtime.config import Settings
+from app.runtime.orm_base import Base
 
 
 class VisualAssetContext:
@@ -15,7 +17,10 @@ class VisualAssetContext:
         self.library = AssetLibrary(session, settings)
 
     async def _project(self, project_id: str) -> None:
-        if await self.session.get(VisualWorkshopProject, project_id) is None:
+        projects = Base.metadata.tables.get("visual_workshop_projects")
+        if projects is None or await self.session.scalar(
+            select(projects.c.id).where(projects.c.id == project_id).limit(1)
+        ) is None:
             raise AssetError("项目不存在", code="not_found", status=404)
 
     async def _folder(self, folder_id: str) -> VisualAssetFolder:

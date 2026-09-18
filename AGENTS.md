@@ -41,9 +41,9 @@
   `orm.py` 负责应用装配；`routes/` 只处理 HTTP/SSE 协议边界（含尚未迁入 App 的共享路由）；
   无业务语义的基础设施归属 `runtime/`；有契约的共享能力归属 `capabilities/`；Studio 治理与库级
   文件用例归属 `console/`；已垂直切片的产品 App 归属 `apps/`（目前 `presentation_workshop`、
-  `audio_annotation`、`thought_workshop` 已迁入，其余业务包仍暂留顶层，按批次收拢）；
-  `models/`、`schemas/` 仍定义尚未迁出的持久化与传输形状；业务规则暂留 `llm/`、
-  `visual_workshop/` 等功能包。
+  `audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop` 已迁入，
+  `galgame_workshop` 仍暂留顶层）；`models/`、`schemas/` 仍定义尚未迁出的持久化与传输形状；
+  业务规则暂留 `llm/`、`galgame_workshop/` 等功能包。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`
   遵守同一边界。

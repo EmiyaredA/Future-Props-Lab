@@ -11,17 +11,19 @@ from sqlalchemy import delete
 
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.providers.temporary_media import TemporaryMediaError
+from app.apps.visual_workshop.models import (
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
 from app.models import (
     ModelEntry,
     ModelProvider,
     VisualAsset,
-    VisualGenerationTask,
-    VisualWorkshopProject,
 )
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
-from app.visual_workshop.generation_runner import (
+from app.apps.visual_workshop.generation_runner import (
     MaterializationError,
     VisualGenerationRunner,
     _assert_public_https,
@@ -152,7 +154,7 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         return f"https://temp.sh/{kind}-{asset_id}"
 
     runner = VisualGenerationRunner()
-    monkeypatch.setattr("app.visual_workshop.generation_runner.submit_generation_task", fake_create)
+    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.submit_generation_task", fake_create)
     monkeypatch.setattr(runner, "_asset_data_uri", fake_image)
     monkeypatch.setattr(runner, "_temporary_asset_url", fake_temporary)
 
@@ -220,7 +222,7 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
         raise TemporaryMediaError("private upstream response")
 
     runner = VisualGenerationRunner()
-    monkeypatch.setattr("app.visual_workshop.generation_runner.submit_generation_task", fake_create)
+    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.submit_generation_task", fake_create)
     monkeypatch.setattr(runner, "_temporary_asset_url", failed_upload)
 
     with pytest.raises(TemporaryMediaError):
@@ -368,7 +370,7 @@ async def test_concurrent_claim_submits_a_queued_task_only_once(
             return "provider-task-once"
 
         monkeypatch.setattr(
-            "app.visual_workshop.generation_runner.submit_generation_task", fake_submit
+            "app.apps.visual_workshop.generation_runner.submit_generation_task", fake_submit
         )
         runner = VisualGenerationRunner()
         await asyncio.gather(runner._process_task(task.id), runner._process_task(task.id))

@@ -10,7 +10,7 @@ from app.models import ModelEntry, ModelProvider
 from app.runtime.operation_receipts import OperationError
 from app.schemas.model_inference import InferenceModelOut, InferenceOptionsOut, InferenceTextIn
 from app.schemas.transcription import ModelTestTranscriptionParametersIn
-from app.schemas.visual_workshop import (
+from app.schemas.generation_tasks import (
     AudioGenerationTaskCreateIn,
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,

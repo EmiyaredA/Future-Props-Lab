@@ -27,7 +27,7 @@ from app.schemas.model_inference import (
     InferenceTextIn,
     InferenceTextOut,
 )
-from app.schemas.visual_workshop import VisualAssetOut
+from app.schemas.files import VisualAssetOut
 
 router = APIRouter(prefix="/model-inference", tags=["model-inference"])
 

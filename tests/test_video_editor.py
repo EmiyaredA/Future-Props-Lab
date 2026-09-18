@@ -15,12 +15,12 @@ from PIL import Image
 from sqlalchemy import delete
 
 from app.main import app
-from app.models import VideoEditorProject
+from app.apps.video_editor.models import VideoEditorProject
 from app.runtime.db import SessionLocal
-from app.schemas.video_editor import VideoEditorTimelineDocument
-from app.video_editor.evaluator import FrameSource, TimelineFrameRenderer, property_at, visual_gaps
-from app.video_editor.render_engine import render_document
-from app.video_editor.runner import VideoEditorRunner
+from app.apps.video_editor.schemas import VideoEditorTimelineDocument
+from app.apps.video_editor.evaluator import FrameSource, TimelineFrameRenderer, property_at, visual_gaps
+from app.apps.video_editor.render_engine import render_document
+from app.apps.video_editor.runner import VideoEditorRunner
 
 
 async def _reset() -> None:

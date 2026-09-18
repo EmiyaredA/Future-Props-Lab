@@ -7,11 +7,13 @@ import pytest
 
 from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
-from app.models import (
+from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
     VideoEditorProject,
     VideoEditorTask,
     VideoEditorTimeline,
+)
+from app.models import (
     VisualAsset,
     Workspace,
 )

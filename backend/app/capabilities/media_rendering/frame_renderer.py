@@ -10,7 +10,7 @@ from PIL import Image
 from app.capabilities.media_rendering.contracts import RenderPlan
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.speed import source_time_us
-from app.schemas.video_editor import VideoEditorClip
+from app.capabilities.media_rendering.timeline_document import VideoEditorClip
 
 
 def _extract_video_frame(path: Path, source_us: int) -> Image.Image:

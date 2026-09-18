@@ -43,9 +43,9 @@ from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal, engine
 from app.runtime.polling_runner import RunnerSupervisor
 from app.runtime.revisions import RevisionConflictError
-from app.video_editor.runner import VideoEditorRunner
-from app.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
-from app.visual_workshop.generation_runner import VisualGenerationRunner
+from app.apps.video_editor.runner import VideoEditorRunner
+from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
+from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
 from db.migrations import apply_migrations
 from db.migrations.registry import LATEST_MIGRATION_ID
 

@@ -40,6 +40,35 @@ import type {
   VideoEditorOperation,
 } from "./types";
 
+/** Visual sync can stay tight; small frame jumps are less jarring than audio chops. */
+const PREVIEW_VIDEO_SYNC_TOLERANCE_S = 0.12;
+/**
+ * Audio seeks flush the decoder buffer and sound like stutter. Preview playhead
+ * is wall-clock rAF while media runs on its own clock, so under decode load they
+ * drift; tolerate more before correcting, and never stack seeks.
+ */
+const PREVIEW_AUDIO_SYNC_TOLERANCE_S = 0.45;
+
+function syncMediaClock(
+  node: HTMLMediaElement,
+  targetSeconds: number,
+  {
+    playing,
+    playStarted,
+    toleranceSeconds,
+  }: {
+    playing: boolean;
+    playStarted: boolean;
+    toleranceSeconds: number;
+  },
+) {
+  if (node.seeking) return;
+  const drift = Math.abs(node.currentTime - targetSeconds);
+  if (!playing || playStarted || drift > toleranceSeconds) {
+    node.currentTime = Math.max(0, targetSeconds);
+  }
+}
+
 function ProxyVideo({
   source,
   clip,
@@ -54,14 +83,21 @@ function ProxyVideo({
   crop: VideoProxyCrop;
 }) {
   const video = useRef<HTMLVideoElement>(null);
+  const wasPlayingRef = useRef(false);
   useEffect(() => {
     const node = video.current;
     if (!node) return;
     const target =
       clipSourceTimeUs(clip, playheadUs - clip.timelineStartUs) / 1_000_000;
-    node.playbackRate = clip.playbackRate ?? 1;
-    if (!playing || Math.abs(node.currentTime - target) > 0.12)
-      node.currentTime = Math.max(0, target);
+    const rate = clip.playbackRate ?? 1;
+    if (node.playbackRate !== rate) node.playbackRate = rate;
+    const playStarted = playing && !wasPlayingRef.current;
+    wasPlayingRef.current = playing;
+    syncMediaClock(node, target, {
+      playing,
+      playStarted,
+      toleranceSeconds: PREVIEW_VIDEO_SYNC_TOLERANCE_S,
+    });
   }, [clip, playheadUs, playing]);
   useEffect(() => {
     const node = video.current;
@@ -144,6 +180,7 @@ function ProxyAudioChain({
   playing: boolean;
 }) {
   const audio = useRef<HTMLAudioElement>(null);
+  const wasPlayingRef = useRef(false);
   const clip = clips.find(
     (item) =>
       item.timelineStartUs <= playheadUs &&
@@ -155,10 +192,18 @@ function ProxyAudioChain({
     if (!node || !clip) return;
     const target =
       clipSourceTimeUs(clip, playheadUs - clip.timelineStartUs) / 1_000_000;
-    node.playbackRate = clip.playbackRate ?? 1;
-    node.preservesPitch = true;
-    if (!playing || Math.abs(node.currentTime - target) > 0.12)
-      node.currentTime = Math.max(0, target);
+    const rate = clip.playbackRate ?? 1;
+    if (node.playbackRate !== rate) {
+      node.playbackRate = rate;
+      node.preservesPitch = true;
+    }
+    const playStarted = playing && !wasPlayingRef.current;
+    wasPlayingRef.current = playing;
+    syncMediaClock(node, target, {
+      playing,
+      playStarted,
+      toleranceSeconds: PREVIEW_AUDIO_SYNC_TOLERANCE_S,
+    });
     const localUs = playheadUs - clip.timelineStartUs;
     node.volume = Math.max(
       0,

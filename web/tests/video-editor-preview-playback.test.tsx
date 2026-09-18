@@ -227,6 +227,80 @@ describe("video editor preview playback", () => {
     expect(play).toHaveBeenCalledTimes(2);
   });
 
+  it("lets audio free-run through moderate playhead drift while playing", () => {
+    const props = {
+      projectId: "editor-1",
+      timeline,
+      assets,
+      setPlayheadUs: vi.fn(),
+      playing: true,
+      setPlaying: vi.fn(),
+      selectedClipId: "video-1",
+      preciseFrame: true,
+      onPreciseFrameChange: vi.fn(),
+    };
+    const { container, rerender } = render(
+      <VideoEditorPreview {...props} playheadUs={1_000_000} />,
+    );
+    const audio = container.querySelector("audio")!;
+    expect(audio.currentTime).toBeCloseTo(1, 6);
+
+    rerender(<VideoEditorPreview {...props} playheadUs={1_250_000} />);
+
+    expect(audio.currentTime).toBeCloseTo(1, 6);
+  });
+
+  it("does not stack audio seeks while the element is already seeking", () => {
+    const props = {
+      projectId: "editor-1",
+      timeline,
+      assets,
+      setPlayheadUs: vi.fn(),
+      playing: true,
+      setPlaying: vi.fn(),
+      selectedClipId: "video-1",
+      preciseFrame: true,
+      onPreciseFrameChange: vi.fn(),
+    };
+    const { container, rerender } = render(
+      <VideoEditorPreview {...props} playheadUs={1_000_000} />,
+    );
+    const audio = container.querySelector("audio")!;
+    Object.defineProperty(audio, "seeking", {
+      configurable: true,
+      get: () => true,
+    });
+
+    rerender(<VideoEditorPreview {...props} playheadUs={3_000_000} />);
+
+    expect(audio.currentTime).toBeCloseTo(1, 6);
+  });
+
+  it("resyncs audio after playhead jumps beyond the playback tolerance", () => {
+    const props = {
+      projectId: "editor-1",
+      timeline,
+      assets,
+      setPlayheadUs: vi.fn(),
+      playing: true,
+      setPlaying: vi.fn(),
+      selectedClipId: "video-1",
+      preciseFrame: true,
+      onPreciseFrameChange: vi.fn(),
+    };
+    const { container, rerender } = render(
+      <VideoEditorPreview {...props} playheadUs={1_000_000} />,
+    );
+    const audio = container.querySelector("audio")!;
+    expect(audio.currentTime).toBeCloseTo(1, 6);
+
+    rerender(<VideoEditorPreview {...props} playheadUs={1_250_000} />);
+    expect(audio.currentTime).toBeCloseTo(1, 6);
+
+    rerender(<VideoEditorPreview {...props} playheadUs={2_000_000} />);
+    expect(audio.currentTime).toBeCloseTo(2, 6);
+  });
+
   it("keeps source jump cuts on separate audio players", () => {
     const jumpCutTimeline = structuredClone(timeline);
     const rightClip = jumpCutTimeline.document.tracks?.[1]?.clips?.[1];

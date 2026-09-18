@@ -12,11 +12,11 @@ from app.models import (
     ModelEntry,
     ModelProvider,
     ModelTestGenerationTask,
-    VisualGenerationTask,
 )
 from app.models.model_inference import ModelInferenceTask
 from app.models.platform_governance import PlatformSetting
 from app.runtime.credentials import encrypt_secret
+from app.runtime.orm_base import Base
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.secret_hints import encrypted_secret_hint
 from app.schemas.model_service import (
@@ -360,10 +360,11 @@ class ModelCatalogService:
 
     async def delete_model(self, model_id: str, expected: int) -> int:
         await self.get_model(model_id)
+        visual_tasks = Base.metadata.tables["visual_generation_tasks"]
         active = await self.session.scalar(
-            select(func.count(VisualGenerationTask.id)).where(
-                VisualGenerationTask.model_id == model_id,
-                VisualGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
+            select(func.count(visual_tasks.c.id)).where(
+                visual_tasks.c.model_id == model_id,
+                visual_tasks.c.status.in_(ACTIVE_GENERATION_STATUSES),
             )
         )
         test_active = await self.session.scalar(
@@ -392,10 +393,11 @@ class ModelCatalogService:
         return revision
 
     async def _provider_has_active_tasks(self, provider_id: str) -> bool:
+        visual_tasks = Base.metadata.tables["visual_generation_tasks"]
         count = await self.session.scalar(
-            select(func.count(VisualGenerationTask.id)).where(
-                VisualGenerationTask.provider_id == provider_id,
-                VisualGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
+            select(func.count(visual_tasks.c.id)).where(
+                visual_tasks.c.provider_id == provider_id,
+                visual_tasks.c.status.in_(ACTIVE_GENERATION_STATUSES),
             )
         )
         test_count = await self.session.scalar(

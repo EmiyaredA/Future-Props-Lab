@@ -9,15 +9,11 @@ from app.models import (
     McpIntegration,
     SkillIntegration,
     ToolApiIntegration,
-    VideoEditorProject,
-    VisualWorkshopProject,
 )
 from app.orm import DESKTOP_UI_ROOTS
 
 ROOTS = {
-    "visual": VisualWorkshopProject,
     "galgame": GalgameWorkshopProject,
-    "video": VideoEditorProject,
     "skill": SkillIntegration,
     "mcp": McpIntegration,
     "tool-api": ToolApiIntegration,

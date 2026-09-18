@@ -23,8 +23,23 @@ from app.apps.thought_workshop.models import (
     ThoughtNoteAsset,
     ThoughtNoteHistory,
 )
-
-# Importing app.models registers every mapped class on Base.metadata.
+from app.apps.video_editor.models import (
+    VideoEditorAssetMetadata,
+    VideoEditorOperationBatch,
+    VideoEditorProject,
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
+from app.apps.visual_workshop.models import (
+    VisualAssistantAction,
+    VisualAssistantConversation,
+    VisualAssistantMessage,
+    VisualAssistantMessageAsset,
+    VisualCanvasDocument,
+    VisualGenerationBatch,
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
 from app.models import (  # noqa: F401
     GalgameAnnotationImportTask,
     GalgameAssetTranscriptionTask,
@@ -47,13 +62,6 @@ from app.models import (  # noqa: F401
     SkillIntegration,
     ToolApiIntegration,
     ToolNavigationItem,
-    VideoEditorOperationBatch,
-    VideoEditorProject,
-    VideoEditorTask,
-    VisualAssistantConversation,
-    VisualGenerationBatch,
-    VisualGenerationTask,
-    VisualWorkshopProject,
 )
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
 from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
@@ -66,6 +74,29 @@ DESKTOP_UI_ROOTS: dict[str, type] = {
     "knowledge": ThoughtKnowledgeBase,
     "note": ThoughtNote,
     "presentation": PresentationProject,
+    "video": VideoEditorProject,
+    "visual": VisualWorkshopProject,
+}
+
+# Console project certification (galgame remains on app.models until its app slice).
+CERTIFIABLE_PROJECT_ROOTS: dict[str, type] = {
+    "visual": VisualWorkshopProject,
+}
+
+# Public workspace projection for migrated apps.
+PUBLIC_WORKSPACE_PROJECT_MODELS: dict[str, type] = {
+    "visual": VisualWorkshopProject,
+}
+
+# Runtime quota task kinds owned by migrated apps.
+RUNTIME_QUOTA_TASK_MODELS: dict[str, type] = {
+    "visual": VisualGenerationTask,
+}
+
+# Storage layout migration project roots for migrated apps.
+LAYOUT_PROJECT_MODELS: dict[str, type] = {
+    "visual-workshop": VisualWorkshopProject,
+    "video-editor": VideoEditorProject,
 }
 
 # Ensure reference mappers are registered on Base.metadata for capability queries.
@@ -76,6 +107,12 @@ _ = (
     ThoughtHistoryAsset,
     ThoughtNoteAsset,
     ThoughtNoteHistory,
+    VideoEditorAssetMetadata,
+    VideoEditorTimeline,
+    VisualAssistantAction,
+    VisualAssistantMessage,
+    VisualAssistantMessageAsset,
+    VisualCanvasDocument,
 )
 
 TENANT_MODELS = (
@@ -182,7 +219,11 @@ def bind_workspace(session: Any, workspace_id: str) -> None:
 
 __all__ = [
     "Base",
+    "CERTIFIABLE_PROJECT_ROOTS",
     "DESKTOP_UI_ROOTS",
+    "LAYOUT_PROJECT_MODELS",
+    "PUBLIC_WORKSPACE_PROJECT_MODELS",
+    "RUNTIME_QUOTA_TASK_MODELS",
     "TENANT_MODELS",
     "TenantScopeError",
     "bind_workspace",

@@ -44,23 +44,6 @@ from app.models.model_test_tools import (
     ModelTestToolCall,
 )
 from app.models.tool_navigation import ToolNavigationItem
-from app.models.video_editor import (
-    VideoEditorAssetMetadata,
-    VideoEditorOperationBatch,
-    VideoEditorProject,
-    VideoEditorTask,
-    VideoEditorTimeline,
-)
-from app.models.visual_workshop import (
-    VisualAssistantAction,
-    VisualAssistantConversation,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
-    VisualCanvasDocument,
-    VisualGenerationBatch,
-    VisualGenerationTask,
-    VisualWorkshopProject,
-)
 from app.models.workspace import Workspace
 from app.runtime.orm_base import Base
 
@@ -101,22 +84,9 @@ __all__ = [
     "ToolApiIntegration",
     "ToolNavigationItem",
     "User",
-    "VisualAssistantConversation",
-    "VisualAssistantAction",
-    "VisualAssistantMessage",
-    "VisualAssistantMessageAsset",
     "VisualAsset",
     "VisualAssetFolder",
-    "VisualCanvasDocument",
-    "VisualGenerationTask",
-    "VisualGenerationBatch",
     "VisualProjectAssetReference",
-    "VisualWorkshopProject",
-    "VideoEditorAssetMetadata",
-    "VideoEditorOperationBatch",
-    "VideoEditorProject",
-    "VideoEditorTask",
-    "VideoEditorTimeline",
     "Workspace",
     "WorkspaceInvitation",
     "WorkspaceMembership",

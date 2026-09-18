@@ -491,23 +491,28 @@
 .library-source-picker,
 .library-upload-staging {
   width: min(520px, 100%);
+  max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .library-source-picker-body {
-  padding: 14px 18px;
-  display: grid;
-  gap: 12px;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .library-source-picker-field,
 .library-source-picker-search {
   display: grid;
+  flex: none;
   gap: 6px;
+  min-width: 0;
 }
 
 .library-source-picker-field > span {
@@ -515,8 +520,14 @@
   font-size: 11px;
 }
 
+.library-source-picker-field .custom-select,
+.library-source-picker-field .file-filter-select {
+  width: 100%;
+  min-width: 0;
+}
+
 .library-source-picker-search {
-  grid-template-columns: 16px 1fr;
+  grid-template-columns: 16px minmax(0, 1fr);
   align-items: center;
   min-height: 38px;
   padding: 0 12px;
@@ -525,7 +536,16 @@
   background: var(--surface-2, var(--surface));
 }
 
+.library-source-picker-search svg {
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+  flex: none;
+}
+
 .library-source-picker-search input {
+  width: 100%;
+  min-width: 0;
   border: 0;
   background: transparent;
   color: var(--text);
@@ -533,44 +553,104 @@
 }
 
 .library-source-picker-list {
-  display: grid;
-  gap: 6px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
   max-height: min(360px, 50vh);
   overflow: auto;
+  padding: 2px;
 }
 
 .library-source-picker-list > button {
-  min-height: 52px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  height: auto;
+  margin: 0;
   padding: 8px 10px;
   display: grid;
-  grid-template-columns: 36px 1fr 18px;
+  grid-template-columns: 40px minmax(0, 1fr) 18px;
   gap: 10px;
   align-items: center;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: transparent;
+  background: var(--surface);
   color: var(--text);
   text-align: left;
+  cursor: pointer;
+}
+
+.library-source-picker-list > button:hover {
+  background: var(--surface-hover);
 }
 
 .library-source-picker-list > button.active {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.library-source-picker-list .file-item-preview,
+.library-upload-staging-item .file-item-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.library-source-picker-list .file-item-preview svg,
+.library-upload-staging-item .file-item-preview svg {
+  width: 18px;
+  height: 18px;
+}
+
+.library-source-picker-list .file-item-copy {
+  min-width: 0;
+  gap: 2px;
+}
+
+.library-source-picker-list .file-item-copy > strong {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.library-source-picker-list .file-item-copy > small {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.library-source-picker-list > button > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+  flex: none;
+}
+
+.library-source-picker-body > .file-empty {
+  flex: 1 1 auto;
+  min-height: 160px;
+  margin: 0;
 }
 
 .library-upload-staging-list {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 14px 18px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   max-height: min(420px, 55vh);
   overflow: auto;
 }
 
 .library-upload-staging-item {
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: 36px 1fr 28px;
+  grid-template-columns: 40px minmax(0, 1fr) 28px;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 
 .library-upload-staging-fields {
@@ -580,7 +660,9 @@
 }
 
 .library-upload-staging-fields input {
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
 }
 
 .library-upload-staging-fields small {
@@ -591,10 +673,31 @@
   white-space: nowrap;
 }
 
-.library-upload-staging .file-dialog-actions {
-  padding: 0 18px 16px;
+.library-upload-staging-item > button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
 }
 
-.library-source-picker .file-dialog-actions {
-  padding: 0 18px 16px;
+.library-upload-staging-item > button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.library-upload-staging-item > button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.library-source-picker .file-dialog-actions,
+.library-upload-staging .file-dialog-actions {
+  flex: none;
+  margin-top: 0;
+  padding: 14px 18px 16px;
 }

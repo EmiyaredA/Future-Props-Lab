@@ -16,15 +16,17 @@ from app.galgame_workshop.video_compiler import (
     remap_render_plan_assets,
 )
 from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
+from app.apps.video_editor.models import (
+    VideoEditorAssetMetadata,
+    VideoEditorProject,
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
 from app.models import (
     GalgameAssetMetadata,
     GalgameStorySnapshot,
     GalgameVideoEditorHandoffTask,
     GalgameWorkshopProject,
-    VideoEditorAssetMetadata,
-    VideoEditorProject,
-    VideoEditorTask,
-    VideoEditorTimeline,
     VisualAsset,
 )
 from app.orm import bind_workspace, require_workspace_id

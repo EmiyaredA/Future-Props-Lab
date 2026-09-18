@@ -18,7 +18,10 @@ from app.capabilities.media_rendering.contracts import RenderCaptureFrame, Rende
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.presets import RENDER_PRESETS
 from app.capabilities.media_rendering.speed import audio_speed_filters, source_time_us
-from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocument
+from app.capabilities.media_rendering.timeline_document import (
+    VideoEditorClip,
+    VideoEditorTimelineDocument,
+)
 
 
 class RenderCancelled(RuntimeError):

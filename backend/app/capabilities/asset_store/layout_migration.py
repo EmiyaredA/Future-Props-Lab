@@ -11,12 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.models import (
-    GalgameWorkshopProject,
-    VideoEditorProject,
-    VisualAsset,
-    VisualWorkshopProject,
-)
+from app.models import GalgameWorkshopProject, VisualAsset
+from app.orm import LAYOUT_PROJECT_MODELS
 from app.runtime.config import Settings
 from app.schemas.files import (
     StorageLayoutIssueOut,
@@ -47,9 +43,8 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
     if not root.is_dir():
         return
     project_models = {
-        "visual-workshop": VisualWorkshopProject,
+        **LAYOUT_PROJECT_MODELS,
         "galgame-workshop": GalgameWorkshopProject,
-        "video-editor": VideoEditorProject,
     }
     trash_scopes: list[tuple[str, str, Path]] = []
     for child in root.iterdir():
@@ -86,9 +81,8 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
 async def reconcile_snapshot_imports(session: AsyncSession, storage: AssetStorage) -> None:
     """完成或清理进程中断的项目快照导入。"""
     project_models = {
-        "visual-workshop": VisualWorkshopProject,
+        **LAYOUT_PROJECT_MODELS,
         "galgame-workshop": GalgameWorkshopProject,
-        "video-editor": VideoEditorProject,
     }
     markers = list(storage.settings.applications_path.glob("*/projects/*/.snapshot-importing"))
     workspaces_root = storage.settings.runtime_path / "workspaces"
@@ -136,12 +130,10 @@ class StorageLayoutMigration:
         self.storage = AssetStorage(settings)
 
     async def _projects(self) -> tuple[list[str], list[str], list[str]]:
+        visual = LAYOUT_PROJECT_MODELS["visual-workshop"]
+        video = LAYOUT_PROJECT_MODELS["video-editor"]
         visual_ids = list(
-            (
-                await self.session.execute(
-                    select(VisualWorkshopProject.id).order_by(VisualWorkshopProject.created_at)
-                )
-            ).scalars()
+            (await self.session.execute(select(visual.id).order_by(visual.created_at))).scalars()
         )
         galgame_ids = list(
             (
@@ -151,11 +143,7 @@ class StorageLayoutMigration:
             ).scalars()
         )
         video_editor_ids = list(
-            (
-                await self.session.execute(
-                    select(VideoEditorProject.id).order_by(VideoEditorProject.created_at)
-                )
-            ).scalars()
+            (await self.session.execute(select(video.id).order_by(video.created_at))).scalars()
         )
         return visual_ids, galgame_ids, video_editor_ids
 

@@ -11,9 +11,9 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
     VisualProjectAssetReference,
-    VisualWorkshopProject,
     Workspace,
 )
+from app.orm import PUBLIC_WORKSPACE_PROJECT_MODELS
 from app.runtime.config import get_settings
 
 
@@ -37,6 +37,7 @@ def asset_view(asset: VisualAsset) -> dict:
 
 async def public_projection(session: AsyncSession, workspace_id: str) -> dict:
     workspace = await require_public_workspace(session, workspace_id)
+    VisualWorkshopProject = PUBLIC_WORKSPACE_PROJECT_MODELS["visual"]
     visual_projects = list(
         (
             await session.execute(
