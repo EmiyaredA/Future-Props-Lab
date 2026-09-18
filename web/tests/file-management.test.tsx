@@ -260,7 +260,9 @@ test("switches file layouts, remembers the choice, and imports a library file", 
   expect(container.querySelector(".file-items")).toHaveClass("list");
   expect(window.localStorage.getItem("fpl_file_browser_view")).toBe("list");
 
-  expect(screen.getByRole("button", { name: "新建文件夹" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "新建文件夹" }),
+  ).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "导入" }));
   await waitFor(() =>
     expect(importFile).toHaveBeenCalledWith("project-1", "file-1"),
@@ -280,9 +282,7 @@ test("manages the shared library while importing from the library tab", async ()
       <AssetBrowser projectId="project-1" importSource="library" compact />
     </QueryClientProvider>,
   );
-  expect(
-    await screen.findByText("文件管理中还没有文件"),
-  ).toBeInTheDocument();
+  expect(await screen.findByText("文件管理中还没有文件")).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "上传第一个文件" }),
   ).toBeInTheDocument();

@@ -20,18 +20,18 @@ Future-Props-Lab/
 │   ├── runtime/       # 配置、数据库、CAS/轮询原语与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理与库级文件用例：governance、file_library
+│   ├── apps/          # 已垂直切片的产品 App（presentation_workshop 已迁入；其余按批次收拢）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
 │   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
-│   ├── presentation_workshop/ # 文稿 CAS、公共图片引用与受限请求内原生 PPTX 导出
 │   ├── thought_workshop/ # Workspace 富文本笔记、图片引用、AI 写作与可移植备份
 │   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、片段交接与后台任务
-│   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂
-│   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按九类协议模块拆分
-│   └── schemas/       # Pydantic 请求与响应形状；Galgame 项目内容、Block 核心/流程与视频剪辑按职责拆包
+│   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂（App 迁出后逐步清空）
+│   ├── routes/        # `/v1` HTTP/SSE 协议边界；未迁入 App 的协议模块仍在此
+│   └── schemas/       # Pydantic 请求与响应形状；未迁入 App 的契约仍在此
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -358,7 +358,7 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 ## 演示工坊
 
-`backend/app/presentation_workshop/` 拥有文稿项目、图片归属校验、引用同步和请求内导出。
+`backend/app/apps/presentation_workshop/` 拥有文稿项目、图片归属校验、引用同步和请求内导出。
 `projects.py` 处理 Workspace 限定加载与整体 CAS；`exports.py` 负责只读版本快照、
 两路导出并发、私有临时文件和取消清理；`pptx_export.py` 组装 python-pptx 导出，`pptx_styles.py` 映射 DrawingML 样式，
 `pptx_media.py` 拥有 SVG 扩展嵌入、PNG 兼容图与图片外观，`native_shapes.py` 构造可编辑自由形状。

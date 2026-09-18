@@ -24,7 +24,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：共享层与治理层可从目录判断；架构测试能禁止旧包与 capabilities→业务包依赖。
-- **代价与已知上限**：业务包仍暂留原地，等阶段 2 再按 App 收口；`runtime/operation_receipts.py` 仍引用 ORM 回执模型，环检测对 `models → runtime.orm_base` 做了显式豁免。
+- **代价与已知上限**：业务包仍暂留原地，等阶段 2 再按 App 收口（首切片见 [presentation App vertical slice](./2026-09-18-presentation-app-vertical-slice.md)）；`runtime/operation_receipts.py` 仍引用 ORM 回执模型，环检测对 `models → runtime.orm_base` 做了显式豁免。
 
 ## Verification
 

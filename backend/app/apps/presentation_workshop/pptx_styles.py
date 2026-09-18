@@ -4,7 +4,7 @@ from pptx.dml.color import RGBColor
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Emu
 
-from app.schemas.presentation_workshop import PresentationElement
+from app.apps.presentation_workshop.schemas.document import PresentationElement
 
 
 def apply_shape_style(shape, item: PresentationElement):

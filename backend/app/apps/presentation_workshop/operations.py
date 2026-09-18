@@ -1,8 +1,11 @@
-from app.presentation_workshop.projects import Presentations
+from app.apps.presentation_workshop.projects import Presentations
+from app.apps.presentation_workshop.schemas.document import (
+    PresentationProjectOut,
+    PresentationProjectPut,
+)
 from app.runtime.entity_edits import edit, find
 from app.runtime.operation_receipts import OperationError, record, replay
 from app.runtime.revisions import RevisionConflictError
-from app.schemas.presentation_workshop import PresentationProjectOut, PresentationProjectPut
 
 
 def transform(current, body):

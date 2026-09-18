@@ -8,11 +8,11 @@ from PIL import Image, ImageDraw
 from pptx import Presentation
 from tests.presentation_helpers import element, sample_document
 
+from app.apps.presentation_workshop.exports import build_export
+from app.apps.presentation_workshop.image_crop import cover_crop, pptx_crop
+from app.apps.presentation_workshop.projects import PresentationError
+from app.apps.presentation_workshop.schemas.document import PresentationProjectOut
 from app.main import app
-from app.presentation_workshop.exports import build_export
-from app.presentation_workshop.image_crop import cover_crop, pptx_crop
-from app.presentation_workshop.projects import PresentationError
-from app.schemas.presentation_workshop import PresentationProjectOut
 
 CASES = json.loads((Path(__file__).parent / "fixtures/presentation_crop_cases.json").read_text())
 

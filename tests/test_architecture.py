@@ -64,7 +64,6 @@ BUSINESS_BACKEND_PACKAGES = (
     "galgame_workshop",
     "integrations",
     "llm",
-    "presentation_workshop",
     "thought_workshop",
     "tool_navigation",
     "video_editor",
@@ -73,6 +72,12 @@ BUSINESS_BACKEND_PACKAGES = (
 ROUTE_FORBIDDEN_IMPORTS = ("app.runtime.db", "app.models", "db", "sqlalchemy")
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace", "websocket"}
 ROOT_PROBE_PATHS = {"/health", "/ready"}
+
+
+def _backend_route_files() -> list[Path]:
+    roots = [BACKEND_APP / "routes", *(BACKEND_APP / "apps").glob("*/routes")]
+    return sorted(path for root in roots if root.is_dir() for path in _python_files(root))
+
 
 FROM_IMPORT_PATTERN = re.compile(r"\bfrom\s+[\"']([^\"']+)[\"']")
 SIDE_EFFECT_IMPORT_PATTERN = re.compile(r"^\s*import\s+[\"']([^\"']+)[\"']", re.MULTILINE)
@@ -259,7 +264,7 @@ def test_feature_query_keys_have_one_owner() -> None:
 
 def test_backend_routes_do_not_own_persistence() -> None:
     violations: list[str] = []
-    for path in _python_files(BACKEND_APP / "routes"):
+    for path in _backend_route_files():
         for module in _python_imports(path):
             if any(_matches_module(module, prefix) for prefix in ROUTE_FORBIDDEN_IMPORTS):
                 violations.append(f"{_relative(path)} imports {module}")
@@ -531,10 +536,30 @@ def test_capabilities_do_not_depend_on_business_packages() -> None:
         f"{_relative(path)} imports {module}"
         for path in _python_files(BACKEND_APP / "capabilities")
         for module in _python_imports(path)
-        for package in BUSINESS_BACKEND_PACKAGES
+        for package in (*BUSINESS_BACKEND_PACKAGES, "apps")
         if _matches_module(module, f"app.{package}")
     ]
-    assert not violations, "capabilities 不得依赖业务包：\n" + "\n".join(violations)
+    assert not violations, "capabilities 不得依赖业务包或 apps：\n" + "\n".join(violations)
+
+
+def test_console_does_not_depend_on_apps() -> None:
+    violations = [
+        f"{_relative(path)} imports {module}"
+        for path in _python_files(BACKEND_APP / "console")
+        for module in _python_imports(path)
+        if _matches_module(module, "app.apps")
+    ]
+    assert not violations, "console 不得依赖 apps：\n" + "\n".join(violations)
+
+
+def test_presentation_workshop_lives_under_apps() -> None:
+    assert (BACKEND_APP / "apps" / "presentation_workshop" / "models.py").is_file()
+    assert (BACKEND_APP / "apps" / "presentation_workshop" / "routes" / "__init__.py").is_file()
+    assert not (BACKEND_APP / "presentation_workshop").exists()
+    assert not (BACKEND_APP / "models" / "presentation_workshop.py").exists()
+    assert not (BACKEND_APP / "routes" / "presentation_workshop.py").exists()
+    assert not (BACKEND_APP / "schemas" / "presentation_workshop.py").exists()
+    assert not (BACKEND_APP / "schemas" / "presentation_operations.py").exists()
 
 
 def test_runtime_assembly_entrypoints_exist() -> None:
@@ -563,11 +588,20 @@ def test_visual_assistant_has_no_function_local_app_imports() -> None:
 
 
 def test_backend_business_packages_have_no_function_local_app_imports() -> None:
-    allowed_roots = {"routes", "schemas", "models", "runtime", "capabilities"}
+    def exempt(relative: Path) -> bool:
+        root = relative.parts[0]
+        if root in {"routes", "schemas", "models", "runtime", "capabilities"}:
+            return True
+        if root == "apps":
+            if relative.name == "models.py":
+                return True
+            return len(relative.parts) >= 3 and relative.parts[2] in {"routes", "schemas"}
+        return False
+
     violations: list[str] = []
     for path in _python_files(BACKEND_APP):
         relative = path.relative_to(BACKEND_APP)
-        if relative.parts[0] in allowed_roots:
+        if exempt(relative):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for function in (
@@ -760,6 +794,8 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/console",
         "backend/app/console/file_library",
         "backend/app/console/governance",
+        "backend/app/apps",
+        "backend/app/apps/presentation_workshop",
         "backend/app/llm",
         "backend/app/models",
         "backend/app/routes",

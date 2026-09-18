@@ -124,16 +124,18 @@ test("imports portable transcription JSON after explicitly selecting its audio",
 test("annotation editor page owns viewport height outside StudioShell", async () => {
   const { readFileSync } = await import("node:fs");
   const { resolve } = await import("node:path");
-  const css = readFileSync(
-    resolve(
-      "src/features/audio-annotation/audio-annotation-foundation.css",
-    ),
+  const foundation = readFileSync(
+    resolve("src/features/audio-annotation/audio-annotation-foundation.css"),
     "utf8",
   );
-  expect(css).toMatch(
+  const shell = readFileSync(
+    resolve("src/app/layout/studio-shell.css"),
+    "utf8",
+  );
+  expect(foundation).toMatch(
     /\.annotation-editor-page\s*\{[^}]*height:\s*100dvh/s,
   );
-  expect(css).toMatch(
-    /\.studio-main\s+\.annotation-editor-page\s*\{[^}]*height:\s*100%/s,
+  expect(shell).toMatch(
+    /\.studio-main:has\(\.annotation-editor-page\)\s*>\s*\.annotation-editor-page\s*\{[^}]*height:\s*100%/s,
   );
 });

@@ -12,15 +12,11 @@ from app.galgame_workshop.errors import (
     GalgameWorkshopProjectNotFoundError,
 )
 from app.galgame_workshop.operations import apply_operations as galgame_operations
-from app.presentation_workshop.operations import apply_operations as presentation_operations
-from app.presentation_workshop.projects import PresentationError
 from app.runtime.operation_receipts import OperationError
 from app.schemas.annotation_operations import AnnotationOperationsIn
 from app.schemas.audio_annotation import AudioAnnotationDocumentOut
 from app.schemas.galgame_operations import GalgameOperationsIn
 from app.schemas.galgame_workshop import GalgameStoryDocumentOut
-from app.schemas.presentation_operations import PresentationOperationsIn
-from app.schemas.presentation_workshop import PresentationProjectOut
 from app.schemas.thought_operations import ThoughtOperationsIn
 from app.schemas.thought_workshop import ThoughtNoteOut
 from app.schemas.visual_operations import VisualOperationsIn
@@ -38,7 +34,6 @@ async def mapped(operation):
         return await operation
     except (
         OperationError,
-        PresentationError,
         AudioAnnotationError,
         ThoughtError,
         VisualCanvasError,
@@ -63,17 +58,6 @@ async def apply_canvas_operations(
     project_id: str, body: VisualOperationsIn, session: SessionDep, workspace_id: WorkspaceDep
 ):
     return await mapped(visual_operations(session, workspace_id, project_id, body))
-
-
-@router.post(
-    "/presentation-workshop/projects/{project_id}/operations",
-    response_model=PresentationProjectOut,
-    tags=["presentation-workshop"],
-)
-async def apply_presentation_operations(
-    project_id: str, body: PresentationOperationsIn, session: SessionDep, workspace_id: WorkspaceDep
-):
-    return await mapped(presentation_operations(session, workspace_id, project_id, body))
 
 
 @router.post(

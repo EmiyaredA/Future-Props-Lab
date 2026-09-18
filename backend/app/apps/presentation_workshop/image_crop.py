@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 
-from app.presentation_workshop.projects import PresentationError
+from app.apps.presentation_workshop.projects import PresentationError
 
 
 def cover_crop(

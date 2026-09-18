@@ -1,25 +1,40 @@
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
+from pydantic import ValidationError
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store import AssetStorage
-from app.deps import SessionDep, WorkspaceDep
-from app.presentation_workshop.exports import export_project
-from app.presentation_workshop.projects import PresentationError, Presentations
-from app.runtime.config import get_settings
-from app.schemas.presentation_workshop import (
+from app.apps.presentation_workshop.exports import export_project
+from app.apps.presentation_workshop.operations import apply_operations as presentation_operations
+from app.apps.presentation_workshop.projects import PresentationError, Presentations
+from app.apps.presentation_workshop.schemas.document import (
     PresentationExportIn,
     PresentationProjectIn,
     PresentationProjectList,
     PresentationProjectOut,
     PresentationProjectPut,
 )
+from app.apps.presentation_workshop.schemas.operations import PresentationOperationsIn
+from app.capabilities.asset_store import AssetStorage
+from app.deps import SessionDep, WorkspaceDep
+from app.runtime.config import get_settings
+from app.runtime.operation_receipts import OperationError
 
 router = APIRouter(prefix="/presentation-workshop", tags=["presentation-workshop"])
 
 
-def mapped(exc: PresentationError):
+def mapped(exc: PresentationError | OperationError):
     return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+
+
+async def mapped_operation(operation):
+    try:
+        return await operation
+    except (OperationError, PresentationError) as exc:
+        raise mapped(exc) from None
+    except ValidationError as exc:
+        raise HTTPException(
+            422, {"code": "invalid_operation_result", "errors": exc.errors(include_context=False)}
+        ) from None
 
 
 @router.get("/projects", response_model=PresentationProjectList)
@@ -73,6 +88,13 @@ async def delete_project(
         return {"deleted": True}
     except PresentationError as exc:
         raise mapped(exc) from None
+
+
+@router.post("/projects/{project_id}/operations", response_model=PresentationProjectOut)
+async def apply_presentation_operations(
+    project_id: str, body: PresentationOperationsIn, session: SessionDep, workspace_id: WorkspaceDep
+):
+    return await mapped_operation(presentation_operations(session, workspace_id, project_id, body))
 
 
 @router.post(

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 
+from app.apps.presentation_workshop.routes import router as presentation_workshop_router
 from app.deps import require_studio_auth
 from app.routes import annotation_exports, image_crop, thought_conversion, video_frames
 from app.routes.account_management import router as management_router
@@ -26,7 +27,6 @@ from app.routes.models import (
     suppliers,
 )
 from app.routes.platform_governance import router as platform_governance_router
-from app.routes.presentation_workshop import router as presentation_workshop_router
 from app.routes.public_workspace import router as public_workspace_router
 from app.routes.thought_workshop import router as thought_workshop_router
 from app.routes.tool_navigation import router as tool_navigation_router

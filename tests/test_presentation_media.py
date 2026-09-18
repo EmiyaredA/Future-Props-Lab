@@ -4,9 +4,9 @@ import sqlite3
 import pytest
 from tests.presentation_helpers import sample_document
 
+from app.apps.presentation_workshop.schemas.document import PresentationDocument
 from app.capabilities.asset_store.svg import normalize_svg, tint_svg
 from app.main import app
-from app.schemas.presentation_workshop import PresentationDocument
 from db.migrations.versions.r0058_presentation_media import SQL
 
 SVG = (
@@ -150,7 +150,7 @@ async def test_svg_preview_upload_reference_and_vector_export():
 def test_new_shapes_export_as_editable_freeforms(tmp_path, kind):
     from pptx import Presentation
 
-    from app.presentation_workshop.pptx_export import write_pptx
+    from app.apps.presentation_workshop.pptx_export import write_pptx
 
     doc = sample_document().model_dump()
     doc["slides"][0]["elements"][0].update(kind=kind, paragraphs=[])

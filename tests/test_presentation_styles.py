@@ -7,8 +7,11 @@ import pytest
 from pydantic import ValidationError
 from tests.presentation_helpers import element, sample_document
 
-from app.presentation_workshop.pptx_export import write_pptx
-from app.schemas.presentation_workshop import PresentationDocument, PresentationElement
+from app.apps.presentation_workshop.pptx_export import write_pptx
+from app.apps.presentation_workshop.schemas.document import (
+    PresentationDocument,
+    PresentationElement,
+)
 from db.migrations.versions.r0057_presentation_styles import SQL
 
 

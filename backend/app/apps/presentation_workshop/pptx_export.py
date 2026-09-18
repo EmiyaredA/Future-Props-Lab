@@ -10,11 +10,14 @@ from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Emu, Pt
 
-from app.presentation_workshop.image_crop import pptx_crop
-from app.presentation_workshop.native_shapes import freeform, points_for
-from app.presentation_workshop.pptx_media import picture_style, vector_picture
-from app.presentation_workshop.pptx_styles import apply_shape_style
-from app.schemas.presentation_workshop import PresentationDocument, PresentationElement
+from app.apps.presentation_workshop.image_crop import pptx_crop
+from app.apps.presentation_workshop.native_shapes import freeform, points_for
+from app.apps.presentation_workshop.pptx_media import picture_style, vector_picture
+from app.apps.presentation_workshop.pptx_styles import apply_shape_style
+from app.apps.presentation_workshop.schemas.document import (
+    PresentationDocument,
+    PresentationElement,
+)
 
 SHAPES = {
     "rect": MSO_AUTO_SHAPE_TYPE.RECTANGLE,

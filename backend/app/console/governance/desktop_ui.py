@@ -15,19 +15,19 @@ from app.models import (
     VideoEditorProject,
     VisualWorkshopProject,
 )
-from app.models.presentation_workshop import PresentationProject
+from app.orm import DESKTOP_UI_ROOTS
 
 ROOTS = {
     "visual": VisualWorkshopProject,
     "galgame": GalgameWorkshopProject,
     "video": VideoEditorProject,
-    "presentation": PresentationProject,
     "annotation": AudioAnnotationProject,
     "note": ThoughtNote,
     "knowledge": ThoughtKnowledgeBase,
     "skill": SkillIntegration,
     "mcp": McpIntegration,
     "tool-api": ToolApiIntegration,
+    **DESKTOP_UI_ROOTS,
 }
 
 

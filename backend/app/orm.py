@@ -7,6 +7,11 @@ from typing import Any
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
+from app.apps.presentation_workshop.models import (
+    PresentationAssetReference,
+    PresentationProject,
+)
+
 # Importing app.models registers every mapped class on Base.metadata.
 from app.models import (  # noqa: F401
     AudioAnnotationProject,
@@ -45,9 +50,16 @@ from app.models import (  # noqa: F401
     VisualWorkshopProject,
 )
 from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
-from app.models.presentation_workshop import PresentationProject
 from app.models.project_operations import ProjectOperationReceipt
 from app.runtime.orm_base import Base
+
+# App-owned roots registered at assembly time so console must not import apps/.
+DESKTOP_UI_ROOTS: dict[str, type] = {
+    "presentation": PresentationProject,
+}
+
+# Ensure reference mappers are registered on Base.metadata for capability queries.
+_ = PresentationAssetReference
 
 TENANT_MODELS = (
     ModelInferenceAsset,
@@ -153,6 +165,7 @@ def bind_workspace(session: Any, workspace_id: str) -> None:
 
 __all__ = [
     "Base",
+    "DESKTOP_UI_ROOTS",
     "TENANT_MODELS",
     "TenantScopeError",
     "bind_workspace",

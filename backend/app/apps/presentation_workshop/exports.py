@@ -9,12 +9,12 @@ from threading import BoundedSemaphore
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from app.apps.presentation_workshop.pptx_export import write_pptx
+from app.apps.presentation_workshop.projects import PresentationError, Presentations
+from app.apps.presentation_workshop.schemas.document import PresentationProjectOut
 from app.capabilities.asset_store import AssetStorage
 from app.capabilities.asset_store.svg import normalize_svg
-from app.presentation_workshop.pptx_export import write_pptx
-from app.presentation_workshop.projects import PresentationError, Presentations
 from app.runtime.revisions import RevisionConflictError
-from app.schemas.presentation_workshop import PresentationProjectOut
 
 EXPORT_SLOTS = BoundedSemaphore(2)
 MAX_EXPORT_BYTES = 100 * 1024 * 1024
