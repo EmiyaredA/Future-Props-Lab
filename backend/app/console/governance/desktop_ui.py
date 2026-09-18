@@ -5,7 +5,6 @@ import time
 
 from app.console.governance.desktop_agent import AgentError
 from app.models import (
-    GalgameWorkshopProject,
     McpIntegration,
     SkillIntegration,
     ToolApiIntegration,
@@ -13,7 +12,6 @@ from app.models import (
 from app.orm import DESKTOP_UI_ROOTS
 
 ROOTS = {
-    "galgame": GalgameWorkshopProject,
     "skill": SkillIntegration,
     "mcp": McpIntegration,
     "tool-api": ToolApiIntegration,

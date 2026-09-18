@@ -3,7 +3,6 @@ from typing import Literal
 from app.capabilities.identity.errors import AccountError
 from app.console.governance.governance_transactions import begin_governance, cas
 from app.console.governance.service import add_audit_event
-from app.models import GalgameWorkshopProject
 from app.orm import CERTIFIABLE_PROJECT_ROOTS
 
 
@@ -13,7 +12,7 @@ async def certify_project(
     principal = await begin_governance(session, principal)
     if not principal.allows("projects.certify") or not principal.allows("content.write"):
         raise AccountError("project_certification_required")
-    model = CERTIFIABLE_PROJECT_ROOTS["visual"] if kind == "visual" else GalgameWorkshopProject
+    model = CERTIFIABLE_PROJECT_ROOTS[kind]
     row = await session.get(model, project_id)
     if row is None or row.workspace_id != principal.workspace_id:
         raise AccountError("project_not_found")

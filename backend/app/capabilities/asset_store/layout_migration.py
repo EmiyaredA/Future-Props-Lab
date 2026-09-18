@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.models import GalgameWorkshopProject, VisualAsset
+from app.models import VisualAsset
 from app.orm import LAYOUT_PROJECT_MODELS
 from app.runtime.config import Settings
 from app.schemas.files import (
@@ -44,7 +44,6 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
         return
     project_models = {
         **LAYOUT_PROJECT_MODELS,
-        "galgame-workshop": GalgameWorkshopProject,
     }
     trash_scopes: list[tuple[str, str, Path]] = []
     for child in root.iterdir():
@@ -82,7 +81,6 @@ async def reconcile_snapshot_imports(session: AsyncSession, storage: AssetStorag
     """完成或清理进程中断的项目快照导入。"""
     project_models = {
         **LAYOUT_PROJECT_MODELS,
-        "galgame-workshop": GalgameWorkshopProject,
     }
     markers = list(storage.settings.applications_path.glob("*/projects/*/.snapshot-importing"))
     workspaces_root = storage.settings.runtime_path / "workspaces"
@@ -131,16 +129,13 @@ class StorageLayoutMigration:
 
     async def _projects(self) -> tuple[list[str], list[str], list[str]]:
         visual = LAYOUT_PROJECT_MODELS["visual-workshop"]
+        galgame = LAYOUT_PROJECT_MODELS["galgame-workshop"]
         video = LAYOUT_PROJECT_MODELS["video-editor"]
         visual_ids = list(
             (await self.session.execute(select(visual.id).order_by(visual.created_at))).scalars()
         )
         galgame_ids = list(
-            (
-                await self.session.execute(
-                    select(GalgameWorkshopProject.id).order_by(GalgameWorkshopProject.created_at)
-                )
-            ).scalars()
+            (await self.session.execute(select(galgame.id).order_by(galgame.created_at))).scalars()
         )
         video_editor_ids = list(
             (await self.session.execute(select(video.id).order_by(video.created_at))).scalars()

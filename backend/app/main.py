@@ -23,10 +23,10 @@ from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
 from app.console.governance.runtime_quotas import recover_admissions
 from app.console.governance.service import AccountError
-from app.galgame_workshop.annotation_import_runner import GalgameAnnotationImportRunner
-from app.galgame_workshop.asr import GalgameAsrRunner
-from app.galgame_workshop.video_export_runner import GalgameVideoExportRunner
-from app.galgame_workshop.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
+from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
+from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
+from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.inference.runner import InferenceRunner
 from app.llm.playground.generation_runner import ModelTestGenerationRunner

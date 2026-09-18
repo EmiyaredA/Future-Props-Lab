@@ -60,7 +60,6 @@ REMOVED_BACKEND_IMPORT_PREFIXES = (
 )
 BUSINESS_BACKEND_PACKAGES = (
     "demo_runtime",
-    "galgame_workshop",
     "integrations",
     "llm",
     "tool_navigation",
@@ -452,11 +451,11 @@ def test_media_rendering_and_galgame_keep_feature_boundaries() -> None:
         for module in _python_imports(path)
         if _matches_module(module, "app.video_editor")
         or _matches_module(module, "app.apps.video_editor")
-        or _matches_module(module, "app.galgame_workshop")
+        or _matches_module(module, "app.apps.galgame_workshop")
     ]
     galgame_violations = [
         f"{_relative(path)} imports {module}"
-        for path in _python_files(BACKEND_APP / "galgame_workshop")
+        for path in _python_files(BACKEND_APP / "apps" / "galgame_workshop")
         if path.name not in {"video_handoff.py", "video_handoff_runner.py"}
         for module in _python_imports(path)
         if _matches_module(module, "app.video_editor")
@@ -483,7 +482,7 @@ def test_transcription_consumers_do_not_depend_on_playground() -> None:
         f"{_relative(path)} imports {module}"
         for root in (
             BACKEND_APP / "apps" / "audio_annotation",
-            BACKEND_APP / "galgame_workshop",
+            BACKEND_APP / "apps" / "galgame_workshop",
         )
         for path in _python_files(root)
         for module in _python_imports(path)
@@ -626,6 +625,20 @@ def test_visual_workshop_lives_under_apps() -> None:
         "visual_assistant.py",
     ):
         assert not (BACKEND_APP / "schemas" / schema_name).exists()
+
+
+def test_galgame_workshop_lives_under_apps() -> None:
+    assert (BACKEND_APP / "apps" / "galgame_workshop" / "models.py").is_file()
+    assert (BACKEND_APP / "apps" / "galgame_workshop" / "routes" / "__init__.py").is_file()
+    assert (BACKEND_APP / "apps" / "galgame_workshop" / "story").is_dir()
+    assert (BACKEND_APP / "apps" / "galgame_workshop" / "assets").is_dir()
+    assert (BACKEND_APP / "apps" / "galgame_workshop" / "video").is_dir()
+    assert not (BACKEND_APP / "galgame_workshop").exists()
+    assert not (BACKEND_APP / "models" / "galgame_workshop.py").exists()
+    assert not (BACKEND_APP / "routes" / "galgame_workshop").exists()
+    assert not (BACKEND_APP / "schemas" / "galgame_workshop").exists()
+    assert not (BACKEND_APP / "schemas" / "galgame_operations.py").exists()
+    assert not (BACKEND_APP / "routes" / "workshop_operations.py").exists()
 
 
 def test_runtime_assembly_entrypoints_exist() -> None:
@@ -866,11 +879,11 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/apps/thought_workshop",
         "backend/app/apps/video_editor",
         "backend/app/apps/visual_workshop",
+        "backend/app/apps/galgame_workshop",
         "backend/app/llm",
         "backend/app/models",
         "backend/app/routes",
         "backend/app/schemas",
-        "backend/app/galgame_workshop",
         "backend/app/tool_navigation",
         "db/migrations/versions",
         "docs/architecture",
@@ -922,12 +935,14 @@ def test_documentation_markdown_and_compatibility_sources_are_present() -> None:
 
 
 def test_galgame_protocol_and_schema_modules_stay_split() -> None:
-    route_root = BACKEND_APP / "routes" / "galgame_workshop"
+    route_root = BACKEND_APP / "apps" / "galgame_workshop" / "routes"
     assert {"projects.py", "story.py", "assets.py", "asr.py", "maintenance.py"}.issubset(
         {path.name for path in route_root.glob("*.py")}
     )
     assert not (BACKEND_APP / "routes" / "galgame_workshop.py").exists()
     assert not (BACKEND_APP / "schemas" / "galgame_workshop.py").exists()
+    assert not (BACKEND_APP / "routes" / "galgame_workshop").exists()
+    assert not (BACKEND_APP / "schemas" / "galgame_workshop").exists()
 
 
 def test_project_applications_have_modules_routes_and_storage_roots() -> None:

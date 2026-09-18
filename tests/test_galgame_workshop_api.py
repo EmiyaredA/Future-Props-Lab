@@ -4,11 +4,13 @@ import httpx
 import pytest
 from sqlalchemy import delete, update
 
-from app.main import app
-from app.models import (
+from app.apps.galgame_workshop.models import (
     GalgameProjectAssetReference,
     GalgameStoryDocument,
     GalgameWorkshopProject,
+)
+from app.main import app
+from app.models import (
     VisualAsset,
 )
 from app.runtime.db import SessionLocal

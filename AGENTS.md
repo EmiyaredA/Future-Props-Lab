@@ -41,9 +41,9 @@
   `orm.py` 负责应用装配；`routes/` 只处理 HTTP/SSE 协议边界（含尚未迁入 App 的共享路由）；
   无业务语义的基础设施归属 `runtime/`；有契约的共享能力归属 `capabilities/`；Studio 治理与库级
   文件用例归属 `console/`；已垂直切片的产品 App 归属 `apps/`（目前 `presentation_workshop`、
-  `audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop` 已迁入，
-  `galgame_workshop` 仍暂留顶层）；`models/`、`schemas/` 仍定义尚未迁出的持久化与传输形状；
-  业务规则暂留 `llm/`、`galgame_workshop/` 等功能包。
+  `audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop`、`galgame_workshop`
+  已迁入）；`models/`、`schemas/` 仍定义尚未迁出的持久化与传输形状；
+  业务规则暂留 `llm/` 等功能包。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`
   遵守同一边界。
@@ -92,7 +92,7 @@
   不得形成强依赖环。Workspace 项目记录的加载、CAS 更新和删除原语可复用
   `runtime/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
 - Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
-  `schemas/galgame_workshop/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
+  `apps/galgame_workshop/schemas/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
 - 鉴权原语归属 `capabilities/identity/`；账号、Session、审计、Management API Key 与 Workspace 治理归属
   `console/governance/`；`StudioPrincipal` 是业务请求的唯一租户来源，业务 API 不接受客户端提交
   `workspace_id`。路由需要显式租户参数时使用 `WorkspaceDep`；不得新增 ContextVar、`default`

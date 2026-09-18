@@ -6,14 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.governance.service import AccountError
 from app.models import (
-    GalgameProjectAssetReference,
-    GalgameStoryDocument,
-    GalgameWorkshopProject,
     VisualAsset,
     VisualProjectAssetReference,
     Workspace,
 )
-from app.orm import PUBLIC_WORKSPACE_PROJECT_MODELS
+from app.orm import PUBLIC_WORKSPACE_GALGAME_MODELS, PUBLIC_WORKSPACE_PROJECT_MODELS
 from app.runtime.config import get_settings
 
 
@@ -38,6 +35,8 @@ def asset_view(asset: VisualAsset) -> dict:
 async def public_projection(session: AsyncSession, workspace_id: str) -> dict:
     workspace = await require_public_workspace(session, workspace_id)
     VisualWorkshopProject = PUBLIC_WORKSPACE_PROJECT_MODELS["visual"]
+    GalgameWorkshopProject = PUBLIC_WORKSPACE_PROJECT_MODELS["galgame"]
+    GalgameProjectAssetReference = PUBLIC_WORKSPACE_GALGAME_MODELS["asset_reference"]
     visual_projects = list(
         (
             await session.execute(
@@ -137,9 +136,9 @@ async def public_projection(session: AsyncSession, workspace_id: str) -> dict:
     }
 
 
-async def public_story(
-    session: AsyncSession, *, workspace_id: str, project_id: str
-) -> GalgameStoryDocument:
+async def public_story(session: AsyncSession, *, workspace_id: str, project_id: str):
+    GalgameWorkshopProject = PUBLIC_WORKSPACE_PROJECT_MODELS["galgame"]
+    GalgameStoryDocument = PUBLIC_WORKSPACE_GALGAME_MODELS["story"]
     await require_public_workspace(session, workspace_id)
     project = await session.scalar(
         select(GalgameWorkshopProject).where(
@@ -156,6 +155,8 @@ async def public_story(
 
 
 async def public_asset_content(session: AsyncSession, *, workspace_id: str, asset_id: str):
+    GalgameWorkshopProject = PUBLIC_WORKSPACE_PROJECT_MODELS["galgame"]
+    GalgameProjectAssetReference = PUBLIC_WORKSPACE_GALGAME_MODELS["asset_reference"]
     await require_public_workspace(session, workspace_id)
     asset = await session.scalar(
         select(VisualAsset).where(

@@ -12,6 +12,18 @@ from app.apps.audio_annotation.models import (
     AudioAnnotationProject,
     AudioAnnotationWaveform,
 )
+from app.apps.galgame_workshop.models import (
+    GalgameAnnotationImportTask,
+    GalgameAssetMetadata,
+    GalgameAssetSettings,
+    GalgameAssetTranscriptionTask,
+    GalgameProjectAssetReference,
+    GalgameStoryDocument,
+    GalgameStorySnapshot,
+    GalgameVideoEditorHandoffTask,
+    GalgameVideoExportTask,
+    GalgameWorkshopProject,
+)
 from app.apps.presentation_workshop.models import (
     PresentationAssetReference,
     PresentationProject,
@@ -41,11 +53,6 @@ from app.apps.visual_workshop.models import (
     VisualWorkshopProject,
 )
 from app.models import (  # noqa: F401
-    GalgameAnnotationImportTask,
-    GalgameAssetTranscriptionTask,
-    GalgameVideoEditorHandoffTask,
-    GalgameVideoExportTask,
-    GalgameWorkshopProject,
     IntegrationCheck,
     LlmCallLog,
     McpIntegration,
@@ -71,6 +78,7 @@ from app.runtime.orm_base import Base
 # App-owned roots registered at assembly time so console must not import apps/.
 DESKTOP_UI_ROOTS: dict[str, type] = {
     "annotation": AudioAnnotationProject,
+    "galgame": GalgameWorkshopProject,
     "knowledge": ThoughtKnowledgeBase,
     "note": ThoughtNote,
     "presentation": PresentationProject,
@@ -78,23 +86,31 @@ DESKTOP_UI_ROOTS: dict[str, type] = {
     "visual": VisualWorkshopProject,
 }
 
-# Console project certification (galgame remains on app.models until its app slice).
 CERTIFIABLE_PROJECT_ROOTS: dict[str, type] = {
+    "galgame": GalgameWorkshopProject,
     "visual": VisualWorkshopProject,
 }
 
 # Public workspace projection for migrated apps.
 PUBLIC_WORKSPACE_PROJECT_MODELS: dict[str, type] = {
+    "galgame": GalgameWorkshopProject,
     "visual": VisualWorkshopProject,
+}
+
+PUBLIC_WORKSPACE_GALGAME_MODELS: dict[str, type] = {
+    "asset_reference": GalgameProjectAssetReference,
+    "story": GalgameStoryDocument,
 }
 
 # Runtime quota task kinds owned by migrated apps.
 RUNTIME_QUOTA_TASK_MODELS: dict[str, type] = {
+    "galgame_asr": GalgameAssetTranscriptionTask,
     "visual": VisualGenerationTask,
 }
 
 # Storage layout migration project roots for migrated apps.
 LAYOUT_PROJECT_MODELS: dict[str, type] = {
+    "galgame-workshop": GalgameWorkshopProject,
     "visual-workshop": VisualWorkshopProject,
     "video-editor": VideoEditorProject,
 }
@@ -113,6 +129,11 @@ _ = (
     VisualAssistantMessage,
     VisualAssistantMessageAsset,
     VisualCanvasDocument,
+    GalgameAssetMetadata,
+    GalgameAssetSettings,
+    GalgameProjectAssetReference,
+    GalgameStoryDocument,
+    GalgameStorySnapshot,
 )
 
 TENANT_MODELS = (

@@ -3,15 +3,17 @@ from copy import deepcopy
 import httpx
 import pytest
 
+from app.apps.galgame_workshop.models import (
+    GalgameAssetMetadata,
+)
+from app.apps.galgame_workshop.schemas import GalgameStoryProject
 from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
 from app.models import (
-    GalgameAssetMetadata,
     VisualAsset,
 )
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
-from app.schemas.galgame_workshop import GalgameStoryProject
 
 
 def playable_story() -> dict:

@@ -5,9 +5,9 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from app.galgame_workshop.video_export import EXPORT_PACKAGING_POLICY
-from app.galgame_workshop.video_export_runner import _recover_interrupted_task
-from app.galgame_workshop.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from app.apps.galgame_workshop.video.video_export import EXPORT_PACKAGING_POLICY
+from app.apps.galgame_workshop.video.video_export_runner import _recover_interrupted_task
+from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.main import app
 from test_galgame_workshop import playable_story
 

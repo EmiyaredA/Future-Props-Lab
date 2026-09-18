@@ -7,13 +7,14 @@ import httpx
 import pytest
 from sqlalchemy import select, update
 
-from app.galgame_workshop.story import default_story_document
-from app.galgame_workshop.story_migrations import (
+from app.apps.galgame_workshop.story.story import default_story_document
+from app.apps.galgame_workshop.story.story_migrations import (
     GalgameStoryMigrations,
     inspect_story_migration,
 )
 from app.main import app
-from app.models import GalgameStoryDocument, GalgameWorkshopProject, Workspace
+from app.apps.galgame_workshop.models import GalgameStoryDocument, GalgameWorkshopProject
+from app.models import Workspace
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
 

@@ -289,6 +289,7 @@ class VideoEditorProjectSnapshots:
                             byte_size=item["byte_size"],
                         )
                     )
+                    await self.session.flush()
                     self.session.add(
                         VideoEditorAssetMetadata(asset_id=new_asset_id, project_id=project.id)
                     )

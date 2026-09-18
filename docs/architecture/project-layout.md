@@ -20,11 +20,10 @@ Future-Props-Lab/
 │   ├── runtime/       # 配置、数据库、CAS/轮询原语与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理与库级文件用例：governance、file_library
-│   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual）
+│   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
-│   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
 │   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂（App 迁出后逐步清空）
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；未迁入 App 的协议模块仍在此
 │   └── schemas/       # Pydantic 请求与响应形状；未迁入 App 的契约仍在此
@@ -145,7 +144,7 @@ Future-Props-Lab/
   后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
   `apps/visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
-  `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、Workspace 级旧 Story
+  `apps/galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、Workspace 级旧 Story
   批量迁移与旧文件导入用例、剧情对话富文本、多人角色舞台演出、
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
@@ -265,9 +264,9 @@ schema migration 不执行文件 I/O。
 目录配置、模型测试会话、测试工具与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、项目对话、文件夹、文件和项目引用
 使用 revision/CAS 防止静默覆盖；Galgame 工坊工程元数据与整份故事文档分别使用 revision/CAS，
 故事冲突保留服务器完整快照，完成态工程在故事修改后恢复草稿。Story 1.4 的角色、素材、国际化、
-时间轴、流程与表现层交叉校验由 `schemas/galgame_workshop/story_validation.py` 的纯函数拥有；
+时间轴、流程与表现层交叉校验由 `apps/galgame_workshop/schemas/story_validation.py` 的纯函数拥有；
 旧 Story 1.0–1.3 的格式转换只由
-`schemas/galgame_workshop/story_legacy.py` 适配器拥有；`galgame_workshop/story_migrations.py`
+`apps/galgame_workshop/schemas/story_legacy.py` 适配器拥有；`apps/galgame_workshop/story/story_migrations.py`
 通过正式 `/v1` API 执行状态预检、受 Workspace 约束的批量 CAS 固化和单工程旧文件导入，不以
 schema migration 或直接数据库修改替代运行期迁移。工具单项状态通过幂等更新和原子 upsert 写入。图片/视频/音频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊

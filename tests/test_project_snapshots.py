@@ -18,14 +18,14 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
+from app.apps.galgame_workshop.models import (
+    GalgameWorkshopProject,
+)
 from app.apps.video_editor.models import (
     VideoEditorProject,
 )
 from app.apps.visual_workshop.models import (
     VisualWorkshopProject,
-)
-from app.models import (
-    GalgameWorkshopProject,
 )
 from app.orm import bind_workspace
 from app.runtime.config import get_settings

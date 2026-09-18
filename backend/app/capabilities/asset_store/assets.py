@@ -21,7 +21,6 @@ from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.policy import display_name_without_original_extension
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
 from app.models import (
-    GalgameProjectAssetReference,
     VisualAsset,
     VisualAssetFolder,
     VisualProjectAssetReference,
@@ -252,10 +251,15 @@ class VisualAssets(VisualAssetContext):
                     code="asset_in_use",
                     status=409,
                 )
-            galgame_reference = await self.session.scalar(
-                select(GalgameProjectAssetReference.id)
-                .where(GalgameProjectAssetReference.asset_id.in_(global_ids))
-                .limit(1)
+            galgame_refs = Base.metadata.tables.get("galgame_project_asset_references")
+            galgame_reference = (
+                await self.session.scalar(
+                    select(galgame_refs.c.id)
+                    .where(galgame_refs.c.asset_id.in_(global_ids))
+                    .limit(1)
+                )
+                if galgame_refs is not None
+                else None
             )
             if galgame_reference:
                 raise AssetError(

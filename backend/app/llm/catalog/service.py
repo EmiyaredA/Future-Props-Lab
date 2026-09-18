@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.catalog.supplier_records import get_supplier, list_suppliers
 from app.models import (
-    GalgameAssetTranscriptionTask,
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
@@ -373,10 +372,11 @@ class ModelCatalogService:
                 ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
             )
         )
+        asr_tasks = Base.metadata.tables["galgame_asset_transcription_tasks"]
         asr_active = await self.session.scalar(
-            select(func.count(GalgameAssetTranscriptionTask.id)).where(
-                GalgameAssetTranscriptionTask.model_id == model_id,
-                GalgameAssetTranscriptionTask.status.in_(("queued", "running")),
+            select(func.count(asr_tasks.c.id)).where(
+                asr_tasks.c.model_id == model_id,
+                asr_tasks.c.status.in_(("queued", "running")),
             )
         )
         inference_active = await self.session.scalar(
@@ -406,10 +406,11 @@ class ModelCatalogService:
                 ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
             )
         )
+        asr_tasks = Base.metadata.tables["galgame_asset_transcription_tasks"]
         asr_count = await self.session.scalar(
-            select(func.count(GalgameAssetTranscriptionTask.id)).where(
-                GalgameAssetTranscriptionTask.provider_id == provider_id,
-                GalgameAssetTranscriptionTask.status.in_(("queued", "running")),
+            select(func.count(asr_tasks.c.id)).where(
+                asr_tasks.c.provider_id == provider_id,
+                asr_tasks.c.status.in_(("queued", "running")),
             )
         )
         inference_count = await self.session.scalar(

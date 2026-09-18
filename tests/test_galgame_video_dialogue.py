@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from app.galgame_workshop.video_dialogue import (
+from app.apps.galgame_workshop.video.video_dialogue import (
     _draw_name,
     _speaker_name_geometry,
     render_dialogue_layer,

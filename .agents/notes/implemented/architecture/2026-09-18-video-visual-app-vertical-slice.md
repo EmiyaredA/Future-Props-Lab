@@ -19,7 +19,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：媒体工坊两包可整体删除/替换；workshop_operations 仅剩 galgame。
-- **代价与已知上限**：`galgame_workshop` 与 `llm/` 仍暂留；Galgame handoff 可 import `apps.video_editor.models`（既有交接例外）。
+- **代价与已知上限**：`galgame_workshop` 已按同套路迁入（见 `2026-09-18-galgame-app-vertical-slice.md`）；`llm/` 仍暂留；Galgame handoff 可 import `apps.video_editor.models`（既有交接例外）。
 
 ## Verification
 

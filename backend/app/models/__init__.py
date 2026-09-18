@@ -8,18 +8,6 @@ from app.models.accounts import (
 )
 from app.models.call_log import LlmCallLog
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
-from app.models.galgame_workshop import (
-    GalgameAnnotationImportTask,
-    GalgameAssetMetadata,
-    GalgameAssetSettings,
-    GalgameAssetTranscriptionTask,
-    GalgameProjectAssetReference,
-    GalgameStoryDocument,
-    GalgameStorySnapshot,
-    GalgameVideoEditorHandoffTask,
-    GalgameVideoExportTask,
-    GalgameWorkshopProject,
-)
 from app.models.integrations import (
     IntegrationCheck,
     McpDiscoveredTool,
@@ -50,16 +38,6 @@ from app.runtime.orm_base import Base
 __all__ = [
     "Base",
     "AuthSession",
-    "GalgameStoryDocument",
-    "GalgameAnnotationImportTask",
-    "GalgameAssetMetadata",
-    "GalgameAssetSettings",
-    "GalgameAssetTranscriptionTask",
-    "GalgameProjectAssetReference",
-    "GalgameStorySnapshot",
-    "GalgameVideoExportTask",
-    "GalgameVideoEditorHandoffTask",
-    "GalgameWorkshopProject",
     "IntegrationCheck",
     "LlmCallLog",
     "ManagementApiKey",

@@ -6,7 +6,6 @@ from app.capabilities.identity.errors import AccountError
 from app.console.governance.platform_policy import read_setting
 from app.models import (
     AuthSession,
-    GalgameAssetTranscriptionTask,
     ManagementApiKey,
     ModelTestGenerationTask,
     ModelTestTranscriptionTask,
@@ -24,7 +23,6 @@ TASK_MODELS = {
     "inference": ModelInferenceTask,
     "model": ModelTestGenerationTask,
     "transcription": ModelTestTranscriptionTask,
-    "galgame_asr": GalgameAssetTranscriptionTask,
     **RUNTIME_QUOTA_TASK_MODELS,
 }
 ACTIVE = ("queued", "submitting", "pending", "processing", "running")

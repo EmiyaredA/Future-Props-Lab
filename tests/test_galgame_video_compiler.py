@@ -3,12 +3,12 @@ from pathlib import Path
 
 from PIL import Image
 
-from app.galgame_workshop.video_compiler import (
+from app.apps.galgame_workshop.video.video_compiler import (
     FLOATING_TEXT_FONT_ASSET_ID,
     compile_galgame_render_plan,
 )
-from app.galgame_workshop.video_dialogue import FONT_REGULAR
-from app.galgame_workshop.video_lip_sync import AudioEnvelope
+from app.apps.galgame_workshop.video.video_dialogue import FONT_REGULAR
+from app.apps.galgame_workshop.video.video_lip_sync import AudioEnvelope
 from app.apps.video_editor.frames import render_plan_frame
 
 

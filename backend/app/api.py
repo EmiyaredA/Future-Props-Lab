@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.apps.audio_annotation.routes import router as audio_annotation_router
+from app.apps.galgame_workshop.routes import router as galgame_workshop_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
 from app.apps.thought_workshop.routes import conversion as thought_conversion
 from app.apps.thought_workshop.routes import router as thought_workshop_router
@@ -17,7 +18,6 @@ from app.routes.demo_runtime import router as demo_runtime_router
 from app.routes.desktop import router as desktop_router
 from app.routes.desktop_agent import router as desktop_agent_router
 from app.routes.file_management import router as file_management_router
-from app.routes.galgame_workshop import router as galgame_workshop_router
 from app.routes.integrations import router as integrations_router
 from app.routes.model_capacity import ModelCapacity
 from app.routes.model_inference import router as model_inference_router
@@ -35,7 +35,6 @@ from app.routes.models import (
 from app.routes.platform_governance import router as platform_governance_router
 from app.routes.public_workspace import router as public_workspace_router
 from app.routes.tool_navigation import router as tool_navigation_router
-from app.routes.workshop_operations import router as workshop_operations_router
 from app.routes.workspaces import invitation_router
 from app.routes.workspaces import router as workspaces_router
 
@@ -107,10 +106,6 @@ api_router.include_router(
 
 api_router.include_router(
     presentation_workshop_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
-)
-
-api_router.include_router(
-    workshop_operations_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 
 api_router.include_router(
