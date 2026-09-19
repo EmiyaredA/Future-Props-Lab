@@ -564,6 +564,91 @@
   line-height: 1.6;
 }
 
+.ve-batch-mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ve-batch-mode-options button {
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid #33394a;
+  border-radius: 8px;
+  color: #b8bfd2;
+  background: #181d2a;
+  font-size: 11px;
+}
+
+.ve-batch-mode-options button[aria-checked="true"] {
+  border-color: #6258bc;
+  color: #dedaff;
+  background: #24263c;
+}
+
+.ve-batch-mode-options button:disabled {
+  opacity: 0.52;
+}
+
+.ve-batch-field-hint {
+  margin: 0 0 8px;
+  color: #858da2;
+  font-size: 10px;
+}
+
+.ve-batch-lock-aspect {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  color: #c9cdda;
+  font-size: 11px;
+}
+
+.ve-batch-apply-bar {
+  margin: 8px;
+  padding: 11px;
+  border: 1px solid #292f3e;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgb(27 32 45 / 94%), rgb(20 25 36 / 94%));
+}
+
+.ve-batch-apply {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #6258bc;
+  border-radius: 9px;
+  color: #f1f2f8;
+  background: #3a3480;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ve-batch-apply:disabled {
+  opacity: 0.52;
+}
+
+.ve-batch-apply-message,
+.ve-batch-empty {
+  margin: 8px 0 0;
+  color: #9aa3ba;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.ve-batch-empty {
+  margin: 16px 8px;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.ve-batch-empty strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #c9cdda;
+}
+
 @media (max-height: 760px) {
   .ve-inspector .ve-inspector-section {
     padding: 12px;

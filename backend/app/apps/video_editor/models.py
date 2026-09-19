@@ -77,6 +77,7 @@ class VideoEditorAssetMetadata(Base):
     thumbnail_filename: Mapped[str | None] = mapped_column(String(255))
     waveform_filename: Mapped[str | None] = mapped_column(String(255))
     error: Mapped[str | None] = mapped_column(Text)
+    default_effects: Mapped[dict] = mapped_column(JSON, default=dict)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

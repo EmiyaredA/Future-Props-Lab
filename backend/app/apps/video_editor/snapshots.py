@@ -146,7 +146,9 @@ class VideoEditorProjectSnapshots:
                     select(VideoEditorTask.output_asset_id).where(
                         VideoEditorTask.project_id == project_id,
                         VideoEditorTask.output_asset_id.is_not(None),
-                        VideoEditorTask.kind.in_(("render", "segment_export")),
+                        VideoEditorTask.kind.in_(
+                            ("render", "segment_export", "asset_bake")
+                        ),
                     )
                 )
             ).scalars()

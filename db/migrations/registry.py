@@ -68,6 +68,7 @@ from db.migrations.versions import (
     r0064_director_desk,
     r0065_director_desk_motions,
     r0066_motion_compositor,
+    r0067_video_editor_asset_default_effects_bake,
 )
 
 
@@ -300,5 +301,13 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0066_motion_compositor.MIGRATION_ID, r0066_motion_compositor.SQL),)
+
+MIGRATIONS += (
+    Migration(
+        r0067_video_editor_asset_default_effects_bake.MIGRATION_ID,
+        r0067_video_editor_asset_default_effects_bake.SQL,
+        foreign_keys_off=True,
+    ),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

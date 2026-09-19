@@ -5,9 +5,25 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
+from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
 
 VideoEditorPreset = Literal["720p30", "1080p30", "720p60", "1080p60"]
 VideoEditorTaskStatus = Literal["queued", "running", "completed", "failed", "cancelled"]
+
+
+class VideoEditorDefaultEffects(BaseModel):
+    chroma_key: VideoEditorChromaKey | None = Field(default=None, alias="chromaKey")
+
+
+class VideoEditorAssetPatchIn(BaseModel):
+    expected_revision: int = Field(alias="expectedRevision", ge=0)
+    default_effects: VideoEditorDefaultEffects = Field(alias="defaultEffects")
+
+
+class VideoEditorAssetBakeCreateIn(BaseModel):
+    expected_revision: int = Field(alias="expectedRevision", ge=0)
+    request_id: str = Field(alias="requestId", min_length=8, max_length=64)
+    effects: VideoEditorDefaultEffects | None = None
 
 
 class VideoEditorProjectCreateIn(BaseModel):
@@ -81,6 +97,10 @@ class VideoEditorAssetOut(BaseModel):
     thumbnail_url: str | None = Field(default=None, alias="thumbnailUrl")
     waveform_url: str | None = Field(default=None, alias="waveformUrl")
     error: str | None = None
+    default_effects: VideoEditorDefaultEffects = Field(
+        default_factory=VideoEditorDefaultEffects, alias="defaultEffects"
+    )
+    revision: int = 0
     created_at: str = Field(alias="createdAt")
 
 
@@ -189,7 +209,7 @@ class VideoEditorTaskOut(BaseModel):
     id: str
     project_id: str = Field(alias="projectId")
     request_id: str = Field(alias="requestId")
-    kind: Literal["media", "render", "segment_export"]
+    kind: Literal["media", "render", "segment_export", "asset_bake"]
     status: VideoEditorTaskStatus
     progress: int = Field(ge=0, le=100)
     output_asset_id: str | None = Field(default=None, alias="outputAssetId")

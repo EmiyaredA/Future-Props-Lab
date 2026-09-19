@@ -127,6 +127,10 @@ const baseClip = (
   },
   keyframes: [],
   muted: false,
+  ...((asset.mediaKind === "video" || asset.mediaKind === "image") &&
+  asset.defaultEffects?.chromaKey
+    ? { chromaKey: asset.defaultEffects.chromaKey }
+    : {}),
 });
 
 export function operationsForAsset(

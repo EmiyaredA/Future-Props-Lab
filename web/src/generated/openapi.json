@@ -23645,6 +23645,37 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VideoEditorAssetBakeCreateIn": {
+        "properties": {
+          "effects": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorDefaultEffects"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId"
+        ],
+        "title": "VideoEditorAssetBakeCreateIn",
+        "type": "object"
+      },
       "VideoEditorAssetFolder": {
         "properties": {
           "assetIds": {
@@ -23741,6 +23772,9 @@
             "title": "Createdat",
             "type": "string"
           },
+          "defaultEffects": {
+            "$ref": "#/components/schemas/VideoEditorDefaultEffects"
+          },
           "displayName": {
             "title": "Displayname",
             "type": "string"
@@ -23792,6 +23826,11 @@
             ],
             "title": "Proxyurl"
           },
+          "revision": {
+            "default": 0,
+            "title": "Revision",
+            "type": "integer"
+          },
           "thumbnailUrl": {
             "anyOf": [
               {
@@ -23826,6 +23865,24 @@
           "createdAt"
         ],
         "title": "VideoEditorAssetOut",
+        "type": "object"
+      },
+      "VideoEditorAssetPatchIn": {
+        "properties": {
+          "defaultEffects": {
+            "$ref": "#/components/schemas/VideoEditorDefaultEffects"
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "defaultEffects"
+        ],
+        "title": "VideoEditorAssetPatchIn",
         "type": "object"
       },
       "VideoEditorAvailableAssetListOut": {
@@ -24172,6 +24229,22 @@
           "durationUs"
         ],
         "title": "VideoEditorClip",
+        "type": "object"
+      },
+      "VideoEditorDefaultEffects": {
+        "properties": {
+          "chromaKey": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorChromaKey"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "VideoEditorDefaultEffects",
         "type": "object"
       },
       "VideoEditorKeyframe": {
@@ -24824,7 +24897,8 @@
             "enum": [
               "media",
               "render",
-              "segment_export"
+              "segment_export",
+              "asset_bake"
             ],
             "title": "Kind",
             "type": "string"
@@ -44309,6 +44383,57 @@
         ]
       }
     },
+    "/v1/video-editor/projects/{project_id}/asset-bakes/{task_id}": {
+      "get": {
+        "operationId": "get_asset_bake_v1_video_editor_projects__project_id__asset_bakes__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Asset Bake",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
     "/v1/video-editor/projects/{project_id}/assets": {
       "get": {
         "operationId": "list_assets_v1_video_editor_projects__project_id__assets_get",
@@ -44503,6 +44628,126 @@
           }
         },
         "summary": "Delete Asset",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_asset_v1_video_editor_projects__project_id__assets__asset_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorAssetPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Asset",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes": {
+      "post": {
+        "operationId": "create_asset_bake_v1_video_editor_projects__project_id__assets__asset_id__bakes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorAssetBakeCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Asset Bake",
         "tags": [
           "video-editor"
         ]

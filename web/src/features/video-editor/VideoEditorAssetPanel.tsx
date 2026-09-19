@@ -26,12 +26,15 @@ import {
   X,
 } from "lucide-react";
 import {
+  createVideoEditorAssetBake,
   deleteVideoEditorAsset,
+  getVideoEditorAssetBake,
   getVideoEditorTimeline,
   listVideoEditorAssets,
   applyVideoEditorOperations,
   importVideoEditorAssets,
   listVideoEditorImportSources,
+  patchVideoEditorAsset,
   uploadVideoEditorAsset,
 } from "./api";
 import {
@@ -48,8 +51,10 @@ import {
   VideoEditorAssetBatchSelectionHeader,
   VideoEditorAssetBatchToolbar,
 } from "./VideoEditorAssetBatchToolbar";
+import { VideoEditorAssetDefaultChromaDialog } from "./VideoEditorAssetDefaultChromaDialog";
 import { VideoEditorAssetImportDialog } from "./VideoEditorAssetImportDialog";
 import { VideoEditorAssetRow } from "./VideoEditorAssetRow";
+import type { ChromaKey } from "./chromaPresets";
 import {
   VideoEditorAssetUploadFeedback,
   type PendingFolderPlacement,
@@ -109,6 +114,7 @@ export function VideoEditorAssetPanel({
   const [batchFolderId, setBatchFolderId] = useState<string>();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [confirmBatchDelete, setConfirmBatchDelete] = useState(false);
+  const [defaultChromaOpen, setDefaultChromaOpen] = useState(false);
   const [batchBusy, setBatchBusy] = useState(false);
   const [batchMessage, setBatchMessage] = useState("");
   const [pendingPlacements, setPendingPlacements] = useState<
@@ -345,6 +351,122 @@ export function VideoEditorAssetPanel({
     void client.invalidateQueries({
       queryKey: videoEditorQueryKeys.timeline(projectId),
     });
+  };
+
+  const applyDefaultChroma = async (chromaKey: ChromaKey | null) => {
+    const targets = selectedAssets.filter(
+      (asset) => asset.mediaKind === "video" || asset.mediaKind === "image",
+    );
+    const skipped = selectedAssets.filter(
+      (asset) => asset.mediaKind !== "video" && asset.mediaKind !== "image",
+    );
+    if (!targets.length) {
+      setBatchMessage("所选素材没有可设置默认抠像的视频或图片");
+      setDefaultChromaOpen(false);
+      return;
+    }
+    const failed: string[] = [];
+    setBatchBusy(true);
+    for (const asset of targets) {
+      try {
+        await patchVideoEditorAsset(projectId, asset.id, asset.revision ?? 0, {
+          chromaKey,
+        });
+      } catch (error) {
+        failed.push(
+          `${asset.displayName}：${apiErrorMessage(error, "更新失败")}`,
+        );
+      }
+    }
+    setDefaultChromaOpen(false);
+    setBatchBusy(false);
+    refresh();
+    const parts = [
+      chromaKey === null
+        ? `已清除 ${targets.length - failed.length} 个素材的默认抠像`
+        : `已为 ${targets.length - failed.length} 个素材设置默认抠像`,
+    ];
+    if (skipped.length) parts.push(`跳过 ${skipped.length} 个不支持的素材`);
+    if (failed.length) parts.push(`失败：${failed.join("；")}`);
+    setBatchMessage(parts.join("。"));
+  };
+
+  const bakeSelected = async () => {
+    const candidates = selectedAssets.filter(
+      (asset) => asset.mediaKind === "video" || asset.mediaKind === "image",
+    );
+    const skippedKind = selectedAssets.filter(
+      (asset) => asset.mediaKind !== "video" && asset.mediaKind !== "image",
+    );
+    const notReady = candidates.filter(
+      (asset) => asset.processingStatus !== "ready",
+    );
+    const missingChroma = candidates.filter(
+      (asset) =>
+        asset.processingStatus === "ready" &&
+        !asset.defaultEffects?.chromaKey?.enabled,
+    );
+    const targets = candidates.filter(
+      (asset) =>
+        asset.processingStatus === "ready" &&
+        asset.defaultEffects?.chromaKey?.enabled,
+    );
+    if (!targets.length) {
+      const reasons = [
+        skippedKind.length ? `${skippedKind.length} 个类型不支持` : "",
+        notReady.length ? `${notReady.length} 个尚未就绪` : "",
+        missingChroma.length
+          ? `${missingChroma.length} 个未设置启用中的默认抠像`
+          : "",
+      ].filter(Boolean);
+      setBatchMessage(
+        reasons.length
+          ? `没有可烘焙的素材（${reasons.join("，")}）`
+          : "没有可烘焙的素材",
+      );
+      return;
+    }
+    setBatchBusy(true);
+    const failed: string[] = [];
+    let completed = 0;
+    for (const [index, asset] of targets.entries()) {
+      setBatchMessage(`正在烘焙 ${index + 1} / ${targets.length}`);
+      try {
+        let task = await createVideoEditorAssetBake(
+          projectId,
+          asset.id,
+          asset.revision ?? 0,
+        );
+        while (task.status === "queued" || task.status === "running") {
+          await new Promise((resolve) => window.setTimeout(resolve, 1000));
+          task = await getVideoEditorAssetBake(projectId, task.id);
+        }
+        if (task.status !== "completed") {
+          failed.push(
+            `${asset.displayName}：${task.error || task.status || "烘焙失败"}`,
+          );
+          continue;
+        }
+        completed += 1;
+      } catch (error) {
+        failed.push(
+          `${asset.displayName}：${apiErrorMessage(error, "烘焙失败")}`,
+        );
+      }
+    }
+    setBatchBusy(false);
+    refresh();
+    void client.invalidateQueries({
+      queryKey: videoEditorQueryKeys.timeline(projectId),
+    });
+    const parts = [`已烘焙 ${completed} 个素材`];
+    if (skippedKind.length || notReady.length || missingChroma.length) {
+      parts.push(
+        `跳过 ${skippedKind.length + notReady.length + missingChroma.length} 个`,
+      );
+    }
+    if (failed.length) parts.push(`失败：${failed.slice(0, 3).join("；")}`);
+    setBatchMessage(parts.join("。"));
   };
 
   const saveFolderName = (
@@ -826,12 +948,26 @@ export function VideoEditorAssetPanel({
           onAdd={() => void addSelected()}
           onMove={(folderId) => void moveSelected(folderId)}
           onDelete={() => setConfirmBatchDelete(true)}
+          onDefaultChroma={() => setDefaultChromaOpen(true)}
+          onBake={() => void bakeSelected()}
         />
       ) : batchMessage ? (
         <p className="ve-batch-message" role="status">
           {batchMessage}
         </p>
       ) : null}
+      <VideoEditorAssetDefaultChromaDialog
+        open={defaultChromaOpen}
+        count={
+          selectedAssets.filter(
+            (asset) =>
+              asset.mediaKind === "video" || asset.mediaKind === "image",
+          ).length
+        }
+        pending={batchBusy}
+        onCancel={() => setDefaultChromaOpen(false)}
+        onApply={(chromaKey) => void applyDefaultChroma(chromaKey)}
+      />
       {showImport ? (
         <VideoEditorAssetImportDialog
           items={sources.data?.items ?? []}

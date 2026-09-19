@@ -2,19 +2,13 @@ import { Pipette } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
+import {
+  CHROMA_COLOR_PRESETS,
+  type ChromaKey,
+  defaultChromaKey,
+  resolveChromaKey,
+} from "./chromaPresets";
 import "./video-editor-chroma.css";
-
-type ChromaKey = Required<NonNullable<VideoEditorClip["chromaKey"]>>;
-
-const PRESET_COLORS = ["#00ff00", "#0000ff"] as const;
-
-const defaultChromaKey: ChromaKey = {
-  enabled: false,
-  color: "#00ff00",
-  similarity: 42,
-  softness: 18,
-  despill: 30,
-};
 
 export function VideoEditorChromaInspector({
   clip,
@@ -28,20 +22,16 @@ export function VideoEditorChromaInspector({
 }) {
   const lastSubmitted = useRef("");
   const [colorOpen, setColorOpen] = useState(false);
-  const [draft, setDraft] = useState<ChromaKey>({
-    ...defaultChromaKey,
-    ...clip.chromaKey,
-  });
+  const [draft, setDraft] = useState<ChromaKey>(() => resolveChromaKey(clip));
   useEffect(() => {
-    setDraft({ ...defaultChromaKey, ...clip.chromaKey });
+    setDraft(resolveChromaKey(clip));
     lastSubmitted.current = "";
   }, [clip.id, clip.chromaKey]);
   const save = (next: ChromaKey) => {
     setDraft(next);
     const signature = JSON.stringify(next);
     if (
-      signature ===
-        JSON.stringify({ ...defaultChromaKey, ...clip.chromaKey }) ||
+      signature === JSON.stringify(resolveChromaKey(clip)) ||
       signature === lastSubmitted.current
     )
       return;
@@ -57,7 +47,7 @@ export function VideoEditorChromaInspector({
       ],
     ).catch(() => {
       lastSubmitted.current = "";
-      setDraft({ ...defaultChromaKey, ...clip.chromaKey });
+      setDraft(resolveChromaKey(clip));
     });
   };
   const chooseColor = async () => {
@@ -78,8 +68,8 @@ export function VideoEditorChromaInspector({
     }
   };
   const color = draft.color.toLowerCase();
-  const isCustom = !PRESET_COLORS.includes(
-    color as (typeof PRESET_COLORS)[number],
+  const isCustom = !CHROMA_COLOR_PRESETS.includes(
+    color as (typeof CHROMA_COLOR_PRESETS)[number],
   );
   return (
     <section className="ve-inspector-section ve-chroma-section">

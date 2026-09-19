@@ -41,6 +41,8 @@ export function VideoEditorAssetBatchToolbar({
   onAdd,
   onMove,
   onDelete,
+  onDefaultChroma,
+  onBake,
 }: {
   folderId: string | "root";
   folders: VideoEditorAssetFolder[];
@@ -50,6 +52,8 @@ export function VideoEditorAssetBatchToolbar({
   onAdd: () => void;
   onMove: (folderId: string | null) => void;
   onDelete: () => void;
+  onDefaultChroma: () => void;
+  onBake: () => void;
 }) {
   const [moveOpen, setMoveOpen] = useState(false);
   const inRoot = folderId === "root";
@@ -59,6 +63,16 @@ export function VideoEditorAssetBatchToolbar({
       <div>
         <button type="button" disabled={!count || busy} onClick={onAdd}>
           添加到时间轴
+        </button>
+        <button
+          type="button"
+          disabled={!count || busy}
+          onClick={onDefaultChroma}
+        >
+          默认抠像
+        </button>
+        <button type="button" disabled={!count || busy} onClick={onBake}>
+          烘焙选中
         </button>
         <button
           type="button"

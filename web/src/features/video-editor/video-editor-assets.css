@@ -513,6 +513,79 @@
   font-size: 11px;
   overflow-wrap: anywhere;
 }
+.ve-asset-chroma-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 48%);
+}
+.ve-asset-chroma-dialog-card {
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid #3a4156;
+  border-radius: 14px;
+  background: #171b27;
+  color: #e8ebf5;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 35%);
+}
+.ve-asset-chroma-dialog-card header {
+  margin-bottom: 12px;
+}
+.ve-asset-chroma-dialog-card header strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+.ve-asset-chroma-dialog-card header p {
+  margin: 0;
+  color: #9aa3ba;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ve-asset-chroma-dialog-card .ve-batch-mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 10px 0;
+}
+.ve-asset-chroma-dialog-card .ve-batch-mode-options button {
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid #33394a;
+  border-radius: 8px;
+  color: #b8bfd2;
+  background: #181d2a;
+  font-size: 11px;
+}
+.ve-asset-chroma-dialog-card .ve-batch-mode-options button[aria-pressed="true"] {
+  border-color: #6258bc;
+  color: #dedaff;
+  background: #24263c;
+}
+.ve-asset-chroma-dialog-card footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+.ve-asset-chroma-dialog-card footer button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid #3a4156;
+  border-radius: 8px;
+  color: #d7dcee;
+  background: #222836;
+  font-size: 12px;
+}
+.ve-asset-chroma-dialog-card footer button.primary {
+  border-color: #6258bc;
+  background: #3a3480;
+}
 .ve-batch-move-menu {
   display: grid;
   gap: 3px;

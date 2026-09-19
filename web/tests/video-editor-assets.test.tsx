@@ -16,11 +16,14 @@ import type { VideoEditorAsset } from "@features/video-editor/types";
 
 vi.mock("@features/video-editor/api", () => ({
   applyVideoEditorOperations: vi.fn(),
+  createVideoEditorAssetBake: vi.fn(),
   deleteVideoEditorAsset: vi.fn(),
+  getVideoEditorAssetBake: vi.fn(),
   getVideoEditorTimeline: vi.fn(),
   listVideoEditorAssets: vi.fn(),
   importVideoEditorAssets: vi.fn(),
   listVideoEditorImportSources: vi.fn(),
+  patchVideoEditorAsset: vi.fn(),
   uploadVideoEditorAsset: vi.fn(),
 }));
 
@@ -41,6 +44,8 @@ const asset: VideoEditorAsset = {
   byteSize: 1024,
   processingStatus: "ready",
   probe: { durationUs: 3_000_000 },
+  defaultEffects: {},
+  revision: 0,
   createdAt: "2026-08-29T00:00:00Z",
 };
 

@@ -110,6 +110,53 @@ export const deleteVideoEditorAsset = async (
     ),
   );
 
+export const patchVideoEditorAsset = async (
+  projectId: string,
+  assetId: string,
+  expectedRevision: number,
+  defaultEffects: components["schemas"]["VideoEditorDefaultEffects"],
+) =>
+  unwrap(
+    await api.PATCH(
+      "/v1/video-editor/projects/{project_id}/assets/{asset_id}",
+      {
+        params: { path: { project_id: projectId, asset_id: assetId } },
+        body: { expectedRevision, defaultEffects },
+      },
+    ),
+  );
+
+export const createVideoEditorAssetBake = async (
+  projectId: string,
+  assetId: string,
+  expectedRevision: number,
+  requestId = crypto.randomUUID(),
+  effects?: components["schemas"]["VideoEditorDefaultEffects"],
+) =>
+  unwrap(
+    await api.POST(
+      "/v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes",
+      {
+        params: { path: { project_id: projectId, asset_id: assetId } },
+        body: {
+          expectedRevision,
+          requestId,
+          ...(effects ? { effects } : {}),
+        },
+      },
+    ),
+  );
+
+export const getVideoEditorAssetBake = async (
+  projectId: string,
+  taskId: string,
+) =>
+  unwrap(
+    await api.GET("/v1/video-editor/projects/{project_id}/asset-bakes/{task_id}", {
+      params: { path: { project_id: projectId, task_id: taskId } },
+    }),
+  );
+
 export const listVideoEditorImportSources = async () =>
   unwrap(await api.GET("/v1/video-editor/import-sources"));
 

@@ -295,6 +295,8 @@ class VideoEditorRunner(PollingTaskRunner):
                 await self._process_media(task_id)
             elif kind == "segment_export":
                 await self._process_segment_export(task_id)
+            elif kind == "asset_bake":
+                await self._process_asset_bake(task_id)
             else:
                 await self._process_render(task_id)
         except RenderCancelled:
@@ -519,6 +521,193 @@ class VideoEditorRunner(PollingTaskRunner):
             status="completed",
             progress=100,
             result=detail,
+            output_asset_id=output_asset_id,
+            finished=True,
+        )
+
+    async def _process_asset_bake(self, task_id: str) -> None:
+        from uuid import uuid4
+
+        from PIL import Image
+
+        from app.apps.video_editor.asset_bakes import insert_baked_asset_in_organization
+        from app.capabilities.media_rendering.chroma_key import apply_chroma_key
+        from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
+
+        async with self.session_factory() as session:
+            task = await self._get(session, task_id)
+            if task is None:
+                return
+            payload = dict(task.request_payload or {})
+            source_asset_id = str(payload["assetId"])
+            effects = dict(payload.get("effects") or {})
+            chroma_payload = effects.get("chromaKey") or effects.get("chroma_key")
+            if not chroma_payload:
+                raise RuntimeError("烘焙缺少抠像参数")
+            chroma = VideoEditorChromaKey.model_validate(chroma_payload)
+            asset = await session.get(VisualAsset, source_asset_id)
+            metadata = await session.get(VideoEditorAssetMetadata, source_asset_id)
+            if (
+                asset is None
+                or metadata is None
+                or asset.video_editor_project_id != task.project_id
+            ):
+                raise RuntimeError("待烘焙素材不存在")
+            source = self.storage.path_for(asset)
+            project_id = task.project_id
+            workspace_id = task.workspace_id
+            media_kind = asset.media_kind
+            display_name = asset.display_name
+            duration_us = int((metadata.probe or {}).get("durationUs") or 5_000_000)
+
+        cancel = threading.Event()
+        watch = asyncio.create_task(self._cancel_watch(task_id, cancel))
+        with TemporaryDirectory(prefix=f"video-editor-bake-{task_id}-") as temporary:
+            temp_root = Path(temporary)
+            try:
+                if media_kind == "image":
+                    output = temp_root / "baked.png"
+                    await self._set(task_id, progress=20)
+
+                    def bake_image() -> None:
+                        layer = Image.open(source).convert("RGBA")
+                        keyed = apply_chroma_key(layer, chroma)
+                        keyed.save(output, format="PNG")
+
+                    await asyncio.to_thread(bake_image)
+                    await self._raise_if_cancelled(task_id)
+                    content_type = "image/png"
+                    filename = f"{display_name}-baked-{task_id[:8]}.png"
+                    extensions = {".png"}
+                    probe: dict = {
+                        "mediaKind": "image",
+                        "durationUs": 5_000_000,
+                        "streams": [{"codec_type": "video", "width": 0, "height": 0}],
+                    }
+                    with Image.open(output) as baked:
+                        probe["streams"][0]["width"] = baked.width
+                        probe["streams"][0]["height"] = baked.height
+                else:
+                    output = temp_root / "baked.mp4"
+                    document = VideoEditorTimelineDocument.model_validate(
+                        {
+                            "settings": {
+                                "width": 1920,
+                                "height": 1080,
+                                "fps": 30,
+                                "backgroundColor": "#000000",
+                            },
+                            "tracks": [
+                                {
+                                    "id": "bake-visual",
+                                    "kind": "visual",
+                                    "name": "画面",
+                                    "order": 0,
+                                    "locked": False,
+                                    "hidden": False,
+                                    "muted": False,
+                                    "clips": [
+                                        {
+                                            "id": str(uuid4()),
+                                            "trackId": "bake-visual",
+                                            "kind": "video",
+                                            "name": display_name,
+                                            "timelineStartUs": 0,
+                                            "durationUs": max(1, duration_us),
+                                            "sourceInUs": 0,
+                                            "assetId": source_asset_id,
+                                            "fitMode": "contain",
+                                            "volume": 1,
+                                            "muted": True,
+                                            "chromaKey": chroma.model_dump(
+                                                mode="json", by_alias=True
+                                            ),
+                                            "transform": {
+                                                "x": 960,
+                                                "y": 540,
+                                                "scaleX": 1,
+                                                "scaleY": 1,
+                                                "rotation": 0,
+                                                "opacity": 1,
+                                                "anchor": "center",
+                                                "brightness": 1,
+                                            },
+                                            "keyframes": [],
+                                        }
+                                    ],
+                                }
+                            ],
+                            "assetOrganization": {"folders": [], "rootAssetIds": []},
+                        }
+                    )
+                    loop = asyncio.get_running_loop()
+
+                    def progress(value: int) -> None:
+                        asyncio.run_coroutine_threadsafe(self._set(task_id, progress=value), loop)
+
+                    await asyncio.to_thread(
+                        render_document,
+                        document,
+                        {source_asset_id: source},
+                        output,
+                        preset="1080p30",
+                        start_us=0,
+                        end_us=max(1, duration_us),
+                        cancel=cancel,
+                        progress=progress,
+                    )
+                    await self._raise_if_cancelled(task_id)
+                    probe = await asyncio.to_thread(probe_media, output)
+                    content_type = "video/mp4"
+                    filename = f"{display_name}-baked-{task_id[:8]}.mp4"
+                    extensions = {".mp4"}
+            finally:
+                watch.cancel()
+
+            async with self.session_factory() as session:
+                bind_workspace(session, workspace_id)
+                asset_out, staged = await AssetLibrary(session, self.settings).stage_local_copy(
+                    output,
+                    workspace_id=workspace_id,
+                    filename=filename,
+                    content_type=content_type,
+                    video_editor_project_id=project_id,
+                    allowed_extensions=extensions,
+                    max_bytes=self.settings.fpl_galgame_export_max_bytes,
+                )
+                try:
+                    session.add(
+                        VideoEditorAssetMetadata(
+                            asset_id=asset_out.id,
+                            project_id=project_id,
+                            processing_status="ready",
+                            probe=probe,
+                            fingerprint=sha256_file(output),
+                            default_effects={},
+                        )
+                    )
+                    await insert_baked_asset_in_organization(
+                        session,
+                        project_id=project_id,
+                        source_asset_id=source_asset_id,
+                        output_asset_id=asset_out.id,
+                    )
+                    await session.commit()
+                except Exception:
+                    staged.unlink(missing_ok=True)
+                    raise
+                output_asset_id = asset_out.id
+
+        await self._set(
+            task_id,
+            status="completed",
+            progress=100,
+            result={
+                "sourceAssetId": source_asset_id,
+                "outputFilename": filename,
+                "probe": probe,
+                "effects": effects,
+            },
             output_asset_id=output_asset_id,
             finished=True,
         )

@@ -39,6 +39,10 @@ class Video:
         'Patch Project. PATCH /v1/video-editor/projects/{project_id}'
         return self._client._call('PATCH', '/v1/video-editor/projects/{project_id}', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VideoEditorProjectOut)
 
+    def get_asset_bake(self, *, project_id: str, task_id: str) -> models.VideoEditorTaskOut:
+        'Get Asset Bake. GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}'
+        return self._client._call('GET', '/v1/video-editor/projects/{project_id}/asset-bakes/{task_id}', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=models.VideoEditorTaskOut)
+
     def list_assets(self, *, project_id: str) -> models.VideoEditorAssetListOut:
         'List Assets. GET /v1/video-editor/projects/{project_id}/assets'
         return self._client._call('GET', '/v1/video-editor/projects/{project_id}/assets', parameters=[('project_id', 'path', project_id)], response_type=models.VideoEditorAssetListOut)
@@ -54,6 +58,14 @@ class Video:
     def delete_asset(self, *, project_id: str, asset_id: str) -> dict[str, bool]:
         'Delete Asset. DELETE /v1/video-editor/projects/{project_id}/assets/{asset_id}'
         return self._client._call('DELETE', '/v1/video-editor/projects/{project_id}/assets/{asset_id}', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], response_type=dict[str, bool])
+
+    def patch_asset(self, *, project_id: str, asset_id: str, body: models.VideoEditorAssetPatchIn | dict) -> models.VideoEditorAssetOut:
+        'Patch Asset. PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}'
+        return self._client._call('PATCH', '/v1/video-editor/projects/{project_id}/assets/{asset_id}', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=models.VideoEditorAssetOut)
+
+    def create_asset_bake(self, *, project_id: str, asset_id: str, body: models.VideoEditorAssetBakeCreateIn | dict) -> models.VideoEditorTaskOut:
+        'Create Asset Bake. POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes'
+        return self._client._call('POST', '/v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=models.VideoEditorTaskOut)
 
     def retry_proxy(self, *, project_id: str, asset_id: str) -> models.VideoEditorAssetOut:
         'Retry Proxy. POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry'
@@ -163,6 +175,10 @@ class AsyncVideo:
         'Patch Project. PATCH /v1/video-editor/projects/{project_id}'
         return await self._client._call('PATCH', '/v1/video-editor/projects/{project_id}', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VideoEditorProjectOut)
 
+    async def get_asset_bake(self, *, project_id: str, task_id: str) -> models.VideoEditorTaskOut:
+        'Get Asset Bake. GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}'
+        return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/asset-bakes/{task_id}', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=models.VideoEditorTaskOut)
+
     async def list_assets(self, *, project_id: str) -> models.VideoEditorAssetListOut:
         'List Assets. GET /v1/video-editor/projects/{project_id}/assets'
         return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/assets', parameters=[('project_id', 'path', project_id)], response_type=models.VideoEditorAssetListOut)
@@ -178,6 +194,14 @@ class AsyncVideo:
     async def delete_asset(self, *, project_id: str, asset_id: str) -> dict[str, bool]:
         'Delete Asset. DELETE /v1/video-editor/projects/{project_id}/assets/{asset_id}'
         return await self._client._call('DELETE', '/v1/video-editor/projects/{project_id}/assets/{asset_id}', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], response_type=dict[str, bool])
+
+    async def patch_asset(self, *, project_id: str, asset_id: str, body: models.VideoEditorAssetPatchIn | dict) -> models.VideoEditorAssetOut:
+        'Patch Asset. PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}'
+        return await self._client._call('PATCH', '/v1/video-editor/projects/{project_id}/assets/{asset_id}', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=models.VideoEditorAssetOut)
+
+    async def create_asset_bake(self, *, project_id: str, asset_id: str, body: models.VideoEditorAssetBakeCreateIn | dict) -> models.VideoEditorTaskOut:
+        'Create Asset Bake. POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes'
+        return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=models.VideoEditorTaskOut)
 
     async def retry_proxy(self, *, project_id: str, asset_id: str) -> models.VideoEditorAssetOut:
         'Retry Proxy. POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry'

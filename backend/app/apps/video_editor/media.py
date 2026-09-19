@@ -21,8 +21,10 @@ from app.apps.video_editor.schemas import (
     VideoEditorAssetImportIn,
     VideoEditorAssetListOut,
     VideoEditorAssetOut,
+    VideoEditorAssetPatchIn,
     VideoEditorAvailableAssetListOut,
     VideoEditorAvailableAssetOut,
+    VideoEditorDefaultEffects,
 )
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
@@ -30,7 +32,7 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import Settings, get_settings
-from app.runtime.revisions import RevisionConflictError
+from app.runtime.revisions import RevisionConflictError, require_revision_write
 from app.runtime.time import iso_utc, utc_now
 
 VIDEO_EDITOR_EXTENSIONS = VIDEO_EDITABLE_EXTENSIONS
@@ -75,6 +77,7 @@ class VideoEditorMedia:
         self, project_id: str, asset: VisualAsset, metadata: VideoEditorAssetMetadata
     ) -> VideoEditorAssetOut:
         base = f"/v1/video-editor/projects/{project_id}/assets/{asset.id}"
+        effects = VideoEditorDefaultEffects.model_validate(metadata.default_effects or {})
         return VideoEditorAssetOut(
             id=asset.id,
             displayName=asset.display_name,
@@ -88,6 +91,8 @@ class VideoEditorMedia:
             thumbnailUrl=f"{base}/thumbnail" if metadata.thumbnail_filename else None,
             waveformUrl=f"{base}/waveform" if metadata.waveform_filename else None,
             error=metadata.error,
+            defaultEffects=effects,
+            revision=metadata.revision,
             createdAt=iso_utc(asset.created_at),
         )
 
@@ -243,6 +248,42 @@ class VideoEditorMedia:
             )
         )
         await self.session.commit()
+        return self._out(project_id, asset, metadata)
+
+    async def patch(
+        self, project_id: str, asset_id: str, body: VideoEditorAssetPatchIn
+    ) -> VideoEditorAssetOut:
+        asset, metadata = await self.asset(project_id, asset_id)
+        if asset.media_kind not in {"video", "image"} and body.default_effects.chroma_key is not None:
+            raise VideoEditorValidationError("只有视频和图片素材可以设置抠像默认效果", code="invalid_kind")
+        effects_payload = body.default_effects.model_dump(mode="json", by_alias=True)
+        now = utc_now()
+        result = await self.session.execute(
+            update(VideoEditorAssetMetadata)
+            .where(
+                VideoEditorAssetMetadata.asset_id == asset_id,
+                VideoEditorAssetMetadata.project_id == project_id,
+                VideoEditorAssetMetadata.revision == body.expected_revision,
+            )
+            .values(
+                default_effects=effects_payload,
+                revision=body.expected_revision + 1,
+                updated_at=now,
+            )
+        )
+
+        async def load_current() -> VideoEditorAssetOut:
+            current_asset, current_meta = await self.asset(project_id, asset_id)
+            return self._out(project_id, current_asset, current_meta)
+
+        await require_revision_write(
+            self.session,
+            result,
+            expected=body.expected_revision,
+            load_current=load_current,
+        )
+        await self.session.commit()
+        asset, metadata = await self.asset(project_id, asset_id)
         return self._out(project_id, asset, metadata)
 
     async def delete(self, project_id: str, asset_id: str) -> None:

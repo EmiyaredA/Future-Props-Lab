@@ -15,6 +15,7 @@
 | [import_sources](#import-sources) | `GET /v1/video-editor/import-sources` |
 | [list_projects](#list-projects) | `GET /v1/video-editor/projects` |
 | [get_project](#get-project) | `GET /v1/video-editor/projects/{project_id}` |
+| [get_asset_bake](#get-asset-bake) | `GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}` |
 | [list_assets](#list-assets) | `GET /v1/video-editor/projects/{project_id}/assets` |
 | [asset_variant](#asset-variant) | `GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}` |
 | [exact_frame](#exact-frame) | `GET /v1/video-editor/projects/{project_id}/preview/frame` |
@@ -27,10 +28,12 @@
 | [text_clip_layer](#text-clip-layer) | `GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer` |
 | [get_timeline](#get-timeline) | `GET /v1/video-editor/projects/{project_id}/timeline` |
 | [patch_project](#patch-project) | `PATCH /v1/video-editor/projects/{project_id}` |
+| [patch_asset](#patch-asset) | `PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}` |
 | [create_project](#create-project) | `POST /v1/video-editor/projects` |
 | [import_project_snapshot](#import-project-snapshot) | `POST /v1/video-editor/projects/snapshot-imports` |
 | [upload_asset](#upload-asset) | `POST /v1/video-editor/projects/{project_id}/assets` |
 | [import_assets](#import-assets) | `POST /v1/video-editor/projects/{project_id}/assets/import` |
+| [create_asset_bake](#create-asset-bake) | `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes` |
 | [retry_proxy](#retry-proxy) | `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry` |
 | [reveal_project_folder](#reveal-project-folder) | `POST /v1/video-editor/projects/{project_id}/open-folder` |
 | [create_render](#create-render) | `POST /v1/video-editor/projects/{project_id}/renders` |
@@ -153,6 +156,26 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VideoEditorProjectOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_asset_bake {#get-asset-bake}
+
+`client.video.get_asset_bake(...)`
+
+**接口**：`GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `task_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorTaskOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -399,6 +422,29 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## patch_asset {#patch-asset}
+
+`client.video.patch_asset(...)`
+
+**接口**：`PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `asset_id` | path | string | 是 |
+| `body` | application/json | VideoEditorAssetPatchIn | 是 |
+| `body.defaultEffects` | 请求体 | VideoEditorDefaultEffects | 是 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorAssetOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## create_project {#create-project}
 
 `client.video.create_project(...)`
@@ -482,6 +528,30 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VideoEditorAssetListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_asset_bake {#create-asset-bake}
+
+`client.video.create_asset_bake(...)`
+
+**接口**：`POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `asset_id` | path | string | 是 |
+| `body` | application/json | VideoEditorAssetBakeCreateIn | 是 |
+| `body.effects` | 请求体 | VideoEditorDefaultEffects / null | 否 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+| `body.requestId` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorTaskOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

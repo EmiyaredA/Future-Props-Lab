@@ -3737,6 +3737,11 @@ class ValidationError(WireModel):
     msg: str = Field(default=..., alias='msg')
     type: str = Field(default=..., alias='type')
 
+class VideoEditorAssetBakeCreateIn(WireModel):
+    effects: VideoEditorDefaultEffects | None = Field(default=None, alias='effects')
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
+
 class VideoEditorAssetFolder(WireModel):
     asset_ids: list[str] | None = Field(default=None, alias='assetIds', max_length=10000)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
@@ -3755,6 +3760,7 @@ class VideoEditorAssetOrganization(WireModel):
 class VideoEditorAssetOut(WireModel):
     byte_size: int = Field(default=..., alias='byteSize')
     created_at: str = Field(default=..., alias='createdAt')
+    default_effects: VideoEditorDefaultEffects | None = Field(default=None, alias='defaultEffects')
     display_name: str = Field(default=..., alias='displayName')
     error: str | None = Field(default=None, alias='error')
     id: str = Field(default=..., alias='id')
@@ -3764,8 +3770,13 @@ class VideoEditorAssetOut(WireModel):
     probe: dict[str, Any] | None = Field(default=None, alias='probe')
     processing_status: str = Field(default=..., alias='processingStatus')
     proxy_url: str | None = Field(default=None, alias='proxyUrl')
+    revision: int = Field(default=0, alias='revision')
     thumbnail_url: str | None = Field(default=None, alias='thumbnailUrl')
     waveform_url: str | None = Field(default=None, alias='waveformUrl')
+
+class VideoEditorAssetPatchIn(WireModel):
+    default_effects: VideoEditorDefaultEffects = Field(default=..., alias='defaultEffects')
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
 
 class VideoEditorAvailableAssetListOut(WireModel):
     items: list[VideoEditorAvailableAssetOut] = Field(default=..., alias='items')
@@ -3813,6 +3824,9 @@ class VideoEditorClip(WireModel):
     transition_in: VideoEditorTransition | None = Field(default=None, alias='transitionIn')
     transition_out: VideoEditorTransition | None = Field(default=None, alias='transitionOut')
     volume: float = Field(default=1, alias='volume', ge=0.0, le=4.0)
+
+class VideoEditorDefaultEffects(WireModel):
+    chroma_key: VideoEditorChromaKey | None = Field(default=None, alias='chromaKey')
 
 class VideoEditorKeyframe(WireModel):
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
@@ -3910,7 +3924,7 @@ class VideoEditorTaskOut(WireModel):
     created_at: str = Field(default=..., alias='createdAt')
     error: str | None = Field(default=None, alias='error')
     id: str = Field(default=..., alias='id')
-    kind: Literal['media', 'render', 'segment_export'] = Field(default=..., alias='kind')
+    kind: Literal['media', 'render', 'segment_export', 'asset_bake'] = Field(default=..., alias='kind')
     output_asset_id: str | None = Field(default=None, alias='outputAssetId')
     progress: int = Field(default=..., alias='progress', ge=0.0, le=100.0)
     project_id: str = Field(default=..., alias='projectId')
@@ -4924,15 +4938,18 @@ UpdateClipOperation.model_rebuild()
 UpdateSettingsOperation.model_rebuild()
 UpdateTrackOperation.model_rebuild()
 ValidationError.model_rebuild()
+VideoEditorAssetBakeCreateIn.model_rebuild()
 VideoEditorAssetFolder.model_rebuild()
 VideoEditorAssetImportIn.model_rebuild()
 VideoEditorAssetListOut.model_rebuild()
 VideoEditorAssetOrganization.model_rebuild()
 VideoEditorAssetOut.model_rebuild()
+VideoEditorAssetPatchIn.model_rebuild()
 VideoEditorAvailableAssetListOut.model_rebuild()
 VideoEditorAvailableAssetOut.model_rebuild()
 VideoEditorChromaKey.model_rebuild()
 VideoEditorClip.model_rebuild()
+VideoEditorDefaultEffects.model_rebuild()
 VideoEditorKeyframe.model_rebuild()
 VideoEditorProjectCreateIn.model_rebuild()
 VideoEditorProjectListOut.model_rebuild()

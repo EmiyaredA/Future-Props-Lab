@@ -6,15 +6,18 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
+from app.apps.video_editor.asset_bakes import VideoEditorAssetBakes
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.frames import VideoEditorFrames
 from app.apps.video_editor.media import VideoEditorMedia, guessed_mime
 from app.apps.video_editor.projects import VideoEditorProjects
 from app.apps.video_editor.rendering import VideoEditorRenders
 from app.apps.video_editor.schemas import (
+    VideoEditorAssetBakeCreateIn,
     VideoEditorAssetImportIn,
     VideoEditorAssetListOut,
     VideoEditorAssetOut,
+    VideoEditorAssetPatchIn,
     VideoEditorAvailableAssetListOut,
     VideoEditorProjectCreateIn,
     VideoEditorProjectListOut,
@@ -223,6 +226,50 @@ async def retry_proxy(
 ) -> VideoEditorAssetOut:
     try:
         return await VideoEditorMedia(session, workspace_id).retry(project_id, asset_id)
+    except VideoEditorNotFoundError as exc:
+        raise _error(exc) from None
+
+
+@router.patch("/projects/{project_id}/assets/{asset_id}", response_model=VideoEditorAssetOut)
+async def patch_asset(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    asset_id: str,
+    body: VideoEditorAssetPatchIn,
+) -> VideoEditorAssetOut:
+    try:
+        return await VideoEditorMedia(session, workspace_id).patch(project_id, asset_id, body)
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/projects/{project_id}/assets/{asset_id}/bakes", response_model=VideoEditorTaskOut
+)
+async def create_asset_bake(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    asset_id: str,
+    body: VideoEditorAssetBakeCreateIn,
+) -> VideoEditorTaskOut:
+    try:
+        return await VideoEditorAssetBakes(session, workspace_id).create(
+            project_id, asset_id, body
+        )
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None
+
+
+@router.get(
+    "/projects/{project_id}/asset-bakes/{task_id}", response_model=VideoEditorTaskOut
+)
+async def get_asset_bake(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
+) -> VideoEditorTaskOut:
+    try:
+        return await VideoEditorAssetBakes(session, workspace_id).get(project_id, task_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
 

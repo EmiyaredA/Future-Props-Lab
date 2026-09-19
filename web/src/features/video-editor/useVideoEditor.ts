@@ -17,6 +17,10 @@ import {
   type ClipClipboardSnapshot,
 } from "./clipClipboard";
 import { frameUs, timelineDuration } from "./editorModel";
+import {
+  buildBatchClipOperations,
+  type BatchClipPatch,
+} from "./batchClipPatch";
 import { canPlaceClip, linkedClipIds } from "./timelineSnap";
 import { videoEditorQueryKeys } from "./queryKeys";
 import {
@@ -344,6 +348,18 @@ export function useVideoEditor(projectId: string) {
     return true;
   }, [clipboard, commit, selectClip, timeline.data]);
 
+  const patchSelectedClips = useCallback(
+    async (patch: BatchClipPatch) => {
+      const clips = (timeline.data?.document.tracks ?? [])
+        .flatMap((track) => track.clips ?? [])
+        .filter((clip) => selectedClipIds.includes(clip.id));
+      const result = buildBatchClipOperations(clips, patch);
+      if (result.redo.length) await commit(result.redo, result.undo);
+      return result;
+    },
+    [commit, selectedClipIds, timeline.data],
+  );
+
   useEffect(() => {
     setClipboard(undefined);
   }, [projectId]);
@@ -506,6 +522,7 @@ export function useVideoEditor(projectId: string) {
     copySelectedClip,
     copyClip,
     pasteClipboardClip,
+    patchSelectedClips,
     commit,
     undo,
     redo,

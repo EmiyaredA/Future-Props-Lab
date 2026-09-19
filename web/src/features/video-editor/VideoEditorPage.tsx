@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { operationsForAsset, newTrack, snapUs, frameUs } from "./editorModel";
 import { VideoEditorAssetPanel } from "./VideoEditorAssetPanel";
+import { VideoEditorBatchInspector } from "./VideoEditorBatchInspector";
 import { VideoEditorExportDialog } from "./VideoEditorExportDialog";
 import { VideoEditorInspector } from "./VideoEditorInspector";
 import { VideoEditorPreview } from "./VideoEditorPreview";
@@ -388,21 +389,31 @@ export function VideoEditorPage({
           <VideoEditorSeparator
             {...workspaceLayout.separator("inspectorWidth")}
           />
-          <VideoEditorInspector
-            speedRippleEnabled={editor.speedRippleEnabled}
-            setSpeedRippleEnabled={editor.setSpeedRippleEnabled}
-            clip={editor.selected}
-            disabled={
-              editor.saving ||
-              Boolean(
-                tracks.find((track) => track.id === editor.selected?.trackId)
-                  ?.locked,
-              )
-            }
-            clips={tracks.flatMap((track) => track.clips ?? [])}
-            playheadUs={editor.playheadUs}
-            commit={editor.commit}
-          />
+          {editor.selectedClipIds.length > 1 ? (
+            <VideoEditorBatchInspector
+              clips={tracks
+                .flatMap((track) => track.clips ?? [])
+                .filter((clip) => editor.selectedClipIds.includes(clip.id))}
+              disabled={editor.saving}
+              applyPatch={editor.patchSelectedClips}
+            />
+          ) : (
+            <VideoEditorInspector
+              speedRippleEnabled={editor.speedRippleEnabled}
+              setSpeedRippleEnabled={editor.setSpeedRippleEnabled}
+              clip={editor.selected}
+              disabled={
+                editor.saving ||
+                Boolean(
+                  tracks.find((track) => track.id === editor.selected?.trackId)
+                    ?.locked,
+                )
+              }
+              clips={tracks.flatMap((track) => track.clips ?? [])}
+              playheadUs={editor.playheadUs}
+              commit={editor.commit}
+            />
+          )}
         </main>
         <VideoEditorSeparator {...workspaceLayout.separator("timelineRatio")} />
         <div className="ve-timeline-bar">

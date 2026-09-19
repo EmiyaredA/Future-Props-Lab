@@ -389,7 +389,8 @@ export function VideoEditorInspector({
               ))}
             </div>
           </section>
-        ) : (
+        ) : null}
+        {clip.kind === "video" || clip.kind === "audio" ? (
           <section className="ve-inspector-section">
             <div className="ve-section-heading">
               <div>
@@ -422,7 +423,7 @@ export function VideoEditorInspector({
               </button>
             </label>
           </section>
-        )}
+        ) : null}
         {clip.kind === "video" || clip.kind === "audio" ? (
           <section className="ve-inspector-section">
             <div className="ve-section-heading">

@@ -2394,6 +2394,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}",
+    "sdk": "client.video.get_asset_bake",
+    "document": "/docs.html?page=sdk-reference-video#get-asset-bake",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/video-editor/projects/{project_id}/assets",
     "sdk": "client.video.list_assets",
     "document": "/docs.html?page=sdk-reference-video#list-assets",
@@ -2478,6 +2485,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}",
+    "sdk": "client.video.patch_asset",
+    "document": "/docs.html?page=sdk-reference-video#patch-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/video-editor/projects",
     "sdk": "client.video.create_project",
     "document": "/docs.html?page=sdk-reference-video#create-project",
@@ -2502,6 +2516,13 @@
     "http": "POST /v1/video-editor/projects/{project_id}/assets/import",
     "sdk": "client.video.import_assets",
     "document": "/docs.html?page=sdk-reference-video#import-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes",
+    "sdk": "client.video.create_asset_bake",
+    "document": "/docs.html?page=sdk-reference-video#create-asset-bake",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

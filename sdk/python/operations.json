@@ -699,6 +699,10 @@
     "method": "get_project",
     "resource": "video"
   },
+  "GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}": {
+    "method": "get_asset_bake",
+    "resource": "video"
+  },
   "GET /v1/video-editor/projects/{project_id}/assets": {
     "method": "list_assets",
     "resource": "video"
@@ -909,6 +913,10 @@
   },
   "PATCH /v1/video-editor/projects/{project_id}": {
     "method": "patch_project",
+    "resource": "video"
+  },
+  "PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}": {
+    "method": "patch_asset",
     "resource": "video"
   },
   "PATCH /v1/visual-workshop/projects/{project_id}": {
@@ -1465,6 +1473,10 @@
   },
   "POST /v1/video-editor/projects/{project_id}/assets/import": {
     "method": "import_assets",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes": {
+    "method": "create_asset_bake",
     "resource": "video"
   },
   "POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry": {

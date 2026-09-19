@@ -4525,6 +4525,23 @@ export interface paths {
         patch: operations["patch_project_v1_video_editor_projects__project_id__patch"];
         trace?: never;
     };
+    "/v1/video-editor/projects/{project_id}/asset-bakes/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Asset Bake */
+        get: operations["get_asset_bake_v1_video_editor_projects__project_id__asset_bakes__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/video-editor/projects/{project_id}/assets": {
         parameters: {
             query?: never;
@@ -4572,6 +4589,24 @@ export interface paths {
         post?: never;
         /** Delete Asset */
         delete: operations["delete_asset_v1_video_editor_projects__project_id__assets__asset_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Asset */
+        patch: operations["patch_asset_v1_video_editor_projects__project_id__assets__asset_id__patch"];
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Asset Bake */
+        post: operations["create_asset_bake_v1_video_editor_projects__project_id__assets__asset_id__bakes_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -14363,6 +14398,14 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** VideoEditorAssetBakeCreateIn */
+        VideoEditorAssetBakeCreateIn: {
+            effects?: components["schemas"]["VideoEditorDefaultEffects"] | null;
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Requestid */
+            requestId: string;
+        };
         /** VideoEditorAssetFolder */
         VideoEditorAssetFolder: {
             /** Assetids */
@@ -14395,6 +14438,7 @@ export interface components {
             byteSize: number;
             /** Createdat */
             createdAt: string;
+            defaultEffects?: components["schemas"]["VideoEditorDefaultEffects"];
             /** Displayname */
             displayName: string;
             /** Error */
@@ -14415,10 +14459,21 @@ export interface components {
             processingStatus: string;
             /** Proxyurl */
             proxyUrl?: string | null;
+            /**
+             * Revision
+             * @default 0
+             */
+            revision: number;
             /** Thumbnailurl */
             thumbnailUrl?: string | null;
             /** Waveformurl */
             waveformUrl?: string | null;
+        };
+        /** VideoEditorAssetPatchIn */
+        VideoEditorAssetPatchIn: {
+            defaultEffects: components["schemas"]["VideoEditorDefaultEffects"];
+            /** Expectedrevision */
+            expectedRevision: number;
         };
         /** VideoEditorAvailableAssetListOut */
         VideoEditorAvailableAssetListOut: {
@@ -14544,6 +14599,10 @@ export interface components {
              * @default 1
              */
             volume: number;
+        };
+        /** VideoEditorDefaultEffects */
+        VideoEditorDefaultEffects: {
+            chromaKey?: components["schemas"]["VideoEditorChromaKey"] | null;
         };
         /** VideoEditorKeyframe */
         VideoEditorKeyframe: {
@@ -14782,7 +14841,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "media" | "render" | "segment_export";
+            kind: "media" | "render" | "segment_export" | "asset_bake";
             /** Outputassetid */
             outputAssetId?: string | null;
             /** Progress */
@@ -26916,6 +26975,38 @@ export interface operations {
             };
         };
     };
+    get_asset_bake_v1_video_editor_projects__project_id__asset_bakes__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_assets_v1_video_editor_projects__project_id__assets_get: {
         parameters: {
             query?: never;
@@ -27038,6 +27129,78 @@ export interface operations {
                     "application/json": {
                         [key: string]: boolean;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_asset_v1_video_editor_projects__project_id__assets__asset_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorAssetPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_asset_bake_v1_video_editor_projects__project_id__assets__asset_id__bakes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorAssetBakeCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
                 };
             };
             /** @description Validation Error */
