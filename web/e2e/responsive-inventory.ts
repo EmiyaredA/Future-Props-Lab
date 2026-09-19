@@ -49,6 +49,8 @@ export const responsiveOwners = {
   "video-editor-tasks": "shell",
   "audio-annotation-projects": "shell",
   "audio-annotation-editor": "editors",
+  "director-desk-projects": "shell",
+  "director-desk-editor": "editors",
 } satisfies Record<AppPage, "shell" | "editors" | "thought">;
 export const publicSurfaces = [
   "login",
@@ -84,6 +86,7 @@ export const staticPaths = [
   "/apps/video-editor",
   "/apps/video-editor/tasks",
   "/apps/audio-annotation",
+  "/apps/director-desk",
   "/docs.html",
 ];
 export const viewports = [

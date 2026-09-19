@@ -34,6 +34,7 @@ WEB_APP_UNITS = (
     "thought-workshop",
     "video-editor",
     "visual-workshop",
+    "director-desk",
 )
 # The video editor hands finished segments to the visual workshop. That product
 # flow is the only reason one app may reach for another.
@@ -843,6 +844,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/apps/video_editor",
         "backend/app/apps/visual_workshop",
         "backend/app/apps/galgame_workshop",
+        "backend/app/apps/director_desk",
         "backend/app/llm",
         "backend/app/integrations",
         "backend/app/demo_runtime",

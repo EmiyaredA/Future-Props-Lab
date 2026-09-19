@@ -43,7 +43,7 @@
   routes/schemas）；Studio
   治理与库级文件用例归属 `console/`（含自有 models/routes/schemas）；已垂直切片的产品 App 归属 `apps/`（目前
   `presentation_workshop`、`audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop`、
-  `galgame_workshop` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
+  `galgame_workshop`、`director_desk` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
   `integrations/`、`tool_navigation/`、`demo_runtime/` 各自拥有 models/schemas/routes（demo 无独立 ORM）。
   顶层不再保留 `models/`、`schemas/`、`routes/` 横向包。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和

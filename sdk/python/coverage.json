@@ -420,6 +420,41 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/director-desk/projects/{project_id}",
+    "sdk": "client.director.delete_project",
+    "document": "/docs.html?page=sdk-reference-director#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/director-desk/projects",
+    "sdk": "client.director.list_projects",
+    "document": "/docs.html?page=sdk-reference-director#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/director-desk/projects/{project_id}",
+    "sdk": "client.director.get_project",
+    "document": "/docs.html?page=sdk-reference-director#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/director-desk/projects/{project_id}",
+    "sdk": "client.director.patch_project",
+    "document": "/docs.html?page=sdk-reference-director#patch-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/director-desk/projects",
+    "sdk": "client.director.create_project",
+    "document": "/docs.html?page=sdk-reference-director#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/file-folders/{folder_id}",
     "sdk": "client.files.delete_file_folder",
     "document": "/docs.html?page=sdk-reference-files#delete-file-folder",

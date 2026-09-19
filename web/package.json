@@ -49,6 +49,7 @@
     "katex": "^0.16.47",
     "lucide-react": "^1.28.0",
     "mdast-util-to-hast": "^13.2.1",
+    "mediabunny": "^1.55.7",
     "mermaid": "11.12.2",
     "onnxruntime-web": "^1.27.0",
     "openapi-fetch": "^0.14.0",
@@ -62,6 +63,7 @@
     "remark-parse": "^11.0.0",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
+    "three": "^0.185.1",
     "unified": "^11.0.5",
     "wavesurfer.js": "7.12.6"
   },
@@ -75,6 +77,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^4.6.0",
     "eslint": "^9.31.0",
     "eslint-plugin-react-hooks": "^5.2.0",

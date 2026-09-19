@@ -20,7 +20,7 @@ Future-Props-Lab/
 │   ├── runtime/       # 配置、数据库、CAS/轮询、操作批回执、ID/时间工厂与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
-│   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame）
+│   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame / director_desk）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具收藏与最近使用；自有 models/schemas/routes
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
@@ -376,6 +376,13 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 `useSelectionFormat` 统一整框与 Tiptap 选区格式，`selectionGeometry` 和 `SelectionHandles` 拥有八方向缩放及选框。
 首页基础版式创建复用 `templates.ts`；画布报告实际缩放比例，缩略图按容器宽度等比适配。
 新增路由由响应式清单登记，浏览器流程位于 `presentation-workshop.spec.ts`。
+
+## 导演台
+
+`backend/app/apps/director_desk/` 目前只拥有 Workspace 项目记录。`director_desk_projects.document`
+是占位 JSON（`format`、`version`、`name`），场景由后续编辑器写入；迁移 `r0064_director_desk` 只追加这张表。
+`web/src/features/director-desk/` 拥有项目列表和占位编辑页，查询键在 `queryKeys.ts`。
+素材根目录、`.director` 导入和三维编辑器尚未接入。
 
 演示工坊的 `image_crop.py` / Web `imageCrop.ts` 分别拥有相同的原图区域到图片框的等比填充计算，
 使用 `tests/fixtures/presentation_crop_cases.json` 共用测试向量。图片尺寸仅在读取素材后取得，

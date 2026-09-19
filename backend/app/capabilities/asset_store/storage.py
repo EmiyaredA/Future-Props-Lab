@@ -55,6 +55,14 @@ class AssetStorage:
                 / "projects"
                 / project_id
             ).resolve()
+        if application_id == "director-desk":
+            return (
+                self.settings.runtime_path
+                / "applications"
+                / "director-desk"
+                / "projects"
+                / project_id
+            ).resolve()
         raise ValueError("unknown project application")
 
     def target_root(

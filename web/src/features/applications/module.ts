@@ -16,7 +16,8 @@ export type ApplicationModule = {
     | "video-editor"
     | "thought-workshop"
     | "presentation-workshop"
-    | "audio-annotation";
+    | "audio-annotation"
+    | "director-desk";
   shellConfig: {
     className?: string;
     brandClassName?: string;

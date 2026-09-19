@@ -30,6 +30,7 @@ LABELS = {
     "thought": "思绪工坊",
     "annotation": "录音标注",
     "presentation": "演示工坊",
+    "director": "导演台",
     "public": "公开展台",
     "demo": "演示服务管理",
     "demo_calls": "演示服务调用",

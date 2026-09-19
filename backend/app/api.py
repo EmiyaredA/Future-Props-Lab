@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.apps.audio_annotation.routes import router as audio_annotation_router
+from app.apps.director_desk.routes import router as director_desk_router
 from app.apps.galgame_workshop.routes import router as galgame_workshop_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
 from app.apps.thought_workshop.routes import conversion as thought_conversion
@@ -106,6 +107,9 @@ api_router.include_router(
 
 api_router.include_router(
     presentation_workshop_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    director_desk_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 
 api_router.include_router(

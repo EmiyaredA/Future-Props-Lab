@@ -986,6 +986,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/director-desk/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Projects */
+        get: operations["list_projects_v1_director_desk_projects_get"];
+        put?: never;
+        /** Create Project */
+        post: operations["create_project_v1_director_desk_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-desk/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_project_v1_director_desk_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Project */
+        delete: operations["delete_project_v1_director_desk_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Project */
+        patch: operations["patch_project_v1_director_desk_projects__project_id__patch"];
+        trace?: never;
+    };
     "/v1/file-folders": {
         parameters: {
             query?: never;
@@ -6036,6 +6073,94 @@ export interface components {
         DeveloperDocumentsOut: {
             /** Items */
             items: components["schemas"]["DeveloperDocumentOut"][];
+        };
+        /** DirectorDocument */
+        DirectorDocument: {
+            /** Activesceneid */
+            activeSceneId?: string | null;
+            /**
+             * Format
+             * @default director-desk
+             * @constant
+             */
+            format: "director-desk";
+            /** Media */
+            media?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Name */
+            name: string;
+            /** Resources */
+            resources?: {
+                [key: string]: unknown;
+            }[];
+            /** Scenes */
+            scenes?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Version
+             * @default 3
+             * @constant
+             */
+            version: 3;
+        };
+        /** DirectorProjectCreate */
+        DirectorProjectCreate: {
+            /**
+             * Title
+             * @default 未命名预演
+             */
+            title: string;
+        };
+        /** DirectorProjectList */
+        DirectorProjectList: {
+            /** Items */
+            items: components["schemas"]["DirectorProjectSummary"][];
+            /** Total */
+            total: number;
+        };
+        /** DirectorProjectOut */
+        DirectorProjectOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            document: components["schemas"]["DirectorDocument"];
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** DirectorProjectPatch */
+        DirectorProjectPatch: {
+            document?: components["schemas"]["DirectorDocument"] | null;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Title */
+            title: string;
+        };
+        /** DirectorProjectSummary */
+        DirectorProjectSummary: {
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** GalgameAnnotationImportIn */
         GalgameAnnotationImportIn: {
@@ -16918,6 +17043,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DesktopOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_projects_v1_director_desk_projects_get: {
+        parameters: {
+            query?: {
+                query?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorProjectList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_v1_director_desk_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_v1_director_desk_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_v1_director_desk_projects__project_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_project_v1_director_desk_projects__project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorProjectPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorProjectOut"];
                 };
             };
             /** @description Validation Error */

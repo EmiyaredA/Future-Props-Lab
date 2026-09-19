@@ -6,6 +6,7 @@ from .annotation import Annotation, AsyncAnnotation
 from .demo import Demo, AsyncDemo
 from .demo_calls import DemoCalls, AsyncDemoCalls
 from .desktop import Desktop, AsyncDesktop
+from .director import Director, AsyncDirector
 from .files import Files, AsyncFiles
 from .galgame import Galgame, AsyncGalgame
 from .generation import Generation, AsyncGeneration
@@ -27,8 +28,8 @@ from .visual import Visual, AsyncVisual
 from .visual_assistant import VisualAssistant, AsyncVisualAssistant
 from .workspaces import Workspaces, AsyncWorkspaces
 
-RESOURCES = {'accounts': Accounts, 'admin': Admin, 'annotation': Annotation, 'demo': Demo, 'demo_calls': DemoCalls, 'desktop': Desktop, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'logs': Logs, 'models': Models, 'presentation': Presentation, 'public': Public, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant, 'workspaces': Workspaces}
-ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'annotation': AsyncAnnotation, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'desktop': AsyncDesktop, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'logs': AsyncLogs, 'models': AsyncModels, 'presentation': AsyncPresentation, 'public': AsyncPublic, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant, 'workspaces': AsyncWorkspaces}
+RESOURCES = {'accounts': Accounts, 'admin': Admin, 'annotation': Annotation, 'demo': Demo, 'demo_calls': DemoCalls, 'desktop': Desktop, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'logs': Logs, 'models': Models, 'presentation': Presentation, 'public': Public, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant, 'workspaces': Workspaces}
+ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'annotation': AsyncAnnotation, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'desktop': AsyncDesktop, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'logs': AsyncLogs, 'models': AsyncModels, 'presentation': AsyncPresentation, 'public': AsyncPublic, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant, 'workspaces': AsyncWorkspaces}
 
 class SyncResources:
     accounts: Accounts
@@ -37,6 +38,7 @@ class SyncResources:
     demo: Demo
     demo_calls: DemoCalls
     desktop: Desktop
+    director: Director
     files: Files
     galgame: Galgame
     generation: Generation
@@ -65,6 +67,7 @@ class AsyncResources:
     demo: AsyncDemo
     demo_calls: AsyncDemoCalls
     desktop: AsyncDesktop
+    director: AsyncDirector
     files: AsyncFiles
     galgame: AsyncGalgame
     generation: AsyncGeneration

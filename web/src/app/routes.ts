@@ -37,7 +37,9 @@ export type WorkshopPage =
   | "video-editor-editor"
   | "video-editor-tasks"
   | "audio-annotation-projects"
-  | "audio-annotation-editor";
+  | "audio-annotation-editor"
+  | "director-desk-projects"
+  | "director-desk-editor";
 
 export type VisualWorkshopPage = Extract<
   WorkshopPage,
@@ -51,6 +53,10 @@ export type VideoEditorPage = Extract<WorkshopPage, `video-editor-${string}`>;
 export type AudioAnnotationPage = Extract<
   WorkshopPage,
   `audio-annotation-${string}`
+>;
+export type DirectorDeskPage = Extract<
+  WorkshopPage,
+  `director-desk-${string}`
 >;
 
 export type AppPage = StudioPage | WorkshopPage;
@@ -68,7 +74,8 @@ export function isWorkshopPage(page: AppPage): page is WorkshopPage {
     page.startsWith("visual-workshop-") ||
     page.startsWith("galgame-workshop-") ||
     page.startsWith("video-editor-") ||
-    page.startsWith("audio-annotation-")
+    page.startsWith("audio-annotation-") ||
+    page.startsWith("director-desk-")
   );
 }
 
@@ -92,6 +99,10 @@ export function isAudioAnnotationPage(
   page: AppPage,
 ): page is AudioAnnotationPage {
   return page.startsWith("audio-annotation-");
+}
+
+export function isDirectorDeskPage(page: AppPage): page is DirectorDeskPage {
+  return page.startsWith("director-desk-");
 }
 
 export function parsePage(pathname = window.location.pathname): AppPage {
@@ -196,6 +207,8 @@ export function pathFor(
     "video-editor-tasks": "/apps/video-editor/tasks",
     "audio-annotation-projects": "/apps/audio-annotation",
     "audio-annotation-editor": "/apps/audio-annotation",
+    "director-desk-projects": "/apps/director-desk",
+    "director-desk-editor": "/apps/director-desk",
   };
   return paths[page];
 }

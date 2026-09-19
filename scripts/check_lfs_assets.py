@@ -18,6 +18,7 @@ BACKEND_ASSETS = (
 )
 WEB_ASSETS = (
     Path("web/public/brand/audio-annotation-mark.png"),
+    Path("web/public/brand/director-desk-mark.png"),
     Path("web/public/brand/presentation-workshop-mark.png"),
     Path("web/public/brand/thought-workshop-mark.png"),
     Path("web/public/voice-vad/silero_vad_v5.onnx"),
@@ -27,6 +28,9 @@ EXPECTED_SHA256 = {
     Path(
         "web/public/brand/audio-annotation-mark.png"
     ): "a3539f2db85bdc42fdfab5dea9215b3ef1ce4e1c560bc9834d5c30feae015349",
+    Path(
+        "web/public/brand/director-desk-mark.png"
+    ): "fec866de8e555d43d4faa4ae818bae1725b2cfc106e79affa6be2646c4235ee0",
     Path(
         "web/public/brand/presentation-workshop-mark.png"
     ): "34895e659c9406789e9cadfe7aab0ea42f86ea3d55e868718d9714bec06357ec",
@@ -200,7 +204,8 @@ def main() -> None:
             WEB_ASSETS,
             "web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,"
             "web/public/brand/presentation-workshop-mark.png,"
-            "web/public/brand/audio-annotation-mark.png",
+            "web/public/brand/audio-annotation-mark.png,"
+            "web/public/brand/director-desk-mark.png",
         )
 
 

@@ -37,6 +37,7 @@ TAGS = {
     "thought-workshop": "thought",
     "audio-annotation": "annotation",
     "presentation-workshop": "presentation",
+    "director-desk": "director",
     "public-workspace": "public",
     "demo-services": "demo",
     "demo-calls": "demo_calls",

@@ -1,4 +1,5 @@
 import { AUDIO_ANNOTATION_MODULE } from "@features/audio-annotation/module";
+import { DIRECTOR_DESK_MODULE } from "@features/director-desk/module";
 import { PRESENTATION_WORKSHOP_MODULE } from "@features/presentation-workshop/module";
 import { THOUGHT_WORKSHOP_MODULE } from "@features/thought-workshop/module";
 import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
@@ -12,6 +13,7 @@ export const APPLICATION_MODULES = [
   GALGAME_WORKSHOP_MODULE,
   VIDEO_EDITOR_MODULE,
   AUDIO_ANNOTATION_MODULE,
+  DIRECTOR_DESK_MODULE,
 ] as const;
 
 export const APPLICATION_DEFINITIONS = APPLICATION_MODULES.map(
@@ -50,3 +52,4 @@ export {
 export { THOUGHT_WORKSHOP_MODULE };
 
 export { PRESENTATION_WORKSHOP_MODULE };
+export { DIRECTOR_DESK_MODULE };

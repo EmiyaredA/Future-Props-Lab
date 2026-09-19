@@ -27,6 +27,7 @@ test("every route and independent HTML entry has a responsive scenario", () => {
   ).toEqual(
     [
       "audio-annotation-editor",
+      "director-desk-editor",
       "galgame-workshop-editor",
       "galgame-workshop-overview",
       "galgame-workshop-preview",

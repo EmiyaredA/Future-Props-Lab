@@ -23,6 +23,10 @@
     "method": "delete_project",
     "resource": "annotation"
   },
+  "DELETE /v1/director-desk/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "director"
+  },
   "DELETE /v1/file-folders/{folder_id}": {
     "method": "delete_file_folder",
     "resource": "files"
@@ -250,6 +254,14 @@
   "GET /v1/desktop/ui/requests/{request_id}": {
     "method": "open_status",
     "resource": "desktop"
+  },
+  "GET /v1/director-desk/projects": {
+    "method": "list_projects",
+    "resource": "director"
+  },
+  "GET /v1/director-desk/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "director"
   },
   "GET /v1/file-folders": {
     "method": "list_file_folders",
@@ -723,6 +735,10 @@
     "method": "patch_project",
     "resource": "annotation"
   },
+  "PATCH /v1/director-desk/projects/{project_id}": {
+    "method": "patch_project",
+    "resource": "director"
+  },
   "PATCH /v1/file-folders/{folder_id}": {
     "method": "patch_file_folder",
     "resource": "files"
@@ -934,6 +950,10 @@
   "POST /v1/desktop/ui/requests/{request_id}/ack": {
     "method": "acknowledge",
     "resource": "desktop"
+  },
+  "POST /v1/director-desk/projects": {
+    "method": "create_project",
+    "resource": "director"
   },
   "POST /v1/file-folders": {
     "method": "create_file_folder",

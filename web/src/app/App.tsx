@@ -19,6 +19,7 @@ import { galgameSpeakerImportSource } from "@app/integrations/galgameSpeakerImpo
 import {
   APPLICATION_DEFINITIONS,
   AUDIO_ANNOTATION_MODULE,
+  DIRECTOR_DESK_MODULE,
   PRESENTATION_WORKSHOP_MODULE,
   THOUGHT_WORKSHOP_MODULE,
   GALGAME_WORKSHOP_MODULE,
@@ -27,6 +28,7 @@ import {
 } from "@app/applicationRegistry";
 import {
   isAudioAnnotationPage,
+  isDirectorDeskPage,
   isGalgameWorkshopPage,
   isThoughtWorkshopPage,
   isVisualWorkshopPage,
@@ -77,6 +79,8 @@ const AudioAnnotationProjectsPage = lazy(
   AUDIO_ANNOTATION_MODULE.pages.projects,
 );
 const AudioAnnotationEditorPage = lazy(AUDIO_ANNOTATION_MODULE.pages.editor);
+const DirectorDeskProjectsPage = lazy(DIRECTOR_DESK_MODULE.pages.projects);
+const DirectorDeskEditorPage = lazy(DIRECTOR_DESK_MODULE.pages.editor);
 const ModelTestPage = lazy(() =>
   import("@features/models/conversation").then((module) => ({
     default: module.ModelTestPage,
@@ -433,6 +437,33 @@ export default function App() {
             onOpen={(projectId) =>
               navigate("audio-annotation-editor", projectId)
             }
+          />
+        </PageBoundary>
+      </WorkshopShell>
+    );
+
+  if (page === "director-desk-editor" && route.projectId)
+    return (
+      <PageBoundary>
+        <DirectorDeskEditorPage
+          projectId={route.projectId}
+          onBack={() => navigate("director-desk-projects")}
+        />
+      </PageBoundary>
+    );
+
+  if (isDirectorDeskPage(page))
+    return (
+      <WorkshopShell
+        module={DIRECTOR_DESK_MODULE}
+        page={page}
+        navigate={(next) => navigate(next as WorkshopPage)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          <DirectorDeskProjectsPage
+            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            onOpen={(projectId) => navigate("director-desk-editor", projectId)}
           />
         </PageBoundary>
       </WorkshopShell>

@@ -16,4 +16,23 @@ export default tseslint.config(
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     },
   },
+  {
+    // Upstream director-desk keeps rest-sibling omissions, NUL stripping and empty catches.
+    files: ["src/features/director-desk/editor/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
+      "no-control-regex": "off",
+      "no-empty": ["error", { allowEmptyCatch: true }],
+      "prefer-const": "off",
+      "@typescript-eslint/no-unused-expressions": "off",
+    },
+  },
 );

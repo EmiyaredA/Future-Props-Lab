@@ -581,6 +581,41 @@ class DeveloperDocumentOut(WireModel):
 class DeveloperDocumentsOut(WireModel):
     items: list[DeveloperDocumentOut] = Field(default=..., alias='items')
 
+class DirectorDocument(WireModel):
+    active_scene_id: str | None = Field(default=None, alias='activeSceneId')
+    format: Literal['director-desk'] = Field(default='director-desk', alias='format')
+    media: list[dict[str, Any]] | None = Field(default=None, alias='media')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    resources: list[dict[str, Any]] | None = Field(default=None, alias='resources')
+    scenes: list[dict[str, Any]] | None = Field(default=None, alias='scenes')
+    version: Literal[3] = Field(default=3, alias='version')
+
+class DirectorProjectCreate(WireModel):
+    title: str = Field(default='未命名预演', alias='title', min_length=1, max_length=120)
+
+class DirectorProjectList(WireModel):
+    items: list[DirectorProjectSummary] = Field(default=..., alias='items')
+    total: int = Field(default=..., alias='total')
+
+class DirectorProjectOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    document: DirectorDocument = Field(default=..., alias='document')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class DirectorProjectPatch(WireModel):
+    document: DirectorDocument | None = Field(default=None, alias='document')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class DirectorProjectSummary(WireModel):
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
 class GalgameAnnotationImportIn(WireModel):
     asset_prefix: str = Field(default=..., alias='assetPrefix')
     document: GalgameStoryProject = Field(default=..., alias='document')
@@ -4229,6 +4264,12 @@ DesktopSetupIn.model_rebuild()
 DesktopSetupOut.model_rebuild()
 DeveloperDocumentOut.model_rebuild()
 DeveloperDocumentsOut.model_rebuild()
+DirectorDocument.model_rebuild()
+DirectorProjectCreate.model_rebuild()
+DirectorProjectList.model_rebuild()
+DirectorProjectOut.model_rebuild()
+DirectorProjectPatch.model_rebuild()
+DirectorProjectSummary.model_rebuild()
 GalgameAnnotationImportIn.model_rebuild()
 GalgameAnnotationImportIssue.model_rebuild()
 GalgameAnnotationImportPreviewOut.model_rebuild()

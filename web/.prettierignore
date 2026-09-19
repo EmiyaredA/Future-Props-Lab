@@ -8,3 +8,6 @@ src/docs/articles/sdk/sdk-first-call.md
 
 # Executable workflow examples extracted verbatim from Python
 src/docs/articles/sdk/sdk-workflow-examples.md
+
+# Vendored Quaternius motion library. Do not reformat.
+src/features/director-desk/editor/animation/library/humanoid-v1.json

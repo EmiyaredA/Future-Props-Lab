@@ -65,6 +65,7 @@ from db.migrations.versions import (
     r0061_senseaudio_asr_pro_kind,
     r0062_call_log_credential,
     r0063_audio_annotation_custom_emotions,
+    r0064_director_desk,
 )
 
 
@@ -289,5 +290,7 @@ MIGRATIONS += (
         r0063_audio_annotation_custom_emotions.SQL,
     ),
 )
+
+MIGRATIONS += (Migration(r0064_director_desk.MIGRATION_ID, r0064_director_desk.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id
