@@ -439,75 +439,77 @@ export function VideoEditorAssetPanel({
           <span>{assets.length}</span>
         </div>
       </header>
-      <div className="ve-asset-actions">
-        <button
-          disabled={disabled || upload.isPending}
-          onClick={() => input.current?.click()}
-          title="选择一个或多个素材上传"
-        >
-          <Upload aria-hidden />{" "}
-          {upload.isPending
-            ? `上传中 ${uploadProgress.completed}/${uploadProgress.total}`
-            : "上传"}
-        </button>
-        <button onClick={() => setShowImport(true)}>
-          <Library aria-hidden /> 导入快照
-        </button>
-        <input
-          ref={input}
-          hidden
-          type="file"
-          multiple
-          aria-label="上传素材（可多选）"
-          disabled={disabled || upload.isPending}
-          accept="video/*,audio/*,image/*,.ttf,.otf,.woff,.woff2"
-          onChange={(event) => {
-            const files = Array.from(event.target.files ?? []);
-            if (files.length && !disabled && !upload.isPending) {
-              setUploadProgress({
-                completed: 0,
-                total: files.length,
-                filename: files[0]!.name,
-              });
-              upload.mutate(files);
-            }
-            event.target.value = "";
-          }}
-        />
-      </div>
-      {upload.isPending || upload.data ? (
-        <div className="ve-upload-feedback">
-          <p role="status">
+      <div className="ve-assets-toolbar">
+        <div className="ve-asset-actions">
+          <button
+            disabled={disabled || upload.isPending}
+            onClick={() => input.current?.click()}
+            title="选择一个或多个素材上传"
+          >
+            <Upload aria-hidden />{" "}
             {upload.isPending
-              ? `正在上传 ${uploadProgress.completed}/${uploadProgress.total}：${uploadProgress.filename}`
-              : `上传完成：成功 ${upload.data!.succeeded} 个${upload.data!.failures.length ? `，失败 ${upload.data!.failures.length} 个` : ""}`}
-          </p>
-          {!upload.isPending && upload.data?.failures.length ? (
-            <ul role="alert">
-              {upload.data.failures.map((failure, index) => (
-                <li key={index}>
-                  {failure.filename}：{failure.message}
-                </li>
-              ))}
-            </ul>
-          ) : null}
+              ? `上传中 ${uploadProgress.completed}/${uploadProgress.total}`
+              : "上传"}
+          </button>
+          <button onClick={() => setShowImport(true)}>
+            <Library aria-hidden /> 导入快照
+          </button>
+          <input
+            ref={input}
+            hidden
+            type="file"
+            multiple
+            aria-label="上传素材（可多选）"
+            disabled={disabled || upload.isPending}
+            accept="video/*,audio/*,image/*,.ttf,.otf,.woff,.woff2"
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              if (files.length && !disabled && !upload.isPending) {
+                setUploadProgress({
+                  completed: 0,
+                  total: files.length,
+                  filename: files[0]!.name,
+                });
+                upload.mutate(files);
+              }
+              event.target.value = "";
+            }}
+          />
         </div>
-      ) : null}
-      <div className="ve-generated-assets">
-        <CustomSelect
-          value=""
-          ariaLabel="添加文字"
-          disabled={disabled}
-          options={[
-            { value: "", label: "添加文字", disabled: true },
-            ...textPresets,
-          ]}
-          leadingIcon={<Type aria-hidden />}
-          onChange={(value) => onAddGenerated("text", value as TextPreset)}
-        />
-        <button onClick={() => onAddGenerated("color")}>
-          <span className="ve-black-swatch" /> 纯色黑幕
-        </button>
+        {upload.isPending || upload.data ? (
+          <div className="ve-upload-feedback">
+            <p role="status">
+              {upload.isPending
+                ? `正在上传 ${uploadProgress.completed}/${uploadProgress.total}：${uploadProgress.filename}`
+                : `上传完成：成功 ${upload.data!.succeeded} 个${upload.data!.failures.length ? `，失败 ${upload.data!.failures.length} 个` : ""}`}
+            </p>
+            {!upload.isPending && upload.data?.failures.length ? (
+              <ul role="alert">
+                {upload.data.failures.map((failure, index) => (
+                  <li key={index}>
+                    {failure.filename}：{failure.message}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="ve-generated-assets">
+          <CustomSelect
+            value=""
+            ariaLabel="添加文字"
+            disabled={disabled}
+            options={[
+              { value: "", label: "添加文字", disabled: true },
+              ...textPresets,
+            ]}
+            leadingIcon={<Type aria-hidden />}
+            onChange={(value) => onAddGenerated("text", value as TextPreset)}
+          />
+          <button type="button" onClick={() => onAddGenerated("color")}>
+            <span className="ve-black-swatch" aria-hidden /> 纯色黑幕
+          </button>
+        </div>
       </div>
       <div className="ve-assets-list">
         {creatingFolder ? renderNameForm() : null}

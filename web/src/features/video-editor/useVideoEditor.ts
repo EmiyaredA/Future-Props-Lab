@@ -11,7 +11,12 @@ import {
   listVideoEditorRenders,
   patchVideoEditorProject,
 } from "./api";
-import type { VideoEditorOperation } from "./types";
+import type { VideoEditorClip, VideoEditorOperation } from "./types";
+import {
+  pasteClipOperations,
+  snapshotClipForClipboard,
+  type ClipClipboardSnapshot,
+} from "./clipClipboard";
 import { frameUs, timelineDuration } from "./editorModel";
 import { canPlaceClip, linkedClipIds } from "./timelineSnap";
 import { videoEditorQueryKeys } from "./queryKeys";
@@ -87,6 +92,7 @@ export function useVideoEditor(projectId: string) {
   const [notice, setNotice] = useState("");
   const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
+  const [clipboard, setClipboard] = useState<ClipClipboardSnapshot>();
   const clock = useRef({ startedAt: 0, startedUs: 0 });
   const fitPolicyMigrationRevision = useRef<number | undefined>(undefined);
   const playheadRef = useRef(initialWorkspacePreferences.playheadUs);
@@ -291,6 +297,63 @@ export function useVideoEditor(projectId: string) {
     [commit, selectedClipIds, timeline.data],
   );
 
+  const selected = (timeline.data?.document.tracks ?? [])
+    .flatMap((track) => track.clips ?? [])
+    .find((clip) => clip.id === selectedClipId);
+  const selectClip = useCallback((clipId?: string, additive = false) => {
+    setSelectedClipIds((current) => {
+      if (!clipId) {
+        setSelectedClipId(undefined);
+        return [];
+      }
+      if (!additive) {
+        setSelectedClipId(clipId);
+        return [clipId];
+      }
+      const next = current.includes(clipId)
+        ? current.filter((id) => id !== clipId)
+        : [...current, clipId];
+      setSelectedClipId(next.at(-1));
+      return next;
+    });
+  }, []);
+
+  const copyClip = useCallback(
+    (clip?: VideoEditorClip) => {
+      const target = clip ?? selected;
+      if (!target) return false;
+      setClipboard(snapshotClipForClipboard(target));
+      setNotice("已复制片段");
+      return true;
+    },
+    [selected],
+  );
+
+  const copySelectedClip = useCallback(() => copyClip(), [copyClip]);
+
+  const pasteClipboardClip = useCallback(() => {
+    if (!clipboard || !timeline.data) return false;
+    const fps = timeline.data.document.settings?.fps ?? 30;
+    const result = pasteClipOperations({
+      snapshot: clipboard,
+      tracks: timeline.data.document.tracks ?? [],
+      playheadUs: playheadRef.current,
+      fps,
+    });
+    if ("error" in result) {
+      setNotice(result.error);
+      return false;
+    }
+    void commit(result.redo, result.undo).then(() =>
+      selectClip(result.newClipId),
+    );
+    return true;
+  }, [clipboard, commit, selectClip, timeline.data]);
+
+  useEffect(() => {
+    setClipboard(undefined);
+  }, [projectId]);
+
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (
@@ -311,6 +374,18 @@ export function useVideoEditor(projectId: string) {
       if ((event.metaKey || event.ctrlKey) && event.code === "KeyY") {
         event.preventDefault();
         void redo();
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.code === "KeyC") {
+        if (!canWrite || !selected) return;
+        event.preventDefault();
+        copyClip();
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.code === "KeyV") {
+        if (!canWrite || !clipboard) return;
+        event.preventDefault();
+        pasteClipboardClip();
         return;
       }
       if (event.code === "Space") {
@@ -345,35 +420,19 @@ export function useVideoEditor(projectId: string) {
     window.addEventListener("keydown", keydown);
     return () => window.removeEventListener("keydown", keydown);
   }, [
+    canWrite,
+    clipboard,
+    copyClip,
     durationUs,
     moveSelectedClips,
+    pasteClipboardClip,
+    selected,
     selectedClipIds.length,
     setPlayheadUs,
     timeline.data,
     redo,
     undo,
   ]);
-
-  const selected = (timeline.data?.document.tracks ?? [])
-    .flatMap((track) => track.clips ?? [])
-    .find((clip) => clip.id === selectedClipId);
-  const selectClip = useCallback((clipId?: string, additive = false) => {
-    setSelectedClipIds((current) => {
-      if (!clipId) {
-        setSelectedClipId(undefined);
-        return [];
-      }
-      if (!additive) {
-        setSelectedClipId(clipId);
-        return [clipId];
-      }
-      const next = current.includes(clipId)
-        ? current.filter((id) => id !== clipId)
-        : [...current, clipId];
-      setSelectedClipId(next.at(-1));
-      return next;
-    });
-  }, []);
   latestWorkspacePreferences.current = {
     version: 1,
     playheadUs,
@@ -450,6 +509,10 @@ export function useVideoEditor(projectId: string) {
     setSpeedRippleEnabled,
     notice,
     setNotice,
+    hasClipboard: Boolean(clipboard),
+    copySelectedClip,
+    copyClip,
+    pasteClipboardClip,
     commit,
     undo,
     redo,

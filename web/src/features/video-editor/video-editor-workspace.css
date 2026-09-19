@@ -1,3 +1,33 @@
+.ve-editor,
+.ve-dialog-backdrop {
+  --ve-accent: #8b7cff;
+  --ve-accent-bright: #b2a8ff;
+  --bg: #0b0e15;
+  --surface: #161b26;
+  --surface-soft: #1b202d;
+  --surface-hover: #222838;
+  --surface-raised: #1a1f2b;
+  --text: #dfe8ef;
+  --text-strong: #f1f3f8;
+  --text-muted: #a4acc0;
+  --muted: #a4acc0;
+  --faint: #7f889d;
+  --border: #303647;
+  --border-strong: #424860;
+  --accent: #8b7cff;
+  --accent-hover: #9b80ff;
+  --accent-soft: rgb(139 124 255 / 16%);
+  --accent-line: #7466d2;
+  --accent-glow: rgb(139 124 255 / 22%);
+  --ok: #5bd2a1;
+  --ok-soft: rgb(91 210 161 / 14%);
+  --danger: #f19aa3;
+  --danger-soft: #4a2730;
+  --warning: #e4ad55;
+  --warning-soft: rgb(228 173 85 / 14%);
+  --overlay: rgb(4 5 10 / 68%);
+}
+
 .ve-editor {
   min-width: 0;
   height: max(506px, 100dvh);
@@ -7,13 +37,35 @@
       240px
     );
   overflow: hidden;
-  color: #dfe8ef;
+  color: var(--text);
   background:
     radial-gradient(circle at 52% -20%, rgb(103 86 230 / 8%), transparent 42%),
-    #0b0e15;
+    var(--bg);
 }
 .ve-editor button {
   color: inherit;
+}
+.ve-editor .ve-dialog-backdrop,
+.ve-editor .frame-export-backdrop,
+.ve-editor .modal-backdrop {
+  color: var(--text);
+}
+.ve-editor .ve-dialog-backdrop button,
+.ve-editor .frame-export-backdrop button,
+.ve-editor .modal-backdrop button {
+  color: var(--text);
+}
+.ve-editor .ve-dialog-backdrop button.selected,
+.ve-editor .ve-dialog-backdrop button.active,
+.ve-editor .ve-dialog-backdrop .ve-preset-grid button.selected {
+  color: var(--ve-accent-bright, var(--accent));
+}
+.ve-editor .ve-dialog-backdrop button.primary,
+.ve-editor .ve-dialog-backdrop button.danger,
+.ve-editor .frame-export-backdrop button.primary,
+.ve-editor .modal-backdrop button.primary,
+.ve-editor .modal-backdrop button.danger {
+  color: white;
 }
 .ve-editor-topbar {
   display: flex;
@@ -150,6 +202,7 @@
 .ve-generated-assets {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: start;
   gap: 7px;
   padding: 10px;
 }
@@ -157,12 +210,13 @@
   padding-top: 0;
 }
 .ve-asset-actions button,
-.ve-generated-assets button {
+.ve-generated-assets > button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-height: 34px;
+  height: 34px;
   border: 1px solid #303647;
   background: #1b202d;
 }
@@ -171,6 +225,8 @@
   width: 15px;
 }
 .ve-black-swatch {
+  flex: none;
+  display: inline-block;
   width: 14px;
   height: 14px;
   border: 1px solid #666;
@@ -282,26 +338,44 @@
   align-items: center;
   gap: 10px;
   margin: 5px 0;
-  padding: 9px;
+  padding: 10px 12px;
   text-align: left;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+.ve-import-dialog > div button:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-soft));
 }
 .ve-import-dialog > div button.selected {
-  border-color: #7669ef;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-soft));
 }
 .ve-import-dialog > div button > span {
   width: 22px;
   height: 22px;
   display: grid;
+  flex: none;
   place-items: center;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
   color: white;
-  background: #6558db;
+  background: var(--accent);
 }
 .ve-import-dialog > div button div {
   display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ve-import-dialog strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+.ve-import-dialog small {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .ve-preview-panel {

@@ -27,7 +27,7 @@ export function linkedClipIds(
 export function snapClipPosition({
   candidateUs,
   durationUs,
-  targetTrackId,
+  targetTrackId: _targetTrackId,
   tracks,
   movingClipIds,
   fps,
@@ -53,21 +53,24 @@ export function snapClipPosition({
   );
   if (!enabled) return { startUs: frameAligned, guideUs: undefined };
 
+  // Snap targets span every track so clips can align across the timeline.
+  // targetTrackId stays in the API for call-site placement checks.
   const targets: { startUs: number; guideUs: number }[] = [
     { startUs: 0, guideUs: 0 },
     { startUs: timelineEndUs - durationUs, guideUs: timelineEndUs },
   ];
-  const targetTrack = tracks.find((track) => track.id === targetTrackId);
-  for (const clip of targetTrack?.clips ?? []) {
-    if (movingClipIds.has(clip.id)) continue;
-    for (const edge of [
-      clip.timelineStartUs,
-      clip.timelineStartUs + clip.durationUs,
-    ]) {
-      targets.push(
-        { startUs: edge, guideUs: edge },
-        { startUs: edge - durationUs, guideUs: edge },
-      );
+  for (const track of tracks) {
+    for (const clip of track.clips ?? []) {
+      if (movingClipIds.has(clip.id)) continue;
+      for (const edge of [
+        clip.timelineStartUs,
+        clip.timelineStartUs + clip.durationUs,
+      ]) {
+        targets.push(
+          { startUs: edge, guideUs: edge },
+          { startUs: edge - durationUs, guideUs: edge },
+        );
+      }
     }
   }
 

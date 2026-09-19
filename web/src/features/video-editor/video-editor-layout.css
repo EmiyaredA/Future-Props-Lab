@@ -4,8 +4,11 @@
 }
 .ve-assets-panel {
   display: grid;
-  grid-template-rows: 42px auto auto minmax(0, 1fr);
+  grid-template-rows: 42px auto minmax(0, 1fr);
   overflow: hidden;
+}
+.ve-assets-toolbar {
+  min-width: 0;
 }
 .ve-panel-separator {
   position: relative;

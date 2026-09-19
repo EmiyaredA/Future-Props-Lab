@@ -441,6 +441,9 @@ export function VideoEditorPage({
           snapEnabled={editor.snapEnabled}
           setSnapEnabled={editor.setSnapEnabled}
           onNotice={editor.setNotice}
+          hasClipboard={editor.hasClipboard}
+          onCopyClip={editor.copyClip}
+          onPasteClip={editor.pasteClipboardClip}
         />
         {exportOpen ? (
           <VideoEditorExportDialog

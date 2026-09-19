@@ -15,7 +15,16 @@
 .ve-generated-assets .custom-select {
   min-width: 0;
 }
-.ve-generated-assets button {
+.ve-generated-assets .custom-select-trigger {
+  min-height: 34px;
+  height: 34px;
+  padding-inline: 8px;
+  border-radius: 0;
+  border-color: #303647;
+  background: #1b202d;
+  font-size: 12px;
+}
+.ve-generated-assets > button {
   white-space: nowrap;
   font-size: 12px;
   padding-inline: 6px;

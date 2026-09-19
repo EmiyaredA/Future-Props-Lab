@@ -7,7 +7,14 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Copy, Download, Magnet, Scissors, Trash2 } from "lucide-react";
+import {
+  ClipboardPaste,
+  Copy,
+  Download,
+  Magnet,
+  Scissors,
+  Trash2,
+} from "lucide-react";
 import { formatTime, newTrack, snapUs } from "./editorModel";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
 import { VideoEditorTrackHeads } from "./VideoEditorTrackHeads";
@@ -47,6 +54,9 @@ export function VideoEditorTimeline({
   setSnapEnabled = () => undefined,
   onNotice,
   onRequestSegmentExport,
+  hasClipboard = false,
+  onCopyClip,
+  onPasteClip,
 }: {
   draggingAsset?: VideoEditorAsset;
   timeline: Timeline;
@@ -76,6 +86,9 @@ export function VideoEditorTimeline({
   setSnapEnabled?: (value: boolean) => void;
   onNotice?: (value: string) => void;
   onRequestSegmentExport?: (clipId: string) => void;
+  hasClipboard?: boolean;
+  onCopyClip?: (clip?: VideoEditorClip) => void;
+  onPasteClip?: () => void;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
@@ -391,17 +404,16 @@ export function VideoEditorTimeline({
           <Scissors aria-hidden /> 分割
         </button>
         <button
-          disabled={!selected}
-          onClick={() => {
-            if (!selected) return;
-            const id = crypto.randomUUID();
-            void commit(
-              [{ type: "duplicateClip", clipId: selected.id, newClipId: id }],
-              [{ type: "removeClip", clipId: id }],
-            );
-          }}
+          disabled={!selected || !onCopyClip}
+          onClick={() => onCopyClip?.()}
         >
           <Copy aria-hidden /> 复制
+        </button>
+        <button
+          disabled={!hasClipboard || !onPasteClip}
+          onClick={() => onPasteClip?.()}
+        >
+          <ClipboardPaste aria-hidden /> 粘贴
         </button>
         <button disabled={!selected} onClick={() => deleteSelected(false)}>
           <Trash2 aria-hidden /> 删除
@@ -413,7 +425,11 @@ export function VideoEditorTimeline({
           className={`ve-snap-toggle${snapEnabled ? " active" : ""}`}
           aria-pressed={snapEnabled}
           onClick={() => setSnapEnabled(!snapEnabled)}
-          title={snapEnabled ? "关闭片段接缝吸附" : "开启片段接缝吸附"}
+          title={
+            snapEnabled
+              ? "关闭片段接缝与跨轨边吸附"
+              : "开启片段接缝与跨轨边吸附"
+          }
         >
           <Magnet aria-hidden /> {snapEnabled ? "吸附" : "吸附关闭"}
         </button>
@@ -624,6 +640,28 @@ export function VideoEditorTimeline({
             onClick={() => toggleClipMute(contextMenu.clip)}
           >
             {clipIsMuted(contextMenu.clip) ? "取消静音" : "静音"}
+          </button>
+          <button
+            role="menuitem"
+            disabled={!onCopyClip}
+            onClick={() => {
+              const clip = contextMenu.clip;
+              setContextMenu(undefined);
+              selectClip(clip.id);
+              onCopyClip?.(clip);
+            }}
+          >
+            复制片段
+          </button>
+          <button
+            role="menuitem"
+            disabled={!hasClipboard || !onPasteClip}
+            onClick={() => {
+              setContextMenu(undefined);
+              onPasteClip?.();
+            }}
+          >
+            粘贴片段
           </button>
           <button
             role="menuitem"

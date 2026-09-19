@@ -180,6 +180,43 @@ describe("exact seam feedback", () => {
     },
   );
 
+  it("snaps a moving clip to an edge on another track", () => {
+    const otherTrack: VideoEditorTrack = {
+      id: "visual",
+      name: "视觉",
+      kind: "visual",
+      order: 1,
+      locked: false,
+      hidden: false,
+      muted: false,
+      clips: [
+        {
+          ...clip,
+          id: "anchor",
+          trackId: "visual",
+          timelineStartUs: 4_000_003,
+          durationUs: 2_000_000,
+        },
+      ],
+    };
+    expect(
+      snapClipPosition({
+        candidateUs: 3_520_000,
+        durationUs: 500_001,
+        targetTrackId: track.id,
+        tracks: [{ ...track, clips: [] }, otherTrack],
+        movingClipIds: new Set<string>(),
+        fps: 30,
+        zoom: 80,
+        timelineEndUs: 30_000_000,
+        enabled: true,
+      }),
+    ).toEqual({
+      startUs: 3_500_002,
+      guideUs: 4_000_003,
+    });
+  });
+
   function setup({
     zoom = 80,
     fps = 30,

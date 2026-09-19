@@ -187,6 +187,70 @@ describe("video editor timeline model", () => {
     ).toBe(snapUs(27_800_000, 30));
   });
 
+  it("snaps clip edges to clips on other tracks", () => {
+    const operation = operationsForAsset(video, tracks, 0)[0];
+    if (operation?.type !== "addClip") throw new Error("unexpected operation");
+    const onAudio = {
+      ...operation.clip,
+      id: "audio-anchor",
+      kind: "audio" as const,
+      trackId: "a1",
+      timelineStartUs: 5_000_000,
+      durationUs: 2_000_000,
+    };
+    const moving = {
+      ...operation.clip,
+      id: "visual-moving",
+      trackId: "v1",
+      timelineStartUs: 0,
+      durationUs: 1_500_000,
+    };
+    const crossTracks: VideoEditorTrack[] = [
+      { ...tracks[0]!, clips: [moving] },
+      { ...tracks[1]!, clips: [onAudio] },
+    ];
+    const movingIds = new Set([moving.id]);
+    expect(
+      snapClipStartUs({
+        candidateUs: 4_960_000,
+        durationUs: moving.durationUs,
+        targetTrackId: "v1",
+        tracks: crossTracks,
+        movingClipIds: movingIds,
+        fps: 30,
+        zoom: 80,
+        timelineEndUs: 30_000_000,
+        enabled: true,
+      }),
+    ).toBe(5_000_000);
+    expect(
+      snapClipStartUs({
+        candidateUs: 5_460_000,
+        durationUs: moving.durationUs,
+        targetTrackId: "v1",
+        tracks: crossTracks,
+        movingClipIds: movingIds,
+        fps: 30,
+        zoom: 80,
+        timelineEndUs: 30_000_000,
+        enabled: true,
+      }),
+    ).toBe(5_500_000);
+    expect(
+      snapClipStartUs({
+        candidateUs: 4_960_000,
+        durationUs: moving.durationUs,
+        targetTrackId: "v1",
+        tracks: crossTracks,
+        movingClipIds: movingIds,
+        fps: 30,
+        zoom: 80,
+        timelineEndUs: 30_000_000,
+        enabled: false,
+      }),
+    ).toBe(snapUs(4_960_000, 30));
+  });
+
   it.each([30, 60])("preserves exact clip seams at %i fps", (fps) => {
     const operation = operationsForAsset(video, tracks, 0)[0];
     if (operation?.type !== "addClip") throw new Error("unexpected operation");

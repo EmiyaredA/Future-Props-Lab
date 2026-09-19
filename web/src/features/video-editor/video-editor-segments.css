@@ -13,7 +13,7 @@
   flex-direction: column;
   border: 1px solid var(--border-strong);
   border-radius: 22px;
-  background: color-mix(in srgb, var(--surface) 97%, #0b0c10);
+  background: var(--surface);
   box-shadow: 0 32px 90px rgb(0 0 0 / 55%);
 }
 
@@ -40,6 +40,7 @@
 }
 
 .ve-segment-dialog h2 {
+  color: var(--text-strong);
   font-size: 18px;
 }
 
@@ -58,7 +59,7 @@
 .ve-segment-dialog input,
 .ve-segment-choice summary {
   min-height: 38px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--surface-soft);
   color: var(--text);
@@ -112,9 +113,9 @@
   grid-template-columns: auto repeat(4, minmax(116px, 1fr)) auto;
   align-items: center;
   gap: 9px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+  background: var(--surface-soft);
 }
 
 .ve-segment-batch > strong {
@@ -141,9 +142,9 @@
   grid-template-columns: 32px 120px minmax(0, 1fr) 160px;
   align-items: center;
   gap: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 15px;
-  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+  background: var(--surface-soft);
 }
 
 .ve-segment-thumb {
@@ -422,7 +423,8 @@
   border-color: var(--accent);
 }
 .ve-segment-list article[data-selected="false"] {
-  background: var(--surface);
+  background: var(--bg);
+  border-color: var(--border);
 }
 .ve-segment-import {
   margin: 0 22px 16px;
@@ -430,6 +432,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface-soft);
 }
 .ve-segment-import-toggle {
   display: inline-flex;
