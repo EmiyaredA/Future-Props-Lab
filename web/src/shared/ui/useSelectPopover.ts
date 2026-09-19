@@ -7,7 +7,7 @@ export function useSelectPopover(
   menu: RefObject<HTMLDivElement | null>,
   heightLimit = 280,
   widthLimit = 180,
-  align: "start" | "end" = "end",
+  align: "start" | "end" | "center" = "end",
 ) {
   useLayoutEffect(() => {
     const element = menu.current;
@@ -15,7 +15,6 @@ export function useSelectPopover(
     if (!open || !element || !anchor) return;
     element.showPopover?.();
     const position = () => {
-      const rect = anchor.getBoundingClientRect();
       const boundary = anchor
         .closest("[data-popover-boundary]")
         ?.getBoundingClientRect();
@@ -28,10 +27,6 @@ export function useSelectPopover(
           (window.visualViewport?.width ?? innerWidth),
         boundary?.right ?? innerWidth,
       );
-      const width = Math.min(
-        Math.max(rect.width, widthLimit),
-        visibleRight - visibleLeft - 24,
-      );
       const visibleTop = Math.max(
         window.visualViewport?.offsetTop ?? 0,
         boundary?.top ?? 0,
@@ -40,6 +35,29 @@ export function useSelectPopover(
         (window.visualViewport?.offsetTop ?? 0) +
           (window.visualViewport?.height ?? innerHeight),
         boundary?.bottom ?? innerHeight,
+      );
+      if (align === "center") {
+        const width = Math.min(widthLimit, visibleRight - visibleLeft - 24);
+        Object.assign(element.style, {
+          position: "fixed",
+          margin: "0",
+          right: "auto",
+          bottom: "auto",
+          width: `${width}px`,
+          maxHeight: `${Math.min(heightLimit, visibleBottom - visibleTop - 24)}px`,
+          left: `${visibleLeft + (visibleRight - visibleLeft - width) / 2}px`,
+        });
+        element.style.top = `${Math.max(
+          visibleTop + 12,
+          visibleTop +
+            (visibleBottom - visibleTop - element.offsetHeight) / 2,
+        )}px`;
+        return;
+      }
+      const rect = anchor.getBoundingClientRect();
+      const width = Math.min(
+        Math.max(rect.width, widthLimit),
+        visibleRight - visibleLeft - 24,
       );
       const below = visibleBottom - rect.bottom - 17;
       const above = rect.top - visibleTop - 17;

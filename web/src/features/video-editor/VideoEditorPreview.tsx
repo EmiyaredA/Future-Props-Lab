@@ -341,6 +341,10 @@ export function VideoEditorPreview({
   const [showCanvasGuides, setShowCanvasGuides] = useState(true);
   const [compareEnabled, setCompareEnabled] = useState(false);
   const [comparePercent, setComparePercent] = useState(50);
+  const [compareView, setCompareView] = useState<"split" | "before" | "after">(
+    "split",
+  );
+  const [compareHint, setCompareHint] = useState("");
   const stageRef = useRef<HTMLDivElement>(null);
   const assetMap = useMemo(
     () => new Map(assets.map((asset) => [asset.id, asset])),
@@ -351,6 +355,10 @@ export function VideoEditorPreview({
     timeline.document.settings?.width ?? VIDEO_EDITOR_CANVAS_WIDTH;
   const canvasHeight =
     timeline.document.settings?.height ?? VIDEO_EDITOR_CANVAS_HEIGHT;
+  const allClips = useMemo(
+    () => (timeline.document.tracks ?? []).flatMap((track) => track.clips ?? []),
+    [timeline.document.tracks],
+  );
   const active = (timeline.document.tracks ?? [])
     .filter(
       (track) =>
@@ -368,10 +376,64 @@ export function VideoEditorPreview({
     [timeline],
   );
   const preciseUrl = exactFrameUrl(projectId, timeline.revision, playheadUs);
+  const selectedKeyedClip = allClips.find(
+    (clip) => clip.id === selectedClipId && clip.chromaKey?.enabled,
+  );
   const compareClip = active.find(
     (clip) => clip.id === selectedClipId && clip.chromaKey?.enabled,
   );
   const compareActive = compareEnabled && Boolean(compareClip) && !playing;
+  const compareButtonTitle = selectedKeyedClip
+    ? compareActive
+      ? "关闭抠像对比"
+      : "暂停后左右对比选中片段的抠像前后画面，可拖动紫色分界线"
+    : "请先选中已启用抠像的视频或图片片段";
+  const toggleCompare = () => {
+    setPlaying(false);
+    if (!selectedKeyedClip) {
+      setCompareEnabled(false);
+      setCompareHint("请先在时间轴选中已启用抠像的片段");
+      return;
+    }
+    if (
+      playheadUs < selectedKeyedClip.timelineStartUs ||
+      playheadUs >=
+        selectedKeyedClip.timelineStartUs + selectedKeyedClip.durationUs
+    ) {
+      setPlayheadUs(
+        selectedKeyedClip.timelineStartUs +
+          Math.min(selectedKeyedClip.durationUs / 2, 500_000),
+      );
+    }
+    setCompareEnabled((value) => !value);
+    setCompareView("split");
+    setCompareHint("");
+  };
+  useEffect(() => {
+    if (!selectedKeyedClip) setCompareEnabled(false);
+  }, [selectedKeyedClip]);
+  const beforeFrameUrl =
+    compareActive && compareClip
+      ? exactFrameUrl(
+          projectId,
+          timeline.revision,
+          playheadUs,
+          960,
+          compareClip.id,
+        )
+      : "";
+  const beforeClipPath =
+    compareView === "before"
+      ? "inset(0 0 0 0)"
+      : compareView === "after"
+        ? "inset(0 100% 0 0)"
+        : `inset(0 ${100 - comparePercent}% 0 0)`;
+  const compareStatus =
+    compareView === "before"
+      ? "正在查看抠像前"
+      : compareView === "after"
+        ? "正在查看抠像后"
+        : "分屏对比 · 拖动分界线";
   return (
     <section className="ve-preview-panel">
       <header>
@@ -396,14 +458,11 @@ export function VideoEditorPreview({
             精确停帧
           </button>
           <button
-            className={compareActive ? "active" : ""}
-            disabled={!compareClip}
+            className={compareActive || (compareEnabled && selectedKeyedClip) ? "active" : ""}
+            disabled={!selectedKeyedClip}
             aria-pressed={compareActive}
-            title="暂停后对比选中片段抠像前后的节目画面"
-            onClick={() => {
-              setPlaying(false);
-              setCompareEnabled((value) => !value);
-            }}
+            title={compareButtonTitle}
+            onClick={toggleCompare}
           >
             抠像对比
           </button>
@@ -606,35 +665,75 @@ export function VideoEditorPreview({
           ) : null}
           {compareActive && compareClip ? (
             <div
-              className="ve-chroma-compare"
+              className={`ve-chroma-compare is-${compareView}`}
               style={
                 { "--compare-percent": `${comparePercent}%` } as CSSProperties
               }
             >
               <img
-                src={exactFrameUrl(
-                  projectId,
-                  timeline.revision,
-                  playheadUs,
-                  960,
-                  compareClip.id,
-                )}
+                src={beforeFrameUrl}
                 alt="抠像前的节目帧"
-                style={{ clipPath: `inset(0 ${100 - comparePercent}% 0 0)` }}
+                style={{ clipPath: beforeClipPath }}
               />
-              <span className="ve-chroma-compare-label before">原图</span>
-              <span className="ve-chroma-compare-label after">抠像后</span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={comparePercent}
-                aria-label="调整抠像前后对比分界线"
-                onChange={(event) =>
-                  setComparePercent(Number(event.target.value))
-                }
-              />
+              <div className="ve-chroma-compare-banner">
+                <div
+                  className="ve-chroma-compare-modes"
+                  role="group"
+                  aria-label="抠像对比视图"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={compareView === "before"}
+                    onClick={() => setCompareView("before")}
+                  >
+                    原图
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={compareView === "split"}
+                    onClick={() => setCompareView("split")}
+                  >
+                    分屏
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={compareView === "after"}
+                    onClick={() => setCompareView("after")}
+                  >
+                    抠像后
+                  </button>
+                </div>
+                <span role="status">{compareStatus}</span>
+              </div>
+              {compareView === "split" ? (
+                <>
+                  <span className="ve-chroma-compare-label before">原图</span>
+                  <span className="ve-chroma-compare-label after">抠像后</span>
+                  <span className="ve-chroma-compare-handle" aria-hidden />
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={comparePercent}
+                    aria-label="调整抠像前后对比分界线"
+                    onChange={(event) =>
+                      setComparePercent(Number(event.target.value))
+                    }
+                  />
+                </>
+              ) : (
+                <span
+                  className={`ve-chroma-compare-label ${compareView === "before" ? "before" : "after"}`}
+                >
+                  {compareView === "before" ? "原图" : "抠像后"}
+                </span>
+              )}
             </div>
+          ) : null}
+          {compareHint ? (
+            <p className="ve-chroma-compare-hint" role="status">
+              {compareHint}
+            </p>
           ) : null}
           <span
             className={`ve-canvas-guides ${showCanvasGuides ? "is-visible" : ""}`}

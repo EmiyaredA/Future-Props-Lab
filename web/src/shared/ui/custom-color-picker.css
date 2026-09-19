@@ -111,3 +111,18 @@
   border-color: var(--accent);
   outline: 2px solid var(--accent-soft);
 }
+
+.custom-color-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgb(8 10 18 / 42%);
+  cursor: default;
+}
+
+.custom-color-picker.is-centered .custom-color-picker-popover {
+  z-index: 100;
+}

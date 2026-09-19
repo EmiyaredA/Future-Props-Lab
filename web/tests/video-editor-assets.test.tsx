@@ -7,6 +7,7 @@ import {
   applyVideoEditorOperations,
   deleteVideoEditorAsset,
   getVideoEditorTimeline,
+  importVideoEditorAssets,
   listVideoEditorAssets,
   listVideoEditorImportSources,
   uploadVideoEditorAsset,
@@ -21,6 +22,14 @@ vi.mock("@features/video-editor/api", () => ({
   importVideoEditorAssets: vi.fn(),
   listVideoEditorImportSources: vi.fn(),
   uploadVideoEditorAsset: vi.fn(),
+}));
+
+vi.mock("@platform/api/useApiBlobUrl", () => ({
+  useApiBlobUrl: (path: string | null | undefined) => ({
+    url: path ? `blob:preview-${path}` : "",
+    loading: false,
+    error: null,
+  }),
 }));
 
 const asset: VideoEditorAsset = {
@@ -116,6 +125,7 @@ describe("video editor asset panel", () => {
     await user.click(
       screen.getByRole("button", { name: "向文件夹“特效”添加素材" }),
     );
+    await user.click(screen.getByRole("menuitem", { name: "本地上传" }));
     await user.upload(
       screen.getByLabelText("上传素材（可多选）"),
       new File(["a"], "a.mp4", { type: "video/mp4" }),
@@ -160,6 +170,7 @@ describe("video editor asset panel", () => {
     await user.click(
       screen.getByRole("button", { name: "向文件夹“特效”添加素材" }),
     );
+    await user.click(screen.getByRole("menuitem", { name: "本地上传" }));
     await user.upload(
       screen.getByLabelText("上传素材（可多选）"),
       new File(["a"], "a.mp4", { type: "video/mp4" }),
@@ -340,7 +351,9 @@ describe("video editor asset panel", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "正在上传 0/2：first.mp4",
     );
-    expect(screen.getByRole("button", { name: "上传中 0/2" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "向未分类添加素材" }),
+    ).toBeDisabled();
     expect(uploadVideoEditorAsset).toHaveBeenCalledTimes(1);
     complete(asset);
     await waitFor(() =>
@@ -348,7 +361,9 @@ describe("video editor asset panel", () => {
         "上传完成：成功 2 个",
       ),
     );
-    expect(screen.getByRole("button", { name: "上传" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "向未分类添加素材" }),
+    ).toBeEnabled();
   });
 
   it("does not upload when file selection is cancelled", () => {
@@ -575,5 +590,96 @@ describe("video editor asset panel", () => {
       rootAssetIds: [],
     });
     expect(container.querySelector(".ve-assets-panel")).toBeInTheDocument();
+  });
+
+  it("shows a new-folder tooltip and supports root batch selection", async () => {
+    const user = userEvent.setup();
+    const { onAddBatch } = renderPanel({
+      assets: [asset, secondAsset],
+      organization: {
+        folders: [],
+        rootAssetIds: [asset.id, secondAsset.id],
+      },
+    });
+    expect(screen.getByRole("button", { name: "新建素材文件夹" })).toHaveAttribute(
+      "data-tooltip",
+      "新建文件夹",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "批量选择未分类中的素材" }),
+    );
+    await user.click(screen.getByRole("button", { name: "全选" }));
+    expect(screen.getByText("已选择 2 项")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "添加到时间轴" }));
+    await waitFor(() =>
+      expect(onAddBatch).toHaveBeenCalledWith([asset, secondAsset]),
+    );
+  });
+
+  it("opens the import dialog from the add menu with previews", async () => {
+    const user = userEvent.setup();
+    vi.mocked(listVideoEditorImportSources).mockResolvedValue({
+      items: [
+        {
+          id: "src-image",
+          displayName: "海报.png",
+          mediaKind: "image",
+          mimeType: "image/png",
+          sourceApplication: "visual-workshop",
+        },
+        {
+          id: "src-audio",
+          displayName: "旁白.wav",
+          mediaKind: "audio",
+          mimeType: "audio/wav",
+          sourceApplication: "file-library",
+        },
+      ],
+    });
+    vi.mocked(importVideoEditorAssets).mockResolvedValue({
+      items: [{ ...asset, id: "imported-1", displayName: "海报.png" }],
+    });
+    vi.mocked(getVideoEditorTimeline).mockResolvedValue({
+      projectId: "project-1",
+      revision: 2,
+      updatedAt: "2026-09-19",
+      document: {
+        tracks: [],
+        assetOrganization: {
+          folders: [{ id: "folder", name: "特效", assetIds: [] }],
+          rootAssetIds: [],
+        },
+      },
+    } as never);
+    vi.mocked(listVideoEditorAssets).mockResolvedValue({
+      items: [{ ...asset, id: "imported-1", displayName: "海报.png" }],
+    });
+    vi.mocked(applyVideoEditorOperations).mockResolvedValue({
+      revision: 3,
+    } as never);
+    renderPanel({
+      organization: {
+        folders: [{ id: "folder", name: "特效", assetIds: [] }],
+        rootAssetIds: [],
+      },
+    });
+    await user.click(
+      screen.getByRole("button", { name: "向文件夹“特效”添加素材" }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "从其他项目导入" }));
+    expect(
+      await screen.findByRole("dialog", { name: "从其他应用复制素材" }),
+    ).toBeVisible();
+    expect(
+      document.querySelector(".ve-import-preview")?.getAttribute("src"),
+    ).toContain("/v1/files/src-image/content");
+    await user.click(screen.getByRole("button", { name: /海报\.png/ }));
+    await user.click(screen.getByRole("button", { name: /复制 1 项/ }));
+    await waitFor(() =>
+      expect(importVideoEditorAssets).toHaveBeenCalledWith("project-1", [
+        "src-image",
+      ]),
+    );
+    await waitFor(() => expect(applyVideoEditorOperations).toHaveBeenCalled());
   });
 });

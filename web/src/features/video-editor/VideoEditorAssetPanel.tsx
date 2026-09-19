@@ -1,10 +1,6 @@
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { textPresets, type TextPreset } from "./textModel";
-import {
-  canEditAsset,
-  assetPreparationLabel,
-  assetUnavailableReason,
-} from "./assetReadiness";
+import { canEditAsset } from "./assetReadiness";
 import {
   type DragEvent,
   type FormEvent,
@@ -22,16 +18,11 @@ import {
   CheckSquare2,
   ChevronDown,
   ChevronRight,
-  FilePlus2,
   Folder,
-  FolderInput,
   FolderPlus,
-  Image,
-  Music2,
   Pencil,
   Trash2,
   Type,
-  Video,
   X,
 } from "lucide-react";
 import {
@@ -49,7 +40,6 @@ import {
   moveAssetInOrganization,
   moveAssetsInOrganization,
   moveFolderBefore,
-  shiftAssetInOrganization,
   shiftFolderInOrganization,
 } from "./assetOrganization";
 import { videoEditorQueryKeys } from "./queryKeys";
@@ -59,6 +49,7 @@ import {
   VideoEditorAssetBatchToolbar,
 } from "./VideoEditorAssetBatchToolbar";
 import { VideoEditorAssetImportDialog } from "./VideoEditorAssetImportDialog";
+import { VideoEditorAssetRow } from "./VideoEditorAssetRow";
 import {
   VideoEditorAssetUploadFeedback,
   type PendingFolderPlacement,
@@ -74,15 +65,6 @@ const ORGANIZE_ASSET_TYPE = "application/x-video-editor-organize-asset";
 const TIMELINE_ASSET_TYPE = "application/x-video-editor-asset";
 const FOLDER_TYPE = "application/x-video-editor-folder";
 export const ROOT_BATCH_ID = "root";
-
-const iconFor = (kind: string) =>
-  kind === "video"
-    ? Video
-    : kind === "audio"
-      ? Music2
-      : kind === "image"
-        ? Image
-        : Type;
 
 export function VideoEditorAssetPanel({
   projectId,
@@ -449,167 +431,42 @@ export function VideoEditorAssetPanel({
   const renderAsset = (assetId: string, folderId: string | null) => {
     const asset = assetsById.get(assetId);
     if (!asset) return null;
-    const Icon = iconFor(asset.mediaKind);
-    const ready = canEditAsset(asset);
-    const processing = ["queued", "processing"].includes(
-      asset.processingStatus,
-    );
-    const list = folderId
-      ? (arranged.folders.find((folder) => folder.id === folderId)?.assetIds ??
-        [])
-      : arranged.rootAssetIds;
-    const index = list.indexOf(asset.id);
     const batchKey = folderId ?? ROOT_BATCH_ID;
     return (
-      <div
+      <VideoEditorAssetRow
         key={asset.id}
-        className="ve-asset-wrap"
-        title={ready ? undefined : assetUnavailableReason(asset)}
-        draggable={!disabled}
-        onDragStart={(event) => {
-          event.dataTransfer.effectAllowed = "copyMove";
-          event.dataTransfer.setData(ORGANIZE_ASSET_TYPE, asset.id);
-          event.dataTransfer.setData(TIMELINE_ASSET_TYPE, asset.id);
-          onTimelineAssetDrag?.(asset);
+        asset={asset}
+        folderId={folderId}
+        arranged={arranged}
+        batchActive={batchFolderId === batchKey}
+        selected={selectedIds.includes(asset.id)}
+        disabled={disabled}
+        organizeOpen={assetMenuId === asset.id}
+        onSelect={() =>
+          setSelectedIds((current) =>
+            current.includes(asset.id)
+              ? current.filter((id) => id !== asset.id)
+              : [...current, asset.id],
+          )
+        }
+        onAdd={() => onAdd(asset)}
+        onDelete={() => {
+          setDeleteError("");
+          setDeleting(asset);
         }}
-        onDragEnd={() => onTimelineAssetDrag?.()}
+        onToggleOrganize={() =>
+          setAssetMenuId((current) =>
+            current === asset.id ? undefined : asset.id,
+          )
+        }
+        onCloseOrganize={() => setAssetMenuId(undefined)}
+        onOrganizationChange={onOrganizationChange}
+        onTimelineAssetDrag={onTimelineAssetDrag}
         onDragOver={allowAssetDrop}
         onDrop={(event) => dropAsset(event, folderId, asset.id)}
-      >
-        <div className="ve-asset">
-          {batchFolderId === batchKey ? (
-            <label className="ve-asset-check">
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(asset.id)}
-                aria-label={`选择素材“${asset.displayName}”`}
-                onChange={() =>
-                  setSelectedIds((current) =>
-                    current.includes(asset.id)
-                      ? current.filter((id) => id !== asset.id)
-                      : [...current, asset.id],
-                  )
-                }
-              />
-            </label>
-          ) : null}
-          <button
-            type="button"
-            className="ve-asset-main"
-            disabled={!ready || disabled}
-            aria-label={`双击将“${asset.displayName}”添加到时间轴`}
-            onDoubleClick={() => onAdd(asset)}
-          >
-            {asset.thumbnailUrl ? (
-              <img src={asset.thumbnailUrl} alt="" />
-            ) : (
-              <span>
-                <Icon aria-hidden />
-              </span>
-            )}
-            <span className="ve-asset-copy">
-              <strong>{asset.displayName}</strong>
-              <small>{assetPreparationLabel(asset)}</small>
-            </span>
-          </button>
-          <div className="ve-asset-controls">
-            <button
-              type="button"
-              disabled={!ready || disabled}
-              aria-label={`将“${asset.displayName}”添加到时间轴`}
-              title={ready ? "添加到时间轴" : assetUnavailableReason(asset)}
-              onClick={() => onAdd(asset)}
-            >
-              <FilePlus2 aria-hidden />
-            </button>
-            <button
-              type="button"
-              disabled={disabled}
-              aria-expanded={assetMenuId === asset.id}
-              aria-label={`整理素材“${asset.displayName}”`}
-              title="整理素材"
-              onClick={() =>
-                setAssetMenuId((current) =>
-                  current === asset.id ? undefined : asset.id,
-                )
-              }
-            >
-              <FolderInput aria-hidden />
-            </button>
-            <button
-              type="button"
-              className="ve-asset-delete"
-              disabled={processing || disabled}
-              aria-label={`删除素材“${asset.displayName}”`}
-              title={processing ? "素材处理中，完成后可删除" : "删除素材"}
-              onClick={() => {
-                setDeleteError("");
-                setDeleting(asset);
-              }}
-            >
-              <Trash2 aria-hidden />
-            </button>
-          </div>
-        </div>
-        {assetMenuId === asset.id ? (
-          <div className="ve-asset-organize-menu" role="menu">
-            <div>
-              <button
-                role="menuitem"
-                disabled={index === 0}
-                onClick={() => {
-                  onOrganizationChange(
-                    shiftAssetInOrganization(arranged, asset.id, -1),
-                  );
-                  setAssetMenuId(undefined);
-                }}
-              >
-                <ArrowUp aria-hidden /> 上移
-              </button>
-              <button
-                role="menuitem"
-                disabled={index === list.length - 1}
-                onClick={() => {
-                  onOrganizationChange(
-                    shiftAssetInOrganization(arranged, asset.id, 1),
-                  );
-                  setAssetMenuId(undefined);
-                }}
-              >
-                <ArrowDown aria-hidden /> 下移
-              </button>
-            </div>
-            <strong>移动到</strong>
-            <button
-              role="menuitem"
-              disabled={folderId === null}
-              onClick={() => {
-                onOrganizationChange(
-                  moveAssetInOrganization(arranged, asset.id, null),
-                );
-                setAssetMenuId(undefined);
-              }}
-            >
-              未分类
-            </button>
-            {arranged.folders.map((folder) => (
-              <button
-                key={folder.id}
-                role="menuitem"
-                disabled={folder.id === folderId}
-                onClick={() => {
-                  onOrganizationChange(
-                    moveAssetInOrganization(arranged, asset.id, folder.id),
-                  );
-                  setAssetMenuId(undefined);
-                }}
-              >
-                {folder.name}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
+        organizeType={ORGANIZE_ASSET_TYPE}
+        timelineType={TIMELINE_ASSET_TYPE}
+      />
     );
   };
 
@@ -666,7 +523,7 @@ export function VideoEditorAssetPanel({
   );
 
   return (
-    <aside className="ve-assets-panel">
+    <aside className="ve-assets-panel" data-popover-boundary>
       <header>
         <strong>素材</strong>
         <div>

@@ -1,33 +1,52 @@
 .ve-chroma-section {
   display: grid;
-  gap: 14px;
-}
-.ve-chroma-enable,
-.ve-chroma-slider,
-.ve-chroma-color-row,
-.ve-chroma-presets {
-  display: flex;
-  align-items: center;
   gap: 10px;
 }
 .ve-chroma-enable {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  min-height: 32px;
+  padding: 0 2px;
+  color: #d5dae6;
+  font-size: 13px;
 }
 .ve-chroma-enable input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
   accent-color: #8274f4;
-  width: 20px;
-  height: 20px;
 }
 .ve-chroma-controls {
   display: grid;
   gap: 12px;
+  padding: 10px;
+  border: 1px solid #2f3546;
+  border-radius: 8px;
+  background: #171c28;
 }
-.ve-chroma-controls > span {
-  color: #b4bbca;
-  font-size: 13px;
+.ve-chroma-controls.is-disabled {
+  opacity: 0.48;
+}
+.ve-chroma-field {
+  display: grid;
+  gap: 8px;
+}
+.ve-chroma-field-label {
+  color: #9aa3b7;
+  font-size: 11px;
+}
+.ve-chroma-presets,
+.ve-chroma-color-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .ve-chroma-presets {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 .ve-chroma-presets button,
 .ve-chroma-color-row button,
@@ -36,43 +55,66 @@
   border-radius: 6px;
   color: #d9dce8;
   background: #1b2130;
-  padding: 7px 10px;
+  padding: 6px 8px;
   cursor: pointer;
+  font-size: 12px;
 }
 .ve-chroma-presets button[aria-pressed="true"] {
   border-color: #8274f4;
   color: #dcd7ff;
   background: #292443;
 }
-.ve-chroma-color-row .ve-chroma-swatch {
-  width: 34px;
-  height: 34px;
-  padding: 0;
+.ve-chroma-color-row .custom-color-picker {
   flex: none;
 }
+.ve-chroma-color-row .custom-color-picker-trigger {
+  width: 32px;
+  min-height: 32px;
+  border: 1px solid #41485b;
+  border-radius: 6px;
+  background: #1b2130;
+}
+.ve-chroma-color-row > button {
+  flex: 1;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
 .ve-chroma-color-row button svg {
-  width: 16px;
-  height: 16px;
-  vertical-align: middle;
+  width: 14px;
+  height: 14px;
+}
+.ve-chroma-params {
+  display: grid;
+  gap: 8px;
 }
 .ve-chroma-slider {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
   color: #bdc3d0;
-  font-size: 13px;
-}
-.ve-chroma-slider span {
-  min-width: 64px;
+  font-size: 12px;
 }
 .ve-chroma-slider input {
-  flex: 1;
-  min-width: 40px;
+  width: 100%;
+  min-width: 0;
   accent-color: #8274f4;
 }
 .ve-chroma-slider output {
-  min-width: 26px;
   text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #c5cad8;
 }
 .ve-chroma-reset {
   justify-self: end;
+  min-height: 30px;
+}
+.ve-chroma-section button:disabled,
+.ve-chroma-section input:disabled {
+  cursor: not-allowed;
 }
 .ve-chroma-section button:focus-visible,
 .ve-chroma-section input:focus-visible {
@@ -82,7 +124,7 @@
 .ve-chroma-compare {
   position: absolute;
   inset: 0;
-  z-index: 22;
+  z-index: 24;
   pointer-events: none;
 }
 .ve-chroma-compare > img {
@@ -90,20 +132,88 @@
   height: 100%;
   object-fit: cover;
 }
+.ve-chroma-compare-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  color: #f4f2ff;
+  background: linear-gradient(180deg, #1a1738f2, #1a1738cc 70%, #1a173800);
+  pointer-events: none;
+}
+.ve-chroma-compare-modes {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #5b5494;
+  border-radius: 8px;
+  background: #17142fe8;
+  pointer-events: auto;
+}
+.ve-chroma-compare-modes button {
+  min-width: 56px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  color: #d8d3ff;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ve-chroma-compare-modes button[aria-pressed="true"] {
+  color: #16122c;
+  background: #c4bcff;
+}
 .ve-chroma-compare-label {
   position: absolute;
-  top: 12px;
-  padding: 5px 9px;
-  border-radius: 5px;
-  color: white;
-  background: #1c2135d9;
+  top: 52px;
+  z-index: 2;
+  padding: 6px 10px;
+  border: 1px solid #8b82ef;
+  border-radius: 6px;
+  color: #fff;
+  background: #17142fd9;
   font-size: 12px;
+  font-weight: 650;
+  box-shadow: 0 6px 18px #0008;
 }
 .ve-chroma-compare-label.before {
   left: 12px;
 }
 .ve-chroma-compare-label.after {
   right: 12px;
+}
+.ve-chroma-compare-handle {
+  position: absolute;
+  top: 50%;
+  left: var(--compare-percent, 50%);
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #8274f4;
+  box-shadow:
+    0 0 0 2px #8274f488,
+    0 4px 12px #000a;
+  pointer-events: none;
+}
+.ve-chroma-compare.is-before .ve-chroma-compare-handle,
+.ve-chroma-compare.is-after .ve-chroma-compare-handle,
+.ve-chroma-compare.is-before::after,
+.ve-chroma-compare.is-after::after,
+.ve-chroma-compare.is-before > input,
+.ve-chroma-compare.is-after > input {
+  display: none;
 }
 .ve-chroma-compare > input {
   position: absolute;
@@ -121,7 +231,26 @@
   left: var(--compare-percent, 50%);
   top: 0;
   bottom: 0;
-  width: 2px;
-  background: #a69cff;
+  width: 3px;
+  margin-left: -1px;
+  background: #c4bcff;
+  box-shadow:
+    0 0 0 1px #2a2458,
+    0 0 16px #8274f4aa;
   pointer-events: none;
+}
+.ve-chroma-compare-hint {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 25;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #645bd2;
+  border-radius: 6px;
+  color: #e8e4ff;
+  background: #1c1835f2;
+  font-size: 12px;
+  text-align: center;
 }

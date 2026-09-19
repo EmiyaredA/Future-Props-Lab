@@ -1,5 +1,6 @@
 import { FilePlus2, Library, Upload } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
+import { useSelectPopover } from "@shared/ui/useSelectPopover";
 
 export function VideoEditorAssetAddMenu({
   open,
@@ -21,6 +22,10 @@ export function VideoEditorAssetAddMenu({
   onImport: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const id = useId();
+  useSelectPopover(open, trigger, menu, 120, 168, "end");
   useEffect(() => {
     if (!open) return;
     const close = (event: MouseEvent) => {
@@ -40,18 +45,26 @@ export function VideoEditorAssetAddMenu({
   return (
     <div className="ve-asset-add-wrap" ref={root}>
       <button
+        ref={trigger}
         type="button"
         disabled={disabled}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-controls={open ? id : undefined}
         data-tooltip={tooltip}
         onClick={onToggle}
       >
         <FilePlus2 aria-hidden />
       </button>
       {open ? (
-        <div className="ve-asset-add-menu" role="menu">
+        <div
+          ref={menu}
+          id={id}
+          className="ve-asset-add-menu"
+          role="menu"
+          popover="manual"
+        >
           <button type="button" role="menuitem" onClick={onLocalUpload}>
             <Upload aria-hidden /> 本地上传
           </button>

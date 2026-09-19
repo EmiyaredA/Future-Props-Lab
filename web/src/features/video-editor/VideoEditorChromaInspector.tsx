@@ -1,9 +1,12 @@
 import { Pipette } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
 import "./video-editor-chroma.css";
 
 type ChromaKey = Required<NonNullable<VideoEditorClip["chromaKey"]>>;
+
+const PRESET_COLORS = ["#00ff00", "#0000ff"] as const;
 
 const defaultChromaKey: ChromaKey = {
   enabled: false,
@@ -23,8 +26,8 @@ export function VideoEditorChromaInspector({
     undo?: VideoEditorOperation[],
   ) => Promise<void>;
 }) {
-  const colorInput = useRef<HTMLInputElement>(null);
   const lastSubmitted = useRef("");
+  const [colorOpen, setColorOpen] = useState(false);
   const [draft, setDraft] = useState<ChromaKey>({
     ...defaultChromaKey,
     ...clip.chromaKey,
@@ -64,7 +67,7 @@ export function VideoEditorChromaInspector({
       }
     ).EyeDropper;
     if (!Picker) {
-      colorInput.current?.click();
+      setColorOpen(true);
       return;
     }
     try {
@@ -74,6 +77,10 @@ export function VideoEditorChromaInspector({
       // Cancelling the system eyedropper leaves the clip unchanged.
     }
   };
+  const color = draft.color.toLowerCase();
+  const isCustom = !PRESET_COLORS.includes(
+    color as (typeof PRESET_COLORS)[number],
+  );
   return (
     <section className="ve-inspector-section ve-chroma-section">
       <div className="ve-section-heading">
@@ -81,72 +88,79 @@ export function VideoEditorChromaInspector({
           <h3>抠像</h3>
           <p>移除纯色背景，露出下层画面</p>
         </div>
-      </div>
-      <label className="ve-chroma-enable">
-        <span>启用抠像</span>
-        <input
-          type="checkbox"
-          checked={draft.enabled}
-          onChange={(event) =>
-            save({ ...draft, enabled: event.target.checked })
-          }
-        />
-      </label>
-      <div className="ve-chroma-controls" aria-disabled={!draft.enabled}>
-        <span>抠像颜色</span>
-        <div
-          className="ve-chroma-presets"
-          role="group"
-          aria-label="抠像颜色预设"
-        >
-          {(
-            [
-              ["#00ff00", "绿色"],
-              ["#0000ff", "蓝色"],
-            ] as const
-          ).map(([color, label]) => (
-            <button
-              key={color}
-              type="button"
-              aria-pressed={draft.color.toLowerCase() === color}
-              onClick={() => save({ ...draft, color })}
-            >
-              {label}
-            </button>
-          ))}
-          <button
-            type="button"
-            aria-label="选择自定义抠像颜色"
-            onClick={() => colorInput.current?.click()}
-          >
-            自定义
-          </button>
-        </div>
-        <div className="ve-chroma-color-row">
-          <button
-            type="button"
-            className="ve-chroma-swatch"
-            style={{ background: draft.color }}
-            aria-label="选择抠像颜色"
-            onClick={() => colorInput.current?.click()}
-          />
+        <label className="ve-chroma-enable">
           <input
-            ref={colorInput}
-            hidden
-            type="color"
-            aria-label="自定义抠像颜色"
-            value={draft.color}
-            onChange={(event) => save({ ...draft, color: event.target.value })}
+            type="checkbox"
+            checked={draft.enabled}
+            onChange={(event) =>
+              save({ ...draft, enabled: event.target.checked })
+            }
           />
-          <button type="button" onClick={() => void chooseColor()}>
-            <Pipette aria-hidden /> 吸取颜色
+          <span>启用</span>
+        </label>
+      </div>
+      <div
+        className={`ve-chroma-controls${draft.enabled ? "" : " is-disabled"}`}
+        aria-disabled={!draft.enabled}
+      >
+        <div className="ve-chroma-color-row">
+          <div
+            className="ve-chroma-presets"
+            role="group"
+            aria-label="抠像颜色预设"
+          >
+            {(
+              [
+                ["#00ff00", "绿"],
+                ["#0000ff", "蓝"],
+              ] as const
+            ).map(([preset, label]) => (
+              <button
+                key={preset}
+                type="button"
+                aria-pressed={color === preset}
+                disabled={!draft.enabled}
+                onClick={() => save({ ...draft, color: preset })}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              aria-label="选择自定义抠像颜色"
+              aria-pressed={isCustom || colorOpen}
+              disabled={!draft.enabled}
+              onClick={() => setColorOpen(true)}
+            >
+              自定义
+            </button>
+          </div>
+          <CustomColorPicker
+            compact
+            placement="center"
+            open={colorOpen}
+            onOpenChange={setColorOpen}
+            ariaLabel="自定义抠像颜色"
+            value={draft.color}
+            disabled={!draft.enabled}
+            onChange={(next) => save({ ...draft, color: next })}
+          />
+          <button
+            type="button"
+            className="ve-chroma-pick"
+            disabled={!draft.enabled}
+            title="吸取颜色"
+            aria-label="吸取抠像颜色"
+            onClick={() => void chooseColor()}
+          >
+            <Pipette aria-hidden />
           </button>
         </div>
         {(
           [
             ["similarity", "相似度"],
-            ["softness", "边缘柔化"],
-            ["despill", "溢色抑制"],
+            ["softness", "柔化"],
+            ["despill", "溢色"],
           ] as const
         ).map(([name, label]) => (
           <label className="ve-chroma-slider" key={name}>
@@ -157,6 +171,7 @@ export function VideoEditorChromaInspector({
               max="100"
               value={draft[name]}
               aria-label={label}
+              disabled={!draft.enabled}
               onChange={(event) =>
                 setDraft({ ...draft, [name]: Number(event.target.value) })
               }
@@ -176,9 +191,10 @@ export function VideoEditorChromaInspector({
         <button
           type="button"
           className="ve-chroma-reset"
+          disabled={!draft.enabled}
           onClick={() => save({ ...defaultChromaKey, enabled: draft.enabled })}
         >
-          重置参数
+          重置
         </button>
       </div>
     </section>

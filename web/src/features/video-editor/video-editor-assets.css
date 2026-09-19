@@ -289,12 +289,12 @@
 .ve-asset-add-wrap {
   position: relative;
 }
-.ve-folder-quick-actions button,
+.ve-folder-quick-actions > button,
 .ve-folder-controls button,
 .ve-asset-add-wrap > button {
   position: relative;
 }
-.ve-folder-quick-actions button,
+.ve-folder-quick-actions > button,
 .ve-asset-add-wrap > button {
   width: 21px;
   height: 25px;
@@ -307,60 +307,70 @@
   background: transparent;
   cursor: pointer;
 }
-.ve-folder-quick-actions button:hover:not(:disabled),
-.ve-folder-quick-actions button:focus-visible,
+.ve-folder-quick-actions > button:hover:not(:disabled),
+.ve-folder-quick-actions > button:focus-visible,
 .ve-asset-add-wrap > button:hover:not(:disabled),
 .ve-asset-add-wrap > button:focus-visible {
   color: #e4e0ff;
   background: #34394d;
 }
-.ve-folder-quick-actions button[aria-pressed="true"] {
+.ve-folder-quick-actions > button[aria-pressed="true"] {
   color: #d4ceff;
   background: #2f2a48;
 }
-.ve-folder-quick-actions svg,
+.ve-folder-quick-actions > button svg,
 .ve-asset-add-wrap > button svg {
   width: 12px;
   height: 12px;
 }
 .ve-asset-add-menu {
-  position: absolute;
-  z-index: 9;
-  top: calc(100% + 2px);
-  right: 0;
+  z-index: 40;
   display: grid;
   gap: 2px;
-  min-width: 148px;
+  min-width: 160px;
+  width: max-content;
+  margin: 0;
   padding: 5px;
   border: 1px solid #505975;
   border-radius: 6px;
   background: #202636;
   box-shadow: 0 8px 22px #0008;
+  overflow: auto;
 }
 .ve-asset-add-menu button {
+  width: auto;
+  height: auto;
+  min-width: 100%;
+  min-height: 28px;
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
   padding: 4px 8px;
   border: 0;
   border-radius: 4px;
   text-align: left;
+  white-space: nowrap;
   color: #e8ebf4;
   background: transparent;
   font-size: 11px;
+  line-height: 1.3;
   cursor: pointer;
 }
 .ve-asset-add-menu button:hover,
 .ve-asset-add-menu button:focus-visible {
   background: #343a4e;
 }
+.ve-asset-add-menu button::after {
+  content: none;
+  display: none;
+}
 .ve-asset-add-menu svg {
   width: 13px;
   height: 13px;
+  flex: none;
   color: #c9c3ff;
 }
-.ve-folder-quick-actions button::after,
+.ve-folder-quick-actions > button::after,
 .ve-folder-controls button::after,
 .ve-asset-add-wrap > button::after {
   content: attr(data-tooltip);
@@ -389,8 +399,8 @@
   right: 0;
   transform: none;
 }
-.ve-folder-quick-actions button:hover::after,
-.ve-folder-quick-actions button:focus-visible::after,
+.ve-folder-quick-actions > button:hover::after,
+.ve-folder-quick-actions > button:focus-visible::after,
 .ve-folder-controls button:hover::after,
 .ve-folder-controls button:focus-visible::after,
 .ve-asset-add-wrap > button:hover::after,
@@ -508,7 +518,9 @@
   box-shadow: 0 8px 22px #0008;
   z-index: 5;
 }
-.ve-folder-quick-actions button:focus-visible,
+.ve-folder-quick-actions > button:focus-visible,
+.ve-asset-add-wrap > button:focus-visible,
+.ve-asset-add-menu button:focus-visible,
 .ve-batch-toolbar button:focus-visible,
 .ve-batch-selection-head button:focus-visible {
   outline: 2px solid #a69cff;

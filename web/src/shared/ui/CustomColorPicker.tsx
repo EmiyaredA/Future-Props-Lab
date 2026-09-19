@@ -29,6 +29,9 @@ export function CustomColorPicker({
   compact = false,
   mixed = false,
   disabled = false,
+  open: openProp,
+  onOpenChange,
+  placement = "anchor",
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -37,12 +40,28 @@ export function CustomColorPicker({
   compact?: boolean;
   mixed?: boolean;
   disabled?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  placement?: "anchor" | "center";
 }) {
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  useSelectPopover(open, trigger, menu, 280, 224);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = openProp ?? uncontrolledOpen;
+  const setOpen = (next: boolean | ((current: boolean) => boolean)) => {
+    const resolved = typeof next === "function" ? next(open) : next;
+    onOpenChange?.(resolved);
+    if (openProp === undefined) setUncontrolledOpen(resolved);
+  };
+  useSelectPopover(
+    open,
+    trigger,
+    menu,
+    280,
+    224,
+    placement === "center" ? "center" : "end",
+  );
   const close = () => {
     setOpen(false);
     trigger.current?.focus();
@@ -54,18 +73,30 @@ export function CustomColorPicker({
 
   useEffect(() => setDraft(value.toUpperCase()), [value]);
   useEffect(() => {
-    const close = (event: MouseEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    if (!open) return;
+    const closeOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (root.current?.contains(target)) return;
+      if (menu.current?.contains(target)) return;
+      setOpen(false);
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
+    document.addEventListener("mousedown", closeOutside);
+    return () => document.removeEventListener("mousedown", closeOutside);
+  }, [open]);
 
   return (
     <div
       ref={root}
-      className={`custom-color-picker${compact ? " compact" : ""}`}
+      className={`custom-color-picker${compact ? " compact" : ""}${placement === "center" && open ? " is-centered" : ""}`}
     >
+      {placement === "center" && open ? (
+        <button
+          type="button"
+          className="custom-color-picker-backdrop"
+          aria-label="关闭选色器"
+          onClick={() => setOpen(false)}
+        />
+      ) : null}
       <button
         ref={trigger}
         type="button"
