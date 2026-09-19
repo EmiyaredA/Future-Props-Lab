@@ -25,6 +25,12 @@ from app.apps.galgame_workshop.models import (
     GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
+from app.apps.motion_compositor.models import (
+    MotionDocument,
+    MotionOperationBatch,
+    MotionProject,
+    MotionTask,
+)
 from app.apps.presentation_workshop.models import (
     PresentationAssetReference,
     PresentationProject,
@@ -119,6 +125,7 @@ DESKTOP_UI_ROOTS: dict[str, type] = {
     "skill": SkillIntegration,
     "tool-api": ToolApiIntegration,
     "video": VideoEditorProject,
+    "motion": MotionProject,
     "visual": VisualWorkshopProject,
 }
 
@@ -152,6 +159,7 @@ LAYOUT_PROJECT_MODELS: dict[str, type] = {
     "galgame-workshop": GalgameWorkshopProject,
     "visual-workshop": VisualWorkshopProject,
     "video-editor": VideoEditorProject,
+    "motion-compositor": MotionProject,
 }
 
 # Ensure reference mappers are registered on Base.metadata for capability queries.
@@ -164,6 +172,7 @@ _ = (
     ThoughtNoteHistory,
     VideoEditorAssetMetadata,
     VideoEditorTimeline,
+    MotionDocument,
     VisualAssistantAction,
     VisualAssistantMessage,
     VisualAssistantMessageAsset,
@@ -221,6 +230,9 @@ TENANT_MODELS = (
     VideoEditorProject,
     VideoEditorOperationBatch,
     VideoEditorTask,
+    MotionProject,
+    MotionOperationBatch,
+    MotionTask,
     ModelTestConversation,
     ModelTestGenerationTask,
     ModelTestGenerationAsset,

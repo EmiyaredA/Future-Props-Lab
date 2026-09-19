@@ -33,12 +33,12 @@ WEB_APP_UNITS = (
     "presentation-workshop",
     "thought-workshop",
     "video-editor",
+    "motion-compositor",
     "visual-workshop",
     "director-desk",
 )
-# The video editor hands finished segments to the visual workshop. That product
-# flow is the only reason one app may reach for another.
-ALLOWED_APP_HANDOFFS = {("video-editor", "visual-workshop")}
+# Explicit finished-media handoffs are the only cross-app calls.
+ALLOWED_APP_HANDOFFS = {("video-editor", "visual-workshop"), ("motion-compositor", "video-editor")}
 
 FORBIDDEN_BACKEND_DIRECTORIES = {"domain", "platform", "product", "services"}
 # Hard-cut legacy package roots from the runtime/capabilities restructure.
@@ -185,8 +185,8 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
         WorkspaceInvitation,
         WorkspaceMembership,
     )
-    from app.runtime.orm_base import Base
     from app.orm import TENANT_MODELS
+    from app.runtime.orm_base import Base
 
     account_governance_models = {
         ModelTemplateSyncItem,
@@ -415,8 +415,16 @@ def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
         BACKEND_APP / "integrations" / "models.py",
         BACKEND_APP / "tool_navigation" / "models.py",
         *(BACKEND_APP / "apps").glob("*/models.py"),
-        *((BACKEND_APP / "console" / "models").glob("*.py") if (BACKEND_APP / "console" / "models").is_dir() else []),
-        *((BACKEND_APP / "llm" / "models").rglob("*.py") if (BACKEND_APP / "llm" / "models").is_dir() else []),
+        *(
+            (BACKEND_APP / "console" / "models").glob("*.py")
+            if (BACKEND_APP / "console" / "models").is_dir()
+            else []
+        ),
+        *(
+            (BACKEND_APP / "llm" / "models").rglob("*.py")
+            if (BACKEND_APP / "llm" / "models").is_dir()
+            else []
+        ),
     ]
     violations: list[str] = []
     for path in roots:
@@ -583,7 +591,9 @@ def test_capabilities_do_not_depend_on_business_packages() -> None:
         for package in (*BUSINESS_BACKEND_PACKAGES, "apps", "console")
         if _matches_module(module, f"app.{package}")
     ]
-    assert not violations, "capabilities 不得依赖业务包、apps 或 console：\n" + "\n".join(violations)
+    assert not violations, "capabilities 不得依赖业务包、apps 或 console：\n" + "\n".join(
+        violations
+    )
 
 
 def test_console_does_not_depend_on_apps() -> None:

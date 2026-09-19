@@ -12,6 +12,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.orm  # noqa: F401 — register tenant listeners
 from app.api import api_router
+from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
+from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
+from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
+from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from app.apps.motion_compositor.runner import MotionExportRunner
+from app.apps.video_editor.runner import VideoEditorRunner
+from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
+from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
 from app.capabilities.asset_store.layout_migration import (
     reconcile_project_trash,
     reconcile_snapshot_imports,
@@ -23,10 +31,6 @@ from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
 from app.console.governance.runtime_quotas import recover_admissions
 from app.console.governance.service import AccountError
-from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
-from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
-from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
-from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.inference.runner import InferenceRunner
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
@@ -43,9 +47,6 @@ from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal, engine
 from app.runtime.polling_runner import RunnerSupervisor
 from app.runtime.revisions import RevisionConflictError
-from app.apps.video_editor.runner import VideoEditorRunner
-from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
-from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
 from db.migrations import apply_migrations
 from db.migrations.registry import LATEST_MIGRATION_ID
 
@@ -77,6 +78,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             GalgameVideoExportRunner(),
             GalgameVideoEditorHandoffRunner(),
             VideoEditorRunner(),
+            MotionExportRunner(),
         )
     )
     lifespan_app.state.runner_supervisor = supervisor

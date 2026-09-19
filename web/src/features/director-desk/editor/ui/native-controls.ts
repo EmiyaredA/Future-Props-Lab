@@ -304,7 +304,7 @@ function dress(element: Control) {
 
 function scan(node: Node) {
     const found: Control[] = [];
-    if (node instanceof HTMLSelectElement || isColor(node)) found.push(node);
+    if (node instanceof HTMLSelectElement || (node instanceof Element && isColor(node))) found.push(node);
     if (node instanceof HTMLElement) node.querySelectorAll('select, input[type="color"]').forEach(item => {
         if (item instanceof HTMLSelectElement || isColor(item)) found.push(item);
     });

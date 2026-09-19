@@ -36,6 +36,8 @@ export type WorkshopPage =
   | "video-editor-projects"
   | "video-editor-editor"
   | "video-editor-tasks"
+  | "motion-compositor-projects"
+  | "motion-compositor-editor"
   | "audio-annotation-projects"
   | "audio-annotation-editor"
   | "director-desk-projects"
@@ -54,10 +56,7 @@ export type AudioAnnotationPage = Extract<
   WorkshopPage,
   `audio-annotation-${string}`
 >;
-export type DirectorDeskPage = Extract<
-  WorkshopPage,
-  `director-desk-${string}`
->;
+export type DirectorDeskPage = Extract<WorkshopPage, `director-desk-${string}`>;
 
 export type AppPage = StudioPage | WorkshopPage;
 
@@ -74,6 +73,7 @@ export function isWorkshopPage(page: AppPage): page is WorkshopPage {
     page.startsWith("visual-workshop-") ||
     page.startsWith("galgame-workshop-") ||
     page.startsWith("video-editor-") ||
+    page.startsWith("motion-compositor-") ||
     page.startsWith("audio-annotation-") ||
     page.startsWith("director-desk-")
   );
@@ -205,6 +205,8 @@ export function pathFor(
     "video-editor-projects": "/apps/video-editor",
     "video-editor-editor": "/apps/video-editor",
     "video-editor-tasks": "/apps/video-editor/tasks",
+    "motion-compositor-projects": "/apps/motion-compositor",
+    "motion-compositor-editor": "/apps/motion-compositor",
     "audio-annotation-projects": "/apps/audio-annotation",
     "audio-annotation-editor": "/apps/audio-annotation",
     "director-desk-projects": "/apps/director-desk",
@@ -227,7 +229,7 @@ export function hasReadOnlyRoute(page: AppPage) {
   return (
     page === "files" ||
     page === "model-test" ||
-    /^(visual-workshop|thought-workshop|galgame-workshop|video-editor|audio-annotation)-/.test(
+    /^(visual-workshop|thought-workshop|galgame-workshop|video-editor|motion-compositor|audio-annotation)-/.test(
       page,
     )
   );

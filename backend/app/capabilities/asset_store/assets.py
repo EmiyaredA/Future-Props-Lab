@@ -306,6 +306,7 @@ class VisualAssets(VisualAssetContext):
                 VisualAsset.project_id.is_(None),
                 VisualAsset.galgame_project_id.is_(None),
                 VisualAsset.video_editor_project_id.is_(None),
+                VisualAsset.motion_compositor_project_id.is_(None),
             ]
         )
         conditions.append(
@@ -420,9 +421,7 @@ class VisualAssets(VisualAssetContext):
         message_assets = Base.metadata.tables.get("visual_assistant_message_assets")
         conversation_reference = (
             await self.session.scalar(
-                select(message_assets.c.id)
-                .where(message_assets.c.asset_id == asset_id)
-                .limit(1)
+                select(message_assets.c.id).where(message_assets.c.asset_id == asset_id).limit(1)
             )
             if message_assets is not None
             else None

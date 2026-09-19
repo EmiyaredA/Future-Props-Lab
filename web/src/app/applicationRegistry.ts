@@ -5,6 +5,7 @@ import { THOUGHT_WORKSHOP_MODULE } from "@features/thought-workshop/module";
 import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
 import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
 import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
+import { MOTION_COMPOSITOR_MODULE } from "@features/motion-compositor/module";
 
 export const APPLICATION_MODULES = [
   PRESENTATION_WORKSHOP_MODULE,
@@ -12,6 +13,7 @@ export const APPLICATION_MODULES = [
   VISUAL_WORKSHOP_MODULE,
   GALGAME_WORKSHOP_MODULE,
   VIDEO_EDITOR_MODULE,
+  MOTION_COMPOSITOR_MODULE,
   AUDIO_ANNOTATION_MODULE,
   DIRECTOR_DESK_MODULE,
 ] as const;
@@ -46,6 +48,7 @@ export {
   AUDIO_ANNOTATION_MODULE,
   GALGAME_WORKSHOP_MODULE,
   VIDEO_EDITOR_MODULE,
+  MOTION_COMPOSITOR_MODULE,
   VISUAL_WORKSHOP_MODULE,
 };
 

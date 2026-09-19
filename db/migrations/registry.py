@@ -67,6 +67,7 @@ from db.migrations.versions import (
     r0063_audio_annotation_custom_emotions,
     r0064_director_desk,
     r0065_director_desk_motions,
+    r0066_motion_compositor,
 )
 
 
@@ -297,5 +298,7 @@ MIGRATIONS += (Migration(r0064_director_desk.MIGRATION_ID, r0064_director_desk.S
 MIGRATIONS += (
     Migration(r0065_director_desk_motions.MIGRATION_ID, r0065_director_desk_motions.SQL),
 )
+
+MIGRATIONS += (Migration(r0066_motion_compositor.MIGRATION_ID, r0066_motion_compositor.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

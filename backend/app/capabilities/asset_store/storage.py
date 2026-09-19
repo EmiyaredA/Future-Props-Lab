@@ -19,6 +19,7 @@ class StoredAsset(Protocol):
     project_id: str | None
     galgame_project_id: str | None
     video_editor_project_id: str | None
+    motion_compositor_project_id: str | None
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,14 @@ class AssetStorage:
                 / "projects"
                 / project_id
             ).resolve()
+        if application_id == "motion-compositor":
+            return (
+                self.settings.runtime_path
+                / "applications"
+                / "motion-compositor"
+                / "projects"
+                / project_id
+            ).resolve()
         if application_id == "director-desk":
             return (
                 self.settings.runtime_path
@@ -71,9 +80,15 @@ class AssetStorage:
         visual_project_id: str | None,
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
+        motion_compositor_project_id: str | None = None,
         workspace_id: str,
     ) -> Path:
-        owners = (visual_project_id, galgame_project_id, video_editor_project_id)
+        owners = (
+            visual_project_id,
+            galgame_project_id,
+            video_editor_project_id,
+            motion_compositor_project_id,
+        )
         if sum(owner is not None for owner in owners) > 1:
             raise ValueError("asset cannot belong to multiple project applications")
         if visual_project_id:
@@ -93,6 +108,13 @@ class AssetStorage:
                 )
                 / "assets"
             )
+        if motion_compositor_project_id:
+            return (
+                self.project_root(
+                    "motion-compositor", motion_compositor_project_id, workspace_id=workspace_id
+                )
+                / "assets"
+            )
         workspace_id = self._segment(workspace_id)
         if workspace_id != "default":
             return self.settings.workspace_path(workspace_id) / "library" / "assets"
@@ -105,12 +127,14 @@ class AssetStorage:
         visual_project_id: str | None,
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
+        motion_compositor_project_id: str | None = None,
         workspace_id: str,
     ) -> Path:
         return self.target_root(
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
+            motion_compositor_project_id=motion_compositor_project_id,
             workspace_id=workspace_id,
         ) / self._segment(storage_key)
 
@@ -124,6 +148,7 @@ class AssetStorage:
                 visual_project_id=asset.project_id,
                 galgame_project_id=asset.galgame_project_id,
                 video_editor_project_id=asset.video_editor_project_id,
+                motion_compositor_project_id=asset.motion_compositor_project_id,
                 workspace_id=asset.workspace_id,
             )
         return self.legacy_path(asset.storage_key)
@@ -135,6 +160,7 @@ class AssetStorage:
         visual_project_id: str | None,
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
+        motion_compositor_project_id: str | None = None,
         workspace_id: str,
     ) -> tuple[Path, Path]:
         final_path = self.target_path(
@@ -142,6 +168,7 @@ class AssetStorage:
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
+            motion_compositor_project_id=motion_compositor_project_id,
             workspace_id=workspace_id,
         )
         temp_dir = final_path.parent / ".tmp"

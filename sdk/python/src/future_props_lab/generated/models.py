@@ -162,6 +162,19 @@ class ApiKeyOut(WireModel):
     revoked_at: datetime | None = Field(default=..., alias='revoked_at')
     scopes: list[str] = Field(default=..., alias='scopes')
 
+class AssetImportIn(WireModel):
+    asset_ids: list[str] = Field(default=..., alias='assetIds', min_length=1, max_length=100)
+
+class AssetListOut(WireModel):
+    items: list[AssetOut] = Field(default=..., alias='items')
+
+class AssetOut(WireModel):
+    display_name: str = Field(default=..., alias='displayName')
+    id: str = Field(default=..., alias='id')
+    media_kind: str = Field(default=..., alias='mediaKind')
+    mime_type: str = Field(default=..., alias='mimeType')
+    url: str = Field(default=..., alias='url')
+
 class AudioAnnotationCustomEmotion(WireModel):
     color: str = Field(default=..., alias='color')
     name: str = Field(default=..., alias='name', min_length=1, max_length=40)
@@ -346,6 +359,9 @@ class Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_pos
 class Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post(WireModel):
     file: str = Field(default=..., alias='file')
 
+class Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post(WireModel):
+    file: str = Field(default=..., alias='file')
+
 class Body_imports_v1_thought_workshop_imports_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
@@ -364,6 +380,9 @@ class Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_
 
 class Body_upload_asset_v1_model_inference_assets_post(WireModel):
     upload: str = Field(default=..., alias='upload')
+
+class Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post(WireModel):
+    file: str = Field(default=..., alias='file')
 
 class Body_upload_asset_v1_video_editor_projects__project_id__assets_post(WireModel):
     upload: str = Field(default=..., alias='upload')
@@ -661,6 +680,28 @@ class DirectorToolCall(WireModel):
 
 class DirectorToolOut(WireModel):
     result: Any = Field(default=..., alias='result')
+
+class DocumentOut(WireModel):
+    document: MotionComposition = Field(default=..., alias='document')
+    revision: int = Field(default=..., alias='revision')
+
+class ExportCreateIn(WireModel):
+    end_frame: int | None = Field(default=None, alias='endFrame')
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    formats: list[Literal['mp4', 'mov4444', 'png-sequence']] = Field(default=..., alias='formats', min_length=1, max_length=3)
+    request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
+    start_frame: int = Field(default=0, alias='startFrame', ge=0.0)
+
+class ExportListOut(WireModel):
+    items: list[ExportOut] = Field(default=..., alias='items')
+
+class ExportOut(WireModel):
+    error: str | None = Field(default=..., alias='error')
+    formats: list[str] = Field(default=..., alias='formats')
+    id: str = Field(default=..., alias='id')
+    outputs: dict[str, str] = Field(default=..., alias='outputs')
+    progress: int = Field(default=..., alias='progress')
+    status: Literal['queued', 'running', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
 
 class GalgameAnnotationImportIn(WireModel):
     asset_prefix: str = Field(default=..., alias='assetPrefix')
@@ -2008,6 +2049,15 @@ class GenerationTaskOut(WireModel):
 class HTTPValidationError(WireModel):
     detail: list[ValidationError] | None = Field(default=None, alias='detail')
 
+class HandoffIn(WireModel):
+    format: Literal['mp4', 'mov4444'] = Field(default=..., alias='format')
+    new_project_title: str | None = Field(default=None, alias='newProjectTitle')
+    target_project_id: str | None = Field(default=None, alias='targetProjectId')
+
+class HandoffOut(WireModel):
+    asset_id: str = Field(default=..., alias='assetId')
+    project_id: str = Field(default=..., alias='projectId')
+
 class ImageCompositionCreateIn(WireModel):
     expected_canvas_revision: int = Field(default=..., alias='expected_canvas_revision', ge=0.0)
     grid_size: Literal[4, 9] = Field(default=..., alias='grid_size')
@@ -2046,6 +2096,15 @@ class ImageGenerationTaskCreateIn(WireModel):
     reference_asset_id: str | None = Field(default=None, alias='reference_asset_id')
     seed: int | None = Field(default=None, alias='seed')
     size: str = Field(default='1024x1024', alias='size', max_length=32)
+
+class ImportSourceListOut(WireModel):
+    items: list[ImportSourceOut] = Field(default=..., alias='items')
+
+class ImportSourceOut(WireModel):
+    display_name: str = Field(default=..., alias='displayName')
+    id: str = Field(default=..., alias='id')
+    media_kind: str = Field(default=..., alias='mediaKind')
+    source_application: str = Field(default=..., alias='sourceApplication')
 
 class InferenceAssetImportIn(WireModel):
     asset_id: str = Field(default=..., alias='asset_id')
@@ -2721,11 +2780,97 @@ class ModelTestVideoGenerationIn(WireModel):
     video_asset_ids: list[str] | None = Field(default=None, alias='video_asset_ids', max_length=3)
     watermark: bool = Field(default=True, alias='watermark')
 
+class MotionComposition(WireModel):
+    layers: list[MotionLayer] | None = Field(default=None, alias='layers', max_length=200)
+    schema_version: Literal[1] = Field(default=1, alias='schemaVersion')
+    settings: MotionSettings | None = Field(default=None, alias='settings')
+
+class MotionEffects(WireModel):
+    duotone: bool = Field(default=False, alias='duotone')
+    halftone: int = Field(default=0, alias='halftone', ge=0.0, le=40.0)
+    outline: int = Field(default=0, alias='outline', ge=0.0, le=30.0)
+    shadow: int = Field(default=0, alias='shadow', ge=0.0, le=100.0)
+
+class MotionKeyframe(WireModel):
+    frame: int = Field(default=..., alias='frame', ge=0.0)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    interpolation: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out', 'hold'] = Field(default='linear', alias='interpolation')
+    property: Literal['x', 'y', 'scaleX', 'scaleY', 'rotation', 'opacity'] = Field(default=..., alias='property')
+    value: float = Field(default=..., alias='value')
+
+class MotionLayer(WireModel):
+    asset_id: str | None = Field(default=None, alias='assetId')
+    effects: MotionEffects | None = Field(default=None, alias='effects')
+    end_frame: int = Field(default=180, alias='endFrame', ge=1.0)
+    fill: str = Field(default='#ffffff', alias='fill')
+    font_size: int = Field(default=96, alias='fontSize', ge=8.0, le=500.0)
+    height: int = Field(default=300, alias='height', ge=1.0, le=4000.0)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    keyframes: list[MotionKeyframe] | None = Field(default=None, alias='keyframes')
+    kind: Literal['image', 'video', 'text', 'shape'] = Field(default=..., alias='kind')
+    locked: bool = Field(default=False, alias='locked')
+    mask: MotionMask | None = Field(default=None, alias='mask')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    shape: Literal['rect', 'ellipse', 'triangle', 'speedLines'] = Field(default='rect', alias='shape')
+    source_start_us: int = Field(default=0, alias='sourceStartUs', ge=0.0)
+    start_frame: int = Field(default=0, alias='startFrame', ge=0.0)
+    stroke: str = Field(default='#111318', alias='stroke')
+    text: str = Field(default='', alias='text', max_length=1000)
+    transform: MotionTransform | None = Field(default=None, alias='transform')
+    visible: bool = Field(default=True, alias='visible')
+    width: int = Field(default=500, alias='width', ge=1.0, le=4000.0)
+
+class MotionMask(WireModel):
+    feather: int = Field(default=0, alias='feather', ge=0.0, le=32.0)
+    inverted: bool = Field(default=False, alias='inverted')
+    keyframes: list[MotionMaskFrame] | None = Field(default=None, alias='keyframes')
+    points: list[MotionPoint] = Field(default=..., alias='points', min_length=3, max_length=80)
+
+class MotionMaskFrame(WireModel):
+    frame: int = Field(default=..., alias='frame', ge=0.0)
+    points: list[MotionPoint] = Field(default=..., alias='points', min_length=3, max_length=80)
+
+class MotionOperation(WireModel):
+    document: MotionComposition | None = Field(default=None, alias='document')
+    layer: MotionLayer | None = Field(default=None, alias='layer')
+    layer_id: str | None = Field(default=None, alias='layerId')
+    layer_ids: list[str] | None = Field(default=None, alias='layerIds')
+    patch: dict[str, Any] | None = Field(default=None, alias='patch')
+    type: Literal['addLayer', 'updateLayer', 'removeLayer', 'reorderLayers', 'updateSettings', 'replaceDocument'] = Field(default=..., alias='type')
+
+class MotionPoint(WireModel):
+    in_x: float = Field(default=0, alias='inX')
+    in_y: float = Field(default=0, alias='inY')
+    out_x: float = Field(default=0, alias='outX')
+    out_y: float = Field(default=0, alias='outY')
+    x: float = Field(default=..., alias='x')
+    y: float = Field(default=..., alias='y')
+
+class MotionSettings(WireModel):
+    background_color: str = Field(default='#111318', alias='backgroundColor')
+    duration_frames: int = Field(default=180, alias='durationFrames', ge=1.0, le=3600.0)
+    fps: Literal[30, 60] = Field(default=30, alias='fps')
+    height: Literal[1080, 1920] = Field(default=1080, alias='height')
+    width: Literal[1920, 1080] = Field(default=1920, alias='width')
+
+class MotionTransform(WireModel):
+    opacity: float = Field(default=1, alias='opacity', ge=0.0, le=1.0)
+    rotation: float = Field(default=0, alias='rotation')
+    scale_x: float = Field(default=1, alias='scaleX', ge=0.01, le=20.0)
+    scale_y: float = Field(default=1, alias='scaleY', ge=0.01, le=20.0)
+    x: float = Field(default=0, alias='x')
+    y: float = Field(default=0, alias='y')
+
 class MoveClipOperation(WireModel):
     clip_id: str = Field(default=..., alias='clipId')
     timeline_start_us: int = Field(default=..., alias='timelineStartUs', ge=0.0)
     track_id: str = Field(default=..., alias='trackId')
     type: Literal['moveClip'] = Field(default=..., alias='type')
+
+class OperationBatchIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    operations: list[MotionOperation] = Field(default=..., alias='operations', min_length=1, max_length=100)
+    request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
 
 class PermissionPolicy(WireModel):
     admin: RolePolicy = Field(default=..., alias='admin')
@@ -2843,8 +2988,28 @@ class PresentationSlide(WireModel):
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     notes: str = Field(default=..., alias='notes', max_length=20000)
 
+class ProjectCreateIn(WireModel):
+    aspect: Literal['16:9', '9:16', '1:1'] = Field(default='16:9', alias='aspect')
+    fps: Literal[30, 60] = Field(default=30, alias='fps')
+    starter: Literal['blank', 'comic-entry'] = Field(default='blank', alias='starter')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
 class ProjectFolderOpenOut(WireModel):
     opened: Literal[True] = Field(default=True, alias='opened')
+
+class ProjectListOut(WireModel):
+    items: list[ProjectOut] = Field(default=..., alias='items')
+
+class ProjectOut(WireModel):
+    created_at: str = Field(default=..., alias='createdAt')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    updated_at: str = Field(default=..., alias='updatedAt')
+
+class ProjectPatchIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class ProjectSnapshotImportWarning(WireModel):
     code: Literal['model_binding_unavailable'] = Field(default=..., alias='code')
@@ -4239,6 +4404,9 @@ AnnotationSplitOperation.model_rebuild()
 ApiKeyCreateIn.model_rebuild()
 ApiKeyCreatedOut.model_rebuild()
 ApiKeyOut.model_rebuild()
+AssetImportIn.model_rebuild()
+AssetListOut.model_rebuild()
+AssetOut.model_rebuild()
 AudioAnnotationCustomEmotion.model_rebuild()
 AudioAnnotationDocumentOut.model_rebuild()
 AudioAnnotationDocumentPutIn.model_rebuild()
@@ -4270,10 +4438,12 @@ Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post.mod
 Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post.model_rebuild()
+Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post.model_rebuild()
 Body_imports_v1_thought_workshop_imports_post.model_rebuild()
 Body_put_avatar_v1_account_profile_avatar_put.model_rebuild()
 Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post.model_rebuild()
 Body_upload_asset_v1_model_inference_assets_post.model_rebuild()
+Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post.model_rebuild()
 Body_upload_asset_v1_video_editor_projects__project_id__assets_post.model_rebuild()
 Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post.model_rebuild()
 Body_upload_file_v1_files_post.model_rebuild()
@@ -4328,6 +4498,10 @@ DirectorProjectPatch.model_rebuild()
 DirectorProjectSummary.model_rebuild()
 DirectorToolCall.model_rebuild()
 DirectorToolOut.model_rebuild()
+DocumentOut.model_rebuild()
+ExportCreateIn.model_rebuild()
+ExportListOut.model_rebuild()
+ExportOut.model_rebuild()
 GalgameAnnotationImportIn.model_rebuild()
 GalgameAnnotationImportIssue.model_rebuild()
 GalgameAnnotationImportPreviewOut.model_rebuild()
@@ -4507,11 +4681,15 @@ GenerationOptionsOut.model_rebuild()
 GenerationTaskListOut.model_rebuild()
 GenerationTaskOut.model_rebuild()
 HTTPValidationError.model_rebuild()
+HandoffIn.model_rebuild()
+HandoffOut.model_rebuild()
 ImageCompositionCreateIn.model_rebuild()
 ImageCompositionItemIn.model_rebuild()
 ImageCropIn.model_rebuild()
 ImageGenerationBatchCreateIn.model_rebuild()
 ImageGenerationTaskCreateIn.model_rebuild()
+ImportSourceListOut.model_rebuild()
+ImportSourceOut.model_rebuild()
 InferenceAssetImportIn.model_rebuild()
 InferenceAssetOut.model_rebuild()
 InferenceMessage.model_rebuild()
@@ -4598,7 +4776,18 @@ ModelTestTranscriptionTaskOut.model_rebuild()
 ModelTestTranscriptionWarningOut.model_rebuild()
 ModelTestTranscriptionWordOut.model_rebuild()
 ModelTestVideoGenerationIn.model_rebuild()
+MotionComposition.model_rebuild()
+MotionEffects.model_rebuild()
+MotionKeyframe.model_rebuild()
+MotionLayer.model_rebuild()
+MotionMask.model_rebuild()
+MotionMaskFrame.model_rebuild()
+MotionOperation.model_rebuild()
+MotionPoint.model_rebuild()
+MotionSettings.model_rebuild()
+MotionTransform.model_rebuild()
 MoveClipOperation.model_rebuild()
+OperationBatchIn.model_rebuild()
 PermissionPolicy.model_rebuild()
 PermissionPolicyIn.model_rebuild()
 PermissionPolicyOut.model_rebuild()
@@ -4616,7 +4805,11 @@ PresentationProjectPut.model_rebuild()
 PresentationProjectSummary.model_rebuild()
 PresentationRun.model_rebuild()
 PresentationSlide.model_rebuild()
+ProjectCreateIn.model_rebuild()
 ProjectFolderOpenOut.model_rebuild()
+ProjectListOut.model_rebuild()
+ProjectOut.model_rebuild()
+ProjectPatchIn.model_rebuild()
 ProjectSnapshotImportWarning.model_rebuild()
 ProviderEnabledIn.model_rebuild()
 ProviderIn.model_rebuild()

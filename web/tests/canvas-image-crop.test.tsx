@@ -45,7 +45,7 @@ beforeEach(() => {
   );
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     drawImage,
-  } as unknown as CanvasRenderingContext2D);
+  } as never);
   vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(
     (callback, type) => callback(new Blob(["pixels"], { type })),
   );

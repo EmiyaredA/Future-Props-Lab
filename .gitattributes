@@ -9,5 +9,6 @@ web/public/brand/thought-workshop-mark.png filter=lfs diff=lfs merge=lfs -text
 web/public/brand/presentation-workshop-mark.png filter=lfs diff=lfs merge=lfs -text
 web/public/brand/audio-annotation-mark.png filter=lfs diff=lfs merge=lfs -text
 web/public/brand/director-desk-mark.png filter=lfs diff=lfs merge=lfs -text
+web/public/brand/motion-compositor-mark.png filter=lfs diff=lfs merge=lfs -text
 desktop/assets/*.png filter=lfs diff=lfs merge=lfs -text
 desktop/assets/*.icns filter=lfs diff=lfs merge=lfs -text

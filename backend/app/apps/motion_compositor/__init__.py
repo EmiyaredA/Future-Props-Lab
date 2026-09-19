@@ -1,0 +1,1 @@
+"""Motion compositor application."""

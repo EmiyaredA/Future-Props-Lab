@@ -111,6 +111,10 @@
     "method": "delete_transcription_task",
     "resource": "testing"
   },
+  "DELETE /v1/motion-compositor/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "motion_compositor"
+  },
   "DELETE /v1/presentation-workshop/projects/{project_id}": {
     "method": "delete_project",
     "resource": "presentation"
@@ -527,6 +531,50 @@
     "method": "transcription_input_content",
     "resource": "testing"
   },
+  "GET /v1/motion-compositor/import-sources": {
+    "method": "import_sources",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects": {
+    "method": "list_projects",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}/assets": {
+    "method": "list_assets",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}/assets/{asset_id}/file": {
+    "method": "asset_file",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}/document": {
+    "method": "get_document",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}/exports": {
+    "method": "list_exports",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}/exports/{task_id}": {
+    "method": "get_export",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}/exports/{task_id}/download/{format_name}": {
+    "method": "download_export",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}/preview/frame": {
+    "method": "exact_frame",
+    "resource": "motion_compositor"
+  },
+  "GET /v1/motion-compositor/projects/{project_id}/snapshot": {
+    "method": "export_snapshot",
+    "resource": "motion_compositor"
+  },
   "GET /v1/platform/accounts": {
     "method": "accounts",
     "resource": "admin"
@@ -834,6 +882,10 @@
   "PATCH /v1/model-test/tools/{tool_id}": {
     "method": "update_tool",
     "resource": "test_tools"
+  },
+  "PATCH /v1/motion-compositor/projects/{project_id}": {
+    "method": "patch_project",
+    "resource": "motion_compositor"
   },
   "PATCH /v1/platform/accounts/{user_id}": {
     "method": "patch_account",
@@ -1262,6 +1314,38 @@
   "POST /v1/model-test/transcription-tasks/upload": {
     "method": "upload_transcription_task",
     "resource": "testing"
+  },
+  "POST /v1/motion-compositor/projects": {
+    "method": "create_project",
+    "resource": "motion_compositor"
+  },
+  "POST /v1/motion-compositor/projects/snapshot-imports": {
+    "method": "import_snapshot",
+    "resource": "motion_compositor"
+  },
+  "POST /v1/motion-compositor/projects/{project_id}/assets": {
+    "method": "upload_asset",
+    "resource": "motion_compositor"
+  },
+  "POST /v1/motion-compositor/projects/{project_id}/assets/import": {
+    "method": "import_assets",
+    "resource": "motion_compositor"
+  },
+  "POST /v1/motion-compositor/projects/{project_id}/document/operations": {
+    "method": "edit_document",
+    "resource": "motion_compositor"
+  },
+  "POST /v1/motion-compositor/projects/{project_id}/exports": {
+    "method": "create_export",
+    "resource": "motion_compositor"
+  },
+  "POST /v1/motion-compositor/projects/{project_id}/exports/{task_id}/cancel": {
+    "method": "cancel_export",
+    "resource": "motion_compositor"
+  },
+  "POST /v1/motion-compositor/projects/{project_id}/exports/{task_id}/video-editor-handoffs": {
+    "method": "send_to_video_editor",
+    "resource": "motion_compositor"
   },
   "POST /v1/platform/accounts": {
     "method": "add_account",

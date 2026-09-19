@@ -14,6 +14,7 @@ export type ApplicationModule = {
     | "visual-workshop"
     | "galgame-workshop"
     | "video-editor"
+    | "motion-compositor"
     | "thought-workshop"
     | "presentation-workshop"
     | "audio-annotation"

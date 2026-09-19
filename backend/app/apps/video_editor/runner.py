@@ -61,36 +61,62 @@ def _prepare_media(
         return {"mediaKind": "font"}, proxy, thumbnail, waveform, fingerprint
     probe = probe if probe is not None else probe_media(source)
     if asset.media_kind == "video":
-        proxy = f"{asset.id}-proxy.mp4"
-        thumbnail = f"{asset.id}-thumbnail.png"
-        _run(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-i",
-                str(source),
-                "-vf",
-                "scale=960:540:force_original_aspect_ratio=decrease,pad=960:540:(ow-iw)/2:(oh-ih)/2",
-                "-c:v",
-                "libx264",
-                "-preset",
-                "veryfast",
-                "-crf",
-                "24",
-                "-pix_fmt",
-                "yuv420p",
-                "-c:a",
-                "aac",
-                "-ar",
-                "48000",
-                "-movflags",
-                "+faststart",
-                "-y",
-                str(derived / proxy),
-            ]
+        video_stream = next(
+            (item for item in probe.get("streams", []) if item.get("codec_type") == "video"), {}
         )
+        alpha = str(video_stream.get("pix_fmt") or "").startswith(
+            ("yuva", "rgba", "bgra", "argb", "abgr")
+        )
+        proxy = f"{asset.id}-proxy.{'webm' if alpha else 'mp4'}"
+        thumbnail = f"{asset.id}-thumbnail.png"
+        proxy_args = [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(source),
+            "-vf",
+            "scale=960:540:force_original_aspect_ratio=decrease,pad=960:540:(ow-iw)/2:(oh-ih)/2:color=black@0",
+        ]
+        if alpha:
+            proxy_args.extend(
+                [
+                    "-c:v",
+                    "libvpx-vp9",
+                    "-crf",
+                    "30",
+                    "-b:v",
+                    "0",
+                    "-pix_fmt",
+                    "yuva420p",
+                    "-auto-alt-ref",
+                    "0",
+                    "-c:a",
+                    "libopus",
+                ]
+            )
+        else:
+            proxy_args.extend(
+                [
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-crf",
+                    "24",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-c:a",
+                    "aac",
+                    "-ar",
+                    "48000",
+                    "-movflags",
+                    "+faststart",
+                ]
+            )
+        proxy_args.extend(["-y", str(derived / proxy)])
+        _run(proxy_args)
         _run(
             [
                 "ffmpeg",

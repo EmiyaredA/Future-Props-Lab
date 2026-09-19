@@ -1610,6 +1610,153 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/motion-compositor/projects/{project_id}",
+    "sdk": "client.motion_compositor.delete_project",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/import-sources",
+    "sdk": "client.motion_compositor.import_sources",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#import-sources",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects",
+    "sdk": "client.motion_compositor.list_projects",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}",
+    "sdk": "client.motion_compositor.get_project",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}/assets",
+    "sdk": "client.motion_compositor.list_assets",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#list-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}/assets/{asset_id}/file",
+    "sdk": "client.motion_compositor.asset_file",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#asset-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}/document",
+    "sdk": "client.motion_compositor.get_document",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#get-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}/exports",
+    "sdk": "client.motion_compositor.list_exports",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#list-exports",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}/exports/{task_id}",
+    "sdk": "client.motion_compositor.get_export",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#get-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}/exports/{task_id}/download/{format_name}",
+    "sdk": "client.motion_compositor.download_export",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#download-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}/preview/frame",
+    "sdk": "client.motion_compositor.exact_frame",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#exact-frame",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/motion-compositor/projects/{project_id}/snapshot",
+    "sdk": "client.motion_compositor.export_snapshot",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#export-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/motion-compositor/projects/{project_id}",
+    "sdk": "client.motion_compositor.patch_project",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#patch-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/motion-compositor/projects",
+    "sdk": "client.motion_compositor.create_project",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/motion-compositor/projects/snapshot-imports",
+    "sdk": "client.motion_compositor.import_snapshot",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#import-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/motion-compositor/projects/{project_id}/assets",
+    "sdk": "client.motion_compositor.upload_asset",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#upload-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/motion-compositor/projects/{project_id}/assets/import",
+    "sdk": "client.motion_compositor.import_assets",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#import-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/motion-compositor/projects/{project_id}/document/operations",
+    "sdk": "client.motion_compositor.edit_document",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#edit-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/motion-compositor/projects/{project_id}/exports",
+    "sdk": "client.motion_compositor.create_export",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#create-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/motion-compositor/projects/{project_id}/exports/{task_id}/cancel",
+    "sdk": "client.motion_compositor.cancel_export",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#cancel-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/motion-compositor/projects/{project_id}/exports/{task_id}/video-editor-handoffs",
+    "sdk": "client.motion_compositor.send_to_video_editor",
+    "document": "/docs.html?page=sdk-reference-motion-compositor#send-to-video-editor",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/presentation-workshop/projects/{project_id}",
     "sdk": "client.presentation.delete_project",
     "document": "/docs.html?page=sdk-reference-presentation#delete-project",

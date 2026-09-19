@@ -1,0 +1,59 @@
+import { Clapperboard, Layers3 } from "lucide-react";
+import { defineApplicationModule } from "@features/applications";
+
+export const MOTION_COMPOSITOR_MODULE = defineApplicationModule({
+  definition: {
+    id: "motion-compositor",
+    name: "动效合成工坊",
+    description: "制作可编辑的二维动效、路径遮罩与透明镜头。",
+    category: "visual",
+    capabilities: ["动效", "遮罩", "关键帧", "透明导出"],
+    path: "/apps/motion-compositor",
+    icon: Clapperboard,
+    brandImage: "/brand/motion-compositor-mark.png",
+  },
+  supportsProjects: true,
+  shell: "motion-compositor",
+  shellConfig: {
+    className: "motion-compositor-shell",
+    subtitle: "Motion Compositor",
+    backSubtitle: "浏览全部应用",
+    navigation: [
+      {
+        page: "motion-compositor-projects",
+        label: "动效项目",
+        icon: Layers3,
+        activePages: ["motion-compositor-projects"],
+      },
+    ],
+  },
+  matchPath(pathname: string) {
+    const editor = pathname.match(
+      /^\/apps\/motion-compositor\/projects\/([^/]+)\/editor\/?$/,
+    );
+    if (editor)
+      return {
+        page: "motion-compositor-editor",
+        projectId: decodeURIComponent(editor[1]),
+      };
+    if (pathname.startsWith("/apps/motion-compositor"))
+      return { page: "motion-compositor-projects" };
+    return undefined;
+  },
+  pathFor(page: string, projectId?: string) {
+    if (page === "motion-compositor-editor" && projectId)
+      return `/apps/motion-compositor/projects/${encodeURIComponent(projectId)}/editor`;
+    if (page === "motion-compositor-projects") return "/apps/motion-compositor";
+    return undefined;
+  },
+  pages: {
+    projects: () =>
+      import("./ProjectsPage").then((module) => ({
+        default: module.ProjectsPage,
+      })),
+    editor: () =>
+      import("./EditorPage").then((module) => ({
+        default: module.EditorPage,
+      })),
+  },
+});

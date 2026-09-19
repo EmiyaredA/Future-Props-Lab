@@ -3278,6 +3278,283 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/motion-compositor/import-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Import Sources */
+        get: operations["import_sources_v1_motion_compositor_import_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Projects */
+        get: operations["list_projects_v1_motion_compositor_projects_get"];
+        put?: never;
+        /** Create Project */
+        post: operations["create_project_v1_motion_compositor_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/snapshot-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Snapshot */
+        post: operations["import_snapshot_v1_motion_compositor_projects_snapshot_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_project_v1_motion_compositor_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Project */
+        delete: operations["delete_project_v1_motion_compositor_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Project */
+        patch: operations["patch_project_v1_motion_compositor_projects__project_id__patch"];
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Assets */
+        get: operations["list_assets_v1_motion_compositor_projects__project_id__assets_get"];
+        put?: never;
+        /** Upload Asset */
+        post: operations["upload_asset_v1_motion_compositor_projects__project_id__assets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/assets/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Assets */
+        post: operations["import_assets_v1_motion_compositor_projects__project_id__assets_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/assets/{asset_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Asset File */
+        get: operations["asset_file_v1_motion_compositor_projects__project_id__assets__asset_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["get_document_v1_motion_compositor_projects__project_id__document_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/document/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Edit Document */
+        post: operations["edit_document_v1_motion_compositor_projects__project_id__document_operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Exports */
+        get: operations["list_exports_v1_motion_compositor_projects__project_id__exports_get"];
+        put?: never;
+        /** Create Export */
+        post: operations["create_export_v1_motion_compositor_projects__project_id__exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/exports/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Export */
+        get: operations["get_export_v1_motion_compositor_projects__project_id__exports__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Export */
+        post: operations["cancel_export_v1_motion_compositor_projects__project_id__exports__task_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/download/{format_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Export */
+        get: operations["download_export_v1_motion_compositor_projects__project_id__exports__task_id__download__format_name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/video-editor-handoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send To Video Editor */
+        post: operations["send_to_video_editor_v1_motion_compositor_projects__project_id__exports__task_id__video_editor_handoffs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/preview/frame": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exact Frame */
+        get: operations["exact_frame_v1_motion_compositor_projects__project_id__preview_frame_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/motion-compositor/projects/{project_id}/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Snapshot */
+        get: operations["export_snapshot_v1_motion_compositor_projects__project_id__snapshot_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/platform/accounts": {
         parameters: {
             query?: never;
@@ -5364,6 +5641,29 @@ export interface components {
             /** Scopes */
             scopes: string[];
         };
+        /** AssetImportIn */
+        AssetImportIn: {
+            /** Assetids */
+            assetIds: string[];
+        };
+        /** AssetListOut */
+        AssetListOut: {
+            /** Items */
+            items: components["schemas"]["AssetOut"][];
+        };
+        /** AssetOut */
+        AssetOut: {
+            /** Displayname */
+            displayName: string;
+            /** Id */
+            id: string;
+            /** Mediakind */
+            mediaKind: string;
+            /** Mimetype */
+            mimeType: string;
+            /** Url */
+            url: string;
+        };
         /** AudioAnnotationCustomEmotion */
         AudioAnnotationCustomEmotion: {
             /** Color */
@@ -5767,6 +6067,11 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post */
+        Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post: {
+            /** File */
+            file: string;
+        };
         /** Body_imports_v1_thought_workshop_imports_post */
         Body_imports_v1_thought_workshop_imports_post: {
             /** Upload */
@@ -5800,6 +6105,11 @@ export interface components {
         Body_upload_asset_v1_model_inference_assets_post: {
             /** Upload */
             upload: string;
+        };
+        /** Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post */
+        Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post: {
+            /** File */
+            file: string;
         };
         /** Body_upload_asset_v1_video_editor_projects__project_id__assets_post */
         Body_upload_asset_v1_video_editor_projects__project_id__assets_post: {
@@ -6427,6 +6737,53 @@ export interface components {
         DirectorToolOut: {
             /** Result */
             result: unknown;
+        };
+        /** DocumentOut */
+        DocumentOut: {
+            document: components["schemas"]["MotionComposition"];
+            /** Revision */
+            revision: number;
+        };
+        /** ExportCreateIn */
+        ExportCreateIn: {
+            /** Endframe */
+            endFrame?: number | null;
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Formats */
+            formats: ("mp4" | "mov4444" | "png-sequence")[];
+            /** Requestid */
+            requestId: string;
+            /**
+             * Startframe
+             * @default 0
+             */
+            startFrame: number;
+        };
+        /** ExportListOut */
+        ExportListOut: {
+            /** Items */
+            items: components["schemas"]["ExportOut"][];
+        };
+        /** ExportOut */
+        ExportOut: {
+            /** Error */
+            error: string | null;
+            /** Formats */
+            formats: string[];
+            /** Id */
+            id: string;
+            /** Outputs */
+            outputs: {
+                [key: string]: string;
+            };
+            /** Progress */
+            progress: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed" | "cancelled";
         };
         /** GalgameAnnotationImportIn */
         GalgameAnnotationImportIn: {
@@ -9942,6 +10299,25 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HandoffIn */
+        HandoffIn: {
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "mp4" | "mov4444";
+            /** Newprojecttitle */
+            newProjectTitle?: string | null;
+            /** Targetprojectid */
+            targetProjectId?: string | null;
+        };
+        /** HandoffOut */
+        HandoffOut: {
+            /** Assetid */
+            assetId: string;
+            /** Projectid */
+            projectId: string;
+        };
         /** ImageCompositionCreateIn */
         ImageCompositionCreateIn: {
             /** Expected Canvas Revision */
@@ -10038,6 +10414,22 @@ export interface components {
              * @default 1024x1024
              */
             size: string;
+        };
+        /** ImportSourceListOut */
+        ImportSourceListOut: {
+            /** Items */
+            items: components["schemas"]["ImportSourceOut"][];
+        };
+        /** ImportSourceOut */
+        ImportSourceOut: {
+            /** Displayname */
+            displayName: string;
+            /** Id */
+            id: string;
+            /** Mediakind */
+            mediaKind: string;
+            /** Sourceapplication */
+            sourceApplication: string;
         };
         /** InferenceAssetImportIn */
         InferenceAssetImportIn: {
@@ -11626,6 +12018,274 @@ export interface components {
              */
             watermark: boolean;
         };
+        /** MotionComposition */
+        MotionComposition: {
+            /** Layers */
+            layers?: components["schemas"]["MotionLayer"][];
+            /**
+             * Schemaversion
+             * @default 1
+             * @constant
+             */
+            schemaVersion: 1;
+            settings?: components["schemas"]["MotionSettings"];
+        };
+        /** MotionEffects */
+        MotionEffects: {
+            /**
+             * Duotone
+             * @default false
+             */
+            duotone: boolean;
+            /**
+             * Halftone
+             * @default 0
+             */
+            halftone: number;
+            /**
+             * Outline
+             * @default 0
+             */
+            outline: number;
+            /**
+             * Shadow
+             * @default 0
+             */
+            shadow: number;
+        };
+        /** MotionKeyframe */
+        MotionKeyframe: {
+            /** Frame */
+            frame: number;
+            /** Id */
+            id: string;
+            /**
+             * Interpolation
+             * @default linear
+             * @enum {string}
+             */
+            interpolation: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "hold";
+            /**
+             * Property
+             * @enum {string}
+             */
+            property: "x" | "y" | "scaleX" | "scaleY" | "rotation" | "opacity";
+            /** Value */
+            value: number;
+        };
+        /** MotionLayer */
+        MotionLayer: {
+            /** Assetid */
+            assetId?: string | null;
+            effects?: components["schemas"]["MotionEffects"];
+            /**
+             * Endframe
+             * @default 180
+             */
+            endFrame: number;
+            /**
+             * Fill
+             * @default #ffffff
+             */
+            fill: string;
+            /**
+             * Fontsize
+             * @default 96
+             */
+            fontSize: number;
+            /**
+             * Height
+             * @default 300
+             */
+            height: number;
+            /** Id */
+            id: string;
+            /** Keyframes */
+            keyframes?: components["schemas"]["MotionKeyframe"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video" | "text" | "shape";
+            /**
+             * Locked
+             * @default false
+             */
+            locked: boolean;
+            mask?: components["schemas"]["MotionMask"] | null;
+            /** Name */
+            name: string;
+            /**
+             * Shape
+             * @default rect
+             * @enum {string}
+             */
+            shape: "rect" | "ellipse" | "triangle" | "speedLines";
+            /**
+             * Sourcestartus
+             * @default 0
+             */
+            sourceStartUs: number;
+            /**
+             * Startframe
+             * @default 0
+             */
+            startFrame: number;
+            /**
+             * Stroke
+             * @default #111318
+             */
+            stroke: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            transform?: components["schemas"]["MotionTransform"];
+            /**
+             * Visible
+             * @default true
+             */
+            visible: boolean;
+            /**
+             * Width
+             * @default 500
+             */
+            width: number;
+        };
+        /** MotionMask */
+        MotionMask: {
+            /**
+             * Feather
+             * @default 0
+             */
+            feather: number;
+            /**
+             * Inverted
+             * @default false
+             */
+            inverted: boolean;
+            /** Keyframes */
+            keyframes?: components["schemas"]["MotionMaskFrame"][];
+            /** Points */
+            points: components["schemas"]["MotionPoint"][];
+        };
+        /** MotionMaskFrame */
+        MotionMaskFrame: {
+            /** Frame */
+            frame: number;
+            /** Points */
+            points: components["schemas"]["MotionPoint"][];
+        };
+        /** MotionOperation */
+        MotionOperation: {
+            document?: components["schemas"]["MotionComposition"] | null;
+            layer?: components["schemas"]["MotionLayer"] | null;
+            /** Layerid */
+            layerId?: string | null;
+            /** Layerids */
+            layerIds?: string[] | null;
+            /** Patch */
+            patch?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "addLayer" | "updateLayer" | "removeLayer" | "reorderLayers" | "updateSettings" | "replaceDocument";
+        };
+        /** MotionPoint */
+        MotionPoint: {
+            /**
+             * Inx
+             * @default 0
+             */
+            inX: number;
+            /**
+             * Iny
+             * @default 0
+             */
+            inY: number;
+            /**
+             * Outx
+             * @default 0
+             */
+            outX: number;
+            /**
+             * Outy
+             * @default 0
+             */
+            outY: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /** MotionSettings */
+        MotionSettings: {
+            /**
+             * Backgroundcolor
+             * @default #111318
+             */
+            backgroundColor: string;
+            /**
+             * Durationframes
+             * @default 180
+             */
+            durationFrames: number;
+            /**
+             * Fps
+             * @default 30
+             * @enum {integer}
+             */
+            fps: 30 | 60;
+            /**
+             * Height
+             * @default 1080
+             * @enum {integer}
+             */
+            height: 1080 | 1920;
+            /**
+             * Width
+             * @default 1920
+             * @enum {integer}
+             */
+            width: 1920 | 1080;
+        };
+        /** MotionTransform */
+        MotionTransform: {
+            /**
+             * Opacity
+             * @default 1
+             */
+            opacity: number;
+            /**
+             * Rotation
+             * @default 0
+             */
+            rotation: number;
+            /**
+             * Scalex
+             * @default 1
+             */
+            scaleX: number;
+            /**
+             * Scaley
+             * @default 1
+             */
+            scaleY: number;
+            /**
+             * X
+             * @default 0
+             */
+            x: number;
+            /**
+             * Y
+             * @default 0
+             */
+            y: number;
+        };
         /** MoveClipOperation */
         MoveClipOperation: {
             /** Clipid */
@@ -11639,6 +12299,15 @@ export interface components {
              * @enum {string}
              */
             type: "moveClip";
+        };
+        /** OperationBatchIn */
+        OperationBatchIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Operations */
+            operations: components["schemas"]["MotionOperation"][];
+            /** Requestid */
+            requestId: string;
         };
         /** PermissionPolicy */
         PermissionPolicy: {
@@ -11908,6 +12577,29 @@ export interface components {
             /** Notes */
             notes: string;
         };
+        /** ProjectCreateIn */
+        ProjectCreateIn: {
+            /**
+             * Aspect
+             * @default 16:9
+             * @enum {string}
+             */
+            aspect: "16:9" | "9:16" | "1:1";
+            /**
+             * Fps
+             * @default 30
+             * @enum {integer}
+             */
+            fps: 30 | 60;
+            /**
+             * Starter
+             * @default blank
+             * @enum {string}
+             */
+            starter: "blank" | "comic-entry";
+            /** Title */
+            title: string;
+        };
         /** ProjectFolderOpenOut */
         ProjectFolderOpenOut: {
             /**
@@ -11916,6 +12608,31 @@ export interface components {
              * @constant
              */
             opened: true;
+        };
+        /** ProjectListOut */
+        ProjectListOut: {
+            /** Items */
+            items: components["schemas"]["ProjectOut"][];
+        };
+        /** ProjectOut */
+        ProjectOut: {
+            /** Createdat */
+            createdAt: string;
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** ProjectPatchIn */
+        ProjectPatchIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Title */
+            title: string;
         };
         /** ProjectSnapshotImportWarning */
         ProjectSnapshotImportWarning: {
@@ -23087,6 +23804,678 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_sources_v1_motion_compositor_import_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportSourceListOut"];
+                };
+            };
+        };
+    };
+    list_projects_v1_motion_compositor_projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectListOut"];
+                };
+            };
+        };
+    };
+    create_project_v1_motion_compositor_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_snapshot_v1_motion_compositor_projects_snapshot_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_v1_motion_compositor_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_v1_motion_compositor_projects__project_id__delete: {
+        parameters: {
+            query: {
+                expectedRevision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_project_v1_motion_compositor_projects__project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_assets_v1_motion_compositor_projects__project_id__assets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_asset_v1_motion_compositor_projects__project_id__assets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_assets_v1_motion_compositor_projects__project_id__assets_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    asset_file_v1_motion_compositor_projects__project_id__assets__asset_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_v1_motion_compositor_projects__project_id__document_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_document_v1_motion_compositor_projects__project_id__document_operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OperationBatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_exports_v1_motion_compositor_projects__project_id__exports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_export_v1_motion_compositor_projects__project_id__exports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_export_v1_motion_compositor_projects__project_id__exports__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_export_v1_motion_compositor_projects__project_id__exports__task_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_export_v1_motion_compositor_projects__project_id__exports__task_id__download__format_name__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+                format_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_to_video_editor_v1_motion_compositor_projects__project_id__exports__task_id__video_editor_handoffs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoffIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HandoffOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exact_frame_v1_motion_compositor_projects__project_id__preview_frame_get: {
+        parameters: {
+            query: {
+                frame: number;
+                revision?: number | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_snapshot_v1_motion_compositor_projects__project_id__snapshot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/zip": unknown;
                 };
             };
             /** @description Validation Error */

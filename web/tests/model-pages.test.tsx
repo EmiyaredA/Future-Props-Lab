@@ -636,7 +636,7 @@ test("renders persistent model test workspace with safe markdown", async () => {
 });
 
 test("chat scroll area is scrollable and sticks to the bottom while streaming", async () => {
-  let detail = await vi.mocked(getModelTestConversation)();
+  let detail = await vi.mocked(getModelTestConversation)("c1");
   vi.mocked(getModelTestConversation).mockImplementation(async () => detail);
   vi.mocked(streamModelTest).mockImplementation(
     async (_id, _body, _regenerate, _signal, onEvent) => {
@@ -650,7 +650,7 @@ test("chat scroll area is scrollable and sticks to the bottom while streaming", 
             turn_id: "t-stream",
             role: "user",
             content: "跟滚测试",
-            model_slug: null,
+            model_slug: "",
             status: "completed",
             error_message: null,
             created_at: "2026-08-03T00:01:00Z",
@@ -708,10 +708,7 @@ test("chat scroll area is scrollable and sticks to the bottom while streaming", 
   });
   (scroll as HTMLDivElement).scrollTop = 0;
 
-  await user.type(
-    screen.getByPlaceholderText("输入要测试的问题"),
-    "跟滚测试",
-  );
+  await user.type(screen.getByPlaceholderText("输入要测试的问题"), "跟滚测试");
   await user.click(screen.getByRole("button", { name: "发送" }));
 
   await waitFor(() => {

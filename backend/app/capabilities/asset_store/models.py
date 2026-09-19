@@ -41,6 +41,7 @@ class VisualAsset(Base):
             "created_at",
         ),
         Index("ix_visual_assets_video_editor_project", "video_editor_project_id", "updated_at"),
+        Index("ix_visual_assets_motion_project", "motion_compositor_project_id", "updated_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -53,6 +54,9 @@ class VisualAsset(Base):
     )
     video_editor_project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE")
+    )
+    motion_compositor_project_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("motion_compositor_projects.id", ondelete="CASCADE")
     )
     folder_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_asset_folders.id", ondelete="CASCADE")

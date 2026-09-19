@@ -53,6 +53,7 @@
     "mermaid": "11.12.2",
     "onnxruntime-web": "^1.27.0",
     "openapi-fetch": "^0.14.0",
+    "pixi.js": "^8.21.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",

@@ -35,10 +35,11 @@ export function readCanvasAssetDragData(
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<CanvasAssetDragPayload>;
+    const mediaKind = String(parsed.mediaKind ?? "");
     if (
       typeof parsed.assetId !== "string" ||
       !parsed.assetId ||
-      !isCanvasMediaKind(String(parsed.mediaKind ?? "")) ||
+      !isCanvasMediaKind(mediaKind) ||
       typeof parsed.displayName !== "string" ||
       !parsed.displayName ||
       (parsed.importMode !== "none" &&
@@ -49,7 +50,7 @@ export function readCanvasAssetDragData(
     }
     return {
       assetId: parsed.assetId,
-      mediaKind: parsed.mediaKind,
+      mediaKind,
       displayName: parsed.displayName,
       importMode: parsed.importMode,
       sourceProjectId:

@@ -20,7 +20,7 @@ Future-Props-Lab/
 │   ├── runtime/       # 配置、数据库、CAS/轮询、操作批回执、ID/时间工厂与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
-│   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame / director_desk）
+│   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame / director_desk / motion_compositor）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具收藏与最近使用；自有 models/schemas/routes
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
@@ -147,7 +147,7 @@ Future-Props-Lab/
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `apps/video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
-  后端精确停帧和剪辑任务；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
+  后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有动效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、动效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
   FFmpeg/Pillow 合成和取消控制。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
@@ -240,7 +240,8 @@ Future-Props-Lab/
 `library/assets/`；视觉项目使用
 `applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
 `applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`；视频剪辑项目使用
-`applications/video-editor/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
+`applications/video-editor/projects/<project-id>/{assets,derived,exports}/`；动效合成项目使用
+`applications/motion-compositor/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
 派生文件和正式导出结果，不保存快照历史；标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
 素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。
 Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共用 revision/CAS，

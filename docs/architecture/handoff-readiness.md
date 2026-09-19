@@ -1,6 +1,6 @@
 # 开发交付说明
 
-最新登记迁移为 `r0064_director_desk`（导演台项目表；文档仍是占位，场景由后续编辑器写入）；`r0063_audio_annotation_custom_emotions` 为录音标注自定义情绪清单。`r0062_call_log_credential` 为调用日志与模型任务保存调用方凭据快照，`r0061_senseaudio_asr_pro_kind` 追加专业识别供应商类型。`0060_model_inference` 保存独立模型任务、输入和输出；`0059_project_operations` 保存工坊操作去重回执。`0058_presentation_media`，补齐整体透明度、翻转、矢量改色和图片边框缺省值；上一版 `0057_presentation_styles` 补齐元素样式缺省值。`0056_presentation_workshop` 追加演示文稿与图片引用表。上一版 `r0055_model_suppliers`，在已发布的运行时治理迁移后追加供应商分组，并保留三级身份、注册邀请码、角色模板与同步记录、敏感工具标记、官方作品和任务额度归属。升级细节见[账号治理](../reference/account-governance.md)。
+最新登记迁移为 `r0066_motion_compositor`（动效合成项目、文档、操作批次、素材归属与导出任务）；`r0065_director_desk_motions` 追加导演台用户动作库，`r0064_director_desk` 建立导演台项目表；`r0063_audio_annotation_custom_emotions` 为录音标注自定义情绪清单。`r0062_call_log_credential` 为调用日志与模型任务保存调用方凭据快照，`r0061_senseaudio_asr_pro_kind` 追加专业识别供应商类型。`0060_model_inference` 保存独立模型任务、输入和输出；`0059_project_operations` 保存工坊操作去重回执。`0058_presentation_media`，补齐整体透明度、翻转、矢量改色和图片边框缺省值；上一版 `0057_presentation_styles` 补齐元素样式缺省值。`0056_presentation_workshop` 追加演示文稿与图片引用表。上一版 `r0055_model_suppliers`，在已发布的运行时治理迁移后追加供应商分组，并保留三级身份、注册邀请码、角色模板与同步记录、敏感工具标记、官方作品和任务额度归属。升级细节见[账号治理](../reference/account-governance.md)。
 
 账号治理迁移为 `r0050_workspace_governance`，追加在思绪工坊历史迁移之后。扩展固定成员角色并保存邀请目标角色，保留旧数据；升级影响见[账号与工作区治理](../reference/account-governance.md)。
 

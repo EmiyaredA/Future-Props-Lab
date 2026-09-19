@@ -31,6 +31,7 @@ test("every route and independent HTML entry has a responsive scenario", () => {
       "galgame-workshop-editor",
       "galgame-workshop-overview",
       "galgame-workshop-preview",
+      "motion-compositor-editor",
       "presentation-workshop-editor",
       "thought-workshop-editor",
       "thought-workshop-legacy",

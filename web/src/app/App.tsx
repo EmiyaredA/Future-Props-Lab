@@ -25,6 +25,7 @@ import {
   GALGAME_WORKSHOP_MODULE,
   VISUAL_WORKSHOP_MODULE,
   VIDEO_EDITOR_MODULE,
+  MOTION_COMPOSITOR_MODULE,
 } from "@app/applicationRegistry";
 import {
   isAudioAnnotationPage,
@@ -117,6 +118,16 @@ const GalgameFastPreviewPage = lazy(GALGAME_WORKSHOP_MODULE.pages.preview);
 const VideoEditorProjectsPage = lazy(VIDEO_EDITOR_MODULE.pages.projects);
 const VideoEditorPage = lazy(VIDEO_EDITOR_MODULE.pages.editor);
 const VideoEditorTasksPage = lazy(VIDEO_EDITOR_MODULE.pages.tasks);
+const MotionCompositorProjectsPage = lazy(() =>
+  import("@features/motion-compositor/ProjectsPage").then((m) => ({
+    default: m.ProjectsPage,
+  })),
+);
+const MotionCompositorEditorPage = lazy(() =>
+  import("@features/motion-compositor/EditorPage").then((m) => ({
+    default: m.EditorPage,
+  })),
+);
 
 const ThoughtWorkshopPage = lazy(THOUGHT_WORKSHOP_MODULE.pages.notes);
 
@@ -291,6 +302,38 @@ export default function App() {
           registerNavigationGuard={registerNavigationGuard}
         />
       </PageBoundary>
+    );
+
+  if (page === "motion-compositor-editor" && route.projectId)
+    return (
+      <PageBoundary>
+        <MotionCompositorEditorPage
+          key={route.projectId}
+          projectId={route.projectId}
+          onBack={() => navigate("motion-compositor-projects")}
+          registerNavigationGuard={registerNavigationGuard}
+          readOnly={!workspaceAllows(me.workspace, "content.write")}
+        />
+      </PageBoundary>
+    );
+
+  if (page === "motion-compositor-projects")
+    return (
+      <WorkshopShell
+        module={MOTION_COMPOSITOR_MODULE}
+        page={page}
+        navigate={(next) => navigate(next as WorkshopPage)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          <MotionCompositorProjectsPage
+            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            onOpen={(projectId) =>
+              navigate("motion-compositor-editor", projectId)
+            }
+          />
+        </PageBoundary>
+      </WorkshopShell>
     );
 
   if (
@@ -572,7 +615,10 @@ export default function App() {
   }
 
   return (
-    <StudioShell page={page} navigate={(next: StudioPage) => navigate(next)}>
+    <StudioShell
+      page={page as StudioPage}
+      navigate={(next: StudioPage) => navigate(next)}
+    >
       <PageBoundary>
         {page === "home" ? (
           <HomePage onNavigate={navigatePath} />

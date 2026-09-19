@@ -963,6 +963,73 @@
         "title": "ApiKeyOut",
         "type": "object"
       },
+      "AssetImportIn": {
+        "properties": {
+          "assetIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Assetids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assetIds"
+        ],
+        "title": "AssetImportIn",
+        "type": "object"
+      },
+      "AssetListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssetOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AssetListOut",
+        "type": "object"
+      },
+      "AssetOut": {
+        "properties": {
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mediaKind": {
+            "title": "Mediakind",
+            "type": "string"
+          },
+          "mimeType": {
+            "title": "Mimetype",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "mediaKind",
+          "mimeType",
+          "url"
+        ],
+        "title": "AssetOut",
+        "type": "object"
+      },
       "AudioAnnotationCustomEmotion": {
         "properties": {
           "color": {
@@ -2081,6 +2148,20 @@
         "title": "Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post",
         "type": "object"
       },
+      "Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post",
+        "type": "object"
+      },
       "Body_imports_v1_thought_workshop_imports_post": {
         "properties": {
           "upload": {
@@ -2190,6 +2271,20 @@
           "upload"
         ],
         "title": "Body_upload_asset_v1_model_inference_assets_post",
+        "type": "object"
+      },
+      "Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post",
         "type": "object"
       },
       "Body_upload_asset_v1_video_editor_projects__project_id__assets_post": {
@@ -4025,6 +4120,151 @@
           "result"
         ],
         "title": "DirectorToolOut",
+        "type": "object"
+      },
+      "DocumentOut": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/MotionComposition"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "document"
+        ],
+        "title": "DocumentOut",
+        "type": "object"
+      },
+      "ExportCreateIn": {
+        "properties": {
+          "endFrame": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endframe"
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "formats": {
+            "items": {
+              "enum": [
+                "mp4",
+                "mov4444",
+                "png-sequence"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Formats",
+            "type": "array"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Requestid",
+            "type": "string"
+          },
+          "startFrame": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Startframe",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId",
+          "formats"
+        ],
+        "title": "ExportCreateIn",
+        "type": "object"
+      },
+      "ExportListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExportOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ExportListOut",
+        "type": "object"
+      },
+      "ExportOut": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "formats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Formats",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "outputs": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Outputs",
+            "type": "object"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "progress",
+          "formats",
+          "outputs",
+          "error"
+        ],
+        "title": "ExportOut",
         "type": "object"
       },
       "GalgameAnnotationImportIn": {
@@ -13231,6 +13471,63 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HandoffIn": {
+        "properties": {
+          "format": {
+            "enum": [
+              "mp4",
+              "mov4444"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "newProjectTitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newprojecttitle"
+          },
+          "targetProjectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetprojectid"
+          }
+        },
+        "required": [
+          "format"
+        ],
+        "title": "HandoffIn",
+        "type": "object"
+      },
+      "HandoffOut": {
+        "properties": {
+          "assetId": {
+            "title": "Assetid",
+            "type": "string"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "assetId"
+        ],
+        "title": "HandoffOut",
+        "type": "object"
+      },
       "ImageCompositionCreateIn": {
         "properties": {
           "expected_canvas_revision": {
@@ -13507,6 +13804,50 @@
           "prompt"
         ],
         "title": "ImageGenerationTaskCreateIn",
+        "type": "object"
+      },
+      "ImportSourceListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ImportSourceOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ImportSourceListOut",
+        "type": "object"
+      },
+      "ImportSourceOut": {
+        "properties": {
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mediaKind": {
+            "title": "Mediakind",
+            "type": "string"
+          },
+          "sourceApplication": {
+            "title": "Sourceapplication",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "mediaKind",
+          "sourceApplication"
+        ],
+        "title": "ImportSourceOut",
         "type": "object"
       },
       "InferenceAssetImportIn": {
@@ -17717,6 +18058,531 @@
         "title": "ModelTestVideoGenerationIn",
         "type": "object"
       },
+      "MotionComposition": {
+        "additionalProperties": false,
+        "properties": {
+          "layers": {
+            "items": {
+              "$ref": "#/components/schemas/MotionLayer"
+            },
+            "maxItems": 200,
+            "title": "Layers",
+            "type": "array"
+          },
+          "schemaVersion": {
+            "const": 1,
+            "default": 1,
+            "title": "Schemaversion",
+            "type": "integer"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/MotionSettings"
+          }
+        },
+        "title": "MotionComposition",
+        "type": "object"
+      },
+      "MotionEffects": {
+        "additionalProperties": false,
+        "properties": {
+          "duotone": {
+            "default": false,
+            "title": "Duotone",
+            "type": "boolean"
+          },
+          "halftone": {
+            "default": 0,
+            "maximum": 40.0,
+            "minimum": 0.0,
+            "title": "Halftone",
+            "type": "integer"
+          },
+          "outline": {
+            "default": 0,
+            "maximum": 30.0,
+            "minimum": 0.0,
+            "title": "Outline",
+            "type": "integer"
+          },
+          "shadow": {
+            "default": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Shadow",
+            "type": "integer"
+          }
+        },
+        "title": "MotionEffects",
+        "type": "object"
+      },
+      "MotionKeyframe": {
+        "additionalProperties": false,
+        "properties": {
+          "frame": {
+            "minimum": 0.0,
+            "title": "Frame",
+            "type": "integer"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "interpolation": {
+            "default": "linear",
+            "enum": [
+              "linear",
+              "ease-in",
+              "ease-out",
+              "ease-in-out",
+              "hold"
+            ],
+            "title": "Interpolation",
+            "type": "string"
+          },
+          "property": {
+            "enum": [
+              "x",
+              "y",
+              "scaleX",
+              "scaleY",
+              "rotation",
+              "opacity"
+            ],
+            "title": "Property",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "frame",
+          "property",
+          "value"
+        ],
+        "title": "MotionKeyframe",
+        "type": "object"
+      },
+      "MotionLayer": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assetid"
+          },
+          "effects": {
+            "$ref": "#/components/schemas/MotionEffects"
+          },
+          "endFrame": {
+            "default": 180,
+            "minimum": 1.0,
+            "title": "Endframe",
+            "type": "integer"
+          },
+          "fill": {
+            "default": "#ffffff",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "title": "Fill",
+            "type": "string"
+          },
+          "fontSize": {
+            "default": 96,
+            "maximum": 500.0,
+            "minimum": 8.0,
+            "title": "Fontsize",
+            "type": "integer"
+          },
+          "height": {
+            "default": 300,
+            "maximum": 4000.0,
+            "minimum": 1.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "keyframes": {
+            "items": {
+              "$ref": "#/components/schemas/MotionKeyframe"
+            },
+            "title": "Keyframes",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video",
+              "text",
+              "shape"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "default": false,
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "mask": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MotionMask"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "shape": {
+            "default": "rect",
+            "enum": [
+              "rect",
+              "ellipse",
+              "triangle",
+              "speedLines"
+            ],
+            "title": "Shape",
+            "type": "string"
+          },
+          "sourceStartUs": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Sourcestartus",
+            "type": "integer"
+          },
+          "startFrame": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Startframe",
+            "type": "integer"
+          },
+          "stroke": {
+            "default": "#111318",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "title": "Stroke",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Text",
+            "type": "string"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/MotionTransform"
+          },
+          "visible": {
+            "default": true,
+            "title": "Visible",
+            "type": "boolean"
+          },
+          "width": {
+            "default": 500,
+            "maximum": 4000.0,
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "title": "MotionLayer",
+        "type": "object"
+      },
+      "MotionMask": {
+        "additionalProperties": false,
+        "properties": {
+          "feather": {
+            "default": 0,
+            "maximum": 32.0,
+            "minimum": 0.0,
+            "title": "Feather",
+            "type": "integer"
+          },
+          "inverted": {
+            "default": false,
+            "title": "Inverted",
+            "type": "boolean"
+          },
+          "keyframes": {
+            "items": {
+              "$ref": "#/components/schemas/MotionMaskFrame"
+            },
+            "title": "Keyframes",
+            "type": "array"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MotionPoint"
+            },
+            "maxItems": 80,
+            "minItems": 3,
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "title": "MotionMask",
+        "type": "object"
+      },
+      "MotionMaskFrame": {
+        "additionalProperties": false,
+        "properties": {
+          "frame": {
+            "minimum": 0.0,
+            "title": "Frame",
+            "type": "integer"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MotionPoint"
+            },
+            "maxItems": 80,
+            "minItems": 3,
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "frame",
+          "points"
+        ],
+        "title": "MotionMaskFrame",
+        "type": "object"
+      },
+      "MotionOperation": {
+        "properties": {
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MotionComposition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "layer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MotionLayer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "layerId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layerid"
+          },
+          "layerIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layerids"
+          },
+          "patch": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patch"
+          },
+          "type": {
+            "enum": [
+              "addLayer",
+              "updateLayer",
+              "removeLayer",
+              "reorderLayers",
+              "updateSettings",
+              "replaceDocument"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "MotionOperation",
+        "type": "object"
+      },
+      "MotionPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "inX": {
+            "default": 0,
+            "title": "Inx",
+            "type": "number"
+          },
+          "inY": {
+            "default": 0,
+            "title": "Iny",
+            "type": "number"
+          },
+          "outX": {
+            "default": 0,
+            "title": "Outx",
+            "type": "number"
+          },
+          "outY": {
+            "default": 0,
+            "title": "Outy",
+            "type": "number"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "MotionPoint",
+        "type": "object"
+      },
+      "MotionSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "backgroundColor": {
+            "default": "#111318",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "title": "Backgroundcolor",
+            "type": "string"
+          },
+          "durationFrames": {
+            "default": 180,
+            "maximum": 3600.0,
+            "minimum": 1.0,
+            "title": "Durationframes",
+            "type": "integer"
+          },
+          "fps": {
+            "default": 30,
+            "enum": [
+              30,
+              60
+            ],
+            "title": "Fps",
+            "type": "integer"
+          },
+          "height": {
+            "default": 1080,
+            "enum": [
+              1080,
+              1920
+            ],
+            "title": "Height",
+            "type": "integer"
+          },
+          "width": {
+            "default": 1920,
+            "enum": [
+              1920,
+              1080
+            ],
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "title": "MotionSettings",
+        "type": "object"
+      },
+      "MotionTransform": {
+        "additionalProperties": false,
+        "properties": {
+          "opacity": {
+            "default": 1,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Opacity",
+            "type": "number"
+          },
+          "rotation": {
+            "default": 0,
+            "title": "Rotation",
+            "type": "number"
+          },
+          "scaleX": {
+            "default": 1,
+            "maximum": 20.0,
+            "minimum": 0.01,
+            "title": "Scalex",
+            "type": "number"
+          },
+          "scaleY": {
+            "default": 1,
+            "maximum": 20.0,
+            "minimum": 0.01,
+            "title": "Scaley",
+            "type": "number"
+          },
+          "x": {
+            "default": 0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "title": "MotionTransform",
+        "type": "object"
+      },
       "MoveClipOperation": {
         "properties": {
           "clipId": {
@@ -17745,6 +18611,37 @@
           "timelineStartUs"
         ],
         "title": "MoveClipOperation",
+        "type": "object"
+      },
+      "OperationBatchIn": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/MotionOperation"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId",
+          "operations"
+        ],
+        "title": "OperationBatchIn",
         "type": "object"
       },
       "PermissionPolicy": {
@@ -18483,6 +19380,49 @@
         "title": "PresentationSlide",
         "type": "object"
       },
+      "ProjectCreateIn": {
+        "properties": {
+          "aspect": {
+            "default": "16:9",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1"
+            ],
+            "title": "Aspect",
+            "type": "string"
+          },
+          "fps": {
+            "default": 30,
+            "enum": [
+              30,
+              60
+            ],
+            "title": "Fps",
+            "type": "integer"
+          },
+          "starter": {
+            "default": "blank",
+            "enum": [
+              "blank",
+              "comic-entry"
+            ],
+            "title": "Starter",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "ProjectCreateIn",
+        "type": "object"
+      },
       "ProjectFolderOpenOut": {
         "properties": {
           "opened": {
@@ -18493,6 +19433,76 @@
           }
         },
         "title": "ProjectFolderOpenOut",
+        "type": "object"
+      },
+      "ProjectListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ProjectListOut",
+        "type": "object"
+      },
+      "ProjectOut": {
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ProjectOut",
+        "type": "object"
+      },
+      "ProjectPatchIn": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "title"
+        ],
+        "title": "ProjectPatchIn",
         "type": "object"
       },
       "ProjectSnapshotImportWarning": {
@@ -38515,6 +39525,983 @@
         "summary": "Transcription Input Content",
         "tags": [
           "model-test"
+        ]
+      }
+    },
+    "/v1/motion-compositor/import-sources": {
+      "get": {
+        "operationId": "import_sources_v1_motion_compositor_import_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportSourceListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Import Sources",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects": {
+      "get": {
+        "operationId": "list_projects_v1_motion_compositor_projects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Projects",
+        "tags": [
+          "motion-compositor"
+        ]
+      },
+      "post": {
+        "operationId": "create_project_v1_motion_compositor_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/snapshot-imports": {
+      "post": {
+        "operationId": "import_snapshot_v1_motion_compositor_projects_snapshot_imports_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Snapshot",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}": {
+      "delete": {
+        "operationId": "delete_project_v1_motion_compositor_projects__project_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedRevision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expectedrevision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Project V1 Motion Compositor Projects  Project Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Project",
+        "tags": [
+          "motion-compositor"
+        ]
+      },
+      "get": {
+        "operationId": "get_project_v1_motion_compositor_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project",
+        "tags": [
+          "motion-compositor"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_project_v1_motion_compositor_projects__project_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Project",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/assets": {
+      "get": {
+        "operationId": "list_assets_v1_motion_compositor_projects__project_id__assets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Assets",
+        "tags": [
+          "motion-compositor"
+        ]
+      },
+      "post": {
+        "operationId": "upload_asset_v1_motion_compositor_projects__project_id__assets_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Asset",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/assets/import": {
+      "post": {
+        "operationId": "import_assets_v1_motion_compositor_projects__project_id__assets_import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Assets",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/assets/{asset_id}/file": {
+      "get": {
+        "operationId": "asset_file_v1_motion_compositor_projects__project_id__assets__asset_id__file_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Asset File",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/document": {
+      "get": {
+        "operationId": "get_document_v1_motion_compositor_projects__project_id__document_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Document",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/document/operations": {
+      "post": {
+        "operationId": "edit_document_v1_motion_compositor_projects__project_id__document_operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationBatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Document",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/exports": {
+      "get": {
+        "operationId": "list_exports_v1_motion_compositor_projects__project_id__exports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Exports",
+        "tags": [
+          "motion-compositor"
+        ]
+      },
+      "post": {
+        "operationId": "create_export_v1_motion_compositor_projects__project_id__exports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Export",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/exports/{task_id}": {
+      "get": {
+        "operationId": "get_export_v1_motion_compositor_projects__project_id__exports__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Export",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_export_v1_motion_compositor_projects__project_id__exports__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Export",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/download/{format_name}": {
+      "get": {
+        "operationId": "download_export_v1_motion_compositor_projects__project_id__exports__task_id__download__format_name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "format_name",
+            "required": true,
+            "schema": {
+              "title": "Format Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Export",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/video-editor-handoffs": {
+      "post": {
+        "operationId": "send_to_video_editor_v1_motion_compositor_projects__project_id__exports__task_id__video_editor_handoffs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send To Video Editor",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/preview/frame": {
+      "get": {
+        "operationId": "exact_frame_v1_motion_compositor_projects__project_id__preview_frame_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "frame",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Frame",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Revision"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Exact Frame",
+        "tags": [
+          "motion-compositor"
+        ]
+      }
+    },
+    "/v1/motion-compositor/projects/{project_id}/snapshot": {
+      "get": {
+        "operationId": "export_snapshot_v1_motion_compositor_projects__project_id__snapshot_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/zip": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Snapshot",
+        "tags": [
+          "motion-compositor"
         ]
       }
     },

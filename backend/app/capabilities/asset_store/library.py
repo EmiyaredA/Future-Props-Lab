@@ -52,6 +52,7 @@ class AssetLibrary:
         visual_project_id: str | None = None,
         galgame_project_id: str | None = None,
         video_editor_project_id: str | None = None,
+        motion_compositor_project_id: str | None = None,
         folder_id: str | None = None,
         allowed_extensions: set[str] | None = None,
     ) -> VisualAsset:
@@ -81,6 +82,7 @@ class AssetLibrary:
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
+            motion_compositor_project_id=motion_compositor_project_id,
             workspace_id=workspace_id,
         )
         size = 0
@@ -121,6 +123,7 @@ class AssetLibrary:
                 project_id=visual_project_id,
                 galgame_project_id=galgame_project_id,
                 video_editor_project_id=video_editor_project_id,
+                motion_compositor_project_id=motion_compositor_project_id,
                 folder_id=folder_id,
                 original_filename=filename,
                 display_name=resolved_display,
@@ -151,6 +154,7 @@ class AssetLibrary:
         folder_id: str | None = None,
         galgame_project_id: str | None = None,
         video_editor_project_id: str | None = None,
+        motion_compositor_project_id: str | None = None,
         allowed_extensions: set[str] | None = None,
         max_bytes: int | None = None,
         defer_persistence: bool = False,
@@ -183,6 +187,7 @@ class AssetLibrary:
             visual_project_id=None,
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
+            motion_compositor_project_id=motion_compositor_project_id,
             workspace_id=workspace_id,
         )
 
@@ -215,6 +220,7 @@ class AssetLibrary:
                 project_id=None,
                 galgame_project_id=galgame_project_id,
                 video_editor_project_id=video_editor_project_id,
+                motion_compositor_project_id=motion_compositor_project_id,
                 folder_id=folder_id,
                 original_filename=safe_name,
                 display_name=display_name_without_original_extension(safe_name, safe_name),
