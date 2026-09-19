@@ -2,6 +2,63 @@ import type { VideoEditorClip } from "./types";
 
 type ChromaKey = NonNullable<VideoEditorClip["chromaKey"]>;
 
+type ChromaBuffers = {
+  pixelCount: number;
+  matte: Uint8Array;
+  nearby: Uint8Array;
+  horizontal: Uint8Array;
+};
+
+export type ChromaCanvasPerf = {
+  paints: number;
+  skippedResizes: number;
+  skippedDuplicateFrames: number;
+  lastPaintMs: number;
+  avgPaintMs: number;
+};
+
+const PERF_KEY = "__VE_CHROMA_PERF__";
+const buffersByCanvas = new WeakMap<HTMLCanvasElement, ChromaBuffers>();
+
+function chromaPerf(): ChromaCanvasPerf | undefined {
+  if (!import.meta.env.DEV) return undefined;
+  const globalStore = globalThis as typeof globalThis & {
+    [PERF_KEY]?: ChromaCanvasPerf;
+  };
+  if (!globalStore[PERF_KEY]) {
+    globalStore[PERF_KEY] = {
+      paints: 0,
+      skippedResizes: 0,
+      skippedDuplicateFrames: 0,
+      lastPaintMs: 0,
+      avgPaintMs: 0,
+    };
+  }
+  return globalStore[PERF_KEY];
+}
+
+function buffersFor(
+  canvas: HTMLCanvasElement,
+  pixelCount: number,
+): ChromaBuffers {
+  let cached = buffersByCanvas.get(canvas);
+  if (!cached || cached.pixelCount !== pixelCount) {
+    cached = {
+      pixelCount,
+      matte: new Uint8Array(pixelCount),
+      nearby: new Uint8Array(pixelCount),
+      horizontal: new Uint8Array(pixelCount),
+    };
+    buffersByCanvas.set(canvas, cached);
+  }
+  return cached;
+}
+
+export function recordChromaDuplicateFrameSkip() {
+  const perf = chromaPerf();
+  if (perf) perf.skippedDuplicateFrames += 1;
+}
+
 export function paintChromaCanvas(
   canvas: HTMLCanvasElement,
   media: CanvasImageSource,
@@ -9,9 +66,17 @@ export function paintChromaCanvas(
   height: number,
   key: ChromaKey,
 ) {
+  const startedAt = import.meta.env.DEV ? performance.now() : 0;
   const scale = Math.min(1, 960 / width);
-  canvas.width = Math.max(1, Math.round(width * scale));
-  canvas.height = Math.max(1, Math.round(height * scale));
+  const nextW = Math.max(1, Math.round(width * scale));
+  const nextH = Math.max(1, Math.round(height * scale));
+  const perf = chromaPerf();
+  if (canvas.width === nextW && canvas.height === nextH) {
+    if (perf) perf.skippedResizes += 1;
+  } else {
+    canvas.width = nextW;
+    canvas.height = nextH;
+  }
   const context = canvas.getContext("2d", { willReadFrequently: true });
   if (!context) return;
   context.drawImage(media, 0, 0, canvas.width, canvas.height);
@@ -22,7 +87,10 @@ export function paintChromaCanvas(
   );
   const threshold = (key.similarity ?? 42) * 1.275;
   const softness = Math.max(1, (key.softness ?? 18) * 0.51);
-  const matteValues = new Uint8Array(canvas.width * canvas.height);
+  const { matte: matteValues, nearby, horizontal } = buffersFor(
+    canvas,
+    canvas.width * canvas.height,
+  );
   for (let index = 0; index < pixels.length; index += 4) {
     const distance =
       Math.floor(Math.abs(pixels[index]! - target[0]!) / 3) +
@@ -37,9 +105,9 @@ export function paintChromaCanvas(
   }
   const high = Math.max(...target);
   const despill = (key.despill ?? 30) / 100;
-  const nearby = new Uint8Array(matteValues.length);
   if (despill) {
-    const horizontal = new Uint8Array(matteValues.length);
+    nearby.fill(0);
+    horizontal.fill(0);
     for (let y = 0; y < canvas.height; y++) {
       let last = -3;
       for (let x = 0; x < canvas.width; x++) {
@@ -104,4 +172,13 @@ export function paintChromaCanvas(
     );
   }
   context.putImageData(frame, 0, 0);
+  if (perf) {
+    const elapsed = performance.now() - startedAt;
+    perf.paints += 1;
+    perf.lastPaintMs = elapsed;
+    perf.avgPaintMs =
+      perf.avgPaintMs === 0
+        ? elapsed
+        : perf.avgPaintMs * 0.9 + elapsed * 0.1;
+  }
 }

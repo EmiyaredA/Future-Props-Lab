@@ -5,6 +5,7 @@ import {
   exactFramePath,
   uploadVideoEditorAsset,
 } from "@features/video-editor/api";
+import * as chromaCanvas from "@features/video-editor/chromaCanvas";
 import { fetchApiBlob } from "@platform/api/client";
 import type {
   VideoEditorAsset,
@@ -392,6 +393,35 @@ describe("video editor preview playback", () => {
     expect(onPreciseFrameChange).toHaveBeenCalledWith(false);
   });
 
+  it("loads the backend exact frame only when preciseFrame is enabled while paused", () => {
+    const props = {
+      projectId: "editor-1",
+      timeline,
+      assets,
+      playheadUs: 1_000_000,
+      setPlayheadUs: vi.fn(),
+      setPlaying: vi.fn(),
+      selectedClipId: "video-1",
+      onPreciseFrameChange: vi.fn(),
+    };
+    const { rerender } = render(
+      <VideoEditorPreview {...props} playing={false} preciseFrame />,
+    );
+    const frame = screen.getByAltText("后端精确停帧");
+    expect(frame).toHaveAttribute(
+      "src",
+      expect.stringContaining("preview/frame"),
+    );
+
+    rerender(
+      <VideoEditorPreview {...props} playing={false} preciseFrame={false} />,
+    );
+    expect(screen.queryByAltText("后端精确停帧")).toBeNull();
+
+    rerender(<VideoEditorPreview {...props} playing preciseFrame />);
+    expect(screen.queryByAltText("后端精确停帧")).toBeNull();
+  });
+
   it("exports the locked full-resolution program frame into project assets", async () => {
     const setPlaying = vi.fn();
     const setPlayheadUs = vi.fn();
@@ -452,5 +482,113 @@ describe("video editor preview playback", () => {
     expect(file.name).toBe("预告片-frame_00-00-04-500.png");
     expect(onFrameSaved).toHaveBeenCalledOnce();
     expect(download).toHaveBeenCalledOnce();
+  });
+
+  it("schedules keyed preview paints with requestVideoFrameCallback while playing", () => {
+    const paint = vi
+      .spyOn(chromaCanvas, "paintChromaCanvas")
+      .mockImplementation(() => {});
+    const callbacks: Array<
+      (now: number, meta: { mediaTime: number }) => void
+    > = [];
+    const requestVideoFrameCallback = vi.fn(
+      (callback: (now: number, meta: { mediaTime: number }) => void) => {
+        callbacks.push(callback);
+        return callbacks.length;
+      },
+    );
+    const cancelVideoFrameCallback = vi.fn();
+    Object.defineProperty(HTMLVideoElement.prototype, "requestVideoFrameCallback", {
+      configurable: true,
+      value: requestVideoFrameCallback,
+    });
+    Object.defineProperty(HTMLVideoElement.prototype, "cancelVideoFrameCallback", {
+      configurable: true,
+      value: cancelVideoFrameCallback,
+    });
+    const keyedTimeline = structuredClone(timeline);
+    keyedTimeline.document.tracks![0]!.clips![0]!.chromaKey = {
+      enabled: true,
+      color: "#00ff00",
+      similarity: 42,
+      softness: 18,
+      despill: 30,
+    };
+    const { container, unmount } = render(
+      <VideoEditorPreview
+        projectId="editor-1"
+        timeline={keyedTimeline}
+        assets={assets}
+        playheadUs={1_000_000}
+        setPlayheadUs={vi.fn()}
+        playing
+        setPlaying={vi.fn()}
+        selectedClipId="video-1"
+        preciseFrame
+        onPreciseFrameChange={vi.fn()}
+      />,
+    );
+    const video = container.querySelector("video")!;
+    Object.defineProperty(video, "videoWidth", {
+      configurable: true,
+      value: 1920,
+    });
+    Object.defineProperty(video, "videoHeight", {
+      configurable: true,
+      value: 1080,
+    });
+    expect(requestVideoFrameCallback).toHaveBeenCalled();
+    expect(container.querySelector("canvas.ve-keyed-media")).toBeTruthy();
+    paint.mockClear();
+    expect(callbacks).toHaveLength(1);
+    callbacks[0]!(0, { mediaTime: 1 });
+    expect(paint).toHaveBeenCalledTimes(1);
+    expect(callbacks).toHaveLength(2);
+    callbacks[1]!(0, { mediaTime: 1 });
+    expect(paint).toHaveBeenCalledTimes(1);
+    expect(callbacks).toHaveLength(3);
+    callbacks[2]!(0, { mediaTime: 1.033 });
+    expect(paint).toHaveBeenCalledTimes(2);
+    unmount();
+    expect(cancelVideoFrameCallback).toHaveBeenCalled();
+  });
+
+  it("falls back to requestAnimationFrame when video frame callbacks are missing", () => {
+    vi.spyOn(chromaCanvas, "paintChromaCanvas").mockImplementation(() => {});
+    Reflect.deleteProperty(
+      HTMLVideoElement.prototype,
+      "requestVideoFrameCallback",
+    );
+    Reflect.deleteProperty(
+      HTMLVideoElement.prototype,
+      "cancelVideoFrameCallback",
+    );
+    const raf = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation(() => 1);
+    const keyedTimeline = structuredClone(timeline);
+    keyedTimeline.document.tracks![0]!.clips![0]!.chromaKey = {
+      enabled: true,
+      color: "#00ff00",
+      similarity: 42,
+      softness: 18,
+      despill: 30,
+    };
+    const { unmount } = render(
+      <VideoEditorPreview
+        projectId="editor-1"
+        timeline={keyedTimeline}
+        assets={assets}
+        playheadUs={1_000_000}
+        setPlayheadUs={vi.fn()}
+        playing
+        setPlaying={vi.fn()}
+        selectedClipId="video-1"
+        preciseFrame
+        onPreciseFrameChange={vi.fn()}
+      />,
+    );
+    expect(raf).toHaveBeenCalled();
+    unmount();
   });
 });

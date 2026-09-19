@@ -8,7 +8,6 @@ import {
   getVideoEditorProject,
   getVideoEditorTimeline,
   listVideoEditorAssets,
-  listVideoEditorRenders,
   patchVideoEditorProject,
 } from "./api";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
@@ -54,11 +53,6 @@ export function useVideoEditor(projectId: string) {
       )
         ? 1000
         : false,
-  });
-  const tasks = useQuery({
-    queryKey: videoEditorQueryKeys.renders(projectId),
-    queryFn: () => listVideoEditorRenders(projectId),
-    refetchInterval: 1200,
   });
   const [selectedClipId, setSelectedClipId] = useState<string | undefined>(
     initialWorkspacePreferences.selectedClipIds.at(-1),
@@ -482,7 +476,6 @@ export function useVideoEditor(projectId: string) {
     project,
     timeline,
     assets,
-    tasks,
     selected,
     selectedClipId,
     setSelectedClipId: selectClip,

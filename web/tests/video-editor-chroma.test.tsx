@@ -94,4 +94,47 @@ describe("video editor chroma key", () => {
     expect(pixels[9]).toBeLessThan(3);
     expect([...pixels.slice(20, 24)]).toEqual([200, 55, 0, 255]);
   });
+
+  it("skips rewriting canvas size when paint dimensions are unchanged", () => {
+    const canvas = document.createElement("canvas");
+    const pixels = new Uint8ClampedArray([0, 255, 0, 255, 255, 0, 0, 255]);
+    vi.spyOn(canvas, "getContext").mockReturnValue({
+      drawImage: vi.fn(),
+      getImageData: () => ({ data: pixels }),
+      putImageData: vi.fn(),
+    } as never);
+    let widthSets = 0;
+    let heightSets = 0;
+    let storedWidth = 0;
+    let storedHeight = 0;
+    Object.defineProperty(canvas, "width", {
+      configurable: true,
+      get: () => storedWidth,
+      set: (value: number) => {
+        widthSets += 1;
+        storedWidth = value;
+      },
+    });
+    Object.defineProperty(canvas, "height", {
+      configurable: true,
+      get: () => storedHeight,
+      set: (value: number) => {
+        heightSets += 1;
+        storedHeight = value;
+      },
+    });
+    const key = {
+      enabled: true,
+      color: "#00ff00",
+      similarity: 42,
+      softness: 18,
+      despill: 0,
+    };
+    paintChromaCanvas(canvas, canvas, 2, 1, key);
+    expect(widthSets).toBe(1);
+    expect(heightSets).toBe(1);
+    paintChromaCanvas(canvas, canvas, 2, 1, key);
+    expect(widthSets).toBe(1);
+    expect(heightSets).toBe(1);
+  });
 });

@@ -1,5 +1,8 @@
 import { VideoEditorTextLayer } from "./VideoEditorTextLayer";
-import { paintChromaCanvas } from "./chromaCanvas";
+import {
+  paintChromaCanvas,
+  recordChromaDuplicateFrameSkip,
+} from "./chromaCanvas";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
   useEffect,
@@ -114,25 +117,62 @@ function ProxyVideo({
     const node = video.current;
     const canvas = keyedCanvas.current;
     if (!node || !canvas) return;
-    let frame = 0;
-    const paint = () => {
-      if (node.videoWidth && node.videoHeight)
-        paintChromaCanvas(
-          canvas,
-          node,
-          node.videoWidth,
-          node.videoHeight,
-          chromaKey,
-        );
-      if (playing) frame = requestAnimationFrame(paint);
+    let cancelled = false;
+    let rafId = 0;
+    let vfcId = 0;
+    let lastMediaTime = Number.NaN;
+    const supportsVfc =
+      typeof node.requestVideoFrameCallback === "function" &&
+      typeof node.cancelVideoFrameCallback === "function";
+    const paintOnce = (mediaTime?: number) => {
+      if (!node.videoWidth || !node.videoHeight) return;
+      if (
+        mediaTime !== undefined &&
+        Number.isFinite(lastMediaTime) &&
+        mediaTime === lastMediaTime
+      ) {
+        recordChromaDuplicateFrameSkip();
+        return;
+      }
+      if (mediaTime !== undefined) lastMediaTime = mediaTime;
+      paintChromaCanvas(
+        canvas,
+        node,
+        node.videoWidth,
+        node.videoHeight,
+        chromaKey,
+      );
     };
-    node.addEventListener("loadeddata", paint);
-    node.addEventListener("seeked", paint);
-    paint();
+    const schedule = () => {
+      if (cancelled || !playing) return;
+      if (supportsVfc) {
+        vfcId = node.requestVideoFrameCallback((_now, meta) => {
+          if (cancelled) return;
+          paintOnce(meta.mediaTime);
+          schedule();
+        });
+        return;
+      }
+      rafId = requestAnimationFrame(() => {
+        if (cancelled) return;
+        paintOnce();
+        schedule();
+      });
+    };
+    const onMediaEvent = () => {
+      lastMediaTime = Number.NaN;
+      paintOnce();
+    };
+    node.addEventListener("loadeddata", onMediaEvent);
+    node.addEventListener("seeked", onMediaEvent);
+    paintOnce();
+    schedule();
     return () => {
-      cancelAnimationFrame(frame);
-      node.removeEventListener("loadeddata", paint);
-      node.removeEventListener("seeked", paint);
+      cancelled = true;
+      if (supportsVfc) node.cancelVideoFrameCallback(vfcId);
+      else cancelAnimationFrame(rafId);
+      node.removeEventListener("loadeddata", onMediaEvent);
+      node.removeEventListener("seeked", onMediaEvent);
     };
   }, [chromaKey, playing, source]);
   const placement = {
@@ -687,7 +727,7 @@ export function VideoEditorPreview({
               </div>
             );
           })}
-          {!playing && !draggingText ? (
+          {preciseFrame && !playing && !draggingText ? (
             <img
               className="ve-precise-frame"
               key={preciseUrl}
