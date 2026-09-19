@@ -1,4 +1,5 @@
 import { floatingPanel } from './floating-panel.ts';
+import { editorRoot } from './common.ts';
 /** Presentation and navigation for the assistant; provider state stays in ai-panel. */
 export function createAIPanel(desktop: boolean) {
     const toggle = document.createElement('button'); toggle.id = 'ai-toggle'; toggle.className = 'subtle'; toggle.textContent = 'AI';
@@ -15,7 +16,7 @@ export function createAIPanel(desktop: boolean) {
 <footer class="ai-footer"><textarea id="ai-status" readonly role="status" aria-label="助手运行状态">${desktop ? '选择渠道后输入任务。' : 'AI 接口与 MCP 在桌面版使用。网页版仍可导入 AI 生成的工程文件。'}</textarea><button id="ai-background-stop" class="subtle" hidden>停止任务</button></footer>`;
     const changes = document.createElement('button'); changes.id = 'ai-changes'; changes.className = 'subtle'; changes.textContent = '修改定位';
     panel.querySelector('.ai-context-row')!.append(changes);
-    document.body.append(panel);
+    editorRoot().append(panel);
     const find = <T extends HTMLElement = HTMLInputElement>(id: string) => panel.querySelector<T>('#' + id)!;
     const windowLayout = floatingPanel(panel, panel.querySelector('.ai-header')!, find('ai-resize'), find<HTMLButtonElement>('ai-collapse'), 'director-ai-window-v1');
     const open = (value: boolean) => { panel.hidden = !value; if (value) windowLayout.refresh(); toggle.setAttribute('aria-expanded', String(value)); if (!value) { panel.querySelector('[data-parent-page-back]')?.remove(); toggle.focus({ preventScroll: true }); } };

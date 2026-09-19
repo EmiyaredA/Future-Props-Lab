@@ -3,7 +3,7 @@ import { normalizedColor, setEntityColor } from '../editor/entity-color.ts';
 import { $, escape, options } from './common.ts';
 import './color-palette.css';
 
-const swatches = [
+export const directorColorSwatches = [
     ['雪白', '#ffffff'], ['浅灰', '#d5d5d0'], ['灰色', '#929292'], ['深灰', '#505050'], ['墨黑', '#202020'], ['暖白', '#eee5d5'],
     ['浅红', '#f3adad'], ['红色', '#d95656'], ['暗红', '#853b43'], ['浅橙', '#f6ceab'], ['橙色', '#e99c51'], ['棕色', '#8e6249'],
     ['浅黄', '#f4e8a2'], ['黄色', '#e6c755'], ['橄榄', '#99964c'], ['浅绿', '#b8dba6'], ['绿色', '#78ae78'], ['深绿', '#3e705b'],
@@ -18,7 +18,7 @@ export function createColorPalette(ctx: AppContext) {
         if (owner !== key()) { owner = ''; return; }
         const entity = ctx.current(); if (!entity || entity.locked) { owner = ''; return; }
         const host = document.createElement('div'); host.className = 'inline-color-palette';
-        host.innerHTML = `<div class="color-swatches" role="group" aria-label="常用色板">${swatches.map(([name,value])=>`<button type="button" data-swatch="${value}" style="--swatch:${value}" title="${name}" aria-label="${name} ${value}" aria-pressed="${value === entity.color}"></button>`).join('')}</div>
+        host.innerHTML = `<div class="color-swatches" role="group" aria-label="常用色板">${directorColorSwatches.map(([name,value])=>`<button type="button" data-swatch="${value}" style="--swatch:${value}" title="${name}" aria-label="${name} ${value}" aria-pressed="${value === entity.color}"></button>`).join('')}</div>
           <div class="color-custom"><label class="field"><span>自定义颜色</span><input id="palette-picker" type="color" value="${entity.color}"/></label><label class="field"><span>HEX 色值</span><input id="palette-hex" value="${escape(entity.color)}" maxlength="7" spellcheck="false"/></label></div>
           ${entity.external ? `<label class="field"><span>模型材质</span><select id="palette-appearance">${options([['color','统一着色'],['original','原材质'],['white','白模']],entity.external.appearance)}</select></label>` : ''}
           <p id="palette-feedback" class="color-feedback" aria-live="polite">选择即生效，可撤销</p>`;

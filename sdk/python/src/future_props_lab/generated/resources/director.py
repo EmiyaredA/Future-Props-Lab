@@ -11,6 +11,30 @@ class Director:
     def __init__(self, client):
         self._client = client
 
+    def upload_library_file(self, *, body: models.Body_upload_library_file_v1_director_desk_library_files_post | dict, files: dict | list | None = None) -> models.DirectorFileOut:
+        'Upload Library File. POST /v1/director-desk/library/files'
+        return self._client._call('POST', '/v1/director-desk/library/files', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.DirectorFileOut)
+
+    def download_library_file(self, *, key: str) -> Any:
+        'Download Library File. GET /v1/director-desk/library/files/{key}'
+        return self._client._call('GET', '/v1/director-desk/library/files/{key}', parameters=[('key', 'path', key)], response_type=Any)
+
+    def list_motions(self, *, query: str | Unset = UNSET) -> models.DirectorMotionList:
+        'List Motions. GET /v1/director-desk/motions'
+        return self._client._call('GET', '/v1/director-desk/motions', parameters=[('query', 'query', query)], response_type=models.DirectorMotionList)
+
+    def delete_motion(self, *, motion_key: str) -> dict[str, bool]:
+        'Delete Motion. DELETE /v1/director-desk/motions/{motion_key}'
+        return self._client._call('DELETE', '/v1/director-desk/motions/{motion_key}', parameters=[('motion_key', 'path', motion_key)], response_type=dict[str, bool])
+
+    def get_motion(self, *, motion_key: str) -> models.DirectorMotionOut:
+        'Get Motion. GET /v1/director-desk/motions/{motion_key}'
+        return self._client._call('GET', '/v1/director-desk/motions/{motion_key}', parameters=[('motion_key', 'path', motion_key)], response_type=models.DirectorMotionOut)
+
+    def save_motion(self, *, motion_key: str, body: models.DirectorMotionWrite | dict) -> models.DirectorMotionOut:
+        'Save Motion. PUT /v1/director-desk/motions/{motion_key}'
+        return self._client._call('PUT', '/v1/director-desk/motions/{motion_key}', parameters=[('motion_key', 'path', motion_key)], body=body, media_type='application/json', response_type=models.DirectorMotionOut)
+
     def list_projects(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.DirectorProjectList:
         'List Projects. GET /v1/director-desk/projects'
         return self._client._call('GET', '/v1/director-desk/projects', parameters=[('query', 'query', query), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=models.DirectorProjectList)
@@ -31,9 +55,41 @@ class Director:
         'Patch Project. PATCH /v1/director-desk/projects/{project_id}'
         return self._client._call('PATCH', '/v1/director-desk/projects/{project_id}', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.DirectorProjectOut)
 
+    def upload_project_file(self, *, project_id: str, body: models.Body_upload_project_file_v1_director_desk_projects__project_id__files_post | dict, files: dict | list | None = None) -> models.DirectorFileOut:
+        'Upload Project File. POST /v1/director-desk/projects/{project_id}/files'
+        return self._client._call('POST', '/v1/director-desk/projects/{project_id}/files', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.DirectorFileOut)
+
+    def download_project_file(self, *, project_id: str, key: str) -> Any:
+        'Download Project File. GET /v1/director-desk/projects/{project_id}/files/{key}'
+        return self._client._call('GET', '/v1/director-desk/projects/{project_id}/files/{key}', parameters=[('project_id', 'path', project_id), ('key', 'path', key)], response_type=Any)
+
 class AsyncDirector:
     def __init__(self, client):
         self._client = client
+
+    async def upload_library_file(self, *, body: models.Body_upload_library_file_v1_director_desk_library_files_post | dict, files: dict | list | None = None) -> models.DirectorFileOut:
+        'Upload Library File. POST /v1/director-desk/library/files'
+        return await self._client._call('POST', '/v1/director-desk/library/files', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.DirectorFileOut)
+
+    async def download_library_file(self, *, key: str) -> Any:
+        'Download Library File. GET /v1/director-desk/library/files/{key}'
+        return await self._client._call('GET', '/v1/director-desk/library/files/{key}', parameters=[('key', 'path', key)], response_type=Any)
+
+    async def list_motions(self, *, query: str | Unset = UNSET) -> models.DirectorMotionList:
+        'List Motions. GET /v1/director-desk/motions'
+        return await self._client._call('GET', '/v1/director-desk/motions', parameters=[('query', 'query', query)], response_type=models.DirectorMotionList)
+
+    async def delete_motion(self, *, motion_key: str) -> dict[str, bool]:
+        'Delete Motion. DELETE /v1/director-desk/motions/{motion_key}'
+        return await self._client._call('DELETE', '/v1/director-desk/motions/{motion_key}', parameters=[('motion_key', 'path', motion_key)], response_type=dict[str, bool])
+
+    async def get_motion(self, *, motion_key: str) -> models.DirectorMotionOut:
+        'Get Motion. GET /v1/director-desk/motions/{motion_key}'
+        return await self._client._call('GET', '/v1/director-desk/motions/{motion_key}', parameters=[('motion_key', 'path', motion_key)], response_type=models.DirectorMotionOut)
+
+    async def save_motion(self, *, motion_key: str, body: models.DirectorMotionWrite | dict) -> models.DirectorMotionOut:
+        'Save Motion. PUT /v1/director-desk/motions/{motion_key}'
+        return await self._client._call('PUT', '/v1/director-desk/motions/{motion_key}', parameters=[('motion_key', 'path', motion_key)], body=body, media_type='application/json', response_type=models.DirectorMotionOut)
 
     async def list_projects(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.DirectorProjectList:
         'List Projects. GET /v1/director-desk/projects'
@@ -54,4 +110,12 @@ class AsyncDirector:
     async def patch_project(self, *, project_id: str, body: models.DirectorProjectPatch | dict) -> models.DirectorProjectOut:
         'Patch Project. PATCH /v1/director-desk/projects/{project_id}'
         return await self._client._call('PATCH', '/v1/director-desk/projects/{project_id}', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.DirectorProjectOut)
+
+    async def upload_project_file(self, *, project_id: str, body: models.Body_upload_project_file_v1_director_desk_projects__project_id__files_post | dict, files: dict | list | None = None) -> models.DirectorFileOut:
+        'Upload Project File. POST /v1/director-desk/projects/{project_id}/files'
+        return await self._client._call('POST', '/v1/director-desk/projects/{project_id}/files', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.DirectorFileOut)
+
+    async def download_project_file(self, *, project_id: str, key: str) -> Any:
+        'Download Project File. GET /v1/director-desk/projects/{project_id}/files/{key}'
+        return await self._client._call('GET', '/v1/director-desk/projects/{project_id}/files/{key}', parameters=[('project_id', 'path', project_id), ('key', 'path', key)], response_type=Any)
 

@@ -1,7 +1,6 @@
 """Director-desk project document. The editor is the scene writer; this only stores that JSON."""
 
 import re
-
 from datetime import datetime
 from typing import Any, Literal
 
@@ -26,7 +25,9 @@ def _reject_embedded_binary(value: object) -> None:
         return
     if isinstance(value, dict):
         file_key = value.get("file")
-        if file_key is not None and (not isinstance(file_key, str) or FILE_KEY.fullmatch(file_key) is None):
+        if file_key is not None and (
+            not isinstance(file_key, str) or FILE_KEY.fullmatch(file_key) is None
+        ):
             raise ValueError("文件引用无效")
         data = value.get("data")
         if isinstance(data, str) and ("path" in value or data.startswith("data:")):
@@ -86,3 +87,27 @@ class DirectorProjectSummary(DirectorModel):
 class DirectorProjectList(DirectorModel):
     items: list[DirectorProjectSummary]
     total: int
+
+
+class DirectorFileOut(DirectorModel):
+    key: str = Field(pattern=r"^[a-f0-9]{64}$")
+    size: int = Field(ge=1)
+
+
+class DirectorMotionWrite(DirectorModel):
+    motion: dict[str, Any]
+    resource: dict[str, Any]
+
+    @model_validator(mode="after")
+    def reject_embedded_binary(self) -> "DirectorMotionWrite":
+        _reject_embedded_binary({"motion": self.motion, "resource": self.resource})
+        return self
+
+
+class DirectorMotionOut(DirectorModel):
+    motion: dict[str, Any]
+    resource: dict[str, Any]
+
+
+class DirectorMotionList(DirectorModel):
+    items: list[dict[str, Any]]

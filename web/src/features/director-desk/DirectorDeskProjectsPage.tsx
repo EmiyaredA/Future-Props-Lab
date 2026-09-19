@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Maximize2, Pencil, Plus, RefreshCcw, Search, Trash2, X } from "lucide-react";
+import { Download, Maximize2, Pencil, Plus, RefreshCcw, Search, Trash2, Upload, X } from "lucide-react";
 import { ApiError } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ProjectEditorDialog, ProjectLibraryCard } from "@shared/ui/project-library";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { createDirectorProject, deleteDirectorProject, listDirectorProjects, patchDirectorProject } from "./api";
+import { exportDirectorFile, importDirectorFile } from "./directorPackage";
 import { directorDeskKeys } from "./queryKeys";
 import "./director-desk-projects.css";
 
@@ -30,6 +31,7 @@ export function DirectorDeskProjectsPage({
   onOpen: (projectId: string) => void;
 }) {
   const client = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
   const [rename, setRename] = useState<{ project: DirectorListItem; title: string } | null>(null);
@@ -74,6 +76,18 @@ export function DirectorDeskProjectsPage({
       void client.invalidateQueries({ queryKey: directorDeskKeys.all });
     },
   });
+  const importing = useMutation({
+    mutationFn: importDirectorFile,
+    onSuccess: (id) => {
+      void client.invalidateQueries({ queryKey: directorDeskKeys.all });
+      onOpen(id);
+    },
+    onError: (error) => setNotice(message(error)),
+  });
+  const exporting = useMutation({
+    mutationFn: (project: DirectorListItem) => exportDirectorFile(project.id, project.title),
+    onError: (error) => setNotice(message(error)),
+  });
   const items = projects.data?.items ?? [];
   return (
     <section className="workshop-page workshop-projects-page dd-projects">
@@ -82,15 +96,38 @@ export function DirectorDeskProjectsPage({
         description="建立预演工程，打开后排布场景、走位和运镜。"
         actions={
           readOnly ? null : (
-            <button
-              type="button"
-              className="workshop-primary"
-              disabled={create.isPending}
-              onClick={() => create.mutate()}
-            >
-              <Plus aria-hidden />
-              {create.isPending ? "正在创建…" : "新建预演"}
-            </button>
+            <>
+              <button
+                type="button"
+                className="workshop-secondary"
+                disabled={importing.isPending}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload aria-hidden />
+                {importing.isPending ? "正在导入…" : "导入"}
+              </button>
+              <button
+                type="button"
+                className="workshop-primary"
+                disabled={create.isPending}
+                onClick={() => create.mutate()}
+              >
+                <Plus aria-hidden />
+                {create.isPending ? "正在创建…" : "新建预演"}
+              </button>
+              <input
+                ref={fileRef}
+                className="project-snapshot-file-input"
+                type="file"
+                accept=".director,.json,application/json"
+                aria-label="导入预演工程"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) importing.mutate(file);
+                }}
+              />
+            </>
           )
         }
       />
@@ -141,6 +178,14 @@ export function DirectorDeskProjectsPage({
                 <button type="button" onClick={() => onOpen(project.id)}>
                   <Maximize2 aria-hidden />
                   布景
+                </button>
+                <button
+                  type="button"
+                  disabled={exporting.isPending}
+                  onClick={() => exporting.mutate(project)}
+                >
+                  <Download aria-hidden />
+                  导出
                 </button>
               </div>
               {readOnly ? null : (

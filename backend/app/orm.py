@@ -12,7 +12,7 @@ from app.apps.audio_annotation.models import (
     AudioAnnotationProject,
     AudioAnnotationWaveform,
 )
-from app.apps.director_desk.models import DirectorDeskProject
+from app.apps.director_desk.models import DirectorDeskProject, DirectorDeskUserMotion
 from app.apps.galgame_workshop.models import (
     GalgameAnnotationImportTask,
     GalgameAssetMetadata,
@@ -195,6 +195,7 @@ TENANT_MODELS = (
     ProjectOperationReceipt,
     PresentationProject,
     DirectorDeskProject,
+    DirectorDeskUserMotion,
     AudioAnnotationProject,
     ModelCatalogState,
     ModelProvider,

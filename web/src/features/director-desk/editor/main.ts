@@ -47,6 +47,7 @@ import { createDialogs } from './ui/dialogs.ts';
 import { bindEvents } from './ui/events.ts';
 import { createInspector } from './ui/inspector.ts';
 import { mountLayout } from './ui/layout.ts';
+import { mountNativeControls } from './ui/native-controls.ts';
 import { createSidebar } from './ui/sidebar.ts';
 import { createTimeline } from './ui/timeline.ts';
 import { createVideoPanel } from './ui/video-panel.ts';
@@ -107,6 +108,7 @@ export function mountDirectorEditor(host: {
     let aborter: AbortController | null = null;
     let transformError: Error | undefined;
     mountLayout(project);
+    const releaseControls = mountNativeControls();
     const engine = new Engine(project, $('#stage-canvas'), $('#shot-canvas'), {
         select: selectEntity, point: i => { engine.select(selected, i); inspectorTab = 'path'; renderInspector(); }, ground: addGroundPoint,
         transformStart: () => { transformError=undefined; playing = false; history.begin(project); const e = current(); if (e?.camera && e.camera.mode !== 'free') freezeCamera(engine, e); },
@@ -420,6 +422,7 @@ export function mountDirectorEditor(host: {
 
     return () => {
         alive = false;
+        releaseControls();
         document.addEventListener = documentAdd as typeof document.addEventListener;
         window.addEventListener = windowAdd as typeof window.addEventListener;
         for (const [target, type, listener, options] of tracked)

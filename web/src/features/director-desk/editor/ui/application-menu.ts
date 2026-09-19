@@ -1,4 +1,5 @@
 import './application-menu.css';
+import { editorRoot } from './common.ts';
 
 /** Move existing controls, preserving their handlers, state and unique IDs. */
 export function mountApplicationMenu() {
@@ -55,7 +56,7 @@ export function mountApplicationMenu() {
                 menu.append(control);
             }
         }
-        bar.append(trigger); document.body.append(menu); menus.push({ trigger, menu });
+        bar.append(trigger); editorRoot().append(menu); menus.push({ trigger, menu });
         const place = () => {
             if (!menu.matches(':popover-open')) return;
             const r = trigger.getBoundingClientRect();

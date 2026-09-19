@@ -2301,6 +2301,20 @@
         "title": "Body_upload_image_v1_thought_workshop_images_post",
         "type": "object"
       },
+      "Body_upload_library_file_v1_director_desk_library_files_post": {
+        "properties": {
+          "upload": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Upload",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload"
+        ],
+        "title": "Body_upload_library_file_v1_director_desk_library_files_post",
+        "type": "object"
+      },
       "Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post": {
         "properties": {
           "category": {
@@ -2336,6 +2350,20 @@
           "upload"
         ],
         "title": "Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post",
+        "type": "object"
+      },
+      "Body_upload_project_file_v1_director_desk_projects__project_id__files_post": {
+        "properties": {
+          "upload": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Upload",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload"
+        ],
+        "title": "Body_upload_project_file_v1_director_desk_projects__project_id__files_post",
         "type": "object"
       },
       "Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post": {
@@ -3643,6 +3671,87 @@
           "name"
         ],
         "title": "DirectorDocument",
+        "type": "object"
+      },
+      "DirectorFileOut": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Key",
+            "type": "string"
+          },
+          "size": {
+            "minimum": 1.0,
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "size"
+        ],
+        "title": "DirectorFileOut",
+        "type": "object"
+      },
+      "DirectorMotionList": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "DirectorMotionList",
+        "type": "object"
+      },
+      "DirectorMotionOut": {
+        "additionalProperties": false,
+        "properties": {
+          "motion": {
+            "additionalProperties": true,
+            "title": "Motion",
+            "type": "object"
+          },
+          "resource": {
+            "additionalProperties": true,
+            "title": "Resource",
+            "type": "object"
+          }
+        },
+        "required": [
+          "motion",
+          "resource"
+        ],
+        "title": "DirectorMotionOut",
+        "type": "object"
+      },
+      "DirectorMotionWrite": {
+        "additionalProperties": false,
+        "properties": {
+          "motion": {
+            "additionalProperties": true,
+            "title": "Motion",
+            "type": "object"
+          },
+          "resource": {
+            "additionalProperties": true,
+            "title": "Resource",
+            "type": "object"
+          }
+        },
+        "required": [
+          "motion",
+          "resource"
+        ],
+        "title": "DirectorMotionWrite",
         "type": "object"
       },
       "DirectorProjectCreate": {
@@ -29875,6 +29984,267 @@
         ]
       }
     },
+    "/v1/director-desk/library/files": {
+      "post": {
+        "operationId": "upload_library_file_v1_director_desk_library_files_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_library_file_v1_director_desk_library_files_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorFileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Library File",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
+    "/v1/director-desk/library/files/{key}": {
+      "get": {
+        "operationId": "download_library_file_v1_director_desk_library_files__key__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Library File",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
+    "/v1/director-desk/motions": {
+      "get": {
+        "operationId": "list_motions_v1_director_desk_motions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 100,
+              "title": "Query",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorMotionList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Motions",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
+    "/v1/director-desk/motions/{motion_key}": {
+      "delete": {
+        "operationId": "delete_motion_v1_director_desk_motions__motion_key__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "motion_key",
+            "required": true,
+            "schema": {
+              "title": "Motion Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Motion V1 Director Desk Motions  Motion Key  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Motion",
+        "tags": [
+          "director-desk"
+        ]
+      },
+      "get": {
+        "operationId": "get_motion_v1_director_desk_motions__motion_key__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "motion_key",
+            "required": true,
+            "schema": {
+              "title": "Motion Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorMotionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Motion",
+        "tags": [
+          "director-desk"
+        ]
+      },
+      "put": {
+        "operationId": "save_motion_v1_director_desk_motions__motion_key__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "motion_key",
+            "required": true,
+            "schema": {
+              "title": "Motion Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectorMotionWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorMotionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Motion",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
     "/v1/director-desk/projects": {
       "get": {
         "operationId": "list_projects_v1_director_desk_projects_get",
@@ -30122,6 +30492,107 @@
           }
         },
         "summary": "Patch Project",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
+    "/v1/director-desk/projects/{project_id}/files": {
+      "post": {
+        "operationId": "upload_project_file_v1_director_desk_projects__project_id__files_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_project_file_v1_director_desk_projects__project_id__files_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorFileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Project File",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
+    "/v1/director-desk/projects/{project_id}/files/{key}": {
+      "get": {
+        "operationId": "download_project_file_v1_director_desk_projects__project_id__files__key__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Project File",
         "tags": [
           "director-desk"
         ]

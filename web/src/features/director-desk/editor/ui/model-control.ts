@@ -4,7 +4,7 @@ import { assertProject, type Vec3 } from '../model.ts';
 import { assertLockedEntitiesUnchanged } from '../editor/invariants.ts';
 import { ModelRecording, canRecordActions, recordingError, type RecordingAction } from '../editor/model-recording.ts';
 import { extendTimelineView } from './timeline-zoom.ts';
-import { escape } from './common.ts';
+import { escape, editorRoot } from './common.ts';
 import './model-control.css';
 
 export function mountModelControl(ctx: AppContext) {
@@ -13,7 +13,7 @@ export function mountModelControl(ctx: AppContext) {
     document.querySelector('.key-tools')!.append(trigger);
     const canvas = ctx.engine.editorRenderer.domElement;
     const panel = document.createElement('section'); panel.id = 'model-control'; panel.hidden = true;
-    panel.setAttribute('aria-label', '白模操控录制'); document.body.append(panel);
+    panel.setAttribute('aria-label', '白模操控录制'); editorRoot().append(panel);
     const keys = new Set<string>(), movementKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyR', 'KeyF', 'ShiftLeft', 'ShiftRight']);
     let take: ModelRecording | null = null, raf = 0, previous = 0, accumulator = 0, lastUI = 0, paused = false;
     let targetId = '', oldMode = '', oldPan = true, oldPicking = true, oldCamera = new Vector3(), oldTarget = new Vector3();

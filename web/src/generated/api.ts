@@ -986,6 +986,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/director-desk/library/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Library File */
+        post: operations["upload_library_file_v1_director_desk_library_files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-desk/library/files/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Library File */
+        get: operations["download_library_file_v1_director_desk_library_files__key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-desk/motions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Motions */
+        get: operations["list_motions_v1_director_desk_motions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-desk/motions/{motion_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Motion */
+        get: operations["get_motion_v1_director_desk_motions__motion_key__get"];
+        /** Save Motion */
+        put: operations["save_motion_v1_director_desk_motions__motion_key__put"];
+        post?: never;
+        /** Delete Motion */
+        delete: operations["delete_motion_v1_director_desk_motions__motion_key__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/director-desk/projects": {
         parameters: {
             query?: never;
@@ -1021,6 +1091,40 @@ export interface paths {
         head?: never;
         /** Patch Project */
         patch: operations["patch_project_v1_director_desk_projects__project_id__patch"];
+        trace?: never;
+    };
+    "/v1/director-desk/projects/{project_id}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Project File */
+        post: operations["upload_project_file_v1_director_desk_projects__project_id__files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-desk/projects/{project_id}/files/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Project File */
+        get: operations["download_project_file_v1_director_desk_projects__project_id__files__key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/file-folders": {
@@ -5659,10 +5763,20 @@ export interface components {
             /** Upload */
             upload: string;
         };
+        /** Body_upload_library_file_v1_director_desk_library_files_post */
+        Body_upload_library_file_v1_director_desk_library_files_post: {
+            /** Upload */
+            upload: string;
+        };
         /** Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post */
         Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post: {
             /** Category */
             category?: ("character" | "scene" | "cg" | "bgm" | "ambient" | "sfx" | "voice" | "video" | "font" | "other") | null;
+            /** Upload */
+            upload: string;
+        };
+        /** Body_upload_project_file_v1_director_desk_projects__project_id__files_post */
+        Body_upload_project_file_v1_director_desk_projects__project_id__files_post: {
             /** Upload */
             upload: string;
         };
@@ -6104,6 +6218,42 @@ export interface components {
              * @constant
              */
             version: 3;
+        };
+        /** DirectorFileOut */
+        DirectorFileOut: {
+            /** Key */
+            key: string;
+            /** Size */
+            size: number;
+        };
+        /** DirectorMotionList */
+        DirectorMotionList: {
+            /** Items */
+            items: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** DirectorMotionOut */
+        DirectorMotionOut: {
+            /** Motion */
+            motion: {
+                [key: string]: unknown;
+            };
+            /** Resource */
+            resource: {
+                [key: string]: unknown;
+            };
+        };
+        /** DirectorMotionWrite */
+        DirectorMotionWrite: {
+            /** Motion */
+            motion: {
+                [key: string]: unknown;
+            };
+            /** Resource */
+            resource: {
+                [key: string]: unknown;
+            };
         };
         /** DirectorProjectCreate */
         DirectorProjectCreate: {
@@ -17056,6 +17206,200 @@ export interface operations {
             };
         };
     };
+    upload_library_file_v1_director_desk_library_files_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_library_file_v1_director_desk_library_files_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_library_file_v1_director_desk_library_files__key__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_motions_v1_director_desk_motions_get: {
+        parameters: {
+            query?: {
+                query?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMotionList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_motion_v1_director_desk_motions__motion_key__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                motion_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMotionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_motion_v1_director_desk_motions__motion_key__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                motion_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorMotionWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMotionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_motion_v1_director_desk_motions__motion_key__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                motion_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_projects_v1_director_desk_projects_get: {
         parameters: {
             query?: {
@@ -17210,6 +17554,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DirectorProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_project_file_v1_director_desk_projects__project_id__files_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_project_file_v1_director_desk_projects__project_id__files_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorFileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_project_file_v1_director_desk_projects__project_id__files__key__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

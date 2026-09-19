@@ -23,6 +23,10 @@
     "method": "delete_project",
     "resource": "annotation"
   },
+  "DELETE /v1/director-desk/motions/{motion_key}": {
+    "method": "delete_motion",
+    "resource": "director"
+  },
   "DELETE /v1/director-desk/projects/{project_id}": {
     "method": "delete_project",
     "resource": "director"
@@ -255,12 +259,28 @@
     "method": "open_status",
     "resource": "desktop"
   },
+  "GET /v1/director-desk/library/files/{key}": {
+    "method": "download_library_file",
+    "resource": "director"
+  },
+  "GET /v1/director-desk/motions": {
+    "method": "list_motions",
+    "resource": "director"
+  },
+  "GET /v1/director-desk/motions/{motion_key}": {
+    "method": "get_motion",
+    "resource": "director"
+  },
   "GET /v1/director-desk/projects": {
     "method": "list_projects",
     "resource": "director"
   },
   "GET /v1/director-desk/projects/{project_id}": {
     "method": "get_project",
+    "resource": "director"
+  },
+  "GET /v1/director-desk/projects/{project_id}/files/{key}": {
+    "method": "download_project_file",
     "resource": "director"
   },
   "GET /v1/file-folders": {
@@ -951,8 +971,16 @@
     "method": "acknowledge",
     "resource": "desktop"
   },
+  "POST /v1/director-desk/library/files": {
+    "method": "upload_library_file",
+    "resource": "director"
+  },
   "POST /v1/director-desk/projects": {
     "method": "create_project",
+    "resource": "director"
+  },
+  "POST /v1/director-desk/projects/{project_id}/files": {
+    "method": "upload_project_file",
     "resource": "director"
   },
   "POST /v1/file-folders": {
@@ -1434,6 +1462,10 @@
   "PUT /v1/audio-annotation/projects/{project_id}/waveform": {
     "method": "put_waveform",
     "resource": "annotation"
+  },
+  "PUT /v1/director-desk/motions/{motion_key}": {
+    "method": "save_motion",
+    "resource": "director"
   },
   "PUT /v1/galgame-workshop/projects/{project_id}/story": {
     "method": "put_story",

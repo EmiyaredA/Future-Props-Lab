@@ -19,7 +19,7 @@ const tuple = (x: unknown, n: number, min: number, max: number): x is number[] =
 const payloadCache = new Map<string, WeakRef<object>>();
 const payloadSnapshots = new WeakMap<object,{data:string;mime:string}>();
 export function assertMediaResources(resources: unknown): asserts resources is MediaResource[] | undefined {
-    if (resources === undefined) return;
+    if (resources == null) return;
     if (!Array.isArray(resources) || resources.length > 1000) throw Error('媒体资源列表无效');
     const ids = new Set<string>();
     for (const r of resources) {

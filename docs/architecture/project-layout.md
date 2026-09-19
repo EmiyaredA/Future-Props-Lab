@@ -379,10 +379,14 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 ## 导演台
 
-`backend/app/apps/director_desk/` 目前只拥有 Workspace 项目记录。`director_desk_projects.document`
-是占位 JSON（`format`、`version`、`name`），场景由后续编辑器写入；迁移 `r0064_director_desk` 只追加这张表。
-`web/src/features/director-desk/` 拥有项目列表和占位编辑页，查询键在 `queryKeys.ts`。
-素材根目录、`.director` 导入和三维编辑器尚未接入。
+`backend/app/apps/director_desk/` 拥有 Workspace 项目记录和用户动作库。
+`director_desk_projects.document` 是编辑器写出的瘦 JSON：戏段、实体和资源引用。
+模型、贴图和视频按内容 SHA-256 放在 `applications/director-desk/projects/{id}/files/`，
+不进入 SQLite，也不给共享 `VisualAsset` 增加外键。
+`director_desk_user_motions` 只保存动作元数据，模型包放在 `applications/director-desk/library/`。
+迁移 `r0064_director_desk` 建立项目表，`r0065_director_desk_motions` 追加动作表。
+`web/src/features/director-desk/` 拥有项目列表、`.director` 导入导出和三维编辑器，查询键在 `queryKeys.ts`。
+编辑器内存仍使用内嵌字节；保存前换成文件引用，打开时再还原。助手和 `fpl` 白名单尚未接入。
 
 演示工坊的 `image_crop.py` / Web `imageCrop.ts` 分别拥有相同的原图区域到图片框的等比填充计算，
 使用 `tests/fixtures/presentation_crop_cases.json` 共用测试向量。图片尺寸仅在读取素材后取得，

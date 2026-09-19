@@ -1,5 +1,5 @@
 import type { UpdateState } from '../updates/types.ts';
-import { icon } from './common.ts';
+import { icon, editorRoot } from './common.ts';
 import './update-panel.css';
 export function mountUpdates(prepareInstall: (run: () => Promise<void>) => Promise<void>) {
     const bridge = window.directorDesktop; if (!bridge) return;
@@ -7,7 +7,7 @@ export function mountUpdates(prepareInstall: (run: () => Promise<void>) => Promi
     document.querySelector('.header-actions')!.prepend(button);
     const dialog = document.createElement('dialog'); dialog.id = 'update-panel'; dialog.setAttribute('aria-label', '软件更新');
     dialog.innerHTML = `<header><strong>软件更新</strong><button id="update-close" aria-label="关闭更新窗口">×</button></header><p id="update-version"></p><textarea id="update-message" readonly aria-label="更新状态"></textarea><progress id="update-progress" max="100" value="0"></progress><textarea id="update-notes" readonly aria-label="版本说明" placeholder="发现新版本后显示更新说明"></textarea><div class="update-actions"><button id="update-check">检查更新</button><button id="update-download">下载更新</button><button id="update-install">重启安装</button></div><button id="update-page">打开下载页</button><details><summary>更新设置</summary><label>检查来源<select id="update-source"><option value="auto">网站 + GitHub（取较新版本）</option><option value="website">仅网站</option><option value="github">仅 GitHub</option></select></label><label>网站更新目录<input id="update-url" type="url"/></label><p class="update-auto">每次启动检查；不会自动下载或安装。</p><button id="update-save">保存设置</button></details><p id="update-mode"></p>`;
-    document.body.append(dialog);
+    editorRoot().append(dialog);
     const find = <T extends HTMLElement>(id: string) => dialog.querySelector<T>('#update-' + id)!;
     let state: UpdateState | undefined, working = false;
     const notified = new Set<string>();

@@ -9,11 +9,38 @@
 
 | SDK 方法 | HTTP 操作 |
 | --- | --- |
+| [delete_motion](#delete-motion) | `DELETE /v1/director-desk/motions/{motion_key}` |
 | [delete_project](#delete-project) | `DELETE /v1/director-desk/projects/{project_id}` |
+| [download_library_file](#download-library-file) | `GET /v1/director-desk/library/files/{key}` |
+| [list_motions](#list-motions) | `GET /v1/director-desk/motions` |
+| [get_motion](#get-motion) | `GET /v1/director-desk/motions/{motion_key}` |
 | [list_projects](#list-projects) | `GET /v1/director-desk/projects` |
 | [get_project](#get-project) | `GET /v1/director-desk/projects/{project_id}` |
+| [download_project_file](#download-project-file) | `GET /v1/director-desk/projects/{project_id}/files/{key}` |
 | [patch_project](#patch-project) | `PATCH /v1/director-desk/projects/{project_id}` |
+| [upload_library_file](#upload-library-file) | `POST /v1/director-desk/library/files` |
 | [create_project](#create-project) | `POST /v1/director-desk/projects` |
+| [upload_project_file](#upload-project-file) | `POST /v1/director-desk/projects/{project_id}/files` |
+| [save_motion](#save-motion) | `PUT /v1/director-desk/motions/{motion_key}` |
+
+## delete_motion {#delete-motion}
+
+`client.director.delete_motion(...)`
+
+**接口**：`DELETE /v1/director-desk/motions/{motion_key}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `motion_key` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
 ## delete_project {#delete-project}
 
@@ -32,6 +59,63 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## download_library_file {#download-library-file}
+
+`client.director.download_library_file(...)`
+
+**接口**：`GET /v1/director-desk/library/files/{key}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `key` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_motions {#list-motions}
+
+`client.director.list_motions(...)`
+
+**接口**：`GET /v1/director-desk/motions`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `query` | query | string | 否 |
+
+**响应**：
+- `200` · `application/json` · `DirectorMotionList`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_motion {#get-motion}
+
+`client.director.get_motion(...)`
+
+**接口**：`GET /v1/director-desk/motions/{motion_key}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `motion_key` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `DirectorMotionOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -75,6 +159,26 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## download_project_file {#download-project-file}
+
+`client.director.download_project_file(...)`
+
+**接口**：`GET /v1/director-desk/projects/{project_id}/files/{key}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `key` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## patch_project {#patch-project}
 
 `client.director.patch_project(...)`
@@ -98,6 +202,28 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## upload_library_file {#upload-library-file}
+
+`client.director.upload_library_file(...)`
+
+**接口**：`POST /v1/director-desk/library/files`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | multipart/form-data | Body_upload_library_file_v1_director_desk_library_files_post | 是 |
+| `body.upload` | 请求体 | string | 是 |
+
+文件通过 `files={字段名: (文件名, 二进制文件对象, MIME)}` 传入；其他表单字段放在 `body`。
+
+**响应**：
+- `200` · `application/json` · `DirectorFileOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## create_project {#create-project}
 
 `client.director.create_project(...)`
@@ -115,5 +241,50 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `201` · `application/json` · `DirectorProjectOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## upload_project_file {#upload-project-file}
+
+`client.director.upload_project_file(...)`
+
+**接口**：`POST /v1/director-desk/projects/{project_id}/files`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | multipart/form-data | Body_upload_project_file_v1_director_desk_projects__project_id__files_post | 是 |
+| `body.upload` | 请求体 | string | 是 |
+
+文件通过 `files={字段名: (文件名, 二进制文件对象, MIME)}` 传入；其他表单字段放在 `body`。
+
+**响应**：
+- `200` · `application/json` · `DirectorFileOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## save_motion {#save-motion}
+
+`client.director.save_motion(...)`
+
+**接口**：`PUT /v1/director-desk/motions/{motion_key}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `motion_key` | path | string | 是 |
+| `body` | application/json | DirectorMotionWrite | 是 |
+| `body.motion` | 请求体 | object | 是 |
+| `body.resource` | 请求体 | object | 是 |
+
+**响应**：
+- `200` · `application/json` · `DirectorMotionOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。

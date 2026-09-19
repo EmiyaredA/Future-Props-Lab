@@ -420,9 +420,37 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/director-desk/motions/{motion_key}",
+    "sdk": "client.director.delete_motion",
+    "document": "/docs.html?page=sdk-reference-director#delete-motion",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/director-desk/projects/{project_id}",
     "sdk": "client.director.delete_project",
     "document": "/docs.html?page=sdk-reference-director#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/director-desk/library/files/{key}",
+    "sdk": "client.director.download_library_file",
+    "document": "/docs.html?page=sdk-reference-director#download-library-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/director-desk/motions",
+    "sdk": "client.director.list_motions",
+    "document": "/docs.html?page=sdk-reference-director#list-motions",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/director-desk/motions/{motion_key}",
+    "sdk": "client.director.get_motion",
+    "document": "/docs.html?page=sdk-reference-director#get-motion",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -441,6 +469,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/director-desk/projects/{project_id}/files/{key}",
+    "sdk": "client.director.download_project_file",
+    "document": "/docs.html?page=sdk-reference-director#download-project-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PATCH /v1/director-desk/projects/{project_id}",
     "sdk": "client.director.patch_project",
     "document": "/docs.html?page=sdk-reference-director#patch-project",
@@ -448,9 +483,30 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/director-desk/library/files",
+    "sdk": "client.director.upload_library_file",
+    "document": "/docs.html?page=sdk-reference-director#upload-library-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/director-desk/projects",
     "sdk": "client.director.create_project",
     "document": "/docs.html?page=sdk-reference-director#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/director-desk/projects/{project_id}/files",
+    "sdk": "client.director.upload_project_file",
+    "document": "/docs.html?page=sdk-reference-director#upload-project-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/director-desk/motions/{motion_key}",
+    "sdk": "client.director.save_motion",
+    "document": "/docs.html?page=sdk-reference-director#save-motion",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

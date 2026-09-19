@@ -12,6 +12,9 @@ from app.apps.director_desk.schemas import (
     DirectorProjectPatch,
     DirectorProjectSummary,
 )
+from app.capabilities.asset_store.project_transactions import deleting_project_layout
+from app.capabilities.asset_store.storage import AssetStorage
+from app.runtime.config import get_settings
 from app.runtime.project_records import (
     delete_revisioned_project,
     load_workspace_project,
@@ -110,12 +113,18 @@ class DirectorDeskProjects:
 
     async def delete(self, project_id: str, revision: int) -> None:
         await self.row(project_id)
-        await delete_revisioned_project(
+        async with deleting_project_layout(
             self.session,
-            DirectorDeskProject,
+            AssetStorage(get_settings()),
+            "director-desk",
             project_id,
-            self.workspace_id,
-            expected_revision=revision,
-            load_current=lambda: self.get(project_id),
-        )
-        await self.session.commit()
+            workspace_id=self.workspace_id,
+        ):
+            await delete_revisioned_project(
+                self.session,
+                DirectorDeskProject,
+                project_id,
+                self.workspace_id,
+                expected_revision=revision,
+                load_current=lambda: self.get(project_id),
+            )

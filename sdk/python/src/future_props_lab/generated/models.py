@@ -383,8 +383,14 @@ class Body_upload_generation_assets_v1_model_test_generation_assets_post(WireMod
 class Body_upload_image_v1_thought_workshop_images_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
+class Body_upload_library_file_v1_director_desk_library_files_post(WireModel):
+    upload: str = Field(default=..., alias='upload')
+
 class Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post(WireModel):
     category: Literal['character', 'scene', 'cg', 'bgm', 'ambient', 'sfx', 'voice', 'video', 'font', 'other'] | None = Field(default=None, alias='category')
+    upload: str = Field(default=..., alias='upload')
+
+class Body_upload_project_file_v1_director_desk_projects__project_id__files_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
 class Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post(WireModel):
@@ -589,6 +595,21 @@ class DirectorDocument(WireModel):
     resources: list[dict[str, Any]] | None = Field(default=None, alias='resources')
     scenes: list[dict[str, Any]] | None = Field(default=None, alias='scenes')
     version: Literal[3] = Field(default=3, alias='version')
+
+class DirectorFileOut(WireModel):
+    key: str = Field(default=..., alias='key')
+    size: int = Field(default=..., alias='size', ge=1.0)
+
+class DirectorMotionList(WireModel):
+    items: list[dict[str, Any]] = Field(default=..., alias='items')
+
+class DirectorMotionOut(WireModel):
+    motion: dict[str, Any] = Field(default=..., alias='motion')
+    resource: dict[str, Any] = Field(default=..., alias='resource')
+
+class DirectorMotionWrite(WireModel):
+    motion: dict[str, Any] = Field(default=..., alias='motion')
+    resource: dict[str, Any] = Field(default=..., alias='resource')
 
 class DirectorProjectCreate(WireModel):
     title: str = Field(default='未命名预演', alias='title', min_length=1, max_length=120)
@@ -4233,7 +4254,9 @@ Body_upload_attachments_v1_model_test_conversations__conversation_id__attachment
 Body_upload_file_v1_files_post.model_rebuild()
 Body_upload_generation_assets_v1_model_test_generation_assets_post.model_rebuild()
 Body_upload_image_v1_thought_workshop_images_post.model_rebuild()
+Body_upload_library_file_v1_director_desk_library_files_post.model_rebuild()
 Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post.model_rebuild()
+Body_upload_project_file_v1_director_desk_projects__project_id__files_post.model_rebuild()
 Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post.model_rebuild()
 CallLogListItem.model_rebuild()
 CallLogListOut.model_rebuild()
@@ -4265,6 +4288,10 @@ DesktopSetupOut.model_rebuild()
 DeveloperDocumentOut.model_rebuild()
 DeveloperDocumentsOut.model_rebuild()
 DirectorDocument.model_rebuild()
+DirectorFileOut.model_rebuild()
+DirectorMotionList.model_rebuild()
+DirectorMotionOut.model_rebuild()
+DirectorMotionWrite.model_rebuild()
 DirectorProjectCreate.model_rebuild()
 DirectorProjectList.model_rebuild()
 DirectorProjectOut.model_rebuild()

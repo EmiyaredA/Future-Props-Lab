@@ -1,5 +1,6 @@
 import type { AppContext } from '../app-context.ts';
 import { emptyEditorView } from '../building/floors.ts';
+import { editorRoot } from './common.ts';
 
 /** Track order is scene-local editor metadata, never the scene entity order. */
 export function bindTrackOrder(ctx: AppContext) {
@@ -40,7 +41,7 @@ export function bindTrackOrder(ctx: AppContext) {
         ghost.style.width=marker.style.width=host.clientWidth+'px'; ghost.style.height=rowBounds.height+'px';
         ghost.style.setProperty('--timeline-pps',getComputedStyle(host).getPropertyValue('--timeline-pps'));
         ghost.style.setProperty('--timeline-playhead',getComputedStyle(host).getPropertyValue('--timeline-playhead'));
-        ghost.hidden=marker.hidden=true; document.body.append(ghost,marker);
+        ghost.hidden=marker.hidden=true; editorRoot().append(ghost,marker);
         let y = startY, moved = false, frame = 0, finished = false, previous = performance.now(), destination=0;
         const top = bounds.top + 62, bottom = bounds.top + host.clientHeight;
         const update = () => {
