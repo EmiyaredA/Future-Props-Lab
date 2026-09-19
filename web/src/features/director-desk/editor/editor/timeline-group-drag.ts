@@ -5,7 +5,7 @@ import { selectionKey } from './timeline-selection.ts';
 /** Capture timing only once. Keep group offsets intact and clamp the entire group at stationary neighbours. */
 export function createTimelineGroupDrag(project: Project, selections: TimelineSelection[], anchor: TimelineSelection) {
     const selected = [...new Map(selections.map(s => [selectionKey(s), s])).values()];
-    if (selected.some(s => s.kind === 'cut') && selected.some(s => s.kind !== 'cut')) throw Error('切镜是连续序列，请单独拖动切镜组；混合选择仍可交给 AI');
+    if (selected.some(s => s.kind === 'cut') && selected.some(s => s.kind !== 'cut')) throw Error('切镜是连续序列，请单独拖动切镜组');
     const duration = project.duration, frame = 1 / project.fps;
     if (selected.every(s => s.kind === 'cut')) {
         const shots = project.cuts.map((c, i) => ({ ...c, index: i, duration: (project.cuts[i + 1]?.time ?? duration) - c.time }));

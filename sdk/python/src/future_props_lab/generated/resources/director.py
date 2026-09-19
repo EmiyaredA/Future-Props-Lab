@@ -55,6 +55,22 @@ class Director:
         'Patch Project. PATCH /v1/director-desk/projects/{project_id}'
         return self._client._call('PATCH', '/v1/director-desk/projects/{project_id}', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.DirectorProjectOut)
 
+    def release_agent_session(self, *, project_id: str, session_id: str) -> dict[str, bool]:
+        'Release Agent Session. DELETE /v1/director-desk/projects/{project_id}/agent-session'
+        return self._client._call('DELETE', '/v1/director-desk/projects/{project_id}/agent-session', parameters=[('project_id', 'path', project_id), ('session_id', 'query', session_id)], response_type=dict[str, bool])
+
+    def claim_agent_session(self, *, project_id: str) -> models.DirectorAgentSessionOut:
+        'Claim Agent Session. POST /v1/director-desk/projects/{project_id}/agent-session'
+        return self._client._call('POST', '/v1/director-desk/projects/{project_id}/agent-session', parameters=[('project_id', 'path', project_id)], response_type=models.DirectorAgentSessionOut)
+
+    def poll_agent_session(self, *, project_id: str, session_id: str, wait: float | Unset = UNSET) -> models.DirectorAgentPollOut:
+        'Poll Agent Session. GET /v1/director-desk/projects/{project_id}/agent-session/calls'
+        return self._client._call('GET', '/v1/director-desk/projects/{project_id}/agent-session/calls', parameters=[('project_id', 'path', project_id), ('session_id', 'query', session_id), ('wait', 'query', wait)], response_type=models.DirectorAgentPollOut)
+
+    def complete_agent_call(self, *, project_id: str, call_id: str, body: models.DirectorAgentCallComplete | dict) -> dict[str, bool]:
+        'Complete Agent Call. POST /v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}'
+        return self._client._call('POST', '/v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}', parameters=[('project_id', 'path', project_id), ('call_id', 'path', call_id)], body=body, media_type='application/json', response_type=dict[str, bool])
+
     def upload_project_file(self, *, project_id: str, body: models.Body_upload_project_file_v1_director_desk_projects__project_id__files_post | dict, files: dict | list | None = None) -> models.DirectorFileOut:
         'Upload Project File. POST /v1/director-desk/projects/{project_id}/files'
         return self._client._call('POST', '/v1/director-desk/projects/{project_id}/files', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.DirectorFileOut)
@@ -62,6 +78,10 @@ class Director:
     def download_project_file(self, *, project_id: str, key: str) -> Any:
         'Download Project File. GET /v1/director-desk/projects/{project_id}/files/{key}'
         return self._client._call('GET', '/v1/director-desk/projects/{project_id}/files/{key}', parameters=[('project_id', 'path', project_id), ('key', 'path', key)], response_type=Any)
+
+    def call_tool(self, *, project_id: str, body: models.DirectorToolCall | dict) -> models.DirectorToolOut:
+        'Call Tool. POST /v1/director-desk/projects/{project_id}/tools'
+        return self._client._call('POST', '/v1/director-desk/projects/{project_id}/tools', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.DirectorToolOut)
 
 class AsyncDirector:
     def __init__(self, client):
@@ -111,6 +131,22 @@ class AsyncDirector:
         'Patch Project. PATCH /v1/director-desk/projects/{project_id}'
         return await self._client._call('PATCH', '/v1/director-desk/projects/{project_id}', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.DirectorProjectOut)
 
+    async def release_agent_session(self, *, project_id: str, session_id: str) -> dict[str, bool]:
+        'Release Agent Session. DELETE /v1/director-desk/projects/{project_id}/agent-session'
+        return await self._client._call('DELETE', '/v1/director-desk/projects/{project_id}/agent-session', parameters=[('project_id', 'path', project_id), ('session_id', 'query', session_id)], response_type=dict[str, bool])
+
+    async def claim_agent_session(self, *, project_id: str) -> models.DirectorAgentSessionOut:
+        'Claim Agent Session. POST /v1/director-desk/projects/{project_id}/agent-session'
+        return await self._client._call('POST', '/v1/director-desk/projects/{project_id}/agent-session', parameters=[('project_id', 'path', project_id)], response_type=models.DirectorAgentSessionOut)
+
+    async def poll_agent_session(self, *, project_id: str, session_id: str, wait: float | Unset = UNSET) -> models.DirectorAgentPollOut:
+        'Poll Agent Session. GET /v1/director-desk/projects/{project_id}/agent-session/calls'
+        return await self._client._call('GET', '/v1/director-desk/projects/{project_id}/agent-session/calls', parameters=[('project_id', 'path', project_id), ('session_id', 'query', session_id), ('wait', 'query', wait)], response_type=models.DirectorAgentPollOut)
+
+    async def complete_agent_call(self, *, project_id: str, call_id: str, body: models.DirectorAgentCallComplete | dict) -> dict[str, bool]:
+        'Complete Agent Call. POST /v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}'
+        return await self._client._call('POST', '/v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}', parameters=[('project_id', 'path', project_id), ('call_id', 'path', call_id)], body=body, media_type='application/json', response_type=dict[str, bool])
+
     async def upload_project_file(self, *, project_id: str, body: models.Body_upload_project_file_v1_director_desk_projects__project_id__files_post | dict, files: dict | list | None = None) -> models.DirectorFileOut:
         'Upload Project File. POST /v1/director-desk/projects/{project_id}/files'
         return await self._client._call('POST', '/v1/director-desk/projects/{project_id}/files', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.DirectorFileOut)
@@ -118,4 +154,8 @@ class AsyncDirector:
     async def download_project_file(self, *, project_id: str, key: str) -> Any:
         'Download Project File. GET /v1/director-desk/projects/{project_id}/files/{key}'
         return await self._client._call('GET', '/v1/director-desk/projects/{project_id}/files/{key}', parameters=[('project_id', 'path', project_id), ('key', 'path', key)], response_type=Any)
+
+    async def call_tool(self, *, project_id: str, body: models.DirectorToolCall | dict) -> models.DirectorToolOut:
+        'Call Tool. POST /v1/director-desk/projects/{project_id}/tools'
+        return await self._client._call('POST', '/v1/director-desk/projects/{project_id}/tools', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.DirectorToolOut)
 

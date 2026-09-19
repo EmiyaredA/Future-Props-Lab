@@ -54,7 +54,7 @@ export function mountModelControl(ctx: AppContext) {
             ctx.engine.project = ctx.project; ctx.engine.sample(take.start);
             ctx.engine.focus(targetId); ctx.engine.orbit.update();
             // The stage and recording controls stay interactive; all other editing waits for this transaction.
-            inertElements = [...document.querySelectorAll<HTMLElement>('.topbar,.sidebar,.inspector,.timeline,.view-toolbar,.monitor-strip,.statusbar,#object-labels,#ai-panel,#ai-launcher')]
+            inertElements = [...document.querySelectorAll<HTMLElement>('.topbar,.sidebar,.inspector,.timeline,.view-toolbar,.monitor-strip,.statusbar,#object-labels')]
                 .map(element => ({ element, inert: element.inert }));
             inertElements.forEach(({ element }) => element.inert = true);
             panel.querySelector('.model-control-options')!.setAttribute('hidden', '');

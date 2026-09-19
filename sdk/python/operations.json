@@ -31,6 +31,10 @@
     "method": "delete_project",
     "resource": "director"
   },
+  "DELETE /v1/director-desk/projects/{project_id}/agent-session": {
+    "method": "release_agent_session",
+    "resource": "director"
+  },
   "DELETE /v1/file-folders/{folder_id}": {
     "method": "delete_file_folder",
     "resource": "files"
@@ -277,6 +281,10 @@
   },
   "GET /v1/director-desk/projects/{project_id}": {
     "method": "get_project",
+    "resource": "director"
+  },
+  "GET /v1/director-desk/projects/{project_id}/agent-session/calls": {
+    "method": "poll_agent_session",
     "resource": "director"
   },
   "GET /v1/director-desk/projects/{project_id}/files/{key}": {
@@ -979,8 +987,20 @@
     "method": "create_project",
     "resource": "director"
   },
+  "POST /v1/director-desk/projects/{project_id}/agent-session": {
+    "method": "claim_agent_session",
+    "resource": "director"
+  },
+  "POST /v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}": {
+    "method": "complete_agent_call",
+    "resource": "director"
+  },
   "POST /v1/director-desk/projects/{project_id}/files": {
     "method": "upload_project_file",
+    "resource": "director"
+  },
+  "POST /v1/director-desk/projects/{project_id}/tools": {
+    "method": "call_tool",
     "resource": "director"
   },
   "POST /v1/file-folders": {

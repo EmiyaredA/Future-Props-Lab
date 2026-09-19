@@ -57,6 +57,8 @@ cp -R skills/visual-workshop/visual-canvas-editing ~/.cursor/skills/visual-canva
 | 视频：时间轴 | `skills/video-editor/video-timeline-editing/SKILL.md` |
 | 视频：媒体素材 | `skills/video-editor/video-media-assets/SKILL.md` |
 | 视频：渲染/分段导出 | `skills/video-editor/video-render-export/SKILL.md` |
+| 导演台：项目库 | `skills/director-desk/director-project-library/SKILL.md` |
+| 导演台：场景工具 | `skills/director-desk/director-scene-tools/SKILL.md` |
 | 录音标注：项目与文档 | `skills/audio-annotation/audio-annotation-project-and-document/SKILL.md` |
 | 录音标注：段落转录 | `skills/audio-annotation/audio-annotation-segment-transcription/SKILL.md` |
 | 文件库 | `skills/cross-cutting/files-library/SKILL.md` |

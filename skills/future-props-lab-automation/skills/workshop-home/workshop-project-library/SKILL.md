@@ -18,7 +18,7 @@ description: Automates Future Props Lab workshop home project libraries—list, 
 
 ## 不在范围
 
-文档 `apply_*_operations`、项目内素材、生成/渲染/ASR → 各应用子 skill。思绪工坊 → `thought-knowledge-library`。
+文档 `apply_*_operations`、项目内素材、生成/渲染/ASR → 各应用子 skill。思绪工坊 → `thought-knowledge-library`。导演台 → `director-project-library`。
 
 ## 决策树（先选 resource）
 

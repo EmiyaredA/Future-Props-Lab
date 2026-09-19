@@ -56,6 +56,7 @@ class DesktopOpenIn(BaseModel):
         "video",
         "presentation",
         "annotation",
+        "director",
         "note",
         "knowledge",
         "skill",

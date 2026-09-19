@@ -11,16 +11,21 @@
 | --- | --- |
 | [delete_motion](#delete-motion) | `DELETE /v1/director-desk/motions/{motion_key}` |
 | [delete_project](#delete-project) | `DELETE /v1/director-desk/projects/{project_id}` |
+| [release_agent_session](#release-agent-session) | `DELETE /v1/director-desk/projects/{project_id}/agent-session` |
 | [download_library_file](#download-library-file) | `GET /v1/director-desk/library/files/{key}` |
 | [list_motions](#list-motions) | `GET /v1/director-desk/motions` |
 | [get_motion](#get-motion) | `GET /v1/director-desk/motions/{motion_key}` |
 | [list_projects](#list-projects) | `GET /v1/director-desk/projects` |
 | [get_project](#get-project) | `GET /v1/director-desk/projects/{project_id}` |
+| [poll_agent_session](#poll-agent-session) | `GET /v1/director-desk/projects/{project_id}/agent-session/calls` |
 | [download_project_file](#download-project-file) | `GET /v1/director-desk/projects/{project_id}/files/{key}` |
 | [patch_project](#patch-project) | `PATCH /v1/director-desk/projects/{project_id}` |
 | [upload_library_file](#upload-library-file) | `POST /v1/director-desk/library/files` |
 | [create_project](#create-project) | `POST /v1/director-desk/projects` |
+| [claim_agent_session](#claim-agent-session) | `POST /v1/director-desk/projects/{project_id}/agent-session` |
+| [complete_agent_call](#complete-agent-call) | `POST /v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}` |
 | [upload_project_file](#upload-project-file) | `POST /v1/director-desk/projects/{project_id}/files` |
+| [call_tool](#call-tool) | `POST /v1/director-desk/projects/{project_id}/tools` |
 | [save_motion](#save-motion) | `PUT /v1/director-desk/motions/{motion_key}` |
 
 ## delete_motion {#delete-motion}
@@ -56,6 +61,26 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `project_id` | path | string | 是 |
 | `expected_revision` | query | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## release_agent_session {#release-agent-session}
+
+`client.director.release_agent_session(...)`
+
+**接口**：`DELETE /v1/director-desk/projects/{project_id}/agent-session`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `session_id` | query | string | 是 |
 
 **响应**：
 - `200` · `application/json` · `object`
@@ -159,6 +184,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## poll_agent_session {#poll-agent-session}
+
+`client.director.poll_agent_session(...)`
+
+**接口**：`GET /v1/director-desk/projects/{project_id}/agent-session/calls`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `session_id` | query | string | 是 |
+| `wait` | query | number | 否 |
+
+**响应**：
+- `200` · `application/json` · `DirectorAgentPollOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## download_project_file {#download-project-file}
 
 `client.director.download_project_file(...)`
@@ -244,6 +290,49 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## claim_agent_session {#claim-agent-session}
+
+`client.director.claim_agent_session(...)`
+
+**接口**：`POST /v1/director-desk/projects/{project_id}/agent-session`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `DirectorAgentSessionOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## complete_agent_call {#complete-agent-call}
+
+`client.director.complete_agent_call(...)`
+
+**接口**：`POST /v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `call_id` | path | string | 是 |
+| `body` | application/json | DirectorAgentCallComplete | 是 |
+| `body.error` | 请求体 | string / null | 否 |
+| `body.result` | 请求体 | object | 否 |
+| `body.session_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## upload_project_file {#upload-project-file}
 
 `client.director.upload_project_file(...)`
@@ -264,6 +353,29 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `DirectorFileOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## call_tool {#call-tool}
+
+`client.director.call_tool(...)`
+
+**接口**：`POST /v1/director-desk/projects/{project_id}/tools`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | DirectorToolCall | 是 |
+| `body.arguments` | 请求体 | object | 否 |
+| `body.name` | 请求体 | string | 是 |
+| `body.request_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `DirectorToolOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

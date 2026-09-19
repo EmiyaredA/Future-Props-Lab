@@ -63,6 +63,7 @@ def parser():
             "video",
             "presentation",
             "annotation",
+            "director",
             "note",
             "knowledge",
             "skill",

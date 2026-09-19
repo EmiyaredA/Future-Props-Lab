@@ -46,6 +46,8 @@ python3 scripts/validate_skills.py
 | `skills/video-editor/video-timeline-editing` | `video-timeline-editing` |
 | `skills/video-editor/video-media-assets` | `video-media-assets` |
 | `skills/video-editor/video-render-export` | `video-render-export` |
+| `skills/director-desk/director-project-library` | `director-project-library` |
+| `skills/director-desk/director-scene-tools` | `director-scene-tools` |
 | `skills/audio-annotation/audio-annotation-project-and-document` | `audio-annotation-project-and-document` |
 | `skills/audio-annotation/audio-annotation-segment-transcription` | `audio-annotation-segment-transcription` |
 | `skills/cross-cutting/files-library` | `files-library` |

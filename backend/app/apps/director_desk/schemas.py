@@ -111,3 +111,34 @@ class DirectorMotionOut(DirectorModel):
 
 class DirectorMotionList(DirectorModel):
     items: list[dict[str, Any]]
+
+
+class DirectorToolCall(DirectorModel):
+    name: str = Field(min_length=1, max_length=64)
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    request_id: str = Field(min_length=1, max_length=200)
+
+
+class DirectorToolOut(DirectorModel):
+    result: Any
+
+
+class DirectorAgentSessionOut(DirectorModel):
+    session_id: str
+
+
+class DirectorPendingCall(DirectorModel):
+    id: str
+    name: str
+    arguments: dict[str, Any]
+    request_id: str
+
+
+class DirectorAgentPollOut(DirectorModel):
+    call: DirectorPendingCall | None = None
+
+
+class DirectorAgentCallComplete(DirectorModel):
+    session_id: str = Field(min_length=16, max_length=64)
+    result: Any = None
+    error: str | None = Field(default=None, max_length=4000)

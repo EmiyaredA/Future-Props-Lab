@@ -10,10 +10,8 @@ export function mountApplicationMenu() {
     const status = document.querySelector<HTMLElement>('#save-status')!;
     status.hidden = false;
     document.querySelector('.statusbar')!.prepend(status);
-    for (const [id, label] of [['ai-toggle', 'AI'], ['ai-changes-toggle', 'AI 最新改动']]) {
-        const control = document.getElementById(id)!; control.textContent = label; header.append(control);
-    }
-    for (const id of ['aspect','fps']) header.insertBefore(document.getElementById(id)!,document.getElementById('ai-toggle'));
+    const changes = document.getElementById('ai-changes-toggle');
+    if (changes) { changes.textContent = '工具改动'; header.append(changes); }
     for (const action of ['save','export']) {
         const control = document.querySelector<HTMLButtonElement>(`.header-actions [data-act="${action}"]`)!;
         const entry = control.cloneNode(true) as HTMLButtonElement; entry.removeAttribute('id'); entry.dataset.menuCopy=action;

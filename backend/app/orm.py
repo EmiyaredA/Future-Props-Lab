@@ -110,6 +110,7 @@ CATALOG_MODELS: dict[str, type] = {
 # App-owned roots registered at assembly time so console must not import apps/.
 DESKTOP_UI_ROOTS: dict[str, type] = {
     "annotation": AudioAnnotationProject,
+    "director": DirectorDeskProject,
     "galgame": GalgameWorkshopProject,
     "knowledge": ThoughtKnowledgeBase,
     "mcp": McpIntegration,

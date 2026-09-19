@@ -3,20 +3,34 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
+from app.apps.director_desk.agent_session import (
+    claim,
+    complete,
+    invoke,
+    needs_write,
+    poll,
+    release,
+)
 from app.apps.director_desk.files import DirectorDeskFiles
 from app.apps.director_desk.motions import DirectorDeskMotions
 from app.apps.director_desk.projects import DirectorDeskError, DirectorDeskProjects
 from app.apps.director_desk.schemas import (
+    DirectorAgentCallComplete,
+    DirectorAgentPollOut,
+    DirectorAgentSessionOut,
     DirectorFileOut,
     DirectorMotionList,
     DirectorMotionOut,
     DirectorMotionWrite,
+    DirectorPendingCall,
     DirectorProjectCreate,
     DirectorProjectList,
     DirectorProjectOut,
     DirectorProjectPatch,
+    DirectorToolCall,
+    DirectorToolOut,
 )
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
 
 router = APIRouter(prefix="/director-desk", tags=["director-desk"])
 
@@ -166,3 +180,105 @@ async def delete_motion(
     except DirectorDeskError as exc:
         raise mapped(exc) from None
     return {"deleted": True}
+
+
+async def _release_read(session: SessionDep) -> None:
+    await session.rollback()
+
+
+@router.post("/projects/{project_id}/agent-session", response_model=DirectorAgentSessionOut)
+async def claim_agent_session(
+    session: SessionDep, principal: StudioAuth, project_id: str
+) -> DirectorAgentSessionOut:
+    await _release_read(session)
+    try:
+        return DirectorAgentSessionOut(session_id=await claim(principal.workspace_id, project_id))
+    except DirectorDeskError as exc:
+        raise mapped(exc) from None
+
+
+@router.delete("/projects/{project_id}/agent-session")
+async def release_agent_session(
+    session: SessionDep,
+    principal: StudioAuth,
+    project_id: str,
+    session_id: str = Query(min_length=16, max_length=64),
+) -> dict[str, bool]:
+    await _release_read(session)
+    try:
+        await release(principal.workspace_id, project_id, session_id)
+    except DirectorDeskError as exc:
+        raise mapped(exc) from None
+    return {"released": True}
+
+
+@router.get(
+    "/projects/{project_id}/agent-session/calls",
+    response_model=DirectorAgentPollOut,
+)
+async def poll_agent_session(
+    session: SessionDep,
+    principal: StudioAuth,
+    project_id: str,
+    session_id: str = Query(min_length=16, max_length=64),
+    wait: float = Query(20, ge=0, le=25),
+) -> DirectorAgentPollOut:
+    await _release_read(session)
+    try:
+        call = await poll(principal.workspace_id, project_id, session_id, wait)
+    except DirectorDeskError as exc:
+        raise mapped(exc) from None
+    if call is None:
+        return DirectorAgentPollOut()
+    return DirectorAgentPollOut(
+        call=DirectorPendingCall(
+            id=call.id,
+            name=call.name,
+            arguments=call.arguments,
+            request_id=call.request_id,
+        )
+    )
+
+
+@router.post("/projects/{project_id}/agent-session/calls/{call_id}")
+async def complete_agent_call(
+    session: SessionDep,
+    principal: StudioAuth,
+    project_id: str,
+    call_id: str,
+    body: DirectorAgentCallComplete,
+) -> dict[str, bool]:
+    await _release_read(session)
+    try:
+        await complete(
+            principal.workspace_id,
+            project_id,
+            body.session_id,
+            call_id,
+            result=body.result,
+            error=body.error,
+        )
+    except DirectorDeskError as exc:
+        raise mapped(exc) from None
+    return {"accepted": True}
+
+
+@router.post("/projects/{project_id}/tools", response_model=DirectorToolOut)
+async def call_tool(
+    session: SessionDep,
+    principal: StudioAuth,
+    project_id: str,
+    body: DirectorToolCall,
+) -> DirectorToolOut:
+    if needs_write(body.name, body.arguments) and not principal.allows("content.write"):
+        raise mapped(
+            DirectorDeskError("当前工作区角色不允许此操作", 403, "insufficient_permission")
+        )
+    await _release_read(session)
+    try:
+        result = await invoke(
+            principal.workspace_id, project_id, body.name, body.arguments, body.request_id
+        )
+    except DirectorDeskError as exc:
+        raise mapped(exc) from None
+    return DirectorToolOut(result=result)

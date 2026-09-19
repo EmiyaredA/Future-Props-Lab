@@ -46,7 +46,7 @@
 .sidebar .side-tabs > button { flex:0 0 auto; padding:5px 6px; }
 .sidebar .side-tabs > #creation-mode { display:flex; flex:0 0 auto; width:auto; margin:0 0 0 auto; padding:2px; border-radius:20px; }
 .sidebar .side-tabs #creation-mode button { min-height:22px; height:22px; padding:2px 6px; border-radius:16px; font-size:11px; flex:none; }
-.header-actions #ai-toggle,.header-actions #ai-changes-toggle { min-height:28px; padding:4px 9px; white-space:nowrap; }
+.header-actions #ai-changes-toggle { min-height:28px; padding:4px 9px; white-space:nowrap; }
 #save-status[hidden] { display:none; }
 .inspector-category-part { display:grid; gap:12px; }
 .inspector-category-part > h2 { font-size:12px; color:#eee; margin:4px 0 0; padding-top:12px; border-top:1px solid #383838; }

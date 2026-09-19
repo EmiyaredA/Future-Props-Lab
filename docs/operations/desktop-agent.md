@@ -30,6 +30,7 @@ fpl call files.upload_file --input upload-parameters.json --file upload=/absolut
 fpl call visual.export_project_snapshot --input project-parameters.json --output project.zip
 fpl wait inference.get_task --input task-parameters.json --timeout 300
 fpl open visual PROJECT_ID
+fpl open director PROJECT_ID
 fpl open skill
 fpl open skill --view upload
 fpl open skill SKILL_ID --view versions
@@ -42,7 +43,8 @@ fpl open mcp MCP_ID --view tools
 上传参数为 `{"body":{}}`；空查询参数为 `{}`。也可以使用 `--input -` 从标准输入读取 JSON。
 `fpl operations resource.method` 给出当前 App 方法、SDK 参数与 schema；不支持的方法默认拒绝。
 
-开放六个工坊、笔记/知识库、素材、生成与独立推理任务，以及模型目录、日志查询和集成中心的已有管理操作。
+开放工坊、笔记/知识库、素材、生成与独立推理任务，以及模型目录、日志查询和集成中心的已有管理操作。
+导演台另开放项目、文件和动作库；场景工具只在对应工程的编辑器已经打开时执行，不提供第二套 MCP。
 不开放账号治理、供应商凭据设置、平台密钥管理、文件存储迁移或任意系统命令。
 下载必须显式指定 `--output`，已有文件默认拒绝覆盖；只有显式 `--overwrite` 才覆盖。
 SSE 每个事件输出一行 JSON；结果在 stdout，进度与错误在 stderr，不把密钥写入输出。

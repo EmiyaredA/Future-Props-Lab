@@ -89,7 +89,7 @@ export function createInspector(ctx: AppContext) {
         }
         if (!e || ctx.inspectorTab !== 'contacts' || e.kind !== 'prop') ctx.engine.showContactAnchor();
         if (ctx.inspectorTab === 'ai-changes') {
-            $('#inspector-header').innerHTML = '<div class="inspect-title"><h2>AI 修改定位</h2></div><div class="inspect-subtitle">内置助手与 MCP · 点击记录定位</div>';
+            $('#inspector-header').innerHTML = '<div class="inspect-title"><h2>工具修改定位</h2></div><div class="inspect-subtitle">外部工具提交后，点击记录定位</div>';
             $('#inspector-tabs').innerHTML = '';
             $('#inspector-content').innerHTML = editLocations.render(); editLocations.bind();
             $('#inspector-footer').innerHTML = '<div class="page-footer">'+button('inspector-return', '返回', '', 'subtle')+'</div>'; return;

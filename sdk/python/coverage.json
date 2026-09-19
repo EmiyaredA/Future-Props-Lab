@@ -434,6 +434,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/director-desk/projects/{project_id}/agent-session",
+    "sdk": "client.director.release_agent_session",
+    "document": "/docs.html?page=sdk-reference-director#release-agent-session",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/director-desk/library/files/{key}",
     "sdk": "client.director.download_library_file",
     "document": "/docs.html?page=sdk-reference-director#download-library-file",
@@ -469,6 +476,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/director-desk/projects/{project_id}/agent-session/calls",
+    "sdk": "client.director.poll_agent_session",
+    "document": "/docs.html?page=sdk-reference-director#poll-agent-session",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/director-desk/projects/{project_id}/files/{key}",
     "sdk": "client.director.download_project_file",
     "document": "/docs.html?page=sdk-reference-director#download-project-file",
@@ -497,9 +511,30 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/director-desk/projects/{project_id}/agent-session",
+    "sdk": "client.director.claim_agent_session",
+    "document": "/docs.html?page=sdk-reference-director#claim-agent-session",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}",
+    "sdk": "client.director.complete_agent_call",
+    "document": "/docs.html?page=sdk-reference-director#complete-agent-call",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/director-desk/projects/{project_id}/files",
     "sdk": "client.director.upload_project_file",
     "document": "/docs.html?page=sdk-reference-director#upload-project-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/director-desk/projects/{project_id}/tools",
+    "sdk": "client.director.call_tool",
+    "document": "/docs.html?page=sdk-reference-director#call-tool",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

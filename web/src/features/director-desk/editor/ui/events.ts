@@ -226,7 +226,6 @@ export function bindEvents(ctx: AppContext) {
         if (ctx.busy)
             return;
         const input = event.target as HTMLElement;
-        if (input.closest('#ai-panel')) return;
         if (event.key === 'Escape' && input.closest('#modal-root') && input.tagName !== 'SELECT') {
             event.preventDefault(); ctx.closeModal(); return;
         }

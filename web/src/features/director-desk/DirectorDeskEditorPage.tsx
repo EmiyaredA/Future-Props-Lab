@@ -43,6 +43,7 @@ export function DirectorDeskEditorPage({
       try {
         dispose = mountDirectorEditor({
           name: data.title,
+          projectId,
           document: scene as SceneDocument,
           onSave: async (document) => {
             try {

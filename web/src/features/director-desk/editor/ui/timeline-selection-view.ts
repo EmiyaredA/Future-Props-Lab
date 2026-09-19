@@ -1,6 +1,6 @@
 import type { AppContext } from '../app-context.ts';
 import { clipFromBar } from './clip-controls.ts';
-import { clipSelected, selectedClips, selectedEntities, selectedTimeRange } from '../editor/timeline-selection.ts';
+import { clipSelected, selectedEntities, selectedTimeRange } from '../editor/timeline-selection.ts';
 import './timeline-selection.css';
 
 export function refreshTimelineSelection(ctx: AppContext, rangeOnly=false) {
@@ -20,7 +20,5 @@ export function refreshTimelineSelection(ctx: AppContext, rangeOnly=false) {
         overlay.style.width = `calc(var(--timeline-pps) * ${Math.max(0, range.end - range.start)})`;
         overlay.textContent = `${range.start.toFixed(2)}–${range.end.toFixed(2)}s`;
     } else overlay?.remove();
-    const button = document.querySelector<HTMLElement>('#timeline-to-ai');
-    if (button) { const count = selectedClips().length; button.textContent = count ? `交给 AI · ${count}` : range ? '时间范围 → AI' : '交给 AI'; }
     root.dispatchEvent(new CustomEvent('editor-selection-change', { detail: ctx.scenes?.context.sceneId }));
 }

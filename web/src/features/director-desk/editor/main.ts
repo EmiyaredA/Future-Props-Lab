@@ -10,7 +10,7 @@ import { syncFloorElevations } from './building/floors.ts';
 import { editBoundTransform } from './animation/hand-binding.ts';
 import { isAnimalAsset } from './asset-catalog.ts';
 import { createToolService } from './automation/service.ts';
-import { mountAI } from './ui/ai-panel.ts';
+import { attachDirectorAgentSession } from './automation/agent-session.ts';
 import { mountUpdates } from './ui/update-panel.ts';
 import { recordPositionKey } from './editor/position-keys.ts';
 import * as T from 'three';
@@ -66,6 +66,7 @@ function startingProject(host: { name?: string; document?: unknown }) {
 export function mountDirectorEditor(host: {
     name?: string;
     document?: unknown;
+    projectId?: string;
     onSave?: (document: SceneDocument) => Promise<void>;
 } = {}): () => void {
     const tracked: Array<[EventTarget, string, EventListenerOrEventListenerObject, AddEventListenerOptions | boolean | undefined]> = [];
@@ -356,13 +357,14 @@ export function mountDirectorEditor(host: {
     const videopanelUI = createVideoPanel(uiContext);
     const commandsUI = createCommands(uiContext, inspectorUI);
     const toolService = createToolService(uiContext);
-    window.directorDesktop?.onTool((name, args) => toolService.call(name, args));
-    mountAI(uiContext);
+    const releaseAgent = host.projectId
+        ? attachDirectorAgentSession(host.projectId, (name, args) => toolService.call(name, args))
+        : () => {};
     mountFileLocations(uiContext);
     mountSettings(uiContext);
     bindLiveFields(uiContext, editingTools.mutateField);
     mountUpdates(async run => {
-        if (busy || history.pending || draft || document.querySelector('#ai-panel')?.getAttribute('data-running') === 'true') throw Error('请先完成当前编辑、导出或 AI 任务');
+        if (busy || history.pending || draft) throw Error('请先完成当前编辑或导出');
         busy = true; playing = false;
         try { await recoverySave.flush(); await run(); } finally { busy = false; }
     });
@@ -422,6 +424,7 @@ export function mountDirectorEditor(host: {
 
     return () => {
         alive = false;
+        releaseAgent();
         releaseControls();
         document.addEventListener = documentAdd as typeof document.addEventListener;
         window.addEventListener = windowAdd as typeof window.addEventListener;

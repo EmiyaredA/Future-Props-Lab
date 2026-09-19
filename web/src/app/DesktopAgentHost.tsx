@@ -17,6 +17,7 @@ const pages: Record<OpenRequest["kind"], AppPage> = {
   video: "video-editor-editor",
   presentation: "presentation-workshop-editor",
   annotation: "audio-annotation-editor",
+  director: "director-desk-editor",
   note: "thought-workshop-legacy",
   knowledge: "thought-workshop-editor",
   skill: "integrations-skills",

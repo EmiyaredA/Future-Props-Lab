@@ -386,7 +386,8 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 `director_desk_user_motions` 只保存动作元数据，模型包放在 `applications/director-desk/library/`。
 迁移 `r0064_director_desk` 建立项目表，`r0065_director_desk_motions` 追加动作表。
 `web/src/features/director-desk/` 拥有项目列表、`.director` 导入导出和三维编辑器，查询键在 `queryKeys.ts`。
-编辑器内存仍使用内嵌字节；保存前换成文件引用，打开时再还原。助手和 `fpl` 白名单尚未接入。
+编辑器内存仍使用内嵌字节；保存前换成文件引用，打开时再还原。
+外部 Agent 经 `fpl` 调用项目、文件和动作库；场景工具只在该工程的编辑器已打开时执行，不另建 MCP。
 
 演示工坊的 `image_crop.py` / Web `imageCrop.ts` 分别拥有相同的原图区域到图片框的等比填充计算，
 使用 `tests/fixtures/presentation_crop_cases.json` 共用测试向量。图片尺寸仅在读取素材后取得，

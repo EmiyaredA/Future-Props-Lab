@@ -1093,6 +1093,58 @@ export interface paths {
         patch: operations["patch_project_v1_director_desk_projects__project_id__patch"];
         trace?: never;
     };
+    "/v1/director-desk/projects/{project_id}/agent-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Agent Session */
+        post: operations["claim_agent_session_v1_director_desk_projects__project_id__agent_session_post"];
+        /** Release Agent Session */
+        delete: operations["release_agent_session_v1_director_desk_projects__project_id__agent_session_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-desk/projects/{project_id}/agent-session/calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Poll Agent Session */
+        get: operations["poll_agent_session_v1_director_desk_projects__project_id__agent_session_calls_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Agent Call */
+        post: operations["complete_agent_call_v1_director_desk_projects__project_id__agent_session_calls__call_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/director-desk/projects/{project_id}/files": {
         parameters: {
             query?: never;
@@ -1121,6 +1173,23 @@ export interface paths {
         get: operations["download_project_file_v1_director_desk_projects__project_id__files__key__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/director-desk/projects/{project_id}/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Call Tool */
+        post: operations["call_tool_v1_director_desk_projects__project_id__tools_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6130,7 +6199,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
+            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
             /** Resource Id */
             resource_id?: string | null;
             /** View */
@@ -6144,7 +6213,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
+            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
             /** Resource Id */
             resource_id?: string | null;
             /**
@@ -6187,6 +6256,24 @@ export interface components {
         DeveloperDocumentsOut: {
             /** Items */
             items: components["schemas"]["DeveloperDocumentOut"][];
+        };
+        /** DirectorAgentCallComplete */
+        DirectorAgentCallComplete: {
+            /** Error */
+            error?: string | null;
+            /** Result */
+            result?: unknown;
+            /** Session Id */
+            session_id: string;
+        };
+        /** DirectorAgentPollOut */
+        DirectorAgentPollOut: {
+            call?: components["schemas"]["DirectorPendingCall"] | null;
+        };
+        /** DirectorAgentSessionOut */
+        DirectorAgentSessionOut: {
+            /** Session Id */
+            session_id: string;
         };
         /** DirectorDocument */
         DirectorDocument: {
@@ -6255,6 +6342,19 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** DirectorPendingCall */
+        DirectorPendingCall: {
+            /** Arguments */
+            arguments: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Request Id */
+            request_id: string;
+        };
         /** DirectorProjectCreate */
         DirectorProjectCreate: {
             /**
@@ -6311,6 +6411,22 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** DirectorToolCall */
+        DirectorToolCall: {
+            /** Arguments */
+            arguments?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name: string;
+            /** Request Id */
+            request_id: string;
+        };
+        /** DirectorToolOut */
+        DirectorToolOut: {
+            /** Result */
+            result: unknown;
         };
         /** GalgameAnnotationImportIn */
         GalgameAnnotationImportIn: {
@@ -17567,6 +17683,144 @@ export interface operations {
             };
         };
     };
+    claim_agent_session_v1_director_desk_projects__project_id__agent_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorAgentSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_agent_session_v1_director_desk_projects__project_id__agent_session_delete: {
+        parameters: {
+            query: {
+                session_id: string;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    poll_agent_session_v1_director_desk_projects__project_id__agent_session_calls_get: {
+        parameters: {
+            query: {
+                session_id: string;
+                wait?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorAgentPollOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_agent_call_v1_director_desk_projects__project_id__agent_session_calls__call_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorAgentCallComplete"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_project_file_v1_director_desk_projects__project_id__files_post: {
         parameters: {
             query?: never;
@@ -17621,6 +17875,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    call_tool_v1_director_desk_projects__project_id__tools_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorToolCall"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorToolOut"];
                 };
             };
             /** @description Validation Error */

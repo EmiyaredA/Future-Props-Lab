@@ -559,13 +559,13 @@ class DesktopOpenAck(WireModel):
     status: Literal['waiting_confirmation', 'opened', 'cancelled', 'unavailable'] = Field(default=..., alias='status')
 
 class DesktopOpenIn(WireModel):
-    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
+    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
     resource_id: str | None = Field(default=None, alias='resource_id')
     view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
 
 class DesktopOpenOut(WireModel):
     id: str = Field(default=..., alias='id')
-    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
+    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
     resource_id: str | None = Field(default=None, alias='resource_id')
     status: Literal['pending', 'waiting_confirmation', 'opened', 'cancelled', 'unavailable'] = Field(default=..., alias='status')
     view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
@@ -586,6 +586,17 @@ class DeveloperDocumentOut(WireModel):
 
 class DeveloperDocumentsOut(WireModel):
     items: list[DeveloperDocumentOut] = Field(default=..., alias='items')
+
+class DirectorAgentCallComplete(WireModel):
+    error: str | None = Field(default=None, alias='error')
+    result: Any | None = Field(default=None, alias='result')
+    session_id: str = Field(default=..., alias='session_id', min_length=16, max_length=64)
+
+class DirectorAgentPollOut(WireModel):
+    call: DirectorPendingCall | None = Field(default=None, alias='call')
+
+class DirectorAgentSessionOut(WireModel):
+    session_id: str = Field(default=..., alias='session_id')
 
 class DirectorDocument(WireModel):
     active_scene_id: str | None = Field(default=None, alias='activeSceneId')
@@ -610,6 +621,12 @@ class DirectorMotionOut(WireModel):
 class DirectorMotionWrite(WireModel):
     motion: dict[str, Any] = Field(default=..., alias='motion')
     resource: dict[str, Any] = Field(default=..., alias='resource')
+
+class DirectorPendingCall(WireModel):
+    arguments: dict[str, Any] = Field(default=..., alias='arguments')
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name')
+    request_id: str = Field(default=..., alias='request_id')
 
 class DirectorProjectCreate(WireModel):
     title: str = Field(default='未命名预演', alias='title', min_length=1, max_length=120)
@@ -636,6 +653,14 @@ class DirectorProjectSummary(WireModel):
     revision: int = Field(default=..., alias='revision')
     title: str = Field(default=..., alias='title')
     updated_at: datetime = Field(default=..., alias='updated_at')
+
+class DirectorToolCall(WireModel):
+    arguments: dict[str, Any] | None = Field(default=None, alias='arguments')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=64)
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=200)
+
+class DirectorToolOut(WireModel):
+    result: Any = Field(default=..., alias='result')
 
 class GalgameAnnotationImportIn(WireModel):
     asset_prefix: str = Field(default=..., alias='assetPrefix')
@@ -4287,16 +4312,22 @@ DesktopSetupIn.model_rebuild()
 DesktopSetupOut.model_rebuild()
 DeveloperDocumentOut.model_rebuild()
 DeveloperDocumentsOut.model_rebuild()
+DirectorAgentCallComplete.model_rebuild()
+DirectorAgentPollOut.model_rebuild()
+DirectorAgentSessionOut.model_rebuild()
 DirectorDocument.model_rebuild()
 DirectorFileOut.model_rebuild()
 DirectorMotionList.model_rebuild()
 DirectorMotionOut.model_rebuild()
 DirectorMotionWrite.model_rebuild()
+DirectorPendingCall.model_rebuild()
 DirectorProjectCreate.model_rebuild()
 DirectorProjectList.model_rebuild()
 DirectorProjectOut.model_rebuild()
 DirectorProjectPatch.model_rebuild()
 DirectorProjectSummary.model_rebuild()
+DirectorToolCall.model_rebuild()
+DirectorToolOut.model_rebuild()
 GalgameAnnotationImportIn.model_rebuild()
 GalgameAnnotationImportIssue.model_rebuild()
 GalgameAnnotationImportPreviewOut.model_rebuild()

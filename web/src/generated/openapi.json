@@ -3389,6 +3389,7 @@
               "video",
               "presentation",
               "annotation",
+              "director",
               "note",
               "knowledge",
               "skill",
@@ -3453,6 +3454,7 @@
               "video",
               "presentation",
               "annotation",
+              "director",
               "note",
               "knowledge",
               "skill",
@@ -3600,6 +3602,68 @@
           "items"
         ],
         "title": "DeveloperDocumentsOut",
+        "type": "object"
+      },
+      "DirectorAgentCallComplete": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "result": {
+            "title": "Result"
+          },
+          "session_id": {
+            "maxLength": 64,
+            "minLength": 16,
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "DirectorAgentCallComplete",
+        "type": "object"
+      },
+      "DirectorAgentPollOut": {
+        "additionalProperties": false,
+        "properties": {
+          "call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectorPendingCall"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "DirectorAgentPollOut",
+        "type": "object"
+      },
+      "DirectorAgentSessionOut": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "DirectorAgentSessionOut",
         "type": "object"
       },
       "DirectorDocument": {
@@ -3754,6 +3818,36 @@
         "title": "DirectorMotionWrite",
         "type": "object"
       },
+      "DirectorPendingCall": {
+        "additionalProperties": false,
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "arguments",
+          "request_id"
+        ],
+        "title": "DirectorPendingCall",
+        "type": "object"
+      },
       "DirectorProjectCreate": {
         "additionalProperties": false,
         "properties": {
@@ -3890,6 +3984,47 @@
           "updated_at"
         ],
         "title": "DirectorProjectSummary",
+        "type": "object"
+      },
+      "DirectorToolCall": {
+        "additionalProperties": false,
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          },
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "request_id"
+        ],
+        "title": "DirectorToolCall",
+        "type": "object"
+      },
+      "DirectorToolOut": {
+        "additionalProperties": false,
+        "properties": {
+          "result": {
+            "title": "Result"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "DirectorToolOut",
         "type": "object"
       },
       "GalgameAnnotationImportIn": {
@@ -30497,6 +30632,233 @@
         ]
       }
     },
+    "/v1/director-desk/projects/{project_id}/agent-session": {
+      "delete": {
+        "operationId": "release_agent_session_v1_director_desk_projects__project_id__agent_session_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 16,
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Release Agent Session V1 Director Desk Projects  Project Id  Agent Session Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Release Agent Session",
+        "tags": [
+          "director-desk"
+        ]
+      },
+      "post": {
+        "operationId": "claim_agent_session_v1_director_desk_projects__project_id__agent_session_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorAgentSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Claim Agent Session",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
+    "/v1/director-desk/projects/{project_id}/agent-session/calls": {
+      "get": {
+        "operationId": "poll_agent_session_v1_director_desk_projects__project_id__agent_session_calls_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 16,
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "wait",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 25,
+              "minimum": 0,
+              "title": "Wait",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorAgentPollOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Poll Agent Session",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
+    "/v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}": {
+      "post": {
+        "operationId": "complete_agent_call_v1_director_desk_projects__project_id__agent_session_calls__call_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "call_id",
+            "required": true,
+            "schema": {
+              "title": "Call Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectorAgentCallComplete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Complete Agent Call V1 Director Desk Projects  Project Id  Agent Session Calls  Call Id  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete Agent Call",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
     "/v1/director-desk/projects/{project_id}/files": {
       "post": {
         "operationId": "upload_project_file_v1_director_desk_projects__project_id__files_post",
@@ -30593,6 +30955,58 @@
           }
         },
         "summary": "Download Project File",
+        "tags": [
+          "director-desk"
+        ]
+      }
+    },
+    "/v1/director-desk/projects/{project_id}/tools": {
+      "post": {
+        "operationId": "call_tool_v1_director_desk_projects__project_id__tools_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectorToolCall"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorToolOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Call Tool",
         "tags": [
           "director-desk"
         ]
