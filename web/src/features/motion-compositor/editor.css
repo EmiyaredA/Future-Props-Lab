@@ -62,14 +62,19 @@
   flex: none;
 }
 .mc-brand {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
-  background: #df3642;
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  font-size: 21px;
+  background: #df3642;
+  color: #fff;
+  line-height: 0;
+}
+.mc-brand svg {
+  display: block;
 }
 .mc-project-title {
   display: flex;

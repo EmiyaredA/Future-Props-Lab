@@ -471,7 +471,14 @@ export function EditorPage({
         >
           <ArrowLeft size={18} />
         </button>
-        <div className="mc-brand">✦</div>
+        <div className="mc-brand" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 18 18">
+            <path
+              fill="currentColor"
+              d="M9 1.1 10.2 7.8 16.9 9 10.2 10.2 9 16.9 7.8 10.2 1.1 9 7.8 7.8Z"
+            />
+          </svg>
+        </div>
         <div className="mc-project-title">
           <strong>{project.title}</strong>
           <small>动效合成工坊 · 镜头 01</small>
