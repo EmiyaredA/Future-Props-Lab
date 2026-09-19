@@ -15,10 +15,7 @@ import {
   Type,
   Video,
 } from "lucide-react";
-import type {
-  VideoEditorAsset,
-  VideoEditorAssetOrganization,
-} from "./types";
+import type { VideoEditorAsset, VideoEditorAssetOrganization } from "./types";
 import {
   moveAssetInOrganization,
   shiftAssetInOrganization,
@@ -39,9 +36,11 @@ export function VideoEditorAssetRow({
   arranged,
   batchActive,
   selected,
+  previewing = false,
   disabled,
   organizeOpen,
   onSelect,
+  onPreview,
   onAdd,
   onDelete,
   onToggleOrganize,
@@ -58,9 +57,11 @@ export function VideoEditorAssetRow({
   arranged: VideoEditorAssetOrganization;
   batchActive: boolean;
   selected: boolean;
+  previewing?: boolean;
   disabled?: boolean;
   organizeOpen: boolean;
   onSelect: () => void;
+  onPreview: () => void;
   onAdd: () => void;
   onDelete: () => void;
   onToggleOrganize: () => void;
@@ -82,7 +83,7 @@ export function VideoEditorAssetRow({
   const index = list.indexOf(asset.id);
   return (
     <div
-      className="ve-asset-wrap"
+      className={`ve-asset-wrap${previewing ? " is-previewing" : ""}`}
       title={ready ? undefined : assetUnavailableReason(asset)}
       draggable={!disabled}
       onDragStart={(event) => {
@@ -110,7 +111,9 @@ export function VideoEditorAssetRow({
           type="button"
           className="ve-asset-main"
           disabled={!ready || disabled}
-          aria-label={`双击将“${asset.displayName}”添加到时间轴`}
+          aria-label={`预览素材“${asset.displayName}”，双击添加到时间轴`}
+          aria-pressed={previewing}
+          onClick={onPreview}
           onDoubleClick={onAdd}
         >
           {asset.thumbnailUrl ? (

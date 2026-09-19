@@ -490,7 +490,7 @@ describe("video editor asset panel", () => {
 
     await user.click(screen.getByRole("button", { name: "场景 1" }));
     expect(
-      screen.queryByRole("button", { name: /双击将“演示视频/ }),
+      screen.queryByRole("button", { name: /预览素材“演示视频/ }),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "场景 1" }));
     await user.click(
@@ -573,7 +573,7 @@ describe("video editor asset panel", () => {
       },
     };
     const row = screen
-      .getByRole("button", { name: /双击将“演示视频/ })
+      .getByRole("button", { name: /预览素材“演示视频/ })
       .closest(".ve-asset-wrap");
     const folderRow = screen
       .getByRole("button", { name: "场景 0" })

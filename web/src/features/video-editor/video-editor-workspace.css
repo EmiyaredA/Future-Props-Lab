@@ -45,6 +45,14 @@
 .ve-editor button {
   color: inherit;
 }
+.ve-editor .ve-asset-add-menu,
+.ve-editor .ve-asset-add-menu button {
+  /* Popover top-layer uses CanvasText; keep menu readable on dark chrome. */
+  color: #e8ebf4;
+}
+.ve-editor .ve-asset-add-menu svg {
+  color: #c9c3ff;
+}
 .ve-editor .ve-dialog-backdrop,
 .ve-editor .frame-export-backdrop,
 .ve-editor .modal-backdrop {
@@ -398,6 +406,26 @@
   flex: none;
   white-space: nowrap;
 }
+.ve-preview-mode-tabs {
+  display: flex;
+  gap: 4px;
+}
+.ve-preview-mode-tabs button {
+  flex: none;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid #303647;
+  border-radius: 5px;
+  background: transparent;
+  color: #c4cad8;
+  font-size: 11px;
+}
+.ve-preview-mode-tabs button.active,
+.ve-preview-mode-tabs button[aria-pressed="true"] {
+  border-color: #6ea8ff;
+  background: #2a3548;
+  color: #eef3ff;
+}
 .ve-preview-panel header div {
   display: flex;
   align-items: center;
@@ -411,6 +439,21 @@
   flex: none;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+.ve-source-stage {
+  display: grid;
+  place-items: center;
+}
+.ve-source-media {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.ve-source-audio-label {
+  color: #9aa3b8;
+  font-size: 13px;
 }
 .ve-preview-panel header button {
   flex: none;

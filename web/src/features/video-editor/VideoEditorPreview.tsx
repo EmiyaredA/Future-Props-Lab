@@ -1,4 +1,5 @@
 import { VideoEditorTextLayer } from "./VideoEditorTextLayer";
+import { VideoEditorSourceMonitor } from "./VideoEditorSourceMonitor";
 import {
   paintChromaCanvas,
   recordChromaDuplicateFrameSkip,
@@ -348,6 +349,8 @@ export function VideoEditorPreview({
   onSelectClip,
   commit,
   saving = false,
+  previewingAsset,
+  onClearPreviewingAsset,
 }: {
   onSelectClip?: (clipId: string) => void;
   commit?: (
@@ -367,6 +370,8 @@ export function VideoEditorPreview({
   preciseFrame: boolean;
   onPreciseFrameChange: (value: boolean) => void;
   onFrameSaved?: () => void | Promise<unknown>;
+  previewingAsset?: VideoEditorAsset;
+  onClearPreviewingAsset?: () => void;
 }) {
   const canWrite = useWorkspacePermission("content.write");
   const [frameExport, setFrameExport] = useState<{
@@ -396,7 +401,8 @@ export function VideoEditorPreview({
   const canvasHeight =
     timeline.document.settings?.height ?? VIDEO_EDITOR_CANVAS_HEIGHT;
   const allClips = useMemo(
-    () => (timeline.document.tracks ?? []).flatMap((track) => track.clips ?? []),
+    () =>
+      (timeline.document.tracks ?? []).flatMap((track) => track.clips ?? []),
     [timeline.document.tracks],
   );
   const active = (timeline.document.tracks ?? [])
@@ -468,6 +474,21 @@ export function VideoEditorPreview({
       : compareView === "after"
         ? "inset(0 100% 0 0)"
         : `inset(0 ${100 - comparePercent}% 0 0)`;
+  if (previewingAsset) {
+    return (
+      <section className="ve-preview-panel">
+        <VideoEditorSourceMonitor
+          asset={previewingAsset}
+          fps={fps}
+          canvasWidth={canvasWidth}
+          canvasHeight={canvasHeight}
+          showCanvasGuides={showCanvasGuides}
+          onToggleCanvasGuides={() => setShowCanvasGuides((value) => !value)}
+          onExitSource={() => onClearPreviewingAsset?.()}
+        />
+      </section>
+    );
+  }
   return (
     <section className="ve-preview-panel">
       <header>

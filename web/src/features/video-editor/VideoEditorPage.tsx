@@ -47,6 +47,7 @@ export function VideoEditorPage({
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
   const [segmentExportClipId, setSegmentExportClipId] = useState<string>();
   const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
+  const [previewingAssetId, setPreviewingAssetId] = useState<string>();
   const [titleDraft, setTitleDraft] = useState<string | null>(null);
   const discardTitle = useRef(false);
   if (editor.project.isLoading || editor.timeline.isLoading)
@@ -59,6 +60,18 @@ export function VideoEditorPage({
   const nextTrackOrder =
     Math.max(-1, ...tracks.map((track) => track.order)) + 1;
   const assets = editor.assets.data?.items ?? [];
+  const previewingAsset = assets.find(
+    (asset) => asset.id === previewingAssetId,
+  );
+  const clearSourcePreview = () => setPreviewingAssetId(undefined);
+  const setPlayheadUs = (value: number | ((current: number) => number)) => {
+    clearSourcePreview();
+    editor.setPlayheadUs(value);
+  };
+  const selectClip = (clipId?: string, additive = false) => {
+    clearSourcePreview();
+    editor.selectClip(clipId, additive);
+  };
   const videoClips = tracks
     .flatMap((track) => track.clips ?? [])
     .filter((clip) => clip.kind === "video");
@@ -134,6 +147,7 @@ export function VideoEditorPage({
         preset,
       );
       editor.setPlaying(false);
+      setPreviewingAssetId(undefined);
       void editor
         .commit(redo, undo)
         .then(() => {
@@ -326,6 +340,12 @@ export function VideoEditorPage({
             assets={assets}
             organization={timeline.document.assetOrganization}
             disabled={editor.saving}
+            previewingAssetId={previewingAssetId}
+            onPreview={(asset) => {
+              editor.setPlaying(false);
+              setPreviewingAssetId(asset.id);
+              setMobilePanel("preview");
+            }}
             onAdd={addAsset}
             onAddBatch={addAssetBatch}
             onTimelineAssetDrag={setDraggingAsset}
@@ -352,16 +372,18 @@ export function VideoEditorPage({
             timeline={timeline}
             assets={assets}
             playheadUs={editor.playheadUs}
-            setPlayheadUs={editor.setPlayheadUs}
+            setPlayheadUs={setPlayheadUs}
             playing={editor.playing}
             setPlaying={editor.setPlaying}
             selectedClipId={editor.selectedClipId}
             preciseFrame={editor.preciseFrame}
             onPreciseFrameChange={editor.setPreciseFrame}
             onFrameSaved={() => editor.assets.refetch()}
-            onSelectClip={editor.selectClip}
+            onSelectClip={selectClip}
             commit={editor.commit}
             saving={editor.saving}
+            previewingAsset={previewingAsset}
+            onClearPreviewingAsset={clearSourcePreview}
           />
           <VideoEditorSeparator
             {...workspaceLayout.separator("inspectorWidth")}
@@ -464,7 +486,7 @@ export function VideoEditorPage({
           timeline={timeline}
           assets={assets}
           playheadUs={editor.playheadUs}
-          setPlayheadUs={editor.setPlayheadUs}
+          setPlayheadUs={setPlayheadUs}
           zoom={editor.zoom}
           trackHeaderWidth={editor.layout.trackHeaderWidth}
           headerSeparator={workspaceLayout.separator("trackHeaderWidth")}
@@ -474,7 +496,7 @@ export function VideoEditorPage({
           onScrollLeftChange={editor.setTimelineScrollLeft}
           selectedClipId={editor.selectedClipId}
           selectedClipIds={editor.selectedClipIds}
-          selectClip={editor.selectClip}
+          selectClip={selectClip}
           commit={editor.commit}
           onDropAsset={(asset, trackId, startUs) =>
             addAsset(asset, startUs, trackId)

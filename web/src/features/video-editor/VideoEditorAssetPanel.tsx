@@ -71,6 +71,8 @@ export function VideoEditorAssetPanel({
   assets,
   organization,
   disabled = false,
+  previewingAssetId,
+  onPreview,
   onAdd,
   onAddBatch,
   onAddGenerated,
@@ -82,6 +84,8 @@ export function VideoEditorAssetPanel({
   assets: VideoEditorAsset[];
   organization?: VideoEditorAssetOrganization;
   disabled?: boolean;
+  previewingAssetId?: string;
+  onPreview?: (asset: VideoEditorAsset) => void;
   onAdd: (asset: VideoEditorAsset) => void;
   onAddBatch: (assets: VideoEditorAsset[]) => Promise<void>;
   onAddGenerated: (kind: "text" | "color", preset?: TextPreset) => void;
@@ -267,7 +271,9 @@ export function VideoEditorAssetPanel({
   });
 
   const selectedIdSet = new Set(selectedIds);
-  const orderedSelectedIds = batchAssetIds.filter((id) => selectedIdSet.has(id));
+  const orderedSelectedIds = batchAssetIds.filter((id) =>
+    selectedIdSet.has(id),
+  );
   const selectedAssets = orderedSelectedIds
     .map((id) => assetsById.get(id))
     .filter((asset): asset is VideoEditorAsset => Boolean(asset));
@@ -440,6 +446,7 @@ export function VideoEditorAssetPanel({
         arranged={arranged}
         batchActive={batchFolderId === batchKey}
         selected={selectedIds.includes(asset.id)}
+        previewing={previewingAssetId === asset.id}
         disabled={disabled}
         organizeOpen={assetMenuId === asset.id}
         onSelect={() =>
@@ -449,6 +456,7 @@ export function VideoEditorAssetPanel({
               : [...current, asset.id],
           )
         }
+        onPreview={() => onPreview?.(asset)}
         onAdd={() => onAdd(asset)}
         onDelete={() => {
           setDeleteError("");
@@ -508,17 +516,13 @@ export function VideoEditorAssetPanel({
       disabled={disabled || upload.isPending}
       ariaLabel={ariaLabel}
       onToggle={() =>
-        setAddMenuTarget((current) =>
-          current === target ? undefined : target,
-        )
+        setAddMenuTarget((current) => (current === target ? undefined : target))
       }
       onClose={() => setAddMenuTarget(undefined)}
       onLocalUpload={() =>
         openLocalUpload(target === ROOT_BATCH_ID ? undefined : target)
       }
-      onImport={() =>
-        openImport(target === ROOT_BATCH_ID ? undefined : target)
-      }
+      onImport={() => openImport(target === ROOT_BATCH_ID ? undefined : target)}
     />
   );
 
@@ -794,9 +798,7 @@ export function VideoEditorAssetPanel({
                 <VideoEditorAssetBatchSelectionHeader
                   count={selectedIds.length}
                   total={arranged.rootAssetIds.length}
-                  onSelectAll={() =>
-                    setSelectedIds([...arranged.rootAssetIds])
-                  }
+                  onSelectAll={() => setSelectedIds([...arranged.rootAssetIds])}
                   onClearSelection={() => setSelectedIds([])}
                   onExit={() => {
                     setBatchFolderId(undefined);
