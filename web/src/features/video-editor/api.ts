@@ -127,7 +127,7 @@ export const importVideoEditorAssets = async (
 export async function uploadVideoEditorAsset(projectId: string, file: File) {
   const form = new FormData();
   form.append("upload", file);
-  return fetchApiJson(
+  return fetchApiJson<components["schemas"]["VideoEditorAssetOut"]>(
     `/v1/video-editor/projects/${encodeURIComponent(projectId)}/assets`,
     { method: "POST", body: form },
   );
@@ -241,16 +241,18 @@ export const exactFramePath = (
   revision: number,
   timeUs: number,
   width = 960,
+  withoutChromaClipId?: string,
 ) =>
-  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}&renderVersion=2`;
+  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}&renderVersion=3${withoutChromaClipId ? `&withoutChromaClipId=${encodeURIComponent(withoutChromaClipId)}` : ""}`;
 
 export const exactFrameUrl = (
   projectId: string,
   revision: number,
   timeUs: number,
   width = 960,
+  withoutChromaClipId?: string,
 ) =>
-  `${import.meta.env.VITE_API_BASE || ""}${exactFramePath(projectId, revision, timeUs, width)}`;
+  `${import.meta.env.VITE_API_BASE || ""}${exactFramePath(projectId, revision, timeUs, width, withoutChromaClipId)}`;
 
 export const downloadVideoEditorSegments = (
   projectId: string,

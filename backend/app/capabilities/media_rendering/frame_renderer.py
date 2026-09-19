@@ -44,7 +44,13 @@ def _load_image(path: str) -> Image.Image:
         return source.convert("RGBA")
 
 
-def render_plan_frame(plan: RenderPlan, *, time_us: int, width: int = 960) -> bytes:
+def render_plan_frame(
+    plan: RenderPlan,
+    *,
+    time_us: int,
+    width: int = 960,
+    without_chroma_clip_id: str | None = None,
+) -> bytes:
     def image_for_clip(clip: VideoEditorClip, local_us: int) -> Image.Image | None:
         path = plan.asset_paths.get(clip.asset_id or "")
         if path is None:
@@ -61,6 +67,7 @@ def render_plan_frame(plan: RenderPlan, *, time_us: int, width: int = 960) -> by
             image_for_clip=image_for_clip,
             font_for_clip=lambda clip: plan.asset_paths.get(clip.font_asset_id or ""),
         ),
+        without_chroma_clip_id=without_chroma_clip_id,
     ).render(time_us)
     capture = plan.capture_frame
     frame = frame.crop(

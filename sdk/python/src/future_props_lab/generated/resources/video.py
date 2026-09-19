@@ -67,9 +67,9 @@ class Video:
         'Reveal Project Folder. POST /v1/video-editor/projects/{project_id}/open-folder'
         return self._client._call('POST', '/v1/video-editor/projects/{project_id}/open-folder', parameters=[('project_id', 'path', project_id)], response_type=models.ProjectFolderOpenOut)
 
-    def exact_frame(self, *, project_id: str, revision: int, time_us: int, width: int | Unset = UNSET) -> Any:
+    def exact_frame(self, *, project_id: str, revision: int, time_us: int, width: int | Unset = UNSET, without_chroma_clip_id: str | None | Unset = UNSET) -> Any:
         'Exact Frame. GET /v1/video-editor/projects/{project_id}/preview/frame'
-        return self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/frame', parameters=[('project_id', 'path', project_id), ('revision', 'query', revision), ('timeUs', 'query', time_us), ('width', 'query', width)], response_type=Any)
+        return self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/frame', parameters=[('project_id', 'path', project_id), ('revision', 'query', revision), ('timeUs', 'query', time_us), ('width', 'query', width), ('withoutChromaClipId', 'query', without_chroma_clip_id)], response_type=Any)
 
     def list_renders(self, *, project_id: str) -> models.VideoEditorTaskListOut:
         'List Renders. GET /v1/video-editor/projects/{project_id}/renders'
@@ -191,9 +191,9 @@ class AsyncVideo:
         'Reveal Project Folder. POST /v1/video-editor/projects/{project_id}/open-folder'
         return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/open-folder', parameters=[('project_id', 'path', project_id)], response_type=models.ProjectFolderOpenOut)
 
-    async def exact_frame(self, *, project_id: str, revision: int, time_us: int, width: int | Unset = UNSET) -> Any:
+    async def exact_frame(self, *, project_id: str, revision: int, time_us: int, width: int | Unset = UNSET, without_chroma_clip_id: str | None | Unset = UNSET) -> Any:
         'Exact Frame. GET /v1/video-editor/projects/{project_id}/preview/frame'
-        return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/frame', parameters=[('project_id', 'path', project_id), ('revision', 'query', revision), ('timeUs', 'query', time_us), ('width', 'query', width)], response_type=Any)
+        return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/frame', parameters=[('project_id', 'path', project_id), ('revision', 'query', revision), ('timeUs', 'query', time_us), ('width', 'query', width), ('withoutChromaClipId', 'query', without_chroma_clip_id)], response_type=Any)
 
     async def list_renders(self, *, project_id: str) -> models.VideoEditorTaskListOut:
         'List Renders. GET /v1/video-editor/projects/{project_id}/renders'

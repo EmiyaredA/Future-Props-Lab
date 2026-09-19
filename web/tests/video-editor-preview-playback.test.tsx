@@ -147,6 +147,43 @@ describe("video editor preview playback", () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
   });
 
+  it("shows a paused split comparison for a selected keyed clip", () => {
+    const keyedTimeline = structuredClone(timeline);
+    keyedTimeline.document.tracks![0]!.clips![0]!.chromaKey = {
+      enabled: true,
+      color: "#00ff00",
+      similarity: 42,
+      softness: 18,
+      despill: 30,
+    };
+    render(
+      <VideoEditorPreview
+        projectId="editor-1"
+        timeline={keyedTimeline}
+        assets={assets}
+        playheadUs={1_000_000}
+        setPlayheadUs={vi.fn()}
+        playing={false}
+        setPlaying={vi.fn()}
+        selectedClipId="video-1"
+        preciseFrame={true}
+        onPreciseFrameChange={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "抠像对比" }));
+    expect(screen.getByAltText("抠像前的节目帧")).toHaveAttribute(
+      "src",
+      expect.stringContaining("withoutChromaClipId=video-1"),
+    );
+    fireEvent.change(
+      screen.getByRole("slider", { name: "调整抠像前后对比分界线" }),
+      { target: { value: "70" } },
+    );
+    expect(screen.getByAltText("抠像前的节目帧")).toHaveStyle({
+      clipPath: "inset(0 30% 0 0)",
+    });
+  });
+
   it("seeks every paused frame even when the delta is below playback tolerance", () => {
     const props = {
       projectId: "editor-1",

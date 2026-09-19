@@ -94,6 +94,14 @@ class VideoEditorTextStyle(BaseModel):
     background_opacity: float = Field(default=0, alias="backgroundOpacity", ge=0, le=1)
 
 
+class VideoEditorChromaKey(BaseModel):
+    enabled: bool = False
+    color: str = Field(default="#00ff00", pattern=r"^#[0-9a-fA-F]{6}$")
+    similarity: float = Field(default=42, ge=0, le=100)
+    softness: float = Field(default=18, ge=0, le=100)
+    despill: float = Field(default=30, ge=0, le=100)
+
+
 class VideoEditorClip(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     track_id: str = Field(alias="trackId", min_length=1, max_length=64)
@@ -112,6 +120,7 @@ class VideoEditorClip(BaseModel):
     text_color: str = Field(default="#ffffff", alias="textColor", pattern=r"^#[0-9a-fA-F]{6}$")
     text_max_width: int | None = Field(default=None, alias="textMaxWidth", ge=80, le=1920)
     text_style: VideoEditorTextStyle | None = Field(default=None, alias="textStyle")
+    chroma_key: VideoEditorChromaKey | None = Field(default=None, alias="chromaKey")
     fit_mode: Literal["native", "cover", "contain", "height"] = Field(
         default="cover", alias="fitMode"
     )
@@ -127,6 +136,8 @@ class VideoEditorClip(BaseModel):
 
     @model_validator(mode="after")
     def required_source(self) -> VideoEditorClip:
+        if self.chroma_key is not None and self.kind not in {"video", "image"}:
+            raise ValueError("只有视频和图片 Clip 可以抠像")
         if self.kind not in {"video", "audio"} and self.playback_rate not in {None, 1}:
             raise ValueError("只有视频和音频 Clip 可以变速")
         if self.kind in {"video", "image", "audio"} and not self.asset_id:

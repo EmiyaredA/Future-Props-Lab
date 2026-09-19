@@ -3,6 +3,7 @@ import { Diamond, Link, Link2Off, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
 import { ClipSpeedControl } from "./ClipSpeedControl";
+import { VideoEditorChromaInspector } from "./VideoEditorChromaInspector";
 import "./video-editor-inspector.css";
 
 const numberValue = (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -251,6 +252,9 @@ export function VideoEditorInspector({
             onRippleChange={setSpeedRippleEnabled}
             commit={commit}
           />
+        ) : null}
+        {clip.kind === "video" || clip.kind === "image" ? (
+          <VideoEditorChromaInspector clip={clip} commit={commit} />
         ) : null}
         {clip.kind === "video" ? (
           <section className="ve-inspector-section">

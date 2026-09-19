@@ -23877,6 +23877,44 @@
         "title": "VideoEditorAvailableAssetOut",
         "type": "object"
       },
+      "VideoEditorChromaKey": {
+        "properties": {
+          "color": {
+            "default": "#00ff00",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "despill": {
+            "default": 30,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Despill",
+            "type": "number"
+          },
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "similarity": {
+            "default": 42,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Similarity",
+            "type": "number"
+          },
+          "softness": {
+            "default": 18,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Softness",
+            "type": "number"
+          }
+        },
+        "title": "VideoEditorChromaKey",
+        "type": "object"
+      },
       "VideoEditorClip": {
         "properties": {
           "assetId": {
@@ -23889,6 +23927,16 @@
               }
             ],
             "title": "Assetid"
+          },
+          "chromaKey": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorChromaKey"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "color": {
             "anyOf": [
@@ -44654,6 +44702,22 @@
               "minimum": 320,
               "title": "Width",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "withoutChromaClipId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Withoutchromaclipid"
             }
           }
         ],

@@ -247,6 +247,9 @@ export function VideoEditorSegmentExportDialog({
             <div>
               <h2>分段导出</h2>
               <p>勾选片段并设置输出规格，可选择导入画布项目</p>
+              <p role="note">
+                分段导出输出原始视频片段，不包含抠像、背景合成等时间线画面效果；需要这些效果请使用“导出视频”。
+              </p>
             </div>
           </div>
           <button aria-label="关闭" onClick={onClose}>

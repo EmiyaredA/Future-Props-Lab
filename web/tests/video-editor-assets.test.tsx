@@ -4,14 +4,20 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VideoEditorAssetPanel } from "@features/video-editor/VideoEditorAssetPanel";
 import {
+  applyVideoEditorOperations,
   deleteVideoEditorAsset,
+  getVideoEditorTimeline,
+  listVideoEditorAssets,
   listVideoEditorImportSources,
   uploadVideoEditorAsset,
 } from "@features/video-editor/api";
 import type { VideoEditorAsset } from "@features/video-editor/types";
 
 vi.mock("@features/video-editor/api", () => ({
+  applyVideoEditorOperations: vi.fn(),
   deleteVideoEditorAsset: vi.fn(),
+  getVideoEditorTimeline: vi.fn(),
+  listVideoEditorAssets: vi.fn(),
   importVideoEditorAssets: vi.fn(),
   listVideoEditorImportSources: vi.fn(),
   uploadVideoEditorAsset: vi.fn(),
@@ -42,6 +48,7 @@ function renderPanel({
   assets = [asset],
   organization,
   onOrganizationChange = vi.fn(),
+  onAddBatch = vi.fn(),
 }: {
   assets?: VideoEditorAsset[];
   organization?: {
@@ -49,6 +56,7 @@ function renderPanel({
     rootAssetIds?: string[];
   };
   onOrganizationChange?: ReturnType<typeof vi.fn>;
+  onAddBatch?: ReturnType<typeof vi.fn>;
 } = {}) {
   const client = new QueryClient({
     defaultOptions: {
@@ -63,12 +71,13 @@ function renderPanel({
         assets={assets}
         organization={organization}
         onAdd={vi.fn()}
+        onAddBatch={onAddBatch}
         onAddGenerated={vi.fn()}
         onOrganizationChange={onOrganizationChange}
       />
     </QueryClientProvider>,
   );
-  return { ...view, onOrganizationChange };
+  return { ...view, onOrganizationChange, onAddBatch };
 }
 
 beforeEach(() => {
@@ -77,6 +86,179 @@ beforeEach(() => {
 });
 
 describe("video editor asset panel", () => {
+  it("uploads into a chosen folder and saves the organization", async () => {
+    const user = userEvent.setup();
+    vi.mocked(uploadVideoEditorAsset).mockResolvedValue(asset);
+    vi.mocked(getVideoEditorTimeline).mockResolvedValue({
+      projectId: "project-1",
+      revision: 2,
+      updatedAt: "2026-09-19",
+      document: {
+        folders: [],
+        tracks: [],
+        assetOrganization: {
+          folders: [{ id: "folder", name: "特效", assetIds: [] }],
+          rootAssetIds: [],
+        },
+      },
+    } as never);
+    vi.mocked(listVideoEditorAssets).mockResolvedValue({ items: [asset] });
+    vi.mocked(applyVideoEditorOperations).mockResolvedValue({
+      revision: 3,
+    } as never);
+    renderPanel({
+      assets: [asset],
+      organization: {
+        folders: [{ id: "folder", name: "特效", assetIds: [] }],
+        rootAssetIds: [asset.id],
+      },
+    });
+    await user.click(
+      screen.getByRole("button", { name: "向文件夹“特效”添加素材" }),
+    );
+    await user.upload(
+      screen.getByLabelText("上传素材（可多选）"),
+      new File(["a"], "a.mp4", { type: "video/mp4" }),
+    );
+    await waitFor(() => expect(applyVideoEditorOperations).toHaveBeenCalled());
+    expect(vi.mocked(applyVideoEditorOperations).mock.calls[0]?.[2]).toEqual([
+      {
+        type: "setAssetOrganization",
+        organization: {
+          folders: [{ id: "folder", name: "特效", assetIds: [asset.id] }],
+          rootAssetIds: [],
+        },
+      },
+    ]);
+  });
+
+  it("keeps uploaded assets recoverable when folder placement fails", async () => {
+    const user = userEvent.setup();
+    vi.mocked(uploadVideoEditorAsset).mockResolvedValue(asset);
+    vi.mocked(getVideoEditorTimeline).mockResolvedValue({
+      projectId: "project-1",
+      revision: 2,
+      updatedAt: "2026-09-19",
+      document: {
+        tracks: [],
+        assetOrganization: {
+          folders: [{ id: "folder", name: "特效", assetIds: [] }],
+          rootAssetIds: [],
+        },
+      },
+    } as never);
+    vi.mocked(listVideoEditorAssets).mockResolvedValue({ items: [asset] });
+    vi.mocked(applyVideoEditorOperations).mockRejectedValue(
+      new Error("版本冲突"),
+    );
+    renderPanel({
+      organization: {
+        folders: [{ id: "folder", name: "特效", assetIds: [] }],
+        rootAssetIds: [],
+      },
+    });
+    await user.click(
+      screen.getByRole("button", { name: "向文件夹“特效”添加素材" }),
+    );
+    await user.upload(
+      screen.getByLabelText("上传素材（可多选）"),
+      new File(["a"], "a.mp4", { type: "video/mp4" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: /重试将 1 个素材归入/ }),
+    ).toBeVisible();
+    expect(screen.getByText(/暂在“未分类”/)).toBeVisible();
+    expect(applyVideoEditorOperations).toHaveBeenCalledTimes(3);
+  });
+
+  it("selects folder assets for ordered batch actions", async () => {
+    const user = userEvent.setup();
+    const { onAddBatch, onOrganizationChange } = renderPanel({
+      assets: [asset, secondAsset],
+      organization: {
+        folders: [
+          { id: "folder", name: "特效", assetIds: [asset.id, secondAsset.id] },
+        ],
+        rootAssetIds: [],
+      },
+    });
+    await user.click(
+      screen.getByRole("button", { name: "批量选择文件夹“特效”中的素材" }),
+    );
+    await user.click(screen.getByRole("button", { name: "全选" }));
+    expect(screen.getByText("已选择 2 项")).toBeVisible();
+    expect(screen.getByRole("button", { name: "取消全选" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "添加到时间轴" }));
+    await waitFor(() =>
+      expect(onAddBatch).toHaveBeenCalledWith([asset, secondAsset]),
+    );
+    await user.click(screen.getByRole("button", { name: "全选" }));
+    await user.click(screen.getByRole("button", { name: "移动到文件夹" }));
+    await user.click(screen.getByRole("menuitem", { name: "未分类" }));
+    expect(onOrganizationChange).toHaveBeenCalledWith({
+      folders: [{ id: "folder", name: "特效", assetIds: [] }],
+      rootAssetIds: [asset.id, secondAsset.id],
+    });
+  });
+
+  it("adds manually selected assets in folder order rather than click order", async () => {
+    const user = userEvent.setup();
+    const { onAddBatch } = renderPanel({
+      assets: [asset, secondAsset],
+      organization: {
+        folders: [
+          { id: "folder", name: "特效", assetIds: [asset.id, secondAsset.id] },
+        ],
+        rootAssetIds: [],
+      },
+    });
+    await user.click(
+      screen.getByRole("button", { name: "批量选择文件夹“特效”中的素材" }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: "选择素材“配乐.wav”" }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: "选择素材“演示视频.mp4”" }),
+    );
+    await user.click(screen.getByRole("button", { name: "添加到时间轴" }));
+    await waitFor(() =>
+      expect(onAddBatch).toHaveBeenCalledWith([asset, secondAsset]),
+    );
+  });
+
+  it("keeps only failed items selected after a partial batch deletion", async () => {
+    const user = userEvent.setup();
+    vi.mocked(deleteVideoEditorAsset)
+      .mockResolvedValueOnce({ deleted: true })
+      .mockRejectedValueOnce(new Error("素材仍被时间轴引用"));
+    renderPanel({
+      assets: [asset, secondAsset],
+      organization: {
+        folders: [
+          { id: "folder", name: "特效", assetIds: [asset.id, secondAsset.id] },
+        ],
+        rootAssetIds: [],
+      },
+    });
+    await user.click(
+      screen.getByRole("button", { name: "批量选择文件夹“特效”中的素材" }),
+    );
+    await user.click(screen.getByRole("button", { name: "全选" }));
+    await user.click(screen.getByRole("button", { name: /^删除$/ }));
+    await user.click(screen.getByRole("button", { name: "确认删除" }));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "素材仍被时间轴引用",
+      ),
+    );
+    expect(
+      screen.getByRole("checkbox", { name: "选择素材“配乐.wav”" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "选择素材“演示视频.mp4”" }),
+    ).not.toBeChecked();
+  });
   it("uploads multiple selected files in order and allows choosing the same file again", async () => {
     const user = userEvent.setup();
     vi.mocked(uploadVideoEditorAsset).mockResolvedValue(asset);
@@ -141,7 +323,7 @@ describe("video editor asset panel", () => {
 
   it("displays batch progress and prevents another selection while uploading", async () => {
     const user = userEvent.setup();
-    let complete!: (value: unknown) => void;
+    let complete!: (value: VideoEditorAsset) => void;
     vi.mocked(uploadVideoEditorAsset)
       .mockImplementationOnce(
         () =>

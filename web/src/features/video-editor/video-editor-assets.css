@@ -4,6 +4,7 @@
   gap: 7px;
 }
 .ve-assets-panel > header button {
+  position: relative;
   width: 28px;
   height: 28px;
   display: grid;
@@ -22,6 +23,33 @@
 .ve-assets-panel > header button svg {
   width: 16px;
 }
+.ve-assets-panel > header button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  border: 1px solid #505975;
+  border-radius: 4px;
+  background: #202636;
+  color: #e8ebf4;
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 80ms ease,
+    visibility 80ms ease;
+}
+.ve-assets-panel > header button:hover::after,
+.ve-assets-panel > header button:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
 .ve-asset-group {
   margin-bottom: 8px;
   border: 1px solid #292f3f;
@@ -31,8 +59,9 @@
 .ve-asset-folder-row {
   min-height: 34px;
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
   align-items: center;
+  gap: 2px;
   padding: 2px 3px 2px 6px;
   border-radius: 6px;
   color: #c5c9d5;
@@ -87,11 +116,6 @@
 }
 .ve-folder-controls {
   display: flex;
-  opacity: 0;
-}
-.ve-asset-folder-row:hover .ve-folder-controls,
-.ve-asset-folder-row:focus-within .ve-folder-controls {
-  opacity: 1;
 }
 .ve-folder-controls button {
   width: 21px;
@@ -132,13 +156,17 @@
   border-style: dashed;
   background: #111620;
 }
+.ve-root-assets-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-left: 4px;
+}
 .ve-root-assets-toggle {
-  width: 100%;
+  width: auto;
   min-height: 34px;
-  padding: 5px 8px;
+  padding: 5px 4px;
 }
 .ve-asset-wrap {
-  margin-top: 5px;
+  margin-top: 3px;
 }
 .ve-asset-wrap:first-child {
   margin-top: 0;
@@ -251,4 +279,238 @@
   margin: 6px 0 0;
   padding-left: 16px;
   color: #ff9ea6;
+}
+.ve-folder-quick-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1px;
+  align-items: center;
+}
+.ve-asset-add-wrap {
+  position: relative;
+}
+.ve-folder-quick-actions button,
+.ve-folder-controls button,
+.ve-asset-add-wrap > button {
+  position: relative;
+}
+.ve-folder-quick-actions button,
+.ve-asset-add-wrap > button {
+  width: 21px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: #c9c3ff;
+  background: transparent;
+  cursor: pointer;
+}
+.ve-folder-quick-actions button:hover:not(:disabled),
+.ve-folder-quick-actions button:focus-visible,
+.ve-asset-add-wrap > button:hover:not(:disabled),
+.ve-asset-add-wrap > button:focus-visible {
+  color: #e4e0ff;
+  background: #34394d;
+}
+.ve-folder-quick-actions button[aria-pressed="true"] {
+  color: #d4ceff;
+  background: #2f2a48;
+}
+.ve-folder-quick-actions svg,
+.ve-asset-add-wrap > button svg {
+  width: 12px;
+  height: 12px;
+}
+.ve-asset-add-menu {
+  position: absolute;
+  z-index: 9;
+  top: calc(100% + 2px);
+  right: 0;
+  display: grid;
+  gap: 2px;
+  min-width: 148px;
+  padding: 5px;
+  border: 1px solid #505975;
+  border-radius: 6px;
+  background: #202636;
+  box-shadow: 0 8px 22px #0008;
+}
+.ve-asset-add-menu button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  color: #e8ebf4;
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+}
+.ve-asset-add-menu button:hover,
+.ve-asset-add-menu button:focus-visible {
+  background: #343a4e;
+}
+.ve-asset-add-menu svg {
+  width: 13px;
+  height: 13px;
+  color: #c9c3ff;
+}
+.ve-folder-quick-actions button::after,
+.ve-folder-controls button::after,
+.ve-asset-add-wrap > button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  border: 1px solid #505975;
+  border-radius: 4px;
+  background: #202636;
+  color: #e8ebf4;
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 80ms ease,
+    visibility 80ms ease;
+}
+.ve-folder-controls button:last-child::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.ve-folder-quick-actions button:hover::after,
+.ve-folder-quick-actions button:focus-visible::after,
+.ve-folder-controls button:hover::after,
+.ve-folder-controls button:focus-visible::after,
+.ve-asset-add-wrap > button:hover::after,
+.ve-asset-add-wrap > button:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+.ve-asset-add-wrap:has(.ve-asset-add-menu) > button::after {
+  opacity: 0;
+  visibility: hidden;
+}
+.ve-import-preview {
+  width: 44px;
+  height: 32px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 5px;
+  background: #121722;
+}
+.ve-import-preview-fallback {
+  display: grid;
+  place-items: center;
+  color: #9aa3bb;
+}
+.ve-import-preview-fallback svg {
+  width: 16px;
+  height: 16px;
+}
+.ve-import-empty {
+  margin: 12px 0;
+  color: #848da2;
+  font-size: 12px;
+  text-align: center;
+}
+.ve-asset-check {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 0 0 6px;
+  cursor: pointer;
+}
+.ve-asset-check input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #8274f4;
+}
+.ve-batch-selection-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px 6px 4px;
+  color: #bfc5d3;
+  font-size: 10px;
+}
+.ve-batch-selection-head button {
+  border: 0;
+  background: transparent;
+  color: #aca3ff;
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ve-batch-toolbar {
+  position: relative;
+  padding: 6px;
+  border-top: 1px solid #384055;
+  background: #191e2b;
+}
+.ve-batch-toolbar > div:first-of-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ve-batch-toolbar button,
+.ve-upload-retry {
+  border: 1px solid #444b61;
+  border-radius: 5px;
+  padding: 5px 7px;
+  color: #d8dce8;
+  background: #252a3a;
+  cursor: pointer;
+  font-size: 11px;
+}
+.ve-batch-toolbar button.danger {
+  color: #f5a2ad;
+  border-color: #8f434d;
+}
+.ve-batch-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ve-batch-toolbar p,
+.ve-batch-message {
+  margin: 0 0 6px;
+  padding: 5px;
+  color: #f1cba5;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.ve-batch-move-menu {
+  display: grid;
+  gap: 3px;
+  position: absolute;
+  bottom: 100%;
+  left: 7px;
+  min-width: 150px;
+  padding: 6px;
+  border: 1px solid #505975;
+  border-radius: 6px;
+  background: #202636;
+  box-shadow: 0 8px 22px #0008;
+  z-index: 5;
+}
+.ve-folder-quick-actions button:focus-visible,
+.ve-batch-toolbar button:focus-visible,
+.ve-batch-selection-head button:focus-visible {
+  outline: 2px solid #a69cff;
+  outline-offset: 2px;
 }

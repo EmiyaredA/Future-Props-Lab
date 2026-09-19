@@ -38,6 +38,7 @@ export function NoteEditorPane({
   const editing = useNoteDraft(note, onSaved);
   const [editor, setEditor] = useState<Editor | null>(null);
   const titleInput = useRef<HTMLInputElement>(null);
+  const [titleDraft, setTitleDraft] = useState<string | null>(null);
   const [assistant, setAssistant] = useState(false);
   const [notice, setNotice] = useState("");
   const [serverPreview, setServerPreview] = useState(false);
@@ -277,13 +278,17 @@ export function NoteEditorPane({
                   className="thought-title-input"
                   aria-label="笔记标题"
                   maxLength={240}
-                  value={editing.draft.title || ""}
+                  value={titleDraft ?? editing.draft.title}
                   placeholder="未命名笔记"
+                  onFocus={() => setTitleDraft(editing.draft.title)}
                   onCompositionStart={() => editing.setComposition(true)}
                   onCompositionEnd={() => editing.setComposition(false)}
-                  onChange={(e) =>
-                    editing.change({ title: e.target.value || "未命名笔记" })
-                  }
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setTitleDraft(next);
+                    if (next.trim()) editing.change({ title: next });
+                  }}
+                  onBlur={() => setTitleDraft(null)}
                 />
                 <NoteTags
                   tags={editing.draft.tags || []}

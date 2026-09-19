@@ -292,10 +292,15 @@ async def exact_frame(
     revision: int = Query(ge=0),
     time_us: int = Query(alias="timeUs", ge=0),
     width: int = Query(default=960, ge=320, le=1920),
+    without_chroma_clip_id: str | None = Query(default=None, alias="withoutChromaClipId"),
 ) -> Response:
     try:
         png = await VideoEditorFrames(session, workspace_id).render(
-            project_id, revision=revision, time_us=time_us, width=width
+            project_id,
+            revision=revision,
+            time_us=time_us,
+            width=width,
+            without_chroma_clip_id=without_chroma_clip_id,
         )
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None

@@ -212,6 +212,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `revision` | query | integer | 是 |
 | `timeUs` | query | integer | 是 |
 | `width` | query | integer | 否 |
+| `withoutChromaClipId` | query | string / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `object`

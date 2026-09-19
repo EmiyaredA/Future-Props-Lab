@@ -66,6 +66,17 @@ export function moveAssetInOrganization(
   return next;
 }
 
+export function moveAssetsInOrganization(
+  organization: CompleteAssetOrganization,
+  assetIds: string[],
+  folderId: string | null,
+): CompleteAssetOrganization {
+  return assetIds.reduce(
+    (current, assetId) => moveAssetInOrganization(current, assetId, folderId),
+    organization,
+  );
+}
+
 export function shiftAssetInOrganization(
   organization: CompleteAssetOrganization,
   assetId: string,

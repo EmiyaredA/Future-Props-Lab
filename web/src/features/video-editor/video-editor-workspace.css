@@ -240,12 +240,13 @@
 }
 .ve-asset {
   width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  margin-bottom: 7px;
+  gap: 2px;
+  margin-bottom: 4px;
   text-align: left;
   border: 1px solid transparent;
+  border-radius: 5px;
   background: #191e2b;
 }
 .ve-asset:hover,
@@ -254,24 +255,25 @@
   background: #202638;
 }
 .ve-asset-main {
+  flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   align-items: center;
-  gap: 9px;
-  padding: 7px;
+  gap: 6px;
+  padding: 4px 2px 4px 5px;
   text-align: left;
   border: 0;
   background: transparent;
 }
 .ve-asset-main > img,
 .ve-asset-main > span:first-child {
-  width: 54px;
-  height: 38px;
+  width: 40px;
+  height: 28px;
   display: grid;
   place-items: center;
   object-fit: cover;
-  border-radius: 5px;
+  border-radius: 4px;
   background: #0c0f16;
 }
 .ve-asset-copy {
@@ -280,26 +282,29 @@
 }
 .ve-asset strong {
   overflow: hidden;
-  font-size: 12px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ve-asset small {
   color: #8991a6;
+  font-size: 10px;
 }
 .ve-asset-controls {
-  display: grid;
-  gap: 2px;
-  padding-right: 5px;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 1px;
+  padding-right: 3px;
 }
 .ve-asset-controls button {
-  width: 25px;
-  height: 25px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: 4px;
   color: #8d81f7;
   background: transparent;
 }
@@ -308,7 +313,7 @@
   background: #30364b;
 }
 .ve-asset-controls svg {
-  width: 14px;
+  width: 12px;
 }
 .ve-asset-controls .ve-asset-delete {
   color: #c8848b;
@@ -327,12 +332,12 @@
 .ve-import-dialog {
   width: min(620px, 100%);
 }
-.ve-import-dialog > div {
+.ve-import-dialog .ve-import-list {
   max-height: 360px;
   overflow: auto;
   margin-top: 14px;
 }
-.ve-import-dialog > div button {
+.ve-import-dialog .ve-import-list button {
   width: 100%;
   display: flex;
   align-items: center;
@@ -345,15 +350,15 @@
   background: var(--surface-soft);
   color: var(--text);
 }
-.ve-import-dialog > div button:hover {
+.ve-import-dialog .ve-import-list button:hover {
   border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
   background: color-mix(in srgb, var(--accent) 8%, var(--surface-soft));
 }
-.ve-import-dialog > div button.selected {
+.ve-import-dialog .ve-import-list button.selected {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, var(--surface-soft));
 }
-.ve-import-dialog > div button > span {
+.ve-import-dialog .ve-import-list button > span:first-child {
   width: 22px;
   height: 22px;
   display: grid;
@@ -364,7 +369,7 @@
   color: white;
   background: var(--accent);
 }
-.ve-import-dialog > div button div {
+.ve-import-dialog .ve-import-list button div {
   display: grid;
   gap: 2px;
   min-width: 0;
@@ -453,6 +458,16 @@
   position: absolute;
   display: block;
   max-width: none;
+}
+.ve-stage-media-crop .ve-keyed-media {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+.ve-stage-layer > .ve-keyed-image {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 .ve-stage-layer i {
   display: block;

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import os
+from hashlib import sha256
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +34,7 @@ class VideoEditorFrames:
         revision: int,
         time_us: int,
         width: int = 960,
+        without_chroma_clip_id: str | None = None,
     ) -> bytes:
         await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         timeline = await self.session.get(VideoEditorTimeline, project_id)
@@ -45,12 +47,26 @@ class VideoEditorFrames:
                 {"revision": timeline.revision, "document": timeline.document},
             )
         document = VideoEditorTimelineDocument.model_validate(timeline.document)
+        if without_chroma_clip_id and not any(
+            clip.id == without_chroma_clip_id and clip.chroma_key and clip.chroma_key.enabled
+            for track in document.tracks
+            for clip in track.clips
+        ):
+            raise VideoEditorValidationError(
+                "对比片段不存在或未启用抠像", code="invalid_compare_clip"
+            )
         if time_us < 0 or time_us > timeline_duration_us(document):
             raise VideoEditorValidationError("预览时间超出时间轴", code="invalid_time")
+        comparison_key = (
+            sha256(without_chroma_clip_id.encode()).hexdigest()[:16]
+            if without_chroma_clip_id
+            else "none"
+        )
         cache = (
             self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
             / "derived"
-            / f"frame-v{TEXT_RENDER_VERSION}-r{revision}-t{time_us}-w{width}.png"
+            / f"frame-v{TEXT_RENDER_VERSION}-chroma1-r{revision}-t{time_us}-w{width}"
+            f"-raw{comparison_key}.png"
         )
         if cache.is_file():
             return cache.read_bytes()
@@ -88,6 +104,7 @@ class VideoEditorFrames:
             ),
             time_us=time_us,
             width=width,
+            without_chroma_clip_id=without_chroma_clip_id,
         )
         temporary = cache.with_suffix(f".{os.getpid()}.tmp")
         try:

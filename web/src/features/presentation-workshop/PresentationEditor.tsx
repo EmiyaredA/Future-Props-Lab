@@ -73,6 +73,7 @@ export function PresentationEditor({
     [previewId, setPreviewId] = useState<string | null>(null),
     [show, setShow] = useState<number | null>(null);
   const [panel, setPanel] = useState("slides");
+  const [titleDraft, setTitleDraft] = useState<string | null>(null);
   const clipboard = useRef<{ token: string; elements: SlideElement[] } | null>(
     null,
   );
@@ -465,12 +466,18 @@ export function PresentationEditor({
         <input
           aria-label="文稿名称"
           maxLength={120}
-          value={draft.draft.title}
+          value={titleDraft ?? draft.draft.title}
           readOnly={readOnly}
-          onChange={(e) => {
-            if (e.target.value.trim())
-              commit((d) => ({ ...d, title: e.target.value }), "title");
+          onFocus={() => {
+            if (!readOnly) setTitleDraft(draft.draft.title);
           }}
+          onChange={(event) => {
+            const next = event.target.value;
+            setTitleDraft(next);
+            if (next.trim() && next !== draft.draft.title)
+              commit((current) => ({ ...current, title: next }), "title");
+          }}
+          onBlur={() => setTitleDraft(null)}
         />
         <span
           className={`presentation-save-state ${draft.state}`}

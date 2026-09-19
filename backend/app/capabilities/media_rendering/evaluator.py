@@ -9,6 +9,7 @@ from pathlib import Path
 
 from PIL import Image, ImageColor
 
+from app.capabilities.media_rendering.chroma_key import apply_chroma_key
 from app.capabilities.media_rendering.text_layer import render_text_layer
 from app.capabilities.media_rendering.timeline_document import (
     VideoEditorClip,
@@ -96,9 +97,16 @@ class FrameSource:
 
 
 class TimelineFrameRenderer:
-    def __init__(self, document: VideoEditorTimelineDocument, source: FrameSource) -> None:
+    def __init__(
+        self,
+        document: VideoEditorTimelineDocument,
+        source: FrameSource,
+        *,
+        without_chroma_clip_id: str | None = None,
+    ) -> None:
         self.document = document
         self.source = source
+        self.without_chroma_clip_id = without_chroma_clip_id
         self._portrait_ground_ratio_by_asset: dict[str, float] = {}
 
     def render(self, time_us: int, *, size: tuple[int, int] | None = None) -> Image.Image:
@@ -138,7 +146,10 @@ class TimelineFrameRenderer:
             )
         if clip.kind == "text":
             return self._text_layer(clip)
-        return self.source.image_for_clip(clip, local_us)
+        layer = self.source.image_for_clip(clip, local_us)
+        if layer is not None and clip.chroma_key and clip.id != self.without_chroma_clip_id:
+            return apply_chroma_key(layer, clip.chroma_key)
+        return layer
 
     def _text_layer(self, clip: VideoEditorClip) -> Image.Image:
         return render_text_layer(clip, self.source.font_for_clip(clip))

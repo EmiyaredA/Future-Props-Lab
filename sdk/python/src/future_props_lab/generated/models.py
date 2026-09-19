@@ -3777,8 +3777,16 @@ class VideoEditorAvailableAssetOut(WireModel):
     mime_type: str = Field(default=..., alias='mimeType')
     source_application: str = Field(default=..., alias='sourceApplication')
 
+class VideoEditorChromaKey(WireModel):
+    color: str = Field(default='#00ff00', alias='color')
+    despill: float = Field(default=30, alias='despill', ge=0.0, le=100.0)
+    enabled: bool = Field(default=False, alias='enabled')
+    similarity: float = Field(default=42, alias='similarity', ge=0.0, le=100.0)
+    softness: float = Field(default=18, alias='softness', ge=0.0, le=100.0)
+
 class VideoEditorClip(WireModel):
     asset_id: str | None = Field(default=None, alias='assetId')
+    chroma_key: VideoEditorChromaKey | None = Field(default=None, alias='chromaKey')
     color: str | None = Field(default=None, alias='color')
     duration_us: int = Field(default=..., alias='durationUs', gt=0.0)
     fit_mode: Literal['native', 'cover', 'contain', 'height'] = Field(default='cover', alias='fitMode')
@@ -4923,6 +4931,7 @@ VideoEditorAssetOrganization.model_rebuild()
 VideoEditorAssetOut.model_rebuild()
 VideoEditorAvailableAssetListOut.model_rebuild()
 VideoEditorAvailableAssetOut.model_rebuild()
+VideoEditorChromaKey.model_rebuild()
 VideoEditorClip.model_rebuild()
 VideoEditorKeyframe.model_rebuild()
 VideoEditorProjectCreateIn.model_rebuild()

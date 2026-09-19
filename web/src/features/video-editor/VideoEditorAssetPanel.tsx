@@ -5,7 +5,13 @@ import {
   assetPreparationLabel,
   assetUnavailableReason,
 } from "./assetReadiness";
-import { type DragEvent, type FormEvent, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type FormEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiErrorMessage } from "@platform/api/errors";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -13,6 +19,7 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  CheckSquare2,
   ChevronDown,
   ChevronRight,
   FilePlus2,
@@ -20,17 +27,18 @@ import {
   FolderInput,
   FolderPlus,
   Image,
-  Library,
   Music2,
   Pencil,
   Trash2,
   Type,
-  Upload,
   Video,
   X,
 } from "lucide-react";
 import {
   deleteVideoEditorAsset,
+  getVideoEditorTimeline,
+  listVideoEditorAssets,
+  applyVideoEditorOperations,
   importVideoEditorAssets,
   listVideoEditorImportSources,
   uploadVideoEditorAsset,
@@ -39,11 +47,22 @@ import {
   completeAssetOrganization,
   deleteFolderFromOrganization,
   moveAssetInOrganization,
+  moveAssetsInOrganization,
   moveFolderBefore,
   shiftAssetInOrganization,
   shiftFolderInOrganization,
 } from "./assetOrganization";
 import { videoEditorQueryKeys } from "./queryKeys";
+import { VideoEditorAssetAddMenu } from "./VideoEditorAssetAddMenu";
+import {
+  VideoEditorAssetBatchSelectionHeader,
+  VideoEditorAssetBatchToolbar,
+} from "./VideoEditorAssetBatchToolbar";
+import { VideoEditorAssetImportDialog } from "./VideoEditorAssetImportDialog";
+import {
+  VideoEditorAssetUploadFeedback,
+  type PendingFolderPlacement,
+} from "./VideoEditorAssetUploadFeedback";
 import type {
   VideoEditorAsset,
   VideoEditorAssetFolder,
@@ -54,6 +73,7 @@ import "./video-editor-assets.css";
 const ORGANIZE_ASSET_TYPE = "application/x-video-editor-organize-asset";
 const TIMELINE_ASSET_TYPE = "application/x-video-editor-asset";
 const FOLDER_TYPE = "application/x-video-editor-folder";
+export const ROOT_BATCH_ID = "root";
 
 const iconFor = (kind: string) =>
   kind === "video"
@@ -70,6 +90,7 @@ export function VideoEditorAssetPanel({
   organization,
   disabled = false,
   onAdd,
+  onAddBatch,
   onAddGenerated,
   onOrganizationChange,
   onTimelineAssetDrag,
@@ -80,13 +101,17 @@ export function VideoEditorAssetPanel({
   organization?: VideoEditorAssetOrganization;
   disabled?: boolean;
   onAdd: (asset: VideoEditorAsset) => void;
+  onAddBatch: (assets: VideoEditorAsset[]) => Promise<void>;
   onAddGenerated: (kind: "text" | "color", preset?: TextPreset) => void;
-  onOrganizationChange: (next: VideoEditorAssetOrganization) => void;
+  onOrganizationChange: (next: VideoEditorAssetOrganization) => Promise<void>;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const uploadFolderId = useRef<string | undefined>(undefined);
+  const importFolderId = useRef<string | undefined>(undefined);
   const client = useQueryClient();
   const [showImport, setShowImport] = useState(false);
   const [chosen, setChosen] = useState<string[]>([]);
+  const [addMenuTarget, setAddMenuTarget] = useState<string>();
   const [deleting, setDeleting] = useState<VideoEditorAsset>();
   const [deleteError, setDeleteError] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -95,6 +120,14 @@ export function VideoEditorAssetPanel({
   const [folderError, setFolderError] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [assetMenuId, setAssetMenuId] = useState<string>();
+  const [batchFolderId, setBatchFolderId] = useState<string>();
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmBatchDelete, setConfirmBatchDelete] = useState(false);
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchMessage, setBatchMessage] = useState("");
+  const [pendingPlacements, setPendingPlacements] = useState<
+    PendingFolderPlacement[]
+  >([]);
   const [uploadProgress, setUploadProgress] = useState({
     completed: 0,
     total: 0,
@@ -102,6 +135,25 @@ export function VideoEditorAssetPanel({
   });
   const arranged = completeAssetOrganization(organization, assets);
   const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
+  const batchAssetIds =
+    batchFolderId === ROOT_BATCH_ID
+      ? arranged.rootAssetIds
+      : (arranged.folders.find((folder) => folder.id === batchFolderId)
+          ?.assetIds ?? []);
+  const batchFolderAssetIds = batchAssetIds.join("\u0000");
+  const batchFolderExists =
+    batchFolderId === ROOT_BATCH_ID ||
+    arranged.folders.some((folder) => folder.id === batchFolderId);
+  useEffect(() => {
+    const valid = new Set(
+      batchFolderAssetIds ? batchFolderAssetIds.split("\u0000") : [],
+    );
+    setSelectedIds((current) => {
+      const next = current.filter((id) => valid.has(id));
+      return next.length === current.length ? current : next;
+    });
+    if (batchFolderId && !batchFolderExists) setBatchFolderId(undefined);
+  }, [batchFolderAssetIds, batchFolderExists, batchFolderId]);
   const sources = useQuery({
     queryKey: videoEditorQueryKeys.importSources,
     queryFn: listVideoEditorImportSources,
@@ -111,10 +163,43 @@ export function VideoEditorAssetPanel({
     void client.invalidateQueries({
       queryKey: videoEditorQueryKeys.assets(projectId),
     });
+  const placeInFolder = async (folderId: string, ids: string[]) => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const [timeline, latestAssets] = await Promise.all([
+          getVideoEditorTimeline(projectId),
+          listVideoEditorAssets(projectId),
+        ]);
+        const complete = completeAssetOrganization(
+          timeline.document.assetOrganization,
+          latestAssets.items,
+        );
+        if (!complete.folders.some((folder) => folder.id === folderId))
+          throw new Error("目标文件夹已不存在");
+        const next = moveAssetsInOrganization(complete, ids, folderId);
+        const saved = await applyVideoEditorOperations(
+          projectId,
+          timeline.revision,
+          [{ type: "setAssetOrganization", organization: next }],
+        );
+        client.setQueryData(videoEditorQueryKeys.timeline(projectId), saved);
+        return;
+      } catch (error) {
+        if (attempt === 2) throw error;
+      }
+    }
+  };
   const upload = useMutation({
-    mutationFn: async (files: File[]) => {
+    mutationFn: async ({
+      files,
+      folderId,
+    }: {
+      files: File[];
+      folderId?: string;
+    }) => {
       const failures: { filename: string; message: string }[] = [];
       let succeeded = 0;
+      const uploadedIds: string[] = [];
       for (const [index, file] of files.entries()) {
         setUploadProgress({
           completed: index,
@@ -122,8 +207,9 @@ export function VideoEditorAssetPanel({
           filename: file.name,
         });
         try {
-          await uploadVideoEditorAsset(projectId, file);
+          const uploaded = await uploadVideoEditorAsset(projectId, file);
           succeeded += 1;
+          uploadedIds.push(uploaded.id);
           refresh();
         } catch (error) {
           failures.push({
@@ -137,15 +223,49 @@ export function VideoEditorAssetPanel({
           filename: file.name,
         });
       }
+      if (folderId && uploadedIds.length) {
+        try {
+          await placeInFolder(folderId, uploadedIds);
+        } catch (error) {
+          setPendingPlacements((current) => [
+            ...current,
+            { folderId, ids: uploadedIds },
+          ]);
+          setBatchMessage(
+            `已上传 ${uploadedIds.length} 个素材，但归入文件夹失败；素材暂在“未分类”。${apiErrorMessage(error, "请重试归类。")}`,
+          );
+        }
+      }
       return { succeeded, failures };
     },
     retry: false,
   });
   const importAssets = useMutation({
-    mutationFn: () => importVideoEditorAssets(projectId, chosen),
+    mutationFn: async () => {
+      const imported = await importVideoEditorAssets(projectId, chosen);
+      const folderId = importFolderId.current;
+      if (folderId && imported.items.length) {
+        try {
+          await placeInFolder(
+            folderId,
+            imported.items.map((item) => item.id),
+          );
+        } catch (error) {
+          setPendingPlacements((current) => [
+            ...current,
+            { folderId, ids: imported.items.map((item) => item.id) },
+          ]);
+          setBatchMessage(
+            `已导入 ${imported.items.length} 个素材，但归入文件夹失败；素材暂在“未分类”。${apiErrorMessage(error, "请重试归类。")}`,
+          );
+        }
+      }
+      return imported;
+    },
     onSuccess: () => {
       setChosen([]);
       setShowImport(false);
+      importFolderId.current = undefined;
       refresh();
     },
   });
@@ -163,6 +283,81 @@ export function VideoEditorAssetPanel({
       setDeleteError(apiErrorMessage(error, "素材删除失败，请稍后重试。"));
     },
   });
+
+  const selectedIdSet = new Set(selectedIds);
+  const orderedSelectedIds = batchAssetIds.filter((id) => selectedIdSet.has(id));
+  const selectedAssets = orderedSelectedIds
+    .map((id) => assetsById.get(id))
+    .filter((asset): asset is VideoEditorAsset => Boolean(asset));
+  const moveSelected = async (folderId: string | null) => {
+    if (!selectedIds.length) return;
+    try {
+      setBatchBusy(true);
+      await onOrganizationChange(
+        moveAssetsInOrganization(arranged, orderedSelectedIds, folderId),
+      );
+      setSelectedIds([]);
+      setBatchMessage(`已移动 ${selectedIds.length} 个素材`);
+    } catch (error) {
+      setBatchMessage(apiErrorMessage(error, "移动失败"));
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+  const addSelected = async () => {
+    if (!selectedAssets.length) return;
+    const unavailable = selectedAssets.find(
+      (asset) =>
+        !canEditAsset(asset) ||
+        !["video", "audio", "image"].includes(asset.mediaKind),
+    );
+    if (unavailable) {
+      setBatchMessage(`“${unavailable.displayName}”尚不能添加到时间线`);
+      return;
+    }
+    try {
+      setBatchBusy(true);
+      await onAddBatch(selectedAssets);
+      setBatchMessage(`已添加 ${selectedAssets.length} 个素材到时间线末尾`);
+      setSelectedIds([]);
+    } catch (error) {
+      setBatchMessage(apiErrorMessage(error, "批量添加失败"));
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+  const deleteSelected = async () => {
+    const failed: string[] = [];
+    const failedIds: string[] = [];
+    setBatchBusy(true);
+    for (const asset of selectedAssets) {
+      if (["queued", "processing"].includes(asset.processingStatus)) {
+        failedIds.push(asset.id);
+        failed.push(`${asset.displayName}：素材处理中，完成后可删除`);
+        continue;
+      }
+      try {
+        await deleteVideoEditorAsset(projectId, asset.id);
+      } catch (error) {
+        failedIds.push(asset.id);
+        failed.push(
+          `${asset.displayName}：${apiErrorMessage(error, "删除失败")}`,
+        );
+      }
+    }
+    setSelectedIds(failedIds);
+    setBatchMessage(
+      failed.length
+        ? `部分素材未删除：${failed.join("；")}`
+        : `已删除 ${selectedAssets.length} 个素材`,
+    );
+    setConfirmBatchDelete(false);
+    setBatchBusy(false);
+    refresh();
+    void client.invalidateQueries({
+      queryKey: videoEditorQueryKeys.timeline(projectId),
+    });
+  };
 
   const saveFolderName = (
     event: FormEvent,
@@ -234,6 +429,22 @@ export function VideoEditorAssetPanel({
     if (event.dataTransfer.types.includes(ORGANIZE_ASSET_TYPE))
       event.preventDefault();
   };
+  const openLocalUpload = (folderId?: string) => {
+    uploadFolderId.current = folderId;
+    setAddMenuTarget(undefined);
+    input.current?.click();
+  };
+  const openImport = (folderId?: string) => {
+    importFolderId.current = folderId;
+    setChosen([]);
+    setAddMenuTarget(undefined);
+    setShowImport(true);
+  };
+  const toggleBatch = (target: string) => {
+    setBatchFolderId((current) => (current === target ? undefined : target));
+    setSelectedIds([]);
+    setBatchMessage("");
+  };
 
   const renderAsset = (assetId: string, folderId: string | null) => {
     const asset = assetsById.get(assetId);
@@ -248,6 +459,7 @@ export function VideoEditorAssetPanel({
         [])
       : arranged.rootAssetIds;
     const index = list.indexOf(asset.id);
+    const batchKey = folderId ?? ROOT_BATCH_ID;
     return (
       <div
         key={asset.id}
@@ -265,6 +477,22 @@ export function VideoEditorAssetPanel({
         onDrop={(event) => dropAsset(event, folderId, asset.id)}
       >
         <div className="ve-asset">
+          {batchFolderId === batchKey ? (
+            <label className="ve-asset-check">
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(asset.id)}
+                aria-label={`选择素材“${asset.displayName}”`}
+                onChange={() =>
+                  setSelectedIds((current) =>
+                    current.includes(asset.id)
+                      ? current.filter((id) => id !== asset.id)
+                      : [...current, asset.id],
+                  )
+                }
+              />
+            </label>
+          ) : null}
           <button
             type="button"
             className="ve-asset-main"
@@ -417,6 +645,26 @@ export function VideoEditorAssetPanel({
     </form>
   );
 
+  const renderAddMenu = (target: string, ariaLabel: string) => (
+    <VideoEditorAssetAddMenu
+      open={addMenuTarget === target}
+      disabled={disabled || upload.isPending}
+      ariaLabel={ariaLabel}
+      onToggle={() =>
+        setAddMenuTarget((current) =>
+          current === target ? undefined : target,
+        )
+      }
+      onClose={() => setAddMenuTarget(undefined)}
+      onLocalUpload={() =>
+        openLocalUpload(target === ROOT_BATCH_ID ? undefined : target)
+      }
+      onImport={() =>
+        openImport(target === ROOT_BATCH_ID ? undefined : target)
+      }
+    />
+  );
+
   return (
     <aside className="ve-assets-panel">
       <header>
@@ -426,7 +674,7 @@ export function VideoEditorAssetPanel({
             type="button"
             disabled={disabled || creatingFolder}
             aria-label="新建素材文件夹"
-            title="新建文件夹"
+            data-tooltip="新建文件夹"
             onClick={() => {
               setCreatingFolder(true);
               setEditingFolderId(undefined);
@@ -440,60 +688,46 @@ export function VideoEditorAssetPanel({
         </div>
       </header>
       <div className="ve-assets-toolbar">
-        <div className="ve-asset-actions">
-          <button
-            disabled={disabled || upload.isPending}
-            onClick={() => input.current?.click()}
-            title="选择一个或多个素材上传"
-          >
-            <Upload aria-hidden />{" "}
-            {upload.isPending
-              ? `上传中 ${uploadProgress.completed}/${uploadProgress.total}`
-              : "上传"}
-          </button>
-          <button onClick={() => setShowImport(true)}>
-            <Library aria-hidden /> 导入快照
-          </button>
-          <input
-            ref={input}
-            hidden
-            type="file"
-            multiple
-            aria-label="上传素材（可多选）"
-            disabled={disabled || upload.isPending}
-            accept="video/*,audio/*,image/*,.ttf,.otf,.woff,.woff2"
-            onChange={(event) => {
-              const files = Array.from(event.target.files ?? []);
-              if (files.length && !disabled && !upload.isPending) {
-                setUploadProgress({
-                  completed: 0,
-                  total: files.length,
-                  filename: files[0]!.name,
-                });
-                upload.mutate(files);
-              }
-              event.target.value = "";
-            }}
-          />
-        </div>
-        {upload.isPending || upload.data ? (
-          <div className="ve-upload-feedback">
-            <p role="status">
-              {upload.isPending
-                ? `正在上传 ${uploadProgress.completed}/${uploadProgress.total}：${uploadProgress.filename}`
-                : `上传完成：成功 ${upload.data!.succeeded} 个${upload.data!.failures.length ? `，失败 ${upload.data!.failures.length} 个` : ""}`}
-            </p>
-            {!upload.isPending && upload.data?.failures.length ? (
-              <ul role="alert">
-                {upload.data.failures.map((failure, index) => (
-                  <li key={index}>
-                    {failure.filename}：{failure.message}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
+        <input
+          ref={input}
+          hidden
+          type="file"
+          multiple
+          aria-label="上传素材（可多选）"
+          disabled={disabled || upload.isPending}
+          accept="video/*,audio/*,image/*,.ttf,.otf,.woff,.woff2"
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            if (files.length && !disabled && !upload.isPending) {
+              setUploadProgress({
+                completed: 0,
+                total: files.length,
+                filename: files[0]!.name,
+              });
+              upload.mutate({ files, folderId: uploadFolderId.current });
+            }
+            event.target.value = "";
+          }}
+        />
+        <VideoEditorAssetUploadFeedback
+          pending={upload.isPending}
+          progress={uploadProgress}
+          result={upload.data}
+          placements={pendingPlacements}
+          folders={arranged.folders}
+          onRetry={(placement) =>
+            void placeInFolder(placement.folderId, placement.ids)
+              .then(() => {
+                setPendingPlacements((current) =>
+                  current.filter((item) => item !== placement),
+                );
+                setBatchMessage("已将上传素材归入文件夹");
+              })
+              .catch((error) =>
+                setBatchMessage(apiErrorMessage(error, "归类失败，请重试")),
+              )
+          }
+        />
         <div className="ve-generated-assets">
           <CustomSelect
             value=""
@@ -565,11 +799,28 @@ export function VideoEditorAssetPanel({
                     <strong>{folder.name}</strong>
                     <small>{folder.assetIds.length}</small>
                   </button>
+                  <div className="ve-folder-quick-actions">
+                    {renderAddMenu(
+                      folder.id,
+                      `向文件夹“${folder.name}”添加素材`,
+                    )}
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      aria-label={`批量选择文件夹“${folder.name}”中的素材`}
+                      data-tooltip="批量选择"
+                      aria-pressed={batchFolderId === folder.id}
+                      onClick={() => toggleBatch(folder.id)}
+                    >
+                      <CheckSquare2 aria-hidden />
+                    </button>
+                  </div>
                   <div className="ve-folder-controls">
                     <button
                       type="button"
                       disabled={disabled || folderIndex === 0}
                       aria-label={`上移文件夹“${folder.name}”`}
+                      data-tooltip="上移"
                       onClick={() =>
                         onOrganizationChange(
                           shiftFolderInOrganization(arranged, folder.id, -1),
@@ -584,6 +835,7 @@ export function VideoEditorAssetPanel({
                         disabled || folderIndex === arranged.folders.length - 1
                       }
                       aria-label={`下移文件夹“${folder.name}”`}
+                      data-tooltip="下移"
                       onClick={() =>
                         onOrganizationChange(
                           shiftFolderInOrganization(arranged, folder.id, 1),
@@ -596,6 +848,7 @@ export function VideoEditorAssetPanel({
                       type="button"
                       disabled={disabled}
                       aria-label={`重命名文件夹“${folder.name}”`}
+                      data-tooltip="重命名"
                       onClick={() => {
                         setEditingFolderId(folder.id);
                         setCreatingFolder(false);
@@ -609,7 +862,7 @@ export function VideoEditorAssetPanel({
                       type="button"
                       disabled={disabled}
                       aria-label={`删除文件夹“${folder.name}”`}
-                      title="删除文件夹，素材将移到未分类"
+                      data-tooltip="删除文件夹"
                       onClick={() =>
                         onOrganizationChange(
                           deleteFolderFromOrganization(arranged, folder.id),
@@ -623,6 +876,18 @@ export function VideoEditorAssetPanel({
               )}
               {!isCollapsed ? (
                 <div className="ve-folder-assets">
+                  {batchFolderId === folder.id ? (
+                    <VideoEditorAssetBatchSelectionHeader
+                      count={selectedIds.length}
+                      total={folder.assetIds.length}
+                      onSelectAll={() => setSelectedIds([...folder.assetIds])}
+                      onClearSelection={() => setSelectedIds([])}
+                      onExit={() => {
+                        setBatchFolderId(undefined);
+                        setSelectedIds([]);
+                      }}
+                    />
+                  ) : null}
                   {folder.assetIds.map((assetId) =>
                     renderAsset(assetId, folder.id),
                   )}
@@ -633,24 +898,55 @@ export function VideoEditorAssetPanel({
           );
         })}
         <section className="ve-asset-group ve-root-assets">
-          <button
-            type="button"
-            className="ve-root-assets-toggle"
-            aria-expanded={!collapsed.has("root")}
-            onClick={() => toggleCollapsed("root")}
+          <div
+            className="ve-asset-folder-row ve-root-assets-row"
             onDragOver={allowAssetDrop}
             onDrop={(event) => dropAsset(event, null)}
           >
-            {collapsed.has("root") ? (
-              <ChevronRight aria-hidden />
-            ) : (
-              <ChevronDown aria-hidden />
-            )}
-            <strong>未分类</strong>
-            <small>{arranged.rootAssetIds.length}</small>
-          </button>
-          {!collapsed.has("root") ? (
+            <button
+              type="button"
+              className="ve-root-assets-toggle"
+              aria-expanded={!collapsed.has(ROOT_BATCH_ID)}
+              onClick={() => toggleCollapsed(ROOT_BATCH_ID)}
+            >
+              {collapsed.has(ROOT_BATCH_ID) ? (
+                <ChevronRight aria-hidden />
+              ) : (
+                <ChevronDown aria-hidden />
+              )}
+              <strong>未分类</strong>
+              <small>{arranged.rootAssetIds.length}</small>
+            </button>
+            <div className="ve-folder-quick-actions">
+              {renderAddMenu(ROOT_BATCH_ID, "向未分类添加素材")}
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label="批量选择未分类中的素材"
+                data-tooltip="批量选择"
+                aria-pressed={batchFolderId === ROOT_BATCH_ID}
+                onClick={() => toggleBatch(ROOT_BATCH_ID)}
+              >
+                <CheckSquare2 aria-hidden />
+              </button>
+            </div>
+          </div>
+          {!collapsed.has(ROOT_BATCH_ID) ? (
             <div className="ve-folder-assets">
+              {batchFolderId === ROOT_BATCH_ID ? (
+                <VideoEditorAssetBatchSelectionHeader
+                  count={selectedIds.length}
+                  total={arranged.rootAssetIds.length}
+                  onSelectAll={() =>
+                    setSelectedIds([...arranged.rootAssetIds])
+                  }
+                  onClearSelection={() => setSelectedIds([])}
+                  onExit={() => {
+                    setBatchFolderId(undefined);
+                    setSelectedIds([]);
+                  }}
+                />
+              ) : null}
               {arranged.rootAssetIds.map((assetId) =>
                 renderAsset(assetId, null),
               )}
@@ -659,49 +955,53 @@ export function VideoEditorAssetPanel({
           ) : null}
         </section>
       </div>
-      {showImport ? (
-        <div className="ve-dialog-backdrop">
-          <section
-            className="ve-dialog ve-import-dialog"
-            role="dialog"
-            aria-modal="true"
-          >
-            <h2>从其他应用复制素材</h2>
-            <p>导入后生成独立物理快照，源项目删除也不会影响剪辑。</p>
-            <div>
-              {(sources.data?.items ?? []).map((asset) => (
-                <button
-                  key={asset.id}
-                  className={chosen.includes(asset.id) ? "selected" : ""}
-                  onClick={() =>
-                    setChosen((items) =>
-                      items.includes(asset.id)
-                        ? items.filter((id) => id !== asset.id)
-                        : [...items, asset.id],
-                    )
-                  }
-                >
-                  <span>{chosen.includes(asset.id) ? "✓" : ""}</span>
-                  <div>
-                    <strong>{asset.displayName}</strong>
-                    <small>{asset.sourceApplication}</small>
-                  </div>
-                </button>
-              ))}
-            </div>
-            <footer>
-              <button onClick={() => setShowImport(false)}>取消</button>
-              <button
-                className="primary"
-                disabled={!chosen.length}
-                onClick={() => importAssets.mutate()}
-              >
-                复制 {chosen.length || ""} 项
-              </button>
-            </footer>
-          </section>
-        </div>
+      {batchFolderId ? (
+        <VideoEditorAssetBatchToolbar
+          folderId={
+            batchFolderId === ROOT_BATCH_ID ? ROOT_BATCH_ID : batchFolderId
+          }
+          folders={arranged.folders}
+          count={selectedIds.length}
+          busy={batchBusy}
+          message={batchMessage}
+          onAdd={() => void addSelected()}
+          onMove={(folderId) => void moveSelected(folderId)}
+          onDelete={() => setConfirmBatchDelete(true)}
+        />
+      ) : batchMessage ? (
+        <p className="ve-batch-message" role="status">
+          {batchMessage}
+        </p>
       ) : null}
+      {showImport ? (
+        <VideoEditorAssetImportDialog
+          items={sources.data?.items ?? []}
+          chosen={chosen}
+          pending={importAssets.isPending}
+          onToggle={(assetId) =>
+            setChosen((items) =>
+              items.includes(assetId)
+                ? items.filter((id) => id !== assetId)
+                : [...items, assetId],
+            )
+          }
+          onCancel={() => {
+            setShowImport(false);
+            setChosen([]);
+            importFolderId.current = undefined;
+          }}
+          onConfirm={() => importAssets.mutate()}
+        />
+      ) : null}
+      <ConfirmDialog
+        open={confirmBatchDelete}
+        title={`删除选中的 ${selectedIds.length} 个素材？`}
+        description="删除后无法撤销；仍被时间线引用的素材会保留并显示失败原因。"
+        confirmLabel="确认删除"
+        pending={batchBusy}
+        onCancel={() => setConfirmBatchDelete(false)}
+        onConfirm={() => void deleteSelected()}
+      />
       <ConfirmDialog
         open={Boolean(deleting)}
         title={deleting ? `删除“${deleting.displayName}”？` : "删除素材？"}

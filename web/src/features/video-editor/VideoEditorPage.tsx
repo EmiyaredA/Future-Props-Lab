@@ -2,7 +2,7 @@ import { textClipOperations, type TextPreset } from "./textModel";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { useVideoEditorLayout } from "./useVideoEditorLayout";
 import { VideoEditorSeparator } from "./VideoEditorSeparator";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowLeft,
   Film,
@@ -16,7 +16,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { operationsForAsset, newTrack, snapUs } from "./editorModel";
+import { operationsForAsset, newTrack, snapUs, frameUs } from "./editorModel";
 import { VideoEditorAssetPanel } from "./VideoEditorAssetPanel";
 import { VideoEditorExportDialog } from "./VideoEditorExportDialog";
 import { VideoEditorInspector } from "./VideoEditorInspector";
@@ -47,7 +47,8 @@ export function VideoEditorPage({
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
   const [segmentExportClipId, setSegmentExportClipId] = useState<string>();
   const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
-  const [titleDraft, setTitleDraft] = useState("");
+  const [titleDraft, setTitleDraft] = useState<string | null>(null);
+  const discardTitle = useRef(false);
   if (editor.project.isLoading || editor.timeline.isLoading)
     return <div className="ve-editor-state">正在装配剪辑工作区…</div>;
   if (!editor.project.data || !editor.timeline.data)
@@ -82,6 +83,44 @@ export function VideoEditorPage({
       trackId,
     );
     if (operations.length) void editor.commit(operations);
+  };
+  const addAssetBatch = async (selectedAssets: VideoEditorAsset[]) => {
+    if (selectedAssets.length > 100)
+      throw new Error("每次最多添加 100 个素材到时间线");
+    const nextFrame = (value: number) =>
+      Math.ceil(value / frameUs(fps)) * frameUs(fps);
+    let cursor = nextFrame(
+      Math.max(
+        editor.playheadUs,
+        ...tracks.flatMap((track) =>
+          (track.clips ?? []).map(
+            (clip) => clip.timelineStartUs + clip.durationUs,
+          ),
+        ),
+      ),
+    );
+    const operations = selectedAssets.flatMap((asset) => {
+      const next = operationsForAsset(asset, tracks, cursor);
+      if (!next.length)
+        throw new Error(`“${asset.displayName}”无法添加到当前轨道`);
+      const clip = next.find((operation) => operation.type === "addClip")?.clip;
+      cursor = nextFrame(cursor + (clip?.durationUs ?? 0));
+      return next;
+    });
+    if (
+      !operations.length ||
+      operations.length > 200 ||
+      operations.length < selectedAssets.length ||
+      operations.some(
+        (operation) =>
+          operation.type === "addClip" &&
+          tracks.find((track) => track.id === operation.clip.trackId)?.locked,
+      )
+    )
+      throw new Error(
+        "所选素材无法添加到当前轨道，请检查素材类型和轨道锁定状态",
+      );
+    await editor.commit(operations);
   };
   const addGenerated = (
     kind: "text" | "color",
@@ -157,19 +196,25 @@ export function VideoEditorPage({
               <input
                 aria-label="项目名称"
                 maxLength={120}
-                value={titleDraft || project.title}
+                value={titleDraft ?? project.title}
                 onFocus={() => setTitleDraft(project.title)}
                 onChange={(event) => setTitleDraft(event.target.value)}
                 onBlur={() => {
-                  const title = titleDraft.trim();
+                  if (discardTitle.current) {
+                    discardTitle.current = false;
+                    setTitleDraft(null);
+                    return;
+                  }
+                  const title = (titleDraft ?? project.title).trim();
                   if (title && title !== project.title)
                     void editor.renameProject(title);
-                  setTitleDraft("");
+                  setTitleDraft(null);
                 }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") event.currentTarget.blur();
                   if (event.key === "Escape") {
-                    setTitleDraft("");
+                    discardTitle.current = true;
+                    setTitleDraft(null);
                     event.currentTarget.blur();
                   }
                 }}
@@ -282,10 +327,11 @@ export function VideoEditorPage({
             organization={timeline.document.assetOrganization}
             disabled={editor.saving}
             onAdd={addAsset}
+            onAddBatch={addAssetBatch}
             onTimelineAssetDrag={setDraggingAsset}
             onAddGenerated={addGenerated}
             onOrganizationChange={(organization) =>
-              void editor.commit(
+              editor.commit(
                 [{ type: "setAssetOrganization", organization }],
                 [
                   {

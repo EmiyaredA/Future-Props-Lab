@@ -131,6 +131,7 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 "fitMode",
                 "heightPercent",
                 "transform",
+                "chromaKey",
             }
             clip.update({key: value for key, value in data["patch"].items() if key in allowed})
         elif kind == "moveClip":

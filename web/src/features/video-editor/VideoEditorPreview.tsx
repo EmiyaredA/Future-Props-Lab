@@ -1,4 +1,5 @@
 import { VideoEditorTextLayer } from "./VideoEditorTextLayer";
+import { paintChromaCanvas } from "./chromaCanvas";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
   useEffect,
@@ -75,14 +76,17 @@ function ProxyVideo({
   playheadUs,
   playing,
   crop,
+  chromaKey,
 }: {
   source: string;
   clip: VideoEditorClip;
   playheadUs: number;
   playing: boolean;
   crop: VideoProxyCrop;
+  chromaKey?: VideoEditorClip["chromaKey"];
 }) {
   const video = useRef<HTMLVideoElement>(null);
+  const keyedCanvas = useRef<HTMLCanvasElement>(null);
   const wasPlayingRef = useRef(false);
   useEffect(() => {
     const node = video.current;
@@ -105,20 +109,88 @@ function ProxyVideo({
     if (playing) void node.play().catch(() => undefined);
     else node.pause();
   }, [playing]);
+  useEffect(() => {
+    if (!chromaKey?.enabled) return;
+    const node = video.current;
+    const canvas = keyedCanvas.current;
+    if (!node || !canvas) return;
+    let frame = 0;
+    const paint = () => {
+      if (node.videoWidth && node.videoHeight)
+        paintChromaCanvas(
+          canvas,
+          node,
+          node.videoWidth,
+          node.videoHeight,
+          chromaKey,
+        );
+      if (playing) frame = requestAnimationFrame(paint);
+    };
+    node.addEventListener("loadeddata", paint);
+    node.addEventListener("seeked", paint);
+    paint();
+    return () => {
+      cancelAnimationFrame(frame);
+      node.removeEventListener("loadeddata", paint);
+      node.removeEventListener("seeked", paint);
+    };
+  }, [chromaKey, playing, source]);
+  const placement = {
+    left: `${crop.leftPercent}%`,
+    top: `${crop.topPercent}%`,
+    width: `${crop.widthPercent}%`,
+    height: `${crop.heightPercent}%`,
+  };
   return (
-    <video
-      ref={video}
-      muted
-      src={source}
-      preload="auto"
-      style={{
-        left: `${crop.leftPercent}%`,
-        top: `${crop.topPercent}%`,
-        width: `${crop.widthPercent}%`,
-        height: `${crop.heightPercent}%`,
-      }}
-    />
+    <>
+      <video
+        ref={video}
+        muted
+        src={source}
+        preload="auto"
+        style={{
+          ...placement,
+          visibility: chromaKey?.enabled ? "hidden" : "visible",
+        }}
+      />
+      {chromaKey?.enabled ? (
+        <canvas
+          ref={keyedCanvas}
+          className="ve-keyed-media"
+          style={placement}
+          aria-hidden
+        />
+      ) : null}
+    </>
   );
+}
+
+function ChromaImage({
+  source,
+  chromaKey,
+}: {
+  source: string;
+  chromaKey: NonNullable<VideoEditorClip["chromaKey"]>;
+}) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const node = new window.Image();
+    node.onload = () => {
+      if (canvas.current)
+        paintChromaCanvas(
+          canvas.current,
+          node,
+          node.naturalWidth,
+          node.naturalHeight,
+          chromaKey,
+        );
+    };
+    node.src = source;
+    return () => {
+      node.onload = null;
+    };
+  }, [source, chromaKey]);
+  return <canvas ref={canvas} className="ve-keyed-image" aria-hidden />;
 }
 
 type PreviewAudioChain = {
@@ -267,6 +339,8 @@ export function VideoEditorPreview({
   }>();
   const [draggingText, setDraggingText] = useState(false);
   const [showCanvasGuides, setShowCanvasGuides] = useState(true);
+  const [compareEnabled, setCompareEnabled] = useState(false);
+  const [comparePercent, setComparePercent] = useState(50);
   const stageRef = useRef<HTMLDivElement>(null);
   const assetMap = useMemo(
     () => new Map(assets.map((asset) => [asset.id, asset])),
@@ -294,6 +368,10 @@ export function VideoEditorPreview({
     [timeline],
   );
   const preciseUrl = exactFrameUrl(projectId, timeline.revision, playheadUs);
+  const compareClip = active.find(
+    (clip) => clip.id === selectedClipId && clip.chromaKey?.enabled,
+  );
+  const compareActive = compareEnabled && Boolean(compareClip) && !playing;
   return (
     <section className="ve-preview-panel">
       <header>
@@ -316,6 +394,18 @@ export function VideoEditorPreview({
             title="暂停或拖动时始终使用与导出一致的精确画面"
           >
             精确停帧
+          </button>
+          <button
+            className={compareActive ? "active" : ""}
+            disabled={!compareClip}
+            aria-pressed={compareActive}
+            title="暂停后对比选中片段抠像前后的节目画面"
+            onClick={() => {
+              setPlaying(false);
+              setCompareEnabled((value) => !value);
+            }}
+          >
+            抠像对比
           </button>
           <button
             disabled={!canWrite}
@@ -479,6 +569,7 @@ export function VideoEditorPreview({
                       playheadUs={playheadUs}
                       playing={playing}
                       crop={geometry.proxyCrop}
+                      chromaKey={clip.chromaKey}
                     />
                   </div>
                 ) : clip.kind === "video" && asset && !asset.proxyUrl ? (
@@ -487,6 +578,13 @@ export function VideoEditorPreview({
                       ? "视频预览处理失败，请检查素材"
                       : "视频预览准备中，可继续剪辑"}
                   </span>
+                ) : clip.kind === "image" &&
+                  asset &&
+                  clip.chromaKey?.enabled ? (
+                  <ChromaImage
+                    source={`/v1/files/${asset.id}/content`}
+                    chromaKey={clip.chromaKey}
+                  />
                 ) : clip.kind === "image" && asset ? (
                   <img src={`/v1/files/${asset.id}/content`} alt="" />
                 ) : clip.kind === "color" ? (
@@ -505,6 +603,38 @@ export function VideoEditorPreview({
                 event.currentTarget.style.display = "none";
               }}
             />
+          ) : null}
+          {compareActive && compareClip ? (
+            <div
+              className="ve-chroma-compare"
+              style={
+                { "--compare-percent": `${comparePercent}%` } as CSSProperties
+              }
+            >
+              <img
+                src={exactFrameUrl(
+                  projectId,
+                  timeline.revision,
+                  playheadUs,
+                  960,
+                  compareClip.id,
+                )}
+                alt="抠像前的节目帧"
+                style={{ clipPath: `inset(0 ${100 - comparePercent}% 0 0)` }}
+              />
+              <span className="ve-chroma-compare-label before">原图</span>
+              <span className="ve-chroma-compare-label after">抠像后</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={comparePercent}
+                aria-label="调整抠像前后对比分界线"
+                onChange={(event) =>
+                  setComparePercent(Number(event.target.value))
+                }
+              />
+            </div>
           ) : null}
           <span
             className={`ve-canvas-guides ${showCanvasGuides ? "is-visible" : ""}`}

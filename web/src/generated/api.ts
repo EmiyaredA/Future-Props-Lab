@@ -14438,10 +14438,39 @@ export interface components {
             /** Sourceapplication */
             sourceApplication: string;
         };
+        /** VideoEditorChromaKey */
+        VideoEditorChromaKey: {
+            /**
+             * Color
+             * @default #00ff00
+             */
+            color: string;
+            /**
+             * Despill
+             * @default 30
+             */
+            despill: number;
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Similarity
+             * @default 42
+             */
+            similarity: number;
+            /**
+             * Softness
+             * @default 18
+             */
+            softness: number;
+        };
         /** VideoEditorClip */
         VideoEditorClip: {
             /** Assetid */
             assetId?: string | null;
+            chromaKey?: components["schemas"]["VideoEditorChromaKey"] | null;
             /** Color */
             color?: string | null;
             /** Durationus */
@@ -27124,6 +27153,7 @@ export interface operations {
                 revision: number;
                 timeUs: number;
                 width?: number;
+                withoutChromaClipId?: string | null;
             };
             header?: never;
             path: {

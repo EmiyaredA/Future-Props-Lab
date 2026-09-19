@@ -1,0 +1,127 @@
+.ve-chroma-section {
+  display: grid;
+  gap: 14px;
+}
+.ve-chroma-enable,
+.ve-chroma-slider,
+.ve-chroma-color-row,
+.ve-chroma-presets {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ve-chroma-enable {
+  justify-content: space-between;
+}
+.ve-chroma-enable input {
+  accent-color: #8274f4;
+  width: 20px;
+  height: 20px;
+}
+.ve-chroma-controls {
+  display: grid;
+  gap: 12px;
+}
+.ve-chroma-controls > span {
+  color: #b4bbca;
+  font-size: 13px;
+}
+.ve-chroma-presets {
+  flex-wrap: wrap;
+}
+.ve-chroma-presets button,
+.ve-chroma-color-row button,
+.ve-chroma-reset {
+  border: 1px solid #41485b;
+  border-radius: 6px;
+  color: #d9dce8;
+  background: #1b2130;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.ve-chroma-presets button[aria-pressed="true"] {
+  border-color: #8274f4;
+  color: #dcd7ff;
+  background: #292443;
+}
+.ve-chroma-color-row .ve-chroma-swatch {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  flex: none;
+}
+.ve-chroma-color-row button svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+.ve-chroma-slider {
+  color: #bdc3d0;
+  font-size: 13px;
+}
+.ve-chroma-slider span {
+  min-width: 64px;
+}
+.ve-chroma-slider input {
+  flex: 1;
+  min-width: 40px;
+  accent-color: #8274f4;
+}
+.ve-chroma-slider output {
+  min-width: 26px;
+  text-align: right;
+}
+.ve-chroma-reset {
+  justify-self: end;
+}
+.ve-chroma-section button:focus-visible,
+.ve-chroma-section input:focus-visible {
+  outline: 2px solid #a69cff;
+  outline-offset: 2px;
+}
+.ve-chroma-compare {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  pointer-events: none;
+}
+.ve-chroma-compare > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ve-chroma-compare-label {
+  position: absolute;
+  top: 12px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  color: white;
+  background: #1c2135d9;
+  font-size: 12px;
+}
+.ve-chroma-compare-label.before {
+  left: 12px;
+}
+.ve-chroma-compare-label.after {
+  right: 12px;
+}
+.ve-chroma-compare > input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  pointer-events: auto;
+  cursor: ew-resize;
+}
+.ve-chroma-compare::after {
+  content: "";
+  position: absolute;
+  left: var(--compare-percent, 50%);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #a69cff;
+  pointer-events: none;
+}
