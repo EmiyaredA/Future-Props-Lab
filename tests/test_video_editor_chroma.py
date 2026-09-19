@@ -57,18 +57,14 @@ def test_despill_recovers_mixed_foreground_at_screen_boundary(
     image = Image.new("RGBA", (9, 1), (*mixed, 255))
     image.putpixel((0, 0), (*bytes.fromhex(color[1:]), 255))
     image.putpixel((1, 0), (100, 155, 0, 255) if color == "#00ff00" else (100, 0, 155, 255))
-    result = apply_chroma_key(
-        image, VideoEditorChromaKey(enabled=True, color=color, despill=100)
-    )
+    result = apply_chroma_key(image, VideoEditorChromaKey(enabled=True, color=color, despill=100))
     assert result.getpixel((0, 0))[3] == 0
     assert result.getpixel((1, 0))[3] == pytest.approx(100, abs=2)
     assert result.getpixel((2, 0))[3] == pytest.approx(200, abs=2)
     assert result.getpixel((2, 0))[0] >= 250
     assert result.getpixel((2, 0))[1 if color == "#00ff00" else 2] <= 2
     assert result.getpixel((5, 0)) == (*mixed, 255)
-    disabled = apply_chroma_key(
-        image, VideoEditorChromaKey(enabled=True, color=color, despill=0)
-    )
+    disabled = apply_chroma_key(image, VideoEditorChromaKey(enabled=True, color=color, despill=0))
     assert disabled.getpixel((2, 0)) == (*mixed, 255)
 
 

@@ -389,25 +389,51 @@
   border-right: 1px solid #292e3c;
   background: #0b0e15;
 }
+.ve-preview-panel > header {
+  height: 42px;
+  min-height: 42px;
+  overflow: hidden;
+}
+.ve-preview-panel header strong {
+  flex: none;
+  white-space: nowrap;
+}
 .ve-preview-panel header div {
   display: flex;
   align-items: center;
-  gap: 7px;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
   color: #8e96aa;
   font-size: 11px;
 }
+.ve-preview-panel header .ve-preview-meta {
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .ve-preview-panel header button {
-  height: 28px;
-  padding: 0 8px;
+  flex: none;
+  height: 24px;
+  padding: 0 6px;
   border: 1px solid #303647;
+  border-radius: 5px;
   background: #191e2a;
+  font-size: 11px;
+  white-space: nowrap;
 }
 .ve-preview-panel header button.active {
   color: #b8b1ff;
   border-color: #645bd2;
 }
+.ve-preview-panel header button[aria-label] {
+  width: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
 .ve-preview-panel header svg {
-  width: 14px;
+  width: 13px;
 }
 .ve-stage-wrap {
   container-type: size;

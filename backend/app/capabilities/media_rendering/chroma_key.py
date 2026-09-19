@@ -57,10 +57,10 @@ def apply_chroma_key(layer: Image.Image, key: VideoEditorChromaKey) -> Image.Ima
             channels = [
                 ImageMath.lambda_eval(
                     lambda args, target_value=value: (
-                        args["channel"] - args["screen"] * target_value / 255
-                    )
-                    * 255
-                    / (255 - args["screen"]),
+                        (args["channel"] - args["screen"] * target_value / 255)
+                        * 255
+                        / (255 - args["screen"])
+                    ),
                     channel=channel,
                     screen=screen,
                 ).convert("L")

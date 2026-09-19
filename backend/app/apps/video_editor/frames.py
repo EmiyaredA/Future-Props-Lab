@@ -65,7 +65,7 @@ class VideoEditorFrames:
         cache = (
             self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
             / "derived"
-            / f"frame-v{TEXT_RENDER_VERSION}-chroma1-r{revision}-t{time_us}-w{width}"
+            / f"frame-v{TEXT_RENDER_VERSION}-chroma2-r{revision}-t{time_us}-w{width}"
             f"-raw{comparison_key}.png"
         )
         if cache.is_file():

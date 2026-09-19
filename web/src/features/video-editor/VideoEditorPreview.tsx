@@ -428,19 +428,13 @@ export function VideoEditorPreview({
       : compareView === "after"
         ? "inset(0 100% 0 0)"
         : `inset(0 ${100 - comparePercent}% 0 0)`;
-  const compareStatus =
-    compareView === "before"
-      ? "正在查看抠像前"
-      : compareView === "after"
-        ? "正在查看抠像后"
-        : "分屏对比 · 拖动分界线";
   return (
     <section className="ve-preview-panel">
       <header>
         <strong>节目监视器</strong>
         <div>
-          <span>
-            {canvasWidth} × {canvasHeight}
+          <span className="ve-preview-meta">
+            {canvasWidth}×{canvasHeight}
           </span>
           <button
             className={showCanvasGuides ? "active" : ""}
@@ -458,7 +452,11 @@ export function VideoEditorPreview({
             精确停帧
           </button>
           <button
-            className={compareActive || (compareEnabled && selectedKeyedClip) ? "active" : ""}
+            className={
+              compareActive || (compareEnabled && selectedKeyedClip)
+                ? "active"
+                : ""
+            }
             disabled={!selectedKeyedClip}
             aria-pressed={compareActive}
             title={compareButtonTitle}
@@ -466,6 +464,43 @@ export function VideoEditorPreview({
           >
             抠像对比
           </button>
+          {compareActive ? (
+            <div
+              className="ve-chroma-compare-modes"
+              role="group"
+              aria-label="抠像对比视图"
+            >
+              <button
+                type="button"
+                aria-pressed={compareView === "before"}
+                title="整屏查看抠像前"
+                onClick={() => setCompareView("before")}
+              >
+                原图
+              </button>
+              <button
+                type="button"
+                aria-pressed={compareView === "split"}
+                title="左右分屏，拖动分界线对比"
+                onClick={() => setCompareView("split")}
+              >
+                分屏
+              </button>
+              <button
+                type="button"
+                aria-pressed={compareView === "after"}
+                title="整屏查看抠像后"
+                onClick={() => setCompareView("after")}
+              >
+                抠像后
+              </button>
+            </div>
+          ) : null}
+          {compareHint ? (
+            <span className="ve-chroma-compare-status" role="status">
+              {compareHint}
+            </span>
+          ) : null}
           <button
             disabled={!canWrite}
             aria-label="导出当前节目帧"
@@ -675,40 +710,8 @@ export function VideoEditorPreview({
                 alt="抠像前的节目帧"
                 style={{ clipPath: beforeClipPath }}
               />
-              <div className="ve-chroma-compare-banner">
-                <div
-                  className="ve-chroma-compare-modes"
-                  role="group"
-                  aria-label="抠像对比视图"
-                >
-                  <button
-                    type="button"
-                    aria-pressed={compareView === "before"}
-                    onClick={() => setCompareView("before")}
-                  >
-                    原图
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={compareView === "split"}
-                    onClick={() => setCompareView("split")}
-                  >
-                    分屏
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={compareView === "after"}
-                    onClick={() => setCompareView("after")}
-                  >
-                    抠像后
-                  </button>
-                </div>
-                <span role="status">{compareStatus}</span>
-              </div>
               {compareView === "split" ? (
                 <>
-                  <span className="ve-chroma-compare-label before">原图</span>
-                  <span className="ve-chroma-compare-label after">抠像后</span>
                   <span className="ve-chroma-compare-handle" aria-hidden />
                   <input
                     type="range"
@@ -721,19 +724,8 @@ export function VideoEditorPreview({
                     }
                   />
                 </>
-              ) : (
-                <span
-                  className={`ve-chroma-compare-label ${compareView === "before" ? "before" : "after"}`}
-                >
-                  {compareView === "before" ? "原图" : "抠像后"}
-                </span>
-              )}
+              ) : null}
             </div>
-          ) : null}
-          {compareHint ? (
-            <p className="ve-chroma-compare-hint" role="status">
-              {compareHint}
-            </p>
           ) : null}
           <span
             className={`ve-canvas-guides ${showCanvasGuides ? "is-visible" : ""}`}

@@ -175,14 +175,11 @@ describe("video editor preview playback", () => {
       "src",
       expect.stringContaining("withoutChromaClipId=video-1"),
     );
-    expect(screen.getByRole("status")).toHaveTextContent("分屏对比");
     fireEvent.click(screen.getByRole("button", { name: "原图" }));
-    expect(screen.getByRole("status")).toHaveTextContent("正在查看抠像前");
     expect(screen.getByAltText("抠像前的节目帧")).toHaveStyle({
       clipPath: "inset(0 0 0 0)",
     });
     fireEvent.click(screen.getByRole("button", { name: "抠像后" }));
-    expect(screen.getByRole("status")).toHaveTextContent("正在查看抠像后");
     expect(screen.getByAltText("抠像前的节目帧")).toHaveStyle({
       clipPath: "inset(0 100% 0 0)",
     });

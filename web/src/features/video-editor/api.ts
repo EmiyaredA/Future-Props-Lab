@@ -243,7 +243,7 @@ export const exactFramePath = (
   width = 960,
   withoutChromaClipId?: string,
 ) =>
-  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}&renderVersion=3${withoutChromaClipId ? `&withoutChromaClipId=${encodeURIComponent(withoutChromaClipId)}` : ""}`;
+  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}&renderVersion=4${withoutChromaClipId ? `&withoutChromaClipId=${encodeURIComponent(withoutChromaClipId)}` : ""}`;
 
 export const exactFrameUrl = (
   projectId: string,

@@ -37,11 +37,43 @@ export function paintChromaCanvas(
   }
   const high = Math.max(...target);
   const despill = (key.despill ?? 30) / 100;
+  const nearby = new Uint8Array(matteValues.length);
+  if (despill) {
+    const horizontal = new Uint8Array(matteValues.length);
+    for (let y = 0; y < canvas.height; y++) {
+      let last = -3;
+      for (let x = 0; x < canvas.width; x++) {
+        const pixel = y * canvas.width + x;
+        if (matteValues[pixel] === 0) last = x;
+        if (x - last <= 2) horizontal[pixel] = 1;
+      }
+      last = canvas.width + 2;
+      for (let x = canvas.width - 1; x >= 0; x--) {
+        const pixel = y * canvas.width + x;
+        if (matteValues[pixel] === 0) last = x;
+        if (last - x <= 2) horizontal[pixel] = 1;
+      }
+    }
+    for (let x = 0; x < canvas.width; x++) {
+      let last = -3;
+      for (let y = 0; y < canvas.height; y++) {
+        const pixel = y * canvas.width + x;
+        if (horizontal[pixel]) last = y;
+        if (y - last <= 2) nearby[pixel] = 1;
+      }
+      last = canvas.height + 2;
+      for (let y = canvas.height - 1; y >= 0; y--) {
+        const pixel = y * canvas.width + x;
+        if (horizontal[pixel]) last = y;
+        if (last - y <= 2) nearby[pixel] = 1;
+      }
+    }
+  }
   for (let pixel = 0; pixel < matteValues.length; pixel++) {
     const index = pixel * 4;
     const matte = matteValues[pixel]!;
     let screen = 0;
-    if (despill && matte) {
+    if (despill && matte && nearby[pixel]) {
       screen = 255;
       for (let channel = 0; channel < 3; channel++) {
         const value = target[channel]!;
@@ -50,38 +82,21 @@ export function paintChromaCanvas(
           value >= high - 16 && value
             ? Math.min(255, Math.round((sample * 255) / value))
             : value < 255
-              ? Math.min(255, Math.round(((255 - sample) * 255) / (255 - value)))
+              ? Math.min(
+                  255,
+                  Math.round(((255 - sample) * 255) / (255 - value)),
+                )
               : 255;
         screen = Math.min(screen, bound);
       }
       if (screen) {
-        const x = pixel % canvas.width;
-        const y = Math.floor(pixel / canvas.width);
-        let nearBackground = false;
-        for (let dy = -2; dy <= 2 && !nearBackground; dy++) {
-          const neighborY = y + dy;
-          if (neighborY < 0 || neighborY >= canvas.height) continue;
-          for (let dx = -2; dx <= 2; dx++) {
-            const neighborX = x + dx;
-            if (
-              neighborX >= 0 &&
-              neighborX < canvas.width &&
-              matteValues[neighborY * canvas.width + neighborX] === 0
-            ) {
-              nearBackground = true;
-              break;
-            }
-          }
+        screen = Math.min(254, Math.round(screen * despill));
+        for (let channel = 0; channel < 3; channel++) {
+          pixels[index + channel] =
+            ((pixels[index + channel]! - (screen * target[channel]!) / 255) *
+              255) /
+            (255 - screen);
         }
-        if (nearBackground) {
-          screen = Math.min(254, Math.round(screen * despill));
-          for (let channel = 0; channel < 3; channel++) {
-            pixels[index + channel] =
-              ((pixels[index + channel]! - (screen * target[channel]!) / 255) *
-                255) /
-              (255 - screen);
-          }
-        } else screen = 0;
       }
     }
     pixels[index + 3] = Math.round(

@@ -19,7 +19,7 @@ describe("video editor chroma key", () => {
   it("saves enabled and custom-color changes through updateClip with undo", () => {
     const commit = vi.fn().mockResolvedValue(undefined);
     render(<VideoEditorChromaInspector clip={clip} commit={commit} />);
-    fireEvent.click(screen.getByRole("checkbox", { name: "启用抠像" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "启用" }));
     expect(commit).toHaveBeenCalledWith(
       [
         {
@@ -44,7 +44,9 @@ describe("video editor chroma key", () => {
       ],
       expect.any(Array),
     );
-    expect(screen.getByRole("dialog", { name: "自定义抠像颜色选色器" })).toBeVisible();
+    expect(
+      screen.getByRole("dialog", { name: "自定义抠像颜色选色器" }),
+    ).toBeVisible();
   });
 
   it("matches the server matte for green and keeps unrelated red", () => {
@@ -71,8 +73,8 @@ describe("video editor chroma key", () => {
   it("removes key color from a red edge even when red is its dominant channel", () => {
     const canvas = document.createElement("canvas");
     const pixels = new Uint8ClampedArray([
-      0, 255, 0, 255, 100, 155, 0, 255, 200, 55, 0, 255,
-      200, 55, 0, 255, 200, 55, 0, 255, 200, 55, 0, 255,
+      0, 255, 0, 255, 100, 155, 0, 255, 200, 55, 0, 255, 200, 55, 0, 255, 200,
+      55, 0, 255, 200, 55, 0, 255,
     ]);
     vi.spyOn(canvas, "getContext").mockReturnValue({
       drawImage: vi.fn(),
