@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { formatTime, newTrack, snapUs } from "./editorModel";
+import { BATCH_OPS_LIMIT } from "./batchClipPatch";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
 import { VideoEditorTrackHeads } from "./VideoEditorTrackHeads";
 import {
@@ -44,7 +45,7 @@ export function VideoEditorTimeline({
   onScrollTopChange,
   trackHeaderWidth = 176,
   headerSeparator,
-  selectedClipId,
+  selectedClipId: _selectedClipId,
   selectedClipIds,
   selectClip,
   commit,
@@ -86,9 +87,9 @@ export function VideoEditorTimeline({
   snapEnabled?: boolean;
   setSnapEnabled?: (value: boolean) => void;
   onNotice?: (value: string) => void;
-  onRequestSegmentExport?: (clipId: string) => void;
+  onRequestSegmentExport?: (clipIds: string[]) => void;
   hasClipboard?: boolean;
-  onCopyClip?: (clip?: VideoEditorClip) => void;
+  onCopyClip?: (clipOrClips?: VideoEditorClip | VideoEditorClip[]) => void;
   onPasteClip?: () => void;
   onContentViewportWidthChange?: (widthPx: number) => void;
 }) {
@@ -201,7 +202,6 @@ export function VideoEditorTimeline({
       (track.clips ?? []).map((clip) => [clip.id, clip] as const),
     ),
   );
-  const selected = selectedClipId ? clipById.get(selectedClipId) : undefined;
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -280,52 +280,88 @@ export function VideoEditorTimeline({
     onNotice,
   });
   const guideUs = trimGuideUs ?? snapGuideUs ?? assetGuideUs;
-  const deleteSelected = (ripple = false) => {
-    if (!selected) return;
+  const selectedClips = selectedClipIds
+    .map((id) => clipById.get(id))
+    .filter((clip): clip is VideoEditorClip => Boolean(clip));
+  const hasSelection = selectedClips.length > 0;
+
+  const deleteSelected = (
+    ripple = false,
+    clips: VideoEditorClip[] = selectedClips,
+  ) => {
+    if (!clips.length) return;
+    if (clips.length > BATCH_OPS_LIMIT) {
+      onNotice?.(`一次最多删除 ${BATCH_OPS_LIMIT} 个片段`);
+      return;
+    }
+    const ordered = ripple
+      ? [...clips].sort((left, right) => {
+          if (left.trackId !== right.trackId) {
+            return left.trackId.localeCompare(right.trackId);
+          }
+          return right.timelineStartUs - left.timelineStartUs;
+        })
+      : clips;
     void commit(
-      [{ type: ripple ? "rippleDelete" : "removeClip", clipId: selected.id }],
-      [{ type: "addClip", clip: selected }],
+      ordered.map((clip) => ({
+        type: ripple ? ("rippleDelete" as const) : ("removeClip" as const),
+        clipId: clip.id,
+      })),
+      ordered.map((clip) => ({ type: "addClip" as const, clip })),
     );
     selectClip(undefined);
   };
+
   const splitSelected = () => {
     const splitAt = snapUs(playheadUs, fps);
-    if (
-      !selected ||
-      splitAt <= selected.timelineStartUs ||
-      splitAt >= selected.timelineStartUs + selected.durationUs
-    )
-      return;
-    const newId = crypto.randomUUID();
-    const linked = selected.linkGroupId
-      ? [...clipById.values()].filter(
-          (clip) =>
-            clip.linkGroupId === selected.linkGroupId &&
-            clip.timelineStartUs < splitAt &&
-            splitAt < clip.timelineStartUs + clip.durationUs,
-        )
-      : [selected];
-    const newIds = Object.fromEntries(
-      linked
-        .filter((clip) => clip.id !== selected.id)
-        .map((clip) => [clip.id, crypto.randomUUID()]),
+    const intersecting = selectedClips.filter(
+      (clip) =>
+        splitAt > clip.timelineStartUs &&
+        splitAt < clip.timelineStartUs + clip.durationUs,
     );
-    const allNewIds = new Map([
-      [selected.id, newId],
-      ...Object.entries(newIds),
-    ]);
-    void commit(
-      [
-        {
-          type: "splitClip",
-          clipId: selected.id,
-          atUs: splitAt,
-          newClipId: newId,
-          linkedNewClipIds: newIds,
-          newLinkGroupId: `link-${crypto.randomUUID()}`,
-        },
-      ],
-      [
+    if (!intersecting.length) return;
+
+    // Deduplicate by link group so one splitClip covers all linked peers.
+    const handled = new Set<string>();
+    const redo: VideoEditorOperation[] = [];
+    const undo: VideoEditorOperation[] = [];
+    const primaryNewIds: string[] = [];
+
+    for (const primary of intersecting) {
+      if (handled.has(primary.id)) continue;
+      const linked = primary.linkGroupId
+        ? [...clipById.values()].filter(
+            (clip) =>
+              clip.linkGroupId === primary.linkGroupId &&
+              clip.timelineStartUs < splitAt &&
+              splitAt < clip.timelineStartUs + clip.durationUs,
+          )
+        : [primary];
+      for (const clip of linked) handled.add(clip.id);
+      if (redo.length >= BATCH_OPS_LIMIT) {
+        onNotice?.(`一次最多分割 ${BATCH_OPS_LIMIT} 组片段`);
+        break;
+      }
+      const newId = crypto.randomUUID();
+      const linkedNewClipIds = Object.fromEntries(
+        linked
+          .filter((clip) => clip.id !== primary.id)
+          .map((clip) => [clip.id, crypto.randomUUID()]),
+      );
+      const allNewIds = new Map([
+        [primary.id, newId],
+        ...Object.entries(linkedNewClipIds),
+      ]);
+      primaryNewIds.push(newId);
+      redo.push({
+        type: "splitClip",
+        clipId: primary.id,
+        atUs: splitAt,
+        newClipId: newId,
+        linkedNewClipIds,
+        newLinkGroupId: `link-${crypto.randomUUID()}`,
+      });
+      undo.push(
         ...linked.map((clip) => ({
           type: "removeClip" as const,
           clipId: allNewIds.get(clip.id)!,
@@ -337,25 +373,52 @@ export function VideoEditorTimeline({
           durationUs: clip.durationUs,
           sourceInUs: clip.sourceInUs,
         })),
-      ],
-    ).then(() => selectClip(newId));
+      );
+    }
+    if (!redo.length) return;
+    void commit(redo, undo).then(() => {
+      const [first, ...rest] = primaryNewIds;
+      if (!first) return;
+      selectClip(first);
+      for (const id of rest) selectClip(id, true);
+    });
   };
-  const toggleClipMute = (clip: VideoEditorClip) => {
-    const peers = clip.linkGroupId
-      ? [...clipById.values()].filter(
-          (item) =>
-            item.linkGroupId === clip.linkGroupId && item.kind === "audio",
-        )
-      : [];
-    const targets = peers.length ? peers : [clip];
-    const muted = !(targets[0]?.muted ?? false);
+
+  const resolveActionClips = (anchor?: VideoEditorClip) => {
+    if (anchor && selectedClipIds.includes(anchor.id) && selectedClips.length) {
+      return selectedClips;
+    }
+    return anchor ? [anchor] : selectedClips;
+  };
+
+  const toggleClipsMute = (anchor?: VideoEditorClip) => {
+    const targets = resolveActionClips(anchor);
+    if (!targets.length) return;
+    const muteTargets = new Map<string, VideoEditorClip>();
+    for (const clip of targets) {
+      const peers = clip.linkGroupId
+        ? [...clipById.values()].filter(
+            (item) =>
+              item.linkGroupId === clip.linkGroupId && item.kind === "audio",
+          )
+        : [];
+      for (const item of peers.length ? peers : [clip]) {
+        muteTargets.set(item.id, item);
+      }
+    }
+    const items = [...muteTargets.values()];
+    if (items.length > BATCH_OPS_LIMIT) {
+      onNotice?.(`一次最多静音 ${BATCH_OPS_LIMIT} 个片段`);
+      return;
+    }
+    const muted = !(items[0]?.muted ?? false);
     void commit(
-      targets.map((item) => ({
+      items.map((item) => ({
         type: "updateClip" as const,
         clipId: item.id,
         patch: { muted },
       })),
-      targets.map((item) => ({
+      items.map((item) => ({
         type: "updateClip" as const,
         clipId: item.id,
         patch: { muted: item.muted ?? false },
@@ -363,6 +426,7 @@ export function VideoEditorTimeline({
     );
     setContextMenu(undefined);
   };
+
   const clipIsMuted = (clip: VideoEditorClip) => {
     if (!clip.linkGroupId) return Boolean(clip.muted);
     const audioPeer = [...clipById.values()].find(
@@ -370,57 +434,87 @@ export function VideoEditorTimeline({
     );
     return Boolean(audioPeer?.muted ?? clip.muted);
   };
-  const separateClip = (clip: VideoEditorClip) => {
-    const sourceTrack = tracks.find((track) => track.id === clip.trackId);
-    if (!sourceTrack || sourceTrack.kind !== "mixed") return;
-    const nextOrder = Math.max(-1, ...tracks.map((track) => track.order)) + 1;
-    const visual = tracks.find(
-      (track) => track.kind === "visual" && !track.locked,
-    );
-    const audio = tracks.find(
-      (track) => track.kind === "audio" && !track.locked,
-    );
-    const visualTrack = visual ?? newTrack("visual", nextOrder);
-    const audioTrack = audio ?? newTrack("audio", nextOrder + (visual ? 0 : 1));
-    const audioClipId = crypto.randomUUID();
-    void commit(
-      [
-        ...(visual ? [] : [{ type: "addTrack" as const, track: visualTrack }]),
-        ...(audio ? [] : [{ type: "addTrack" as const, track: audioTrack }]),
-        {
-          type: "separateClip",
-          clipId: clip.id,
-          visualTrackId: visualTrack.id,
-          audioTrackId: audioTrack.id,
-          audioClipId,
-        },
-      ],
-      [
+
+  const separateClips = (anchor?: VideoEditorClip) => {
+    const candidates = resolveActionClips(anchor).filter((clip) => {
+      const sourceTrack = tracks.find((track) => track.id === clip.trackId);
+      return clip.kind === "video" && sourceTrack?.kind === "mixed";
+    });
+    if (!candidates.length) return;
+    if (candidates.length > BATCH_OPS_LIMIT) {
+      onNotice?.(`一次最多分离 ${BATCH_OPS_LIMIT} 个片段`);
+      return;
+    }
+    const redo: VideoEditorOperation[] = [];
+    const undo: VideoEditorOperation[] = [];
+    let nextOrder = Math.max(-1, ...tracks.map((track) => track.order)) + 1;
+    let visual =
+      tracks.find((track) => track.kind === "visual" && !track.locked) ??
+      undefined;
+    let audio =
+      tracks.find((track) => track.kind === "audio" && !track.locked) ??
+      undefined;
+    const createdTrackIds: string[] = [];
+
+    for (const clip of candidates) {
+      const visualTrack = visual ?? newTrack("visual", nextOrder++);
+      const audioTrack = audio ?? newTrack("audio", nextOrder++);
+      if (!visual) {
+        redo.push({ type: "addTrack", track: visualTrack });
+        createdTrackIds.push(visualTrack.id);
+        visual = visualTrack;
+      }
+      if (!audio) {
+        redo.push({ type: "addTrack", track: audioTrack });
+        createdTrackIds.push(audioTrack.id);
+        audio = audioTrack;
+      }
+      const audioClipId = crypto.randomUUID();
+      redo.push({
+        type: "separateClip",
+        clipId: clip.id,
+        visualTrackId: visual.id,
+        audioTrackId: audio.id,
+        audioClipId,
+      });
+      undo.unshift(
         { type: "removeClip", clipId: clip.id },
         { type: "removeClip", clipId: audioClipId },
         { type: "addClip", clip },
-        ...(visual
-          ? []
-          : [{ type: "removeTrack" as const, trackId: visualTrack.id }]),
-        ...(audio
-          ? []
-          : [{ type: "removeTrack" as const, trackId: audioTrack.id }]),
-      ],
-    );
+      );
+    }
+    for (const trackId of createdTrackIds.reverse()) {
+      undo.push({ type: "removeTrack", trackId });
+    }
+    void commit(redo, undo);
     setContextMenu(undefined);
-    selectClip(clip.id);
+    selectClip(candidates[0]!.id);
+  };
+
+  const copyActionClips = (anchor?: VideoEditorClip) => {
+    const targets = resolveActionClips(anchor);
+    if (!targets.length) return;
+    onCopyClip?.(targets.length === 1 ? targets[0] : targets);
+  };
+
+  const exportSelectedVideos = (anchor?: VideoEditorClip) => {
+    const videoIds = resolveActionClips(anchor)
+      .filter((clip) => clip.kind === "video")
+      .map((clip) => clip.id);
+    if (!videoIds.length || !onRequestSegmentExport) return;
+    onRequestSegmentExport(videoIds);
   };
   return (
     <section className="ve-timeline-panel">
       <header className="ve-timeline-tools">
         <strong>时间轴</strong>
         <span>{formatTime(playheadUs)}</span>
-        <button disabled={!selected} onClick={splitSelected}>
+        <button disabled={!hasSelection} onClick={splitSelected}>
           <Scissors aria-hidden /> 分割
         </button>
         <button
-          disabled={!selected || !onCopyClip}
-          onClick={() => onCopyClip?.()}
+          disabled={!hasSelection || !onCopyClip}
+          onClick={() => copyActionClips()}
         >
           <Copy aria-hidden /> 复制
         </button>
@@ -430,10 +524,10 @@ export function VideoEditorTimeline({
         >
           <ClipboardPaste aria-hidden /> 粘贴
         </button>
-        <button disabled={!selected} onClick={() => deleteSelected(false)}>
+        <button disabled={!hasSelection} onClick={() => deleteSelected(false)}>
           <Trash2 aria-hidden /> 删除
         </button>
-        <button disabled={!selected} onClick={() => deleteSelected(true)}>
+        <button disabled={!hasSelection} onClick={() => deleteSelected(true)}>
           波纹删除
         </button>
         <button
@@ -470,6 +564,7 @@ export function VideoEditorTimeline({
             onScrollTopChange?.(event.currentTarget.scrollTop);
           }}
           onPointerDown={(event) => {
+            if (event.button != null && event.button !== 0) return;
             if (event.target === event.currentTarget) selectClip(undefined);
           }}
         >
@@ -486,6 +581,7 @@ export function VideoEditorTimeline({
                 className="ve-ruler"
                 style={{ width: `${seconds * zoom}px` }}
                 onPointerDown={(event) => {
+                  if (event.button != null && event.button !== 0) return;
                   selectClip(undefined);
                   setPlayheadUs(positionUs(event.clientX));
                 }}
@@ -530,6 +626,7 @@ export function VideoEditorTimeline({
                     key={track.id}
                     data-track-id={track.id}
                     onPointerDown={(event) => {
+                      if (event.button != null && event.button !== 0) return;
                       if (event.target === event.currentTarget) {
                         selectClip(undefined);
                         setPlayheadUs(positionUs(event.clientX));
@@ -549,7 +646,7 @@ export function VideoEditorTimeline({
                         className={`ve-clip ${clip.kind} ${track.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}${dragPreview?.positions.has(clip.id) ? " dragging" : ""}${dragPreview?.positions.has(clip.id) && !dragPreview.valid ? " invalid" : ""}`}
                         style={{
                           left: `${((dragPreview?.positions.get(clip.id)?.startUs ?? trimStates?.find((item) => item.id === clip.id)?.timelineStartUs ?? clip.timelineStartUs) / 1_000_000) * zoom}px`,
-                          width: `${Math.max(18, ((trimStates?.find((item) => item.id === clip.id)?.durationUs ?? clip.durationUs) / 1_000_000) * zoom)}px`,
+                          width: `${Math.max(1, ((trimStates?.find((item) => item.id === clip.id)?.durationUs ?? clip.durationUs) / 1_000_000) * zoom)}px`,
                           transform:
                             dragPreview?.positions.get(clip.id)?.trackId !==
                               undefined &&
@@ -591,7 +688,9 @@ export function VideoEditorTimeline({
                         onContextMenu={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
-                          selectClip(clip.id);
+                          if (!selectedClipIds.includes(clip.id)) {
+                            selectClip(clip.id);
+                          }
                           setContextMenu({
                             clip,
                             left: event.clientX,
@@ -671,7 +770,7 @@ export function VideoEditorTimeline({
         >
           <button
             role="menuitem"
-            onClick={() => toggleClipMute(contextMenu.clip)}
+            onClick={() => toggleClipsMute(contextMenu.clip)}
           >
             {clipIsMuted(contextMenu.clip) ? "取消静音" : "静音"}
           </button>
@@ -679,10 +778,8 @@ export function VideoEditorTimeline({
             role="menuitem"
             disabled={!onCopyClip}
             onClick={() => {
-              const clip = contextMenu.clip;
+              copyActionClips(contextMenu.clip);
               setContextMenu(undefined);
-              selectClip(clip.id);
-              onCopyClip?.(clip);
             }}
           >
             复制片段
@@ -700,24 +797,21 @@ export function VideoEditorTimeline({
           <button
             role="menuitem"
             onClick={() => {
-              const clip = contextMenu.clip;
+              const targets = resolveActionClips(contextMenu.clip);
               setContextMenu(undefined);
-              void commit(
-                [{ type: "removeClip", clipId: clip.id }],
-                [{ type: "addClip", clip }],
-              );
-              selectClip(undefined);
+              deleteSelected(false, targets);
             }}
           >
             删除片段
           </button>
-          {contextMenu.clip.kind === "video" && onRequestSegmentExport ? (
+          {resolveActionClips(contextMenu.clip).some(
+            (clip) => clip.kind === "video",
+          ) && onRequestSegmentExport ? (
             <button
               role="menuitem"
               onClick={() => {
-                const clip = contextMenu.clip;
                 setContextMenu(undefined);
-                onRequestSegmentExport?.(clip.id);
+                exportSelectedVideos(contextMenu.clip);
               }}
             >
               <Download aria-hidden /> 导出视频片段
@@ -732,12 +826,15 @@ export function VideoEditorTimeline({
           >
             在播放头处分割
           </button>
-          {contextMenu.clip.kind === "video" &&
-          tracks.find((track) => track.id === contextMenu.clip.trackId)
-            ?.kind === "mixed" ? (
+          {resolveActionClips(contextMenu.clip).some((clip) => {
+            const sourceTrack = tracks.find(
+              (track) => track.id === clip.trackId,
+            );
+            return clip.kind === "video" && sourceTrack?.kind === "mixed";
+          }) ? (
             <button
               role="menuitem"
-              onClick={() => separateClip(contextMenu.clip)}
+              onClick={() => separateClips(contextMenu.clip)}
             >
               分离轨道
             </button>

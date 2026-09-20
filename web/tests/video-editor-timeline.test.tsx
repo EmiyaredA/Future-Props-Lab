@@ -712,8 +712,8 @@ describe("video editor timeline", () => {
     fireEvent.contextMenu(screen.getByRole("button", { name: /视频/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: "导出视频片段" }));
 
-    expect(onRequestSegmentExport).toHaveBeenCalledWith("video-left");
-    expect(selectClip).toHaveBeenCalledWith("video-left");
+    expect(onRequestSegmentExport).toHaveBeenCalledWith(["video-left"]);
+    expect(selectClip).not.toHaveBeenCalled();
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
@@ -838,5 +838,289 @@ describe("video editor timeline", () => {
     expect(selectClip).toHaveBeenNthCalledWith(1, undefined);
     expect(selectClip).toHaveBeenNthCalledWith(2, undefined);
     expect(selectClip).toHaveBeenNthCalledWith(3, undefined);
+  });
+
+  it("renders short clips at true duration width under low zoom", () => {
+    const track = timeline.document.tracks![0]!;
+    const shortA = {
+      ...track.clips![0]!,
+      id: "short-a",
+      name: "短A",
+      timelineStartUs: 0,
+      durationUs: 500_000,
+    };
+    const shortB = {
+      ...shortA,
+      id: "short-b",
+      name: "短B",
+      timelineStartUs: 1_000_000,
+    };
+    const { container } = render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [{ ...track, clips: [shortA, shortB] }],
+          },
+        }}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={7}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={[]}
+        selectClip={vi.fn()}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onDropAsset={vi.fn()}
+      />,
+    );
+    const clipA = container.querySelector<HTMLElement>('[data-clip-id="short-a"]')!;
+    const clipB = container.querySelector<HTMLElement>('[data-clip-id="short-b"]')!;
+    expect(clipA.style.width).toBe("3.5px");
+    expect(clipA.style.left).toBe("0px");
+    expect(clipB.style.width).toBe("3.5px");
+    expect(clipB.style.left).toBe("7px");
+    expect(parseFloat(clipA.style.left) + parseFloat(clipA.style.width)).toBeLessThan(
+      parseFloat(clipB.style.left),
+    );
+  });
+
+  it("deletes every selected clip from the toolbar", () => {
+    const track = timeline.document.tracks![0]!;
+    const first = {
+      ...track.clips![0]!,
+      id: "text-a",
+      kind: "text" as const,
+      name: "字幕A",
+      timelineStartUs: 0,
+      durationUs: 1_000_000,
+    };
+    const second = {
+      ...first,
+      id: "text-b",
+      name: "字幕B",
+      timelineStartUs: 2_000_000,
+    };
+    const commit = vi.fn().mockResolvedValue(undefined);
+    const selectClip = vi.fn();
+    render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [{ ...track, clips: [first, second] }],
+          },
+        }}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["text-a", "text-b"]}
+        selectClip={selectClip}
+        commit={commit}
+        onDropAsset={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    expect(commit).toHaveBeenCalledWith(
+      [
+        { type: "removeClip", clipId: "text-a" },
+        { type: "removeClip", clipId: "text-b" },
+      ],
+      [
+        { type: "addClip", clip: first },
+        { type: "addClip", clip: second },
+      ],
+    );
+    expect(selectClip).toHaveBeenCalledWith(undefined);
+  });
+
+  it("keeps multi-selection when right-clicking an already selected clip", () => {
+    const track = timeline.document.tracks![0]!;
+    const first = {
+      ...track.clips![0]!,
+      id: "text-a",
+      kind: "text" as const,
+      name: "字幕A",
+      timelineStartUs: 0,
+      durationUs: 1_000_000,
+    };
+    const second = {
+      ...first,
+      id: "text-b",
+      name: "字幕B",
+      timelineStartUs: 2_000_000,
+    };
+    const selectClip = vi.fn();
+    const onCopyClip = vi.fn();
+    render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [{ ...track, clips: [first, second] }],
+          },
+        }}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["text-a", "text-b"]}
+        selectClip={selectClip}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onDropAsset={vi.fn()}
+        onCopyClip={onCopyClip}
+      />,
+    );
+    fireEvent.contextMenu(screen.getByRole("button", { name: /字幕A/ }));
+    expect(selectClip).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("menuitem", { name: "复制片段" }));
+    expect(onCopyClip).toHaveBeenCalledWith([first, second]);
+  });
+
+  it("does not clear multi-selection on right-click empty track space", () => {
+    const selectClip = vi.fn();
+    const { container } = render(
+      <VideoEditorTimeline
+        timeline={timeline}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["video-left"]}
+        selectClip={selectClip}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onDropAsset={vi.fn()}
+      />,
+    );
+    const rightClick = { bubbles: true, button: 2, clientX: 400 };
+    fireEvent(
+      container.querySelector(".ve-track-row")!,
+      new MouseEvent("pointerdown", rightClick),
+    );
+    fireEvent(
+      container.querySelector(".ve-ruler")!,
+      new MouseEvent("pointerdown", rightClick),
+    );
+    expect(selectClip).not.toHaveBeenCalled();
+  });
+
+  it("opens clip context menu from a trim handle without collapsing multi-selection", () => {
+    const track = timeline.document.tracks![0]!;
+    const first = {
+      ...track.clips![0]!,
+      id: "text-a",
+      kind: "text" as const,
+      name: "字幕A",
+      timelineStartUs: 0,
+      durationUs: 1_000_000,
+    };
+    const second = {
+      ...first,
+      id: "text-b",
+      name: "字幕B",
+      timelineStartUs: 2_000_000,
+    };
+    const selectClip = vi.fn();
+    const { container } = render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [{ ...track, clips: [first, second] }],
+          },
+        }}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["text-a", "text-b"]}
+        selectClip={selectClip}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onDropAsset={vi.fn()}
+        onCopyClip={vi.fn()}
+      />,
+    );
+    const handle = container.querySelector(
+      '[data-clip-id="text-a"] .ve-trim-handle.start',
+    )!;
+    fireEvent.pointerDown(handle, { button: 2, clientX: 10 });
+    fireEvent.contextMenu(handle);
+    expect(selectClip).not.toHaveBeenCalled();
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+  });
+
+  it("splits every selected clip that intersects the playhead", async () => {
+    const track = timeline.document.tracks![0]!;
+    const first = {
+      ...track.clips![0]!,
+      id: "text-a",
+      kind: "text" as const,
+      name: "字幕A",
+      timelineStartUs: 0,
+      durationUs: 4_000_000,
+    };
+    const second = {
+      ...first,
+      id: "text-b",
+      name: "字幕B",
+      timelineStartUs: 1_000_000,
+      durationUs: 4_000_000,
+    };
+    const missed = {
+      ...first,
+      id: "text-c",
+      name: "字幕C",
+      timelineStartUs: 5_000_000,
+      durationUs: 2_000_000,
+    };
+    const commit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [{ ...track, clips: [first, second, missed] }],
+          },
+        }}
+        assets={[]}
+        playheadUs={2_000_000}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["text-a", "text-b", "text-c"]}
+        selectClip={vi.fn()}
+        commit={commit}
+        onDropAsset={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /分割/ }));
+    expect(commit).toHaveBeenCalledTimes(1);
+    const [redo] = commit.mock.calls[0]!;
+    expect(redo).toHaveLength(2);
+    expect(redo).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "splitClip", clipId: "text-a" }),
+        expect.objectContaining({ type: "splitClip", clipId: "text-b" }),
+      ]),
+    );
+    expect(redo.some((op: { clipId?: string }) => op.clipId === "text-c")).toBe(
+      false,
+    );
   });
 });

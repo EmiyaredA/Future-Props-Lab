@@ -12,12 +12,13 @@ import {
 } from "./api";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
 import {
-  pasteClipOperations,
-  snapshotClipForClipboard,
+  pasteClipsOperations,
+  snapshotClipsForClipboard,
   type ClipClipboardSnapshot,
 } from "./clipClipboard";
 import { frameUs, timelineDuration } from "./editorModel";
 import {
+  BATCH_OPS_LIMIT,
   buildBatchClipOperations,
   type BatchClipPatch,
 } from "./batchClipPatch";
@@ -316,23 +317,45 @@ export function useVideoEditor(projectId: string) {
     });
   }, []);
 
+  const allClips = useCallback(
+    () =>
+      (timeline.data?.document.tracks ?? []).flatMap(
+        (track) => track.clips ?? [],
+      ),
+    [timeline.data],
+  );
+
   const copyClip = useCallback(
-    (clip?: VideoEditorClip) => {
-      const target = clip ?? selected;
-      if (!target) return false;
-      setClipboard(snapshotClipForClipboard(target));
-      setNotice("已复制片段");
+    (clipOrClips?: VideoEditorClip | VideoEditorClip[]) => {
+      const targets = clipOrClips
+        ? Array.isArray(clipOrClips)
+          ? clipOrClips
+          : [clipOrClips]
+        : allClips().filter((clip) => selectedClipIds.includes(clip.id));
+      if (!targets.length) return false;
+      if (targets.length > BATCH_OPS_LIMIT) {
+        setNotice(`一次最多复制 ${BATCH_OPS_LIMIT} 个片段`);
+        return false;
+      }
+      setClipboard(snapshotClipsForClipboard(targets));
+      setNotice(
+        targets.length > 1 ? `已复制 ${targets.length} 个片段` : "已复制片段",
+      );
       return true;
     },
-    [selected],
+    [allClips, selectedClipIds],
   );
 
   const copySelectedClip = useCallback(() => copyClip(), [copyClip]);
 
   const pasteClipboardClip = useCallback(() => {
-    if (!clipboard || !timeline.data) return false;
+    if (!clipboard?.length || !timeline.data) return false;
+    if (clipboard.length > BATCH_OPS_LIMIT) {
+      setNotice(`一次最多粘贴 ${BATCH_OPS_LIMIT} 个片段`);
+      return false;
+    }
     const fps = timeline.data.document.settings?.fps ?? 30;
-    const result = pasteClipOperations({
+    const result = pasteClipsOperations({
       snapshot: clipboard,
       tracks: timeline.data.document.tracks ?? [],
       playheadUs: playheadRef.current,
@@ -342,9 +365,12 @@ export function useVideoEditor(projectId: string) {
       setNotice(result.error);
       return false;
     }
-    void commit(result.redo, result.undo).then(() =>
-      selectClip(result.newClipId),
-    );
+    void commit(result.redo, result.undo).then(() => {
+      const [first, ...rest] = result.newClipIds;
+      if (!first) return;
+      selectClip(first);
+      for (const id of rest) selectClip(id, true);
+    });
     return true;
   }, [clipboard, commit, selectClip, timeline.data]);
 
@@ -387,13 +413,13 @@ export function useVideoEditor(projectId: string) {
         return;
       }
       if ((event.metaKey || event.ctrlKey) && event.code === "KeyC") {
-        if (!canWrite || !selected) return;
+        if (!canWrite || !selectedClipIds.length) return;
         event.preventDefault();
         copyClip();
         return;
       }
       if ((event.metaKey || event.ctrlKey) && event.code === "KeyV") {
-        if (!canWrite || !clipboard) return;
+        if (!canWrite || !clipboard?.length) return;
         event.preventDefault();
         pasteClipboardClip();
         return;
@@ -436,7 +462,6 @@ export function useVideoEditor(projectId: string) {
     durationUs,
     moveSelectedClips,
     pasteClipboardClip,
-    selected,
     selectedClipIds.length,
     setPlayheadUs,
     timeline.data,
@@ -518,7 +543,7 @@ export function useVideoEditor(projectId: string) {
     setSpeedRippleEnabled,
     notice,
     setNotice,
-    hasClipboard: Boolean(clipboard),
+    hasClipboard: Boolean(clipboard?.length),
     copySelectedClip,
     copyClip,
     pasteClipboardClip,

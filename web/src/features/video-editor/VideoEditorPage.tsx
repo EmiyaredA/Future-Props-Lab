@@ -59,7 +59,7 @@ export function VideoEditorPage({
   const workspaceLayout = useVideoEditorLayout(editor.layout, editor.setLayout);
   const [exportOpen, setExportOpen] = useState(false);
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
-  const [segmentExportClipId, setSegmentExportClipId] = useState<string>();
+  const [segmentExportClipIds, setSegmentExportClipIds] = useState<string[]>();
   const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
   const [previewingAssetId, setPreviewingAssetId] = useState<string>();
   const [titleDraft, setTitleDraft] = useState<string | null>(null);
@@ -420,7 +420,7 @@ export function VideoEditorPage({
             </button>
             <button
               onClick={() => {
-                setSegmentExportClipId(undefined);
+                setSegmentExportClipIds(undefined);
                 setSegmentExportOpen(true);
               }}
             >
@@ -625,8 +625,8 @@ export function VideoEditorPage({
           onDropAsset={(asset, trackId, startUs) =>
             addAsset(asset, startUs, trackId)
           }
-          onRequestSegmentExport={(clipId) => {
-            setSegmentExportClipId(clipId);
+          onRequestSegmentExport={(clipIds) => {
+            setSegmentExportClipIds(clipIds);
             setSegmentExportOpen(true);
           }}
           draggingAsset={draggingAsset}
@@ -650,13 +650,11 @@ export function VideoEditorPage({
             timeline={timeline}
             assets={assets}
             selectedClipIds={
-              segmentExportClipId
-                ? [segmentExportClipId]
-                : editor.selectedClipIds
+              segmentExportClipIds ?? editor.selectedClipIds
             }
             onClose={() => {
               setSegmentExportOpen(false);
-              setSegmentExportClipId(undefined);
+              setSegmentExportClipIds(undefined);
             }}
           />
         ) : null}

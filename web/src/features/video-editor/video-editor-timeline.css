@@ -220,6 +220,7 @@
   position: absolute;
   top: 5px;
   height: 46px;
+  box-sizing: border-box;
   overflow: hidden;
   display: grid;
   align-content: center;

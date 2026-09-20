@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   pasteClipOperations,
+  pasteClipsOperations,
   snapshotClipForClipboard,
+  snapshotClipsForClipboard,
 } from "@features/video-editor/clipClipboard";
 import { snapUs } from "@features/video-editor/editorModel";
 import type {
@@ -144,7 +146,7 @@ describe("video editor clip clipboard", () => {
     const snapshot = snapshotClipForClipboard(
       textClip({ linkGroupId: "linked-av" }),
     );
-    expect(snapshot.linkGroupId).toBe("linked-av");
+    expect(snapshot[0]?.linkGroupId).toBe("linked-av");
     const result = pasteClipOperations({
       snapshot,
       tracks: [visualTrack()],
@@ -157,5 +159,64 @@ describe("video editor clip clipboard", () => {
     const operation = result.redo[0];
     if (operation?.type !== "addClip") throw new Error("expected addClip");
     expect(operation.clip.linkGroupId).toBeNull();
+  });
+
+  it("pastes multiple clips with relative timeline offsets from the playhead", () => {
+    const first = textClip({
+      id: "a",
+      timelineStartUs: 2_000_000,
+      durationUs: 1_000_000,
+      name: "A",
+    });
+    const second = textClip({
+      id: "b",
+      timelineStartUs: 5_000_000,
+      durationUs: 1_000_000,
+      name: "B",
+    });
+    const result = pasteClipsOperations({
+      snapshot: snapshotClipsForClipboard([second, first]),
+      tracks: [visualTrack()],
+      playheadUs: 10_000_000,
+      fps: 30,
+      newClipIds: ["paste-a", "paste-b"],
+    });
+    expect("error" in result).toBe(false);
+    if ("error" in result) return;
+    expect(result.newClipIds).toEqual(["paste-a", "paste-b"]);
+    expect(result.redo).toHaveLength(2);
+    const starts = result.redo.map((operation) => {
+      if (operation.type !== "addClip") throw new Error("expected addClip");
+      return operation.clip.timelineStartUs;
+    });
+    expect(starts[0]).toBe(snapUs(10_000_000, 30));
+    expect(starts[1]).toBe(snapUs(13_000_000, 30));
+  });
+
+  it("rejects the whole multi-paste when any clip would overlap", () => {
+    const first = textClip({
+      id: "a",
+      timelineStartUs: 0,
+      durationUs: 1_000_000,
+    });
+    const second = textClip({
+      id: "b",
+      timelineStartUs: 2_000_000,
+      durationUs: 1_000_000,
+    });
+    const blocking = textClip({
+      id: "blocker",
+      timelineStartUs: 11_000_000,
+      durationUs: 2_000_000,
+    });
+    const result = pasteClipsOperations({
+      snapshot: snapshotClipsForClipboard([first, second]),
+      tracks: [visualTrack({ clips: [blocking] })],
+      playheadUs: 10_000_000,
+      fps: 30,
+    });
+    expect(result).toEqual({
+      error: "该位置与其他片段重叠，无法粘贴",
+    });
   });
 });

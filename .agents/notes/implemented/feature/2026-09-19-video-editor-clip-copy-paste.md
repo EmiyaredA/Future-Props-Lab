@@ -19,7 +19,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：字幕等片段可按 NLE 习惯复制后改播放头再粘贴；撤销走现有 undo 栈。
-- **代价**：仅单片段、会话内剪贴板；切项目清空；不跟粘贴 A/V link 组。
+- **代价**：会话内剪贴板；切项目清空；不跟粘贴 A/V link 组。多选整组复制粘贴见[时间轴多选工具栏与右键操作](2026-09-21-video-editor-multiselect-timeline-actions.md)。
 
 ## Verification
 

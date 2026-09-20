@@ -63,9 +63,10 @@ export function useTimelineClipTrim(options: Options) {
     clip: VideoEditorClip,
     edge: TrimEdge,
   ) => {
+    // Right-click must bubble to the clip context menu; do not swallow it.
+    if (event.button !== 0 || saving.current) return;
     event.stopPropagation();
     event.preventDefault();
-    if (event.button !== 0 || saving.current) return;
     cleanupRef.current?.();
     options.selectClip(clip.id);
     event.currentTarget.focus();
