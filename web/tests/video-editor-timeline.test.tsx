@@ -227,6 +227,251 @@ describe("video editor timeline", () => {
     },
   );
 
+  it("moves every selected clip together when dragging one member", async () => {
+    const track = timeline.document.tracks![0]!;
+    const first = {
+      ...track.clips![0]!,
+      id: "text-a",
+      kind: "text" as const,
+      name: "字幕A",
+      timelineStartUs: 0,
+      durationUs: 1_000_000,
+    };
+    const second = {
+      ...first,
+      id: "text-b",
+      name: "字幕B",
+      timelineStartUs: 1_200_000,
+    };
+    const third = {
+      ...first,
+      id: "text-c",
+      name: "字幕C",
+      timelineStartUs: 5_000_000,
+    };
+    const commit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [
+              {
+                ...track,
+                name: "字幕",
+                clips: [first, second, third],
+              },
+            ],
+          },
+        }}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["text-a", "text-b"]}
+        selectClip={vi.fn()}
+        commit={commit}
+        onDropAsset={vi.fn()}
+      />,
+    );
+    const clip = screen
+      .getByRole("button", { name: /字幕A/ })
+      .closest<HTMLElement>(".ve-clip")!;
+    fireEvent(
+      clip,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        clientX: 10,
+        button: 0,
+      }),
+    );
+    fireEvent(window, new MouseEvent("pointermove", { clientX: 90 }));
+    await act(
+      () => new Promise((resolve) => window.requestAnimationFrame(resolve)),
+    );
+    await act(async () => {
+      fireEvent(window, new MouseEvent("pointerup", { clientX: 90 }));
+    });
+
+    expect(commit).toHaveBeenCalledTimes(1);
+    const [redo] = commit.mock.calls[0]!;
+    expect(redo).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "moveClip",
+          clipId: "text-a",
+          timelineStartUs: expect.any(Number),
+        }),
+        expect.objectContaining({
+          type: "moveClip",
+          clipId: "text-b",
+          timelineStartUs: expect.any(Number),
+        }),
+      ]),
+    );
+    expect(redo).toHaveLength(2);
+    const delta =
+      redo.find((op: { clipId: string }) => op.clipId === "text-a")!
+        .timelineStartUs - first.timelineStartUs;
+    expect(
+      redo.find((op: { clipId: string }) => op.clipId === "text-b")!
+        .timelineStartUs,
+    ).toBe(second.timelineStartUs + delta);
+    expect(
+      redo.find((op: { clipId: string }) => op.clipId === "text-c"),
+    ).toBeUndefined();
+  });
+
+  it("moves every selected same-track clip onto the destination track together", async () => {
+    const source = timeline.document.tracks![0]!;
+    const first = {
+      ...source.clips![0]!,
+      id: "text-a",
+      kind: "text" as const,
+      name: "字幕A",
+      timelineStartUs: 0,
+      durationUs: 1_000_000,
+    };
+    const second = {
+      ...first,
+      id: "text-b",
+      name: "字幕B",
+      timelineStartUs: 1_200_000,
+    };
+    const commit = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [
+              { ...source, name: "字幕", clips: [first, second] },
+              {
+                ...source,
+                id: "visual-2",
+                order: 1,
+                name: "画面 1",
+                clips: [],
+              },
+            ],
+          },
+        }}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["text-a", "text-b"]}
+        selectClip={vi.fn()}
+        commit={commit}
+        onDropAsset={vi.fn()}
+      />,
+    );
+    const rows = container.querySelectorAll<HTMLElement>(".ve-track-row");
+    rows.forEach((row, index) =>
+      vi.spyOn(row, "getBoundingClientRect").mockReturnValue({
+        left: 0,
+        right: 2400,
+        top: 26 + index * 56,
+        bottom: 82 + index * 56,
+      } as DOMRect),
+    );
+    const clip = screen
+      .getByRole("button", { name: /字幕A/ })
+      .closest<HTMLElement>(".ve-clip")!;
+    fireEvent(
+      clip,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        clientX: 10,
+        clientY: 50,
+        button: 0,
+      }),
+    );
+    for (const y of [100, 101]) {
+      fireEvent(
+        window,
+        new MouseEvent("pointermove", { clientX: 10, clientY: y }),
+      );
+      await act(
+        () => new Promise((resolve) => window.requestAnimationFrame(resolve)),
+      );
+    }
+    await act(async () => {
+      fireEvent(
+        window,
+        new MouseEvent("pointerup", { clientX: 10, clientY: 100 }),
+      );
+    });
+
+    expect(commit).toHaveBeenCalledTimes(1);
+    const [redo] = commit.mock.calls[0]!;
+    expect(redo).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "moveClip",
+          clipId: "text-a",
+          trackId: "visual-2",
+          timelineStartUs: 0,
+        }),
+        expect.objectContaining({
+          type: "moveClip",
+          clipId: "text-b",
+          trackId: "visual-2",
+          timelineStartUs: 1_200_000,
+        }),
+      ]),
+    );
+    expect(redo).toHaveLength(2);
+  });
+
+  it("keeps a multi-selection when clicking an already selected member", () => {
+    const track = timeline.document.tracks![0]!;
+    const first = {
+      ...track.clips![0]!,
+      id: "text-a",
+      kind: "text" as const,
+      name: "字幕A",
+      timelineStartUs: 0,
+      durationUs: 1_000_000,
+    };
+    const second = {
+      ...first,
+      id: "text-b",
+      name: "字幕B",
+      timelineStartUs: 1_500_000,
+    };
+    const selectClip = vi.fn();
+    render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [{ ...track, clips: [first, second] }],
+          },
+        }}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["text-a", "text-b"]}
+        selectClip={selectClip}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onDropAsset={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /字幕A/ }));
+    expect(selectClip).not.toHaveBeenCalled();
+  });
+
   it.each(["valid", "locked", "audio", "overlap"] as const)(
     "keeps cross-track previews stable and handles a %s destination",
     async (destination) => {

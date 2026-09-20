@@ -8,6 +8,7 @@ import {
   Film,
   Layers3,
   Maximize,
+  Maximize2,
   Plus,
   Redo2,
   Save,
@@ -25,7 +26,12 @@ import { VideoEditorPreview } from "./VideoEditorPreview";
 import { VideoEditorTimeline } from "./VideoEditorTimeline";
 import { VideoEditorSegmentExportDialog } from "./VideoEditorSegmentExportDialog";
 import { VideoEditorSubtitleImportDialog } from "./VideoEditorSubtitleImportDialog";
-import { MAX_TIMELINE_ZOOM, MIN_TIMELINE_ZOOM } from "./timelineScale";
+import {
+  clampTimelineZoom,
+  fittedTimelineZoom,
+  MAX_TIMELINE_ZOOM,
+  timelineZoomMinimum,
+} from "./timelineScale";
 import { useVideoEditor } from "./useVideoEditor";
 import {
   parseSubtitleFile,
@@ -57,6 +63,7 @@ export function VideoEditorPage({
   const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
   const [previewingAssetId, setPreviewingAssetId] = useState<string>();
   const [titleDraft, setTitleDraft] = useState<string | null>(null);
+  const [contentViewportWidthPx, setContentViewportWidthPx] = useState(0);
   const [subtitleImport, setSubtitleImport] = useState<{
     fileName: string;
     result?: SubtitleParseResult;
@@ -64,6 +71,23 @@ export function VideoEditorPage({
   }>();
   const [subtitleImportPending, setSubtitleImportPending] = useState(false);
   const discardTitle = useRef(false);
+  const contentDurationSeconds = Math.max(
+    1,
+    editor.durationUs / 1_000_000,
+  );
+  const zoomMin = timelineZoomMinimum(
+    contentViewportWidthPx,
+    contentDurationSeconds,
+  );
+  const setTimelineZoom = (value: number) => {
+    editor.setZoom(clampTimelineZoom(value, zoomMin));
+  };
+  useEffect(() => {
+    if (!(contentViewportWidthPx > 0)) return;
+    if (editor.zoom < zoomMin) {
+      editor.setZoom(clampTimelineZoom(zoomMin, zoomMin));
+    }
+  }, [contentViewportWidthPx, editor.zoom, editor.setZoom, zoomMin]);
   useEffect(() => {
     const clip = (editor.timeline.data?.document.tracks ?? []).flatMap((track) => track.clips ?? [])
       .find((item) => editor.selectedClipIds.includes(item.id));
@@ -104,6 +128,13 @@ export function VideoEditorPage({
   const selectClip = (clipId?: string, additive = false) => {
     clearSourcePreview();
     editor.selectClip(clipId, additive);
+  };
+  const fitTimelineWidth = () => {
+    if (!(contentViewportWidthPx > 0)) return;
+    setTimelineZoom(
+      fittedTimelineZoom(contentViewportWidthPx, contentDurationSeconds),
+    );
+    editor.setTimelineScrollLeft(0);
   };
   const handleSubtitleFile = (file: File) => {
     setSubtitleImport({ fileName: file.name });
@@ -556,14 +587,22 @@ export function VideoEditorPage({
             <input
               aria-label="时间轴缩放"
               type="range"
-              min={MIN_TIMELINE_ZOOM}
+              min={zoomMin}
               max={MAX_TIMELINE_ZOOM}
-              step="5"
-              value={editor.zoom}
-              onChange={(event) => editor.setZoom(Number(event.target.value))}
+              step="1"
+              value={Math.max(zoomMin, editor.zoom)}
+              onChange={(event) => setTimelineZoom(Number(event.target.value))}
             />
             <ZoomIn aria-hidden />
             <span>{editor.zoom}px/s</span>
+            <button
+              type="button"
+              aria-label="适配时间轴宽度"
+              title="按轨道有效片段总时长缩放到当前视窗"
+              onClick={fitTimelineWidth}
+            >
+              <Maximize2 aria-hidden /> 适配宽度
+            </button>
           </div>
         </div>
         <VideoEditorTimeline
@@ -578,6 +617,7 @@ export function VideoEditorPage({
           onScrollTopChange={editor.setTimelineScrollTop}
           scrollLeft={editor.timelineScrollLeft}
           onScrollLeftChange={editor.setTimelineScrollLeft}
+          onContentViewportWidthChange={setContentViewportWidthPx}
           selectedClipId={editor.selectedClipId}
           selectedClipIds={editor.selectedClipIds}
           selectClip={selectClip}

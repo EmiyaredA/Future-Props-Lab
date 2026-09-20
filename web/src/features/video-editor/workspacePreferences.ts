@@ -3,7 +3,7 @@ import {
   DEFAULT_EDITOR_LAYOUT,
   type VideoEditorLayout,
 } from "./editorLayout";
-import { MAX_TIMELINE_ZOOM, MIN_TIMELINE_ZOOM } from "./timelineScale";
+import { clampTimelineZoom, MIN_TIMELINE_ZOOM } from "./timelineScale";
 
 const WORKSPACE_PREFERENCES_VERSION = 1;
 const WORKSPACE_PREFERENCES_KEY_PREFIX = "future-props.video-editor.workspace";
@@ -70,7 +70,7 @@ function normalize(
     version: WORKSPACE_PREFERENCES_VERSION,
     playheadUs: finiteNonNegative(candidate.playheadUs, defaults.playheadUs),
     selectedClipIds,
-    zoom: Math.max(MIN_TIMELINE_ZOOM, Math.min(MAX_TIMELINE_ZOOM, zoom)),
+    zoom: clampTimelineZoom(zoom, MIN_TIMELINE_ZOOM),
     timelineScrollLeft: finiteNonNegative(
       candidate.timelineScrollLeft,
       defaults.timelineScrollLeft,

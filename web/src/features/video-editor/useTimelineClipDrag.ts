@@ -64,16 +64,26 @@ export function useTimelineClipDrag({
     if (event.button != null && event.button !== 0) return;
     const sourceTrack = tracks.find((track) => track.id === clip.trackId);
     if (!sourceTrack || sourceTrack.locked || savingRef.current) return;
+    const additive = event.metaKey || event.ctrlKey;
+    if (additive) {
+      event.preventDefault();
+      event.stopPropagation();
+      selectClip(clip.id, true);
+      // pointerdown already toggled; ignore the synthetic click that follows.
+      suppressClickRef.current = true;
+      window.setTimeout(() => (suppressClickRef.current = false), 100);
+      return;
+    }
     cleanupRef.current?.();
     event.preventDefault();
     event.stopPropagation();
     const pointerId = event.pointerId;
     const origin = { x: event.clientX, y: event.clientY };
     const allClips = tracks.flatMap((track) => track.clips ?? []);
-    const movingIds = linkedClipIds(
-      allClips,
-      selectedClipIds.includes(clip.id) ? selectedClipIds : [clip.id],
-    );
+    const selection = selectedClipIds.includes(clip.id)
+      ? selectedClipIds
+      : [clip.id];
+    const movingIds = linkedClipIds(allClips, selection);
     const moving = allClips.filter((item) => movingIds.has(item.id));
     if (!selectedClipIds.includes(clip.id)) selectClip(clip.id);
     const grabOffsetUs = rawPositionUs(event.clientX) - clip.timelineStartUs;
@@ -121,12 +131,15 @@ export function useTimelineClipDrag({
       });
       const deltaUs = startUs - clip.timelineStartUs;
       moved ||= deltaUs !== 0 || targetTrackId !== clip.trackId;
+      // Same-track members of the selection follow the grabbed clip onto the
+      // destination track; linked counterparts on other tracks keep theirs.
       const positions = new Map(
         moving.map((item) => [
           item.id,
           {
             startUs: item.timelineStartUs + deltaUs,
-            trackId: item.id === clip.id ? targetTrackId : item.trackId,
+            trackId:
+              item.trackId === clip.trackId ? targetTrackId : item.trackId,
           },
         ]),
       );

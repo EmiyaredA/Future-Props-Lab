@@ -57,6 +57,7 @@ export function VideoEditorTimeline({
   hasClipboard = false,
   onCopyClip,
   onPasteClip,
+  onContentViewportWidthChange,
 }: {
   draggingAsset?: VideoEditorAsset;
   timeline: Timeline;
@@ -89,6 +90,7 @@ export function VideoEditorTimeline({
   hasClipboard?: boolean;
   onCopyClip?: (clip?: VideoEditorClip) => void;
   onPasteClip?: () => void;
+  onContentViewportWidthChange?: (widthPx: number) => void;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
@@ -112,6 +114,19 @@ export function VideoEditorTimeline({
     if (node && Math.abs(node.scrollTop - scrollTop) > 0.5)
       node.scrollTop = scrollTop;
   }, [scrollTop]);
+  useLayoutEffect(() => {
+    const node = scroller.current;
+    if (!node || !onContentViewportWidthChange) return;
+    const publish = () => {
+      onContentViewportWidthChange(
+        Math.max(0, node.clientWidth - trackHeaderWidth),
+      );
+    };
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [onContentViewportWidthChange, trackHeaderWidth]);
   const fps = timeline.document.settings?.fps ?? 30;
   const tracks = [...(timeline.document.tracks ?? [])].sort(
     (a, b) => a.order - b.order,
@@ -550,7 +565,23 @@ export function VideoEditorTimeline({
                             suppressClickRef.current = false;
                             return;
                           }
-                          selectClip(clip.id, event.metaKey || event.ctrlKey);
+                          const additive = event.metaKey || event.ctrlKey;
+                          // Keep a multi-selection when grabbing an already
+                          // selected member so the group drag can start.
+                          if (
+                            !additive &&
+                            selectedClipIds.includes(clip.id) &&
+                            selectedClipIds.length > 1
+                          ) {
+                            if (
+                              playheadUs < clip.timelineStartUs ||
+                              playheadUs >=
+                                clip.timelineStartUs + clip.durationUs
+                            )
+                              setPlayheadUs(clip.timelineStartUs);
+                            return;
+                          }
+                          selectClip(clip.id, additive);
                           if (
                             playheadUs < clip.timelineStartUs ||
                             playheadUs >= clip.timelineStartUs + clip.durationUs
