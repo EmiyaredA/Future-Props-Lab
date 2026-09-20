@@ -21,8 +21,8 @@ export function WorkshopSidebar({
   subtitle: string;
   brand: ReactNode;
   brandClassName?: string;
-  backSubtitle: string;
-  onBack: () => void;
+  backSubtitle?: string;
+  onBack?: () => void;
   children: ReactNode;
   className?: string;
   sidebarRef?: Ref<HTMLElement>;
@@ -47,20 +47,22 @@ export function WorkshopSidebar({
         {brandAction}
         <SidebarCollapseToggle />
       </div>
-      <button
-        className="workshop-back"
-        type="button"
-        aria-label="返回应用中心"
-        onClick={onBack}
-      >
-        <span className="workshop-back-icon">
-          <ArrowLeft aria-hidden />
-        </span>
-        <span className="workshop-back-copy">
-          <strong>返回应用中心</strong>
-          <small>{backSubtitle}</small>
-        </span>
-      </button>
+      {onBack ? (
+        <button
+          className="workshop-back"
+          type="button"
+          aria-label="返回应用中心"
+          onClick={onBack}
+        >
+          <span className="workshop-back-icon">
+            <ArrowLeft aria-hidden />
+          </span>
+          <span className="workshop-back-copy">
+            <strong>返回应用中心</strong>
+            <small>{backSubtitle}</small>
+          </span>
+        </button>
+      ) : null}
       {children}
       {footer ? <footer>{footer}</footer> : null}
     </aside>

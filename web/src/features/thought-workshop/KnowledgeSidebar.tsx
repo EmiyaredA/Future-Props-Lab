@@ -10,8 +10,6 @@ import {
   WorkshopNavigation,
 } from "@shared/ui/WorkshopSidebar";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
-import { CustomSelect } from "@shared/ui/CustomSelect";
-import type { KnowledgeBase } from "./api";
 import { documentViews } from "./knowledgeViews";
 import { KnowledgeSidebarResize } from "./KnowledgeSidebarResize";
 import {
@@ -25,8 +23,6 @@ export function KnowledgeSidebar({
   close,
   onBack,
   onNavigate,
-  project,
-  projects,
   inside,
   query,
   search,
@@ -44,8 +40,6 @@ export function KnowledgeSidebar({
   close: () => void;
   onBack: () => void;
   onNavigate: (id?: string) => void;
-  project?: KnowledgeBase;
-  projects: KnowledgeBase[];
   inside: boolean;
   query: string;
   search: (query: string) => void;
@@ -74,7 +68,7 @@ export function KnowledgeSidebar({
         className={`knowledge-sidebar ${drawer ? "is-open" : ""}`}
         name="思绪工坊"
         subtitle="Thought Workshop"
-        backSubtitle="浏览全部应用"
+        backSubtitle={inside ? undefined : "浏览全部应用"}
         brand={
           <img
             src="/brand/thought-workshop-mark.png"
@@ -83,7 +77,7 @@ export function KnowledgeSidebar({
             draggable={false}
           />
         }
-        onBack={onBack}
+        onBack={inside ? undefined : onBack}
         brandAction={
           <button
             className="knowledge-mobile"
@@ -97,21 +91,22 @@ export function KnowledgeSidebar({
       >
         {inside ? (
           <>
-            <button className="knowledge-all-link" onClick={() => onNavigate()}>
-              <ArrowLeft size={16} />
-              所有知识库
+            <button
+              className="workshop-back"
+              type="button"
+              aria-label="所有知识库"
+              onClick={() => onNavigate()}
+            >
+              <span className="workshop-back-icon">
+                <ArrowLeft aria-hidden />
+              </span>
+              <span className="workshop-back-copy">
+                <strong>所有知识库</strong>
+                <small>浏览全部知识库</small>
+              </span>
             </button>
-            {project && (
-              <CustomSelect
-                escapeClipping
-                ariaLabel="切换知识库"
-                value={project.id}
-                options={projects.map((p) => ({ value: p.id, label: p.title }))}
-                onChange={onNavigate}
-              />
-            )}
             <label className="knowledge-search">
-              <Search size={16} />
+              <Search size={15} />
               <input
                 aria-label="搜索当前知识库"
                 placeholder="搜索文档…"

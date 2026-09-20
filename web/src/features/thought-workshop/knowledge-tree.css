@@ -61,8 +61,7 @@
   outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: -1px;
 }
-.knowledge-tree-chevron,
-.knowledge-tree-chevron-spacer {
+.knowledge-tree-chevron {
   flex: 0 0 22px;
   width: 22px;
   height: 22px;

@@ -62,14 +62,14 @@ describe("shared workshop sidebar", () => {
   it("keeps knowledge filters directly accessible alongside the directory", async () => {
     const user = userEvent.setup();
     const selectView = vi.fn();
+    const onNavigate = vi.fn();
     render(
       <KnowledgeSidebar
         sidebarRef={{ current: null }}
         drawer={false}
         close={vi.fn()}
         onBack={vi.fn()}
-        onNavigate={vi.fn()}
-        projects={[]}
+        onNavigate={onNavigate}
         inside
         query=""
         search={vi.fn()}
@@ -86,7 +86,14 @@ describe("shared workshop sidebar", () => {
     const sidebar = within(
       screen.getByRole("complementary", { name: "知识库导航" }),
     );
-    expect(sidebar.getByText("浏览全部应用")).toBeVisible();
+    expect(
+      sidebar.queryByRole("button", { name: "返回应用中心" }),
+    ).not.toBeInTheDocument();
+    expect(
+      sidebar.queryByRole("combobox", { name: "切换知识库" }),
+    ).not.toBeInTheDocument();
+    expect(sidebar.getByRole("button", { name: "所有知识库" })).toBeVisible();
+    expect(sidebar.getByText("浏览全部知识库")).toBeVisible();
     expect(sidebar.getByText("目录内容")).toBeVisible();
     for (const name of [
       "首页",
@@ -103,6 +110,8 @@ describe("shared workshop sidebar", () => {
     sidebar.getByRole("button", { name: "收藏文档" }).focus();
     await user.keyboard("{Enter}");
     expect(selectView).toHaveBeenCalledWith("favorites");
+    await user.click(sidebar.getByRole("button", { name: "所有知识库" }));
+    expect(onNavigate).toHaveBeenCalledWith();
   });
 
   it("resizes the knowledge sidebar and remembers the width", async () => {
@@ -113,7 +122,6 @@ describe("shared workshop sidebar", () => {
         close={vi.fn()}
         onBack={vi.fn()}
         onNavigate={vi.fn()}
-        projects={[]}
         inside
         query=""
         search={vi.fn()}

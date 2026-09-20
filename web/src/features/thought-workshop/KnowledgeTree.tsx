@@ -352,9 +352,7 @@ export function KnowledgeTree({
                   <ChevronRight size={14} />
                 )}
               </button>
-            ) : (
-              <span className="knowledge-tree-chevron-spacer" />
-            )}
+            ) : null}
             <button
               type="button"
               className="knowledge-tree-name"

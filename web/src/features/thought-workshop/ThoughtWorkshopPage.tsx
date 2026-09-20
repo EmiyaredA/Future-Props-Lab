@@ -349,8 +349,6 @@ export function ThoughtWorkshopPage({
         close={() => setDrawer(false)}
         onBack={onBack}
         onNavigate={onNavigate}
-        project={project}
-        projects={projects.data || []}
         inside={!!projectId}
         query={query}
         search={search}
