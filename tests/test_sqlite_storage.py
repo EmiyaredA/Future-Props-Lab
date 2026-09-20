@@ -288,7 +288,7 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
             1,
         ),
     ]
-    assert revisions["default"] == default_revision + 5
+    assert revisions["default"] == default_revision + 6
     assert revisions[workspace_id] == 8
     assert "transcript_segments" in metadata_columns
     assert "result_segments" in task_columns
@@ -454,7 +454,7 @@ def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path)
         '["speech_recognition"]',
         '["speech_recognition"]',
     )
-    assert revision == before_revision + 4
+    assert revision == before_revision + 5
 
 
 def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path: Path) -> None:
@@ -836,15 +836,30 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         "glm-5.2",
         "minimax-m2.7",
         "doubao-seed-2-0-pro-260215",
+        "sensenova-6.8-flash-lite",
+        "deepseek-v4.1-flash",
+        "deepseek-v4-flash-0731",
+        "qwen3.8-27b",
+        "glm-5.3-flash",
     ]
     assert "senseaudio-vl-1.0-260319" not in all_slugs
-    assert len(all_slugs) == 15
-    assert revision == (14,)
+    assert {
+        "sensenova-6.8-flash-lite",
+        "deepseek-v4.1-flash",
+        "deepseek-v4-flash-0731",
+        "qwen3.8-27b",
+        "glm-5.3-flash",
+    }.issubset(all_slugs)
+    assert "qwen3.6-27b" in all_slugs
+    assert "deepseek-v4-pro" in all_slugs
+    assert len(all_slugs) == 20
+    assert revision == (15,)
     assert stored_categories == {
         "[]",
         '["speech_recognition"]',
         '["end_to_end_speech"]',
         '["music_generation"]',
+        '["text_generation"]',
     }
 
     assert apply_migrations(database_path) == (
@@ -854,8 +869,15 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (14,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (25,)
+        ).fetchone() == (15,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (31,)
+        assert connection.execute(
+            """
+            SELECT 1 FROM model_entries
+            WHERE provider_id = 'f0000000-0000-4000-8000-000000000008'
+              AND slug = 'senseaudio-music-1.0-260319'
+            """
+        ).fetchone() == (1,)
 
 
 def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Path) -> None:
@@ -879,13 +901,23 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         assert connection.execute(
             "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_asr_pro'"
         ).fetchone() == (1,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (5,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (6,)
         assert connection.execute(
             "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_realtime'"
         ).fetchone() == (1,)
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (9,)
+        ).fetchone() == (10,)
+        assert connection.execute(
+            """
+            SELECT slug FROM model_entries
+            WHERE provider_id = 'f0000000-0000-4000-8000-000000000008'
+            ORDER BY slug
+            """
+        ).fetchall() == [
+            ("senseaudio-music-1.0-260319",),
+            ("senseaudio-music-2.0-260626",),
+        ]
 
 
 def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(

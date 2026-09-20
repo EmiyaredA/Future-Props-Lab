@@ -26,20 +26,24 @@ EXPECTED_OPENAI_MODELS = (
         "轻量低成本视觉理解与工具调用模型",
     ),
     (
-        "sensenova-6.7-flash-lite",
+        "sensenova-6.8-flash-lite",
         ["chat", "vision", "tools"],
         "面向真实工作流的轻量多模态智能体模型",
     ),
-    ("deepseek-v4-flash", ["chat", "tools"], "高速高性价比文本生成与工具调用模型"),
-    ("deepseek-v4-pro", ["chat", "tools"], "旗舰文本生成与工具调用模型"),
-    ("qwen3.6-27b", ["chat", "vision", "tools"], "原生视觉语言 Dense 模型"),
+    ("deepseek-v4.1-flash", ["chat", "tools"], "高速高性价比文本生成与工具调用模型"),
+    (
+        "deepseek-v4-flash-0731",
+        ["chat", "tools"],
+        "百万上下文高速文本生成与工具调用模型",
+    ),
     ("qwen3.6-35b-a3b", ["chat", "vision", "tools"], "高效 MoE 视觉语言模型"),
+    ("qwen3.8-27b", ["chat", "tools"], "通用文本生成与工具调用模型"),
     (
         "kimi-k2.6",
         ["chat", "vision", "tools"],
         "支持图像、视频理解与多步工具调用的多模态模型",
     ),
-    ("glm-5.1", ["chat", "tools"], "面向长程任务与 Coding 的文本生成模型"),
+    ("glm-5.3-flash", ["chat", "tools"], "百万上下文高速文本生成模型"),
     ("glm-5.2", ["chat", "tools"], "百万上下文长程任务文本生成模型"),
     ("minimax-m2.7", ["chat", "tools"], "面向编程与 Agent 工作流的文本生成模型"),
     (
@@ -119,7 +123,6 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             if item.provider_id == "f0000000-0000-4000-8000-000000000003"
         } == {
             ("senseaudio-image-2.0-260319", ("image_generation",)),
-            ("senseaudio-image-1.0-260319", ("image_generation",)),
             ("doubao-seedream-5-0-260128", ("image_generation",)),
             ("sensenova-u1-fast", ("image_generation",)),
         }
@@ -177,10 +180,15 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             if item.provider_id == "f0000000-0000-4000-8000-000000000008"
         } == {
             (
+                "senseaudio-music-1.0-260319",
+                ("audio_generation",),
+                ("music_generation",),
+            ),
+            (
                 "senseaudio-music-2.0-260626",
                 ("audio_generation",),
                 ("music_generation",),
-            )
+            ),
         }
         assert {
             (item.slug, tuple(item.capabilities), tuple(item.categories))

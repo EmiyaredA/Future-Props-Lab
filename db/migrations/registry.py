@@ -69,6 +69,7 @@ from db.migrations.versions import (
     r0065_director_desk_motions,
     r0066_motion_compositor,
     r0067_video_editor_asset_default_effects_bake,
+    r0068_senseaudio_catalog_sync,
 )
 
 
@@ -307,6 +308,13 @@ MIGRATIONS += (
         r0067_video_editor_asset_default_effects_bake.MIGRATION_ID,
         r0067_video_editor_asset_default_effects_bake.SQL,
         foreign_keys_off=True,
+    ),
+)
+
+MIGRATIONS += (
+    Migration(
+        r0068_senseaudio_catalog_sync.MIGRATION_ID,
+        r0068_senseaudio_catalog_sync.SQL,
     ),
 )
 
