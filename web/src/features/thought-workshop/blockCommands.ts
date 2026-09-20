@@ -1,7 +1,8 @@
 import type { Editor } from "@tiptap/react";
-import { DOMSerializer, type Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeRangeSelection } from "@tiptap/extension-node-range";
 import { TextSelection } from "@tiptap/pm/state";
+import { writeThoughtClipboard } from "./clipboard";
 
 export type InsertCommandKey =
   | "paragraph"
@@ -257,52 +258,11 @@ export function selectBlockAt(
   );
 }
 
-function clipboardContent(editor: Editor) {
-  const fragment = editor.state.selection.content().content;
-  const wrapper = document.createElement("div");
-  wrapper.appendChild(
-    DOMSerializer.fromSchema(editor.schema).serializeFragment(fragment),
-  );
-  return {
-    html: wrapper.innerHTML,
-    text: fragment.textBetween(0, fragment.size, "\n\n"),
-  };
-}
-
-function legacyCopy(text: string) {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand("copy");
-  textarea.remove();
-  return copied;
-}
-
-export async function copyBlockSelection(editor: Editor) {
-  const { html, text } = clipboardContent(editor);
-  try {
-    if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "text/html": new Blob([html], { type: "text/html" }),
-          "text/plain": new Blob([text], { type: "text/plain" }),
-        }),
-      ]);
-      return;
-    }
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return;
-    }
-    if (legacyCopy(text)) return;
-  } catch {
-    if (legacyCopy(text)) return;
-  }
-  throw new Error("当前浏览器不允许访问剪贴板");
+export async function copyBlockSelection(
+  editor: Editor,
+  sourceScopeId?: string,
+) {
+  await writeThoughtClipboard(editor, sourceScopeId);
 }
 
 export function deleteBlockSelection(editor: Editor) {

@@ -246,12 +246,14 @@ function BlockMenu({
   close,
   insert,
   onError,
+  assetScopeId,
 }: {
   editor: Editor;
   block: NonNullable<ActiveBlock>;
   close: () => void;
   insert: () => void;
   onError: (message: string) => void;
+  assetScopeId?: string;
 }) {
   const atomic =
     block.node.isAtom ||
@@ -374,7 +376,7 @@ function BlockMenu({
         <button
           type="button"
           onClick={() => {
-            void copyBlockSelection(editor)
+            void copyBlockSelection(editor, assetScopeId)
               .then(close)
               .catch((error: Error) => onError(error.message));
           }}
@@ -437,12 +439,14 @@ export function BlockEditorChrome({
   callbacks,
   onError,
   readOnly,
+  assetScopeId,
 }: {
   editor: Editor;
   canvas: RefObject<HTMLDivElement | null>;
   callbacks: InsertCallbacks;
   onError: (message: string) => void;
   readOnly: boolean;
+  assetScopeId?: string;
 }) {
   const [block, setBlock] = useState<ActiveBlock>(null);
   const [menu, setMenu] = useState<OpenMenu>(null);
@@ -636,6 +640,7 @@ export function BlockEditorChrome({
               block={block}
               close={close}
               onError={onError}
+              assetScopeId={assetScopeId}
               insert={() => setMenu("insert")}
             />
           ) : null}
@@ -655,8 +660,8 @@ export function BlockEditorChrome({
           <button
             type="button"
             onClick={() => {
-              void copyBlockSelection(editor).catch((error: Error) =>
-                onError(error.message),
+              void copyBlockSelection(editor, assetScopeId).catch(
+                (error: Error) => onError(error.message),
               );
             }}
           >

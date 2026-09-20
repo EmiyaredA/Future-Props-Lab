@@ -15,6 +15,17 @@ import { EditorContextMenus } from "./EditorContextMenus";
 import { LinkPreviewCard } from "./LinkPreviewCard";
 import { DocumentOutline } from "./DocumentOutline.tsx";
 import type { InsertCallbacks } from "./blockCommands";
+import {
+  clearSessionThoughtClipboard,
+  htmlNeedsManagedMigration,
+  insertThoughtClipboardPayload,
+  pasteThoughtHTML,
+  peekSessionThoughtClipboard,
+  readThoughtClipboardPayload,
+  sanitizeThoughtPastedHTML,
+  ThoughtClipboardFormatError,
+  writeThoughtClipboard,
+} from "./clipboard";
 import "./attachments.css";
 import "katex/dist/katex.min.css";
 import "./editor.css";
@@ -33,8 +44,10 @@ export function RichEditor({
   historyAuthor = "",
   onCompositionChange,
   onBackspaceAtStart,
+  assetScopeId,
 }: {
   onBackspaceAtStart?: () => boolean;
+  assetScopeId?: string;
   historyMarks?: HistoryMark[];
   historyAuthor?: string;
   onCompositionChange?: (active: boolean) => void;
@@ -65,6 +78,7 @@ export function RichEditor({
   backspaceAtStart.current = onBackspaceAtStart;
   const ready = useRef(onReady);
   ready.current = onReady;
+  const editorRef = useRef<Editor | null>(null);
   const uploadRef = useRef<(files: File[], position?: number) => void>(
     () => {},
   );
@@ -127,9 +141,98 @@ export function RichEditor({
       },
       handlePaste: (_view, event) => {
         const files = Array.from(event.clipboardData?.files ?? []);
-        if (!files.length) return false;
+        const html = event.clipboardData?.getData("text/html") || "";
+        const text = event.clipboardData?.getData("text/plain") || "";
+        const currentEditor = editorRef.current;
+        if (!currentEditor) return false;
+
+        const reportPasteError = (error: unknown) => {
+          if (error instanceof ThoughtClipboardFormatError && html) {
+            void pasteThoughtHTML(currentEditor, html, assetScopeId)
+              .then(() => setError(""))
+              .catch((fallbackError: Error) => setError(fallbackError.message));
+            return;
+          }
+          setError(
+            error instanceof Error ? error.message : "粘贴失败，请重试。",
+          );
+        };
+
+        const sessionPayload = peekSessionThoughtClipboard();
+        const needsHtmlMigration = htmlNeedsManagedMigration(
+          html,
+          assetScopeId,
+        );
+        const looksManagedHtml =
+          /data-thought-image|data-asset-id|data-fpl-source-scope/i.test(html);
+        const emptyClipboardEvent = !html && !text && files.length === 0;
+
+        if (!needsHtmlMigration && !looksManagedHtml) {
+          if (sessionPayload && emptyClipboardEvent) {
+            event.preventDefault();
+            void insertThoughtClipboardPayload(
+              currentEditor,
+              sessionPayload,
+              assetScopeId,
+            )
+              .then(() => setError(""))
+              .catch(reportPasteError);
+            return true;
+          }
+          if (sessionPayload) clearSessionThoughtClipboard();
+          if (files.length) {
+            event.preventDefault();
+            uploadRef.current(files);
+            return true;
+          }
+          return false;
+        }
+
         event.preventDefault();
-        uploadRef.current(files);
+        void (async () => {
+          try {
+            const fromClipboard = await readThoughtClipboardPayload();
+            if (fromClipboard) {
+              await insertThoughtClipboardPayload(
+                currentEditor,
+                fromClipboard,
+                assetScopeId,
+              );
+              setError("");
+              return;
+            }
+            const session = peekSessionThoughtClipboard();
+            if (session) {
+              await insertThoughtClipboardPayload(
+                currentEditor,
+                session,
+                assetScopeId,
+              );
+              setError("");
+              return;
+            }
+            if (htmlNeedsManagedMigration(html, assetScopeId)) {
+              await pasteThoughtHTML(currentEditor, html, assetScopeId);
+              setError("");
+              return;
+            }
+            if (files.length) {
+              uploadRef.current(files);
+              setError("");
+              return;
+            }
+            if (html) {
+              currentEditor.commands.insertContent(
+                sanitizeThoughtPastedHTML(html, assetScopeId),
+              );
+            } else if (text) {
+              currentEditor.commands.insertContent(text);
+            }
+            setError("");
+          } catch (error) {
+            reportPasteError(error);
+          }
+        })();
         return true;
       },
       handleDrop: (view, event) => {
@@ -143,19 +246,18 @@ export function RichEditor({
         return true;
       },
       transformPastedHTML: (html) => {
-        const parsed = new DOMParser().parseFromString(html, "text/html");
-        parsed
-          .querySelectorAll("script,iframe,object,embed,style,img")
-          .forEach((node) => node.remove());
-        parsed.querySelectorAll("*").forEach((node) =>
-          Array.from(node.attributes).forEach((attr) => {
-            if (attr.name.startsWith("on") || attr.name.startsWith("data-"))
-              node.removeAttribute(attr.name);
-          }),
-        );
-        return parsed.body.innerHTML;
+        return sanitizeThoughtPastedHTML(html, assetScopeId);
       },
       handleDOMEvents: {
+        copy: (view) => {
+          if (!view.editable) return false;
+          const currentEditor = editorRef.current;
+          if (!currentEditor) return false;
+          void writeThoughtClipboard(currentEditor, assetScopeId).catch(
+            (error: Error) => setError(error.message),
+          );
+          return true;
+        },
         compositionstart: () => {
           compositionCallback.current?.(true);
           return false;
@@ -174,6 +276,7 @@ export function RichEditor({
         callback.current(current.getJSON());
     },
   });
+  editorRef.current = editor;
   useEffect(() => {
     if (editor && !editor.isDestroyed) ready.current(editor);
   }, [editor]);
@@ -281,6 +384,7 @@ export function RichEditor({
           callbacks={insertCallbacks.current}
           onError={setError}
           readOnly={readOnly}
+          assetScopeId={assetScopeId}
         />
       </div>
       {!readOnly ? <EditorContextMenus editor={editor} onLink={link} /> : null}

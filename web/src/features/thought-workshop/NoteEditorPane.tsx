@@ -228,6 +228,7 @@ export function NoteEditorPane({
         <Suspense fallback={<p>编辑器加载中…</p>}>
           <RichEditor
             outlineTitle={editing.draft.title}
+            assetScopeId={note.knowledge_base_id}
             onBackspaceAtStart={() => {
               const title = titleInput.current;
               if (!title) return false;
