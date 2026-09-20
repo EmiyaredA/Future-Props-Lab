@@ -770,7 +770,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
             """
             SELECT slug, label, description, capabilities, enabled, sort_order
             FROM model_entries
-            WHERE provider_id = ? AND slug IN ('senseaudio-s2-lite', 'qwen3.6-27b')
+            WHERE provider_id = ? AND slug = 'senseaudio-s2-lite'
             ORDER BY slug
             """,
             (DEFAULT_OPENAI_PROVIDER_ID,),
@@ -807,14 +807,6 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     )
     assert preserved_models == [
         (
-            "qwen3.6-27b",
-            "用户手工添加的 Qwen",
-            "不应被迁移覆盖",
-            '["chat"]',
-            0,
-            9,
-        ),
-        (
             "senseaudio-s2-lite",
             "用户修改的 S2 Lite",
             "用户保留的描述",
@@ -828,11 +820,8 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         "senseaudio-s2-flash",
         "senseaudio-s1",
         "senseaudio-vl-lite-1.0-260319",
-        "sensenova-6.7-flash-lite",
-        "deepseek-v4-flash",
         "qwen3.6-35b-a3b",
         "kimi-k2.6",
-        "glm-5.1",
         "glm-5.2",
         "minimax-m2.7",
         "doubao-seed-2-0-pro-260215",
@@ -850,10 +839,13 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         "qwen3.8-27b",
         "glm-5.3-flash",
     }.issubset(all_slugs)
-    assert "qwen3.6-27b" in all_slugs
-    assert "deepseek-v4-pro" in all_slugs
-    assert len(all_slugs) == 20
-    assert revision == (15,)
+    assert "qwen3.6-27b" not in all_slugs
+    assert "deepseek-v4-pro" not in all_slugs
+    assert "sensenova-6.7-flash-lite" not in all_slugs
+    assert "deepseek-v4-flash" not in all_slugs
+    assert "glm-5.1" not in all_slugs
+    assert len(all_slugs) == 15
+    assert revision == (16,)
     assert stored_categories == {
         "[]",
         '["speech_recognition"]',
@@ -869,15 +861,134 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (15,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (31,)
+        ).fetchone() == (16,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (25,)
         assert connection.execute(
             """
-            SELECT 1 FROM model_entries
-            WHERE provider_id = 'f0000000-0000-4000-8000-000000000008'
-              AND slug = 'senseaudio-music-1.0-260319'
+            SELECT COUNT(*) FROM model_entries
+            WHERE slug = 'senseaudio-image-1.0-260319'
             """
+        ).fetchone() == (0,)
+
+
+def test_r0069_retires_unsupported_models_and_remaps_defaults(tmp_path: Path) -> None:
+    database_path = tmp_path / "r0069-retire.db"
+    _create_database_at_migration(
+        database_path,
+        _migration_count_before("r0069_retire_unsupported_senseaudio_models"),
+    )
+    old_model_id = "retire-old-6-7"
+    new_model_id = "retire-new-6-8"
+    keep_model_id = "retire-keep-s2"
+    conversation_id = "retire-conversation"
+    with connect_database(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO model_providers (
+              id, workspace_id, name, kind, base_url, api_key_ciphertext, enabled, sort_order
+            ) VALUES (?, 'default', 'OpenAI 兼容网关', 'openai', 'https://api.senseaudio.cn/v1', '', 1, 0)
+            ON CONFLICT(id) DO NOTHING
+            """,
+            (DEFAULT_OPENAI_PROVIDER_ID,),
+        )
+        connection.execute(
+            """
+            DELETE FROM model_entries
+            WHERE provider_id = ?
+              AND slug IN (
+                'sensenova-6.7-flash-lite',
+                'sensenova-6.8-flash-lite',
+                'senseaudio-s2'
+              )
+            """,
+            (DEFAULT_OPENAI_PROVIDER_ID,),
+        )
+        connection.executemany(
+            """
+            INSERT INTO model_entries (
+              id, workspace_id, provider_id, slug, label, description,
+              capabilities, categories, enabled, sort_order
+            ) VALUES (?, 'default', ?, ?, ?, '', '["chat","tools"]', '["text_generation"]', 1, ?)
+            """,
+            [
+                (
+                    old_model_id,
+                    DEFAULT_OPENAI_PROVIDER_ID,
+                    "sensenova-6.7-flash-lite",
+                    "SenseNova 6.7 Flash-Lite",
+                    20,
+                ),
+                (
+                    new_model_id,
+                    DEFAULT_OPENAI_PROVIDER_ID,
+                    "sensenova-6.8-flash-lite",
+                    "SenseNova 6.8 Flash-Lite",
+                    21,
+                ),
+                (
+                    keep_model_id,
+                    DEFAULT_OPENAI_PROVIDER_ID,
+                    "senseaudio-s2",
+                    "SenseAudio S2",
+                    0,
+                ),
+            ],
+        )
+        connection.execute(
+            """
+            INSERT INTO platform_settings (id, payload, revision)
+            VALUES ('workspace_defaults:default', ?, 1)
+            ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, revision = 1
+            """,
+            (json.dumps({"chat": old_model_id, "tools": keep_model_id}),),
+        )
+        connection.execute(
+            """
+            INSERT INTO model_test_conversations (id, workspace_id, title, model_id)
+            VALUES (?, 'default', '旧模型对话', ?)
+            """,
+            (conversation_id, old_model_id),
+        )
+        before_revision = connection.execute(
+            "SELECT revision FROM model_catalog_state WHERE id = 'default'"
+        ).fetchone()[0]
+        connection.commit()
+
+    assert apply_migrations(database_path) == (LATEST_MIGRATION_ID, True)
+    with connect_database(database_path) as connection:
+        assert connection.execute(
+            """
+            SELECT COUNT(*) FROM model_entries
+            WHERE slug IN (
+              'sensenova-6.7-flash-lite',
+              'deepseek-v4-flash',
+              'deepseek-v4-pro',
+              'qwen3.6-27b',
+              'glm-5.1',
+              'senseaudio-image-1.0-260319'
+            )
+            """
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT 1 FROM model_entries WHERE id = ?",
+            (new_model_id,),
         ).fetchone() == (1,)
+        payload = json.loads(
+            connection.execute(
+                "SELECT payload FROM platform_settings WHERE id = 'workspace_defaults:default'"
+            ).fetchone()[0]
+        )
+        assert payload == {"chat": new_model_id, "tools": keep_model_id}
+        assert connection.execute(
+            "SELECT revision FROM platform_settings WHERE id = 'workspace_defaults:default'"
+        ).fetchone() == (2,)
+        assert connection.execute(
+            "SELECT model_id FROM model_test_conversations WHERE id = ?",
+            (conversation_id,),
+        ).fetchone() == (None,)
+        assert connection.execute(
+            "SELECT revision FROM model_catalog_state WHERE id = 'default'"
+        ).fetchone() == (before_revision + 1,)
 
 
 def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Path) -> None:

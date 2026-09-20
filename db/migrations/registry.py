@@ -70,6 +70,7 @@ from db.migrations.versions import (
     r0066_motion_compositor,
     r0067_video_editor_asset_default_effects_bake,
     r0068_senseaudio_catalog_sync,
+    r0069_retire_unsupported_senseaudio_models,
 )
 
 
@@ -315,6 +316,13 @@ MIGRATIONS += (
     Migration(
         r0068_senseaudio_catalog_sync.MIGRATION_ID,
         r0068_senseaudio_catalog_sync.SQL,
+    ),
+)
+
+MIGRATIONS += (
+    Migration(
+        r0069_retire_unsupported_senseaudio_models.MIGRATION_ID,
+        r0069_retire_unsupported_senseaudio_models.SQL,
     ),
 )
 

@@ -20,6 +20,7 @@ SenseAudio 官方模型列表持续更新，仓库默认目录仍保留已下架
 
 - **收益**：新空库与 default 升级库的默认可选项与官方当前列表对齐；旧 slug 在已有库中仍可用。
 - **代价与已知上限**：非 default Workspace 的固定 ID migration 不会自动追加（与 `r0004` 同类）；文档未标 VL 的 `qwen3.8-27b` 未声明 `vision`；官方 ASR 变体未进入产品目录。
+- **后续翻转**：存量旧 slug 改为硬删下架，见 [硬删下架旧 SenseAudio 默认模型](./2026-09-20-retire-unsupported-senseaudio-models.md)。
 
 ## Verification
 
