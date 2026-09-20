@@ -25,3 +25,7 @@ Status: implemented
 - `WritingAssistant.tsx` 已删除；`KnowledgeTopbar` 无「AI 写作」按钮。
 - `web/e2e/thought-workshop.spec.ts`、`thought-layout.spec.ts`、`thought-document-outline.spec.ts` 不再依赖该入口。
 - `npm run verify-notes`；相关 web 单测 `knowledge-topbar`。
+
+## Related proposals
+
+[全局助手运行内核选型](../../proposed/architecture/2026-09-20-global-assistant-runtime-selection.md) 评估统一 Agent 接入；若新增应用内写作入口，需要另行明确本文产品范围的变化。

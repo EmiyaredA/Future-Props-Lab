@@ -24,3 +24,6 @@ Electron 持有短路径 Unix Socket 和私有启动协议；配对请求只在�
 
 运行桌面 Agent、配对和 SDK desktop 测试。
 
+## Related proposals
+
+[全局助手运行内核选型](../../proposed/architecture/2026-09-20-global-assistant-runtime-selection.md) 复用本文的业务白名单和授权边界，不开放私有启动凭据。

@@ -24,3 +24,6 @@ Status: implemented
 
 运行 Agent Harness、视觉助手审批和重启取消测试。
 
+## Related proposals
+
+[全局助手运行内核选型](../../proposed/architecture/2026-09-20-global-assistant-runtime-selection.md) 评估可替换运行内核，保留本文的审批与 CAS 边界。
