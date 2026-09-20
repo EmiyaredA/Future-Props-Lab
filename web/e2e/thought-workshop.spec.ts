@@ -7,7 +7,7 @@ import {
 import { expect, test } from "@playwright/test";
 import fs from "node:fs/promises";
 
-test("rich notes persist, AI suggestions insert, and archives import", async ({
+test("rich notes persist and archives import", async ({
   page,
 }, testInfo) => {
   test.setTimeout(90000);
@@ -43,25 +43,6 @@ test("rich notes persist, AI suggestions insert, and archives import", async ({
   await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(title);
   await expect(prose).toContainText("记录今天的灵感");
   await expect(prose.locator("table")).toBeVisible();
-  await page.route("**/v1/thought-workshop/models", (route) =>
-    route.fulfill({ json: [{ id: "test-model", label: "测试写作模型" }] }),
-  );
-  await page.route("**/v1/thought-workshop/notes/*/assistant", (route) =>
-    route.fulfill({
-      contentType: "text/event-stream",
-      body: 'data: {"type":"delta","text":"整理后的行动建议。"}\n\ndata: {"type":"complete"}\n\n',
-    }),
-  );
-  await page.getByRole("button", { name: "AI 写作", exact: true }).click();
-  await page.getByRole("button", { name: "生成建议", exact: true }).click();
-  await expect(page.locator(".thought-ai-result")).toContainText(
-    "整理后的行动建议",
-  );
-  await page.getByRole("button", { name: "追加到笔记", exact: true }).click();
-  await expect(prose).toContainText("整理后的行动建议");
-  await saveNote(page);
-  await expect(page.getByText("已保存", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "关闭写作助手" }).click();
   await page.screenshot({
     path: testInfo.outputPath("editor-light.png"),
     fullPage: true,
@@ -318,37 +299,4 @@ test("composition, failed saves, real revision conflicts, and stale AI selection
   await page.getByRole("button", { name: "另存本地副本", exact: true }).click();
   await expect.poll(() => page.url().split("/").pop()).not.toBe(id);
   await expect(prose).toContainText("冲突时不能丢失的正文");
-  await page.route("**/thought-workshop/models", (route) =>
-    route.fulfill({ json: [{ id: "deterministic", label: "确定性测试模型" }] }),
-  );
-  let finish!: () => void;
-  const released = new Promise<void>((resolve) => {
-    finish = resolve;
-  });
-  await page.route("**/notes/*/assistant", async (route) => {
-    await released;
-    await route.fulfill({
-      contentType: "text/event-stream",
-      body: 'data: {"type":"delta","text":"模型建议"}\n\ndata: {"type":"complete"}\n\n',
-    });
-  });
-  await prose.focus();
-  await prose.press("ControlOrMeta+a");
-  await page.getByRole("button", { name: "AI 写作", exact: true }).click();
-  await page.getByRole("combobox", { name: "处理范围", exact: true }).click();
-  await page.getByRole("option", { name: "选中的文字", exact: true }).click();
-  const requested = page.waitForRequest((req) =>
-    req.url().endsWith("/assistant"),
-  );
-  await page.getByRole("button", { name: "生成建议", exact: true }).click();
-  await requested;
-  await prose.fill("模型生成期间继续写作");
-  finish();
-  await expect(page.locator(".thought-ai-result")).toContainText("模型建议");
-  await expect(
-    page.getByRole("button", { name: "替换选区", exact: true }),
-  ).toBeDisabled();
-  await expect(prose).toContainText("模型生成期间继续写作");
-  await page.getByRole("button", { name: "追加到笔记", exact: true }).click();
-  await expect(prose).toContainText("模型建议");
 });

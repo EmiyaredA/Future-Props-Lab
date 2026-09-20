@@ -7,8 +7,6 @@ export type NoteEditorChrome = {
   save: () => Promise<Note>;
   openHistory: () => void;
   exportNote: (format: string) => void;
-  assistant: boolean;
-  setAssistant: (open: boolean) => void;
   canSave: boolean;
   canOpenHistory: boolean;
 };

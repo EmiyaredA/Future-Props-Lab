@@ -1,5 +1,10 @@
 import { ArrowLeft, BookOpen, Home, Search, Trash2, X } from "lucide-react";
-import type { ReactNode, Ref } from "react";
+import {
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type Ref,
+} from "react";
 import {
   WorkshopSidebar,
   WorkshopNavigation,
@@ -8,6 +13,11 @@ import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import type { KnowledgeBase } from "./api";
 import { documentViews } from "./knowledgeViews";
+import { KnowledgeSidebarResize } from "./KnowledgeSidebarResize";
+import {
+  readKnowledgeSidebarWidth,
+  writeKnowledgeSidebarWidth,
+} from "./knowledgeSidebarWidth";
 
 export function KnowledgeSidebar({
   sidebarRef,
@@ -48,8 +58,16 @@ export function KnowledgeSidebar({
   selectTrash: (trash: boolean) => void;
   children: ReactNode;
 }) {
+  const [width, setWidth] = useState(readKnowledgeSidebarWidth);
   return (
-    <div className="knowledge-sidebar-track">
+    <div
+      className="knowledge-sidebar-track"
+      style={
+        {
+          "--knowledge-sidebar-width": `${width}px`,
+        } as CSSProperties
+      }
+    >
       <WorkshopSidebar
         sidebarRef={sidebarRef}
         label="知识库导航"
@@ -144,6 +162,11 @@ export function KnowledgeSidebar({
           />
         )}
       </WorkshopSidebar>
+      <KnowledgeSidebarResize
+        width={width}
+        onChange={setWidth}
+        onCommit={writeKnowledgeSidebarWidth}
+      />
     </div>
   );
 }

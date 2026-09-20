@@ -173,11 +173,7 @@ for (const width of [1600, 1280, 390]) {
     const newDocumentButton = page
       .getByRole("button", { name: "新建文档", exact: true })
       .last();
-    const aiButton = page.getByRole("button", {
-      name: "AI 写作",
-      exact: true,
-    });
-    for (const action of [more, newDocumentButton, aiButton])
+    for (const action of [more, newDocumentButton])
       expect((await action.boundingBox())!.height).toBe(40);
     if (width >= 1280) expect(topbarBox.height).toBeLessThanOrEqual(60);
     for (const theme of ["light", "dark"]) {
@@ -211,22 +207,6 @@ for (const width of [1600, 1280, 390]) {
         page.getByRole("button", { name: "笔记目录", exact: true }),
       ).toBeFocused();
     }
-    await page.route("**/v1/thought-workshop/models", (route) =>
-      route.fulfill({ json: [] }),
-    );
-    await page.getByRole("button", { name: "AI 写作", exact: true }).click();
-    await expect(page.locator(".thought-assistant")).toBeVisible();
-    await noOverflow(page);
-    await page.screenshot({
-      path: testInfo.outputPath("assistant-dark.png"),
-      fullPage: true,
-    });
-    if (width <= 1200) {
-      await page.keyboard.press("Escape");
-      await expect(
-        page.getByRole("button", { name: "AI 写作", exact: true }),
-      ).toBeFocused();
-    } else await page.getByRole("button", { name: "关闭写作助手" }).click();
     await prose.fill("长正文内容与边界检查。".repeat(300));
     await noOverflow(page);
     await saveNote(page);

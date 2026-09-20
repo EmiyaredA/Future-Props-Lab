@@ -1,6 +1,12 @@
-import { render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import {
   GALGAME_WORKSHOP_MODULE,
@@ -8,6 +14,14 @@ import {
   VISUAL_WORKSHOP_MODULE,
 } from "@app/applicationRegistry";
 import { KnowledgeSidebar } from "@features/thought-workshop/KnowledgeSidebar";
+import {
+  DEFAULT_KNOWLEDGE_SIDEBAR_WIDTH,
+  KNOWLEDGE_SIDEBAR_WIDTH_KEY,
+} from "@features/thought-workshop/knowledgeSidebarWidth";
+
+afterEach(() => {
+  localStorage.removeItem(KNOWLEDGE_SIDEBAR_WIDTH_KEY);
+});
 
 describe("shared workshop sidebar", () => {
   for (const module of [
@@ -89,5 +103,66 @@ describe("shared workshop sidebar", () => {
     sidebar.getByRole("button", { name: "收藏文档" }).focus();
     await user.keyboard("{Enter}");
     expect(selectView).toHaveBeenCalledWith("favorites");
+  });
+
+  it("resizes the knowledge sidebar and remembers the width", async () => {
+    const { container } = render(
+      <KnowledgeSidebar
+        sidebarRef={{ current: null }}
+        drawer={false}
+        close={vi.fn()}
+        onBack={vi.fn()}
+        onNavigate={vi.fn()}
+        projects={[]}
+        inside
+        query=""
+        search={vi.fn()}
+        view="all"
+        browsing
+        home={vi.fn()}
+        selectView={vi.fn()}
+        trash={false}
+        selectTrash={vi.fn()}
+      >
+        <p>目录内容</p>
+      </KnowledgeSidebar>,
+    );
+    const track = container.querySelector<HTMLElement>(
+      ".knowledge-sidebar-track",
+    )!;
+    expect(track.style.getPropertyValue("--knowledge-sidebar-width")).toBe(
+      `${DEFAULT_KNOWLEDGE_SIDEBAR_WIDTH}px`,
+    );
+    const divider = screen.getByRole("separator", {
+      name: "调整知识库导航宽度",
+    });
+    fireEvent(
+      divider,
+      new MouseEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        clientX: 236,
+      }),
+    );
+    fireEvent(window, new MouseEvent("pointermove", { clientX: 300 }));
+    await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    fireEvent(window, new MouseEvent("pointerup", { clientX: 300 }));
+    expect(track.style.getPropertyValue("--knowledge-sidebar-width")).toBe(
+      "300px",
+    );
+    expect(localStorage.getItem(KNOWLEDGE_SIDEBAR_WIDTH_KEY)).toBe("300");
+
+    fireEvent.keyDown(divider, { key: "ArrowLeft" });
+    expect(track.style.getPropertyValue("--knowledge-sidebar-width")).toBe(
+      "290px",
+    );
+
+    fireEvent.doubleClick(divider);
+    expect(track.style.getPropertyValue("--knowledge-sidebar-width")).toBe(
+      `${DEFAULT_KNOWLEDGE_SIDEBAR_WIDTH}px`,
+    );
+    expect(localStorage.getItem(KNOWLEDGE_SIDEBAR_WIDTH_KEY)).toBe(
+      String(DEFAULT_KNOWLEDGE_SIDEBAR_WIDTH),
+    );
   });
 });

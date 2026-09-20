@@ -169,12 +169,6 @@ test("docked outline, chapter tracking, temporary reveal, themes and no saves", 
       path: info.outputPath(`outline-wide-${theme}.png`),
     });
   }
-  await page.getByRole("button", { name: "AI 写作", exact: true }).click();
-  await expect(outline).toBeHidden();
-  await expect(
-    page.getByRole("button", { name: "文档大纲", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "关闭写作助手" }).click();
   await expect(outline).toBeVisible();
   expect(writes).toEqual([]);
   const saved = await (

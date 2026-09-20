@@ -325,10 +325,10 @@
   height: min(690px, calc(100dvh - 170px));
 }
 .account-dialog-settings-keys .account-settings-content {
-  padding: 20px 24px;
+  padding: 14px 18px;
 }
 .account-dialog-settings-keys .settings-section {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
 }
 .account-settings-body {
   display: grid;

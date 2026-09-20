@@ -66,7 +66,6 @@ export function ThoughtWorkshopPage({
   noteId,
   onNavigate,
   onBack,
-  onModels,
   registerNavigationGuard,
 }: {
   page: string;
@@ -74,7 +73,6 @@ export function ThoughtWorkshopPage({
   noteId?: string;
   onNavigate: (project?: string, document?: string, replace?: boolean) => void;
   onBack: () => void;
-  onModels: () => void;
   registerNavigationGuard: NavigationGuard;
 }) {
   const client = useQueryClient();
@@ -577,7 +575,6 @@ export function ThoughtWorkshopPage({
                       note={note.data}
                       onSaved={save}
                       onOpen={open}
-                      onModels={onModels}
                       onChromeChange={onNoteChromeChange}
                       registerNavigationGuard={registerEditorGuard}
                     />

@@ -10,8 +10,6 @@ const chrome: NoteEditorChrome = {
   save: vi.fn(),
   openHistory: vi.fn(),
   exportNote: vi.fn(),
-  assistant: false,
-  setAssistant: vi.fn(),
   canSave: true,
   canOpenHistory: true,
 };

@@ -5,7 +5,6 @@ import type { Editor, JSONContent } from "@tiptap/react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useNoteDraft } from "./useNoteDraft";
 import type { Note } from "./api";
-import { WritingAssistant } from "./WritingAssistant";
 import { exportHtml, exportMarkdown } from "./portability";
 import { markdownWarnings, toMarkdown } from "./markdown";
 import type { NoteEditorChrome } from "./noteEditorChrome";
@@ -24,14 +23,12 @@ export function NoteEditorPane({
   note,
   onSaved,
   onOpen,
-  onModels,
   registerNavigationGuard,
   onChromeChange,
 }: {
   note: Note;
   onSaved: (note: Note) => void;
   onOpen: (id: string) => void;
-  onModels: () => void;
   registerNavigationGuard: NavigationGuard;
   onChromeChange?: (chrome: NoteEditorChrome | null) => void;
 }) {
@@ -39,7 +36,6 @@ export function NoteEditorPane({
   const [editor, setEditor] = useState<Editor | null>(null);
   const titleInput = useRef<HTMLInputElement>(null);
   const [titleDraft, setTitleDraft] = useState<string | null>(null);
-  const [assistant, setAssistant] = useState(false);
   const [notice, setNotice] = useState("");
   const [serverPreview, setServerPreview] = useState(false);
   const [exportWarnings, setExportWarnings] = useState<string[] | null>(null);
@@ -121,7 +117,6 @@ export function NoteEditorPane({
   const openHistory = () => {
     void save()
       .then((next) => {
-        setAssistant(false);
         setHistoryNote(next);
       })
       .catch(() => {});
@@ -144,12 +139,10 @@ export function NoteEditorPane({
       save: () => chromeActions.current.save(),
       openHistory: () => chromeActions.current.openHistory(),
       exportNote: (format) => chromeActions.current.exportNote(format),
-      assistant,
-      setAssistant,
       canSave: editing.state !== "saving" && editing.state !== "conflict",
       canOpenHistory: !leaving && editing.state !== "conflict",
     });
-  }, [onChromeChange, editing.state, editing.savedAt, assistant, leaving]);
+  }, [onChromeChange, editing.state, editing.savedAt, leaving]);
   useEffect(() => {
     if (!onChromeChange) return;
     return () => onChromeChange(null);
@@ -173,9 +166,7 @@ export function NoteEditorPane({
       </Suspense>
     );
   return (
-    <div
-      className={`thought-edit-workspace ${assistant ? "has-assistant" : ""}`}
-    >
+    <div className="thought-edit-workspace">
       <section className="thought-document">
         {(editing.error || notice) && (
           <p className="thought-error" role="alert">
@@ -300,14 +291,6 @@ export function NoteEditorPane({
         </Suspense>
         <footer className="thought-document-footer">专注于眼前的想法</footer>
       </section>
-      {assistant && (
-        <WritingAssistant
-          editor={editor}
-          save={save}
-          onModels={onModels}
-          close={() => setAssistant(false)}
-        />
-      )}
       <ConfirmDialog
         open={leave}
         title="仍有未保存的内容"

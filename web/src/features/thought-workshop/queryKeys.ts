@@ -11,5 +11,4 @@ export const thoughtKeys = {
   history: (id: string) => [...thoughtKeys.all, "history", id] as const,
   historyDetail: (id: string, record: string) =>
     [...thoughtKeys.all, "history-detail", id, record] as const,
-  models: () => [...thoughtKeys.all, "models"] as const,
 };

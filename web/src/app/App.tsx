@@ -403,7 +403,6 @@ export default function App() {
             } else navigate(next, project, document);
           }}
           onBack={() => navigate("apps")}
-          onModels={() => navigate("model-service")}
           registerNavigationGuard={registerNavigationGuard}
         />
       </PageBoundary>

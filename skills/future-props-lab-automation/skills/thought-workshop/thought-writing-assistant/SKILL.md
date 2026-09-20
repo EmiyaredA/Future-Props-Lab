@@ -1,9 +1,11 @@
 ---
 name: thought-writing-assistant
-description: Runs Thought Workshop AI writing via thought.writing_models and thought.assistant event streams. Use when drafting with the writing assistant; persist accepted text via note-editing operations.
+description: Runs Thought Workshop AI writing via thought.writing_models and thought.assistant event streams. Use when drafting with the writing assistant; persist accepted text via note-editing operations. In-app UI has no entry — Agent/SDK only.
 ---
 
 # thought-writing-assistant
+
+应用内无「AI 写作」入口；本 skill 与 SDK/`fpl` 是正式接入面。
 
 ## 前置（单独安装时必做）
 

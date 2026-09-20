@@ -1,5 +1,5 @@
 import type { components, paths } from "@generated/api";
-import { api, unwrap, requestApi, fetchApiBlob } from "@platform/api/client";
+import { api, unwrap, fetchApiBlob } from "@platform/api/client";
 
 export type Note = components["schemas"]["ThoughtNoteOut"];
 export type LinkPreview = components["schemas"]["ThoughtLinkPreview"];
@@ -36,7 +36,6 @@ export type NoteInput = Omit<
   "expected_revision"
 >;
 export type KnowledgeBase = components["schemas"]["KnowledgeBaseOut"];
-export type AssistantInput = components["schemas"]["ThoughtAssistantIn"];
 export type NoteQuery = NonNullable<
   paths["/v1/thought-workshop/notes"]["get"]["parameters"]["query"]
 >;
@@ -134,13 +133,6 @@ export const restoreNote = async (note: NoteSummary) => {
     }),
   );
 };
-export const listWritingModels = (signal?: AbortSignal) =>
-  read(
-    async (signal) =>
-      unwrap(await api.GET("/v1/thought-workshop/models", { signal })),
-    signal,
-  );
-
 export async function uploadImage(file: File) {
   return unwrap(
     await api.POST("/v1/thought-workshop/images", {
@@ -190,58 +182,6 @@ export const downloadBackup = (id?: string) =>
     "/v1/thought-workshop/backup" +
       (id ? `?knowledge_base_id=${encodeURIComponent(id)}` : ""),
   );
-
-export async function writeWithAI(
-  id: string,
-  body: AssistantInput,
-  signal: AbortSignal,
-  onText: (text: string) => void,
-) {
-  const response = await requestApi(
-    `/v1/thought-workshop/notes/${encodeURIComponent(id)}/assistant`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal,
-    },
-  );
-  if (!response.body) throw new Error("模型响应为空");
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let complete = false;
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      buffer += decoder.decode(value, { stream: !done });
-      const frames = buffer.split("\n\n");
-      buffer = frames.pop() ?? "";
-      for (const frame of frames) {
-        const raw = frame
-          .split("\n")
-          .filter((line) => line.startsWith("data: "))
-          .map((line) => line.slice(6))
-          .join("\n");
-        if (!raw) continue;
-        const event = JSON.parse(raw) as {
-          type: string;
-          text?: string;
-          message?: string;
-        };
-        if (event.type === "error")
-          throw new Error(event.message || "生成失败");
-        if (event.type === "delta") onText(event.text || "");
-        if (event.type === "complete") complete = true;
-      }
-      if (done) break;
-    }
-    if (!complete) throw new Error("生成中断，可保留已生成的文字并重试");
-  } finally {
-    await reader.cancel().catch(() => {});
-    reader.releaseLock();
-  }
-}
 
 export function noteInput(note: Note): NoteInput {
   const {

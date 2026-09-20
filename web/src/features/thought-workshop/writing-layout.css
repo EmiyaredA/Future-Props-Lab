@@ -170,14 +170,6 @@
   font-size: 12px;
   color: var(--muted);
 }
-.thought-assistant {
-  margin-right: 16px;
-}
-@media (max-width: 1200px) {
-  .thought-assistant {
-    margin: 0;
-  }
-}
 @media (max-width: 700px) {
   .thought-shell .theme-toggle {
     padding: 0;

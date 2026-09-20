@@ -22,7 +22,6 @@ import {
   Plus,
   RotateCcw,
   Save,
-  Sparkles,
   Trash2,
   Upload,
   type LucideIcon,
@@ -414,14 +413,6 @@ export function KnowledgeTopbar({
             <button className="btn" disabled={busy} onClick={onCreateDocument}>
               <Plus size={16} aria-hidden="true" />
               新建文档
-            </button>
-            <button
-              className="btn primary thought-ai-toggle"
-              aria-pressed={noteChrome?.assistant ?? false}
-              disabled={!noteChrome}
-              onClick={() => noteChrome?.setAssistant(!noteChrome.assistant)}
-            >
-              <Sparkles size={16} aria-hidden="true" /> AI 写作
             </button>
           </>
         ) : (

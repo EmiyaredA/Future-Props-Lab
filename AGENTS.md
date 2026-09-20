@@ -5,7 +5,7 @@
 - 每次正式处理仓库任务前先阅读本文件；所有命令默认在仓库根目录执行。
 - 本项目定位为单机部署的模型基础设施管理台，支持同一进程和同一 SQLite 内的多账号与逻辑多
   Workspace 隔离；实时语音仅用于模型测试，不引入 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展或多实例部署能力。
-  思绪工坊中的「知识库」仅表示文档项目容器，沿用 Workspace 权限与 AI 写作。
+  思绪工坊中的「知识库」仅表示文档项目容器，沿用 Workspace 权限；AI 写作仅通过 Agent/SDK 接入，应用内无入口。
 - 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
   为唯一完整索引；新增目录或改变职责时同步更新该文件。
 - Python 命令与临时诊断优先通过 `uv run` 执行。
