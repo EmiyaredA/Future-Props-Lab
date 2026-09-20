@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => ({
       input: {
         studio: resolve(__dirname, "index.html"),
         docs: resolve(__dirname, "docs.html"),
+        amadeus: resolve(__dirname, "amadeus.html"),
       },
       output: {
         manualChunks(id) {

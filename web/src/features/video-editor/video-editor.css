@@ -64,6 +64,128 @@
   background: var(--danger);
 }
 
+.ve-subtitle-import-dialog {
+  width: min(620px, 100%);
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: auto;
+}
+.ve-subtitle-import-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ve-subtitle-import-dialog > header > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ve-subtitle-import-dialog > header svg {
+  width: 20px;
+  margin-top: 3px;
+  color: var(--ve-accent-bright, var(--accent));
+}
+.ve-subtitle-import-dialog h2,
+.ve-subtitle-import-dialog p {
+  margin: 0;
+}
+.ve-subtitle-import-dialog header p {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.ve-dialog-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: transparent;
+}
+.ve-dialog-close svg {
+  width: 16px;
+}
+.ve-subtitle-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.ve-subtitle-summary span {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-muted);
+  background: var(--surface-soft);
+  font-size: 12px;
+}
+.ve-subtitle-warnings {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning) 42%, var(--border));
+  border-radius: 9px;
+  background: var(--warning-soft);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.ve-subtitle-warnings strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warning);
+}
+.ve-subtitle-warnings strong svg {
+  width: 15px;
+}
+.ve-subtitle-warnings ul {
+  max-height: 130px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+.ve-subtitle-warnings small {
+  display: block;
+  margin-top: 8px;
+}
+.ve-subtitle-timing {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+.ve-subtitle-timing legend {
+  margin-bottom: 4px;
+  color: var(--text-strong);
+  font-weight: 700;
+}
+.ve-subtitle-timing button {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  text-align: left;
+}
+.ve-subtitle-timing button:hover:not(:disabled),
+.ve-subtitle-timing button.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.ve-subtitle-timing button[aria-checked="true"] strong {
+  color: var(--ve-accent-bright, var(--accent));
+}
+.ve-subtitle-timing small {
+  color: var(--text-muted);
+}
+.ve-subtitle-error {
+  margin-top: 16px !important;
+  color: var(--danger) !important;
+}
+
 .ve-export-dialog {
   position: relative;
   width: min(860px, 100%);

@@ -20,6 +20,7 @@ Future-Props-Lab/
 │   ├── runtime/       # 配置、数据库、CAS/轮询、操作批回执、ID/时间工厂与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
+│   │   └── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame / director_desk / motion_compositor）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具收藏与最近使用；自有 models/schemas/routes
@@ -34,12 +35,14 @@ Future-Props-Lab/
 │   ├── src/          # Electron 主进程、受限 preload、私有后端启动、稳定开发网关与生命周期
 │   ├── ui/           # 本地启动/故障恢复窗口，不加载业务或用户数据
 │   ├── backend/      # PyInstaller 入口；开发只读迁移检查、离线备份与继承数据锁
+│   │   └── script_entry.py # Amadeus 独立无密钥脚本运行器入口
 │   ├── scripts/      # 热加载监督器、源码检查、白名单打包、arm64/许可校验及 Electron 烟测
 │   └── tests/        # 桌面来源与固定能力边界的确定性测试
 ├── web/src/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
 │   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
 │   ├── features/      # 账号治理、首页、应用、文件管理、工坊、工具导航、集成中心与模型功能
+│   │   └── amadeus/   # 独立窗口 UI、Pi Worker 和工坊控件选取层
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
 │   └── shared/        # 无业务归属的媒体处理、品牌与主题 UI
@@ -49,6 +52,7 @@ Future-Props-Lab/
 ├── web/e2e/           # Playwright 浏览器旅程
 │   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
 ├── tests/             # 后端单元、API、存储与架构测试；大型 Story 契约/API 用例按行为拆分
+├── vendor/pi/         # 固定 Pi Agent/AI/Chord/Telemetry 源码快照、来源与许可证
 ├── scripts/           # OpenAPI/LFS 检查、Agent Note 校验、配置转换、API 导入客户端、离线账号命令与 E2E 账号引导
 │   └── demo/galgame_runaway/ # 内容专用演示维护工具；目标项目与素材路径必须显式传入
 ├── docs/assets/       # LFS 管理的文档/演示图片、来源许可证状态与内容集校验清单
@@ -71,6 +75,8 @@ Future-Props-Lab/
   `scripts/migrate_config.py` 仅转换配置，不访问数据库；桌面入口在数据锁内执行旧配置一次性转换。
 
 - `desktop/` 是现有应用的 macOS 壳，不拥有业务 API 或数据库 schema。
+  Amadeus 使用无父窗口的单例 `BrowserWindow`；窗口位置保存于桌面数据目录，关闭仅隐藏。
+  Electron 只转发可信 FPL 窗口上下文、控件引用、定位与截图，不持有模型凭据或业务操作。
   `scripts/dev.py` 持有跨进程更新的数据租约，`scripts/dev.cjs` 监督 Vite、源码检查与 Electron；
   `src/development-gateway.ts` 维护带凭据校验的固定开发入口，`src/development.ts` 只广播开发更新状态。
   `backend/development_data.py` 只做配置/迁移预检、停机快照与清单核验，不执行业务数据或 schema 写入。
@@ -84,6 +90,17 @@ Future-Props-Lab/
   `console/governance/desktop_setup.py` 复用账号开通用例；`runtime/desktop.py` 只负责桌面凭据和静态托管。
   `web/src/features/accounts/DesktopSetupGate.tsx` 拥有首用表单，`platform/desktop.ts` 只定义固定桥接。
   桌面版配置和数据规则见 [macOS 桌面构建](../operations/desktop-macos.md)。
+
+- `console/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、参数摘要审批与执行记录；
+  视频时间线执行由 `apps/video_editor/assistant_operations.py` 提供公共入口，在 `app/api.py` 装配，
+  避免 Console 反向依赖工坊实现。`fpl_operations.py` 只允许调用桌面 Agent 明确登记的业务 HTTP 操作，
+  由原路由重新校验 Workspace、权限和资源版本。
+  `console/routes/amadeus.py` 只暴露协议。会话文件存于
+  `workspaces/<workspace-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号与 Workspace
+  读取隔离，文件访问拒绝符号链接和目录穿越。模型桥接仅使用现有供应商适配器和服务端凭据。
+  `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Pi Worker 与控件选取；
+  `vendor/pi/SOURCE.md` 记录固定源码与许可证。沙箱脚本运行器由桌面构建单独打包，
+  不复用携带后端凭据的服务进程。
 
 - `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供工作区限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于

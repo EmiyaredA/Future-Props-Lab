@@ -88,6 +88,8 @@ Studio 窗发出应用内未保存导航提示，全部批准后再执行页面 
 
 打包白名单包含应用 Python 模块、已登记迁移、原生库、中文字体、允许读取的 Markdown、Web
 构建资源和 FFmpeg/FFprobe。构建前检测 LFS 指针并按精确路径拉取，缺失或摘要不符则失败。
+Amadeus 另带独立 `fpl-script-runner`，只接受本会话已确认脚本的标准输入，实际执行由 macOS
+`sandbox-exec` 限制到会话目录；系统沙箱不可用时禁用运行，不回退到无限制进程。
 不收集真实 `.env`、`config.toml`、配置备份、`.runtime`、测试资产或开发缓存。
 
 PyInstaller 收集并重定位动态库；构建验证每个 Mach-O 的 arm64 架构与链接，不允许依赖

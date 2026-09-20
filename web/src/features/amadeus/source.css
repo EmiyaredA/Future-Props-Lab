@@ -1,0 +1,69 @@
+.amadeus-picker-outline {
+  position: fixed;
+  z-index: 2147483640;
+  pointer-events: none;
+  border: 2px solid #e7633f;
+  border-radius: 7px;
+  background: #e7633f1b;
+  box-shadow: 0 0 0 3px #fff6;
+}
+.amadeus-picker-label {
+  position: fixed;
+  z-index: 2147483641;
+  pointer-events: none;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: #e7633f;
+  color: white;
+  font-size: 12px;
+}
+.amadeus-picker-tip {
+  position: fixed;
+  z-index: 2147483641;
+  pointer-events: none;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 12px;
+  border-radius: 9px;
+  background: #e7633f;
+  color: white;
+  font-size: 13px;
+  box-shadow: 0 5px 20px #0002;
+}
+.amadeus-located {
+  outline: 3px solid #e06c43 !important;
+  outline-offset: 2px;
+  animation: amadeus-locate-pulse 0.8s ease-in-out 2;
+}
+.amadeus-mutation-banner {
+  position: fixed;
+  z-index: 2147483639;
+  right: 20px;
+  bottom: 20px;
+  max-width: min(420px, calc(100vw - 40px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border: 1px solid var(--accent-line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: 0 12px 30px #43251624;
+  font-size: 13px;
+}
+.amadeus-mutation-banner button {
+  flex: none;
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--accent);
+  padding: 5px 8px;
+  cursor: pointer;
+}
+@keyframes amadeus-locate-pulse {
+  50% {
+    outline-color: #ffb78f;
+  }
+}

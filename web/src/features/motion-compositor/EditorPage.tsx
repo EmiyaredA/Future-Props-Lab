@@ -300,6 +300,13 @@ export function EditorPage({
     );
   };
   const selected = doc?.layers.find((layer) => layer.id === selectedId) ?? null;
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("future-props:amadeus-context", { detail: {
+      application: "动效合成工坊", projectId, unsaved: dirty || saving,
+      selection: selected ? { id: selected.id, name: selected.name,
+        value: selected.kind } : undefined,
+    } }));
+  }, [projectId, dirty, saving, selected]);
   const add = (kind: MotionLayer["kind"], asset?: MotionAsset) => {
     const current = docRef.current;
     if (!current) return;
@@ -506,11 +513,11 @@ export function EditorPage({
         </button>
         <button
           className="mc-toolbar-button"
-          disabled
-          title="第二阶段开放：自然语言编辑可撤销图层"
+          onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+          title="打开 Amadeus"
         >
           <Sparkles size={16} />
-          AI 助手 · 即将推出
+          Amadeus
         </button>
         <button
           className="mc-toolbar-button"

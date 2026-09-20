@@ -71,6 +71,7 @@ from db.migrations.versions import (
     r0067_video_editor_asset_default_effects_bake,
     r0068_senseaudio_catalog_sync,
     r0069_retire_unsupported_senseaudio_models,
+    r0070_amadeus,
 )
 
 
@@ -325,5 +326,7 @@ MIGRATIONS += (
         r0069_retire_unsupported_senseaudio_models.SQL,
     ),
 )
+
+MIGRATIONS += (Migration(r0070_amadeus.MIGRATION_ID, r0070_amadeus.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

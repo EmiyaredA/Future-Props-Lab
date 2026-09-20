@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AppWindow } from "lucide-react";
+import { AppWindow, Sparkles } from "lucide-react";
 import type { DesktopDevelopmentState } from "@platform/desktop";
 import "@platform/desktop";
 
@@ -48,6 +48,15 @@ export function DesktopAppChrome() {
 
   return (
     <>
+      <button
+        type="button"
+        className="studio-header-chip"
+        aria-label="打开 Amadeus"
+        onClick={() => void bridge.openAmadeus?.()}
+      >
+        <Sparkles size={16} aria-hidden="true" />
+        <span>Amadeus</span>
+      </button>
       <button
         type="button"
         className="studio-header-chip"

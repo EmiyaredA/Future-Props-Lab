@@ -7,6 +7,7 @@ import {
   Pencil,
   Plus,
   Save,
+  Sparkles,
 } from "lucide-react";
 import { CanvasViewControls } from "@features/visual-workshop/canvas/CanvasViewControls";
 import "@platform/desktop";
@@ -101,6 +102,15 @@ export function CanvasScreenChrome({
           </span>
         </div>
         <div className="canvas-top-actions">
+          {window.futurePropsDesktop?.openAmadeus && (
+            <button
+              type="button"
+              aria-label="打开 Amadeus"
+              onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+            >
+              <Sparkles aria-hidden /> Amadeus
+            </button>
+          )}
           <button
             type="button"
             aria-label="新建窗口"

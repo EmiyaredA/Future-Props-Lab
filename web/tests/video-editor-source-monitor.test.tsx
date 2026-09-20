@@ -252,4 +252,39 @@ describe("video editor source monitor", () => {
     expect(currentTime).toBe(0);
     expect(play).toHaveBeenCalledTimes(1);
   });
+
+  it("seeks the source media when the transport scrubber moves", () => {
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    let currentTime = 0;
+    Object.defineProperty(HTMLMediaElement.prototype, "currentTime", {
+      configurable: true,
+      get: () => currentTime,
+      set: (value: number) => {
+        currentTime = value;
+      },
+    });
+
+    render(
+      <VideoEditorPreview
+        projectId="editor-1"
+        timeline={timeline}
+        assets={[asset]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        playing={false}
+        setPlaying={vi.fn()}
+        preciseFrame={false}
+        onPreciseFrameChange={vi.fn()}
+        previewingAsset={asset}
+        onClearPreviewingAsset={vi.fn()}
+      />,
+    );
+
+    const scrubber = screen.getByRole("slider", { name: "素材播放位置" });
+    expect(scrubber).toBeEnabled();
+    fireEvent.change(scrubber, { target: { value: "2000000" } });
+    expect(currentTime).toBe(2);
+    expect(screen.getByText("00:02.000 / 00:04.000")).toBeInTheDocument();
+  });
 });

@@ -228,4 +228,81 @@ async def test_text_api_save_reload_layer_cas_and_workspace_isolation():
         assert (await client.get(base + "/timeline")).json()["revision"] == 1
         overlap = await commit(1, [{"type": "addClip", "clip": text_clip(id="overlap")}])
         assert overlap.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_text_track_with_many_clips_saves_in_one_timeline_operation():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = (
+            await client.post("/v1/video-editor/projects", json={"title": "字幕批量导入"})
+        ).json()
+        base = f"/v1/video-editor/projects/{project['id']}"
+        clips = [
+            text_clip(
+                id=f"subtitle-{index}",
+                trackId="subtitle-track",
+                timelineStartUs=index * 500_000,
+                durationUs=400_000,
+                text=f"字幕 {index}",
+            )
+            for index in range(220)
+        ]
+        subtitle_track = {
+            "id": "subtitle-track",
+            "kind": "visual",
+            "name": "字幕",
+            "order": 0,
+            "locked": False,
+            "hidden": False,
+            "muted": False,
+            "clips": clips,
+        }
+        response = await client.post(
+            base + "/timeline/operations",
+            json={
+                "expectedRevision": 0,
+                "requestId": str(uuid.uuid4()),
+                "operations": [
+                    {"type": "reorderTrack", "trackId": "visual-1", "order": 1},
+                    {"type": "reorderTrack", "trackId": "mixed-1", "order": 2},
+                    {"type": "reorderTrack", "trackId": "audio-1", "order": 3},
+                    {"type": "addTrack", "track": subtitle_track},
+                ],
+            },
+        )
+        assert response.status_code == 200, response.text
+        document = (await client.get(base + "/timeline")).json()["document"]
+        ordered_tracks = sorted(document["tracks"], key=lambda track: track["order"])
+        assert ordered_tracks[0]["name"] == "字幕"
+        assert len(ordered_tracks[0]["clips"]) == 220
+        assert (await client.get(base + "/timeline")).json()["revision"] == 1
+
+        overlap = await client.post(
+            base + "/timeline/operations",
+            json={
+                "expectedRevision": 1,
+                "requestId": str(uuid.uuid4()),
+                "operations": [
+                    {
+                        "type": "addTrack",
+                        "track": {
+                            **subtitle_track,
+                            "id": "overlapping-subtitle-track",
+                            "clips": [
+                                {**clips[0], "trackId": "overlapping-subtitle-track"},
+                                {
+                                    **clips[1],
+                                    "id": "overlap-subtitle",
+                                    "trackId": "overlapping-subtitle-track",
+                                    "timelineStartUs": 100_000,
+                                },
+                            ],
+                        },
+                    }
+                ],
+            },
+        )
+        assert overlap.status_code == 422
         await client.delete(base)

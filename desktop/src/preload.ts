@@ -10,6 +10,39 @@ contextBridge.exposeInMainWorld(
     minimize: () => ipcRenderer.invoke("desktop:minimize"),
     close: () => ipcRenderer.invoke("desktop:close"),
     openNewWindow: () => ipcRenderer.invoke("desktop:open-new-window"),
+    openAmadeus: () => ipcRenderer.invoke("desktop:amadeus-open"),
+    hideAmadeus: () => ipcRenderer.invoke("desktop:amadeus-hide"),
+    publishAmadeusMutation: (value: unknown) => ipcRenderer.invoke("desktop:amadeus-mutation", value),
+    locateAmadeusReference: (value: unknown) => ipcRenderer.invoke("desktop:amadeus-locate", value),
+    onAmadeusMutation: (callback: (value: unknown) => void) => {
+      const listener = (_event: unknown, value: unknown) => callback(value);
+      ipcRenderer.on("desktop:amadeus-mutation", listener);
+      return () => ipcRenderer.removeListener("desktop:amadeus-mutation", listener);
+    },
+    publishAmadeusContext: (value: unknown) => ipcRenderer.invoke("desktop:amadeus-context-publish", value),
+    amadeusContexts: () => ipcRenderer.invoke("desktop:amadeus-contexts"),
+    setAmadeusPickMode: (enabled: boolean, index?: number) => ipcRenderer.invoke("desktop:amadeus-pick", enabled, index),
+    addAmadeusReference: (value: unknown) => ipcRenderer.invoke("desktop:amadeus-reference", value),
+    onAmadeusContexts: (callback: (value: unknown) => void) => {
+      const listener = (_event: unknown, value: unknown) => callback(value);
+      ipcRenderer.on("desktop:amadeus-contexts", listener);
+      return () => ipcRenderer.removeListener("desktop:amadeus-contexts", listener);
+    },
+    onAmadeusPickCommand: (callback: (value: { enabled: boolean; index: number }) => void) => {
+      const listener = (_event: unknown, value: { enabled: boolean; index: number }) => callback(value);
+      ipcRenderer.on("desktop:amadeus-pick-command", listener);
+      return () => ipcRenderer.removeListener("desktop:amadeus-pick-command", listener);
+    },
+    onAmadeusReference: (callback: (value: unknown) => void) => {
+      const listener = (_event: unknown, value: unknown) => callback(value);
+      ipcRenderer.on("desktop:amadeus-reference-added", listener);
+      return () => ipcRenderer.removeListener("desktop:amadeus-reference-added", listener);
+    },
+    onAmadeusLocate: (callback: (value: unknown) => void) => {
+      const listener = (_event: unknown, value: unknown) => callback(value);
+      ipcRenderer.on("desktop:amadeus-locate", listener);
+      return () => ipcRenderer.removeListener("desktop:amadeus-locate", listener);
+    },
     agentStatus: () => ipcRenderer.invoke("desktop:agent-status"),
     enableAgent: () => ipcRenderer.invoke("desktop:agent-enable"),
     disableAgent: () => ipcRenderer.invoke("desktop:agent-disable"),

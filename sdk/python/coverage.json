@@ -189,6 +189,160 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/amadeus/conversations/{conversation_id}",
+    "sdk": "client.amadeus.delete_conversation",
+    "document": "/docs.html?page=sdk-reference-amadeus#delete-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/amadeus/conversations",
+    "sdk": "client.amadeus.list_conversations",
+    "document": "/docs.html?page=sdk-reference-amadeus#list-conversations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/amadeus/conversations/{conversation_id}",
+    "sdk": "client.amadeus.get_conversation",
+    "document": "/docs.html?page=sdk-reference-amadeus#get-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/amadeus/conversations/{conversation_id}/files",
+    "sdk": "client.amadeus.files_list",
+    "document": "/docs.html?page=sdk-reference-amadeus#files-list",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}",
+    "sdk": "client.amadeus.file_download",
+    "document": "/docs.html?page=sdk-reference-amadeus#file-download",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/amadeus/operations",
+    "sdk": "client.amadeus.list_registered_operations",
+    "document": "/docs.html?page=sdk-reference-amadeus#list-registered-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/amadeus/script-capability",
+    "sdk": "client.amadeus.script_capability",
+    "document": "/docs.html?page=sdk-reference-amadeus#script-capability",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/amadeus/conversations/{conversation_id}",
+    "sdk": "client.amadeus.patch_conversation",
+    "document": "/docs.html?page=sdk-reference-amadeus#patch-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations",
+    "sdk": "client.amadeus.create_conversation",
+    "document": "/docs.html?page=sdk-reference-amadeus#create-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/actions",
+    "sdk": "client.amadeus.propose_action",
+    "document": "/docs.html?page=sdk-reference-amadeus#propose-action",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/cancel",
+    "sdk": "client.amadeus.stop_action",
+    "document": "/docs.html?page=sdk-reference-amadeus#stop-action",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/decision",
+    "sdk": "client.amadeus.decide_action",
+    "document": "/docs.html?page=sdk-reference-amadeus#decide-action",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute",
+    "sdk": "client.amadeus.run_action",
+    "document": "/docs.html?page=sdk-reference-amadeus#run-action",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute/stream",
+    "sdk": "client.amadeus.run_action_stream",
+    "document": "/docs.html?page=sdk-reference-amadeus#run-action-stream",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/files/open-folder",
+    "sdk": "client.amadeus.files_open_folder",
+    "document": "/docs.html?page=sdk-reference-amadeus#files-open-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/imports",
+    "sdk": "client.amadeus.import_file",
+    "document": "/docs.html?page=sdk-reference-amadeus#import-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/messages",
+    "sdk": "client.amadeus.append_message",
+    "document": "/docs.html?page=sdk-reference-amadeus#append-message",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load",
+    "sdk": "client.amadeus.skill_load",
+    "document": "/docs.html?page=sdk-reference-amadeus#skill-load",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/model-turn",
+    "sdk": "client.amadeus.model_turn",
+    "document": "/docs.html?page=sdk-reference-amadeus#model-turn",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/model-turn/stream",
+    "sdk": "client.amadeus.model_turn_stream",
+    "document": "/docs.html?page=sdk-reference-amadeus#model-turn-stream",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/operations/read",
+    "sdk": "client.amadeus.read_registered_operation",
+    "document": "/docs.html?page=sdk-reference-amadeus#read-registered-operation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}",
+    "sdk": "client.amadeus.file_write",
+    "document": "/docs.html?page=sdk-reference-amadeus#file-write",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/audio-annotation/projects/{project_id}",
     "sdk": "client.annotation.delete_project",
     "document": "/docs.html?page=sdk-reference-annotation#delete-project",

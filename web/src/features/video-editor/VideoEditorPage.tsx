@@ -2,7 +2,7 @@ import { textClipOperations, type TextPreset } from "./textModel";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { useVideoEditorLayout } from "./useVideoEditorLayout";
 import { VideoEditorSeparator } from "./VideoEditorSeparator";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Film,
@@ -24,8 +24,15 @@ import { VideoEditorInspector } from "./VideoEditorInspector";
 import { VideoEditorPreview } from "./VideoEditorPreview";
 import { VideoEditorTimeline } from "./VideoEditorTimeline";
 import { VideoEditorSegmentExportDialog } from "./VideoEditorSegmentExportDialog";
+import { VideoEditorSubtitleImportDialog } from "./VideoEditorSubtitleImportDialog";
 import { MAX_TIMELINE_ZOOM, MIN_TIMELINE_ZOOM } from "./timelineScale";
 import { useVideoEditor } from "./useVideoEditor";
+import {
+  parseSubtitleFile,
+  subtitleImportOperations,
+  type SubtitleParseResult,
+  type SubtitleTimingMode,
+} from "./subtitleImport";
 import type { VideoEditorAsset, VideoEditorClip } from "./types";
 import "./video-editor.css";
 import "./video-editor-workspace.css";
@@ -50,7 +57,32 @@ export function VideoEditorPage({
   const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
   const [previewingAssetId, setPreviewingAssetId] = useState<string>();
   const [titleDraft, setTitleDraft] = useState<string | null>(null);
+  const [subtitleImport, setSubtitleImport] = useState<{
+    fileName: string;
+    result?: SubtitleParseResult;
+    error?: string;
+  }>();
+  const [subtitleImportPending, setSubtitleImportPending] = useState(false);
   const discardTitle = useRef(false);
+  useEffect(() => {
+    const clip = (editor.timeline.data?.document.tracks ?? []).flatMap((track) => track.clips ?? [])
+      .find((item) => editor.selectedClipIds.includes(item.id));
+    window.dispatchEvent(new CustomEvent("future-props:amadeus-context", { detail: {
+      application: "视频剪辑工坊", projectId,
+      selection: clip ? { id: clip.id, name: clip.name,
+        value: `${clip.kind} · ${(clip.durationUs / 1_000_000).toFixed(2)} 秒` } : undefined,
+      unsaved: editor.saving,
+    } }));
+  }, [projectId, editor.timeline.data, editor.selectedClipIds, editor.saving]);
+  useEffect(() => window.futurePropsDesktop?.onAmadeusMutation?.((value) => {
+    const changed = value as { application?: string; projectId?: string };
+    if (changed.application !== "video-editor" || changed.projectId !== projectId) return;
+    if (editor.saving) {
+      editor.setNotice("Amadeus 已修改时间线；请先处理当前保存，再刷新项目");
+      return;
+    }
+    void editor.timeline.refetch();
+  }), [projectId, editor.saving, editor.timeline.refetch, editor.setNotice]);
   if (editor.project.isLoading || editor.timeline.isLoading)
     return <div className="ve-editor-state">正在装配剪辑工作区…</div>;
   if (!editor.project.data || !editor.timeline.data)
@@ -72,6 +104,45 @@ export function VideoEditorPage({
   const selectClip = (clipId?: string, additive = false) => {
     clearSourcePreview();
     editor.selectClip(clipId, additive);
+  };
+  const handleSubtitleFile = (file: File) => {
+    setSubtitleImport({ fileName: file.name });
+    void parseSubtitleFile(file)
+      .then((result) => setSubtitleImport({ fileName: file.name, result }))
+      .catch((error) =>
+        setSubtitleImport({
+          fileName: file.name,
+          error: error instanceof Error ? error.message : "字幕文件解析失败",
+        }),
+      );
+  };
+  const confirmSubtitleImport = async (mode: SubtitleTimingMode) => {
+    const result = subtitleImport?.result;
+    if (!result?.cues.length) return;
+    setSubtitleImportPending(true);
+    try {
+      const operations = subtitleImportOperations(
+        result.cues,
+        tracks,
+        editor.playheadUs,
+        mode,
+      );
+      await editor.commit(operations.redo, operations.undo);
+      setSubtitleImport(undefined);
+      selectClip(operations.track.clips?.[0]?.id);
+      setMobilePanel("inspector");
+    } catch (error) {
+      setSubtitleImport((current) =>
+        current
+          ? {
+              ...current,
+              error: error instanceof Error ? error.message : "字幕导入失败",
+            }
+          : current,
+      );
+    } finally {
+      setSubtitleImportPending(false);
+    }
   };
   const videoClips = tracks
     .flatMap((track) => track.clips ?? [])
@@ -242,6 +313,7 @@ export function VideoEditorPage({
             {editor.saving ? "保存中…" : editor.notice || "已自动保存"}
           </div>
           <div className="ve-top-actions">
+            {window.futurePropsDesktop?.openAmadeus && <button type="button" onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}>✦ Amadeus</button>}
             <button
               disabled={!videosNeedingCover.length || editor.saving}
               title="将当前工程的所有视频片段按比例铺满画布"
@@ -340,7 +412,7 @@ export function VideoEditorPage({
             projectId={projectId}
             assets={assets}
             organization={timeline.document.assetOrganization}
-            disabled={editor.saving}
+            disabled={editor.saving || subtitleImportPending}
             previewingAssetId={previewingAssetId}
             onPreview={(asset) => {
               editor.setPlaying(false);
@@ -351,6 +423,7 @@ export function VideoEditorPage({
             onAddBatch={addAssetBatch}
             onTimelineAssetDrag={setDraggingAsset}
             onAddGenerated={addGenerated}
+            onImportSubtitles={handleSubtitleFile}
             onOrganizationChange={(organization) =>
               editor.commit(
                 [{ type: "setAssetOrganization", organization }],
@@ -545,6 +618,18 @@ export function VideoEditorPage({
               setSegmentExportOpen(false);
               setSegmentExportClipId(undefined);
             }}
+          />
+        ) : null}
+        {subtitleImport ? (
+          <VideoEditorSubtitleImportDialog
+            fileName={subtitleImport.fileName}
+            result={subtitleImport.result}
+            error={subtitleImport.error}
+            pending={subtitleImportPending}
+            onCancel={() => {
+              if (!subtitleImportPending) setSubtitleImport(undefined);
+            }}
+            onConfirm={(mode) => void confirmSubtitleImport(mode)}
           />
         ) : null}
       </div>

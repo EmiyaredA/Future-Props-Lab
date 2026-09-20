@@ -621,8 +621,8 @@
 .ve-transport {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
+  padding: 0 12px;
   border-top: 1px solid #292e3c;
 }
 .ve-transport button {
@@ -630,6 +630,7 @@
   height: 30px;
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
   padding: 0;
   border: 0;
   background: transparent;
@@ -642,13 +643,85 @@
 .ve-transport svg {
   width: 16px;
 }
+.ve-transport-seek {
+  flex: 1 1 120px;
+  min-width: 72px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  accent-color: #796aec;
+  cursor: pointer;
+  appearance: none;
+}
+.ve-transport-seek:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ve-transport-seek:focus-visible {
+  outline: 2px solid #a69cff;
+  outline-offset: 2px;
+}
+.ve-transport-seek::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #796aec 0%,
+    #796aec var(--ve-seek-progress, 0%),
+    #2a3142 var(--ve-seek-progress, 0%),
+    #2a3142 100%
+  );
+}
+.ve-transport-seek::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 50%;
+  background: #c4bcff;
+  box-shadow: 0 0 0 1px rgb(16 20 30 / 55%);
+}
+.ve-transport-seek:disabled::-webkit-slider-thumb {
+  background: #6b7388;
+}
+.ve-transport-seek::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: #2a3142;
+}
+.ve-transport-seek::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #796aec;
+}
+.ve-transport-seek::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: #c4bcff;
+  box-shadow: 0 0 0 1px rgb(16 20 30 / 55%);
+}
+.ve-transport-seek:disabled::-moz-range-thumb {
+  background: #6b7388;
+}
 .ve-transport strong {
-  margin-left: 12px;
+  flex: 0 0 auto;
+  margin-left: 4px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .ve-transport span {
+  flex: 0 0 auto;
   color: #778095;
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .ve-proxy-audio {

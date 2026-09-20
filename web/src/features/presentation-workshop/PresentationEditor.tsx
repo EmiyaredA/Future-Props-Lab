@@ -83,6 +83,39 @@ export function PresentationEditor({
   const slideIndex = draft.draft.document.slides.findIndex(
     (s) => s.id === slide.id,
   );
+  const selectedElement = slide.elements.find(
+    (element) => element.id === selected[0],
+  );
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "演示工坊",
+          projectId: initial.id,
+          title: draft.draft.title,
+          selection: selectedElement
+            ? {
+                id: selectedElement.id,
+                name: selectedElement.kind,
+                value: `第 ${slideIndex + 1} 页 · ${selectedElement.kind}`,
+              }
+            : {
+                id: slide.id,
+                name: `第 ${slideIndex + 1} 页`,
+                value: "幻灯片",
+              },
+          unsaved: draft.state !== "saved",
+        },
+      }),
+    );
+  }, [
+    initial.id,
+    draft.draft.title,
+    draft.state,
+    slide.id,
+    slideIndex,
+    selectedElement,
+  ]);
   const report = useCallback(async (work: () => Promise<void>) => {
     setError("");
     try {

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.metadata
+import importlib.util
 import json
 import os
 import platform
@@ -15,6 +16,31 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BUILD = ROOT / "desktop/build"
 POINTER = b"version https://git-lfs.github.com/spec/v1"
+RUNNER_STDLIB_EXCLUDED = {
+    "ensurepip",
+    "idlelib",
+    "lib2to3",
+    "pydoc_data",
+    "test",
+    "tkinter",
+    "turtle",
+    "turtledemo",
+    "venv",
+}
+
+
+def runner_stdlib_args() -> list[str]:
+    """Frozen exec() cannot discover imports in conversation scripts during analysis."""
+    args: list[str] = []
+    for name in sorted(sys.stdlib_module_names - RUNNER_STDLIB_EXCLUDED):
+        spec = importlib.util.find_spec(name)
+        if spec is None:
+            continue
+        if spec.submodule_search_locations:
+            args.extend(("--collect-submodules", name))
+        else:
+            args.extend(("--hidden-import", name))
+    return args
 
 
 def run(*args: str, **kwargs) -> str:
@@ -245,6 +271,31 @@ def main() -> None:
         check=True,
     )
     print(run(str(BUILD / "cli/fpl/fpl"), "--help", env={"PATH": "/usr/bin:/bin"}))
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "PyInstaller",
+            "--noconfirm",
+            "--clean",
+            "--onedir",
+            "--name",
+            "fpl-script-runner",
+            "--target-arch",
+            "arm64",
+            "--distpath",
+            str(BUILD / "runner"),
+            "--workpath",
+            str(BUILD / "runner-pyinstaller"),
+            "--specpath",
+            str(BUILD),
+            *runner_stdlib_args(),
+            str(ROOT / "desktop/backend/script_entry.py"),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=True,
+    )
 
 
 if __name__ == "__main__":

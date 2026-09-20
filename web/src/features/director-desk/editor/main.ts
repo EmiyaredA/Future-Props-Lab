@@ -195,6 +195,12 @@ export function mountDirectorEditor(host: {
         inspectorTab = 'base'; engine.select(id); renderPanels(); }
     function renderPanels() {
         document.title = `${project.name} · 导演台${import.meta.env.DEV ? ' · 开发测试版' : ''}`;
+        const active = current();
+        window.dispatchEvent(new CustomEvent('future-props:amadeus-context', { detail: {
+            application: '导演台', projectId: host.projectId, title: project.name,
+            selection: active ? { id: active.id, name: active.name, value: active.kind } : undefined,
+            unsaved: dirty,
+        } }));
         renderSceneSwitcher(uiContext);
         $('#aspect').value = project.aspect;
         document.querySelectorAll<HTMLElement>('[data-creation-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.creationMode === (project.creationMode ?? 'full'))));

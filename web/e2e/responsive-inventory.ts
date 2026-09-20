@@ -8,6 +8,7 @@ import type { AppPage } from "../src/app/routes";
 export const desktopSurfaces = {
   "desktop/ui/startup.html": "desktop/scripts/smoke.cjs",
   "desktop-setup": "desktop/scripts/smoke.cjs",
+  "web/amadeus.html": "desktop/scripts/smoke-amadeus.cjs",
 } as const;
 
 // Every application route must name its responsive scenario owner.

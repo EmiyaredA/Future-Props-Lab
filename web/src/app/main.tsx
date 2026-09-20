@@ -4,6 +4,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "@app/App";
 import { DesktopAgentHost } from "@app/DesktopAgentHost";
+import { AmadeusSourceHost } from "@features/amadeus/SourceHost";
 import { DesktopDevelopmentHost } from "@app/DesktopDevelopmentHost";
 import { StudioAuthGate } from "@app/StudioAuthGate";
 import { DesktopSetupGate } from "@features/accounts/DesktopSetupGate";
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <StudioAuthGate>
           <App />
           <DesktopAgentHost />
+          <AmadeusSourceHost />
         </StudioAuthGate>
       </DesktopSetupGate>
     </QueryClientProvider>

@@ -81,6 +81,7 @@ export function VideoEditorAssetPanel({
   onAdd,
   onAddBatch,
   onAddGenerated,
+  onImportSubtitles,
   onOrganizationChange,
   onTimelineAssetDrag,
 }: {
@@ -94,9 +95,11 @@ export function VideoEditorAssetPanel({
   onAdd: (asset: VideoEditorAsset) => void;
   onAddBatch: (assets: VideoEditorAsset[]) => Promise<void>;
   onAddGenerated: (kind: "text" | "color", preset?: TextPreset) => void;
+  onImportSubtitles?: (file: File) => void;
   onOrganizationChange: (next: VideoEditorAssetOrganization) => Promise<void>;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const subtitleInput = useRef<HTMLInputElement>(null);
   const uploadFolderId = useRef<string | undefined>(undefined);
   const importFolderId = useRef<string | undefined>(undefined);
   const client = useQueryClient();
@@ -692,6 +695,19 @@ export function VideoEditorAssetPanel({
             event.target.value = "";
           }}
         />
+        <input
+          ref={subtitleInput}
+          hidden
+          type="file"
+          accept=".srt,.vtt,.ass"
+          aria-label="选择字幕文件"
+          disabled={disabled}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file && !disabled) onImportSubtitles?.(file);
+            event.target.value = "";
+          }}
+        />
         <VideoEditorAssetUploadFeedback
           pending={upload.isPending}
           progress={uploadProgress}
@@ -719,9 +735,16 @@ export function VideoEditorAssetPanel({
             options={[
               { value: "", label: "添加文字", disabled: true },
               ...textPresets,
+              { value: "subtitle-import", label: "导入字幕文件" },
             ]}
             leadingIcon={<Type aria-hidden />}
-            onChange={(value) => onAddGenerated("text", value as TextPreset)}
+            onChange={(value) => {
+              if (value === "subtitle-import") {
+                subtitleInput.current?.click();
+                return;
+              }
+              onAddGenerated("text", value as TextPreset);
+            }}
           />
           <button type="button" onClick={() => onAddGenerated("color")}>
             <span className="ve-black-swatch" aria-hidden /> 纯色黑幕

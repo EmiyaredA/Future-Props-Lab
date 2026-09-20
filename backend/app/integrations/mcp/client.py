@@ -122,3 +122,44 @@ class OfficialMcpDiscoveryClient:
         )
         async with Client(stdio_client(parameters)) as client:
             return self._result(client, await self._all_tools(client))
+
+    async def call(
+        self,
+        *,
+        transport: str,
+        url: str,
+        command: str,
+        arguments: list[str],
+        bearer_token: str,
+        environment: dict[str, str],
+        tool_name: str,
+        tool_arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        from mcp import Client
+
+        if transport == "streamable_http":
+            import httpx2
+            from mcp.client.streamable_http import streamable_http_client
+
+            safe_url = await require_safe_integration_http_url(url)
+            headers = {"Authorization": f"Bearer {bearer_token}"} if bearer_token else {}
+            async with httpx2.AsyncClient(
+                headers=headers,
+                timeout=httpx2.Timeout(30.0, connect=10.0),
+                follow_redirects=False,
+            ) as http_client:
+                async with Client(
+                    streamable_http_client(safe_url, http_client=http_client)
+                ) as client:
+                    result = await client.call_tool(tool_name, tool_arguments)
+                    return result.model_dump(mode="json")
+
+        from mcp.client.stdio import StdioServerParameters, stdio_client
+
+        executable = self._stdio_command(command)
+        parameters = StdioServerParameters(
+            command=str(executable), args=list(arguments), env=dict(environment)
+        )
+        async with Client(stdio_client(parameters)) as client:
+            result = await client.call_tool(tool_name, tool_arguments)
+            return result.model_dump(mode="json")

@@ -151,6 +151,37 @@ export default function App() {
   routeRef.current = route;
   const page = route.page;
   useEffect(() => {
+    const key = String(page);
+    const applications: Record<string, string> = {
+      "presentation-workshop": "演示工坊",
+      "thought-workshop": "思绪工坊",
+      "visual-workshop": "视觉创作工坊",
+      "galgame-workshop": "Galgame 工坊",
+      "video-editor": "视频剪辑工坊",
+      "motion-compositor": "动效合成工坊",
+      "audio-annotation": "音频标注工坊",
+      "director-desk": "导演台",
+    };
+    const application =
+      Object.entries(applications).find(([prefix]) =>
+        key.startsWith(prefix),
+      )?.[1] || (page === "apps" ? "应用首页" : "研究所");
+    queueMicrotask(() =>
+      window.dispatchEvent(
+        new CustomEvent("future-props:amadeus-context", {
+          detail: {
+            path: location.pathname,
+            title: document.title,
+            application,
+            projectId: route.projectId,
+            userId: me.user.id,
+            workspaceId: me.workspace.id,
+          },
+        }),
+      ),
+    );
+  }, [page, route.projectId, route.documentId, me.user.id, me.workspace.id]);
+  useEffect(() => {
     if (window.location.pathname === "/")
       window.history.replaceState({}, "", "/home");
     if (window.location.pathname.startsWith("/tools/audio-annotation")) {

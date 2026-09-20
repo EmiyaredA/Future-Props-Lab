@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
-import { externalizeDocument, getDirectorProject, hydrateDocument, patchDirectorProject } from "./api";
+import {
+  externalizeDocument,
+  getDirectorProject,
+  hydrateDocument,
+  patchDirectorProject,
+} from "./api";
 import type { SceneDocument } from "./editor/scenes/sequence-project";
 import { directorDeskKeys } from "./queryKeys";
 import "./editor/style.css";
@@ -36,7 +41,10 @@ export function DirectorDeskEditorPage({
       try {
         scene = await hydrateDocument(projectId, data.document);
       } catch (error) {
-        if (!cancelled) setOpenError(error instanceof Error ? error.message : "预演工程无法打开");
+        if (!cancelled)
+          setOpenError(
+            error instanceof Error ? error.message : "预演工程无法打开",
+          );
         return;
       }
       if (cancelled) return;
@@ -61,10 +69,31 @@ export function DirectorDeskEditorPage({
             }
           },
         });
-        document.getElementById("director-desk-back")?.addEventListener("click", () => onBackRef.current());
+        if (window.futurePropsDesktop?.openAmadeus) {
+          const actions = document.querySelector<HTMLElement>(
+            ".director-desk-root .header-actions",
+          );
+          if (actions) {
+            const trigger = document.createElement("button");
+            trigger.type = "button";
+            trigger.className = "subtle";
+            trigger.setAttribute("aria-label", "打开 Amadeus");
+            trigger.textContent = "✦ Amadeus";
+            trigger.addEventListener(
+              "click",
+              () => void window.futurePropsDesktop?.openAmadeus?.(),
+            );
+            actions.prepend(trigger);
+          }
+        }
+        document
+          .getElementById("director-desk-back")
+          ?.addEventListener("click", () => onBackRef.current());
       } catch (error) {
         if (!cancelled)
-          setOpenError(error instanceof Error ? error.message : "预演工程无法打开");
+          setOpenError(
+            error instanceof Error ? error.message : "预演工程无法打开",
+          );
       }
     });
     return () => {
@@ -74,7 +103,11 @@ export function DirectorDeskEditorPage({
   }, [project.data, projectId]);
 
   if (project.isError || openError) {
-    const text = openError || (project.error instanceof Error ? project.error.message : "预演工程无法打开");
+    const text =
+      openError ||
+      (project.error instanceof Error
+        ? project.error.message
+        : "预演工程无法打开");
     return (
       <section className="workshop-page">
         <p role="alert">{text}</p>
@@ -87,7 +120,9 @@ export function DirectorDeskEditorPage({
 
   return (
     <div className="director-desk-root" data-project-id={projectId}>
-      {project.isPending ? <p className="director-desk-boot">正在打开预演…</p> : null}
+      {project.isPending ? (
+        <p className="director-desk-boot">正在打开预演…</p>
+      ) : null}
       <div id="app" />
     </div>
   );

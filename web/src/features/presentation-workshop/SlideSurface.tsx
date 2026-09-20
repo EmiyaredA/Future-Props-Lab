@@ -163,6 +163,9 @@ export const SlideSurface = memo(function SlideSurface({
         <div
           key={element.id}
           data-element-id={element.id}
+          data-amadeus-id={element.id}
+          data-amadeus-name={element.kind}
+          data-amadeus-value={`幻灯片元素 · ${element.kind}`}
           data-transparent-shape={
             element.kind !== "text" &&
             element.kind !== "image" &&

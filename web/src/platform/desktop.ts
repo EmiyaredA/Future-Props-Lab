@@ -14,6 +14,21 @@ export type DesktopBridge = {
   minimize: () => Promise<void>;
   close: () => Promise<void>;
   openNewWindow: () => Promise<void>;
+  openAmadeus?: () => Promise<void>;
+  hideAmadeus?: () => Promise<void>;
+  publishAmadeusMutation?: (value: unknown) => Promise<void>;
+  locateAmadeusReference?: (value: unknown) => Promise<boolean>;
+  onAmadeusMutation?: (callback: (value: unknown) => void) => () => void;
+  onAmadeusLocate?: (callback: (value: unknown) => void) => () => void;
+  publishAmadeusContext?: (value: unknown) => Promise<void>;
+  amadeusContexts?: () => Promise<unknown>;
+  setAmadeusPickMode?: (enabled: boolean, index?: number) => Promise<void>;
+  addAmadeusReference?: (value: unknown) => Promise<void>;
+  onAmadeusContexts?: (callback: (value: unknown) => void) => () => void;
+  onAmadeusPickCommand?: (
+    callback: (value: { enabled: boolean; index: number }) => void,
+  ) => () => void;
+  onAmadeusReference?: (callback: (value: unknown) => void) => () => void;
   agentStatus: () => Promise<{ enabled: boolean; connected: boolean }>;
   enableAgent: () => Promise<{ enabled: boolean; connected: boolean }>;
   disableAgent: () => Promise<{ enabled: boolean; connected: boolean }>;

@@ -332,6 +332,25 @@ export function ThoughtWorkshopPage({
     note.error?.message ||
     projects.error?.message ||
     filtered.error?.message;
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "思绪工坊",
+          projectId,
+          title: project?.title || "思绪工坊",
+          selection: currentId
+            ? {
+                id: currentId,
+                name: note.data?.title || "文档",
+                value: note.data?.title || "",
+              }
+            : undefined,
+          unsaved: !!noteChrome && noteChrome.state !== "saved",
+        },
+      }),
+    );
+  }, [projectId, project?.title, currentId, note.data?.title, noteChrome]);
   return (
     <div
       className={`thought-shell knowledge-shell ${projectId ? "inside-knowledge" : ""}`}

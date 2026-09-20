@@ -158,6 +158,30 @@ class ToolApiCatalog:
     async def get(self, integration_id: str) -> ToolApiOut:
         return _out(await self._get(integration_id))
 
+    async def execute(
+        self, integration_id: str, inputs: dict[str, Any], expected_revision: int
+    ) -> dict[str, Any]:
+        """Call one enabled Tool API without mutating its configuration/check history."""
+        row = await self._get(integration_id)
+        snapshot = _out(row)
+        if not snapshot.enabled or snapshot.revision != expected_revision:
+            raise ValueError("工具已停用或配置已变更")
+        validate(instance=inputs, schema=snapshot.parameters_schema)
+        secret = decrypt_secret(row.secret_ciphertext) if row.secret_ciphertext else ""
+        await self.session.rollback()
+        status_code, content_type, preview = await asyncio.wait_for(
+            _invoke(snapshot, secret, inputs, self.transport), timeout=30.0
+        )
+        if not 200 <= status_code < 300:
+            raise ValueError(f"远端返回 HTTP {status_code}")
+        return {
+            "status_code": status_code,
+            "content_type": content_type,
+            "text": "敏感结果已隐藏"
+            if snapshot.sensitive_result
+            else redact_sensitive(preview, [secret]),
+        }
+
     async def catalog(self) -> ToolApiCatalogOut:
         rows = (
             (

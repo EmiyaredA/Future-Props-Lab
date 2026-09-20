@@ -63,6 +63,7 @@ function renderPanel({
   organization,
   onOrganizationChange = vi.fn(),
   onAddBatch = vi.fn(),
+  onImportSubtitles = vi.fn(),
 }: {
   assets?: VideoEditorAsset[];
   organization?: {
@@ -71,6 +72,7 @@ function renderPanel({
   };
   onOrganizationChange?: ReturnType<typeof vi.fn>;
   onAddBatch?: ReturnType<typeof vi.fn>;
+  onImportSubtitles?: ReturnType<typeof vi.fn>;
 } = {}) {
   const client = new QueryClient({
     defaultOptions: {
@@ -87,11 +89,12 @@ function renderPanel({
         onAdd={vi.fn()}
         onAddBatch={onAddBatch}
         onAddGenerated={vi.fn()}
+        onImportSubtitles={onImportSubtitles}
         onOrganizationChange={onOrganizationChange}
       />
     </QueryClientProvider>,
   );
-  return { ...view, onOrganizationChange, onAddBatch };
+  return { ...view, onOrganizationChange, onAddBatch, onImportSubtitles };
 }
 
 beforeEach(() => {
@@ -100,6 +103,22 @@ beforeEach(() => {
 });
 
 describe("video editor asset panel", () => {
+  it("opens the subtitle file picker from the text menu", async () => {
+    const user = userEvent.setup();
+    const { onImportSubtitles } = renderPanel();
+    await user.click(screen.getByRole("combobox", { name: "添加文字" }));
+    await user.click(screen.getByRole("option", { name: "导入字幕文件" }));
+    const file = new File(
+      ["1\n00:00:00,000 --> 00:00:01,000\n字幕"],
+      "caption.srt",
+      {
+        type: "text/plain",
+      },
+    );
+    await user.upload(screen.getByLabelText("选择字幕文件"), file);
+    await waitFor(() => expect(onImportSubtitles).toHaveBeenCalledWith(file));
+  });
+
   it("uploads into a chosen folder and saves the organization", async () => {
     const user = userEvent.setup();
     vi.mocked(uploadVideoEditorAsset).mockResolvedValue(asset);
@@ -606,10 +625,9 @@ describe("video editor asset panel", () => {
         rootAssetIds: [asset.id, secondAsset.id],
       },
     });
-    expect(screen.getByRole("button", { name: "新建素材文件夹" })).toHaveAttribute(
-      "data-tooltip",
-      "新建文件夹",
-    );
+    expect(
+      screen.getByRole("button", { name: "新建素材文件夹" }),
+    ).toHaveAttribute("data-tooltip", "新建文件夹");
     await user.click(
       screen.getByRole("button", { name: "批量选择未分类中的素材" }),
     );

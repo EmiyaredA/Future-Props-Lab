@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import {
   ArrowLeft,
@@ -48,6 +48,41 @@ import "@features/audio-annotation/audio-annotation-import.css";
 import "@features/audio-annotation/audio-annotation.css";
 import "@features/audio-annotation/audio-annotation-responsive.css";
 import "./audio-annotation-compact.css";
+
+function AmadeusAudioContext({
+  projectId,
+  title,
+  selectedId,
+  selectedText,
+  dirty,
+}: {
+  projectId: string;
+  title: string;
+  selectedId?: string;
+  selectedText?: string;
+  dirty: boolean;
+}) {
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "音频标注工坊",
+          projectId,
+          title,
+          selection: selectedId
+            ? {
+                id: selectedId,
+                name: "标注片段",
+                value: selectedText?.slice(0, 160) || "",
+              }
+            : undefined,
+          unsaved: dirty,
+        },
+      }),
+    );
+  }, [projectId, title, selectedId, selectedText, dirty]);
+  return null;
+}
 
 export function AudioAnnotationEditorPage({
   projectId,
@@ -160,6 +195,13 @@ export function AudioAnnotationEditorPage({
       className="page annotation-editor-page"
       data-mobile-panel={mobilePanel}
     >
+      <AmadeusAudioContext
+        projectId={projectId}
+        title={project.title}
+        selectedId={selectedId ?? undefined}
+        selectedText={selected?.text}
+        dirty={dirty || save.isPending || Boolean(conflict)}
+      />
       <header className="annotation-editor-header">
         <div className="annotation-editor-title">
           <button
@@ -178,6 +220,15 @@ export function AudioAnnotationEditorPage({
           </div>
         </div>
         <div className="annotation-editor-actions">
+          {window.futurePropsDesktop?.openAmadeus && (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+            >
+              ✦ Amadeus
+            </button>
+          )}
           <button
             type="button"
             className="btn"
@@ -613,6 +664,9 @@ export function AudioAnnotationEditorPage({
                     type="button"
                     role="row"
                     key={segment.id}
+                    data-amadeus-id={segment.id}
+                    data-amadeus-name="标注片段"
+                    data-amadeus-value={`${formatTimestamp(segment.start_ms)} – ${formatTimestamp(segment.end_ms)}`}
                     className={selectedId === segment.id ? "selected" : ""}
                     onClick={() => {
                       if (previewingSegmentId) waveformRef.current?.pause();

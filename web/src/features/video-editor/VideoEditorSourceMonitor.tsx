@@ -325,7 +325,37 @@ export function VideoEditorSourceMonitor({
         >
           <SkipForward aria-hidden />
         </button>
-        <strong>{formatTime(playheadUs)}</strong>
+        <input
+          className="ve-transport-seek"
+          type="range"
+          min={0}
+          max={Math.max(durationUs, 1)}
+          step={stepUs}
+          value={Math.min(playheadUs, Math.max(durationUs, 1))}
+          disabled={!canScrub}
+          aria-label="素材播放位置"
+          style={
+            {
+              "--ve-seek-progress": `${
+                durationUs > 0
+                  ? Math.min(100, Math.max(0, (playheadUs / durationUs) * 100))
+                  : 0
+              }%`,
+            } as CSSProperties
+          }
+          onInput={(event) => {
+            stopPlayback();
+            seekMedia(Number(event.currentTarget.value));
+          }}
+          onChange={(event) => {
+            stopPlayback();
+            seekMedia(Number(event.currentTarget.value));
+          }}
+        />
+        <strong>
+          {formatTime(playheadUs)}
+          {canScrub ? ` / ${formatTime(durationUs)}` : ""}
+        </strong>
         <span>
           {isImage ? "图片预览" : `${fps} FPS · Space 播放 · ← → 逐帧`}
         </span>

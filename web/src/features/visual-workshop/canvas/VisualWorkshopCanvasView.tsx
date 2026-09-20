@@ -171,6 +171,33 @@ export function VisualWorkshopCanvasView({
   useEffect(() => {
     if (!connection) setConnectionHoverTargetId(undefined);
   }, [connection]);
+  useEffect(() => {
+    const selected = nodes.find((node) => node.id === selectedId);
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "视觉创作工坊",
+          projectId,
+          title: title || projectQuery.data?.title || "视觉创作工坊",
+          selection: selected
+            ? {
+                id: selected.id,
+                name: selected.title || nodeLabel(selected.kind),
+                value: nodeLabel(selected.kind),
+              }
+            : undefined,
+          unsaved: saveState !== "saved",
+        },
+      }),
+    );
+  }, [
+    projectId,
+    projectQuery.data?.title,
+    title,
+    nodes,
+    selectedId,
+    saveState,
+  ]);
   const registerVideo = useCallback(
     (nodeId: string, video: HTMLVideoElement | null) => {
       if (video) videoElements.current.set(nodeId, video);
@@ -333,6 +360,9 @@ export function VisualWorkshopCanvasView({
                 className={`canvas-node ${node.kind}${selected ? " selected" : ""}${connectionClass}`}
                 style={{ left: node.position.x, top: node.position.y }}
                 data-node-id={node.id}
+                data-amadeus-id={node.id}
+                data-amadeus-name={node.title || nodeLabel(node.kind)}
+                data-amadeus-value={nodeLabel(node.kind)}
                 key={node.id}
                 onPointerDown={(event) => startNodeDrag(event, node)}
                 onPointerMove={moveNode}

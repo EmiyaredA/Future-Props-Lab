@@ -91,6 +91,10 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0064_director_desk",),
             ("r0065_director_desk_motions",),
             ("r0066_motion_compositor",),
+            ("r0067_video_editor_asset_default_effects_bake",),
+            ("r0068_senseaudio_catalog_sync",),
+            ("r0069_retire_unsupported_senseaudio_models",),
+            ("r0070_amadeus",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

@@ -19,6 +19,10 @@
     "method": "delete_member",
     "resource": "workspaces"
   },
+  "DELETE /v1/amadeus/conversations/{conversation_id}": {
+    "method": "delete_conversation",
+    "resource": "amadeus"
+  },
   "DELETE /v1/audio-annotation/projects/{project_id}": {
     "method": "delete_project",
     "resource": "annotation"
@@ -214,6 +218,30 @@
   "GET /v1/account/workspaces/current/members": {
     "method": "members",
     "resource": "workspaces"
+  },
+  "GET /v1/amadeus/conversations": {
+    "method": "list_conversations",
+    "resource": "amadeus"
+  },
+  "GET /v1/amadeus/conversations/{conversation_id}": {
+    "method": "get_conversation",
+    "resource": "amadeus"
+  },
+  "GET /v1/amadeus/conversations/{conversation_id}/files": {
+    "method": "files_list",
+    "resource": "amadeus"
+  },
+  "GET /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}": {
+    "method": "file_download",
+    "resource": "amadeus"
+  },
+  "GET /v1/amadeus/operations": {
+    "method": "list_registered_operations",
+    "resource": "amadeus"
+  },
+  "GET /v1/amadeus/script-capability": {
+    "method": "script_capability",
+    "resource": "amadeus"
   },
   "GET /v1/audio-annotation/projects": {
     "method": "list_projects",
@@ -811,6 +839,10 @@
     "method": "set_member_role",
     "resource": "workspaces"
   },
+  "PATCH /v1/amadeus/conversations/{conversation_id}": {
+    "method": "patch_conversation",
+    "resource": "amadeus"
+  },
   "PATCH /v1/audio-annotation/projects/{project_id}": {
     "method": "patch_project",
     "resource": "annotation"
@@ -966,6 +998,58 @@
   "POST /v1/account/workspaces/switch": {
     "method": "set_active_workspace",
     "resource": "workspaces"
+  },
+  "POST /v1/amadeus/conversations": {
+    "method": "create_conversation",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/actions": {
+    "method": "propose_action",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/cancel": {
+    "method": "stop_action",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/decision": {
+    "method": "decide_action",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute": {
+    "method": "run_action",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute/stream": {
+    "method": "run_action_stream",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/files/open-folder": {
+    "method": "files_open_folder",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/imports": {
+    "method": "import_file",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/messages": {
+    "method": "append_message",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load": {
+    "method": "skill_load",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/model-turn": {
+    "method": "model_turn",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/model-turn/stream": {
+    "method": "model_turn_stream",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/operations/read": {
+    "method": "read_registered_operation",
+    "resource": "amadeus"
   },
   "POST /v1/audio-annotation/imports": {
     "method": "import_project",
@@ -1570,6 +1654,10 @@
   "PUT /v1/account/profile/avatar": {
     "method": "put_avatar",
     "resource": "accounts"
+  },
+  "PUT /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}": {
+    "method": "file_write",
+    "resource": "amadeus"
   },
   "PUT /v1/audio-annotation/projects/{project_id}/document": {
     "method": "put_document",

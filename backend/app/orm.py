@@ -64,6 +64,7 @@ from app.capabilities.asset_store.models import (
     VisualAssetFolder,
     VisualProjectAssetReference,
 )
+from app.console.amadeus.models import AmadeusAction, AmadeusConversation, AmadeusMessage
 from app.console.models import (
     AuthSession,
     ManagementApiKey,
@@ -200,6 +201,9 @@ _ = (
 )
 
 TENANT_MODELS = (
+    AmadeusConversation,
+    AmadeusMessage,
+    AmadeusAction,
     ModelInferenceAsset,
     ModelInferenceTask,
     ProjectOperationReceipt,

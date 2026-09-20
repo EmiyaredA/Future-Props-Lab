@@ -528,6 +528,9 @@ export function VideoEditorTimeline({
                       <div
                         key={clip.id}
                         data-clip-id={clip.id}
+                        data-amadeus-id={clip.id}
+                        data-amadeus-name={clip.name}
+                        data-amadeus-value={`${clip.kind} · ${(clip.durationUs / 1_000_000).toFixed(2)} 秒`}
                         className={`ve-clip ${clip.kind} ${track.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}${dragPreview?.positions.has(clip.id) ? " dragging" : ""}${dragPreview?.positions.has(clip.id) && !dragPreview.valid ? " invalid" : ""}`}
                         style={{
                           left: `${((dragPreview?.positions.get(clip.id)?.startUs ?? trimStates?.find((item) => item.id === clip.id)?.timelineStartUs ?? clip.timelineStartUs) / 1_000_000) * zoom}px`,

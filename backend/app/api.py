@@ -7,13 +7,18 @@ from app.apps.motion_compositor.routes import router as motion_compositor_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
 from app.apps.thought_workshop.routes import conversion as thought_conversion
 from app.apps.thought_workshop.routes import router as thought_workshop_router
+from app.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from app.apps.video_editor.routes import router as video_editor_router
 from app.apps.visual_workshop.routes import router as visual_workshop_router
 from app.apps.visual_workshop.routes.assistant import router as visual_assistant_router
 from app.apps.visual_workshop.routes.generation import router as visual_generation_router
 from app.capabilities.asset_store.routes import image_crop, video_frames
+from app.console.amadeus.actions import register_video_executor
 from app.console.routes.account_management import router as management_router
 from app.console.routes.accounts import router as accounts_router
+from app.console.routes.amadeus import require_amadeus_session
+from app.console.routes.amadeus import router as amadeus_router
+from app.console.routes.desktop import require_desktop
 from app.console.routes.desktop import router as desktop_router
 from app.console.routes.desktop_agent import router as desktop_agent_router
 from app.console.routes.file_management import router as file_management_router
@@ -40,7 +45,12 @@ from app.llm.routes.models import (
 )
 from app.tool_navigation.routes import router as tool_navigation_router
 
+register_video_executor(apply_assistant_timeline_batch)
+
 api_router = APIRouter(prefix="/v1")
+api_router.include_router(
+    amadeus_router, dependencies=[Depends(require_desktop), Depends(require_amadeus_session)]
+)
 api_router.include_router(desktop_router)
 api_router.include_router(desktop_agent_router)
 api_router.include_router(accounts_router)

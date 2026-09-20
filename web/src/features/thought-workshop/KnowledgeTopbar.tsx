@@ -22,6 +22,7 @@ import {
   Plus,
   RotateCcw,
   Save,
+  Sparkles,
   Trash2,
   Upload,
   type LucideIcon,
@@ -402,6 +403,16 @@ export function KnowledgeTopbar({
         ) : null}
       </div>
       <div className="knowledge-top-actions">
+        {window.futurePropsDesktop?.openAmadeus && (
+          <button
+            type="button"
+            className="btn"
+            aria-label="打开 Amadeus"
+            onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+          >
+            <Sparkles size={16} aria-hidden="true" /> Amadeus
+          </button>
+        )}
         {noteMode ? (
           <>
             <NoteActionMenu

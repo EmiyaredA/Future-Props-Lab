@@ -1,5 +1,13 @@
 # API 参考
 
+## Amadeus 桌面助手
+
+`/v1/amadeus` 使用当前账号和 Workspace 的 Studio Session。会话、消息引用快照、操作提议与批准保存在本机 SQLite；会话文件放在该 Workspace 的独立目录。`GET/POST /conversations` 和 `GET/PATCH/DELETE /conversations/{id}` 管理历史，消息追加与会话修改使用 `expected_revision`，冲突返回 409。`POST /model-turn/stream` 流式返回模型文本和工具调用，不向前端提供供应商密钥。
+
+`GET /operations` 只列出桌面 Agent 明确登记的 FPL 业务操作，`POST /operations/read` 只执行其 GET 操作。修改操作先通过 `/conversations/{id}/actions` 创建提议，`/decision` 以参数摘要批准，`/execute` 单次执行；脚本可用 `/execute/stream` 接收逐段输出，`/cancel` 可取消正在运行的任务。外部调用的未知结果不自动重试。原业务路由再次检查身份、权限、Workspace 和资源版本。Tool API、MCP、脚本与视频时间线操作使用同一批准流程。
+
+`/conversations/{id}/files`、`/imports`、`/files/{kind}/{name}` 负责会话文件列表、导入、下载与受版本保护的写入；`/skills/{skill_id}/load` 将当前 Workspace 的技能版本复制到会话目录。脚本仅在 macOS 沙箱可用时运行，拒绝跨会话文件与直接网络访问。完整字段与状态码以生成的 OpenAPI/SDK 参考为准。
+
 ## 桌面 Agent 接入
 
 仅桌面部署提供 `/v1/desktop/agent/` 和 `/v1/desktop/ui/`。普通 Web 返回 404。

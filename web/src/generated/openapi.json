@@ -386,6 +386,101 @@
         "title": "AccountSessionOut",
         "type": "object"
       },
+      "ActionDecisionIn": {
+        "additionalProperties": false,
+        "properties": {
+          "approve": {
+            "title": "Approve",
+            "type": "boolean"
+          },
+          "arguments_sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Arguments Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "arguments_sha256",
+          "approve"
+        ],
+        "title": "ActionDecisionIn",
+        "type": "object"
+      },
+      "ActionIn": {
+        "additionalProperties": false,
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          },
+          "tool_name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Tool Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool_name"
+        ],
+        "title": "ActionIn",
+        "type": "object"
+      },
+      "ActionOut": {
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          },
+          "arguments_sha256": {
+            "title": "Arguments Sha256",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tool_name": {
+            "title": "Tool Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tool_name",
+          "arguments",
+          "arguments_sha256",
+          "status",
+          "result",
+          "created_at"
+        ],
+        "title": "ActionOut",
+        "type": "object"
+      },
       "AddClipOperation": {
         "properties": {
           "clip": {
@@ -2025,6 +2120,20 @@
         "title": "Body_create_skill_v1_integrations_skills_post",
         "type": "object"
       },
+      "Body_import_file_v1_amadeus_conversations__conversation_id__imports_post": {
+        "properties": {
+          "upload": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Upload",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload"
+        ],
+        "title": "Body_import_file_v1_amadeus_conversations__conversation_id__imports_post",
+        "type": "object"
+      },
       "Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post": {
         "properties": {
           "expectedRevision": {
@@ -2999,6 +3108,135 @@
           "clipId"
         ],
         "title": "ClipIdOperation",
+        "type": "object"
+      },
+      "ConversationDetailOut": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ActionOut"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/ConversationOut"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageOut"
+            },
+            "title": "Messages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "conversation",
+          "messages"
+        ],
+        "title": "ConversationDetailOut",
+        "type": "object"
+      },
+      "ConversationListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ConversationListOut",
+        "type": "object"
+      },
+      "ConversationOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "model_id",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ConversationOut",
+        "type": "object"
+      },
+      "ConversationPatchIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "ConversationPatchIn",
         "type": "object"
       },
       "CrossWorkspaceLogOut": {
@@ -4265,6 +4503,71 @@
           "error"
         ],
         "title": "ExportOut",
+        "type": "object"
+      },
+      "FileListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FileOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "FileListOut",
+        "type": "object"
+      },
+      "FileOut": {
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "bytes",
+          "sha256"
+        ],
+        "title": "FileOut",
+        "type": "object"
+      },
+      "FileWriteIn": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "maxLength": 100000,
+            "title": "Content",
+            "type": "string"
+          },
+          "expected_sha256": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Expected Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "title": "FileWriteIn",
         "type": "object"
       },
       "GalgameAnnotationImportIn": {
@@ -15207,6 +15510,88 @@
         "title": "McpValidationOut",
         "type": "object"
       },
+      "MessageIn": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            },
+            "maxItems": 20,
+            "title": "References",
+            "type": "array"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "role",
+          "content"
+        ],
+        "title": "MessageIn",
+        "type": "object"
+      },
+      "MessageOut": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            },
+            "title": "References",
+            "type": "array"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "content",
+          "references",
+          "created_at"
+        ],
+        "title": "MessageOut",
+        "type": "object"
+      },
       "MockCompletionIn": {
         "properties": {
           "messages": {
@@ -18058,6 +18443,83 @@
         "title": "ModelTestVideoGenerationIn",
         "type": "object"
       },
+      "ModelTurnIn": {
+        "additionalProperties": false,
+        "properties": {
+          "messages": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Messages",
+            "type": "array"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "system": {
+            "maxLength": 100000,
+            "title": "System",
+            "type": "string"
+          },
+          "tools": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 100,
+            "title": "Tools",
+            "type": "array"
+          }
+        },
+        "required": [
+          "model_id",
+          "system",
+          "messages"
+        ],
+        "title": "ModelTurnIn",
+        "type": "object"
+      },
+      "ModelTurnOut": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "tool_calls": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Tool Calls",
+            "type": "array"
+          },
+          "usage": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Usage",
+            "type": "object"
+          }
+        },
+        "required": [
+          "text",
+          "tool_calls",
+          "usage"
+        ],
+        "title": "ModelTurnOut",
+        "type": "object"
+      },
       "MotionComposition": {
         "additionalProperties": false,
         "properties": {
@@ -20260,6 +20722,68 @@
           "page_size"
         ],
         "title": "RedemptionPage",
+        "type": "object"
+      },
+      "Reference": {
+        "additionalProperties": false,
+        "properties": {
+          "application": {
+            "maxLength": 120,
+            "title": "Application",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 120,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Source",
+            "type": "string"
+          },
+          "thumbnail": {
+            "anyOf": [
+              {
+                "maxLength": 400000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail"
+          },
+          "value": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Value",
+            "type": "string"
+          },
+          "window_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Id"
+          }
+        },
+        "required": [
+          "id",
+          "application",
+          "name"
+        ],
+        "title": "Reference",
         "type": "object"
       },
       "RegistrationIn": {
@@ -29742,6 +30266,1016 @@
         "summary": "Set Active Workspace",
         "tags": [
           "account-workspaces"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations": {
+      "get": {
+        "operationId": "list_conversations_v1_amadeus_conversations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Conversations",
+        "tags": [
+          "amadeus"
+        ]
+      },
+      "post": {
+        "operationId": "create_conversation_v1_amadeus_conversations_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Create Conversation",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}": {
+      "delete": {
+        "operationId": "delete_conversation_v1_amadeus_conversations__conversation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Conversation V1 Amadeus Conversations  Conversation Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Conversation",
+        "tags": [
+          "amadeus"
+        ]
+      },
+      "get": {
+        "operationId": "get_conversation_v1_amadeus_conversations__conversation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Conversation",
+        "tags": [
+          "amadeus"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_conversation_v1_amadeus_conversations__conversation_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Conversation",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/actions": {
+      "post": {
+        "operationId": "propose_action_v1_amadeus_conversations__conversation_id__actions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Propose Action",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/cancel": {
+      "post": {
+        "operationId": "stop_action_v1_amadeus_conversations__conversation_id__actions__action_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stop Action",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/decision": {
+      "post": {
+        "operationId": "decide_action_v1_amadeus_conversations__conversation_id__actions__action_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionDecisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Action",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute": {
+      "post": {
+        "operationId": "run_action_v1_amadeus_conversations__conversation_id__actions__action_id__execute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Action",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute/stream": {
+      "post": {
+        "operationId": "run_action_stream_v1_amadeus_conversations__conversation_id__actions__action_id__execute_stream_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Action Stream",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/files": {
+      "get": {
+        "operationId": "files_list_v1_amadeus_conversations__conversation_id__files_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Files List",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/files/open-folder": {
+      "post": {
+        "operationId": "files_open_folder_v1_amadeus_conversations__conversation_id__files_open_folder_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Files Open Folder V1 Amadeus Conversations  Conversation Id  Files Open Folder Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Files Open Folder",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}": {
+      "get": {
+        "operationId": "file_download_v1_amadeus_conversations__conversation_id__files__kind___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "File Download",
+        "tags": [
+          "amadeus"
+        ]
+      },
+      "put": {
+        "operationId": "file_write_v1_amadeus_conversations__conversation_id__files__kind___name__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileWriteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "File Write",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/imports": {
+      "post": {
+        "operationId": "import_file_v1_amadeus_conversations__conversation_id__imports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_file_v1_amadeus_conversations__conversation_id__imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import File",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/messages": {
+      "post": {
+        "operationId": "append_message_v1_amadeus_conversations__conversation_id__messages_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Append Message",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load": {
+      "post": {
+        "operationId": "skill_load_v1_amadeus_conversations__conversation_id__skills__skill_id__load_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Skill Load V1 Amadeus Conversations  Conversation Id  Skills  Skill Id  Load Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skill Load",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/model-turn": {
+      "post": {
+        "operationId": "model_turn_v1_amadeus_model_turn_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTurnIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTurnOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Model Turn",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/model-turn/stream": {
+      "post": {
+        "operationId": "model_turn_stream_v1_amadeus_model_turn_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTurnIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Model Turn Stream",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/operations": {
+      "get": {
+        "operationId": "list_registered_operations_v1_amadeus_operations_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "resource",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 40,
+              "title": "Resource",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "items": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "title": "Response List Registered Operations V1 Amadeus Operations Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Registered Operations",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/operations/read": {
+      "post": {
+        "operationId": "read_registered_operation_v1_amadeus_operations_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Read Registered Operation V1 Amadeus Operations Read Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Registered Operation",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/script-capability": {
+      "get": {
+        "operationId": "script_capability_v1_amadeus_script_capability_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Script Capability V1 Amadeus Script Capability Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Script Capability",
+        "tags": [
+          "amadeus"
         ]
       }
     },

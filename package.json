@@ -8,9 +8,14 @@
   },
   "workspaces": [
     "web",
-    "desktop"
+    "desktop",
+    "vendor/pi/packages/agent",
+    "vendor/pi/packages/ai",
+    "vendor/pi/packages/chord",
+    "vendor/pi/packages/telemetry"
   ],
   "scripts": {
+    "build:amadeus-pi": "tsgo -p vendor/pi/packages/chord/tsconfig.build.json && tsgo -p vendor/pi/packages/telemetry/tsconfig.build.json && tsgo -p vendor/pi/packages/ai/tsconfig.build.json && tsgo -p vendor/pi/packages/agent/tsconfig.build.json",
     "config:migrate": "uv run python scripts/migrate_config.py",
     "dev:desktop": "uv run python desktop/scripts/dev.py --live",
     "dev:desktop:live": "uv run python desktop/scripts/dev.py --live",
@@ -19,6 +24,7 @@
     "package:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run package --workspace desktop",
     "test:desktop": "npm run compile --workspace desktop && uv run pytest -q tests/test_configuration.py tests/test_desktop.py tests/test_desktop_agent.py tests/test_desktop_development.py && npm run test --workspace desktop",
     "test:desktop:dev": "node desktop/scripts/smoke-development.cjs",
+    "test:desktop:amadeus": "node desktop/scripts/smoke-amadeus.cjs",
     "setup": "python3 scripts/check_lfs_assets.py --tool && uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web && python3 scripts/check_lfs_assets.py --all",
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:backend": "uv run uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 9000 --timeout-graceful-shutdown 10",
@@ -53,6 +59,7 @@
     "test:sdk": "uv run pytest -q tests/test_python_sdk.py tests/test_workshop_operations.py tests/test_model_inference.py tests/test_automation_exports.py tests/test_sdk_workflows.py"
   },
   "devDependencies": {
+    "@typescript/native-preview": "^7.0.0-dev.20260120.1",
     "concurrently": "^9.2.0",
     "tsx": "^4.19.4"
   }

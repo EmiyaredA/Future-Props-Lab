@@ -1,0 +1,679 @@
+:root {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  color: #272323;
+  background: #fffaf6;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 400px;
+}
+button,
+textarea,
+input,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+.amadeus-window {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fffaf7;
+}
+.amadeus-header {
+  height: 72px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px 10px 82px;
+  border-bottom: 1px solid #eedfd6;
+  background: #fff;
+}
+.amadeus-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.amadeus-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #fbe6db;
+  color: #d65f40;
+  font-size: 24px;
+}
+.amadeus-brand strong {
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+.amadeus-brand small {
+  display: block;
+  color: #958a83;
+  font-size: 11px;
+  margin-top: 2px;
+}
+.amadeus-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.amadeus-header-actions button,
+.amadeus-toolbar button,
+.amadeus-history button,
+.amadeus-ref button {
+  border: 0;
+  background: transparent;
+  color: #6d655f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 7px;
+}
+.amadeus-header-actions button:hover,
+.amadeus-toolbar button:hover,
+.amadeus-history button:hover,
+.amadeus-ref button:hover {
+  background: #fbece4;
+  color: #cf5d3f;
+}
+.amadeus-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.amadeus-history {
+  flex: 0 0 220px;
+  min-width: 0;
+  padding: 14px 10px;
+  background: #fcf5f0;
+  border-right: 1px solid #eedfd6;
+  overflow-y: auto;
+}
+.amadeus-history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 6px 12px;
+}
+.amadeus-history-head button {
+  gap: 2px;
+  font-size: 12px;
+}
+.amadeus-search {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 10px;
+  background: white;
+  border: 1px solid #e9d8cc;
+  border-radius: 10px;
+  color: #a0968e;
+}
+.amadeus-search input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+}
+.amadeus-history h3 {
+  margin: 20px 8px 8px;
+  font-size: 11px;
+  color: #a28f83;
+  font-weight: 500;
+}
+.amadeus-history-row {
+  display: flex;
+  align-items: center;
+  border-radius: 9px;
+  margin-bottom: 3px;
+}
+.amadeus-history-row.active {
+  background: #f5e4d8;
+}
+.amadeus-history-dialog {
+  background: #fff;
+  border: 1px solid #edd4c5;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+.amadeus-history-dialog input {
+  width: 100%;
+  margin: 8px 0;
+  border: 1px solid #ead7cb;
+  border-radius: 7px;
+  padding: 7px;
+}
+.amadeus-history-dialog p {
+  color: #887a70;
+  line-height: 1.5;
+}
+.amadeus-history-dialog div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.amadeus-history-title {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+.amadeus-chat {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.amadeus-context-summary {
+  flex: none;
+  border: 0;
+  border-bottom: 1px solid #f2e5db;
+  background: #fffaf5;
+  color: #89786c;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 16px;
+  font-size: 12px;
+  text-align: left;
+}
+.amadeus-context-list {
+  border-bottom: 1px solid #efdfd5;
+  padding: 9px 16px;
+  font-size: 12px;
+  max-height: 180px;
+  overflow: auto;
+}
+.amadeus-context-list small {
+  display: block;
+  color: #aa9a8f;
+  margin: 5px 0;
+}
+.amadeus-context-list div {
+  padding: 6px 0;
+  border-bottom: 1px solid #f3e9e2;
+}
+.amadeus-context-list strong {
+  font-weight: 600;
+}
+.amadeus-context-list span {
+  display: block;
+  color: #8a7e74;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.amadeus-context-list em {
+  color: #d65f40;
+  font-size: 10px;
+  font-style: normal;
+  margin-left: 7px;
+}
+.amadeus-messages {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px;
+}
+.amadeus-welcome {
+  margin: auto;
+  max-width: 330px;
+  padding: 22px 0;
+}
+.amadeus-welcome > div {
+  color: #df6848;
+  font-size: 32px;
+}
+.amadeus-welcome h1 {
+  font-size: 22px;
+  margin: 8px 0;
+}
+.amadeus-welcome p {
+  color: #8f8177;
+  line-height: 1.7;
+  font-size: 13px;
+}
+.amadeus-welcome button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #eddbcf;
+  background: white;
+  border-radius: 10px;
+  color: #62544b;
+  padding: 10px 12px;
+  margin: 9px 0;
+  font-size: 12px;
+}
+.amadeus-message {
+  margin: 8px 0 20px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.amadeus-message-name {
+  font-weight: 600;
+  margin-bottom: 7px;
+  font-size: 12px;
+  color: #d56041;
+}
+.amadeus-message.user {
+  background: #fbede4;
+  border: 1px solid #f0d9c9;
+  padding: 12px 14px;
+  border-radius: 13px;
+}
+.amadeus-message.user .amadeus-message-name {
+  color: #6b5549;
+}
+.amadeus-message p {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.amadeus-message pre {
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: #2a2625;
+  color: #fff;
+}
+.amadeus-message-refs,
+.amadeus-pending-refs {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+.amadeus-ref {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-width: 170px;
+  max-width: 240px;
+  padding: 6px;
+  border: 1px solid #ead9ce;
+  border-radius: 9px;
+  background: white;
+}
+.amadeus-ref-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+.amadeus-message-refs > button {
+  color: inherit;
+  text-align: left;
+}
+.amadeus-reference-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #20140e70;
+  padding: 16px;
+}
+.amadeus-reference-detail {
+  width: min(420px, 100%);
+  border-radius: 14px;
+  background: white;
+  padding: 14px;
+  box-shadow: 0 18px 55px #2d190944;
+}
+.amadeus-reference-detail > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.amadeus-reference-detail button {
+  border: 0;
+  border-radius: 8px;
+  background: #fbe6db;
+  color: #be5033;
+  padding: 7px 10px;
+}
+.amadeus-reference-detail img {
+  display: block;
+  max-width: 100%;
+  max-height: 40vh;
+  margin: 12px auto;
+  border-radius: 8px;
+}
+.amadeus-reference-detail p {
+  color: #7c6a5e;
+  font-size: 12px;
+}
+.amadeus-ref-thumb {
+  width: 35px;
+  height: 35px;
+  flex: none;
+  border-radius: 6px;
+  background: #f7ebe4;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #d56041;
+}
+.amadeus-ref-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.amadeus-ref strong,
+.amadeus-ref small {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.amadeus-ref strong {
+  font-size: 11px;
+}
+.amadeus-ref small {
+  font-size: 10px;
+  color: #9b8b80;
+}
+.amadeus-steps {
+  font-size: 12px;
+  border: 1px solid #ead9ce;
+  background: white;
+  border-radius: 9px;
+  padding: 9px 11px;
+}
+.amadeus-steps summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.amadeus-steps div {
+  color: #83766c;
+  padding-top: 6px;
+}
+.amadeus-approval {
+  padding: 13px;
+  border: 1px solid #e6a790;
+  border-radius: 10px;
+  background: #fff3ec;
+  font-size: 12px;
+}
+.amadeus-approval pre {
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  background: white;
+  padding: 9px;
+  border-radius: 7px;
+}
+.amadeus-operation-list {
+  margin: 8px 0;
+  padding-left: 22px;
+  max-height: 96px;
+  overflow: auto;
+}
+.amadeus-operation-list li {
+  margin: 3px 0;
+}
+.amadeus-approval div {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.amadeus-approval button {
+  border: 1px solid #d76646;
+  border-radius: 8px;
+  background: white;
+  color: #c85638;
+  padding: 5px 10px;
+}
+.amadeus-approval button:last-child {
+  background: #d76646;
+  color: white;
+}
+.amadeus-capabilities {
+  max-height: 245px;
+  overflow: auto;
+  background: #fff;
+  border-bottom: 1px solid #ead6c9;
+  padding: 12px 15px;
+  font-size: 12px;
+}
+.amadeus-files {
+  max-height: 205px;
+  overflow: auto;
+  background: white;
+  border-bottom: 1px solid #ead6c9;
+  padding: 10px 15px;
+  font-size: 12px;
+}
+.amadeus-files p {
+  color: #a08e81;
+}
+.amadeus-files button {
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 7px;
+  background: #fbece4;
+  color: #b9573a;
+}
+.amadeus-file-row {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  border-top: 1px solid #f4e8df;
+  padding: 6px 0;
+}
+.amadeus-file-row span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.amadeus-reference-detail pre {
+  max-height: 50vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 11px;
+}
+.amadeus-capabilities-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.amadeus-capabilities-head button {
+  border: none;
+  background: transparent;
+}
+.amadeus-capabilities h3 {
+  color: #8b786c;
+  margin: 12px 0 6px;
+  font-size: 11px;
+}
+.amadeus-capabilities p {
+  color: #aa9a90;
+  margin: 7px 0;
+}
+.amadeus-capability {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 4px;
+  border-bottom: 1px solid #f5eae3;
+  cursor: pointer;
+}
+.amadeus-capability input {
+  accent-color: #d76646;
+}
+.amadeus-capability span {
+  flex: 1;
+  min-width: 0;
+}
+.amadeus-capability strong,
+.amadeus-capability small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.amadeus-capability small {
+  color: #96877c;
+}
+.amadeus-capability em {
+  font-style: normal;
+  font-size: 10px;
+  color: #b67454;
+}
+.amadeus-capability em.failed {
+  color: #b0362c;
+}
+.amadeus-bottom {
+  flex: none;
+  padding: 4px 15px 14px;
+  background: #fffaf7;
+}
+.amadeus-error {
+  font-size: 12px;
+  color: #b33a23;
+  padding: 5px 7px;
+}
+.amadeus-composer {
+  border: 1px solid #ead4c7;
+  background: white;
+  border-radius: 14px;
+  padding: 10px 11px;
+  box-shadow: 0 6px 23px #9c5e3519;
+}
+.amadeus-composer textarea {
+  width: 100%;
+  min-height: 50px;
+  max-height: 130px;
+  resize: vertical;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #2d2723;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.amadeus-pending-refs {
+  margin-bottom: 5px;
+}
+.amadeus-attachments {
+  color: #946e59;
+  font-size: 11px;
+  padding: 0 2px 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.amadeus-toolbar {
+  height: 35px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.amadeus-toolbar button {
+  gap: 3px;
+  font-size: 11px;
+  padding: 6px;
+  white-space: nowrap;
+}
+.amadeus-toolbar button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+.amadeus-spacer {
+  flex: 1;
+  min-width: 2px;
+}
+.amadeus-model-control {
+  position: relative;
+  max-width: 135px;
+}
+.amadeus-model-control > button {
+  max-width: 135px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid #eee0d7;
+  background: #fffaf6;
+  color: #6d5a4e;
+}
+.amadeus-model-list {
+  position: absolute;
+  bottom: 34px;
+  right: 0;
+  z-index: 5;
+  min-width: 175px;
+  max-height: 210px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid #ead6c9;
+  border-radius: 9px;
+  background: white;
+  box-shadow: 0 8px 20px #4d32221f;
+}
+.amadeus-model-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.amadeus-model-list button[aria-selected="true"] {
+  color: #cf5d3f;
+  background: #fff0e7;
+}
+.amadeus-toolbar .amadeus-send {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  background: #d96243;
+  color: white;
+  margin-left: 5px;
+}
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #d96243;
+  outline-offset: 2px;
+}
+@media (max-width: 650px) {
+  .amadeus-history {
+    flex-basis: 175px;
+  }
+  .amadeus-header {
+    padding-left: 82px;
+  }
+  .amadeus-toolbar button span {
+    display: none;
+  }
+}

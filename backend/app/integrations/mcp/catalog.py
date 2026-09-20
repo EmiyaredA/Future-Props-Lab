@@ -4,6 +4,7 @@ import asyncio
 import json
 from time import monotonic
 
+from jsonschema import validate as validate_json
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -103,6 +104,52 @@ class McpCatalog:
 
     async def get(self, integration_id: str) -> McpOut:
         return await self._out(await self._get(integration_id))
+
+    async def execute(
+        self, integration_id: str, tool_name: str, inputs: dict[str, object], expected_revision: int
+    ) -> dict:
+        row = await self._get(integration_id)
+        snapshot = await self._out(row)
+        if not snapshot.enabled or snapshot.revision != expected_revision:
+            raise ValueError("MCP 已停用或配置已变更")
+        tool = await self.session.scalar(
+            select(McpDiscoveredTool).where(
+                McpDiscoveredTool.server_id == integration_id,
+                McpDiscoveredTool.name == tool_name,
+            )
+        )
+        if tool is None:
+            raise ValueError("MCP 工具尚未发现或已移除")
+        validate_json(instance=inputs, schema=tool.input_schema or {"type": "object"})
+        bearer_ciphertext, environment_ciphertext = (
+            row.bearer_ciphertext,
+            row.environment_ciphertext,
+        )
+        await self.session.rollback()
+        bearer = decrypt_secret(bearer_ciphertext) if bearer_ciphertext else ""
+        environment = (
+            json.loads(decrypt_secret(environment_ciphertext)) if environment_ciphertext else {}
+        )
+        result = await asyncio.wait_for(
+            self.client.call(
+                transport=snapshot.transport,
+                url=snapshot.url,
+                command=snapshot.command,
+                arguments=snapshot.arguments,
+                bearer_token=bearer,
+                environment=environment,
+                tool_name=tool_name,
+                tool_arguments=inputs,
+            ),
+            timeout=30.0,
+        )
+        if len(json.dumps(result)) > 1024 * 1024:
+            raise ValueError("MCP 响应超过 1 MiB")
+        return {
+            "result": "敏感结果已隐藏"
+            if snapshot.sensitive_result
+            else redact_structure(result, [bearer, *environment.values()])
+        }
 
     async def tools(self, integration_id: str) -> list[McpToolOut]:
         await self._get(integration_id)

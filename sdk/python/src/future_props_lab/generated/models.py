@@ -69,6 +69,23 @@ class AccountSessionOut(WireModel):
     last_seen_at: datetime = Field(default=..., alias='last_seen_at')
     user_agent: str = Field(default=..., alias='user_agent')
 
+class ActionDecisionIn(WireModel):
+    approve: bool = Field(default=..., alias='approve')
+    arguments_sha256: str = Field(default=..., alias='arguments_sha256', min_length=64, max_length=64)
+
+class ActionIn(WireModel):
+    arguments: dict[str, Any] | None = Field(default=None, alias='arguments')
+    tool_name: str = Field(default=..., alias='tool_name', min_length=1, max_length=120)
+
+class ActionOut(WireModel):
+    arguments: dict[str, Any] = Field(default=..., alias='arguments')
+    arguments_sha256: str = Field(default=..., alias='arguments_sha256')
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    result: dict[str, Any] | None = Field(default=..., alias='result')
+    status: str = Field(default=..., alias='status')
+    tool_name: str = Field(default=..., alias='tool_name')
+
 class AddClipOperation(WireModel):
     clip: VideoEditorClip = Field(default=..., alias='clip')
     type: Literal['addClip'] = Field(default=..., alias='type')
@@ -337,6 +354,9 @@ class Body_create_skill_v1_integrations_skills_post(WireModel):
     file: str = Field(default=..., alias='file')
     tags: list[str] | None = Field(default=None, alias='tags')
 
+class Body_import_file_v1_amadeus_conversations__conversation_id__imports_post(WireModel):
+    upload: str = Field(default=..., alias='upload')
+
 class Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
     file: str = Field(default=..., alias='file')
@@ -491,6 +511,27 @@ class ClipIdOperation(WireModel):
     clip_id: str = Field(default=..., alias='clipId')
     new_clip_id: str | None = Field(default=None, alias='newClipId')
     type: Literal['removeClip', 'duplicateClip', 'rippleDelete', 'unlinkClips'] = Field(default=..., alias='type')
+
+class ConversationDetailOut(WireModel):
+    actions: list[ActionOut] | None = Field(default=None, alias='actions')
+    conversation: ConversationOut = Field(default=..., alias='conversation')
+    messages: list[MessageOut] = Field(default=..., alias='messages')
+
+class ConversationListOut(WireModel):
+    items: list[ConversationOut] = Field(default=..., alias='items')
+
+class ConversationOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    model_id: str | None = Field(default=..., alias='model_id')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class ConversationPatchIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    model_id: str | None = Field(default=None, alias='model_id')
+    title: str | None = Field(default=None, alias='title')
 
 class CrossWorkspaceLogOut(WireModel):
     api_key_id: str | None = Field(default=None, alias='api_key_id', repr=False)
@@ -702,6 +743,19 @@ class ExportOut(WireModel):
     outputs: dict[str, str] = Field(default=..., alias='outputs')
     progress: int = Field(default=..., alias='progress')
     status: Literal['queued', 'running', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
+
+class FileListOut(WireModel):
+    items: list[FileOut] = Field(default=..., alias='items')
+
+class FileOut(WireModel):
+    bytes: int = Field(default=..., alias='bytes')
+    kind: str = Field(default=..., alias='kind')
+    name: str = Field(default=..., alias='name')
+    sha256: str = Field(default=..., alias='sha256')
+
+class FileWriteIn(WireModel):
+    content: str = Field(default=..., alias='content', max_length=100000)
+    expected_sha256: str = Field(default='', alias='expected_sha256', max_length=64)
 
 class GalgameAnnotationImportIn(WireModel):
     asset_prefix: str = Field(default=..., alias='assetPrefix')
@@ -2330,6 +2384,19 @@ class McpValidationOut(WireModel):
     server: McpOut = Field(default=..., alias='server')
     tools: list[McpToolOut] = Field(default=..., alias='tools')
 
+class MessageIn(WireModel):
+    content: str = Field(default=..., alias='content', min_length=1, max_length=100000)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    references: list[Reference] | None = Field(default=None, alias='references', max_length=20)
+    role: Literal['user', 'assistant', 'tool'] = Field(default=..., alias='role')
+
+class MessageOut(WireModel):
+    content: str = Field(default=..., alias='content')
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    references: list[Reference] = Field(default=..., alias='references')
+    role: Literal['user', 'assistant', 'tool'] = Field(default=..., alias='role')
+
 class MockCompletionIn(WireModel):
     messages: list[dict[str, Any]] | None = Field(default=None, alias='messages', max_length=100)
     model: str = Field(default='fpl-mock', alias='model')
@@ -2780,6 +2847,17 @@ class ModelTestVideoGenerationIn(WireModel):
     video_asset_ids: list[str] | None = Field(default=None, alias='video_asset_ids', max_length=3)
     watermark: bool = Field(default=True, alias='watermark')
 
+class ModelTurnIn(WireModel):
+    messages: list[dict[str, Any]] = Field(default=..., alias='messages', min_length=1, max_length=200)
+    model_id: str = Field(default=..., alias='model_id')
+    system: str = Field(default=..., alias='system', max_length=100000)
+    tools: list[dict[str, Any]] | None = Field(default=None, alias='tools', max_length=100)
+
+class ModelTurnOut(WireModel):
+    text: str = Field(default=..., alias='text')
+    tool_calls: list[dict[str, Any]] = Field(default=..., alias='tool_calls')
+    usage: dict[str, int | None] = Field(default=..., alias='usage')
+
 class MotionComposition(WireModel):
     layers: list[MotionLayer] | None = Field(default=None, alias='layers', max_length=200)
     schema_version: Literal[1] = Field(default=1, alias='schemaVersion')
@@ -3153,6 +3231,15 @@ class RedemptionPage(WireModel):
     page: int = Field(default=..., alias='page')
     page_size: int = Field(default=..., alias='page_size')
     total: int = Field(default=..., alias='total')
+
+class Reference(WireModel):
+    application: str = Field(default=..., alias='application', max_length=120)
+    id: str = Field(default=..., alias='id', max_length=120)
+    name: str = Field(default=..., alias='name', max_length=200)
+    source: str = Field(default='', alias='source', max_length=500)
+    thumbnail: str | None = Field(default=None, alias='thumbnail')
+    value: str = Field(default='', alias='value', max_length=2000)
+    window_id: int | None = Field(default=None, alias='window_id')
 
 class RegistrationIn(WireModel):
     display_name: str = Field(default='', alias='display_name', max_length=120)
@@ -4410,6 +4497,9 @@ AccountProfilePatchIn.model_rebuild()
 AccountResetPasswordIn.model_rebuild()
 AccountSessionListOut.model_rebuild()
 AccountSessionOut.model_rebuild()
+ActionDecisionIn.model_rebuild()
+ActionIn.model_rebuild()
+ActionOut.model_rebuild()
 AddClipOperation.model_rebuild()
 AddTrackOperation.model_rebuild()
 AgentCapabilities.model_rebuild()
@@ -4454,6 +4544,7 @@ Body_add_skill_version_v1_integrations_skills__skill_id__versions_post.model_reb
 Body_attachments_v1_thought_workshop_attachments_post.model_rebuild()
 Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post.model_rebuild()
 Body_create_skill_v1_integrations_skills_post.model_rebuild()
+Body_import_file_v1_amadeus_conversations__conversation_id__imports_post.model_rebuild()
 Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post.model_rebuild()
 Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post.model_rebuild()
 Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post.model_rebuild()
@@ -4483,6 +4574,10 @@ CertificationIn.model_rebuild()
 CertificationOut.model_rebuild()
 ChangePasswordIn.model_rebuild()
 ClipIdOperation.model_rebuild()
+ConversationDetailOut.model_rebuild()
+ConversationListOut.model_rebuild()
+ConversationOut.model_rebuild()
+ConversationPatchIn.model_rebuild()
 CrossWorkspaceLogOut.model_rebuild()
 CrossWorkspaceLogPage.model_rebuild()
 CurrentUserOut.model_rebuild()
@@ -4524,6 +4619,9 @@ DocumentOut.model_rebuild()
 ExportCreateIn.model_rebuild()
 ExportListOut.model_rebuild()
 ExportOut.model_rebuild()
+FileListOut.model_rebuild()
+FileOut.model_rebuild()
+FileWriteIn.model_rebuild()
 GalgameAnnotationImportIn.model_rebuild()
 GalgameAnnotationImportIssue.model_rebuild()
 GalgameAnnotationImportPreviewOut.model_rebuild()
@@ -4742,6 +4840,8 @@ McpOut.model_rebuild()
 McpToolOut.model_rebuild()
 McpUpdateIn.model_rebuild()
 McpValidationOut.model_rebuild()
+MessageIn.model_rebuild()
+MessageOut.model_rebuild()
 MockCompletionIn.model_rebuild()
 ModelCatalogOut.model_rebuild()
 ModelCategoryListOut.model_rebuild()
@@ -4798,6 +4898,8 @@ ModelTestTranscriptionTaskOut.model_rebuild()
 ModelTestTranscriptionWarningOut.model_rebuild()
 ModelTestTranscriptionWordOut.model_rebuild()
 ModelTestVideoGenerationIn.model_rebuild()
+ModelTurnIn.model_rebuild()
+ModelTurnOut.model_rebuild()
 MotionComposition.model_rebuild()
 MotionEffects.model_rebuild()
 MotionKeyframe.model_rebuild()
@@ -4853,6 +4955,7 @@ RealtimeVoiceVadOut.model_rebuild()
 ReauthIn.model_rebuild()
 RedemptionOut.model_rebuild()
 RedemptionPage.model_rebuild()
+Reference.model_rebuild()
 RegistrationIn.model_rebuild()
 RegistrationInviteAction.model_rebuild()
 RegistrationInviteCreated.model_rebuild()

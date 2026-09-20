@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain, Menu, session, shell } from "electron";
-import { mkdirSync } from "node:fs";
+import { app, BrowserWindow, ipcMain, Menu, screen, session, shell } from "electron";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Backend } from "./backend";
 import { AgentGateway } from "./agent";
@@ -32,6 +32,8 @@ app.setPath("userData", dataDir);
 app.setName("Future Props Lab");
 
 const studioWindows = new Set<BrowserWindow>();
+let amadeusWindow: BrowserWindow | undefined;
+const studioContexts = new Map<number, Record<string, unknown>>();
 let focusedStudio: BrowserWindow | undefined;
 let backend: Backend | undefined;
 let agent: AgentGateway | undefined;
@@ -51,6 +53,29 @@ const development = isDevelopment
 const pageOrigin = () => gateway?.origin || backend?.origin || "";
 const recovery = path.join(__dirname, "../ui/startup.html");
 const preload = path.join(__dirname, "preload.js");
+const amadeusBoundsPath = path.join(dataDir, "amadeus-window.json");
+
+function savedAmadeusBounds(): Electron.Rectangle | undefined {
+  try {
+    const value = JSON.parse(readFileSync(amadeusBoundsPath, "utf8")) as Electron.Rectangle;
+    if (![value.x, value.y, value.width, value.height].every(Number.isFinite) ||
+        value.width < 400 || value.height < 500) return undefined;
+    const visible = screen.getAllDisplays().some(({ workArea }) =>
+      value.x < workArea.x + workArea.width - 80 && value.x + value.width > workArea.x + 80 &&
+      value.y < workArea.y + workArea.height - 80 && value.y + value.height > workArea.y + 80);
+    return visible ? value : undefined;
+  } catch { return undefined; }
+}
+
+function saveAmadeusBounds(win: BrowserWindow): void {
+  if (win.isDestroyed() || win.isMinimized() || win.isMaximized()) return;
+  try {
+    mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+    const temporary = `${amadeusBoundsPath}.tmp`;
+    writeFileSync(temporary, JSON.stringify(win.getBounds()), { mode: 0o600 });
+    renameSync(temporary, amadeusBoundsPath);
+  } catch { /* Window position is optional. */ }
+}
 
 function developmentWindowTitle(session: DevelopmentSession): string {
   const mode = `开发模式 · ${session.state.live ? "正式数据" : "开发数据"}`;
@@ -89,7 +114,74 @@ function trackStudio(win: BrowserWindow): void {
   focusedStudio = win;
   win.on("focus", () => {
     focusedStudio = win;
+    amadeusWindow?.webContents.send("desktop:amadeus-contexts", availableContexts());
   });
+}
+
+function availableContexts() {
+  return liveStudioWindows().map((win) => ({
+    windowId: win.webContents.id,
+    focused: focusedStudio === win,
+    ...(studioContexts.get(win.webContents.id) || { title: win.getTitle(), path: "/" }),
+  }));
+}
+
+function isTrustedAmadeusSender(event: {
+  sender: Electron.WebContents;
+  senderFrame: Electron.WebFrameMain | null;
+}): boolean {
+  return Boolean(amadeusWindow && !amadeusWindow.isDestroyed() &&
+    event.sender === amadeusWindow.webContents &&
+    event.senderFrame === event.sender.mainFrame &&
+    event.senderFrame && trusted(event.senderFrame.url) &&
+    new URL(event.senderFrame.url).pathname === "/amadeus.html");
+}
+
+async function showAmadeus(): Promise<void> {
+  if (quitting || state.phase !== "ready" || !pageOrigin()) return;
+  if (amadeusWindow && !amadeusWindow.isDestroyed()) {
+    amadeusWindow.show();
+    amadeusWindow.focus();
+    return;
+  }
+  const workArea = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const bounds = savedAmadeusBounds();
+  const win = new BrowserWindow({
+    width: bounds?.width ?? 520, height: bounds?.height ?? 760, minWidth: 400, minHeight: 500,
+    x: bounds?.x ?? Math.max(workArea.x, workArea.x + workArea.width - 548),
+    y: bounds?.y ?? workArea.y + 48,
+    show: false, title: "Amadeus", backgroundColor: "#fffaf6",
+    webPreferences: {
+      preload, sandbox: true, contextIsolation: true, nodeIntegration: false,
+      webSecurity: true, partition: "persist:studio", backgroundThrottling: false,
+    },
+  });
+  amadeusWindow = win;
+  let boundsTimer: ReturnType<typeof setTimeout> | undefined;
+  const queueBounds = () => {
+    if (boundsTimer) clearTimeout(boundsTimer);
+    boundsTimer = setTimeout(() => saveAmadeusBounds(win), 300);
+  };
+  win.on("move", queueBounds);
+  win.on("resize", queueBounds);
+  win.once("ready-to-show", () => win.show());
+  win.on("close", (event) => {
+    if (quitting) return;
+    event.preventDefault();
+    win.hide();
+  });
+  win.on("closed", () => {
+    if (boundsTimer) clearTimeout(boundsTimer);
+    if (amadeusWindow === win) amadeusWindow = undefined;
+  });
+  win.webContents.on("will-navigate", (event, url) => {
+    if (trusted(url) && new URL(url).pathname === "/amadeus.html") return;
+    event.preventDefault();
+  });
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.on("did-finish-load", () =>
+    win.webContents.send("desktop:amadeus-contexts", availableContexts()));
+  await win.loadURL(pageOrigin() + "/amadeus.html");
 }
 
 function isTrustedStudioSender(event: {
@@ -194,7 +286,7 @@ function installApplicationMenu() {
 function syncDevelopmentChrome() {
   if (!development) return;
   const title = developmentWindowTitle(development);
-  for (const win of BrowserWindow.getAllWindows()) win.setTitle(title);
+  for (const win of liveStudioWindows()) win.setTitle(title);
 }
 
 function trusted(url: string): boolean {
@@ -273,6 +365,8 @@ function makeWindow(document = false): BrowserWindow {
     });
     win.on("closed", () => {
       studioWindows.delete(win);
+      studioContexts.delete(contentsId);
+      amadeusWindow?.webContents.send("desktop:amadeus-contexts", availableContexts());
       if (focusedStudio === win) focusedStudio = liveStudioWindows()[0];
       if (quitPending) {
         quitPending.delete(contentsId);
@@ -449,6 +543,7 @@ else {
             }
             quitting = true;
             quitPending = null;
+            amadeusWindow?.destroy();
             for (const win of liveStudioWindows()) win.close();
             if (liveStudioWindows().length === 0) void shutdown();
           }
@@ -544,6 +639,81 @@ else {
         if (!win) throw new Error("拒绝非应用页面请求");
         return action(win);
       });
+    ipcMain.handle("desktop:amadeus-open", (event) => {
+      if (!isTrustedStudioSender(event)) throw new Error("拒绝非应用页面请求");
+      return showAmadeus();
+    });
+    ipcMain.handle("desktop:amadeus-hide", (event) => {
+      if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
+      amadeusWindow?.hide();
+    });
+    ipcMain.handle("desktop:amadeus-mutation", (event, value: unknown) => {
+      if (!isTrustedAmadeusSender(event) || !value || typeof value !== "object" ||
+          JSON.stringify(value).length > 1000) throw new Error("资源通知无效");
+      const target = value as { userId?: unknown; workspaceId?: unknown };
+      if (typeof target.userId !== "string" || typeof target.workspaceId !== "string")
+        throw new Error("资源通知缺少租户范围");
+      for (const win of liveStudioWindows()) {
+        const context = studioContexts.get(win.webContents.id);
+        if (context?.userId === target.userId && context.workspaceId === target.workspaceId)
+          win.webContents.send("desktop:amadeus-mutation", value);
+      }
+    });
+    ipcMain.handle("desktop:amadeus-locate", (event, value: unknown) => {
+      if (!isTrustedAmadeusSender(event) || !value || typeof value !== "object")
+        throw new Error("引用无效");
+      const item = value as { windowId?: number; id?: string };
+      if (!Number.isInteger(item.windowId) || typeof item.id !== "string" || item.id.length > 120)
+        throw new Error("引用无效");
+      const source = liveStudioWindows().find((win) => win.webContents.id === item.windowId);
+      if (!source) return false;
+      source.show();
+      source.focus();
+      source.webContents.send("desktop:amadeus-locate", { id: item.id });
+      return true;
+    });
+    ipcMain.handle("desktop:amadeus-context-publish", (event, value: unknown) => {
+      if (!isTrustedStudioSender(event)) throw new Error("拒绝非应用页面请求");
+      if (!value || typeof value !== "object" || JSON.stringify(value).length > 12_000)
+        throw new Error("上下文无效");
+      studioContexts.set(event.sender.id, value as Record<string, unknown>);
+      amadeusWindow?.webContents.send("desktop:amadeus-contexts", availableContexts());
+    });
+    ipcMain.handle("desktop:amadeus-contexts", (event) => {
+      if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
+      return availableContexts();
+    });
+    ipcMain.handle("desktop:amadeus-pick", (event, enabled: boolean, index?: number) => {
+      if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
+      const source = activeStudio();
+      if (!source) return;
+      source.show();
+      source.focus();
+      source.webContents.send("desktop:amadeus-pick-command", {
+        enabled: Boolean(enabled), index: typeof index === "number" && Number.isSafeInteger(index) && index > 0 ? Math.min(index, 20) : 1,
+      });
+    });
+    ipcMain.handle("desktop:amadeus-reference", async (event, value: unknown) => {
+      if (!isTrustedStudioSender(event) || !amadeusWindow ||
+          !value || typeof value !== "object") throw new Error("引用来源无效");
+      const item = value as Record<string, unknown>;
+      let thumbnail: string | undefined;
+      const rect = item.rect as Record<string, number> | undefined;
+      if (rect && [rect.x, rect.y, rect.width, rect.height].every(
+        (number) => typeof number === "number" && Number.isFinite(number)) &&
+        rect.width > 0 && rect.height > 0 && rect.width <= 900 && rect.height <= 700) {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        const shot = await win?.webContents.capturePage({
+          x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+        });
+        thumbnail = shot?.resize({ width: 180 }).toDataURL();
+      }
+      amadeusWindow.webContents.send("desktop:amadeus-reference-added", {
+        ...item, rect: undefined, thumbnail, windowId: event.sender.id,
+      });
+      amadeusWindow.show();
+      amadeusWindow.focus();
+    });
     ipcMain.on("desktop:quit-approved", (event) => {
       if (!isTrustedStudioSender(event) || !quitPending) return;
       quitPending.delete(event.sender.id);

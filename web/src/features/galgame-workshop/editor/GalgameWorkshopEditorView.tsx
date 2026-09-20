@@ -1,6 +1,6 @@
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import "../styles/compact-workspaces.css";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   ArrowLeft,
   Film,
@@ -11,6 +11,7 @@ import {
   Save,
   Search,
   Settings2,
+  Sparkles,
 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
@@ -53,6 +54,41 @@ import {
 import { GalgameEditorStatusAndSearch } from "./GalgameEditorStatusAndSearch";
 import { GalgameEditorScriptWorkspace } from "./GalgameEditorScriptWorkspace";
 import { GalgameEditorStructurePanel } from "./GalgameEditorStructurePanel";
+
+function AmadeusEditorContext({
+  projectId,
+  title,
+  selectedBlockId,
+  selectedType,
+  saveState,
+}: {
+  projectId: string;
+  title: string;
+  selectedBlockId?: string;
+  selectedType?: string;
+  saveState: string;
+}) {
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "Galgame 工坊",
+          projectId,
+          title,
+          selection: selectedBlockId
+            ? {
+                id: selectedBlockId,
+                name: selectedType || "剧本块",
+                value: selectedType || "",
+              }
+            : undefined,
+          unsaved: saveState !== "saved",
+        },
+      }),
+    );
+  }, [projectId, title, selectedBlockId, selectedType, saveState]);
+  return null;
+}
 
 export function GalgameWorkshopEditorView({
   model,
@@ -184,6 +220,13 @@ export function GalgameWorkshopEditorView({
       fallback={<div className="page-loading">正在加载编辑器模块…</div>}
     >
       <section className="galgame-editor-page" data-mobile-panel={mobilePanel}>
+        <AmadeusEditorContext
+          projectId={projectId}
+          title={projectQuery.data?.title || "Galgame 工坊"}
+          selectedBlockId={selectedBlockId}
+          selectedType={selectedBlock?.type}
+          saveState={saveState}
+        />
         <header className="galgame-editor-header">
           <div className="galgame-editor-project">
             <button
@@ -214,6 +257,15 @@ export function GalgameWorkshopEditorView({
             <kbd>{navigator.platform.includes("Mac") ? "⌘K" : "Ctrl K"}</kbd>
           </button>
           <div className="galgame-editor-actions">
+            {window.futurePropsDesktop?.openAmadeus && (
+              <button
+                type="button"
+                aria-label="打开 Amadeus"
+                onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+              >
+                <Sparkles aria-hidden /> Amadeus
+              </button>
+            )}
             <ThemeToggle compact />
             <button
               type="button"
