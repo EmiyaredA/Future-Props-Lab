@@ -528,6 +528,34 @@ async def test_file_management_rejects_invalid_content_and_scope() -> None:
 
 
 @pytest.mark.asyncio
+async def test_file_upload_accepts_mkv_despite_browser_mime_mislabels() -> None:
+    """Browsers often declare Matroska as video/mp4 or video/webm; magic bytes win."""
+    transport = httpx.ASGITransport(app=app)
+    matroska_head = b"\x1aE\xdf\xa3" + b"matroska-test-payload"
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        for declared in (
+            "video/mp4",
+            "video/webm",
+            "video/x-matroska; charset=binary",
+            "application/x-matroska",
+        ):
+            response = await client.post(
+                "/v1/files",
+                files={"upload": ("clip.mkv", matroska_head, declared)},
+            )
+            assert response.status_code == 200, f"{declared}: {response.text}"
+            body = response.json()
+            assert body["original_filename"] == "clip.mkv"
+            assert body["media_kind"] == "video"
+            assert body["mime_type"] in {
+                "video/x-matroska",
+                "video/matroska",
+                "application/x-matroska",
+                "application/octet-stream",
+            }
+
+
+@pytest.mark.asyncio
 async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_assets() -> None:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:

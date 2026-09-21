@@ -13,6 +13,7 @@ from app.capabilities.asset_store.policy import (
     ALLOWED_FILES,
     display_name_without_original_extension,
     looks_like,
+    normalize_content_type,
     validate_file_structure,
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
@@ -66,9 +67,9 @@ class AssetLibrary:
         ):
             raise AssetError("不支持此文件类型", code="unsupported_file_type")
         media_kind, mime_types = config
-        content_type = (upload.content_type or "application/octet-stream").lower()
-        if content_type not in mime_types and content_type != "application/octet-stream":
-            raise AssetError("文件扩展名与 MIME 类型不匹配", code="file_type_mismatch")
+        # Declared MIME is advisory: browsers mislabel Matroska and other containers.
+        # Magic-byte checks below remain authoritative for content acceptance.
+        content_type = normalize_content_type(upload.content_type)
         resolved_display = display_name_without_original_extension(
             (display_name or "").strip() or filename,
             filename,
@@ -175,9 +176,7 @@ class AssetLibrary:
         ):
             raise AssetError("不支持此文件类型", code="unsupported_file_type")
         media_kind, mime_types = config
-        normalized_type = content_type.lower().strip() or "application/octet-stream"
-        if normalized_type not in mime_types and normalized_type != "application/octet-stream":
-            raise AssetError("文件扩展名与 MIME 类型不匹配", code="file_type_mismatch")
+        normalized_type = normalize_content_type(content_type)
         if not source_path.is_file():
             raise AssetError("源文件内容不存在", code="not_found", status=404)
 

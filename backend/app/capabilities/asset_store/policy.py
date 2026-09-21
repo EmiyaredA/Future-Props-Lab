@@ -16,7 +16,15 @@ ALLOWED_FILES: dict[str, tuple[str, set[str]]] = {
     ".mp4": ("video", {"video/mp4"}),
     ".webm": ("video", {"video/webm"}),
     ".mov": ("video", {"video/quicktime"}),
-    ".mkv": ("video", {"video/x-matroska", "application/octet-stream"}),
+    ".mkv": (
+        "video",
+        {
+            "video/x-matroska",
+            "video/matroska",
+            "application/x-matroska",
+            "application/octet-stream",
+        },
+    ),
     ".mp3": ("audio", {"audio/mpeg"}),
     ".wav": ("audio", {"audio/wav", "audio/x-wav"}),
     ".m4a": ("audio", {"audio/mp4", "audio/x-m4a"}),
@@ -93,6 +101,14 @@ VIDEO_EDITABLE_EXTENSIONS = {
     ".woff",
     ".woff2",
 }
+
+
+def normalize_content_type(raw: str | None) -> str:
+    """Strip parameters; empty/missing becomes application/octet-stream."""
+    value = (raw or "").lower().strip()
+    if not value:
+        return "application/octet-stream"
+    return value.split(";", 1)[0].strip() or "application/octet-stream"
 
 
 def looks_like(extension: str, head: bytes) -> bool:
