@@ -1624,6 +1624,146 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/live2d-workshop/projects/{project_id}",
+    "sdk": "client.live2d_workshop.delete_project",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects",
+    "sdk": "client.live2d_workshop.list_projects",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}",
+    "sdk": "client.live2d_workshop.get_project",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/assets",
+    "sdk": "client.live2d_workshop.list_assets",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#list-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file",
+    "sdk": "client.live2d_workshop.asset_file",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#asset-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/document",
+    "sdk": "client.live2d_workshop.get_document",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#get-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/exports",
+    "sdk": "client.live2d_workshop.list_exports",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#list-exports",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}",
+    "sdk": "client.live2d_workshop.get_export",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#get-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/download",
+    "sdk": "client.live2d_workshop.download_export",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#download-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/package",
+    "sdk": "client.live2d_workshop.export_package",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#export-package",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/preview",
+    "sdk": "client.live2d_workshop.preview",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#preview",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/thumbnail",
+    "sdk": "client.live2d_workshop.thumbnail",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#thumbnail",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/live2d-workshop/projects/{project_id}",
+    "sdk": "client.live2d_workshop.patch_project",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#patch-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/live2d-workshop/projects",
+    "sdk": "client.live2d_workshop.create_project",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/live2d-workshop/projects/import",
+    "sdk": "client.live2d_workshop.import_project",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#import-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/live2d-workshop/projects/{project_id}/assets",
+    "sdk": "client.live2d_workshop.upload_asset",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#upload-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/live2d-workshop/projects/{project_id}/exports",
+    "sdk": "client.live2d_workshop.create_export",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#create-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/live2d-workshop/projects/{project_id}/exports/preflight",
+    "sdk": "client.live2d_workshop.preflight",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#preflight",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel",
+    "sdk": "client.live2d_workshop.cancel_export",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#cancel-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/live2d-workshop/projects/{project_id}/document",
+    "sdk": "client.live2d_workshop.save_document",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#save-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/llm-call-logs/{log_id}",
     "sdk": "client.logs.delete_one",
     "document": "/docs.html?page=sdk-reference-logs#delete-one",

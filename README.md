@@ -89,6 +89,12 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 Mermaid；AI 写作经 Agent/SDK 接入（应用内无入口）。提供回收站、v3 完整或单库备份、Markdown 导入导出与 HTML 离线阅读。
 旧笔记本经 0046 迁移转为文件夹，文档 ID 与内容保留；旧备份仅在导入转换层兼容。编辑器依赖通过既有 `npm run setup` 安装，无额外服务或新环境变量。
 
+### Live2D 工坊
+
+在「应用 → Live2D 工坊」创建角色，导入透明 PNG 或 RGB 8 位分层 PSD，编辑网格、变形器与参数关键形，再制作表情和动作。保存格式为 `.fpllive2d`，可往返导入；PNG 序列按表情与动作组合分别输出。Cubism/CMO3/MOC3 和视频编译尚未支持。
+
+实现、格式限制与验证见 [Live2D 工坊说明](docs/architecture/live2d-workshop.md)。`npm run test:desktop:live2d` 使用临时数据目录验证 Electron 入口、编辑器及保存恢复，不访问正式数据。
+
 ### 演示工坊
 
 应用中的演示工坊支持基础幻灯片编辑、自动保存、放映和原生可编辑 PPTX 导出。

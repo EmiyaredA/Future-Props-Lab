@@ -91,6 +91,10 @@ button {
   background: #fbece4;
   color: #cf5d3f;
 }
+.amadeus-header-actions button[aria-pressed="true"] {
+  background: #fbece4;
+  color: #cf5d3f;
+}
 .amadeus-body {
   display: flex;
   flex: 1;

@@ -1,0 +1,210 @@
+.l2-projects {
+  padding: 24px;
+  color: var(--text-primary, #25211e);
+}
+.l2-projects button,
+.l2-editor button,
+.l2-dialog button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--l2-border, #e8dfd3);
+  background: var(--l2-surface, #fffcf7);
+  color: inherit;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.l2-projects button:disabled,
+.l2-editor button:disabled,
+.l2-dialog button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.l2-projects button:focus-visible,
+.l2-editor :is(button, input, summary):focus-visible,
+.l2-dialog :is(button, input):focus-visible {
+  outline: 2px solid #a58bff;
+  outline-offset: 3px;
+}
+.l2-project-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 24px 0;
+  color: #978b80;
+}
+.l2-project-tools label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e7ddd0;
+  background: var(--surface, #fffdf9);
+  border-radius: 11px;
+  padding: 10px 14px;
+  width: min(480px, 65%);
+}
+.l2-project-tools input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  width: 100%;
+}
+.l2-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 22px;
+}
+.l2-project-card {
+  overflow: hidden;
+  border: 1px solid #e9dfd3;
+  border-radius: 16px;
+  background: var(--surface, #fffdf9);
+  box-shadow: 0 5px 22px #51351508;
+}
+.l2-project-card .l2-cover-button {
+  display: block;
+  width: 100%;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+}
+.l2-project-cover {
+  aspect-ratio: 1.5;
+  background: linear-gradient(135deg, #f7ede2, #fff9ed);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ad927d;
+}
+.l2-project-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  max-height: 210px;
+}
+.l2-project-cover:has(span) img {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 12px;
+}
+.l2-project-info {
+  padding: 18px;
+}
+.l2-project-info h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+.l2-project-info small {
+  color: #9a8f85;
+}
+.l2-project-info footer {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.l2-project-info footer button:first-child {
+  color: #df6b46;
+  border: 0;
+  padding-left: 0;
+  background: none;
+}
+.l2-project-grid .l2-new-project {
+  min-height: 290px;
+  flex-direction: column;
+  border: 1px dashed #ddcbbb;
+  color: #b98462;
+  background: #fff7ed66;
+  border-radius: 16px;
+}
+.l2-new-project span {
+  font-size: 12px;
+  color: #a6988c;
+}
+.l2-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #998d82;
+}
+.l2-overlay {
+  position: fixed;
+  inset: 0;
+  background: #090e1baa;
+  z-index: 600;
+}
+.l2-dialog {
+  position: fixed;
+  z-index: 601;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(480px, calc(100vw - 32px));
+  max-height: 85vh;
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid #d9cabb;
+  padding: 25px;
+  background: #fffcf6;
+  color: #3e342c;
+  box-shadow: 0 20px 80px #0005;
+}
+.l2-dialog h2 {
+  margin-top: 0;
+  font-size: 19px;
+}
+.l2-dialog p {
+  color: #938578;
+  line-height: 1.7;
+}
+.l2-dialog .l2-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px;
+  border: 0;
+  background: none;
+}
+.l2-loading {
+  padding: 35px;
+}
+[data-theme="dark"] .l2-projects {
+  --l2-surface: #212733;
+  --l2-border: #394151;
+}
+[data-theme="dark"] .l2-project-cover {
+  background: #202735;
+}
+[data-theme="dark"] .l2-project-card {
+  background: #202735;
+  border-color: #3a414d;
+}
+[data-theme="dark"] .l2-project-grid .l2-new-project {
+  background: #252b36;
+}
+[data-theme="dark"] .l2-dialog {
+  background: #222939;
+  color: #e5e8ef;
+  border-color: #434c60;
+  --l2-surface: #192132;
+  --l2-border: #45516a;
+  --l2-muted: #b3bccd;
+}
+
+@media (max-width: 760px) {
+  .l2-project-tools {
+    flex-wrap: wrap;
+  }
+  .l2-project-tools label {
+    width: 100%;
+  }
+  .l2-projects {
+    padding: 16px;
+  }
+}

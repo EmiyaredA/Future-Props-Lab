@@ -33,7 +33,7 @@ async def import_motion_export(
         project_id = target_project_id
     else:
         created = await projects.create(
-            VideoEditorProjectCreateIn(title=new_project_title or "动效镜头")
+            VideoEditorProjectCreateIn(title=new_project_title or "特效镜头")
         )
         project_id = created.id
     staged: Path | None = None
@@ -73,7 +73,7 @@ async def import_motion_export(
                     "track": {
                         "id": track_id,
                         "kind": "visual",
-                        "name": "动效合成",
+                        "name": "特效制作",
                         "order": 0,
                         "clips": [],
                     },

@@ -52,6 +52,7 @@ def default_timeline() -> dict:
             "videoFitPolicyVersion": 1,
         },
         "assetOrganization": {"folders": [], "rootAssetIds": []},
+        "transitions": [],
         "tracks": [
             {
                 "id": "visual-1",

@@ -190,7 +190,7 @@ class MotionProjects:
             MotionProject,
             project_id,
             self.workspace_id,
-            not_found=lambda: MotionNotFound("动效项目不存在"),
+            not_found=lambda: MotionNotFound("特效项目不存在"),
         )
 
     async def list(self) -> ProjectListOut:
@@ -264,7 +264,7 @@ class MotionProjects:
         await self.row(project_id)
         row = await self.session.get(MotionDocument, project_id)
         if row is None:
-            raise MotionNotFound("合成文档不存在")
+            raise MotionNotFound("特效文档不存在")
         return DocumentOut(
             revision=row.revision, document=MotionComposition.model_validate(row.document)
         )
@@ -317,7 +317,7 @@ class MotionProjects:
             )
         row = await self.session.get(MotionDocument, project_id)
         if row is None:
-            raise MotionNotFound("合成文档不存在")
+            raise MotionNotFound("特效文档不存在")
         if row.revision != body.expected_revision:
             raise RevisionConflictError(
                 body.expected_revision,

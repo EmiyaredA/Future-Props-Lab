@@ -1,0 +1,41 @@
+.fpl-recovery {
+  box-sizing: border-box;
+  width: min(620px, calc(100% - 40px));
+  margin: 10vh auto;
+  padding: 28px;
+  border: 1px solid #dcae92;
+  border-radius: 20px;
+  background: #fffaf5;
+  color: #40352f;
+  font:
+    15px/1.6 system-ui,
+    sans-serif;
+}
+.fpl-recovery h1 {
+  font-size: 23px;
+}
+.fpl-recovery pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.fpl-recovery button {
+  margin: 12px 12px 0 0;
+  padding: 8px 16px;
+  border: 1px solid #b96642;
+  border-radius: 9px;
+  background: #fff1e6;
+  color: #703917;
+  cursor: pointer;
+}
+.fpl-recovery button:focus-visible {
+  outline: 3px solid #c9794e;
+  outline-offset: 3px;
+}
+[data-theme="dark"] .fpl-recovery {
+  background: #28231f;
+  color: #f7ebe1;
+}
+[data-theme="dark"] .fpl-recovery button {
+  background: #48372d;
+  color: #ffe6d2;
+}

@@ -46,3 +46,7 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 本次迁移不改写既有 Git 历史，只把当前分支上的文件和未来增量改为 LFS 指针。因此旧提交中的二进制
 对象仍会保留在 Git 历史中，仓库体积不会立即下降。新增或替换素材后，应更新本清单的数量/校验值，
 并运行 `npm run lfs:check:pointers`、`npm run lfs:check` 和 `git lfs fsck`。
+
+## Live2D 工坊头像
+
+- `web/public/brand/live2d-workshop-mark.png`：Live2D 工坊卡片、侧栏与项目入口共用；内置 ImageGen，参考现有徽章与用户指定 Amadeus 形象。[来源与提示词](live2d-workshop-avatar.md)。沿用内部开发交接范围。SHA256：`ad615ad25e188543e37dc276592082c87c953f85c8b8bd8039fca44095f17e70`。

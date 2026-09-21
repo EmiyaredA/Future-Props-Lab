@@ -1,3 +1,5 @@
+import { PageErrorBoundary } from "./PageErrorBoundary";
+import { LIVE2D_WORKSHOP_MODULE } from "@features/live2d-workshop/module";
 import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { workspaceAllows } from "@features/accounts/permissions";
@@ -118,6 +120,17 @@ const GalgameFastPreviewPage = lazy(GALGAME_WORKSHOP_MODULE.pages.preview);
 const VideoEditorProjectsPage = lazy(VIDEO_EDITOR_MODULE.pages.projects);
 const VideoEditorPage = lazy(VIDEO_EDITOR_MODULE.pages.editor);
 const VideoEditorTasksPage = lazy(VIDEO_EDITOR_MODULE.pages.tasks);
+const Live2DProjectsPage = lazy(() =>
+  import("@features/live2d-workshop/ProjectsPage").then((m) => ({
+    default: m.ProjectsPage,
+  })),
+);
+const Live2DEditorPage = lazy(() =>
+  import("@features/live2d-workshop/EditorPage").then((m) => ({
+    default: m.EditorPage,
+  })),
+);
+
 const MotionCompositorProjectsPage = lazy(() =>
   import("@features/motion-compositor/ProjectsPage").then((m) => ({
     default: m.ProjectsPage,
@@ -133,9 +146,11 @@ const ThoughtWorkshopPage = lazy(THOUGHT_WORKSHOP_MODULE.pages.notes);
 
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={<div className="page-loading">正在加载…</div>}>
-      {children}
-    </Suspense>
+    <PageErrorBoundary key={window.location.pathname}>
+      <Suspense fallback={<div className="page-loading">正在加载…</div>}>
+        {children}
+      </Suspense>
+    </PageErrorBoundary>
   );
 }
 
@@ -158,9 +173,10 @@ export default function App() {
       "visual-workshop": "视觉创作工坊",
       "galgame-workshop": "Galgame 工坊",
       "video-editor": "视频剪辑工坊",
-      "motion-compositor": "动效合成工坊",
+      "motion-compositor": "特效制作工坊",
       "audio-annotation": "音频标注工坊",
       "director-desk": "导演台",
+      "live2d-workshop": "Live2D 工坊",
     };
     const application =
       Object.entries(applications).find(([prefix]) =>
@@ -333,6 +349,38 @@ export default function App() {
           registerNavigationGuard={registerNavigationGuard}
         />
       </PageBoundary>
+    );
+
+  if (page === "live2d-workshop-editor" && route.projectId)
+    return (
+      <PageBoundary>
+        <Live2DEditorPage
+          key={route.projectId}
+          projectId={route.projectId}
+          onBack={() => navigate("live2d-workshop-projects")}
+          registerNavigationGuard={registerNavigationGuard}
+          readOnly={!workspaceAllows(me.workspace, "content.write")}
+        />
+      </PageBoundary>
+    );
+
+  if (page === "live2d-workshop-projects")
+    return (
+      <WorkshopShell
+        module={LIVE2D_WORKSHOP_MODULE}
+        page={page}
+        navigate={(next) => navigate(next as WorkshopPage)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          <Live2DProjectsPage
+            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            onOpen={(projectId) =>
+              navigate("live2d-workshop-editor", projectId)
+            }
+          />
+        </PageBoundary>
+      </WorkshopShell>
     );
 
   if (page === "motion-compositor-editor" && route.projectId)

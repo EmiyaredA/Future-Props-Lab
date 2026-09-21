@@ -39,7 +39,8 @@
     min-height: 100px;
     overflow: auto;
   }
-  .ve-editor-body > :is(.ve-assets-panel, .ve-inspector, .ve-preview-panel) {
+  .ve-editor-body
+    > :is(.ve-assets-panel, .ve-inspector, .ve-preview-panel, .ve-right-panel) {
     height: 100%;
     min-height: 0;
     width: 100%;
@@ -59,11 +60,16 @@
   }
   .ve-editor-shell[data-mobile-panel="preview"]
     .ve-editor-body
-    > :is(.ve-assets-panel, .ve-inspector),
+    > :is(.ve-assets-panel, .ve-inspector, .ve-right-panel),
   .ve-editor-shell[data-mobile-panel="assets"]
     .ve-editor-body
-    > :is(.ve-preview-panel, .ve-inspector),
+    > :is(.ve-preview-panel, .ve-inspector, .ve-right-panel),
   .ve-editor-shell[data-mobile-panel="inspector"]
+    .ve-editor-body
+    > :is(.ve-preview-panel, .ve-assets-panel) {
+    display: none;
+  }
+  .ve-editor-shell[data-mobile-panel="transitions"]
     .ve-editor-body
     > :is(.ve-preview-panel, .ve-assets-panel) {
     display: none;

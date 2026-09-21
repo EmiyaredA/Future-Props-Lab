@@ -4,10 +4,10 @@ import { defineApplicationModule } from "@features/applications";
 export const MOTION_COMPOSITOR_MODULE = defineApplicationModule({
   definition: {
     id: "motion-compositor",
-    name: "动效合成工坊",
-    description: "制作可编辑的二维动效、路径遮罩与透明镜头。",
+    name: "特效制作工坊",
+    description: "制作可编辑的二维特效、路径遮罩与透明镜头。",
     category: "visual",
-    capabilities: ["动效", "遮罩", "关键帧", "透明导出"],
+    capabilities: ["特效", "遮罩", "关键帧", "透明导出"],
     path: "/apps/motion-compositor",
     icon: Clapperboard,
     brandImage: "/brand/motion-compositor-mark.png",
@@ -16,12 +16,12 @@ export const MOTION_COMPOSITOR_MODULE = defineApplicationModule({
   shell: "motion-compositor",
   shellConfig: {
     className: "motion-compositor-shell",
-    subtitle: "Motion Compositor",
+    subtitle: "Effects Workshop",
     backSubtitle: "浏览全部应用",
     navigation: [
       {
         page: "motion-compositor-projects",
-        label: "动效项目",
+        label: "特效项目",
         icon: Layers3,
         activePages: ["motion-compositor-projects"],
       },

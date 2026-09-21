@@ -119,8 +119,8 @@ export function ProjectsPage({
   return (
     <section className="workshop-page mc-projects">
       <WorkshopAppChrome
-        title="我的动效项目"
-        description="制作镜头动效、蒙版和风格化视觉效果，再交给视频剪辑工坊。"
+        title="我的特效项目"
+        description="制作镜头特效、蒙版和风格化视觉效果，再交给视频剪辑工坊。"
         actions={
           !readOnly && (
             <>
@@ -129,7 +129,7 @@ export function ProjectsPage({
                 hidden
                 type="file"
                 accept=".zip"
-                aria-label="导入动效工程包"
+                aria-label="导入特效工程包"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
@@ -175,8 +175,8 @@ export function ProjectsPage({
         <label>
           <Search size={18} />
           <input
-            aria-label="搜索动效项目"
-            placeholder="搜索动效项目…"
+            aria-label="搜索特效项目"
+            placeholder="搜索特效项目…"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -205,7 +205,7 @@ export function ProjectsPage({
                 <span className="mc-cover-slice" />
                 <span className="mc-cover-spark">✦</span>
                 <strong>{project.title}</strong>
-                <small>MOTION / {String(index + 1).padStart(2, "0")}</small>
+                <small>FX / {String(index + 1).padStart(2, "0")}</small>
               </button>
               <div className="mc-project-card-body">
                 <h3>{project.title}</h3>
@@ -217,7 +217,7 @@ export function ProjectsPage({
                     className="mc-open"
                     onClick={() => onOpen(project.id)}
                   >
-                    进入合成 <ArrowRight size={16} />
+                    进入制作 <ArrowRight size={16} />
                   </button>
                   {!readOnly && (
                     <>
@@ -274,12 +274,12 @@ export function ProjectsPage({
               }}
             >
               <Plus size={30} />
-              <strong>开始新的动效项目</strong>
-              <span>空白画布或选用动效模板</span>
+              <strong>开始新的特效项目</strong>
+              <span>空白画布或选用特效模板</span>
             </button>
           )}
           {!filtered.length && readOnly && (
-            <p className="mc-empty">还没有可查看的动效项目。</p>
+            <p className="mc-empty">还没有可查看的特效项目。</p>
           )}
         </div>
       )}
@@ -288,10 +288,10 @@ export function ProjectsPage({
           <Dialog.Overlay className="mc-dialog-overlay" />
           <Dialog.Content className="mc-dialog">
             <Dialog.Title>
-              {editing ? "重命名动效项目" : "新建动效项目"}
+              {editing ? "重命名特效项目" : "新建特效项目"}
             </Dialog.Title>
             <Dialog.Description>
-              建立可编辑的镜头合成，随后可以加入视频、图形和 AI 素材。
+              建立可编辑的镜头特效，随后可以加入视频、图形和 AI 素材。
             </Dialog.Description>
             <label className="mc-field">
               项目名称
@@ -350,7 +350,7 @@ export function ProjectsPage({
                     onClick={() => setForm({ ...form, starter: "comic-entry" })}
                   >
                     <Sparkles size={20} />
-                    <strong>动效模板</strong>
+                    <strong>特效模板</strong>
                     <span>从「漫画风人物切入」开始</span>
                   </button>
                 </div>
@@ -386,7 +386,7 @@ export function ProjectsPage({
         <Dialog.Portal>
           <Dialog.Overlay className="mc-dialog-overlay" />
           <Dialog.Content className="mc-dialog mc-confirm">
-            <Dialog.Title>删除动效项目？</Dialog.Title>
+            <Dialog.Title>删除特效项目？</Dialog.Title>
             <Dialog.Description>
               项目「{deleting?.title}
               」及其素材、导出文件会被删除。已交接到剪辑工坊的副本会保留。

@@ -1,3 +1,4 @@
+import { PageErrorBoundary } from "./PageErrorBoundary";
 import { ViewportBounds } from "@shared/ui/ViewportBounds";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
@@ -18,16 +19,18 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ViewportBounds />
-    <QueryClientProvider client={queryClient}>
-      <DesktopDevelopmentHost />
-      <DesktopSetupGate>
-        <StudioAuthGate>
-          <App />
-          <DesktopAgentHost />
-          <AmadeusSourceHost />
-        </StudioAuthGate>
-      </DesktopSetupGate>
-    </QueryClientProvider>
+    <PageErrorBoundary>
+      <ViewportBounds />
+      <QueryClientProvider client={queryClient}>
+        <DesktopDevelopmentHost />
+        <DesktopSetupGate>
+          <StudioAuthGate>
+            <App />
+            <DesktopAgentHost />
+            <AmadeusSourceHost />
+          </StudioAuthGate>
+        </DesktopSetupGate>
+      </QueryClientProvider>
+    </PageErrorBoundary>
   </React.StrictMode>,
 );

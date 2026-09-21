@@ -64,6 +64,14 @@ class AssetStorage:
                 / "projects"
                 / project_id
             ).resolve()
+        if application_id == "live2d-workshop":
+            return (
+                self.settings.runtime_path
+                / "applications"
+                / application_id
+                / "projects"
+                / project_id
+            ).resolve()
         if application_id == "director-desk":
             return (
                 self.settings.runtime_path

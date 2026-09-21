@@ -22,6 +22,7 @@ import { VideoEditorAssetPanel } from "./VideoEditorAssetPanel";
 import { VideoEditorBatchInspector } from "./VideoEditorBatchInspector";
 import { VideoEditorExportDialog } from "./VideoEditorExportDialog";
 import { VideoEditorInspector } from "./VideoEditorInspector";
+import { VideoEditorTransitionPanel } from "./VideoEditorTransitionPanel";
 import { VideoEditorPreview } from "./VideoEditorPreview";
 import { VideoEditorTimeline } from "./VideoEditorTimeline";
 import { VideoEditorSegmentExportDialog } from "./VideoEditorSegmentExportDialog";
@@ -56,6 +57,15 @@ export function VideoEditorPage({
 }) {
   const editor = useVideoEditor(projectId);
   const [mobilePanel, setMobilePanel] = useState("preview");
+  const [rightPanel, setRightPanel] = useState<"inspector" | "transitions">(
+    "inspector",
+  );
+  const [selectedTransitionId, setSelectedTransitionId] = useState<string>();
+  const [transitionTarget, setTransitionTarget] = useState<{
+    placement: "in" | "out" | "between";
+    fromClipId?: string;
+    toClipId?: string;
+  }>();
   const workspaceLayout = useVideoEditorLayout(editor.layout, editor.setLayout);
   const [exportOpen, setExportOpen] = useState(false);
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
@@ -71,10 +81,7 @@ export function VideoEditorPage({
   }>();
   const [subtitleImportPending, setSubtitleImportPending] = useState(false);
   const discardTitle = useRef(false);
-  const contentDurationSeconds = Math.max(
-    1,
-    editor.durationUs / 1_000_000,
-  );
+  const contentDurationSeconds = Math.max(1, editor.durationUs / 1_000_000);
   const zoomMin = timelineZoomMinimum(
     contentViewportWidthPx,
     contentDurationSeconds,
@@ -89,24 +96,45 @@ export function VideoEditorPage({
     }
   }, [contentViewportWidthPx, editor.zoom, editor.setZoom, zoomMin]);
   useEffect(() => {
-    const clip = (editor.timeline.data?.document.tracks ?? []).flatMap((track) => track.clips ?? [])
+    const clip = (editor.timeline.data?.document.tracks ?? [])
+      .flatMap((track) => track.clips ?? [])
       .find((item) => editor.selectedClipIds.includes(item.id));
-    window.dispatchEvent(new CustomEvent("future-props:amadeus-context", { detail: {
-      application: "视频剪辑工坊", projectId,
-      selection: clip ? { id: clip.id, name: clip.name,
-        value: `${clip.kind} · ${(clip.durationUs / 1_000_000).toFixed(2)} 秒` } : undefined,
-      unsaved: editor.saving,
-    } }));
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "视频剪辑工坊",
+          projectId,
+          selection: clip
+            ? {
+                id: clip.id,
+                name: clip.name,
+                value: `${clip.kind} · ${(clip.durationUs / 1_000_000).toFixed(2)} 秒`,
+              }
+            : undefined,
+          unsaved: editor.saving,
+        },
+      }),
+    );
   }, [projectId, editor.timeline.data, editor.selectedClipIds, editor.saving]);
-  useEffect(() => window.futurePropsDesktop?.onAmadeusMutation?.((value) => {
-    const changed = value as { application?: string; projectId?: string };
-    if (changed.application !== "video-editor" || changed.projectId !== projectId) return;
-    if (editor.saving) {
-      editor.setNotice("Amadeus 已修改时间线；请先处理当前保存，再刷新项目");
-      return;
-    }
-    void editor.timeline.refetch();
-  }), [projectId, editor.saving, editor.timeline.refetch, editor.setNotice]);
+  useEffect(
+    () =>
+      window.futurePropsDesktop?.onAmadeusMutation?.((value) => {
+        const changed = value as { application?: string; projectId?: string };
+        if (
+          changed.application !== "video-editor" ||
+          changed.projectId !== projectId
+        )
+          return;
+        if (editor.saving) {
+          editor.setNotice(
+            "Amadeus 已修改时间线；请先处理当前保存，再刷新项目",
+          );
+          return;
+        }
+        void editor.timeline.refetch();
+      }),
+    [projectId, editor.saving, editor.timeline.refetch, editor.setNotice],
+  );
   if (editor.project.isLoading || editor.timeline.isLoading)
     return <div className="ve-editor-state">正在装配剪辑工作区…</div>;
   if (!editor.project.data || !editor.timeline.data)
@@ -127,7 +155,25 @@ export function VideoEditorPage({
   };
   const selectClip = (clipId?: string, additive = false) => {
     clearSourcePreview();
+    setSelectedTransitionId(undefined);
+    setTransitionTarget(undefined);
+    setRightPanel("inspector");
     editor.selectClip(clipId, additive);
+  };
+  const selectTransition = (
+    transitionId?: string,
+    target?: {
+      placement: "in" | "out" | "between";
+      fromClipId?: string;
+      toClipId?: string;
+    },
+  ) => {
+    clearSourcePreview();
+    setSelectedTransitionId(transitionId);
+    setTransitionTarget(target);
+    setRightPanel("transitions");
+    setMobilePanel("transitions");
+    editor.selectClip(undefined);
   };
   const fitTimelineWidth = () => {
     if (!(contentViewportWidthPx > 0)) return;
@@ -344,7 +390,14 @@ export function VideoEditorPage({
             {editor.saving ? "保存中…" : editor.notice || "已自动保存"}
           </div>
           <div className="ve-top-actions">
-            {window.futurePropsDesktop?.openAmadeus && <button type="button" onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}>✦ Amadeus</button>}
+            {window.futurePropsDesktop?.openAmadeus && (
+              <button
+                type="button"
+                onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+              >
+                ✦ Amadeus
+              </button>
+            )}
             <button
               disabled={!videosNeedingCover.length || editor.saving}
               title="将当前工程的所有视频片段按比例铺满画布"
@@ -431,11 +484,16 @@ export function VideoEditorPage({
         <CompactPanelTabs
           label="剪辑面板"
           value={mobilePanel}
-          onChange={setMobilePanel}
+          onChange={(value) => {
+            setMobilePanel(value);
+            if (value === "transitions") setRightPanel("transitions");
+            if (value === "inspector") setRightPanel("inspector");
+          }}
           options={[
             { value: "preview", label: "预览" },
             { value: "assets", label: "素材" },
             { value: "inspector", label: "属性" },
+            { value: "transitions", label: "转场" },
           ]}
         />
         <main className="ve-editor-body">
@@ -493,31 +551,74 @@ export function VideoEditorPage({
           <VideoEditorSeparator
             {...workspaceLayout.separator("inspectorWidth")}
           />
-          {editor.selectedClipIds.length > 1 ? (
-            <VideoEditorBatchInspector
-              clips={tracks
-                .flatMap((track) => track.clips ?? [])
-                .filter((clip) => editor.selectedClipIds.includes(clip.id))}
-              disabled={editor.saving}
-              applyPatch={editor.patchSelectedClips}
-            />
-          ) : (
-            <VideoEditorInspector
-              speedRippleEnabled={editor.speedRippleEnabled}
-              setSpeedRippleEnabled={editor.setSpeedRippleEnabled}
-              clip={editor.selected}
-              disabled={
-                editor.saving ||
-                Boolean(
-                  tracks.find((track) => track.id === editor.selected?.trackId)
-                    ?.locked,
-                )
-              }
-              clips={tracks.flatMap((track) => track.clips ?? [])}
-              playheadUs={editor.playheadUs}
-              commit={editor.commit}
-            />
-          )}
+          <div className="ve-right-panel">
+            <div
+              className="ve-right-panel-tabs"
+              role="tablist"
+              aria-label="右侧编辑面板"
+            >
+              <button
+                type="button"
+                className={rightPanel === "inspector" ? "active" : ""}
+                onClick={() => {
+                  setRightPanel("inspector");
+                  setMobilePanel("inspector");
+                }}
+              >
+                属性
+              </button>
+              <button
+                type="button"
+                className={rightPanel === "transitions" ? "active" : ""}
+                onClick={() => {
+                  setRightPanel("transitions");
+                  setMobilePanel("transitions");
+                }}
+              >
+                转场
+              </button>
+            </div>
+            {rightPanel === "transitions" ? (
+              <VideoEditorTransitionPanel
+                clips={tracks.flatMap((track) => track.clips ?? [])}
+                tracks={tracks}
+                transitions={timeline.document.transitions ?? []}
+                selectedClip={editor.selected}
+                selectedTransitionId={selectedTransitionId}
+                target={transitionTarget}
+                disabled={editor.saving}
+                commit={editor.commit}
+                onSelectTransition={(id) =>
+                  selectTransition(id, transitionTarget)
+                }
+              />
+            ) : editor.selectedClipIds.length > 1 ? (
+              <VideoEditorBatchInspector
+                clips={tracks
+                  .flatMap((track) => track.clips ?? [])
+                  .filter((clip) => editor.selectedClipIds.includes(clip.id))}
+                disabled={editor.saving}
+                applyPatch={editor.patchSelectedClips}
+              />
+            ) : (
+              <VideoEditorInspector
+                speedRippleEnabled={editor.speedRippleEnabled}
+                setSpeedRippleEnabled={editor.setSpeedRippleEnabled}
+                clip={editor.selected}
+                disabled={
+                  editor.saving ||
+                  Boolean(
+                    tracks.find(
+                      (track) => track.id === editor.selected?.trackId,
+                    )?.locked,
+                  )
+                }
+                clips={tracks.flatMap((track) => track.clips ?? [])}
+                playheadUs={editor.playheadUs}
+                commit={editor.commit}
+              />
+            )}
+          </div>
         </main>
         <VideoEditorSeparator {...workspaceLayout.separator("timelineRatio")} />
         <div className="ve-timeline-bar">
@@ -621,6 +722,8 @@ export function VideoEditorPage({
           selectedClipId={editor.selectedClipId}
           selectedClipIds={editor.selectedClipIds}
           selectClip={selectClip}
+          selectedTransitionId={selectedTransitionId}
+          selectTransition={selectTransition}
           commit={editor.commit}
           onDropAsset={(asset, trackId, startUs) =>
             addAsset(asset, startUs, trackId)
@@ -649,9 +752,7 @@ export function VideoEditorPage({
             projectId={projectId}
             timeline={timeline}
             assets={assets}
-            selectedClipIds={
-              segmentExportClipIds ?? editor.selectedClipIds
-            }
+            selectedClipIds={segmentExportClipIds ?? editor.selectedClipIds}
             onClose={() => {
               setSegmentExportOpen(false);
               setSegmentExportClipIds(undefined);

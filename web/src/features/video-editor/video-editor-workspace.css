@@ -184,11 +184,47 @@
 }
 .ve-assets-panel,
 .ve-inspector,
-.ve-preview-panel {
+.ve-preview-panel,
+.ve-right-panel {
   min-height: 0;
   min-width: 0;
   border-right: 1px solid #292e3c;
   background: #131722;
+}
+.ve-right-panel {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #292e3c;
+  background: #131722;
+}
+.ve-right-panel-tabs {
+  display: flex;
+  gap: 4px;
+  flex: none;
+  padding: 7px 10px;
+  border-bottom: 1px solid #292e3c;
+  background: #111722;
+}
+.ve-right-panel-tabs button {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #8f99ad;
+  background: transparent;
+  font-size: 10px;
+}
+.ve-right-panel-tabs button.active {
+  border-color: #7467e8;
+  color: #ddd8ff;
+  background: #2b2752;
+}
+.ve-right-panel > .ve-inspector,
+.ve-right-panel > .ve-transition-panel {
+  flex: 1;
+  border-right: 0;
 }
 .ve-assets-panel header,
 .ve-inspector > header,

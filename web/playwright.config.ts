@@ -1,3 +1,6 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 const apiPort = process.env.FPL_E2E_API_PORT || "9000";
@@ -48,6 +51,12 @@ export default defineConfig({
     },
     {
       command: "npm run dev",
+      env: {
+        FPL_VITE_CACHE_DIR: join(
+          mkdtempSync(join(tmpdir(), "fpl-e2e-vite-")),
+          "node_modules/.vite",
+        ),
+      },
       url: `http://127.0.0.1:${webPort}/model-service`,
       reuseExistingServer: false,
     },

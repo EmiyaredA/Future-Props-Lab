@@ -1,0 +1,174 @@
+import { useState, type ReactNode } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock,
+  Plus,
+} from "lucide-react";
+import { makeDeformer } from "./model";
+import type { CharacterDocument, Deformer, Part } from "./types";
+import type { Edit } from "./Inspector";
+
+export function ObjectTree({
+  doc,
+  selected,
+  onSelect,
+  edit,
+  readOnly,
+}: {
+  doc: CharacterDocument;
+  selected: string;
+  onSelect: (id: string) => void;
+  edit: Edit;
+  readOnly: boolean;
+}) {
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  const toggle = (key: string) =>
+    setFolded((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const disclosure = (key: string, name: string) => (
+    <button
+      aria-label={`${folded.has(key) ? "展开" : "折叠"}${name}`}
+      aria-expanded={!folded.has(key)}
+      onClick={() => toggle(key)}
+    >
+      {folded.has(key) ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+    </button>
+  );
+  const row = (node: Part | Deformer, depth: number): ReactNode => (
+    <div key={node.id}>
+      <div
+        className={`l2-tree-row ${selected === node.id ? "selected" : ""}`}
+        style={{ paddingLeft: depth * 12 }}
+      >
+        {"kind" in node && disclosure(node.id, node.name)}
+        <button
+          className="l2-tree-name"
+          aria-pressed={selected === node.id}
+          onClick={() => onSelect(node.id)}
+        >
+          <span>
+            {"kind" in node ? (node.kind === "warp" ? "▦" : "⟳") : "◇"}
+          </span>
+          <span>{node.name}</span>
+        </button>
+        {"vertices" in node && (
+          <>
+            <button
+              disabled={readOnly}
+              aria-label={`${node.visible ? "隐藏" : "显示"}${node.name}`}
+              onClick={() =>
+                edit((d) => {
+                  d.parts.find((p) => p.id === node.id)!.visible =
+                    !node.visible;
+                })
+              }
+            >
+              {node.visible ? <Eye size={13} /> : <EyeOff size={13} />}
+            </button>
+            <button
+              disabled={readOnly}
+              aria-label={`${node.locked ? "解锁" : "锁定"}${node.name}`}
+              onClick={() =>
+                edit((d) => {
+                  d.parts.find((p) => p.id === node.id)!.locked = !node.locked;
+                })
+              }
+            >
+              {node.locked ? <Lock size={13} /> : <Unlock size={13} />}
+            </button>
+          </>
+        )}
+      </div>
+      {"kind" in node && !folded.has(node.id) && children(node.id, depth + 1)}
+    </div>
+  );
+  const groups = (
+    parts: Part[],
+    parent: string,
+    depth: number,
+    path: string[] = [],
+  ): ReactNode => {
+    const direct: Part[] = [],
+      nested = new Map<string, Part[]>();
+    for (const part of parts) {
+      const segments = part.group.split("/").filter(Boolean);
+      const name = segments[path.length];
+      if (!name) direct.push(part);
+      else nested.set(name, [...(nested.get(name) ?? []), part]);
+    }
+    return (
+      <>
+        {[...nested].map(([name, members]) => {
+          const next = [...path, name],
+            key = `group:${parent}:${next.join("/")}`;
+          return (
+            <div key={key}>
+              <div className="l2-tree-row" style={{ paddingLeft: depth * 12 }}>
+                {disclosure(key, name)}
+                <span>{name}</span>
+              </div>
+              {!folded.has(key) && groups(members, parent, depth + 1, next)}
+            </div>
+          );
+        })}
+        {direct.map((p) => row(p, depth))}
+      </>
+    );
+  };
+  function children(parent: string | null, depth: number): ReactNode {
+    // Documents are validated as acyclic; this also bounds rendering of malformed client state.
+    if (depth > doc.deformers.length + 1) return null;
+    return (
+      <>
+        {doc.deformers
+          .filter((d) => (d.parentId ?? null) === parent)
+          .map((d) => row(d, depth))}
+        {groups(
+          doc.parts.filter((p) => (p.parentId ?? null) === parent),
+          parent ?? "root",
+          depth,
+        )}
+      </>
+    );
+  }
+  return (
+    <>
+      <div className="l2-panel-heading">
+        <h2>部件与变形器</h2>
+        <span>{doc.parts.length}</span>
+      </div>
+      <div className="l2-tree-actions">
+        {(["rotation", "warp"] as const).map((kind) => (
+          <button
+            key={kind}
+            disabled={readOnly}
+            onClick={() =>
+              edit((d) => {
+                const node = makeDeformer(d, kind);
+                d.deformers.push(node);
+                onSelect(node.id);
+              })
+            }
+          >
+            <Plus size={13} />
+            {kind === "rotation" ? "旋转" : "曲面"}
+          </button>
+        ))}
+      </div>
+      <div className="l2-object-list" aria-label="角色对象层级">
+        {children(null, 0)}
+      </div>
+      {!doc.parts.length && (
+        <p className="l2-hint">使用顶部“导入素材”添加角色图层。</p>
+      )}
+    </>
+  );
+}

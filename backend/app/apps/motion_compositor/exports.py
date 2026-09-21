@@ -77,7 +77,7 @@ class MotionExports:
             return self._out(existing)
         row = await self.session.get(MotionDocument, project_id)
         if row is None:
-            raise MotionNotFound("合成文档不存在")
+            raise MotionNotFound("特效文档不存在")
         if row.revision != body.expected_revision:
             raise RevisionConflictError(
                 body.expected_revision,

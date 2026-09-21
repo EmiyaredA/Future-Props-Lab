@@ -23,6 +23,7 @@
     "build:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run build --workspace desktop",
     "package:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run package --workspace desktop",
     "test:desktop": "npm run compile --workspace desktop && uv run pytest -q tests/test_configuration.py tests/test_desktop.py tests/test_desktop_agent.py tests/test_desktop_development.py && npm run test --workspace desktop",
+    "test:desktop:live2d": "node desktop/scripts/smoke-live2d.cjs",
     "test:desktop:dev": "node desktop/scripts/smoke-development.cjs",
     "test:desktop:amadeus": "node desktop/scripts/smoke-amadeus.cjs",
     "setup": "python3 scripts/check_lfs_assets.py --tool && uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web && python3 scripts/check_lfs_assets.py --all",

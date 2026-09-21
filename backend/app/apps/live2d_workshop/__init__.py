@@ -1,0 +1,1 @@
+"""Workspace-scoped character authoring."""

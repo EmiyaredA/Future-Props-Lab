@@ -3,8 +3,10 @@ import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  cacheDir: "node_modules/.vite-vitest",
   plugins: [react()],
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@app": resolve(__dirname, "src/app"),
       "@features": resolve(__dirname, "src/features"),

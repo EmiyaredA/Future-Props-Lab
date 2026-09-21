@@ -52,6 +52,19 @@ async function main() {
     const assistant = await until(() => browser.contexts()[0]?.pages().find((item) =>
       item.url().includes("/amadeus.html")));
     await assistant.getByRole("heading", { name: "你好，我是 Amadeus" }).waitFor();
+    assert.equal(await assistant.evaluate(() => window.futurePropsDesktop.amadeusAlwaysOnTop()), true);
+    await assistant.getByRole("button", { name: "取消悬浮置顶" }).click();
+    assert.equal(await assistant.evaluate(() => window.futurePropsDesktop.amadeusAlwaysOnTop()), false);
+    assert.equal(
+      await assistant.getByRole("button", { name: "保持悬浮在应用上方" }).getAttribute("aria-pressed"),
+      "false",
+    );
+    await assistant.getByRole("button", { name: "保持悬浮在应用上方" }).click();
+    assert.equal(await assistant.evaluate(() => window.futurePropsDesktop.amadeusAlwaysOnTop()), true);
+    assert.equal(
+      await assistant.getByRole("button", { name: "取消悬浮置顶" }).getAttribute("aria-pressed"),
+      "true",
+    );
     await page.getByRole("button", { name: "打开 Amadeus" }).click();
     assert.equal(browser.contexts()[0].pages().filter((item) =>
       item.url().includes("/amadeus.html")).length, 1);
@@ -100,7 +113,7 @@ async function main() {
     assert.equal(browser.contexts()[0].pages().filter((item) =>
       item.url().startsWith("http:") && !item.url().includes("amadeus.html")).length, 1);
     await assistant.getByText(/1\. 新建窗口/).last().waitFor();
-    console.log("PASS Amadeus singleton, history, capabilities, files, context reset and safe control picking");
+    console.log("PASS Amadeus singleton, always-on-top, history, capabilities, files, context reset and safe control picking");
   } catch (error) {
     console.error(output.slice(-2000));
     throw error;

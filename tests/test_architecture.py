@@ -34,6 +34,7 @@ WEB_APP_UNITS = (
     "thought-workshop",
     "video-editor",
     "motion-compositor",
+    "live2d-workshop",
     "visual-workshop",
     "director-desk",
 )

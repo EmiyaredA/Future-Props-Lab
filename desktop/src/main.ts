@@ -55,26 +55,88 @@ const recovery = path.join(__dirname, "../ui/startup.html");
 const preload = path.join(__dirname, "preload.js");
 const amadeusBoundsPath = path.join(dataDir, "amadeus-window.json");
 
-function savedAmadeusBounds(): Electron.Rectangle | undefined {
+type AmadeusWindowPrefs = Partial<Electron.Rectangle> & { alwaysOnTop?: boolean };
+
+function readAmadeusPrefs(): AmadeusWindowPrefs {
   try {
-    const value = JSON.parse(readFileSync(amadeusBoundsPath, "utf8")) as Electron.Rectangle;
-    if (![value.x, value.y, value.width, value.height].every(Number.isFinite) ||
-        value.width < 400 || value.height < 500) return undefined;
-    const visible = screen.getAllDisplays().some(({ workArea }) =>
-      value.x < workArea.x + workArea.width - 80 && value.x + value.width > workArea.x + 80 &&
-      value.y < workArea.y + workArea.height - 80 && value.y + value.height > workArea.y + 80);
-    return visible ? value : undefined;
-  } catch { return undefined; }
+    const value = JSON.parse(readFileSync(amadeusBoundsPath, "utf8")) as AmadeusWindowPrefs;
+    return value && typeof value === "object" ? value : {};
+  } catch {
+    return {};
+  }
 }
 
-function saveAmadeusBounds(win: BrowserWindow): void {
-  if (win.isDestroyed() || win.isMinimized() || win.isMaximized()) return;
+function writeAmadeusPrefs(patch: AmadeusWindowPrefs): void {
   try {
     mkdirSync(dataDir, { recursive: true, mode: 0o700 });
     const temporary = `${amadeusBoundsPath}.tmp`;
-    writeFileSync(temporary, JSON.stringify(win.getBounds()), { mode: 0o600 });
+    writeFileSync(
+      temporary,
+      JSON.stringify({ ...readAmadeusPrefs(), ...patch }),
+      { mode: 0o600 },
+    );
     renameSync(temporary, amadeusBoundsPath);
-  } catch { /* Window position is optional. */ }
+  } catch {
+    /* Window prefs are optional. */
+  }
+}
+
+function savedAmadeusBounds(): Electron.Rectangle | undefined {
+  const value = readAmadeusPrefs();
+  if (
+    ![value.x, value.y, value.width, value.height].every(
+      (number) => typeof number === "number" && Number.isFinite(number),
+    ) ||
+    (value.width ?? 0) < 400 ||
+    (value.height ?? 0) < 500
+  )
+    return undefined;
+  const bounds = {
+    x: value.x!,
+    y: value.y!,
+    width: value.width!,
+    height: value.height!,
+  };
+  const visible = screen.getAllDisplays().some(({ workArea }) =>
+    bounds.x < workArea.x + workArea.width - 80 &&
+    bounds.x + bounds.width > workArea.x + 80 &&
+    bounds.y < workArea.y + workArea.height - 80 &&
+    bounds.y + bounds.height > workArea.y + 80);
+  return visible ? bounds : undefined;
+}
+
+function savedAmadeusAlwaysOnTop(): boolean {
+  return readAmadeusPrefs().alwaysOnTop !== false;
+}
+
+let amadeusAlwaysOnTopPreference = savedAmadeusAlwaysOnTop();
+
+function saveAmadeusBounds(win: BrowserWindow): void {
+  if (win.isDestroyed() || win.isMinimized() || win.isMaximized()) return;
+  writeAmadeusPrefs({ ...win.getBounds(), alwaysOnTop: amadeusAlwaysOnTopPreference });
+}
+
+function syncAmadeusAlwaysOnTopSurface(): void {
+  if (!amadeusWindow || amadeusWindow.isDestroyed()) return;
+  const focused = BrowserWindow.getFocusedWindow();
+  const keep =
+    amadeusAlwaysOnTopPreference &&
+    Boolean(focused && (studioWindows.has(focused) || focused === amadeusWindow));
+  amadeusWindow.setAlwaysOnTop(keep, "floating");
+}
+
+function applyAmadeusAlwaysOnTop(enabled: boolean): boolean {
+  amadeusAlwaysOnTopPreference = enabled;
+  writeAmadeusPrefs({ alwaysOnTop: enabled });
+  if (amadeusWindow && !amadeusWindow.isDestroyed()) {
+    if (!enabled) amadeusWindow.setAlwaysOnTop(false);
+    else syncAmadeusAlwaysOnTopSurface();
+  }
+  return amadeusAlwaysOnTopPreference;
+}
+
+function queueAmadeusAlwaysOnTopSync(): void {
+  setImmediate(() => syncAmadeusAlwaysOnTopSurface());
 }
 
 function developmentWindowTitle(session: DevelopmentSession): string {
@@ -114,8 +176,10 @@ function trackStudio(win: BrowserWindow): void {
   focusedStudio = win;
   win.on("focus", () => {
     focusedStudio = win;
+    queueAmadeusAlwaysOnTopSync();
     amadeusWindow?.webContents.send("desktop:amadeus-contexts", availableContexts());
   });
+  win.on("blur", queueAmadeusAlwaysOnTopSync);
 }
 
 function availableContexts() {
@@ -142,6 +206,7 @@ async function showAmadeus(): Promise<void> {
   if (amadeusWindow && !amadeusWindow.isDestroyed()) {
     amadeusWindow.show();
     amadeusWindow.focus();
+    queueAmadeusAlwaysOnTopSync();
     return;
   }
   const workArea = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
@@ -157,6 +222,7 @@ async function showAmadeus(): Promise<void> {
     },
   });
   amadeusWindow = win;
+  syncAmadeusAlwaysOnTopSurface();
   let boundsTimer: ReturnType<typeof setTimeout> | undefined;
   const queueBounds = () => {
     if (boundsTimer) clearTimeout(boundsTimer);
@@ -164,7 +230,12 @@ async function showAmadeus(): Promise<void> {
   };
   win.on("move", queueBounds);
   win.on("resize", queueBounds);
-  win.once("ready-to-show", () => win.show());
+  win.on("focus", queueAmadeusAlwaysOnTopSync);
+  win.on("blur", queueAmadeusAlwaysOnTopSync);
+  win.once("ready-to-show", () => {
+    syncAmadeusAlwaysOnTopSurface();
+    win.show();
+  });
   win.on("close", (event) => {
     if (quitting) return;
     event.preventDefault();
@@ -646,6 +717,12 @@ else {
     ipcMain.handle("desktop:amadeus-hide", (event) => {
       if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
       amadeusWindow?.hide();
+    });
+    ipcMain.handle("desktop:amadeus-always-on-top", (event, enabled?: unknown) => {
+      if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
+      if (enabled === undefined) return amadeusAlwaysOnTopPreference;
+      if (typeof enabled !== "boolean") throw new Error("置顶偏好无效");
+      return applyAmadeusAlwaysOnTop(enabled);
     });
     ipcMain.handle("desktop:amadeus-mutation", (event, value: unknown) => {
       if (!isTrustedAmadeusSender(event) || !value || typeof value !== "object" ||

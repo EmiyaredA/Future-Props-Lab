@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, ImageColor
+from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
 from app.capabilities.media_rendering.chroma_key import apply_chroma_key
 from app.capabilities.media_rendering.text_layer import render_text_layer
@@ -37,6 +37,10 @@ def _curve(progress: float, interpolation: str) -> float:
     if interpolation == "ease-in-out":
         return progress * progress * (3 - 2 * progress)
     return progress
+
+
+def _transition_progress(value_us: int, duration_us: int, interpolation: str) -> float:
+    return _curve(value_us / max(1, duration_us), interpolation)
 
 
 def property_at(clip: VideoEditorClip, name: str, local_us: int, fallback: float) -> float:
@@ -126,12 +130,126 @@ class TimelineFrameRenderer:
             reverse=True,
         )
         for track in tracks:
-            for clip in track.clips:
+            clips = sorted(track.clips, key=lambda item: item.timeline_start_us)
+            transitions = [
+                item
+                for item in self.document.transitions
+                if item.placement == "between"
+                and item.from_clip_id
+                and item.to_clip_id
+                and any(clip.id == item.from_clip_id for clip in clips)
+                and any(clip.id == item.to_clip_id for clip in clips)
+            ]
+            handled_between: set[str] = set()
+            for clip in clips:
                 local_us = time_us - clip.timeline_start_us
+                between = next(
+                    (
+                        item
+                        for item in transitions
+                        if item.from_clip_id == clip.id or item.to_clip_id == clip.id
+                    ),
+                    None,
+                )
+                if between and between.id not in handled_between:
+                    left = next((item for item in clips if item.id == between.from_clip_id), None)
+                    right = next((item for item in clips if item.id == between.to_clip_id), None)
+                    if left and right:
+                        seam_us = right.timeline_start_us
+                        start_us = seam_us - between.duration_us
+                        if start_us <= time_us < seam_us:
+                            progress = _transition_progress(
+                                time_us - start_us,
+                                between.duration_us,
+                                between.easing,
+                            )
+                            left_local_us = max(
+                                0, left.duration_us - between.duration_us + time_us - start_us
+                            )
+                            left_layer = self._layer(left, left_local_us)
+                            right_layer = self._layer(right, 0)
+                            if left_layer is not None:
+                                self._composite(
+                                    canvas,
+                                    left_layer,
+                                    left,
+                                    left_local_us,
+                                    opacity_multiplier=1 - progress,
+                                )
+                            if right_layer is not None:
+                                self._composite(
+                                    canvas,
+                                    right_layer,
+                                    right,
+                                    0,
+                                    opacity_multiplier=progress,
+                                    transition_kind=between.kind,
+                                    transition_progress=progress,
+                                    direction=between.direction,
+                                )
+                                if between.kind == "flash" and progress > 0.65:
+                                    flash = Image.new(
+                                        "RGBA",
+                                        canvas.size,
+                                        (255, 255, 255, round((1 - progress) * 120)),
+                                    )
+                                    canvas.alpha_composite(flash)
+                            handled_between.add(between.id)
+                            continue
+                        if time_us >= seam_us and time_us < seam_us + between.duration_us:
+                            handled_between.add(between.id)
                 if not 0 <= local_us < clip.duration_us:
                     continue
                 layer = self._layer(clip, local_us)
-                if layer is not None:
+                if layer is None:
+                    continue
+                edge = next(
+                    (
+                        item
+                        for item in self.document.transitions
+                        if (
+                            item.placement == "in"
+                            and item.to_clip_id == clip.id
+                            or item.placement == "out"
+                            and item.from_clip_id == clip.id
+                        )
+                    ),
+                    None,
+                )
+                progress = None
+                if edge and edge.placement == "in" and local_us < edge.duration_us:
+                    progress = _transition_progress(local_us, edge.duration_us, edge.easing)
+                elif (
+                    edge
+                    and edge.placement == "out"
+                    and clip.duration_us - local_us < edge.duration_us
+                ):
+                    progress = _transition_progress(
+                        edge.duration_us - (clip.duration_us - local_us),
+                        edge.duration_us,
+                        edge.easing,
+                    )
+                if edge and progress is not None:
+                    if edge.placement == "out":
+                        progress = 1 - progress
+                    self._composite(
+                        canvas,
+                        layer,
+                        clip,
+                        local_us,
+                        opacity_multiplier=progress,
+                        transition_kind=edge.kind,
+                        transition_progress=progress,
+                        direction=edge.direction,
+                    )
+                    if edge.kind == "flash" and progress < 0.45:
+                        flash = Image.new(
+                            "RGBA",
+                            canvas.size,
+                            (255, 255, 255, round((1 - progress) * 150)),
+                        )
+                        canvas.alpha_composite(flash)
+                else:
                     self._composite(canvas, layer, clip, local_us)
         if size and canvas.size != size:
             canvas = canvas.resize(size, Image.Resampling.LANCZOS)
@@ -201,10 +319,23 @@ class TimelineFrameRenderer:
         return cropped, (center - bounds[0], center - bounds[1])
 
     def _composite(
-        self, canvas: Image.Image, layer: Image.Image, clip: VideoEditorClip, local_us: int
+        self,
+        canvas: Image.Image,
+        layer: Image.Image,
+        clip: VideoEditorClip,
+        local_us: int,
+        *,
+        opacity_multiplier: float = 1,
+        transition_kind: str | None = None,
+        transition_progress: float | None = None,
+        direction: str = "left",
     ) -> None:
         transform = clip.transform
         canvas_width, canvas_height = canvas.size
+        if transition_kind == "blur" and transition_progress is not None:
+            radius = max(0, round((1 - transition_progress) * 10))
+            if radius:
+                layer = layer.filter(ImageFilter.GaussianBlur(radius=radius))
         if clip.fit_mode in {"cover", "contain"}:
             ratio = (
                 max(canvas_width / layer.width, canvas_height / layer.height)
@@ -232,6 +363,10 @@ class TimelineFrameRenderer:
             layer = layer.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         scale_x = property_at(clip, "scaleX", local_us, transform.scale_x)
         scale_y = property_at(clip, "scaleY", local_us, transform.scale_y)
+        if transition_kind == "zoom" and transition_progress is not None:
+            zoom = 1 + 0.22 * transition_progress
+            scale_x *= zoom
+            scale_y *= zoom
         width = max(1, round(layer.width * scale_x))
         height = max(1, round(layer.height * scale_y))
         if layer.size != (width, height):
@@ -243,7 +378,30 @@ class TimelineFrameRenderer:
             transform.anchor,
             grounded_bottom=(layer.height * ground_ratio if ground_ratio is not None else None),
         )
-        opacity = clip_opacity(clip, local_us)
+        if transition_kind in {"wipe-left", "wipe-right"} and transition_progress is not None:
+            reveal = max(0.0, min(1.0, transition_progress))
+            if direction in {"right", "up", "down"}:
+                reveal = 1 - reveal
+            mask = Image.new("L", layer.size, 0)
+            if direction in {"left", "right"}:
+                width = round(layer.width * reveal)
+                box = (
+                    (layer.width - width, 0, layer.width, layer.height)
+                    if direction == "right"
+                    else (0, 0, width, layer.height)
+                )
+            else:
+                height = round(layer.height * reveal)
+                box = (
+                    (0, layer.height - height, layer.width, layer.height)
+                    if direction == "up"
+                    else (0, 0, layer.width, height)
+                )
+            ImageDraw.Draw(mask).rectangle(box, fill=255)
+            layer.putalpha(
+                Image.composite(layer.getchannel("A"), Image.new("L", layer.size, 0), mask)
+            )
+        opacity = clip_opacity(clip, local_us) * max(0, min(1, opacity_multiplier))
         if opacity < 1:
             alpha = layer.getchannel("A").point(lambda value: round(value * opacity))
             layer.putalpha(alpha)

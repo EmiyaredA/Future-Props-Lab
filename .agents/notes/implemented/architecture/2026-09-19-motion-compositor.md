@@ -1,4 +1,4 @@
-# Agent Note: 独立动效合成项目与确定性透明交接
+# Agent Note: 独立特效制作项目与确定性透明交接
 
 Status: implemented
 

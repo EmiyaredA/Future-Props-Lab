@@ -25,6 +25,7 @@ from app.apps.galgame_workshop.models import (
     GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
+from app.apps.live2d_workshop.models import Live2DAsset, Live2DExport, Live2DProject
 from app.apps.motion_compositor.models import (
     MotionDocument,
     MotionOperationBatch,
@@ -161,6 +162,7 @@ LAYOUT_PROJECT_MODELS: dict[str, type] = {
     "visual-workshop": VisualWorkshopProject,
     "video-editor": VideoEditorProject,
     "motion-compositor": MotionProject,
+    "live2d-workshop": Live2DProject,
 }
 
 # Ensure reference mappers are registered on Base.metadata for capability queries.
@@ -201,6 +203,9 @@ _ = (
 )
 
 TENANT_MODELS = (
+    Live2DProject,
+    Live2DAsset,
+    Live2DExport,
     AmadeusConversation,
     AmadeusMessage,
     AmadeusAction,

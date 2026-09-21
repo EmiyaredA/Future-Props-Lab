@@ -6,8 +6,11 @@ import { defineConfig } from "vite";
 const apiPort = process.env.FPL_E2E_API_PORT || "9000";
 const webPort = Number(process.env.FPL_E2E_WEB_PORT || "3000");
 const apiTarget = `http://127.0.0.1:${apiPort}`;
+const configuredCacheDir = process.env.FPL_VITE_CACHE_DIR;
 
 export default defineConfig(({ mode }) => ({
+  cacheDir:
+    configuredCacheDir || resolve(__dirname, `node_modules/.vite-${mode}`),
   envDir: mode === "desktop" ? false : undefined,
   define:
     mode === "desktop"
@@ -15,6 +18,7 @@ export default defineConfig(({ mode }) => ({
       : undefined,
   plugins: [react(), tailwindcss()],
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@app": resolve(__dirname, "src/app"),
       "@features": resolve(__dirname, "src/features"),
@@ -64,6 +68,12 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: webPort,
+    fs: {
+      allow: [
+        resolve(__dirname, ".."),
+        ...(configuredCacheDir ? [configuredCacheDir] : []),
+      ],
+    },
     proxy:
       mode === "desktop"
         ? undefined

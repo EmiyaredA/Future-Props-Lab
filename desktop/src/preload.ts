@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld(
     openNewWindow: () => ipcRenderer.invoke("desktop:open-new-window"),
     openAmadeus: () => ipcRenderer.invoke("desktop:amadeus-open"),
     hideAmadeus: () => ipcRenderer.invoke("desktop:amadeus-hide"),
+    amadeusAlwaysOnTop: () => ipcRenderer.invoke("desktop:amadeus-always-on-top"),
+    setAmadeusAlwaysOnTop: (enabled: boolean) =>
+      ipcRenderer.invoke("desktop:amadeus-always-on-top", enabled),
     publishAmadeusMutation: (value: unknown) => ipcRenderer.invoke("desktop:amadeus-mutation", value),
     locateAmadeusReference: (value: unknown) => ipcRenderer.invoke("desktop:amadeus-locate", value),
     onAmadeusMutation: (callback: (value: unknown) => void) => {

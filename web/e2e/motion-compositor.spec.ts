@@ -10,9 +10,9 @@ test("creates, edits and hands off a transparent motion shot", async ({
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto("/apps");
-  await page.getByText("动效合成工坊", { exact: true }).click();
+  await page.getByText("特效制作工坊", { exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "我的动效项目" }),
+    page.getByRole("heading", { name: "我的特效项目" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "新建项目" }).click();
   await page.getByRole("button", { name: /空白项目/ }).click();
@@ -101,7 +101,7 @@ test("creates, edits and hands off a transparent motion shot", async ({
       timeout: 60_000,
     });
     await page.getByRole("button", { name: /发送透明镜头/ }).click();
-    await page.getByPlaceholder("例如：怪盗风格成片").fill("动效交接测试");
+    await page.getByPlaceholder("例如：怪盗风格成片").fill("特效交接测试");
     await page.getByRole("button", { name: /发送到剪辑/ }).click();
     await expect(page).toHaveURL(
       /\/apps\/video-editor\/projects\/[^/]+\/editor/,

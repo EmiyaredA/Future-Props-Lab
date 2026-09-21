@@ -517,6 +517,24 @@
         "title": "AddTrackOperation",
         "type": "object"
       },
+      "AddTransitionOperation": {
+        "properties": {
+          "transition": {
+            "$ref": "#/components/schemas/VideoEditorTimelineTransition"
+          },
+          "type": {
+            "const": "addTransition",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "transition"
+        ],
+        "title": "AddTransitionOperation",
+        "type": "object"
+      },
       "AgentCapabilities": {
         "properties": {
           "operations": {
@@ -2257,6 +2275,20 @@
         "title": "Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post",
         "type": "object"
       },
+      "Body_import_project_v1_live2d_workshop_projects_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_project_v1_live2d_workshop_projects_import_post",
+        "type": "object"
+      },
       "Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post": {
         "properties": {
           "file": {
@@ -2366,6 +2398,20 @@
           "end_ms"
         ],
         "title": "Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post",
+        "type": "object"
+      },
+      "Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post",
         "type": "object"
       },
       "Body_upload_asset_v1_model_inference_assets_post": {
@@ -3073,6 +3119,482 @@
           "new_password"
         ],
         "title": "ChangePasswordIn",
+        "type": "object"
+      },
+      "CharacterDeformer": {
+        "additionalProperties": false,
+        "properties": {
+          "columns": {
+            "default": 2,
+            "maximum": 16.0,
+            "minimum": 1.0,
+            "title": "Columns",
+            "type": "integer"
+          },
+          "height": {
+            "default": 500,
+            "exclusiveMinimum": 0.0,
+            "maximum": 8192.0,
+            "title": "Height",
+            "type": "number"
+          },
+          "id": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "rotation",
+              "warp"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentid"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            },
+            "maxItems": 289,
+            "title": "Points",
+            "type": "array"
+          },
+          "rotation": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Rotation",
+            "type": "number"
+          },
+          "rows": {
+            "default": 2,
+            "maximum": 16.0,
+            "minimum": 1.0,
+            "title": "Rows",
+            "type": "integer"
+          },
+          "scale": {
+            "default": 1,
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Scale",
+            "type": "number"
+          },
+          "width": {
+            "default": 500,
+            "exclusiveMinimum": 0.0,
+            "maximum": 8192.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "title": "CharacterDeformer",
+        "type": "object"
+      },
+      "CharacterDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "deformers": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterDeformer"
+            },
+            "maxItems": 128,
+            "title": "Deformers",
+            "type": "array"
+          },
+          "expressions": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterExpression"
+            },
+            "maxItems": 128,
+            "title": "Expressions",
+            "type": "array"
+          },
+          "height": {
+            "default": 1600,
+            "maximum": 4096.0,
+            "minimum": 32.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "motions": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterMotion"
+            },
+            "maxItems": 128,
+            "title": "Motions",
+            "type": "array"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterParameter"
+            },
+            "maxItems": 128,
+            "title": "Parameters",
+            "type": "array"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterPart"
+            },
+            "maxItems": 128,
+            "title": "Parts",
+            "type": "array"
+          },
+          "schemaVersion": {
+            "const": 1,
+            "default": 1,
+            "title": "Schemaversion",
+            "type": "integer"
+          },
+          "width": {
+            "default": 1200,
+            "maximum": 4096.0,
+            "minimum": 32.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "title": "CharacterDocument",
+        "type": "object"
+      },
+      "CharacterExpression": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "values": {
+            "additionalProperties": {
+              "maximum": 100000.0,
+              "minimum": -100000.0,
+              "type": "number"
+            },
+            "maxProperties": 128,
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CharacterExpression",
+        "type": "object"
+      },
+      "CharacterMotion": {
+        "additionalProperties": false,
+        "properties": {
+          "duration": {
+            "default": 60,
+            "maximum": 36000.0,
+            "minimum": 1.0,
+            "title": "Duration",
+            "type": "integer"
+          },
+          "fps": {
+            "default": 30,
+            "maximum": 60.0,
+            "minimum": 1.0,
+            "title": "Fps",
+            "type": "integer"
+          },
+          "id": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "loopEnd": {
+            "default": 60,
+            "minimum": 1.0,
+            "title": "Loopend",
+            "type": "integer"
+          },
+          "loopStart": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Loopstart",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterTrack"
+            },
+            "maxItems": 128,
+            "title": "Tracks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CharacterMotion",
+        "type": "object"
+      },
+      "CharacterParameter": {
+        "additionalProperties": false,
+        "properties": {
+          "bindings": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterBinding"
+            },
+            "maxItems": 256,
+            "title": "Bindings",
+            "type": "array"
+          },
+          "default": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Default",
+            "type": "number"
+          },
+          "id": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "maximum": {
+            "default": 30,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Maximum",
+            "type": "number"
+          },
+          "minimum": {
+            "default": -30,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Minimum",
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CharacterParameter",
+        "type": "object"
+      },
+      "CharacterPart": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Assetid",
+            "type": "string"
+          },
+          "group": {
+            "default": "",
+            "maxLength": 512,
+            "title": "Group",
+            "type": "string"
+          },
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 8192.0,
+            "title": "Height",
+            "type": "number"
+          },
+          "id": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "locked": {
+            "default": false,
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "maskId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maskid"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "opacity": {
+            "default": 1,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Opacity",
+            "type": "number"
+          },
+          "order": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Order",
+            "type": "integer"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentid"
+          },
+          "triangles": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 24576,
+            "minItems": 3,
+            "title": "Triangles",
+            "type": "array"
+          },
+          "uvs": {
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            },
+            "maxItems": 4096,
+            "minItems": 3,
+            "title": "Uvs",
+            "type": "array"
+          },
+          "vertices": {
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            },
+            "maxItems": 4096,
+            "minItems": 3,
+            "title": "Vertices",
+            "type": "array"
+          },
+          "visible": {
+            "default": true,
+            "title": "Visible",
+            "type": "boolean"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 8192.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "assetId",
+          "width",
+          "height",
+          "vertices",
+          "uvs",
+          "triangles"
+        ],
+        "title": "CharacterPart",
+        "type": "object"
+      },
+      "CharacterTrack": {
+        "additionalProperties": false,
+        "properties": {
+          "keys": {
+            "items": {
+              "$ref": "#/components/schemas/TimeKeyframe"
+            },
+            "maxItems": 1000,
+            "title": "Keys",
+            "type": "array"
+          },
+          "parameterId": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Parameterid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parameterId"
+        ],
+        "title": "CharacterTrack",
         "type": "object"
       },
       "ClipIdOperation": {
@@ -15069,6 +15591,449 @@
         "title": "LinkClipsOperation",
         "type": "object"
       },
+      "Live2DAssetOut": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "width",
+          "height",
+          "url"
+        ],
+        "title": "Live2DAssetOut",
+        "type": "object"
+      },
+      "Live2DAssets": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Live2DAssetOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Live2DAssets",
+        "type": "object"
+      },
+      "Live2DCombination": {
+        "additionalProperties": false,
+        "properties": {
+          "expressionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expressionid"
+          },
+          "motionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motionid"
+          }
+        },
+        "title": "Live2DCombination",
+        "type": "object"
+      },
+      "Live2DCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "default": 1600,
+            "maximum": 4096.0,
+            "minimum": 32.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "title": {
+            "default": "未命名角色",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "width": {
+            "default": 1200,
+            "maximum": 4096.0,
+            "minimum": 32.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "title": "Live2DCreate",
+        "type": "object"
+      },
+      "Live2DCrop": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 4096.0,
+            "title": "Height",
+            "type": "number"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 4096.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "Live2DCrop",
+        "type": "object"
+      },
+      "Live2DDocumentOut": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/CharacterDocument"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "document"
+        ],
+        "title": "Live2DDocumentOut",
+        "type": "object"
+      },
+      "Live2DExportIn": {
+        "additionalProperties": false,
+        "properties": {
+          "combinations": {
+            "items": {
+              "$ref": "#/components/schemas/Live2DCombination"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Combinations",
+            "type": "array"
+          },
+          "crop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Live2DCrop"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "endFrame": {
+            "default": 60,
+            "maximum": 3600.0,
+            "minimum": 1.0,
+            "title": "Endframe",
+            "type": "integer"
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "fps": {
+            "default": 30,
+            "maximum": 60.0,
+            "minimum": 1.0,
+            "title": "Fps",
+            "type": "integer"
+          },
+          "height": {
+            "default": 512,
+            "maximum": 2048.0,
+            "minimum": 32.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Requestid",
+            "type": "string"
+          },
+          "startFrame": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Startframe",
+            "type": "integer"
+          },
+          "width": {
+            "default": 512,
+            "maximum": 2048.0,
+            "minimum": 32.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId",
+          "combinations"
+        ],
+        "title": "Live2DExportIn",
+        "type": "object"
+      },
+      "Live2DExportOut": {
+        "additionalProperties": false,
+        "properties": {
+          "download": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/Live2DExportIn"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "progress",
+          "settings"
+        ],
+        "title": "Live2DExportOut",
+        "type": "object"
+      },
+      "Live2DExports": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Live2DExportOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Live2DExports",
+        "type": "object"
+      },
+      "Live2DPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "title"
+        ],
+        "title": "Live2DPatch",
+        "type": "object"
+      },
+      "Live2DPreflight": {
+        "additionalProperties": false,
+        "properties": {
+          "frameCount": {
+            "title": "Framecount",
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ready",
+          "messages",
+          "frameCount"
+        ],
+        "title": "Live2DPreflight",
+        "type": "object"
+      },
+      "Live2DProjectOut": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "thumbnail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "Live2DProjectOut",
+        "type": "object"
+      },
+      "Live2DProjects": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Live2DProjectOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Live2DProjects",
+        "type": "object"
+      },
+      "Live2DSave": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/CharacterDocument"
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "document"
+        ],
+        "title": "Live2DSave",
+        "type": "object"
+      },
       "LogWorkspaceOut": {
         "properties": {
           "id": {
@@ -19106,6 +20071,101 @@
         "title": "OperationBatchIn",
         "type": "object"
       },
+      "ParameterBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "keys": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterKeyform"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Keys",
+            "type": "array"
+          },
+          "targetId": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Targetid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetId",
+          "keys"
+        ],
+        "title": "ParameterBinding",
+        "type": "object"
+      },
+      "ParameterKeyform": {
+        "additionalProperties": false,
+        "properties": {
+          "opacity": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opacity"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Point"
+                },
+                "maxItems": 4096,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "rotation": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": -100000.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation"
+          },
+          "scale": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 100.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale"
+          },
+          "value": {
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "ParameterKeyform",
+        "type": "object"
+      },
       "PermissionPolicy": {
         "properties": {
           "admin": {
@@ -19155,6 +20215,29 @@
           "value"
         ],
         "title": "PermissionPolicyOut",
+        "type": "object"
+      },
+      "Point": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "Point",
         "type": "object"
       },
       "PresentationCrop": {
@@ -21068,6 +22151,27 @@
           "trackId"
         ],
         "title": "RemoveTrackOperation",
+        "type": "object"
+      },
+      "RemoveTransitionOperation": {
+        "properties": {
+          "transitionId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Transitionid",
+            "type": "string"
+          },
+          "type": {
+            "const": "removeTransition",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "transitionId"
+        ],
+        "title": "RemoveTransitionOperation",
         "type": "object"
       },
       "RenewApiKeyIn": {
@@ -23544,6 +24648,39 @@
         "title": "ThoughtRevisionIn",
         "type": "object"
       },
+      "TimeKeyframe": {
+        "additionalProperties": false,
+        "properties": {
+          "frame": {
+            "maximum": 36000.0,
+            "minimum": 0.0,
+            "title": "Frame",
+            "type": "integer"
+          },
+          "interpolation": {
+            "default": "linear",
+            "enum": [
+              "hold",
+              "linear",
+              "smooth"
+            ],
+            "title": "Interpolation",
+            "type": "string"
+          },
+          "value": {
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "frame",
+          "value"
+        ],
+        "title": "TimeKeyframe",
+        "type": "object"
+      },
       "ToolApiCatalogOut": {
         "properties": {
           "items": {
@@ -24127,6 +25264,33 @@
           "patch"
         ],
         "title": "UpdateTrackOperation",
+        "type": "object"
+      },
+      "UpdateTransitionOperation": {
+        "properties": {
+          "patch": {
+            "additionalProperties": true,
+            "title": "Patch",
+            "type": "object"
+          },
+          "transitionId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Transitionid",
+            "type": "string"
+          },
+          "type": {
+            "const": "updateTransition",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "transitionId",
+          "patch"
+        ],
+        "title": "UpdateTransitionOperation",
         "type": "object"
       },
       "ValidationError": {
@@ -25547,12 +26711,14 @@
                   "addClip": "#/components/schemas/AddClipOperation",
                   "addKeyframe": "#/components/schemas/KeyframeOperation",
                   "addTrack": "#/components/schemas/AddTrackOperation",
+                  "addTransition": "#/components/schemas/AddTransitionOperation",
                   "duplicateClip": "#/components/schemas/ClipIdOperation",
                   "linkClips": "#/components/schemas/LinkClipsOperation",
                   "moveClip": "#/components/schemas/MoveClipOperation",
                   "removeClip": "#/components/schemas/ClipIdOperation",
                   "removeKeyframe": "#/components/schemas/KeyframeOperation",
                   "removeTrack": "#/components/schemas/RemoveTrackOperation",
+                  "removeTransition": "#/components/schemas/RemoveTransitionOperation",
                   "reorderTrack": "#/components/schemas/ReorderTrackOperation",
                   "restoreClipStates": "#/components/schemas/RestoreClipStatesOperation",
                   "rippleDelete": "#/components/schemas/ClipIdOperation",
@@ -25566,7 +26732,8 @@
                   "updateClip": "#/components/schemas/UpdateClipOperation",
                   "updateKeyframe": "#/components/schemas/KeyframeOperation",
                   "updateSettings": "#/components/schemas/UpdateSettingsOperation",
-                  "updateTrack": "#/components/schemas/UpdateTrackOperation"
+                  "updateTrack": "#/components/schemas/UpdateTrackOperation",
+                  "updateTransition": "#/components/schemas/UpdateTransitionOperation"
                 },
                 "propertyName": "type"
               },
@@ -25624,6 +26791,15 @@
                 },
                 {
                   "$ref": "#/components/schemas/SetTransitionOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/AddTransitionOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/UpdateTransitionOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/RemoveTransitionOperation"
                 }
               ]
             },
@@ -25667,6 +26843,13 @@
             },
             "title": "Tracks",
             "type": "array"
+          },
+          "transitions": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorTimelineTransition"
+            },
+            "title": "Transitions",
+            "type": "array"
           }
         },
         "title": "VideoEditorTimelineDocument",
@@ -25697,6 +26880,99 @@
           "updatedAt"
         ],
         "title": "VideoEditorTimelineOut",
+        "type": "object"
+      },
+      "VideoEditorTimelineTransition": {
+        "properties": {
+          "direction": {
+            "default": "left",
+            "enum": [
+              "left",
+              "right",
+              "up",
+              "down",
+              "in",
+              "out"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "durationUs": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000000.0,
+            "title": "Durationus",
+            "type": "integer"
+          },
+          "easing": {
+            "default": "linear",
+            "enum": [
+              "linear",
+              "ease-in",
+              "ease-out",
+              "ease-in-out"
+            ],
+            "title": "Easing",
+            "type": "string"
+          },
+          "fromClipId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fromclipid"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "crossfade",
+              "fade-black",
+              "fade-white",
+              "wipe-left",
+              "wipe-right",
+              "zoom",
+              "blur",
+              "flash"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "placement": {
+            "enum": [
+              "in",
+              "out",
+              "between"
+            ],
+            "title": "Placement",
+            "type": "string"
+          },
+          "toClipId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Toclipid"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "durationUs",
+          "placement"
+        ],
+        "title": "VideoEditorTimelineTransition",
         "type": "object"
       },
       "VideoEditorTrack": {
@@ -38016,6 +39292,1052 @@
         "summary": "Validate Tool Api",
         "tags": [
           "integrations"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects": {
+      "get": {
+        "operationId": "list_projects_v1_live2d_workshop_projects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DProjects"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Projects",
+        "tags": [
+          "live2d-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_project_v1_live2d_workshop_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Live2DCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/import": {
+      "post": {
+        "operationId": "import_project_v1_live2d_workshop_projects_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_project_v1_live2d_workshop_projects_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Project",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}": {
+      "delete": {
+        "operationId": "delete_project_v1_live2d_workshop_projects__project_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedRevision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expectedrevision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Project V1 Live2D Workshop Projects  Project Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Project",
+        "tags": [
+          "live2d-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_project_v1_live2d_workshop_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project",
+        "tags": [
+          "live2d-workshop"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_project_v1_live2d_workshop_projects__project_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Live2DPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Project",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/assets": {
+      "get": {
+        "operationId": "list_assets_v1_live2d_workshop_projects__project_id__assets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DAssets"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Assets",
+        "tags": [
+          "live2d-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "upload_asset_v1_live2d_workshop_projects__project_id__assets_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Asset",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file": {
+      "get": {
+        "operationId": "asset_file_v1_live2d_workshop_projects__project_id__assets__asset_id__file_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Asset File",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/document": {
+      "get": {
+        "operationId": "get_document_v1_live2d_workshop_projects__project_id__document_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Document",
+        "tags": [
+          "live2d-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "save_document_v1_live2d_workshop_projects__project_id__document_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Live2DSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Document",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/exports": {
+      "get": {
+        "operationId": "list_exports_v1_live2d_workshop_projects__project_id__exports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DExports"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Exports",
+        "tags": [
+          "live2d-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_export_v1_live2d_workshop_projects__project_id__exports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Live2DExportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DExportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Export",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/exports/preflight": {
+      "post": {
+        "operationId": "preflight_v1_live2d_workshop_projects__project_id__exports_preflight_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Live2DExportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DPreflight"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preflight",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}": {
+      "get": {
+        "operationId": "get_export_v1_live2d_workshop_projects__project_id__exports__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DExportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Export",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_export_v1_live2d_workshop_projects__project_id__exports__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DExportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Export",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}/download": {
+      "get": {
+        "operationId": "download_export_v1_live2d_workshop_projects__project_id__exports__task_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Export",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/package": {
+      "get": {
+        "operationId": "export_package_v1_live2d_workshop_projects__project_id__package_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Package",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/preview": {
+      "get": {
+        "operationId": "preview_v1_live2d_workshop_projects__project_id__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "frame",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 36000,
+              "minimum": 0,
+              "title": "Frame",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "motionId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Motionid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expressionId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expressionid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedRevision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expectedrevision"
+            }
+          },
+          {
+            "in": "query",
+            "name": "width",
+            "required": false,
+            "schema": {
+              "default": 480,
+              "maximum": 2048,
+              "minimum": 32,
+              "title": "Width",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2048,
+                  "minimum": 32,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cropX",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cropx"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cropY",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cropy"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cropWidth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "maximum": 4096,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cropwidth"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cropHeight",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "maximum": 4096,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cropheight"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/thumbnail": {
+      "get": {
+        "operationId": "thumbnail_v1_live2d_workshop_projects__project_id__thumbnail_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Thumbnail",
+        "tags": [
+          "live2d-workshop"
         ]
       }
     },

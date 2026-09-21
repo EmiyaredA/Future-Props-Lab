@@ -67,6 +67,10 @@
     "method": "delete_tool_api",
     "resource": "integrations"
   },
+  "DELETE /v1/live2d-workshop/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "live2d_workshop"
+  },
   "DELETE /v1/llm-call-logs/{log_id}": {
     "method": "delete_one",
     "resource": "logs"
@@ -458,6 +462,50 @@
   "GET /v1/integrations/tool-apis/{integration_id}": {
     "method": "tool_api",
     "resource": "integrations"
+  },
+  "GET /v1/live2d-workshop/projects": {
+    "method": "list_projects",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/assets": {
+    "method": "list_assets",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file": {
+    "method": "asset_file",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/document": {
+    "method": "get_document",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/exports": {
+    "method": "list_exports",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}": {
+    "method": "get_export",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/download": {
+    "method": "download_export",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/package": {
+    "method": "export_package",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/preview": {
+    "method": "preview",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/thumbnail": {
+    "method": "thumbnail",
+    "resource": "live2d_workshop"
   },
   "GET /v1/llm-call-logs": {
     "method": "list_logs",
@@ -899,6 +947,10 @@
     "method": "update_tool_api",
     "resource": "integrations"
   },
+  "PATCH /v1/live2d-workshop/projects/{project_id}": {
+    "method": "patch_project",
+    "resource": "live2d_workshop"
+  },
   "PATCH /v1/model-entries/{model_id}": {
     "method": "update_model",
     "resource": "models"
@@ -1303,6 +1355,30 @@
     "method": "validate_tool_api",
     "resource": "integrations"
   },
+  "POST /v1/live2d-workshop/projects": {
+    "method": "create_project",
+    "resource": "live2d_workshop"
+  },
+  "POST /v1/live2d-workshop/projects/import": {
+    "method": "import_project",
+    "resource": "live2d_workshop"
+  },
+  "POST /v1/live2d-workshop/projects/{project_id}/assets": {
+    "method": "upload_asset",
+    "resource": "live2d_workshop"
+  },
+  "POST /v1/live2d-workshop/projects/{project_id}/exports": {
+    "method": "create_export",
+    "resource": "live2d_workshop"
+  },
+  "POST /v1/live2d-workshop/projects/{project_id}/exports/preflight": {
+    "method": "preflight",
+    "resource": "live2d_workshop"
+  },
+  "POST /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel": {
+    "method": "cancel_export",
+    "resource": "live2d_workshop"
+  },
   "POST /v1/llm-call-logs/batch-delete": {
     "method": "batch_delete",
     "resource": "logs"
@@ -1674,6 +1750,10 @@
   "PUT /v1/galgame-workshop/projects/{project_id}/story": {
     "method": "put_story",
     "resource": "galgame"
+  },
+  "PUT /v1/live2d-workshop/projects/{project_id}/document": {
+    "method": "save_document",
+    "resource": "live2d_workshop"
   },
   "PUT /v1/model-catalog/defaults": {
     "method": "defaults",

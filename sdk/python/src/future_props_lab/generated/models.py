@@ -94,6 +94,10 @@ class AddTrackOperation(WireModel):
     track: VideoEditorTrack = Field(default=..., alias='track')
     type: Literal['addTrack'] = Field(default=..., alias='type')
 
+class AddTransitionOperation(WireModel):
+    transition: VideoEditorTimelineTransition = Field(default=..., alias='transition')
+    type: Literal['addTransition'] = Field(default=..., alias='type')
+
 class AgentCapabilities(WireModel):
     operations: dict[str, Any] = Field(default=..., alias='operations')
     schemas: dict[str, Any] = Field(default=..., alias='schemas')
@@ -379,6 +383,9 @@ class Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_pos
 class Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post(WireModel):
     file: str = Field(default=..., alias='file')
 
+class Body_import_project_v1_live2d_workshop_projects_import_post(WireModel):
+    file: str = Field(default=..., alias='file')
+
 class Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post(WireModel):
     file: str = Field(default=..., alias='file')
 
@@ -397,6 +404,9 @@ class Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_
     start_ms: int = Field(default=..., alias='start_ms', ge=0.0)
     target_language_tag: str | None = Field(default=None, alias='target_language_tag')
     upload: str = Field(default=..., alias='upload')
+
+class Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post(WireModel):
+    file: str = Field(default=..., alias='file')
 
 class Body_upload_asset_v1_model_inference_assets_post(WireModel):
     upload: str = Field(default=..., alias='upload')
@@ -506,6 +516,76 @@ class CertificationOut(WireModel):
 class ChangePasswordIn(WireModel):
     current_password: str = Field(default=..., alias='current_password', repr=False)
     new_password: str = Field(default=..., alias='new_password', repr=False)
+
+class CharacterDeformer(WireModel):
+    columns: int = Field(default=2, alias='columns', ge=1.0, le=16.0)
+    height: float = Field(default=500, alias='height', le=8192.0, gt=0.0)
+    id: str = Field(default=..., alias='id')
+    kind: Literal['rotation', 'warp'] = Field(default=..., alias='kind')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    parent_id: str | None = Field(default=None, alias='parentId')
+    points: list[Point] | None = Field(default=None, alias='points', max_length=289)
+    rotation: float = Field(default=0, alias='rotation', ge=-100000.0, le=100000.0)
+    rows: int = Field(default=2, alias='rows', ge=1.0, le=16.0)
+    scale: float = Field(default=1, alias='scale', le=100.0, gt=0.0)
+    width: float = Field(default=500, alias='width', le=8192.0, gt=0.0)
+    x: float = Field(default=0, alias='x', ge=-100000.0, le=100000.0)
+    y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
+
+class CharacterDocument(WireModel):
+    deformers: list[CharacterDeformer] | None = Field(default=None, alias='deformers', max_length=128)
+    expressions: list[CharacterExpression] | None = Field(default=None, alias='expressions', max_length=128)
+    height: int = Field(default=1600, alias='height', ge=32.0, le=4096.0)
+    motions: list[CharacterMotion] | None = Field(default=None, alias='motions', max_length=128)
+    parameters: list[CharacterParameter] | None = Field(default=None, alias='parameters', max_length=128)
+    parts: list[CharacterPart] | None = Field(default=None, alias='parts', max_length=128)
+    schema_version: Literal[1] = Field(default=1, alias='schemaVersion')
+    width: int = Field(default=1200, alias='width', ge=32.0, le=4096.0)
+
+class CharacterExpression(WireModel):
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    values: dict[str, float] | None = Field(default=None, alias='values')
+
+class CharacterMotion(WireModel):
+    duration: int = Field(default=60, alias='duration', ge=1.0, le=36000.0)
+    fps: int = Field(default=30, alias='fps', ge=1.0, le=60.0)
+    id: str = Field(default=..., alias='id')
+    loop_end: int = Field(default=60, alias='loopEnd', ge=1.0)
+    loop_start: int = Field(default=0, alias='loopStart', ge=0.0)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    tracks: list[CharacterTrack] | None = Field(default=None, alias='tracks', max_length=128)
+
+class CharacterParameter(WireModel):
+    bindings: list[ParameterBinding] | None = Field(default=None, alias='bindings', max_length=256)
+    default: float = Field(default=0, alias='default', ge=-100000.0, le=100000.0)
+    id: str = Field(default=..., alias='id')
+    maximum: float = Field(default=30, alias='maximum', ge=-100000.0, le=100000.0)
+    minimum: float = Field(default=-30, alias='minimum', ge=-100000.0, le=100000.0)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+
+class CharacterPart(WireModel):
+    asset_id: str = Field(default=..., alias='assetId')
+    group: str = Field(default='', alias='group', max_length=512)
+    height: float = Field(default=..., alias='height', le=8192.0, gt=0.0)
+    id: str = Field(default=..., alias='id')
+    locked: bool = Field(default=False, alias='locked')
+    mask_id: str | None = Field(default=None, alias='maskId')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    opacity: float = Field(default=1, alias='opacity', ge=0.0, le=1.0)
+    order: int = Field(default=0, alias='order', ge=-10000.0, le=10000.0)
+    parent_id: str | None = Field(default=None, alias='parentId')
+    triangles: list[int] = Field(default=..., alias='triangles', min_length=3, max_length=24576)
+    uvs: list[Point] = Field(default=..., alias='uvs', min_length=3, max_length=4096)
+    vertices: list[Point] = Field(default=..., alias='vertices', min_length=3, max_length=4096)
+    visible: bool = Field(default=True, alias='visible')
+    width: float = Field(default=..., alias='width', le=8192.0, gt=0.0)
+    x: float = Field(default=0, alias='x', ge=-100000.0, le=100000.0)
+    y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
+
+class CharacterTrack(WireModel):
+    keys: list[TimeKeyframe] | None = Field(default=None, alias='keys', max_length=1000)
+    parameter_id: str = Field(default=..., alias='parameterId')
 
 class ClipIdOperation(WireModel):
     clip_id: str = Field(default=..., alias='clipId')
@@ -2305,6 +2385,81 @@ class LinkClipsOperation(WireModel):
     link_group_id: str = Field(default=..., alias='linkGroupId')
     type: Literal['linkClips'] = Field(default=..., alias='type')
 
+class Live2DAssetOut(WireModel):
+    height: int = Field(default=..., alias='height')
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name')
+    url: str = Field(default=..., alias='url')
+    width: int = Field(default=..., alias='width')
+
+class Live2DAssets(WireModel):
+    items: list[Live2DAssetOut] = Field(default=..., alias='items')
+
+class Live2DCombination(WireModel):
+    expression_id: str | None = Field(default=None, alias='expressionId')
+    motion_id: str | None = Field(default=None, alias='motionId')
+
+class Live2DCreate(WireModel):
+    height: int = Field(default=1600, alias='height', ge=32.0, le=4096.0)
+    title: str = Field(default='未命名角色', alias='title', min_length=1, max_length=120)
+    width: int = Field(default=1200, alias='width', ge=32.0, le=4096.0)
+
+class Live2DCrop(WireModel):
+    height: float = Field(default=..., alias='height', le=4096.0, gt=0.0)
+    width: float = Field(default=..., alias='width', le=4096.0, gt=0.0)
+    x: float = Field(default=..., alias='x', ge=0.0)
+    y: float = Field(default=..., alias='y', ge=0.0)
+
+class Live2DDocumentOut(WireModel):
+    document: CharacterDocument = Field(default=..., alias='document')
+    revision: int = Field(default=..., alias='revision')
+
+class Live2DExportIn(WireModel):
+    combinations: list[Live2DCombination] = Field(default=..., alias='combinations', min_length=1, max_length=16)
+    crop: Live2DCrop | None = Field(default=None, alias='crop')
+    end_frame: int = Field(default=60, alias='endFrame', ge=1.0, le=3600.0)
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    fps: int = Field(default=30, alias='fps', ge=1.0, le=60.0)
+    height: int = Field(default=512, alias='height', ge=32.0, le=2048.0)
+    request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
+    start_frame: int = Field(default=0, alias='startFrame', ge=0.0)
+    width: int = Field(default=512, alias='width', ge=32.0, le=2048.0)
+
+class Live2DExportOut(WireModel):
+    download: str | None = Field(default=None, alias='download')
+    error: str | None = Field(default=None, alias='error')
+    id: str = Field(default=..., alias='id')
+    progress: int = Field(default=..., alias='progress')
+    settings: Live2DExportIn = Field(default=..., alias='settings')
+    status: Literal['queued', 'running', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
+
+class Live2DExports(WireModel):
+    items: list[Live2DExportOut] = Field(default=..., alias='items')
+
+class Live2DPatch(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class Live2DPreflight(WireModel):
+    frame_count: int = Field(default=..., alias='frameCount')
+    messages: list[str] = Field(default=..., alias='messages')
+    ready: bool = Field(default=..., alias='ready')
+
+class Live2DProjectOut(WireModel):
+    created_at: str = Field(default=..., alias='createdAt')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    thumbnail: str | None = Field(default=None, alias='thumbnail')
+    title: str = Field(default=..., alias='title')
+    updated_at: str = Field(default=..., alias='updatedAt')
+
+class Live2DProjects(WireModel):
+    items: list[Live2DProjectOut] = Field(default=..., alias='items')
+
+class Live2DSave(WireModel):
+    document: CharacterDocument = Field(default=..., alias='document')
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+
 class LogWorkspaceOut(WireModel):
     id: str = Field(default=..., alias='id')
     name: str = Field(default=..., alias='name')
@@ -2950,6 +3105,17 @@ class OperationBatchIn(WireModel):
     operations: list[MotionOperation] = Field(default=..., alias='operations', min_length=1, max_length=100)
     request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
 
+class ParameterBinding(WireModel):
+    keys: list[ParameterKeyform] = Field(default=..., alias='keys', min_length=1, max_length=32)
+    target_id: str = Field(default=..., alias='targetId')
+
+class ParameterKeyform(WireModel):
+    opacity: float | None = Field(default=None, alias='opacity')
+    points: list[Point] | None = Field(default=None, alias='points')
+    rotation: float | None = Field(default=None, alias='rotation')
+    scale: float | None = Field(default=None, alias='scale')
+    value: float = Field(default=..., alias='value', ge=-100000.0, le=100000.0)
+
 class PermissionPolicy(WireModel):
     admin: RolePolicy = Field(default=..., alias='admin')
     member: RolePolicy = Field(default=..., alias='member')
@@ -2961,6 +3127,10 @@ class PermissionPolicyIn(WireModel):
 class PermissionPolicyOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     value: PermissionPolicy = Field(default=..., alias='value')
+
+class Point(WireModel):
+    x: float = Field(default=..., alias='x', ge=-100000.0, le=100000.0)
+    y: float = Field(default=..., alias='y', ge=-100000.0, le=100000.0)
 
 class PresentationCrop(WireModel):
     bottom: float = Field(default=..., alias='bottom', ge=0.0, lt=1.0)
@@ -3289,6 +3459,10 @@ class RegistrationInvitePatch(WireModel):
 class RemoveTrackOperation(WireModel):
     track_id: str = Field(default=..., alias='trackId')
     type: Literal['removeTrack'] = Field(default=..., alias='type')
+
+class RemoveTransitionOperation(WireModel):
+    transition_id: str = Field(default=..., alias='transitionId', min_length=1, max_length=64)
+    type: Literal['removeTransition'] = Field(default=..., alias='type')
 
 class RenewApiKeyIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -3715,6 +3889,11 @@ class ThoughtOperationsIn(WireModel):
 class ThoughtRevisionIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
+class TimeKeyframe(WireModel):
+    frame: int = Field(default=..., alias='frame', ge=0.0, le=36000.0)
+    interpolation: Literal['hold', 'linear', 'smooth'] = Field(default='linear', alias='interpolation')
+    value: float = Field(default=..., alias='value', ge=-100000.0, le=100000.0)
+
 class ToolApiCatalogOut(WireModel):
     items: list[ToolApiOut] = Field(default=..., alias='items')
     overview: IntegrationOverviewOut = Field(default=..., alias='overview')
@@ -3816,6 +3995,11 @@ class UpdateTrackOperation(WireModel):
     patch: dict[str, Any] = Field(default=..., alias='patch')
     track_id: str = Field(default=..., alias='trackId')
     type: Literal['updateTrack'] = Field(default=..., alias='type')
+
+class UpdateTransitionOperation(WireModel):
+    patch: dict[str, Any] = Field(default=..., alias='patch')
+    transition_id: str = Field(default=..., alias='transitionId', min_length=1, max_length=64)
+    type: Literal['updateTransition'] = Field(default=..., alias='type')
 
 class ValidationError(WireModel):
     ctx: dict[str, Any] | None = Field(default=None, alias='ctx')
@@ -4030,7 +4214,7 @@ class VideoEditorTextStyle(WireModel):
 
 class VideoEditorTimelineBatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    operations: list[AddTrackOperation | UpdateSettingsOperation | SetAssetOrganizationOperation | UpdateTrackOperation | RemoveTrackOperation | ReorderTrackOperation | AddClipOperation | UpdateClipOperation | ClipIdOperation | MoveClipOperation | TrimClipOperation | SplitClipOperation | SetClipSpeedOperation | RestoreClipStatesOperation | LinkClipsOperation | SeparateClipOperation | KeyframeOperation | SetTransitionOperation] = Field(default=..., alias='operations', min_length=1, max_length=200)
+    operations: list[AddTrackOperation | UpdateSettingsOperation | SetAssetOrganizationOperation | UpdateTrackOperation | RemoveTrackOperation | ReorderTrackOperation | AddClipOperation | UpdateClipOperation | ClipIdOperation | MoveClipOperation | TrimClipOperation | SplitClipOperation | SetClipSpeedOperation | RestoreClipStatesOperation | LinkClipsOperation | SeparateClipOperation | KeyframeOperation | SetTransitionOperation | AddTransitionOperation | UpdateTransitionOperation | RemoveTransitionOperation] = Field(default=..., alias='operations', min_length=1, max_length=200)
     request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
 
 class VideoEditorTimelineDocument(WireModel):
@@ -4038,12 +4222,23 @@ class VideoEditorTimelineDocument(WireModel):
     schema_version: Literal['1.0'] = Field(default='1.0', alias='schemaVersion')
     settings: VideoEditorProjectSettings | None = Field(default=None, alias='settings')
     tracks: list[VideoEditorTrack] | None = Field(default=None, alias='tracks')
+    transitions: list[VideoEditorTimelineTransition] | None = Field(default=None, alias='transitions')
 
 class VideoEditorTimelineOut(WireModel):
     document: VideoEditorTimelineDocument = Field(default=..., alias='document')
     project_id: str = Field(default=..., alias='projectId')
     revision: int = Field(default=..., alias='revision')
     updated_at: str = Field(default=..., alias='updatedAt')
+
+class VideoEditorTimelineTransition(WireModel):
+    direction: Literal['left', 'right', 'up', 'down', 'in', 'out'] = Field(default='left', alias='direction')
+    duration_us: int = Field(default=..., alias='durationUs', le=10000000.0, gt=0.0)
+    easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
+    from_clip_id: str | None = Field(default=None, alias='fromClipId')
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash'] = Field(default=..., alias='kind')
+    placement: Literal['in', 'out', 'between'] = Field(default=..., alias='placement')
+    to_clip_id: str | None = Field(default=None, alias='toClipId')
 
 class VideoEditorTrack(WireModel):
     clips: list[VideoEditorClip] | None = Field(default=None, alias='clips')
@@ -4502,6 +4697,7 @@ ActionIn.model_rebuild()
 ActionOut.model_rebuild()
 AddClipOperation.model_rebuild()
 AddTrackOperation.model_rebuild()
+AddTransitionOperation.model_rebuild()
 AgentCapabilities.model_rebuild()
 AgentClaimIn.model_rebuild()
 AgentClaimOut.model_rebuild()
@@ -4551,10 +4747,12 @@ Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post.mod
 Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post.model_rebuild()
+Body_import_project_v1_live2d_workshop_projects_import_post.model_rebuild()
 Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post.model_rebuild()
 Body_imports_v1_thought_workshop_imports_post.model_rebuild()
 Body_put_avatar_v1_account_profile_avatar_put.model_rebuild()
 Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post.model_rebuild()
+Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post.model_rebuild()
 Body_upload_asset_v1_model_inference_assets_post.model_rebuild()
 Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post.model_rebuild()
 Body_upload_asset_v1_video_editor_projects__project_id__assets_post.model_rebuild()
@@ -4573,6 +4771,13 @@ CallLogStatsOut.model_rebuild()
 CertificationIn.model_rebuild()
 CertificationOut.model_rebuild()
 ChangePasswordIn.model_rebuild()
+CharacterDeformer.model_rebuild()
+CharacterDocument.model_rebuild()
+CharacterExpression.model_rebuild()
+CharacterMotion.model_rebuild()
+CharacterParameter.model_rebuild()
+CharacterPart.model_rebuild()
+CharacterTrack.model_rebuild()
 ClipIdOperation.model_rebuild()
 ConversationDetailOut.model_rebuild()
 ConversationListOut.model_rebuild()
@@ -4832,6 +5037,20 @@ LibraryAssetImportIn.model_rebuild()
 LibraryFolderImportOut.model_rebuild()
 LibraryFolderImportSkippedOut.model_rebuild()
 LinkClipsOperation.model_rebuild()
+Live2DAssetOut.model_rebuild()
+Live2DAssets.model_rebuild()
+Live2DCombination.model_rebuild()
+Live2DCreate.model_rebuild()
+Live2DCrop.model_rebuild()
+Live2DDocumentOut.model_rebuild()
+Live2DExportIn.model_rebuild()
+Live2DExportOut.model_rebuild()
+Live2DExports.model_rebuild()
+Live2DPatch.model_rebuild()
+Live2DPreflight.model_rebuild()
+Live2DProjectOut.model_rebuild()
+Live2DProjects.model_rebuild()
+Live2DSave.model_rebuild()
 LogWorkspaceOut.model_rebuild()
 LoginIn.model_rebuild()
 McpCatalogOut.model_rebuild()
@@ -4912,9 +5131,12 @@ MotionSettings.model_rebuild()
 MotionTransform.model_rebuild()
 MoveClipOperation.model_rebuild()
 OperationBatchIn.model_rebuild()
+ParameterBinding.model_rebuild()
+ParameterKeyform.model_rebuild()
 PermissionPolicy.model_rebuild()
 PermissionPolicyIn.model_rebuild()
 PermissionPolicyOut.model_rebuild()
+Point.model_rebuild()
 PresentationCrop.model_rebuild()
 PresentationDocument.model_rebuild()
 PresentationElement.model_rebuild()
@@ -4964,6 +5186,7 @@ RegistrationInviteOut.model_rebuild()
 RegistrationInvitePage.model_rebuild()
 RegistrationInvitePatch.model_rebuild()
 RemoveTrackOperation.model_rebuild()
+RemoveTransitionOperation.model_rebuild()
 RenewApiKeyIn.model_rebuild()
 ReorderTrackOperation.model_rebuild()
 ResetPasswordOut.model_rebuild()
@@ -5027,6 +5250,7 @@ ThoughtNoteSummary.model_rebuild()
 ThoughtNoteTransitionIn.model_rebuild()
 ThoughtOperationsIn.model_rebuild()
 ThoughtRevisionIn.model_rebuild()
+TimeKeyframe.model_rebuild()
 ToolApiCatalogOut.model_rebuild()
 ToolApiCreateIn.model_rebuild()
 ToolApiOut.model_rebuild()
@@ -5040,6 +5264,7 @@ TrimClipOperation.model_rebuild()
 UpdateClipOperation.model_rebuild()
 UpdateSettingsOperation.model_rebuild()
 UpdateTrackOperation.model_rebuild()
+UpdateTransitionOperation.model_rebuild()
 ValidationError.model_rebuild()
 VideoEditorAssetBakeCreateIn.model_rebuild()
 VideoEditorAssetFolder.model_rebuild()
@@ -5073,6 +5298,7 @@ VideoEditorTextStyle.model_rebuild()
 VideoEditorTimelineBatchIn.model_rebuild()
 VideoEditorTimelineDocument.model_rebuild()
 VideoEditorTimelineOut.model_rebuild()
+VideoEditorTimelineTransition.model_rebuild()
 VideoEditorTrack.model_rebuild()
 VideoEditorTransform.model_rebuild()
 VideoEditorTransition.model_rebuild()

@@ -44,6 +44,19 @@ def _clip_dump(clip: VideoEditorClip) -> dict:
     return clip.model_dump(mode="json", by_alias=True, exclude_none=True)
 
 
+def _transitions(document: dict) -> list[dict]:
+    return document.setdefault("transitions", [])
+
+
+def _remove_transitions_for_clip(document: dict, clip_id: str) -> None:
+    transitions = _transitions(document)
+    transitions[:] = [
+        item
+        for item in transitions
+        if item.get("fromClipId") != clip_id and item.get("toClipId") != clip_id
+    ]
+
+
 def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
     result = deepcopy(document)
     for operation in body.operations:
@@ -52,6 +65,34 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
         guarded_ids = set(data.get("clipIds", []))
         if data.get("clipId"):
             guarded_ids.add(data["clipId"])
+        transition_payload = data.get("transition")
+        if transition_payload:
+            guarded_ids.update(
+                clip_id
+                for clip_id in (
+                    transition_payload.get("fromClipId"),
+                    transition_payload.get("toClipId"),
+                )
+                if clip_id
+            )
+        if data.get("transitionId"):
+            existing_transition = next(
+                (
+                    item
+                    for item in result.get("transitions", [])
+                    if item.get("id") == data["transitionId"]
+                ),
+                None,
+            )
+            if existing_transition:
+                guarded_ids.update(
+                    clip_id
+                    for clip_id in (
+                        existing_transition.get("fromClipId"),
+                        existing_transition.get("toClipId"),
+                    )
+                    if clip_id
+                )
         if kind == "restoreClipStates":
             guarded_ids.update(item["id"] for item in data["clips"])
         linked_groups = {
@@ -289,10 +330,18 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 )
                 if group_id:
                     right["linkGroupId"] = right_group_id
+                right.pop("transitionIn", None)
+                clip.pop("transitionOut", None)
                 clip["durationUs"] = offset
                 track["clips"].append(right)
+                for transition in _transitions(result):
+                    if transition.get("fromClipId") == clip["id"] and transition.get(
+                        "placement"
+                    ) in {"out", "between"}:
+                        transition["fromClipId"] = new_id
         elif kind in {"removeClip", "rippleDelete"}:
             track, removed = _remove_clip(result, data["clipId"])
+            _remove_transitions_for_clip(result, removed["id"])
             if kind == "rippleDelete":
                 end = removed["timelineStartUs"] + removed["durationUs"]
                 for clip in track["clips"]:
@@ -351,6 +400,9 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 kind="audio",
                 linkGroupId=None,
             )
+            for edge in ("transitionIn", "transitionOut"):
+                if sound.get(edge) and sound[edge].get("kind") != "audio-crossfade":
+                    sound.pop(edge, None)
             visual["clips"].append(picture)
             audio["clips"].append(sound)
         elif kind == "unlinkClips":
@@ -382,6 +434,29 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 clip[key] = data["transition"]
             else:
                 clip.pop(key, None)
+        elif kind == "addTransition":
+            transitions = _transitions(result)
+            transition_id = data["transition"]["id"]
+            if any(item["id"] == transition_id for item in transitions):
+                raise VideoEditorValidationError("转场 ID 已存在", code="transition_exists")
+            transitions.append(data["transition"])
+        elif kind == "updateTransition":
+            transition = next(
+                (item for item in _transitions(result) if item["id"] == data["transitionId"]),
+                None,
+            )
+            if transition is None:
+                raise VideoEditorValidationError("找不到指定转场", code="transition_not_found")
+            allowed = {"kind", "durationUs", "direction", "easing"}
+            transition.update(
+                {key: value for key, value in data["patch"].items() if key in allowed}
+            )
+        elif kind == "removeTransition":
+            transitions = _transitions(result)
+            before = len(transitions)
+            transitions[:] = [item for item in transitions if item["id"] != data["transitionId"]]
+            if len(transitions) == before:
+                raise VideoEditorValidationError("找不到指定转场", code="transition_not_found")
     return result
 
 
@@ -399,12 +474,14 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
     if len(track_orders) != len(set(track_orders)):
         raise VideoEditorValidationError("轨道顺序必须唯一", code="duplicate_track_order")
     clip_ids: list[str] = []
+    clips_by_id: dict[str, tuple[dict, dict]] = {}
     clip_asset_ids: set[str] = set()
     for track in dumped["tracks"]:
         track["clips"].sort(key=lambda clip: (clip["timelineStartUs"], clip["id"]))
         previous_end = 0
         for clip in track["clips"]:
             clip_ids.append(clip["id"])
+            clips_by_id[clip["id"]] = (track, clip)
             if clip["trackId"] != track["id"]:
                 raise VideoEditorValidationError("Clip 的 trackId 与所在轨道不一致")
             if track["kind"] == "audio" and clip["kind"] != "audio":
@@ -427,6 +504,77 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                     clip_asset_ids.add(clip[key])
     if len(clip_ids) != len(set(clip_ids)):
         raise VideoEditorValidationError("Clip ID 必须全局唯一")
+    transition_ids: set[str] = set()
+    transition_boundaries: set[tuple[str, str]] = set()
+    for transition in dumped.get("transitions", []):
+        if transition["id"] in transition_ids:
+            raise VideoEditorValidationError("转场 ID 必须全局唯一", code="duplicate_transition_id")
+        transition_ids.add(transition["id"])
+        from_clip = clips_by_id.get(transition.get("fromClipId"))
+        to_clip = clips_by_id.get(transition.get("toClipId"))
+        if transition["placement"] == "in":
+            if from_clip or not to_clip:
+                raise VideoEditorValidationError("入场转场引用无效", code="invalid_transition_ref")
+            track, clip = to_clip
+            if track["kind"] not in {"visual", "mixed"} or clip["kind"] not in {"video", "image"}:
+                raise VideoEditorValidationError(
+                    "入场转场必须绑定视觉 Clip", code="invalid_transition_track"
+                )
+            boundary = (clip["id"], "in")
+            if boundary in transition_boundaries:
+                raise VideoEditorValidationError(
+                    "同一 Clip 开头不能重复添加转场", code="duplicate_transition_edge"
+                )
+            transition_boundaries.add(boundary)
+            if transition["durationUs"] > clip["durationUs"]:
+                raise VideoEditorValidationError(
+                    "转场长度不能超过 Clip", code="transition_too_long"
+                )
+        elif transition["placement"] == "out":
+            if to_clip or not from_clip:
+                raise VideoEditorValidationError("出场转场引用无效", code="invalid_transition_ref")
+            track, clip = from_clip
+            if track["kind"] not in {"visual", "mixed"} or clip["kind"] not in {"video", "image"}:
+                raise VideoEditorValidationError(
+                    "出场转场必须绑定视觉 Clip", code="invalid_transition_track"
+                )
+            boundary = (clip["id"], "out")
+            if boundary in transition_boundaries:
+                raise VideoEditorValidationError(
+                    "同一 Clip 结尾不能重复添加转场", code="duplicate_transition_edge"
+                )
+            transition_boundaries.add(boundary)
+            if transition["durationUs"] > clip["durationUs"]:
+                raise VideoEditorValidationError(
+                    "转场长度不能超过 Clip", code="transition_too_long"
+                )
+        else:
+            if not from_clip or not to_clip:
+                raise VideoEditorValidationError("接缝转场引用无效", code="invalid_transition_ref")
+            from_track, left = from_clip
+            to_track, right = to_clip
+            if from_track["id"] != to_track["id"] or from_track["kind"] not in {"visual", "mixed"}:
+                raise VideoEditorValidationError(
+                    "接缝转场必须位于同一视觉轨", code="invalid_transition_track"
+                )
+            if left["kind"] not in {"video", "image"} or right["kind"] not in {"video", "image"}:
+                raise VideoEditorValidationError(
+                    "接缝转场必须绑定视觉 Clip", code="invalid_transition_track"
+                )
+            if left["timelineStartUs"] + left["durationUs"] != right["timelineStartUs"]:
+                raise VideoEditorValidationError(
+                    "接缝转场必须连接相邻 Clip", code="transition_not_adjacent"
+                )
+            boundary = (left["id"], right["id"])
+            if boundary in transition_boundaries:
+                raise VideoEditorValidationError(
+                    "同一接缝不能重复添加转场", code="duplicate_transition_edge"
+                )
+            transition_boundaries.add(boundary)
+            if transition["durationUs"] > min(left["durationUs"], right["durationUs"]):
+                raise VideoEditorValidationError(
+                    "转场长度不能超过相邻 Clip", code="transition_too_long"
+                )
     organization = dumped.get("assetOrganization") or {}
     organized_asset_ids = set(organization.get("rootAssetIds") or [])
     for folder in organization.get("folders") or []:

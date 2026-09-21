@@ -9,6 +9,7 @@ from app.capabilities.media_rendering.timeline_document import (
     VideoEditorClip,
     VideoEditorKeyframe,
     VideoEditorTimelineDocument,
+    VideoEditorTimelineTransition,
     VideoEditorTrack,
     VideoEditorTransition,
 )
@@ -155,6 +156,22 @@ class SetTransitionOperation(BaseModel):
     transition: VideoEditorTransition | None = None
 
 
+class AddTransitionOperation(BaseModel):
+    type: Literal["addTransition"]
+    transition: VideoEditorTimelineTransition
+
+
+class UpdateTransitionOperation(BaseModel):
+    type: Literal["updateTransition"]
+    transition_id: str = Field(alias="transitionId", min_length=1, max_length=64)
+    patch: dict
+
+
+class RemoveTransitionOperation(BaseModel):
+    type: Literal["removeTransition"]
+    transition_id: str = Field(alias="transitionId", min_length=1, max_length=64)
+
+
 VideoEditorTimelineOperation = Annotated[
     AddTrackOperation
     | UpdateSettingsOperation
@@ -173,7 +190,10 @@ VideoEditorTimelineOperation = Annotated[
     | LinkClipsOperation
     | SeparateClipOperation
     | KeyframeOperation
-    | SetTransitionOperation,
+    | SetTransitionOperation
+    | AddTransitionOperation
+    | UpdateTransitionOperation
+    | RemoveTransitionOperation,
     Field(discriminator="type"),
 ]
 

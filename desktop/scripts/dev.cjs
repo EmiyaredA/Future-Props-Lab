@@ -22,6 +22,7 @@ const testPort = process.argv.includes("--test-port")
 const python = path.join(root, ".venv/bin/python");
 mkdirSync(path.join(root, "desktop/.dev-pending"), { recursive: true });
 const compiled = mkdtempSync(path.join(root, "desktop/.dev-pending/session-"));
+const viteCache = mkdtempSync(path.join(root, "desktop/.dev-pending/vite-"));
 const compileArgs = [
   path.join(root, "node_modules/typescript/bin/tsc"),
   "-p",
@@ -267,6 +268,7 @@ async function close() {
   watchers.forEach((watcher) => watcher.close());
   await vite?.close();
   rmSync(compiled, { recursive: true, force: true });
+  rmSync(viteCache, { recursive: true, force: true });
   process.exit(0);
 }
 async function main() {
@@ -277,6 +279,7 @@ async function main() {
     root: path.join(root, "web"),
     configFile: path.join(root, "web/vite.config.ts"),
     mode: "desktop",
+    cacheDir: path.join(viteCache, "node_modules/.vite"),
     server: {
       host: "127.0.0.1",
       port: 0,

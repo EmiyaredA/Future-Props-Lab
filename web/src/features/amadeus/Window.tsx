@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   History,
+  Pin,
+  PinOff,
   Plus,
   Search,
   X,
@@ -185,6 +187,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     null,
   );
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
+  const [alwaysOnTop, setAlwaysOnTop] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const workerRef = useRef<Worker | undefined>(undefined);
   const modelAbortRef = useRef<AbortController | undefined>(undefined);
@@ -259,6 +262,9 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
       .catch(() => setModels([]));
     void bridge.amadeusContexts().then((value) => {
       if (alive) setContexts(value as Context[]);
+    });
+    void bridge.amadeusAlwaysOnTop().then((value) => {
+      if (alive && typeof value === "boolean") setAlwaysOnTop(value);
     });
     const offContexts = bridge.onAmadeusContexts((value) =>
       setContexts(value as Context[]),
@@ -1044,6 +1050,18 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           </div>
         </div>
         <div className="amadeus-header-actions">
+          <button
+            title={alwaysOnTop ? "取消悬浮置顶" : "保持悬浮在应用上方"}
+            aria-label={alwaysOnTop ? "取消悬浮置顶" : "保持悬浮在应用上方"}
+            aria-pressed={alwaysOnTop}
+            onClick={() => {
+              void bridge
+                .setAmadeusAlwaysOnTop(!alwaysOnTop)
+                .then((value) => setAlwaysOnTop(value));
+            }}
+          >
+            {alwaysOnTop ? <Pin size={17} /> : <PinOff size={17} />}
+          </button>
           <button
             title="历史对话"
             aria-label="历史对话"

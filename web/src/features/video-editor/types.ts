@@ -13,6 +13,8 @@ export type VideoEditorAssetOrganization =
 export type VideoEditorTrack = components["schemas"]["VideoEditorTrack"];
 export type VideoEditorClip = components["schemas"]["VideoEditorClip"];
 export type VideoEditorKeyframe = components["schemas"]["VideoEditorKeyframe"];
+export type VideoEditorTimelineTransition =
+  components["schemas"]["VideoEditorTimelineTransition"];
 export type VideoEditorOperation =
   components["schemas"]["VideoEditorTimelineBatchIn"]["operations"][number];
 export type VideoEditorTask = components["schemas"]["VideoEditorTaskOut"];

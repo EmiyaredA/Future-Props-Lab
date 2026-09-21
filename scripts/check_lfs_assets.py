@@ -17,6 +17,7 @@ BACKEND_ASSETS = (
     Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"),
 )
 WEB_ASSETS = (
+    Path("web/public/brand/live2d-workshop-mark.png"),
     Path("web/public/brand/audio-annotation-mark.png"),
     Path("web/public/brand/director-desk-mark.png"),
     Path("web/public/brand/presentation-workshop-mark.png"),
@@ -25,6 +26,9 @@ WEB_ASSETS = (
     Path("web/public/voice-vad/ort-wasm-simd-threaded.wasm"),
 )
 EXPECTED_SHA256 = {
+    Path(
+        "web/public/brand/live2d-workshop-mark.png"
+    ): "ad615ad25e188543e37dc276592082c87c953f85c8b8bd8039fca44095f17e70",
     Path(
         "web/public/brand/audio-annotation-mark.png"
     ): "a3539f2db85bdc42fdfab5dea9215b3ef1ce4e1c560bc9834d5c30feae015349",
@@ -205,7 +209,7 @@ def main() -> None:
             "web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,"
             "web/public/brand/presentation-workshop-mark.png,"
             "web/public/brand/audio-annotation-mark.png,"
-            "web/public/brand/director-desk-mark.png",
+            "web/public/brand/director-desk-mark.png,web/public/brand/live2d-workshop-mark.png",
         )
 
 

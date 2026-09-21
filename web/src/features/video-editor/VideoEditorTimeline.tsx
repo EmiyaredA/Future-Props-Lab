@@ -31,6 +31,7 @@ import type {
   VideoEditorClip,
   VideoEditorOperation,
   VideoEditorTimeline as Timeline,
+  VideoEditorTimelineTransition,
 } from "./types";
 
 export function VideoEditorTimeline({
@@ -45,9 +46,10 @@ export function VideoEditorTimeline({
   onScrollTopChange,
   trackHeaderWidth = 176,
   headerSeparator,
-  selectedClipId: _selectedClipId,
   selectedClipIds,
   selectClip,
+  selectedTransitionId,
+  selectTransition,
   commit,
   onDropAsset,
   draggingAsset,
@@ -75,6 +77,15 @@ export function VideoEditorTimeline({
   selectedClipId?: string;
   selectedClipIds: string[];
   selectClip: (value?: string, additive?: boolean) => void;
+  selectedTransitionId?: string;
+  selectTransition?: (
+    value?: string,
+    target?: {
+      placement: VideoEditorTimelineTransition["placement"];
+      fromClipId?: string;
+      toClipId?: string;
+    },
+  ) => void;
   commit: (
     redo: VideoEditorOperation[],
     undo?: VideoEditorOperation[],
@@ -284,6 +295,34 @@ export function VideoEditorTimeline({
     .map((id) => clipById.get(id))
     .filter((clip): clip is VideoEditorClip => Boolean(clip));
   const hasSelection = selectedClips.length > 0;
+  const transitions = timeline.document.transitions ?? [];
+  const transitionForTrack = (
+    transition: VideoEditorTimelineTransition,
+    trackId: string,
+  ) => {
+    const from = clipById.get(transition.fromClipId ?? "");
+    const to = clipById.get(transition.toClipId ?? "");
+    return (
+      (from?.trackId === trackId || to?.trackId === trackId) &&
+      (transition.placement !== "between" ||
+        (from?.trackId === trackId && to?.trackId === trackId))
+    );
+  };
+  const transitionStyle = (transition: VideoEditorTimelineTransition) => {
+    const from = clipById.get(transition.fromClipId ?? "");
+    const to = clipById.get(transition.toClipId ?? "");
+    const start =
+      transition.placement === "in"
+        ? (to?.timelineStartUs ?? 0)
+        : transition.placement === "out"
+          ? (from?.timelineStartUs ?? 0) + (from?.durationUs ?? 0)
+          : (to?.timelineStartUs ?? 0);
+    const width = transition.placement === "between" ? 52 : 24;
+    return {
+      left: `${(start / 1_000_000) * zoom - width / 2}px`,
+      width: `${width}px`,
+    };
+  };
 
   const deleteSelected = (
     ripple = false,
@@ -636,6 +675,34 @@ export function VideoEditorTimeline({
                     onDragLeave={dragLeave}
                     onDrop={(event) => drop(event, track.id)}
                   >
+                    {transitions
+                      .filter((transition) =>
+                        transitionForTrack(transition, track.id),
+                      )
+                      .map((transition) => (
+                        <button
+                          type="button"
+                          key={transition.id}
+                          className={`ve-timeline-transition ${transition.placement}${selectedTransitionId === transition.id ? " selected" : ""}`}
+                          style={transitionStyle(transition)}
+                          aria-label={`${transition.placement === "between" ? "接缝" : transition.placement === "in" ? "入场" : "出场"}转场`}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            selectTransition?.(transition.id, {
+                              placement: transition.placement,
+                              fromClipId: transition.fromClipId ?? undefined,
+                              toClipId: transition.toClipId ?? undefined,
+                            });
+                          }}
+                        >
+                          {transition.placement === "between"
+                            ? "转场"
+                            : transition.placement === "in"
+                              ? "入"
+                              : "出"}
+                        </button>
+                      ))}
                     {(track.clips ?? []).map((clip: VideoEditorClip) => (
                       <div
                         key={clip.id}

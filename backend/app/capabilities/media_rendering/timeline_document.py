@@ -84,6 +84,45 @@ class VideoEditorTransition(BaseModel):
     duration_us: int = Field(alias="durationUs", ge=0, le=10_000_000)
 
 
+class VideoEditorTimelineTransition(BaseModel):
+    id: str = Field(min_length=1, max_length=64)
+    kind: Literal[
+        "crossfade",
+        "fade-black",
+        "fade-white",
+        "wipe-left",
+        "wipe-right",
+        "zoom",
+        "blur",
+        "flash",
+    ]
+    duration_us: int = Field(alias="durationUs", gt=0, le=10_000_000)
+    placement: Literal["in", "out", "between"]
+    from_clip_id: str | None = Field(default=None, alias="fromClipId")
+    to_clip_id: str | None = Field(default=None, alias="toClipId")
+    direction: Literal[
+        "left",
+        "right",
+        "up",
+        "down",
+        "in",
+        "out",
+    ] = "left"
+    easing: Literal["linear", "ease-in", "ease-out", "ease-in-out"] = "linear"
+
+    @model_validator(mode="after")
+    def validate_clip_refs(self) -> VideoEditorTimelineTransition:
+        if self.placement == "in" and (self.from_clip_id or not self.to_clip_id):
+            raise ValueError("入场转场必须只引用 toClipId")
+        if self.placement == "out" and (self.to_clip_id or not self.from_clip_id):
+            raise ValueError("出场转场必须只引用 fromClipId")
+        if self.placement == "between" and (
+            not self.from_clip_id or not self.to_clip_id or self.from_clip_id == self.to_clip_id
+        ):
+            raise ValueError("接缝转场必须引用两个不同的 Clip")
+        return self
+
+
 class VideoEditorTextStyle(BaseModel):
     align: Literal["left", "center", "right"] = "center"
     stroke_color: str = Field(default="#000000", alias="strokeColor", pattern=r"^#[0-9a-fA-F]{6}$")
@@ -168,4 +207,5 @@ class VideoEditorTimelineDocument(BaseModel):
     asset_organization: VideoEditorAssetOrganization = Field(
         default_factory=VideoEditorAssetOrganization, alias="assetOrganization"
     )
+    transitions: list[VideoEditorTimelineTransition] = Field(default_factory=list)
     tracks: list[VideoEditorTrack] = Field(default_factory=list)

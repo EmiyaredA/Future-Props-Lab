@@ -164,7 +164,7 @@ Future-Props-Lab/
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `apps/video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
-  后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有动效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、动效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
+  后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有特效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、特效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
   FFmpeg/Pillow 合成和取消控制。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
@@ -257,7 +257,7 @@ Future-Props-Lab/
 `library/assets/`；视觉项目使用
 `applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
 `applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`；视频剪辑项目使用
-`applications/video-editor/projects/<project-id>/{assets,derived,exports}/`；动效合成项目使用
+`applications/video-editor/projects/<project-id>/{assets,derived,exports}/`；特效制作项目使用
 `applications/motion-compositor/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
 派生文件和正式导出结果，不保存快照历史；标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
 素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。
@@ -443,3 +443,7 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
 - `skills/future-props-lab-automation/`：官方自动化 Agent Skill 包（根 `SKILL.md` 名 `future-props-lab-automation`）。叶子 skill 目录名必须等于 frontmatter `name`，可单独或组合安装；每个叶子内联「前置」与最小 `fpl` 示例。校验：`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。只指导通过 `fpl`/SDK 操作产品，不修改本仓库源码；见该处 `README.md`。
 - `backend/app/capabilities/asset_store/image_crop.py` 与 `capabilities/asset_store/schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存；HTTP 适配在 `capabilities/asset_store/routes/image_crop.py`。
+
+### Live2D 工坊
+
+`web/src/features/live2d-workshop/` 拥有角色项目管理、PSD Worker、PixiJS 网格编辑、参数关键形与动画 UI。`backend/app/apps/live2d_workshop/` 拥有 Workspace 项目 CAS、素材、工程包与导出任务；`backend/app/capabilities/media_rendering/live2d/` 拥有版本化角色文档、确定性参数/变形器求值和 Pillow 三角纹理渲染。素材与输出位于对应 Workspace 的 `applications/live2d-workshop/projects/<id>/{assets,exports}/`。迁移 `r0071_live2d_workshop` 登记角色工程、素材与任务。Cubism 编译、物理、视频、外部输入驱动未启用。

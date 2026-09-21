@@ -13,3 +13,4 @@ web/public/brand/motion-compositor-mark.png filter=lfs diff=lfs merge=lfs -text
 web/public/brand/amadeus/*.png filter=lfs diff=lfs merge=lfs -text
 desktop/assets/*.png filter=lfs diff=lfs merge=lfs -text
 desktop/assets/*.icns filter=lfs diff=lfs merge=lfs -text
+web/public/brand/live2d-workshop-mark.png filter=lfs diff=lfs merge=lfs -text

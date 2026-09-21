@@ -302,7 +302,7 @@ export function EditorPage({
   const selected = doc?.layers.find((layer) => layer.id === selectedId) ?? null;
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("future-props:amadeus-context", { detail: {
-      application: "动效合成工坊", projectId, unsaved: dirty || saving,
+      application: "特效制作工坊", projectId, unsaved: dirty || saving,
       selection: selected ? { id: selected.id, name: selected.name,
         value: selected.kind } : undefined,
     } }));
@@ -460,7 +460,7 @@ export function EditorPage({
     });
   };
 
-  if (loading) return <div className="mc-editor-state">正在打开合成工程…</div>;
+  if (loading) return <div className="mc-editor-state">正在打开特效工程…</div>;
   if (!doc || !project)
     return (
       <div className="mc-editor-state">
@@ -473,7 +473,7 @@ export function EditorPage({
       <header className="mc-editor-header">
         <button
           className="mc-icon-button"
-          aria-label="返回动效项目"
+          aria-label="返回特效项目"
           onClick={onBack}
         >
           <ArrowLeft size={18} />
@@ -488,7 +488,7 @@ export function EditorPage({
         </div>
         <div className="mc-project-title">
           <strong>{project.title}</strong>
-          <small>动效合成工坊 · 镜头 01</small>
+          <small>特效制作工坊 · 镜头 01</small>
         </div>
         <span className={`mc-save-state ${dirty ? "dirty" : ""}`}>
           {saving ? <Save size={14} /> : dirty ? "●" : <Check size={14} />}{" "}
@@ -661,7 +661,7 @@ export function EditorPage({
             </div>
           ) : (
             <div className="mc-assets-content">
-              <h3>原创动效模板</h3>
+              <h3>原创特效模板</h3>
               <p>
                 新建项目时可选「漫画风人物切入」。所有图层和关键帧都能继续编辑。
               </p>
@@ -670,7 +670,7 @@ export function EditorPage({
         </aside>
         <main className="mc-preview">
           <div className="mc-preview-toolbar">
-            <strong>▣ 合成预览</strong>
+            <strong>▣ 特效预览</strong>
             <span>路径遮罩 图层选择 手形工具</span>
             <div className="mc-header-spacer" />
             <span>
