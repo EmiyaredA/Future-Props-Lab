@@ -1,5 +1,4 @@
 .l2-projects {
-  padding: 24px;
   color: var(--text-primary, #25211e);
 }
 .l2-projects button,
@@ -34,107 +33,103 @@
   outline-offset: 3px;
 }
 .l2-project-tools {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin: 24px 0;
-  color: #978b80;
+  margin-bottom: 20px;
 }
-.l2-project-tools label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #e7ddd0;
-  background: var(--surface, #fffdf9);
-  border-radius: 11px;
-  padding: 10px 14px;
-  width: min(480px, 65%);
+.l2-projects .workshop-project-cover.live2d {
+  color: var(--accent, #d96342);
+  background:
+    radial-gradient(
+      circle at 18% 18%,
+      color-mix(in srgb, var(--accent, #d96342) 16%, transparent),
+      transparent 36%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--accent-soft, #fff1e8) 88%, var(--surface, #fffdf9)),
+      var(--surface-soft, #f7f1ea)
+    );
 }
-.l2-project-tools input {
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: inherit;
-  width: 100%;
+.l2-projects .workshop-project-cover.live2d .workshop-project-cover-label {
+  align-items: flex-start;
 }
-.l2-project-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 22px;
+.l2-projects .workshop-project-cover.live2d .workshop-project-cover-label strong {
+  color: var(--text-strong, #241f1b);
 }
-.l2-project-card {
-  overflow: hidden;
-  border: 1px solid #e9dfd3;
-  border-radius: 16px;
-  background: var(--surface, #fffdf9);
-  box-shadow: 0 5px 22px #51351508;
+.l2-projects .workshop-project-cover.live2d .workshop-project-cover-label small {
+  color: var(--muted, #8f8378);
 }
-.l2-project-card .l2-cover-button {
-  display: block;
-  width: 100%;
-  border: none;
-  padding: 0;
-  border-radius: 0;
+.l2-projects .workshop-project-cover:has(.l2-project-thumb)::before,
+.l2-projects .workshop-project-cover:has(.l2-project-thumb)::after {
+  display: none;
 }
-.l2-project-cover {
-  aspect-ratio: 1.5;
-  background: linear-gradient(135deg, #f7ede2, #fff9ed);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #ad927d;
+.l2-projects .workshop-project-cover:has(.l2-project-thumb) {
+  background:
+    linear-gradient(45deg, #ece7df 25%, transparent 25%) -12px 0 / 24px 24px,
+    linear-gradient(-45deg, #ece7df 25%, transparent 25%) -12px 0 / 24px 24px,
+    linear-gradient(45deg, transparent 75%, #ece7df 75%) 0 12px / 24px 24px,
+    linear-gradient(-45deg, transparent 75%, #ece7df 75%) 0 12px / 24px 24px,
+    #f7f3ec;
 }
-.l2-project-cover img {
+.l2-projects .workshop-project-cover:has(.l2-project-thumb)
+  .workshop-project-cover-content {
+  display: none;
+}
+.l2-project-thumb {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  max-height: 210px;
+  pointer-events: none;
 }
-.l2-project-cover:has(span) img {
-  width: 100px;
-  height: 100px;
-  margin-bottom: 12px;
+.l2-projects .l2-error {
+  margin: 0 0 16px;
+  color: #c44b3c;
 }
-.l2-project-info {
-  padding: 18px;
+.l2-projects .workshop-project-actions button {
+  border: 1px solid transparent;
+  background: var(--surface, #fffdf9);
+  color: var(--muted, #8f8378);
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 9.5px;
+  font-weight: 650;
+  box-shadow: 0 1px 1px rgb(33 30 24 / 4%);
 }
-.l2-project-info h3 {
-  margin: 0 0 8px;
-  font-size: 17px;
+.l2-projects .workshop-project-actions button:hover {
+  border-color: var(--accent-line, #e7cfc0);
+  background: var(--accent-soft, #fff1e8);
+  color: var(--accent, #d96342);
 }
-.l2-project-info small {
-  color: #9a8f85;
+.l2-projects .workshop-project-secondary-actions button {
+  width: 30px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
-.l2-project-info footer {
-  margin-top: 18px;
+.l2-menu {
+  z-index: 700;
+  min-width: 160px;
+  padding: 6px;
+  border: 1px solid var(--border, #e4d8cb);
+  border-radius: 10px;
+  background: var(--surface, #fffdf9);
+  box-shadow: 0 12px 40px rgb(40 24 12 / 18%);
+  color: var(--text-primary, #2f2924);
+}
+.l2-menu [role="menuitem"] {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  outline: none;
+  font-size: 13px;
 }
-.l2-project-info footer button:first-child {
-  color: #df6b46;
-  border: 0;
-  padding-left: 0;
-  background: none;
-}
-.l2-project-grid .l2-new-project {
-  min-height: 290px;
-  flex-direction: column;
-  border: 1px dashed #ddcbbb;
-  color: #b98462;
-  background: #fff7ed66;
-  border-radius: 16px;
-}
-.l2-new-project span {
-  font-size: 12px;
-  color: #a6988c;
-}
-.l2-empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: #998d82;
+.l2-menu [data-highlighted] {
+  background: var(--surface-soft, #f7f1ea);
 }
 .l2-overlay {
   position: fixed;
@@ -302,15 +297,37 @@
   --l2-surface: #212733;
   --l2-border: #394151;
 }
-[data-theme="dark"] .l2-project-cover {
-  background: #202735;
+[data-theme="dark"] .l2-projects .workshop-project-cover.live2d {
+  color: #e08a6a;
+  background:
+    radial-gradient(
+      circle at 18% 18%,
+      color-mix(in srgb, #d96342 22%, transparent),
+      transparent 36%
+    ),
+    linear-gradient(145deg, #2a303c, #1c2330);
 }
-[data-theme="dark"] .l2-project-card {
-  background: #202735;
-  border-color: #3a414d;
+[data-theme="dark"]
+  .l2-projects
+  .workshop-project-cover.live2d
+  .workshop-project-cover-label
+  strong {
+  color: #f2f5fb;
 }
-[data-theme="dark"] .l2-project-grid .l2-new-project {
-  background: #252b36;
+[data-theme="dark"]
+  .l2-projects
+  .workshop-project-cover.live2d
+  .workshop-project-cover-label
+  small {
+  color: #a7b0c2;
+}
+[data-theme="dark"] .l2-projects .workshop-project-cover:has(.l2-project-thumb) {
+  background:
+    linear-gradient(45deg, #2a3140 25%, transparent 25%) -12px 0 / 24px 24px,
+    linear-gradient(-45deg, #2a3140 25%, transparent 25%) -12px 0 / 24px 24px,
+    linear-gradient(45deg, transparent 75%, #2a3140 75%) 0 12px / 24px 24px,
+    linear-gradient(-45deg, transparent 75%, #2a3140 75%) 0 12px / 24px 24px,
+    #1b2230;
 }
 [data-theme="dark"] .l2-dialog {
   background: #222939;
@@ -354,15 +371,14 @@
   background: #2a3344;
   color: #f2f5fb;
 }
-
-@media (max-width: 760px) {
-  .l2-project-tools {
-    flex-wrap: wrap;
-  }
-  .l2-project-tools label {
-    width: 100%;
-  }
-  .l2-projects {
-    padding: 16px;
-  }
+[data-theme="dark"] .l2-menu {
+  background: #202638;
+  color: #edf0f9;
+  border-color: #434c60;
+  box-shadow: 0 8px 30px #0005;
 }
+[data-theme="dark"] .l2-menu [data-highlighted] {
+  background: #735bdf;
+  color: white;
+}
+

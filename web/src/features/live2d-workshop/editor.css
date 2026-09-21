@@ -676,21 +676,8 @@
   .l2-header-actions span {
     display: none;
   }
-  .l2-brand {
-    width: 30px;
-    height: 30px;
-  }
   .l2-export-grid {
     grid-template-columns: 1fr;
-  }
-  .l2-project-tools {
-    flex-wrap: wrap;
-  }
-  .l2-project-tools label {
-    width: 100%;
-  }
-  .l2-projects {
-    padding: 16px;
   }
 }
 
