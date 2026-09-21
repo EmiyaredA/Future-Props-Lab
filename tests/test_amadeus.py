@@ -22,9 +22,10 @@ from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.amadeus.schemas import ModelTurnIn
 from app.console.amadeus.scripts import run_script
 from app.console.models.accounts import User
-from app.llm.models import LlmCallLog
+from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.main import app
 from app.orm import bind_workspace
+from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
 
@@ -113,6 +114,74 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
         item["text"] for item in events if item["type"] == "delta"
     )
     assert events[-1]["tool_calls"] == []
+
+
+@pytest.mark.asyncio
+async def test_amadeus_model_bridge_settles_after_request_session_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: rollback expires ORM rows; settle must not touch them again."""
+    from app.capabilities.agents.harness.contracts import ModelTextDelta, ModelTurnEnd, Usage
+    from app.llm.providers import agent as agent_mod
+    from sqlalchemy import delete
+
+    async with SessionLocal() as session:
+        provider = ModelProvider(
+            workspace_id="default",
+            name="Amadeus Bridge Probe",
+            kind="openai",
+            base_url="https://example.invalid/v1",
+            api_key_ciphertext=encrypt_secret("probe-secret"),
+            enabled=True,
+        )
+        session.add(provider)
+        await session.flush()
+        model = ModelEntry(
+            workspace_id="default",
+            provider_id=provider.id,
+            slug="amadeus-bridge-probe",
+            label="Amadeus Bridge Probe",
+            capabilities=["chat", "tools"],
+            enabled=True,
+        )
+        session.add(model)
+        await session.commit()
+        model_id = model.id
+        provider_id = provider.id
+
+    async def fake_turn(self, **_kwargs):  # noqa: ANN001
+        del self
+        yield ModelTextDelta("probe")
+        yield ModelTurnEnd((), Usage(1, 1, 2))
+
+    monkeypatch.setattr(agent_mod.HttpAgentAdapter, "stream_turn", fake_turn)
+
+    request = ModelTurnIn(
+        model_id=model_id,
+        run_id="run-expire-settle-test",
+        system="",
+        messages=[{"role": "user", "text": "hi"}],
+        tools=[],
+    )
+    async with SessionLocal() as session:
+        events = [
+            json.loads(item) async for item in stream_model_turn(session, "default", request)
+        ]
+    assert [event["type"] for event in events] == ["delta", "end"]
+    assert events[0]["text"] == "probe"
+    assert events[-1]["tool_calls"] == []
+    async with SessionLocal() as session:
+        saved = await session.scalar(
+            select(LlmCallLog).where(LlmCallLog.trace_id == "run-expire-settle-test")
+        )
+        assert saved is not None
+        assert saved.status == "success"
+        assert saved.provider_kind == "openai"
+        assert saved.model == "amadeus-bridge-probe"
+        await session.execute(delete(LlmCallLog).where(LlmCallLog.id == saved.id))
+        await session.execute(delete(ModelEntry).where(ModelEntry.id == model_id))
+        await session.execute(delete(ModelProvider).where(ModelProvider.id == provider_id))
+        await session.commit()
 
 
 @pytest.mark.asyncio

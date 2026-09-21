@@ -25,9 +25,12 @@ async def stream_model_turn(
     credential: CredentialSnapshot | None = None,
 ) -> AsyncIterator[str]:
     model, provider = await get_model(session, workspace_id, body.model_id, "text")
+    # Snapshot ORM scalars before releasing the request session; rollback expires
+    # instances, and lazy loads from the generator finally-block raise MissingGreenlet.
     slug = model.slug
+    provider_kind = provider.kind
     adapter = HttpAgentAdapter(
-        kind=provider.kind,
+        kind=provider_kind,
         base_url=provider.base_url,
         api_key=decrypt_secret(provider.api_key_ciphertext),
     )
@@ -116,7 +119,7 @@ async def stream_model_turn(
                         id=log_id,
                         workspace_id=workspace_id,
                         call_source="amadeus",
-                        provider_kind=provider.kind,
+                        provider_kind=provider_kind,
                         model=slug,
                         trace_id=body.run_id or log_id,
                         request_payload=body.model_dump(mode="json"),
@@ -130,4 +133,8 @@ async def stream_model_turn(
                 )
                 await log_session.commit()
 
-        await asyncio.shield(settle())
+        # Settlement must never replace a successful end event or the upstream error.
+        try:
+            await asyncio.shield(settle())
+        except Exception:
+            pass
