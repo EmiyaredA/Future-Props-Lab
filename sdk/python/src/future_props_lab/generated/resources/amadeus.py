@@ -75,9 +75,41 @@ class Amadeus:
         'Append Message. POST /v1/amadeus/conversations/{conversation_id}/messages'
         return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/messages', parameters=[('conversation_id', 'path', conversation_id)], body=body, media_type='application/json', response_type=models.ConversationDetailOut)
 
+    def list_runs(self, *, conversation_id: str) -> list[models.RunDetailOut]:
+        'List Runs. GET /v1/amadeus/conversations/{conversation_id}/runs'
+        return self._client._call('GET', '/v1/amadeus/conversations/{conversation_id}/runs', parameters=[('conversation_id', 'path', conversation_id)], response_type=list[models.RunDetailOut])
+
+    def create_run(self, *, conversation_id: str, body: models.RunCreateIn | dict) -> models.RunDetailOut:
+        'Create Run. POST /v1/amadeus/conversations/{conversation_id}/runs'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs', parameters=[('conversation_id', 'path', conversation_id)], body=body, media_type='application/json', response_type=models.RunDetailOut)
+
+    def get_run(self, *, conversation_id: str, run_id: str) -> models.RunDetailOut:
+        'Get Run. GET /v1/amadeus/conversations/{conversation_id}/runs/{run_id}'
+        return self._client._call('GET', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunDetailOut)
+
+    def cancel_run(self, *, conversation_id: str, run_id: str) -> models.RunDetailOut:
+        'Cancel Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunDetailOut)
+
+    def append_run_event(self, *, conversation_id: str, run_id: str, body: models.RunEventIn | dict) -> models.RunEventOut:
+        'Append Run Event. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.RunEventOut)
+
+    def finish_run(self, *, conversation_id: str, run_id: str, body: models.RunFinishIn | dict) -> models.RunDetailOut:
+        'Finish Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.RunDetailOut)
+
+    def heartbeat_run(self, *, conversation_id: str, run_id: str) -> models.RunOut:
+        'Heartbeat Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunOut)
+
     def skill_load(self, *, conversation_id: str, skill_id: str) -> dict[str, str]:
         'Skill Load. POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load'
         return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load', parameters=[('conversation_id', 'path', conversation_id), ('skill_id', 'path', skill_id)], response_type=dict[str, str])
+
+    def skill_file_read(self, *, conversation_id: str, skill_id: str, version: str, relative_path: str) -> dict[str, str | int]:
+        'Skill File Read. GET /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path}'
+        return self._client._call('GET', '/v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path}', parameters=[('conversation_id', 'path', conversation_id), ('skill_id', 'path', skill_id), ('version', 'path', version), ('relative_path', 'path', relative_path)], response_type=dict[str, str | int])
 
     def model_turn(self, *, body: models.ModelTurnIn | dict) -> models.ModelTurnOut:
         'Model Turn. POST /v1/amadeus/model-turn'
@@ -94,6 +126,10 @@ class Amadeus:
     def read_registered_operation(self, *, body: dict[str, Any] | dict) -> dict[str, Any]:
         'Read Registered Operation. POST /v1/amadeus/operations/read'
         return self._client._call('POST', '/v1/amadeus/operations/read', parameters=[], body=body, media_type='application/json', response_type=dict[str, Any])
+
+    def active_run(self) -> models.RunDetailOut | None:
+        'Active Run. GET /v1/amadeus/runs/active'
+        return self._client._call('GET', '/v1/amadeus/runs/active', parameters=[], response_type=models.RunDetailOut | None)
 
     def script_capability(self) -> dict[str, bool]:
         'Script Capability. GET /v1/amadeus/script-capability'
@@ -167,9 +203,41 @@ class AsyncAmadeus:
         'Append Message. POST /v1/amadeus/conversations/{conversation_id}/messages'
         return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/messages', parameters=[('conversation_id', 'path', conversation_id)], body=body, media_type='application/json', response_type=models.ConversationDetailOut)
 
+    async def list_runs(self, *, conversation_id: str) -> list[models.RunDetailOut]:
+        'List Runs. GET /v1/amadeus/conversations/{conversation_id}/runs'
+        return await self._client._call('GET', '/v1/amadeus/conversations/{conversation_id}/runs', parameters=[('conversation_id', 'path', conversation_id)], response_type=list[models.RunDetailOut])
+
+    async def create_run(self, *, conversation_id: str, body: models.RunCreateIn | dict) -> models.RunDetailOut:
+        'Create Run. POST /v1/amadeus/conversations/{conversation_id}/runs'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs', parameters=[('conversation_id', 'path', conversation_id)], body=body, media_type='application/json', response_type=models.RunDetailOut)
+
+    async def get_run(self, *, conversation_id: str, run_id: str) -> models.RunDetailOut:
+        'Get Run. GET /v1/amadeus/conversations/{conversation_id}/runs/{run_id}'
+        return await self._client._call('GET', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunDetailOut)
+
+    async def cancel_run(self, *, conversation_id: str, run_id: str) -> models.RunDetailOut:
+        'Cancel Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunDetailOut)
+
+    async def append_run_event(self, *, conversation_id: str, run_id: str, body: models.RunEventIn | dict) -> models.RunEventOut:
+        'Append Run Event. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.RunEventOut)
+
+    async def finish_run(self, *, conversation_id: str, run_id: str, body: models.RunFinishIn | dict) -> models.RunDetailOut:
+        'Finish Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.RunDetailOut)
+
+    async def heartbeat_run(self, *, conversation_id: str, run_id: str) -> models.RunOut:
+        'Heartbeat Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunOut)
+
     async def skill_load(self, *, conversation_id: str, skill_id: str) -> dict[str, str]:
         'Skill Load. POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load'
         return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load', parameters=[('conversation_id', 'path', conversation_id), ('skill_id', 'path', skill_id)], response_type=dict[str, str])
+
+    async def skill_file_read(self, *, conversation_id: str, skill_id: str, version: str, relative_path: str) -> dict[str, str | int]:
+        'Skill File Read. GET /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path}'
+        return await self._client._call('GET', '/v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path}', parameters=[('conversation_id', 'path', conversation_id), ('skill_id', 'path', skill_id), ('version', 'path', version), ('relative_path', 'path', relative_path)], response_type=dict[str, str | int])
 
     async def model_turn(self, *, body: models.ModelTurnIn | dict) -> models.ModelTurnOut:
         'Model Turn. POST /v1/amadeus/model-turn'
@@ -186,6 +254,10 @@ class AsyncAmadeus:
     async def read_registered_operation(self, *, body: dict[str, Any] | dict) -> dict[str, Any]:
         'Read Registered Operation. POST /v1/amadeus/operations/read'
         return await self._client._call('POST', '/v1/amadeus/operations/read', parameters=[], body=body, media_type='application/json', response_type=dict[str, Any])
+
+    async def active_run(self) -> models.RunDetailOut | None:
+        'Active Run. GET /v1/amadeus/runs/active'
+        return await self._client._call('GET', '/v1/amadeus/runs/active', parameters=[], response_type=models.RunDetailOut | None)
 
     async def script_capability(self) -> dict[str, bool]:
         'Script Capability. GET /v1/amadeus/script-capability'

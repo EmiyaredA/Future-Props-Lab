@@ -73,6 +73,7 @@ from db.migrations.versions import (
     r0069_retire_unsupported_senseaudio_models,
     r0070_amadeus,
     r0071_live2d_workshop,
+    r0072_amadeus_runs,
 )
 
 
@@ -331,5 +332,7 @@ MIGRATIONS += (
 MIGRATIONS += (Migration(r0070_amadeus.MIGRATION_ID, r0070_amadeus.SQL),)
 
 MIGRATIONS += (Migration(r0071_live2d_workshop.MIGRATION_ID, r0071_live2d_workshop.SQL),)
+
+MIGRATIONS += (Migration(r0072_amadeus_runs.MIGRATION_ID, r0072_amadeus_runs.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

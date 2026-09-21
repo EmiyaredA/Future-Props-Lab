@@ -75,6 +75,7 @@ class ActionDecisionIn(WireModel):
 
 class ActionIn(WireModel):
     arguments: dict[str, Any] | None = Field(default=None, alias='arguments')
+    run_id: str | None = Field(default=None, alias='run_id')
     tool_name: str = Field(default=..., alias='tool_name', min_length=1, max_length=120)
 
 class ActionOut(WireModel):
@@ -83,6 +84,7 @@ class ActionOut(WireModel):
     created_at: datetime = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
     result: dict[str, Any] | None = Field(default=..., alias='result')
+    run_id: str | None = Field(default=None, alias='run_id')
     status: str = Field(default=..., alias='status')
     tool_name: str = Field(default=..., alias='tool_name')
 
@@ -2551,6 +2553,8 @@ class MessageOut(WireModel):
     id: str = Field(default=..., alias='id')
     references: list[Reference] = Field(default=..., alias='references')
     role: Literal['user', 'assistant', 'tool'] = Field(default=..., alias='role')
+    run_id: str | None = Field(default=None, alias='run_id')
+    status: str = Field(default='completed', alias='status')
 
 class MockCompletionIn(WireModel):
     messages: list[dict[str, Any]] | None = Field(default=None, alias='messages', max_length=100)
@@ -3005,6 +3009,7 @@ class ModelTestVideoGenerationIn(WireModel):
 class ModelTurnIn(WireModel):
     messages: list[dict[str, Any]] = Field(default=..., alias='messages', min_length=1, max_length=200)
     model_id: str = Field(default=..., alias='model_id')
+    run_id: str | None = Field(default=None, alias='run_id')
     system: str = Field(default=..., alias='system', max_length=100000)
     tools: list[dict[str, Any]] | None = Field(default=None, alias='tools', max_length=100)
 
@@ -3510,6 +3515,49 @@ class RolePolicy(WireModel):
     view_model_diagnostics: bool = Field(default=False, alias='view_model_diagnostics')
     view_realtime_voice_diagnostics: bool = Field(default=False, alias='view_realtime_voice_diagnostics')
     view_sensitive_tool_results: bool = Field(default=False, alias='view_sensitive_tool_results')
+
+class RunCreateIn(WireModel):
+    capabilities: list[str] | None = Field(default=None, alias='capabilities', max_length=100)
+    context: list[dict[str, Any]] | None = Field(default=None, alias='context', max_length=32)
+    model_id: str = Field(default=..., alias='model_id', min_length=1, max_length=160)
+    references: list[Reference] | None = Field(default=None, alias='references', max_length=20)
+
+class RunDetailOut(WireModel):
+    events: list[RunEventOut] = Field(default=..., alias='events')
+    run: RunOut = Field(default=..., alias='run')
+
+class RunEventIn(WireModel):
+    idempotency_key: str = Field(default=..., alias='idempotency_key', min_length=1, max_length=120)
+    kind: Literal['assistant_delta', 'assistant_message', 'tool_call', 'tool_result', 'status', 'error'] = Field(default=..., alias='kind')
+    payload: dict[str, Any] | None = Field(default=None, alias='payload')
+
+class RunEventOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    idempotency_key: str = Field(default=..., alias='idempotency_key')
+    kind: str = Field(default=..., alias='kind')
+    payload: dict[str, Any] = Field(default=..., alias='payload')
+    run_id: str = Field(default=..., alias='run_id')
+    sequence: int = Field(default=..., alias='sequence')
+
+class RunFinishIn(WireModel):
+    error_message: str | None = Field(default=None, alias='error_message')
+    status: Literal['completed', 'failed', 'cancelled', 'interrupted'] = Field(default=..., alias='status')
+
+class RunOut(WireModel):
+    capabilities: list[str] = Field(default=..., alias='capabilities')
+    context: list[dict[str, Any]] = Field(default=..., alias='context')
+    conversation_id: str = Field(default=..., alias='conversation_id')
+    created_at: datetime = Field(default=..., alias='created_at')
+    error_message: str | None = Field(default=..., alias='error_message')
+    finished_at: datetime | None = Field(default=..., alias='finished_at')
+    heartbeat_at: datetime = Field(default=..., alias='heartbeat_at')
+    id: str = Field(default=..., alias='id')
+    model_id: str = Field(default=..., alias='model_id')
+    partial_text: str = Field(default=..., alias='partial_text')
+    references: list[Reference] = Field(default=..., alias='references')
+    status: str = Field(default=..., alias='status')
+    updated_at: datetime = Field(default=..., alias='updated_at')
 
 class RuntimeQuotas(WireModel):
     admin: QuotaLimit = Field(default={'realtime_voice': 2, 'total': 4}, alias='admin')
@@ -5197,6 +5245,12 @@ RoleModelTemplate_Output.model_rebuild()
 RoleModelTemplateIn.model_rebuild()
 RoleModelTemplateOut.model_rebuild()
 RolePolicy.model_rebuild()
+RunCreateIn.model_rebuild()
+RunDetailOut.model_rebuild()
+RunEventIn.model_rebuild()
+RunEventOut.model_rebuild()
+RunFinishIn.model_rebuild()
+RunOut.model_rebuild()
 RuntimeQuotas.model_rebuild()
 RuntimeQuotasIn.model_rebuild()
 RuntimeQuotasOut.model_rebuild()

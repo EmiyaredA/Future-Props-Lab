@@ -88,7 +88,7 @@ test("authors a character keyform, animates it, saves and exports separate seque
   await page.getByRole("menuitem", { name: "曲面变形器", exact: true }).click();
   await page.getByRole("button", { name: "绑定", exact: true }).click();
   await page.locator(".l2-tree-name").filter({ hasText: "嘴部" }).click();
-  await page.getByRole("button", { name: "当前参数" }).click();
+  await page.getByRole("button", { name: "当前参数", exact: true }).click();
   await page.getByRole("menuitem", { name: "微笑", exact: true }).click();
   await page.getByLabel("参数值", { exact: true }).fill("1");
   await page.getByLabel("顶点 11", { exact: true }).press("ArrowUp");
@@ -98,7 +98,7 @@ test("authors a character keyform, animates it, saves and exports separate seque
     .filter({ hasText: "旋转变形器" })
     .first()
     .click();
-  await page.getByRole("button", { name: "当前参数" }).click();
+  await page.getByRole("button", { name: "当前参数", exact: true }).click();
   await page.getByRole("menuitem", { name: "点头", exact: true }).click();
   await page.getByLabel("参数值", { exact: true }).fill("30");
   await page.getByLabel("旋转角度", { exact: true }).fill("12");
@@ -209,7 +209,7 @@ test("imports layered PSD, edits a smile keyform and reports unsupported or dama
   await expect(page.locator(".l2-canvas-status")).toContainText("256 × 320");
   await page.locator(".l2-tree-name").filter({ hasText: "嘴部" }).click();
   await page.getByRole("button", { name: "绑定", exact: true }).click();
-  await page.getByRole("button", { name: "当前参数" }).click();
+  await page.getByRole("button", { name: "当前参数", exact: true }).click();
   await page.getByRole("menuitem", { name: "微笑", exact: true }).click();
   await page.getByLabel("参数值", { exact: true }).fill("1");
   await page.getByLabel("顶点 11", { exact: true }).press("ArrowUp");

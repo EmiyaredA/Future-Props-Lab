@@ -27,6 +27,12 @@ export default defineConfig(({ mode }) => ({
       "@shared": resolve(__dirname, "src/shared"),
     },
   },
+  // These dependencies are first reached through lazy routes or a Web Worker.
+  // Pre-bundling them at startup prevents Vite from replacing the dependency
+  // graph and reloading an editor while a dialog or PSD import is in progress.
+  optimizeDeps: {
+    include: ["react", "react-dom/client", "@radix-ui/react-dialog", "ag-psd"],
+  },
   build: {
     sourcemap: mode !== "desktop",
     rollupOptions: {

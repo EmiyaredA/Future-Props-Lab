@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import shutil
+from pathlib import Path
 
 from app.console.amadeus.files import work_root
 from app.integrations.skills.catalog import SkillCatalog
 from app.runtime.operation_receipts import OperationError
+
+MAX_SKILL_FILE_BYTES = 1024 * 1024
 
 
 async def load_skill(
@@ -57,4 +60,41 @@ async def load_skill(
         "version": version,
         "content": content,
         "path": str(files[0].relative_to(destination)),
+    }
+
+
+def read_skill_file(
+    workspace_id: str,
+    conversation_id: str,
+    skill_id: str,
+    version: str,
+    relative_path: str,
+) -> dict[str, str | int]:
+    path = Path(relative_path)
+    if (
+        not skill_id
+        or Path(skill_id).name != skill_id
+        or not version
+        or Path(version).name != version
+        or path.is_absolute()
+        or not path.parts
+        or any(part in {"", ".", ".."} for part in path.parts)
+    ):
+        raise OperationError("Skill 文件路径无效", "invalid_path", 422)
+    root = work_root(workspace_id, conversation_id) / "skills" / skill_id / version
+    target = root / path
+    if any(item.is_symlink() for item in (root, *target.parents, target) if item.exists()):
+        raise OperationError("Skill 文件路径不安全", "invalid_path", 422)
+    if not target.resolve().is_relative_to(root.resolve()) or not target.is_file():
+        raise OperationError("Skill 文件不存在", "not_found", 404)
+    if target.stat().st_size > MAX_SKILL_FILE_BYTES:
+        raise OperationError("Skill 文件超过 1 MiB", "file_too_large", 422)
+    try:
+        content = target.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise OperationError("Skill 文件不是 UTF-8 文本", "unsupported_file", 422) from exc
+    return {
+        "path": relative_path,
+        "bytes": target.stat().st_size,
+        "content": content,
     }

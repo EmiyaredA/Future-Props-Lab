@@ -31,6 +31,27 @@ button {
   flex-direction: column;
   background: #fffaf7;
 }
+
+.amadeus-running-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--amadeus-line);
+  background: color-mix(
+    in srgb,
+    var(--amadeus-accent) 9%,
+    var(--amadeus-surface)
+  );
+  color: var(--amadeus-muted);
+  font-size: 12px;
+}
+
+.amadeus-running-banner button {
+  color: var(--amadeus-accent);
+  white-space: nowrap;
+}
 .amadeus-header {
   height: 72px;
   flex: none;

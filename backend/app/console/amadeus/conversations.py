@@ -7,7 +7,12 @@ import shutil
 
 from sqlalchemy import delete, select, update
 
-from app.console.amadeus.models import AmadeusAction, AmadeusConversation, AmadeusMessage
+from app.console.amadeus.models import (
+    AmadeusAction,
+    AmadeusConversation,
+    AmadeusMessage,
+    AmadeusRun,
+)
 from app.console.amadeus.schemas import (
     ActionDecisionIn,
     ActionIn,
@@ -38,6 +43,8 @@ def _message(row: AmadeusMessage) -> MessageOut:
         role=row.role,
         content=row.content,
         references=row.references_json,
+        run_id=row.run_id,
+        status=row.status,
         created_at=row.created_at,
     )
 
@@ -115,6 +122,7 @@ class Conversations:
                     arguments_sha256=item.arguments_sha256,
                     status=item.status,
                     result=item.result_json,
+                    run_id=item.run_id,
                     created_at=item.created_at,
                 )
                 for item in actions
@@ -152,9 +160,9 @@ class Conversations:
         row = await self._get(identity)
         self._revision(row, expected)
         running = await self.session.scalar(
-            select(AmadeusAction.id).where(
-                AmadeusAction.conversation_id == identity,
-                AmadeusAction.status == "running",
+            select(AmadeusRun.id).where(
+                AmadeusRun.conversation_id == identity,
+                AmadeusRun.active_owner_key.is_not(None),
             )
         )
         if running is not None:
@@ -206,6 +214,18 @@ class Conversations:
 
     async def propose(self, identity: str, body: ActionIn) -> ActionOut:
         await self._get(identity)
+        if body.run_id:
+            run = await self.session.scalar(
+                select(AmadeusRun).where(
+                    AmadeusRun.id == body.run_id,
+                    AmadeusRun.conversation_id == identity,
+                    AmadeusRun.workspace_id == self.principal.workspace_id,
+                    AmadeusRun.user_id == self.principal.user_id,
+                    AmadeusRun.status == "running",
+                )
+            )
+            if run is None:
+                raise OperationError("运行不存在或已经结束", "run_not_active", 409)
         row = AmadeusAction(
             conversation_id=identity,
             workspace_id=self.principal.workspace_id,
@@ -214,6 +234,7 @@ class Conversations:
             arguments_json=body.arguments,
             arguments_sha256=_digest(body.arguments),
             status="pending",
+            run_id=body.run_id,
         )
         self.session.add(row)
         await self.session.commit()
@@ -224,6 +245,7 @@ class Conversations:
             arguments_sha256=row.arguments_sha256,
             status=row.status,
             result=row.result_json,
+            run_id=row.run_id,
             created_at=row.created_at,
         )
 
@@ -239,6 +261,15 @@ class Conversations:
         )
         if row is None:
             raise OperationError("操作不存在", "not_found", 404)
+        if row.run_id:
+            active = await self.session.scalar(
+                select(AmadeusRun.id).where(
+                    AmadeusRun.id == row.run_id,
+                    AmadeusRun.status == "running",
+                )
+            )
+            if active is None:
+                raise OperationError("运行已经结束，审批已失效", "run_not_active", 409)
         changed = await self.session.execute(
             update(AmadeusAction)
             .where(
@@ -263,5 +294,6 @@ class Conversations:
             arguments_sha256=row.arguments_sha256,
             status=row.status,
             result=row.result_json,
+            run_id=row.run_id,
             created_at=row.created_at,
         )

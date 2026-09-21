@@ -28,4 +28,4 @@ Status: implemented
 
 ## Related proposals
 
-[全局助手运行内核选型](../../proposed/architecture/2026-09-20-global-assistant-runtime-selection.md) 评估统一 Agent 接入；若新增应用内写作入口，需要另行明确本文产品范围的变化。
+[全局助手运行内核选型](../architecture/2026-09-20-global-assistant-runtime-selection.md) 已实现统一 Agent 接入；若新增应用内写作入口，需要另行明确本文产品范围的变化。

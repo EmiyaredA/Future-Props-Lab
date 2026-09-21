@@ -13,13 +13,16 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from sqlalchemy import select
 
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import read_file_bytes, work_root, write_file
 from app.console.amadeus.model_bridge import stream_model_turn
+from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.amadeus.schemas import ModelTurnIn
 from app.console.amadeus.scripts import run_script
 from app.console.models.accounts import User
+from app.llm.models import LlmCallLog
 from app.main import app
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
@@ -64,6 +67,7 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
     monkeypatch.setattr(runtime, "configuration", demo_configuration)
     request = ModelTurnIn(
         model_id="mock",
+        run_id="run-model-log-test",
         system="回答问题",
         messages=[{"role": "user", "text": "你好"}],
         tools=[
@@ -85,6 +89,13 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
         {"id": "call_fpl_demo", "name": "read_context", "arguments": {"target": "current"}}
     ]
     assert events[-1]["usage"]["total_tokens"] == 2
+    async with SessionLocal() as session:
+        saved_log = await session.scalar(
+            select(LlmCallLog).where(LlmCallLog.trace_id == "run-model-log-test")
+        )
+        assert saved_log is not None
+        assert saved_log.status == "success"
+        assert saved_log.total_tokens == 2
 
     followup = ModelTurnIn(
         model_id="mock",
@@ -242,6 +253,50 @@ async def test_amadeus_registered_fpl_operations_read_and_approved_write() -> No
         assert outcome.json()["status"] == "completed"
         assert outcome.json()["result"]["result"]["title"] == "Amadeus API 项目"
 
+        visual = (
+            await client.post(
+                "/v1/visual-workshop/projects",
+                json={"title": "Amadeus 视觉项目", "kind": "image"},
+            )
+        ).json()
+        visual_read = await client.post(
+            "/v1/amadeus/operations/read",
+            json={
+                "operation": "visual.get_project",
+                "arguments": {"path_params": {"project_id": visual["id"]}},
+            },
+        )
+        assert visual_read.status_code == 200
+        assert visual_read.json()["result"]["revision"] == 0
+        visual_action = (
+            await client.post(
+                root + "/actions",
+                json={
+                    "tool_name": "fpl_operation:visual.patch_project",
+                    "arguments": {
+                        "path_params": {"project_id": visual["id"]},
+                        "body": {
+                            "expected_revision": 0,
+                            "title": "Amadeus 视觉项目 v2",
+                        },
+                    },
+                },
+            )
+        ).json()
+        assert (
+            await client.post(
+                root + f"/actions/{visual_action['id']}/decision",
+                json={
+                    "arguments_sha256": visual_action["arguments_sha256"],
+                    "approve": True,
+                },
+            )
+        ).status_code == 200
+        visual_updated = await client.post(root + f"/actions/{visual_action['id']}/execute")
+        assert visual_updated.status_code == 200, visual_updated.text
+        assert visual_updated.json()["status"] == "completed", visual_updated.text
+        assert visual_updated.json()["result"]["result"]["revision"] == 1
+
 
 @pytest.mark.asyncio
 async def test_amadeus_skill_keeps_loaded_version(
@@ -279,6 +334,11 @@ async def test_amadeus_skill_keeps_loaded_version(
     again = await skills.load_skill(Session(), "default", "conversation", "skill")
     assert (first["version"], first["content"]) == ("v1", "v1")
     assert (again["version"], again["content"]) == ("v1", "v1")
+    (tmp_path / "session" / "skills" / "skill" / "v1" / "guide.txt").write_text("固定版本附属文件")
+    resource = skills.read_skill_file("default", "conversation", "skill", "v1", "guide.txt")
+    assert resource["content"] == "固定版本附属文件"
+    with pytest.raises(OperationError, match="路径无效"):
+        skills.read_skill_file("default", "conversation", "skill", "v1", "../v2/SKILL.md")
 
 
 @pytest.mark.asyncio
@@ -495,6 +555,128 @@ async def test_amadeus_concurrent_message_cas_allows_one_writer() -> None:
 
 
 @pytest.mark.asyncio
+async def test_amadeus_run_is_single_idempotent_and_persists_partial_reply() -> None:
+    await _test_user()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        conversation = (await client.post("/v1/amadeus/conversations")).json()
+        root = f"/v1/amadeus/conversations/{conversation['id']}"
+        run_response = await client.post(
+            root + "/runs",
+            json={
+                "model_id": "mock",
+                "context": [{"application": "视频剪辑工坊", "projectId": "project-1"}],
+                "references": [],
+                "capabilities": ["fpl_operations"],
+            },
+        )
+        assert run_response.status_code == 200, run_response.text
+        run = run_response.json()["run"]
+        duplicate = await client.post(
+            root + "/runs",
+            json={"model_id": "mock", "context": [], "references": [], "capabilities": []},
+        )
+        assert duplicate.status_code == 409
+        event_path = root + f"/runs/{run['id']}/events"
+        event_body = {
+            "kind": "assistant_delta",
+            "payload": {"text": "正在分析片段"},
+            "idempotency_key": "delta-1",
+        }
+        first = await client.post(event_path, json=event_body)
+        repeated = await client.post(event_path, json=event_body)
+        assert first.status_code == repeated.status_code == 200
+        assert first.json()["id"] == repeated.json()["id"]
+        history = await client.get(root + "/runs")
+        assert history.status_code == 200
+        assert history.json()[0]["events"][0]["payload"] == {"text": "正在分析片段"}
+        action = (
+            await client.post(
+                root + "/actions",
+                json={
+                    "run_id": run["id"],
+                    "tool_name": "write_script",
+                    "arguments": {"name": "late.py", "content": "print('late')"},
+                },
+            )
+        ).json()
+        cancelling = await client.post(root + f"/runs/{run['id']}/cancel")
+        assert cancelling.status_code == 200
+        assert cancelling.json()["run"]["status"] == "cancelling"
+        trailing = await client.post(
+            root + f"/runs/{run['id']}/events",
+            json={
+                "kind": "assistant_delta",
+                "payload": {"text": "，以及停止前的尾部"},
+                "idempotency_key": "partial-after-cancel",
+            },
+        )
+        assert trailing.status_code == 200
+        finished = await client.post(
+            root + f"/runs/{run['id']}/finish",
+            json={"status": "cancelled", "error_message": "用户停止"},
+        )
+        assert finished.status_code == 200, finished.text
+        assert finished.json()["run"]["status"] == "cancelled"
+        repeated_finish = await client.post(
+            root + f"/runs/{run['id']}/finish",
+            json={"status": "failed", "error_message": "迟到的重复终态"},
+        )
+        assert repeated_finish.status_code == 200
+        assert repeated_finish.json()["run"]["status"] == "cancelled"
+        detail = (await client.get(root)).json()
+        reply = detail["messages"][-1]
+        assert reply["content"] == "正在分析片段，以及停止前的尾部"
+        assert reply["run_id"] == run["id"]
+        assert reply["status"] == "cancelled"
+        expired = await client.post(
+            root + f"/actions/{action['id']}/decision",
+            json={"arguments_sha256": action["arguments_sha256"], "approve": True},
+        )
+        assert expired.status_code == 409
+        assert (await client.get("/v1/amadeus/runs/active")).json() is None
+
+
+@pytest.mark.asyncio
+async def test_amadeus_startup_recovery_interrupts_run_without_replay() -> None:
+    await _test_user()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        conversation = (await client.post("/v1/amadeus/conversations")).json()
+        root = f"/v1/amadeus/conversations/{conversation['id']}"
+        run = (
+            await client.post(
+                root + "/runs",
+                json={"model_id": "mock", "context": [], "references": [], "capabilities": []},
+            )
+        ).json()["run"]
+        await client.post(
+            root + f"/runs/{run['id']}/events",
+            json={
+                "kind": "assistant_delta",
+                "payload": {"text": "已收到部分回复"},
+                "idempotency_key": "partial-1",
+            },
+        )
+        action = (
+            await client.post(
+                root + "/actions",
+                json={"run_id": run["id"], "tool_name": "write_script", "arguments": {}},
+            )
+        ).json()
+        await recover_interrupted_amadeus_runs()
+        recovered = (await client.get(root + f"/runs/{run['id']}")).json()
+        assert recovered["run"]["status"] == "interrupted"
+        assert recovered["run"]["partial_text"] == "已收到部分回复"
+        detail = (await client.get(root)).json()
+        assert detail["messages"][-1]["status"] == "interrupted"
+        saved_action = next(item for item in detail["actions"] if item["id"] == action["id"])
+        assert saved_action["status"] == "cancelled"
+
+
+@pytest.mark.asyncio
 async def test_amadeus_approval_binds_arguments_and_runs_once() -> None:
     await _test_user()
     async with httpx.AsyncClient(
@@ -592,10 +774,27 @@ async def test_amadeus_video_batch_applies_once_and_reports_revision_conflict() 
         root = f"/v1/amadeus/conversations/{conversation_id}"
 
         async def execute(arguments: dict) -> dict:
+            run = (
+                await client.post(
+                    root + "/runs",
+                    json={
+                        "model_id": "mock",
+                        "context": [
+                            {
+                                "application": "视频剪辑工坊",
+                                "projectId": project_id,
+                            }
+                        ],
+                        "references": [],
+                        "capabilities": ["video_timeline_batch"],
+                    },
+                )
+            ).json()["run"]
             proposed = (
                 await client.post(
                     root + "/actions",
                     json={
+                        "run_id": run["id"],
                         "tool_name": "video_timeline_batch",
                         "arguments": arguments,
                     },
@@ -611,6 +810,10 @@ async def test_amadeus_video_batch_applies_once_and_reports_revision_conflict() 
             assert approved.status_code == 200
             completed = await client.post(root + f"/actions/{proposed['id']}/execute")
             assert completed.status_code == 200, completed.text
+            await client.post(
+                root + f"/runs/{run['id']}/finish",
+                json={"status": "completed"},
+            )
             return completed.json()
 
         applied = await execute(

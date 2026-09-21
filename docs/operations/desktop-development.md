@@ -29,6 +29,10 @@ npm run dev:desktop:live         # 正式数据入口的兼容别名
 出现，顶栏「重新检查」可重试。连续改动合并检查，应用过程中发生的新改动仍保留为下一次待更新。
 启动器本身、依赖或 Vite 配置改变后需要正常退出再启动，不承诺这些引导层文件自身热替换。
 
+桌面开发、普通 Web 开发、Vitest 和 Playwright 使用彼此独立的 Vite 依赖缓存。桌面开发每个实例创建临时缓存并在退出时清理；自动化使用独立临时目录，不能覆盖正在运行的桌面依赖图。React、React DOM 统一从 Web 工作区解析；对话框和 PSD Worker 的首批依赖在服务启动时预构建，避免首次使用时替换依赖图并整页重载。临时缓存只通过 Vite 的精确文件系统允许项开放，不扩大配置和运行数据的读取范围。
+
+主页面由轻量引导模块加载。入口模块加载失败或 React 页面渲染异常时显示恢复页，而不是留下空白背景；恢复页提供“重新加载”和“返回首页”，两者都先触发现有未保存离开保护。恢复动作只导航或重载页面，不重试写入、生成或模型提交。
+
 多窗口：App 顶栏「新建窗口」或 `Cmd/Ctrl+N` 再开一扇共享登录态的 Studio 窗；系统菜单栏不放置该入口。
 
 整页/主进程更新复用项目的未保存提示，取消不会开始更新。后端更新不卸载页面：普通列表恢复后刷新
@@ -100,6 +104,7 @@ CLI/SDK 仍使用正式 Agent 授权与 Unix Socket；更新前暂停通道，�
 npm run test:desktop
 npm run test:desktop:dev
 npm run test --workspace web -- tests/desktop-development.test.tsx
+node web/scripts/check-vite-isolation.mjs
 ```
 
 真实 Electron 烟测仅创建临时测试目录、账号和独有源码探针，验证完成后清理；禁止指向正式数据。

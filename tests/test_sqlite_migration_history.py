@@ -96,6 +96,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0069_retire_unsupported_senseaudio_models",),
             ("r0070_amadeus",),
             ("r0071_live2d_workshop",),
+            ("r0072_amadeus_runs",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

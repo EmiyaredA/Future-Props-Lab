@@ -28,15 +28,28 @@ type LoadedTool = {
 };
 type Start = {
   type: "start";
+  runId: string;
   modelId: string;
   prompt: string;
-  history: Array<{ role: string; content: string }>;
+  history: Array<{
+    role: "user" | "assistant" | "tool";
+    content: string;
+    tool_calls?: Array<{
+      id: string;
+      name: string;
+      arguments: Record<string, unknown>;
+    }>;
+    tool_call_id?: string;
+    tool_name?: string;
+  }>;
   tools: LoadedTool[];
-  skills: Array<{ name: string; content: string }>;
+  skills: Array<{ id: string; version: string; name: string; content: string }>;
 };
 
 let agent: Agent | undefined;
+let activeRunId = "";
 let sequence = 0;
+let stopRequested = false;
 const pending = new Map<
   number,
   {
@@ -150,6 +163,7 @@ async function stream(model: Model<string>, context: TranscriptContext) {
         "model-turn-stream",
         {
           model_id: model.id,
+          run_id: activeRunId,
           system: getCurrentSystemPrompt(context.messages),
           messages,
           tools: getCurrentTools(context.messages).map((tool) => ({
@@ -282,6 +296,7 @@ const registeredWriteTool: AgentTool = {
       body?: unknown;
     };
     const value = await rpc<unknown>("invoke", {
+      tool_call_id: _id,
       tool_name: `fpl_operation:${operation}`,
       arguments: arguments_,
     });
@@ -331,6 +346,25 @@ const readFileTool: AgentTool = {
   },
 };
 
+const readSkillFileTool: AgentTool = {
+  name: "read_skill_file",
+  label: "读取技能附属文件",
+  description:
+    "读取当前会话已加载 Skill 固定版本中的文本附属文件。只能读取已加载版本，且不执行其中的脚本。",
+  parameters: Type.Object({
+    skill_id: Type.String(),
+    version: Type.String(),
+    path: Type.String(),
+  }),
+  async execute(_id, params) {
+    const value = await rpc<unknown>("skill-file-read", params);
+    return {
+      content: [{ type: "text", text: JSON.stringify(value) }],
+      details: undefined,
+    };
+  },
+};
+
 const writeScriptTool: AgentTool = {
   name: "write_script",
   label: "创建会话脚本",
@@ -343,6 +377,7 @@ const writeScriptTool: AgentTool = {
   }),
   async execute(_id, params) {
     const value = await rpc<unknown>("invoke", {
+      tool_call_id: _id,
       tool_name: "write_script",
       arguments: params,
     });
@@ -368,6 +403,7 @@ const runScriptTool: AgentTool = {
   }),
   async execute(_id, params) {
     const value = await rpc<unknown>("invoke", {
+      tool_call_id: _id,
       tool_name: "run_script",
       arguments: params,
     });
@@ -395,6 +431,7 @@ const videoTimelineTool: AgentTool = {
   }),
   async execute(_id, params) {
     const value = await rpc<unknown>("invoke", {
+      tool_call_id: _id,
       tool_name: "video_timeline_batch",
       arguments: params,
     });
@@ -423,12 +460,16 @@ self.onmessage = (
     return;
   }
   if (input.type === "stop") {
+    stopRequested = true;
+    for (const entry of pending.values()) entry.reject(new Error("任务已停止"));
+    pending.clear();
     agent?.abort();
-    self.postMessage({ type: "stopped" });
     return;
   }
   if (input.type !== "start") return;
   agent?.abort();
+  stopRequested = false;
+  activeRunId = input.runId;
   const model: Model<string> = {
     id: input.modelId,
     name: input.modelId,
@@ -441,23 +482,39 @@ self.onmessage = (
     contextWindow: 128_000,
     maxTokens: 4096,
   };
-  const messages: Message[] = input.history.map((item) => ({
-    role: item.role === "assistant" ? "assistant" : "user",
-    content:
-      item.role === "assistant"
-        ? [{ type: "text", text: item.content }]
-        : item.content,
-    ...(item.role === "assistant"
-      ? {
-          api: model.api,
-          provider: model.provider,
-          model: model.id,
-          usage: emptyMessage(model).usage,
-          stopReason: "stop",
-        }
-      : {}),
-    timestamp: Date.now(),
-  })) as Message[];
+  const messages: Message[] = input.history.map((item) => {
+    if (item.role === "tool")
+      return {
+        role: "toolResult",
+        toolCallId: item.tool_call_id || "unknown",
+        toolName: item.tool_name || "tool",
+        content: [{ type: "text", text: item.content }],
+        isError: false,
+        timestamp: Date.now(),
+      };
+    if (item.role === "assistant")
+      return {
+        role: "assistant",
+        content: [
+          ...(item.content
+            ? [{ type: "text" as const, text: item.content }]
+            : []),
+          ...(item.tool_calls || []).map((call) => ({
+            type: "toolCall" as const,
+            id: call.id,
+            name: call.name,
+            arguments: call.arguments as JsonObject,
+          })),
+        ],
+        api: model.api,
+        provider: model.provider,
+        model: model.id,
+        usage: emptyMessage(model).usage,
+        stopReason: item.tool_calls?.length ? "toolUse" : "stop",
+        timestamp: Date.now(),
+      };
+    return { role: "user", content: item.content, timestamp: Date.now() };
+  }) as Message[];
   const loadedTools: AgentTool[] = input.tools.map((tool) => ({
     name: tool.name,
     label: tool.label,
@@ -465,6 +522,7 @@ self.onmessage = (
     parameters: Type.Unsafe(tool.schema),
     async execute(_id, params) {
       const result = await rpc<unknown>("invoke", {
+        tool_call_id: _id,
         tool_name: tool.key,
         arguments: params,
       });
@@ -495,6 +553,7 @@ self.onmessage = (
         registeredWriteTool,
         listFilesTool,
         readFileTool,
+        readSkillFileTool,
         videoTimelineTool,
         writeScriptTool,
         runScriptTool,
@@ -523,16 +582,26 @@ self.onmessage = (
     if (output.type === "tool_execution_end")
       self.postMessage({
         type: "tool",
+        id: output.toolCallId,
         name: output.toolName,
         status: output.isError ? "failed" : "done",
+        result: output.result,
       });
   });
   void agent.prompt(input.prompt).then(
-    () => self.postMessage({ type: "done" }),
-    (error: unknown) =>
-      self.postMessage({
-        type: "error",
-        message: error instanceof Error ? error.message : String(error),
-      }),
+    () => {
+      if (stopRequested) self.postMessage({ type: "stopped" });
+      else if (agent?.state.errorMessage)
+        self.postMessage({ type: "error", message: agent.state.errorMessage });
+      else self.postMessage({ type: "done" });
+    },
+    (error: unknown) => {
+      if (stopRequested) self.postMessage({ type: "stopped" });
+      else
+        self.postMessage({
+          type: "error",
+          message: error instanceof Error ? error.message : String(error),
+        });
+    },
   );
 };

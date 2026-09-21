@@ -239,8 +239,24 @@
     "method": "file_download",
     "resource": "amadeus"
   },
+  "GET /v1/amadeus/conversations/{conversation_id}/runs": {
+    "method": "list_runs",
+    "resource": "amadeus"
+  },
+  "GET /v1/amadeus/conversations/{conversation_id}/runs/{run_id}": {
+    "method": "get_run",
+    "resource": "amadeus"
+  },
+  "GET /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path}": {
+    "method": "skill_file_read",
+    "resource": "amadeus"
+  },
   "GET /v1/amadeus/operations": {
     "method": "list_registered_operations",
+    "resource": "amadeus"
+  },
+  "GET /v1/amadeus/runs/active": {
+    "method": "active_run",
     "resource": "amadeus"
   },
   "GET /v1/amadeus/script-capability": {
@@ -1085,6 +1101,26 @@
   },
   "POST /v1/amadeus/conversations/{conversation_id}/messages": {
     "method": "append_message",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/runs": {
+    "method": "create_run",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel": {
+    "method": "cancel_run",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events": {
+    "method": "append_run_event",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish": {
+    "method": "finish_run",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat": {
+    "method": "heartbeat_run",
     "resource": "amadeus"
   },
   "POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load": {

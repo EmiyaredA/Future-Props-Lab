@@ -42,6 +42,8 @@ class MessageOut(BaseModel):
     role: Literal["user", "assistant", "tool"]
     content: str
     references: list[Reference]
+    run_id: str | None = None
+    status: str = "completed"
     created_at: datetime
 
 
@@ -63,6 +65,7 @@ class ActionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     tool_name: str = Field(min_length=1, max_length=120)
     arguments: dict[str, Any] = Field(default_factory=dict)
+    run_id: str | None = None
 
 
 class ActionOut(BaseModel):
@@ -72,6 +75,7 @@ class ActionOut(BaseModel):
     arguments_sha256: str
     status: str
     result: dict[str, Any] | None
+    run_id: str | None = None
     created_at: datetime
 
 
@@ -87,6 +91,66 @@ class ModelTurnIn(BaseModel):
     system: str = Field(max_length=100_000)
     messages: list[dict[str, Any]] = Field(min_length=1, max_length=200)
     tools: list[dict[str, Any]] = Field(default_factory=list, max_length=100)
+    run_id: str | None = None
+
+
+class RunCreateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model_id: str = Field(min_length=1, max_length=160)
+    context: list[dict[str, Any]] = Field(default_factory=list, max_length=32)
+    references: list[Reference] = Field(default_factory=list, max_length=20)
+    capabilities: list[str] = Field(default_factory=list, max_length=100)
+
+
+class RunEventIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal[
+        "assistant_delta",
+        "assistant_message",
+        "tool_call",
+        "tool_result",
+        "status",
+        "error",
+    ]
+    payload: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str = Field(min_length=1, max_length=120)
+
+
+class RunFinishIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["completed", "failed", "cancelled", "interrupted"]
+    error_message: str | None = Field(default=None, max_length=4000)
+
+
+class RunEventOut(BaseModel):
+    id: str
+    run_id: str
+    sequence: int
+    kind: str
+    payload: dict[str, Any]
+    idempotency_key: str
+    created_at: datetime
+
+
+class RunOut(BaseModel):
+    id: str
+    conversation_id: str
+    model_id: str
+    status: str
+    context: list[dict[str, Any]]
+    references: list[Reference]
+    capabilities: list[str]
+    partial_text: str
+    heartbeat_at: datetime
+    error_message: str | None
+    created_at: datetime
+    updated_at: datetime
+    finished_at: datetime | None
+
+
+class RunDetailOut(BaseModel):
+    run: RunOut
+    events: list[RunEventOut]
 
 
 class ModelTurnOut(BaseModel):

@@ -7,7 +7,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response, StreamingResponse
 
-from app.console.amadeus.actions import cancel_action, execute_action
+from app.console.amadeus.actions import cancel_action, cancel_actions_for_run, execute_action
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import (
     MAX_FILE_BYTES,
@@ -18,6 +18,7 @@ from app.console.amadeus.files import (
 )
 from app.console.amadeus.fpl_operations import call_operation, operation_catalog
 from app.console.amadeus.model_bridge import stream_model_turn
+from app.console.amadeus.runs import Runs
 from app.console.amadeus.schemas import (
     ActionDecisionIn,
     ActionIn,
@@ -32,10 +33,17 @@ from app.console.amadeus.schemas import (
     MessageIn,
     ModelTurnIn,
     ModelTurnOut,
+    RunCreateIn,
+    RunDetailOut,
+    RunEventIn,
+    RunEventOut,
+    RunFinishIn,
+    RunOut,
 )
 from app.console.amadeus.scripts import sandbox_available
-from app.console.amadeus.skills import load_skill
+from app.console.amadeus.skills import load_skill, read_skill_file
 from app.deps import SessionDep, StudioAuth
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.runtime.operation_receipts import OperationError
 
 router = APIRouter(prefix="/amadeus", tags=["amadeus"])
@@ -58,6 +66,97 @@ async def list_conversations(session: SessionDep, principal: StudioAuth) -> Conv
 @router.post("/conversations", response_model=ConversationOut)
 async def create_conversation(session: SessionDep, principal: StudioAuth) -> ConversationOut:
     return await Conversations(session, principal).create()
+
+
+@router.get("/runs/active", response_model=RunDetailOut | None)
+async def active_run(session: SessionDep, principal: StudioAuth) -> RunDetailOut | None:
+    return await Runs(session, principal).active()
+
+
+@router.post("/conversations/{conversation_id}/runs", response_model=RunDetailOut)
+async def create_run(
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    body: RunCreateIn,
+) -> RunDetailOut:
+    try:
+        return await Runs(session, principal).create(conversation_id, body)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.get("/conversations/{conversation_id}/runs", response_model=list[RunDetailOut])
+async def list_runs(
+    session: SessionDep, principal: StudioAuth, conversation_id: str
+) -> list[RunDetailOut]:
+    try:
+        return await Runs(session, principal).history(conversation_id)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.get("/conversations/{conversation_id}/runs/{run_id}", response_model=RunDetailOut)
+async def get_run(
+    session: SessionDep, principal: StudioAuth, conversation_id: str, run_id: str
+) -> RunDetailOut:
+    try:
+        return await Runs(session, principal).detail(conversation_id, run_id)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post("/conversations/{conversation_id}/runs/{run_id}/events", response_model=RunEventOut)
+async def append_run_event(
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    run_id: str,
+    body: RunEventIn,
+) -> RunEventOut:
+    try:
+        return await Runs(session, principal).append_event(conversation_id, run_id, body)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post("/conversations/{conversation_id}/runs/{run_id}/heartbeat", response_model=RunOut)
+async def heartbeat_run(
+    session: SessionDep, principal: StudioAuth, conversation_id: str, run_id: str
+) -> RunOut:
+    try:
+        return await Runs(session, principal).heartbeat(conversation_id, run_id)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post("/conversations/{conversation_id}/runs/{run_id}/finish", response_model=RunDetailOut)
+async def finish_run(
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    run_id: str,
+    body: RunFinishIn,
+) -> RunDetailOut:
+    try:
+        return await Runs(session, principal).finish(
+            conversation_id, run_id, body.status, body.error_message
+        )
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post("/conversations/{conversation_id}/runs/{run_id}/cancel", response_model=RunDetailOut)
+async def cancel_run(
+    session: SessionDep, principal: StudioAuth, conversation_id: str, run_id: str
+) -> RunDetailOut:
+    try:
+        runs = Runs(session, principal)
+        await runs.mark_cancelling(conversation_id, run_id)
+        await cancel_actions_for_run(session, principal, run_id)
+        return await runs.detail(conversation_id, run_id)
+    except OperationError as exc:
+        raise _error(exc) from None
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationDetailOut)
@@ -239,7 +338,12 @@ async def model_turn(session: SessionDep, principal: StudioAuth, body: ModelTurn
     calls: list[dict] = []
     usage: dict = {}
     try:
-        async for line in stream_model_turn(session, principal.workspace_id, body):
+        if body.run_id:
+            run = await Runs(session, principal).get_by_id(body.run_id)
+            if run.status != "running":
+                raise OperationError("运行已经结束", "run_not_active", 409)
+        credential = await snapshot_from_principal(session, principal)
+        async for line in stream_model_turn(session, principal.workspace_id, body, credential):
             event = json.loads(line)
             if event["type"] == "delta":
                 text_parts.append(event["text"])
@@ -258,9 +362,18 @@ async def model_turn_stream(
     if not principal.allows("models.use"):
         raise HTTPException(403, {"code": "insufficient_permission", "message": "没有模型调用权限"})
 
+    try:
+        if body.run_id:
+            run = await Runs(session, principal).get_by_id(body.run_id)
+            if run.status != "running":
+                raise OperationError("运行已经结束", "run_not_active", 409)
+        credential = await snapshot_from_principal(session, principal)
+    except OperationError as exc:
+        raise _error(exc) from None
+
     async def events():
         try:
-            async for line in stream_model_turn(session, principal.workspace_id, body):
+            async for line in stream_model_turn(session, principal.workspace_id, body, credential):
                 yield line
         except OperationError as exc:
             yield json.dumps({"type": "error", "code": exc.code, "message": str(exc)}) + "\n"
@@ -371,5 +484,29 @@ async def skill_load(
     try:
         await Conversations(session, principal)._get(conversation_id)
         return await load_skill(session, principal.workspace_id, conversation_id, skill_id)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.get(
+    "/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path:path}"
+)
+async def skill_file_read(
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    skill_id: str,
+    version: str,
+    relative_path: str,
+) -> dict[str, str | int]:
+    try:
+        await Conversations(session, principal)._get(conversation_id)
+        return read_skill_file(
+            principal.workspace_id,
+            conversation_id,
+            skill_id,
+            version,
+            relative_path,
+        )
     except OperationError as exc:
         raise _error(exc) from None

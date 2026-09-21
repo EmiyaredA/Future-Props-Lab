@@ -27,6 +27,7 @@ from app.capabilities.asset_store.layout_migration import (
 )
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.capabilities.asset_store.storage import AssetStorage
+from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
 from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
@@ -67,6 +68,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs()
+    await recover_interrupted_amadeus_runs()
     supervisor = RunnerSupervisor(
         (
             ModelTemplateSyncRunner(),

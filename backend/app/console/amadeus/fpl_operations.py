@@ -15,6 +15,32 @@ PARAMETER = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
 RESPONSE_LIMIT = 1024 * 1024
 
 
+def _resolve_schema(
+    schema: dict[str, Any],
+    document: dict[str, Any],
+    seen: frozenset[str] = frozenset(),
+):
+    reference = schema.get("$ref")
+    if isinstance(reference, str) and reference.startswith("#/components/schemas/"):
+        if reference in seen:
+            return {"type": "object"}
+        name = reference.rsplit("/", 1)[-1]
+        target = document.get("components", {}).get("schemas", {}).get(name, {})
+        return _resolve_schema(target, document, seen | {reference})
+    result = {}
+    for key, value in schema.items():
+        if isinstance(value, dict):
+            result[key] = _resolve_schema(value, document, seen)
+        elif isinstance(value, list):
+            result[key] = [
+                _resolve_schema(item, document, seen) if isinstance(item, dict) else item
+                for item in value
+            ]
+        else:
+            result[key] = value
+    return result
+
+
 def _registered(identity: str) -> tuple[str, str]:
     for key, value in MANIFEST["operations"].items():
         if f"{value['resource']}.{value['method']}" == identity:
@@ -45,10 +71,13 @@ def operation_catalog(app: Any, resource: str = "") -> list[dict[str, Any]]:
                     }
                     for parameter in operation.get("parameters", [])
                 ],
-                "request_schema": operation.get("requestBody", {})
-                .get("content", {})
-                .get("application/json", {})
-                .get("schema", {}),
+                "request_schema": _resolve_schema(
+                    operation.get("requestBody", {})
+                    .get("content", {})
+                    .get("application/json", {})
+                    .get("schema", {}),
+                    schema,
+                ),
             }
         )
     return result

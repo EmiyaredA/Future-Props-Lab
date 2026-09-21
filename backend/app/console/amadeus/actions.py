@@ -10,7 +10,7 @@ from sqlalchemy import select, update
 
 from app.console.amadeus.files import write_file
 from app.console.amadeus.fpl_operations import call_operation
-from app.console.amadeus.models import AmadeusAction, AmadeusConversation
+from app.console.amadeus.models import AmadeusAction, AmadeusConversation, AmadeusRun
 from app.console.amadeus.schemas import ActionOut
 from app.console.amadeus.scripts import run_script
 from app.integrations.mcp.catalog import McpCatalog
@@ -38,6 +38,7 @@ def _out(row: AmadeusAction) -> ActionOut:
         arguments_sha256=row.arguments_sha256,
         status=row.status,
         result=row.result_json,
+        run_id=row.run_id,
         created_at=row.created_at,
     )
 
@@ -71,6 +72,17 @@ async def execute_action(
         raise OperationError("操作不存在", "not_found", 404)
     if row.status != "approved":
         raise OperationError("操作未获批准或已经执行", "approval_conflict", 409)
+    if row.run_id:
+        active = await session.scalar(
+            select(AmadeusRun.id).where(
+                AmadeusRun.id == row.run_id,
+                AmadeusRun.workspace_id == principal.workspace_id,
+                AmadeusRun.user_id == principal.user_id,
+                AmadeusRun.status == "running",
+            )
+        )
+        if active is None:
+            raise OperationError("运行已经结束，操作不可执行", "run_not_active", 409)
     name, args = row.tool_name, row.arguments_json
     built_in = {"write_script", "run_script", "video_timeline_batch"}
     if not name.startswith(("tool_api:", "mcp:", "fpl_operation:")) and name not in built_in:
@@ -207,3 +219,32 @@ async def cancel_action(session, principal, conversation_id: str, action_id: str
         pass
     await session.refresh(row)
     return _out(row)
+
+
+async def cancel_actions_for_run(session, principal, run_id: str) -> None:
+    """Invalidate pending approvals and stop process-owned work for one run."""
+    rows = (
+        await session.scalars(
+            select(AmadeusAction).where(
+                AmadeusAction.run_id == run_id,
+                AmadeusAction.workspace_id == principal.workspace_id,
+                AmadeusAction.user_id == principal.user_id,
+                AmadeusAction.status.in_(("pending", "approved", "running")),
+            )
+        )
+    ).all()
+    now = utc_now()
+    for row in rows:
+        if row.status == "running":
+            task = _running_tasks.get(row.id)
+            if task is not None:
+                task.cancel()
+            else:
+                row.status = "unknown"
+                row.result_json = {"message": "执行进程不可用，结果待核实"}
+                row.updated_at = now
+        else:
+            row.status = "cancelled"
+            row.result_json = {"message": "运行已停止，操作未执行"}
+            row.updated_at = now
+    await session.commit()
