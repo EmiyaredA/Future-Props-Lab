@@ -19,6 +19,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorProjectCreateIn,
     VideoEditorProjectSnapshotImportOut,
     VideoEditorTimelineDocument,
+    parse_timeline_document,
 )
 from app.capabilities.asset_store import (
     AssetStorage,
@@ -219,7 +220,7 @@ class VideoEditorProjectSnapshots:
                 raise ProjectSnapshotError("project.json 不是受支持的视频剪辑快照")
             try:
                 create = VideoEditorProjectCreateIn.model_validate(source_project)
-                timeline = VideoEditorTimelineDocument.model_validate(payload.get("timeline"))
+                timeline = parse_timeline_document(payload.get("timeline"))
             except ValidationError as exc:
                 raise ProjectSnapshotError("视频剪辑时间线结构无效") from exc
             status = str(source_project.get("status") or "")

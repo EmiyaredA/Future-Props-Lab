@@ -15,6 +15,8 @@ export type VideoEditorClip = components["schemas"]["VideoEditorClip"];
 export type VideoEditorKeyframe = components["schemas"]["VideoEditorKeyframe"];
 export type VideoEditorTimelineTransition =
   components["schemas"]["VideoEditorTimelineTransition"];
+export type VideoEditorTransition =
+  components["schemas"]["VideoEditorTransition"];
 export type VideoEditorOperation =
   components["schemas"]["VideoEditorTimelineBatchIn"]["operations"][number];
 export type VideoEditorTask = components["schemas"]["VideoEditorTaskOut"];

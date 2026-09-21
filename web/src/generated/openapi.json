@@ -27205,6 +27205,7 @@
         "type": "object"
       },
       "VideoEditorTimelineTransition": {
+        "description": "Seam transition between two adjacent visual clips.",
         "properties": {
           "direction": {
             "default": "left",
@@ -27237,15 +27238,10 @@
             "type": "string"
           },
           "fromClipId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fromclipid"
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Fromclipid",
+            "type": "string"
           },
           "id": {
             "maxLength": 64,
@@ -27268,31 +27264,24 @@
             "type": "string"
           },
           "placement": {
-            "enum": [
-              "in",
-              "out",
-              "between"
-            ],
+            "const": "between",
+            "default": "between",
             "title": "Placement",
             "type": "string"
           },
           "toClipId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Toclipid"
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Toclipid",
+            "type": "string"
           }
         },
         "required": [
           "id",
           "kind",
           "durationUs",
-          "placement"
+          "fromClipId",
+          "toClipId"
         ],
         "title": "VideoEditorTimelineTransition",
         "type": "object"
@@ -27419,12 +27408,37 @@
         "type": "object"
       },
       "VideoEditorTransition": {
+        "description": "Clip-local edge transition (fade / wipe / flash on a single clip).",
         "properties": {
+          "direction": {
+            "default": "in",
+            "enum": [
+              "left",
+              "right",
+              "up",
+              "down",
+              "in",
+              "out"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
           "durationUs": {
             "maximum": 10000000.0,
             "minimum": 0.0,
             "title": "Durationus",
             "type": "integer"
+          },
+          "easing": {
+            "default": "linear",
+            "enum": [
+              "linear",
+              "ease-in",
+              "ease-out",
+              "ease-in-out"
+            ],
+            "title": "Easing",
+            "type": "string"
           },
           "kind": {
             "enum": [
@@ -27432,6 +27446,11 @@
               "crossfade",
               "fade-black",
               "fade-white",
+              "wipe-left",
+              "wipe-right",
+              "zoom",
+              "blur",
+              "flash",
               "audio-crossfade"
             ],
             "title": "Kind",

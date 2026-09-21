@@ -10,6 +10,8 @@ import pytest
 
 from app.capabilities.media_rendering.render_engine import (
     RenderCancelled,
+    _decoder_request_action,
+    _decoder_seek_args,
     _read_exact,
     _terminate_process_group,
     _wait_for_process,
@@ -71,3 +73,37 @@ def test_encoder_process_wait_is_interruptible() -> None:
         _terminate_process_group(process)
         timer.join()
     assert time.monotonic() - started < 3
+
+
+def test_decoder_request_action_holds_freezes_and_reseeks() -> None:
+    frame_us = 33_333
+    assert _decoder_request_action(None, 0, frame_us) == ("open", 0)
+    assert _decoder_request_action(0, 0, frame_us) == ("hold", 0)
+    assert _decoder_request_action(0, frame_us, frame_us) == ("advance", 1)
+    # Outgoing seam freeze: same local_us must not keep draining the pipe.
+    assert _decoder_request_action(999_999, 999_999, frame_us) == ("hold", 0)
+    # Continuity / segment restart behind the pipe cursor must reopen.
+    assert _decoder_request_action(1_000_000, 500_000, frame_us) == ("open", 500_000)
+    # Jumping forward by half a transition should advance many frames, not ignore time.
+    assert _decoder_request_action(0, 500_000, frame_us) == (
+        "advance",
+        round(500_000 / frame_us),
+    )
+
+
+def test_decoder_seek_args_use_accurate_output_seek() -> None:
+    assert _decoder_seek_args(0) == ["-i"]
+    # Short seeks: accurate -ss after -i only (no coarse input seek).
+    assert _decoder_seek_args(1_500_000, preroll_us=10_000_000) == [
+        "-i",
+        "-ss",
+        "1.500000",
+    ]
+    # Long seeks: coarse input -ss then fine output -ss.
+    assert _decoder_seek_args(100_000_000, preroll_us=10_000_000) == [
+        "-ss",
+        "90.000000",
+        "-i",
+        "-ss",
+        "10.000000",
+    ]

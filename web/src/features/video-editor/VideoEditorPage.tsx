@@ -62,10 +62,10 @@ export function VideoEditorPage({
   );
   const [selectedTransitionId, setSelectedTransitionId] = useState<string>();
   const [transitionTarget, setTransitionTarget] = useState<{
-    placement: "in" | "out" | "between";
     fromClipId?: string;
     toClipId?: string;
   }>();
+  const [clipEdgeFocus, setClipEdgeFocus] = useState<"in" | "out">("in");
   const workspaceLayout = useVideoEditorLayout(editor.layout, editor.setLayout);
   const [exportOpen, setExportOpen] = useState(false);
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
@@ -163,7 +163,6 @@ export function VideoEditorPage({
   const selectTransition = (
     transitionId?: string,
     target?: {
-      placement: "in" | "out" | "between";
       fromClipId?: string;
       toClipId?: string;
     },
@@ -173,7 +172,17 @@ export function VideoEditorPage({
     setTransitionTarget(target);
     setRightPanel("transitions");
     setMobilePanel("transitions");
-    editor.selectClip(undefined);
+    const highlightId = target?.toClipId ?? target?.fromClipId;
+    if (highlightId) editor.selectClip(highlightId);
+  };
+  const openClipEdgeTransition = (clipId: string, edge: "in" | "out") => {
+    clearSourcePreview();
+    setSelectedTransitionId(undefined);
+    setTransitionTarget(undefined);
+    setClipEdgeFocus(edge);
+    setRightPanel("transitions");
+    setMobilePanel("transitions");
+    editor.selectClip(clipId);
   };
   const fitTimelineWidth = () => {
     if (!(contentViewportWidthPx > 0)) return;
@@ -586,11 +595,13 @@ export function VideoEditorPage({
                 selectedClip={editor.selected}
                 selectedTransitionId={selectedTransitionId}
                 target={transitionTarget}
+                clipEdgeFocus={clipEdgeFocus}
                 disabled={editor.saving}
                 commit={editor.commit}
                 onSelectTransition={(id) =>
                   selectTransition(id, transitionTarget)
                 }
+                onFocusClipEdge={setClipEdgeFocus}
               />
             ) : editor.selectedClipIds.length > 1 ? (
               <VideoEditorBatchInspector
@@ -616,6 +627,7 @@ export function VideoEditorPage({
                 clips={tracks.flatMap((track) => track.clips ?? [])}
                 playheadUs={editor.playheadUs}
                 commit={editor.commit}
+                onOpenClipEdgeTransition={openClipEdgeTransition}
               />
             )}
           </div>
@@ -724,6 +736,7 @@ export function VideoEditorPage({
           selectClip={selectClip}
           selectedTransitionId={selectedTransitionId}
           selectTransition={selectTransition}
+          openClipEdgeTransition={openClipEdgeTransition}
           commit={editor.commit}
           onDropAsset={(asset, trackId, startUs) =>
             addAsset(asset, startUs, trackId)

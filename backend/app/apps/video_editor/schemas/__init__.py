@@ -66,6 +66,8 @@ from app.capabilities.media_rendering.timeline_document import (
     VideoEditorTrack,
     VideoEditorTransform,
     VideoEditorTransition,
+    normalize_legacy_edge_transitions,
+    parse_timeline_document,
 )
 
 __all__ = [
@@ -128,4 +130,6 @@ __all__ = [
     "VideoEditorTrack",
     "VideoEditorTransform",
     "VideoEditorTransition",
+    "normalize_legacy_edge_transitions",
+    "parse_timeline_document",
 ]

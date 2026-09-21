@@ -22,6 +22,9 @@ from app.apps.video_editor.schemas import (
     VideoEditorTimelineOut,
 )
 from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.media_rendering.timeline_document import (
+    normalize_legacy_edge_transitions,
+)
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 
@@ -335,9 +338,10 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 clip["durationUs"] = offset
                 track["clips"].append(right)
                 for transition in _transitions(result):
-                    if transition.get("fromClipId") == clip["id"] and transition.get(
-                        "placement"
-                    ) in {"out", "between"}:
+                    if (
+                        transition.get("fromClipId") == clip["id"]
+                        and transition.get("placement", "between") == "between"
+                    ):
                         transition["fromClipId"] = new_id
         elif kind in {"removeClip", "rippleDelete"}:
             track, removed = _remove_clip(result, data["clipId"])
@@ -436,10 +440,16 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 clip.pop(key, None)
         elif kind == "addTransition":
             transitions = _transitions(result)
-            transition_id = data["transition"]["id"]
+            transition = data["transition"]
+            if transition.get("placement", "between") != "between":
+                raise VideoEditorValidationError(
+                    "独立转场只能用于接缝", code="invalid_transition_placement"
+                )
+            transition_id = transition["id"]
             if any(item["id"] == transition_id for item in transitions):
                 raise VideoEditorValidationError("转场 ID 已存在", code="transition_exists")
-            transitions.append(data["transition"])
+            transition = {**transition, "placement": "between"}
+            transitions.append(transition)
         elif kind == "updateTransition":
             transition = next(
                 (item for item in _transitions(result) if item["id"] == data["transitionId"]),
@@ -451,6 +461,7 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
             transition.update(
                 {key: value for key, value in data["patch"].items() if key in allowed}
             )
+            transition["placement"] = "between"
         elif kind == "removeTransition":
             transitions = _transitions(result)
             before = len(transitions)
@@ -461,6 +472,7 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
 
 
 async def validate_timeline(session: AsyncSession, project_id: str, document: dict) -> dict:
+    document = normalize_legacy_edge_transitions(document)
     try:
         parsed = VideoEditorTimelineDocument.model_validate(document)
     except ValidationError as exc:
@@ -499,6 +511,15 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                 transition = clip.get(edge)
                 if transition and transition["durationUs"] > clip["durationUs"]:
                     raise VideoEditorValidationError("转场长度不能超过 Clip")
+                if (
+                    transition
+                    and track["kind"] == "audio"
+                    and transition.get("kind") != "audio-crossfade"
+                ):
+                    raise VideoEditorValidationError(
+                        "音频轨片段转场只能使用 audio-crossfade",
+                        code="invalid_transition_kind",
+                    )
             for key in ("assetId", "fontAssetId"):
                 if clip.get(key):
                     clip_asset_ids.add(clip[key])
@@ -510,71 +531,38 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
         if transition["id"] in transition_ids:
             raise VideoEditorValidationError("转场 ID 必须全局唯一", code="duplicate_transition_id")
         transition_ids.add(transition["id"])
+        if transition.get("placement", "between") != "between":
+            raise VideoEditorValidationError(
+                "独立转场只能用于接缝", code="invalid_transition_placement"
+            )
         from_clip = clips_by_id.get(transition.get("fromClipId"))
         to_clip = clips_by_id.get(transition.get("toClipId"))
-        if transition["placement"] == "in":
-            if from_clip or not to_clip:
-                raise VideoEditorValidationError("入场转场引用无效", code="invalid_transition_ref")
-            track, clip = to_clip
-            if track["kind"] not in {"visual", "mixed"} or clip["kind"] not in {"video", "image"}:
-                raise VideoEditorValidationError(
-                    "入场转场必须绑定视觉 Clip", code="invalid_transition_track"
-                )
-            boundary = (clip["id"], "in")
-            if boundary in transition_boundaries:
-                raise VideoEditorValidationError(
-                    "同一 Clip 开头不能重复添加转场", code="duplicate_transition_edge"
-                )
-            transition_boundaries.add(boundary)
-            if transition["durationUs"] > clip["durationUs"]:
-                raise VideoEditorValidationError(
-                    "转场长度不能超过 Clip", code="transition_too_long"
-                )
-        elif transition["placement"] == "out":
-            if to_clip or not from_clip:
-                raise VideoEditorValidationError("出场转场引用无效", code="invalid_transition_ref")
-            track, clip = from_clip
-            if track["kind"] not in {"visual", "mixed"} or clip["kind"] not in {"video", "image"}:
-                raise VideoEditorValidationError(
-                    "出场转场必须绑定视觉 Clip", code="invalid_transition_track"
-                )
-            boundary = (clip["id"], "out")
-            if boundary in transition_boundaries:
-                raise VideoEditorValidationError(
-                    "同一 Clip 结尾不能重复添加转场", code="duplicate_transition_edge"
-                )
-            transition_boundaries.add(boundary)
-            if transition["durationUs"] > clip["durationUs"]:
-                raise VideoEditorValidationError(
-                    "转场长度不能超过 Clip", code="transition_too_long"
-                )
-        else:
-            if not from_clip or not to_clip:
-                raise VideoEditorValidationError("接缝转场引用无效", code="invalid_transition_ref")
-            from_track, left = from_clip
-            to_track, right = to_clip
-            if from_track["id"] != to_track["id"] or from_track["kind"] not in {"visual", "mixed"}:
-                raise VideoEditorValidationError(
-                    "接缝转场必须位于同一视觉轨", code="invalid_transition_track"
-                )
-            if left["kind"] not in {"video", "image"} or right["kind"] not in {"video", "image"}:
-                raise VideoEditorValidationError(
-                    "接缝转场必须绑定视觉 Clip", code="invalid_transition_track"
-                )
-            if left["timelineStartUs"] + left["durationUs"] != right["timelineStartUs"]:
-                raise VideoEditorValidationError(
-                    "接缝转场必须连接相邻 Clip", code="transition_not_adjacent"
-                )
-            boundary = (left["id"], right["id"])
-            if boundary in transition_boundaries:
-                raise VideoEditorValidationError(
-                    "同一接缝不能重复添加转场", code="duplicate_transition_edge"
-                )
-            transition_boundaries.add(boundary)
-            if transition["durationUs"] > min(left["durationUs"], right["durationUs"]):
-                raise VideoEditorValidationError(
-                    "转场长度不能超过相邻 Clip", code="transition_too_long"
-                )
+        if not from_clip or not to_clip:
+            raise VideoEditorValidationError("接缝转场引用无效", code="invalid_transition_ref")
+        from_track, left = from_clip
+        to_track, right = to_clip
+        if from_track["id"] != to_track["id"] or from_track["kind"] not in {"visual", "mixed"}:
+            raise VideoEditorValidationError(
+                "接缝转场必须位于同一视觉轨", code="invalid_transition_track"
+            )
+        if left["kind"] not in {"video", "image"} or right["kind"] not in {"video", "image"}:
+            raise VideoEditorValidationError(
+                "接缝转场必须绑定视觉 Clip", code="invalid_transition_track"
+            )
+        if left["timelineStartUs"] + left["durationUs"] != right["timelineStartUs"]:
+            raise VideoEditorValidationError(
+                "接缝转场必须连接相邻 Clip", code="transition_not_adjacent"
+            )
+        boundary = (left["id"], right["id"])
+        if boundary in transition_boundaries:
+            raise VideoEditorValidationError(
+                "同一接缝不能重复添加转场", code="duplicate_transition_edge"
+            )
+        transition_boundaries.add(boundary)
+        if transition["durationUs"] > min(left["durationUs"], right["durationUs"]):
+            raise VideoEditorValidationError(
+                "转场长度不能超过相邻 Clip", code="transition_too_long"
+            )
     organization = dumped.get("assetOrganization") or {}
     organized_asset_ids = set(organization.get("rootAssetIds") or [])
     for folder in organization.get("folders") or []:
@@ -649,10 +637,11 @@ class VideoEditorTimelines:
 
     @staticmethod
     def out(row: VideoEditorTimeline) -> VideoEditorTimelineOut:
+        document = normalize_legacy_edge_transitions(deepcopy(row.document or {}))
         return VideoEditorTimelineOut(
             projectId=row.project_id,
             revision=row.revision,
-            document=row.document,
+            document=document,
             updatedAt=iso_utc(row.updated_at),
         )
 

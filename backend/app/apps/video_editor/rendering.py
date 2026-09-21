@@ -22,6 +22,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorTaskListOut,
     VideoEditorTaskOut,
     VideoEditorTimelineDocument,
+    parse_timeline_document,
 )
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.media_rendering.evaluator import timeline_duration_us, visual_gaps
@@ -93,7 +94,7 @@ class VideoEditorRenders:
                 timeline.revision,
                 {"revision": timeline.revision, "document": timeline.document},
             )
-        document = VideoEditorTimelineDocument.model_validate(timeline.document)
+        document = parse_timeline_document(timeline.document)
         total = timeline_duration_us(document)
         end = body.end_us or total
         blockers: list[VideoEditorRenderIssue] = []

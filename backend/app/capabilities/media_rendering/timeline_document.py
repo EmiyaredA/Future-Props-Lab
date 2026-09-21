@@ -80,11 +80,28 @@ class VideoEditorKeyframe(BaseModel):
 
 
 class VideoEditorTransition(BaseModel):
-    kind: Literal["cut", "crossfade", "fade-black", "fade-white", "audio-crossfade"]
+    """Clip-local edge transition (fade / wipe / flash on a single clip)."""
+
+    kind: Literal[
+        "cut",
+        "crossfade",
+        "fade-black",
+        "fade-white",
+        "wipe-left",
+        "wipe-right",
+        "zoom",
+        "blur",
+        "flash",
+        "audio-crossfade",
+    ]
     duration_us: int = Field(alias="durationUs", ge=0, le=10_000_000)
+    direction: Literal["left", "right", "up", "down", "in", "out"] = "in"
+    easing: Literal["linear", "ease-in", "ease-out", "ease-in-out"] = "linear"
 
 
 class VideoEditorTimelineTransition(BaseModel):
+    """Seam transition between two adjacent visual clips."""
+
     id: str = Field(min_length=1, max_length=64)
     kind: Literal[
         "crossfade",
@@ -97,9 +114,9 @@ class VideoEditorTimelineTransition(BaseModel):
         "flash",
     ]
     duration_us: int = Field(alias="durationUs", gt=0, le=10_000_000)
-    placement: Literal["in", "out", "between"]
-    from_clip_id: str | None = Field(default=None, alias="fromClipId")
-    to_clip_id: str | None = Field(default=None, alias="toClipId")
+    placement: Literal["between"] = "between"
+    from_clip_id: str = Field(alias="fromClipId", min_length=1, max_length=64)
+    to_clip_id: str = Field(alias="toClipId", min_length=1, max_length=64)
     direction: Literal[
         "left",
         "right",
@@ -112,13 +129,7 @@ class VideoEditorTimelineTransition(BaseModel):
 
     @model_validator(mode="after")
     def validate_clip_refs(self) -> VideoEditorTimelineTransition:
-        if self.placement == "in" and (self.from_clip_id or not self.to_clip_id):
-            raise ValueError("入场转场必须只引用 toClipId")
-        if self.placement == "out" and (self.to_clip_id or not self.from_clip_id):
-            raise ValueError("出场转场必须只引用 fromClipId")
-        if self.placement == "between" and (
-            not self.from_clip_id or not self.to_clip_id or self.from_clip_id == self.to_clip_id
-        ):
+        if self.from_clip_id == self.to_clip_id:
             raise ValueError("接缝转场必须引用两个不同的 Clip")
         return self
 
@@ -209,3 +220,70 @@ class VideoEditorTimelineDocument(BaseModel):
     )
     transitions: list[VideoEditorTimelineTransition] = Field(default_factory=list)
     tracks: list[VideoEditorTrack] = Field(default_factory=list)
+
+
+_CLIP_EDGE_KINDS = {
+    "cut",
+    "crossfade",
+    "fade-black",
+    "fade-white",
+    "wipe-left",
+    "wipe-right",
+    "zoom",
+    "blur",
+    "flash",
+    "audio-crossfade",
+}
+
+
+def normalize_legacy_edge_transitions(document: dict) -> dict:
+    """Move legacy placement=in/out entries from transitions[] onto clip edges.
+
+    Independent in/out objects overwrite the matching clip.transitionIn/Out.
+    Only placement=between entries remain in document.transitions.
+    """
+    clips_by_id: dict[str, dict] = {
+        clip["id"]: clip
+        for track in document.get("tracks") or []
+        for clip in track.get("clips") or []
+    }
+    kept: list[dict] = []
+    for item in list(document.get("transitions") or []):
+        placement = item.get("placement")
+        if placement == "between":
+            kept.append(item)
+            continue
+        if placement == "in":
+            clip = clips_by_id.get(item.get("toClipId") or "")
+            if clip is not None:
+                kind = item.get("kind")
+                if kind in _CLIP_EDGE_KINDS:
+                    clip["transitionIn"] = {
+                        "kind": kind,
+                        "durationUs": item.get("durationUs", 0),
+                        "direction": item.get("direction", "in"),
+                        "easing": item.get("easing", "linear"),
+                    }
+            continue
+        if placement == "out":
+            clip = clips_by_id.get(item.get("fromClipId") or "")
+            if clip is not None:
+                kind = item.get("kind")
+                if kind in _CLIP_EDGE_KINDS:
+                    clip["transitionOut"] = {
+                        "kind": kind,
+                        "durationUs": item.get("durationUs", 0),
+                        "direction": item.get("direction", "out"),
+                        "easing": item.get("easing", "linear"),
+                    }
+            continue
+        # Unknown placement: drop rather than fail parse of historical docs.
+    document["transitions"] = kept
+    return document
+
+
+def parse_timeline_document(document: dict) -> VideoEditorTimelineDocument:
+    """Normalize legacy edge transitions then validate the timeline document."""
+    return VideoEditorTimelineDocument.model_validate(
+        normalize_legacy_edge_transitions(document)
+    )

@@ -1123,4 +1123,59 @@ describe("video editor timeline", () => {
       false,
     );
   });
+
+  it("draws clip-local in/out transitions on the clip body", () => {
+    const openClipEdgeTransition = vi.fn();
+    render(
+      <VideoEditorTimeline
+        timeline={{
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [
+              {
+                ...timeline.document.tracks![0]!,
+                clips: [
+                  {
+                    ...timeline.document.tracks![0]!.clips![0]!,
+                    transitionIn: {
+                      kind: "crossfade",
+                      durationUs: 500_000,
+                    },
+                    transitionOut: {
+                      kind: "flash",
+                      durationUs: 1_000_000,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        }}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipIds={["video-left"]}
+        selectClip={vi.fn()}
+        openClipEdgeTransition={openClipEdgeTransition}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onDropAsset={vi.fn()}
+      />,
+    );
+
+    const inBand = screen.getByRole("button", {
+      name: "视频：入场转场 0.50s",
+    });
+    const outBand = screen.getByRole("button", {
+      name: "视频：出场转场 1.00s",
+    });
+    expect(inBand).toHaveStyle({ width: "5%" });
+    expect(outBand).toHaveStyle({ width: "10%" });
+
+    fireEvent.click(outBand);
+    expect(openClipEdgeTransition).toHaveBeenCalledWith("video-left", "out");
+  });
 });

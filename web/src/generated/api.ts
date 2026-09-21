@@ -16390,7 +16390,10 @@ export interface components {
             /** Updatedat */
             updatedAt: string;
         };
-        /** VideoEditorTimelineTransition */
+        /**
+         * VideoEditorTimelineTransition
+         * @description Seam transition between two adjacent visual clips.
+         */
         VideoEditorTimelineTransition: {
             /**
              * Direction
@@ -16407,7 +16410,7 @@ export interface components {
              */
             easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
             /** Fromclipid */
-            fromClipId?: string | null;
+            fromClipId: string;
             /** Id */
             id: string;
             /**
@@ -16417,11 +16420,12 @@ export interface components {
             kind: "crossfade" | "fade-black" | "fade-white" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash";
             /**
              * Placement
-             * @enum {string}
+             * @default between
+             * @constant
              */
-            placement: "in" | "out" | "between";
+            placement: "between";
             /** Toclipid */
-            toClipId?: string | null;
+            toClipId: string;
         };
         /** VideoEditorTrack */
         VideoEditorTrack: {
@@ -16498,15 +16502,30 @@ export interface components {
              */
             y: number;
         };
-        /** VideoEditorTransition */
+        /**
+         * VideoEditorTransition
+         * @description Clip-local edge transition (fade / wipe / flash on a single clip).
+         */
         VideoEditorTransition: {
+            /**
+             * Direction
+             * @default in
+             * @enum {string}
+             */
+            direction: "left" | "right" | "up" | "down" | "in" | "out";
             /** Durationus */
             durationUs: number;
+            /**
+             * Easing
+             * @default linear
+             * @enum {string}
+             */
+            easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
             /**
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "audio-crossfade";
+            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "audio-crossfade";
         };
         /** VideoFramesIn */
         VideoFramesIn: {

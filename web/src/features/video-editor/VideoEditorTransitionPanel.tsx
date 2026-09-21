@@ -1,17 +1,18 @@
-import { Search, SlidersHorizontal, Star, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   VideoEditorClip,
   VideoEditorOperation,
   VideoEditorTimelineTransition,
   VideoEditorTrack,
+  VideoEditorTransition,
 } from "./types";
 import "./video-editor-transitions.css";
 
 type TransitionKind = VideoEditorTimelineTransition["kind"];
-type Placement = VideoEditorTimelineTransition["placement"];
 type Direction = VideoEditorTimelineTransition["direction"];
 type Easing = VideoEditorTimelineTransition["easing"];
+type ClipEdge = "in" | "out";
 
 type TransitionDefinition = {
   kind: TransitionKind;
@@ -82,21 +83,18 @@ const definitions: TransitionDefinition[] = [
 
 const categories = [
   "全部",
-  "收藏",
-  "最近",
   "基础",
   "叠化",
-  "推拉",
   "擦除",
   "缩放",
-  "旋转",
   "模糊",
   "光效",
-  "故障",
 ];
 
 const clipById = (clips: VideoEditorClip[], id?: string | null) =>
   clips.find((clip) => clip.id === id);
+
+const defaultDurationUs = 500_000;
 
 export function VideoEditorTransitionPanel({
   clips,
@@ -105,36 +103,70 @@ export function VideoEditorTransitionPanel({
   selectedClip,
   selectedTransitionId,
   target,
+  clipEdgeFocus,
   disabled = false,
   commit,
   onSelectTransition,
+  onFocusClipEdge,
 }: {
   clips: VideoEditorClip[];
   tracks: VideoEditorTrack[];
   transitions: VideoEditorTimelineTransition[];
   selectedClip?: VideoEditorClip;
   selectedTransitionId?: string;
-  target?: { placement: Placement; fromClipId?: string; toClipId?: string };
+  target?: { fromClipId?: string; toClipId?: string };
+  clipEdgeFocus?: ClipEdge;
   disabled?: boolean;
   commit: (
     redo: VideoEditorOperation[],
     undo?: VideoEditorOperation[],
   ) => Promise<void>;
   onSelectTransition: (id?: string) => void;
+  onFocusClipEdge?: (edge: ClipEdge) => void;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("全部");
-  const [kind, setKind] = useState<TransitionKind>(
-    transitions.find((item) => item.id === selectedTransitionId)?.kind ??
-      "crossfade",
-  );
   const selectedTransition = transitions.find(
     (item) => item.id === selectedTransitionId,
   );
+  const [kind, setKind] = useState<TransitionKind>("crossfade");
+  const [kindTouched, setKindTouched] = useState(false);
+  const edgeFocus: ClipEdge = clipEdgeFocus ?? "in";
+  const activeEdgeTransition: VideoEditorTransition | undefined =
+    selectedClip &&
+    (edgeFocus === "in" ? selectedClip.transitionIn : selectedClip.transitionOut);
+
+  useEffect(() => {
+    setKindTouched(false);
+    if (selectedTransition) {
+      setKind(selectedTransition.kind);
+      return;
+    }
+    if (
+      activeEdgeTransition &&
+      activeEdgeTransition.kind !== "audio-crossfade" &&
+      activeEdgeTransition.kind !== "cut"
+    ) {
+      setKind(activeEdgeTransition.kind as TransitionKind);
+    }
+  }, [
+    selectedTransitionId,
+    selectedTransition?.kind,
+    selectedClip?.id,
+    edgeFocus,
+    activeEdgeTransition?.kind,
+  ]);
+
+  const activeKind: TransitionKind = kindTouched
+    ? kind
+    : (selectedTransition?.kind ??
+      (activeEdgeTransition &&
+      activeEdgeTransition.kind !== "audio-crossfade" &&
+      activeEdgeTransition.kind !== "cut"
+        ? (activeEdgeTransition.kind as TransitionKind)
+        : kind));
   const selectedDefinition =
-    definitions.find(
-      (item) => item.kind === (selectedTransition?.kind ?? kind),
-    ) ?? definitions[0]!;
+    definitions.find((item) => item.kind === activeKind) ?? definitions[0]!;
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return definitions.filter(
@@ -143,26 +175,17 @@ export function VideoEditorTransitionPanel({
           `${item.label}${item.category}${item.description}`
             .toLowerCase()
             .includes(query)) &&
-        (category === "全部" ||
-          category === "最近" ||
-          category === "收藏" ||
-          item.category === category),
+        (category === "全部" || item.category === category),
     );
   }, [category, search]);
-  const effectiveTarget =
-    target ??
-    (selectedClip
-      ? { placement: "in" as const, toClipId: selectedClip.id }
-      : undefined);
-  const currentPlacement =
-    selectedTransition?.placement ?? effectiveTarget?.placement;
+
   const currentFromClip = clipById(
     clips,
-    selectedTransition?.fromClipId ?? effectiveTarget?.fromClipId,
+    selectedTransition?.fromClipId ?? target?.fromClipId,
   );
   const currentToClip = clipById(
     clips,
-    selectedTransition?.toClipId ?? effectiveTarget?.toClipId,
+    selectedTransition?.toClipId ?? target?.toClipId,
   );
   const canApplyBetween = Boolean(
     currentFromClip &&
@@ -173,35 +196,97 @@ export function VideoEditorTransitionPanel({
       currentToClip.timelineStartUs,
   );
 
-  const apply = (placement: Placement) => {
-    if (disabled) return;
-    const fromClipId =
-      placement === "between"
-        ? currentFromClip?.id
-        : placement === "out"
-          ? selectedClip?.id
-          : undefined;
-    const toClipId =
-      placement === "between"
-        ? currentToClip?.id
-        : placement === "in"
-          ? selectedClip?.id
-          : undefined;
-    if (
-      (placement === "between" &&
-        (!fromClipId || !toClipId || !canApplyBetween)) ||
-      (placement !== "between" && !selectedClip)
-    )
+  const pickKind = (next: TransitionKind) => {
+    setKind(next);
+    setKindTouched(true);
+    const definition = definitions.find((item) => item.kind === next);
+    if (selectedTransition && definition) {
+      void commit(
+        [
+          {
+            type: "updateTransition",
+            transitionId: selectedTransition.id,
+            patch: { kind: next, direction: definition.direction },
+          },
+        ],
+        [
+          {
+            type: "updateTransition",
+            transitionId: selectedTransition.id,
+            patch: {
+              kind: selectedTransition.kind,
+              direction: selectedTransition.direction,
+            },
+          },
+        ],
+      );
       return;
+    }
+    if (selectedClip && definition && activeEdgeTransition) {
+      const previous = activeEdgeTransition;
+      const nextEdge: VideoEditorTransition = {
+        ...previous,
+        kind: next,
+        direction: definition.direction,
+      };
+      void commit(
+        [
+          {
+            type: "setTransition",
+            clipId: selectedClip.id,
+            edge: edgeFocus,
+            transition: nextEdge,
+          },
+        ],
+        [
+          {
+            type: "setTransition",
+            clipId: selectedClip.id,
+            edge: edgeFocus,
+            transition: previous,
+          },
+        ],
+      );
+    }
+  };
+
+  const applyBetween = () => {
+    if (disabled || !canApplyBetween || !currentFromClip || !currentToClip)
+      return;
+    if (selectedTransition) {
+      void commit(
+        [
+          {
+            type: "updateTransition",
+            transitionId: selectedTransition.id,
+            patch: {
+              kind: selectedDefinition.kind,
+              direction: selectedDefinition.direction,
+            },
+          },
+        ],
+        [
+          {
+            type: "updateTransition",
+            transitionId: selectedTransition.id,
+            patch: {
+              kind: selectedTransition.kind,
+              direction: selectedTransition.direction,
+            },
+          },
+        ],
+      );
+      return;
+    }
     const next: VideoEditorTimelineTransition = {
       id: crypto.randomUUID(),
       kind: selectedDefinition.kind,
-      durationUs: selectedTransition?.durationUs ?? 500_000,
-      placement,
-      fromClipId,
-      toClipId,
+      durationUs: defaultDurationUs,
+      placement: "between",
+      fromClipId: currentFromClip.id,
+      toClipId: currentToClip.id,
       direction: selectedDefinition.direction,
-      easing: selectedTransition?.easing ?? "ease-in-out",
+      easing: "ease-in-out",
     };
     void commit(
       [{ type: "addTransition", transition: next }],
@@ -209,7 +294,43 @@ export function VideoEditorTransitionPanel({
     ).then(() => onSelectTransition(next.id));
   };
 
-  const update = (patch: Partial<VideoEditorTimelineTransition>) => {
+  const applyClipEdge = (edge: ClipEdge) => {
+    if (disabled || !selectedClip) return;
+    onFocusClipEdge?.(edge);
+    const previous =
+      edge === "in" ? selectedClip.transitionIn : selectedClip.transitionOut;
+    const next: VideoEditorTransition = {
+      kind:
+        selectedClip.kind === "audio"
+          ? "audio-crossfade"
+          : selectedDefinition.kind,
+      durationUs: previous?.durationUs ?? defaultDurationUs,
+      direction: selectedDefinition.direction,
+      easing: previous?.easing ?? "ease-in-out",
+    };
+    void commit(
+      [
+        {
+          type: "setTransition",
+          clipId: selectedClip.id,
+          edge,
+          transition: next,
+        },
+      ],
+      previous
+        ? [
+            {
+              type: "setTransition",
+              clipId: selectedClip.id,
+              edge,
+              transition: previous,
+            },
+          ]
+        : [{ type: "setTransition", clipId: selectedClip.id, edge }],
+    );
+  };
+
+  const updateSeam = (patch: Partial<VideoEditorTimelineTransition>) => {
     if (!selectedTransition || disabled) return;
     const previous = Object.fromEntries(
       Object.keys(patch).map((key) => [
@@ -235,7 +356,30 @@ export function VideoEditorTransitionPanel({
     );
   };
 
-  const remove = () => {
+  const updateClipEdge = (patch: Partial<VideoEditorTransition>) => {
+    if (!selectedClip || !activeEdgeTransition || disabled) return;
+    const previous = activeEdgeTransition;
+    void commit(
+      [
+        {
+          type: "setTransition",
+          clipId: selectedClip.id,
+          edge: edgeFocus,
+          transition: { ...previous, ...patch },
+        },
+      ],
+      [
+        {
+          type: "setTransition",
+          clipId: selectedClip.id,
+          edge: edgeFocus,
+          transition: previous,
+        },
+      ],
+    );
+  };
+
+  const removeSeam = () => {
     if (!selectedTransition || disabled) return;
     void commit(
       [{ type: "removeTransition", transitionId: selectedTransition.id }],
@@ -243,12 +387,46 @@ export function VideoEditorTransitionPanel({
     ).then(() => onSelectTransition(undefined));
   };
 
+  const removeClipEdge = () => {
+    if (!selectedClip || !activeEdgeTransition || disabled) return;
+    void commit(
+      [{ type: "setTransition", clipId: selectedClip.id, edge: edgeFocus }],
+      [
+        {
+          type: "setTransition",
+          clipId: selectedClip.id,
+          edge: edgeFocus,
+          transition: activeEdgeTransition,
+        },
+      ],
+    );
+  };
+
+  const editingSeam = Boolean(selectedTransition || canApplyBetween);
+  const editingParams = selectedTransition
+    ? {
+        durationUs: selectedTransition.durationUs,
+        direction: selectedTransition.direction,
+        easing: selectedTransition.easing,
+        update: updateSeam,
+        remove: removeSeam,
+      }
+    : activeEdgeTransition
+      ? {
+          durationUs: activeEdgeTransition.durationUs,
+          direction: activeEdgeTransition.direction,
+          easing: activeEdgeTransition.easing,
+          update: updateClipEdge,
+          remove: removeClipEdge,
+        }
+      : undefined;
+
   return (
     <aside className="ve-transition-panel">
       <header className="ve-transition-header">
         <div>
           <strong>转场</strong>
-          <small>独立转场工作区</small>
+          <small>接缝与片段转场互不干扰，可同时存在</small>
         </div>
         <SlidersHorizontal aria-hidden />
       </header>
@@ -257,18 +435,16 @@ export function VideoEditorTransitionPanel({
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="搜索转场效果…"
+          placeholder="搜索转场"
         />
       </label>
-      <div
-        className="ve-transition-categories"
-        role="tablist"
-        aria-label="转场分类"
-      >
+      <div className="ve-transition-categories" role="tablist">
         {categories.map((item) => (
           <button
             key={item}
             type="button"
+            role="tab"
+            aria-selected={category === item}
             className={category === item ? "active" : ""}
             onClick={() => setCategory(item)}
           >
@@ -279,53 +455,121 @@ export function VideoEditorTransitionPanel({
       <div className="ve-transition-library">
         {filtered.map((item) => (
           <button
-            type="button"
             key={item.kind}
+            type="button"
             className={`ve-transition-library-card${selectedDefinition.kind === item.kind ? " active" : ""}`}
-            onClick={() => {
-              setKind(item.kind);
-              if (selectedTransition)
-                update({ kind: item.kind, direction: item.direction });
-            }}
+            onClick={() => pickKind(item.kind)}
           >
             <span
               className={`ve-transition-thumb effect-${item.kind}`}
               aria-hidden
             />
             <span className="ve-transition-card-name">{item.label}</span>
-            <Star aria-hidden />
           </button>
         ))}
       </div>
+
       <section className="ve-transition-editor">
         <div className="ve-transition-editor-title">
           <div>
             <strong>{selectedDefinition.label}</strong>
             <small>{selectedDefinition.description}</small>
           </div>
-          {selectedTransition ? (
-            <button type="button" aria-label="删除当前转场" onClick={remove}>
+          {editingParams ? (
+            <button
+              type="button"
+              aria-label="删除当前转场"
+              onClick={editingParams.remove}
+            >
               <Trash2 aria-hidden />
             </button>
           ) : null}
         </div>
+
+        <div className="ve-transition-field">
+          <span>作用对象</span>
+          <div className="ve-transition-options wide">
+            <button
+              type="button"
+              className={editingSeam && selectedTransition ? "active" : ""}
+              disabled={disabled || (!selectedTransition && !canApplyBetween)}
+              onClick={applyBetween}
+            >
+              {selectedTransition ? "接缝转场" : "应用到接缝"}
+            </button>
+            <button
+              type="button"
+              className={
+                selectedClip && edgeFocus === "in" && !selectedTransition
+                  ? "active"
+                  : ""
+              }
+              disabled={disabled || !selectedClip}
+              onClick={() => applyClipEdge("in")}
+            >
+              设置入场
+            </button>
+            <button
+              type="button"
+              className={
+                selectedClip && edgeFocus === "out" && !selectedTransition
+                  ? "active"
+                  : ""
+              }
+              disabled={disabled || !selectedClip}
+              onClick={() => applyClipEdge("out")}
+            >
+              设置出场
+            </button>
+          </div>
+        </div>
+
+        {selectedClip ? (
+          <p className="ve-transition-help">
+            片段「{selectedClip.name}」：入场{" "}
+            {selectedClip.transitionIn
+              ? `${(selectedClip.transitionIn.durationUs / 1_000_000).toFixed(2)}s`
+              : "无"}
+            ，出场{" "}
+            {selectedClip.transitionOut
+              ? `${(selectedClip.transitionOut.durationUs / 1_000_000).toFixed(2)}s`
+              : "无"}
+          </p>
+        ) : null}
+        {selectedTransition ? (
+          <p className="ve-transition-help">
+            当前接缝：
+            {clipById(clips, selectedTransition.fromClipId)?.name ?? "?"} →{" "}
+            {clipById(clips, selectedTransition.toClipId)?.name ?? "?"}
+          </p>
+        ) : canApplyBetween ? (
+          <p className="ve-transition-help">
+            当前目标：
+            {currentFromClip?.name} → {currentToClip?.name}
+          </p>
+        ) : !selectedClip ? (
+          <p className="ve-transition-help">
+            先选择时间线上的接缝或片段
+          </p>
+        ) : null}
+
         <label className="ve-transition-field">
           <span>
             时长 <small>秒</small>
           </span>
           <input
-            disabled={!selectedTransition || disabled}
+            disabled={!editingParams || disabled}
             type="number"
             min="0.05"
             max="10"
             step="0.05"
             value={
-              selectedTransition
-                ? (selectedTransition.durationUs / 1_000_000).toFixed(2)
+              editingParams
+                ? (editingParams.durationUs / 1_000_000).toFixed(2)
                 : "0.50"
             }
             onChange={(event) =>
-              update({
+              editingParams?.update({
                 durationUs: Math.round(
                   Number(event.target.value || 0.5) * 1_000_000,
                 ),
@@ -340,11 +584,9 @@ export function VideoEditorTransitionPanel({
               <button
                 key={item}
                 type="button"
-                disabled={!selectedTransition || disabled}
-                className={
-                  selectedTransition?.direction === item ? "active" : ""
-                }
-                onClick={() => update({ direction: item })}
+                disabled={!editingParams || disabled}
+                className={editingParams?.direction === item ? "active" : ""}
+                onClick={() => editingParams?.update({ direction: item })}
               >
                 {item === "left"
                   ? "左"
@@ -365,11 +607,9 @@ export function VideoEditorTransitionPanel({
                 <button
                   key={item}
                   type="button"
-                  disabled={!selectedTransition || disabled}
-                  className={
-                    selectedTransition?.easing === item ? "active" : ""
-                  }
-                  onClick={() => update({ easing: item })}
+                  disabled={!editingParams || disabled}
+                  className={editingParams?.easing === item ? "active" : ""}
+                  onClick={() => editingParams?.update({ easing: item })}
                 >
                   {item === "linear"
                     ? "匀速"
@@ -383,41 +623,6 @@ export function VideoEditorTransitionPanel({
             )}
           </div>
         </div>
-        <div className="ve-transition-actions">
-          <button
-            type="button"
-            disabled={disabled || !canApplyBetween}
-            onClick={() => apply("between")}
-          >
-            应用到接缝
-          </button>
-          <button
-            type="button"
-            disabled={disabled || !selectedClip}
-            onClick={() => apply("in")}
-          >
-            应用到片段开头
-          </button>
-          <button
-            type="button"
-            disabled={disabled || !selectedClip}
-            onClick={() => apply("out")}
-          >
-            应用到片段结尾
-          </button>
-        </div>
-        {currentPlacement ? (
-          <p className="ve-transition-help">
-            当前目标：
-            {currentPlacement === "between"
-              ? "两个相邻片段之间"
-              : currentPlacement === "in"
-                ? "片段开头"
-                : "片段结尾"}
-          </p>
-        ) : (
-          <p className="ve-transition-help">先选择时间线上的接缝或片段</p>
-        )}
       </section>
     </aside>
   );

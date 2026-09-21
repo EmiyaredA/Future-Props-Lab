@@ -10,7 +10,6 @@ import {
 import {
   ClipboardPaste,
   Copy,
-  Download,
   Magnet,
   Scissors,
   Trash2,
@@ -26,12 +25,22 @@ import {
 import { useTimelineAssetDrop } from "./useTimelineAssetDrop";
 import { useTimelineClipTrim } from "./useTimelineClipTrim";
 import { useTimelineClipDrag } from "./useTimelineClipDrag";
+import {
+  clipEdgeTransitionWidthPercent,
+  emptySeamsForTrack,
+  seamTransitionStyle,
+  seamTransitions,
+  transitionBelongsToTrack,
+} from "./timelineSeams";
+import {
+  VideoEditorTimelineContextMenu,
+  type TimelineContextMenuState,
+} from "./VideoEditorTimelineContextMenu";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
   VideoEditorOperation,
   VideoEditorTimeline as Timeline,
-  VideoEditorTimelineTransition,
 } from "./types";
 
 export function VideoEditorTimeline({
@@ -50,6 +59,7 @@ export function VideoEditorTimeline({
   selectClip,
   selectedTransitionId,
   selectTransition,
+  openClipEdgeTransition,
   commit,
   onDropAsset,
   draggingAsset,
@@ -81,11 +91,11 @@ export function VideoEditorTimeline({
   selectTransition?: (
     value?: string,
     target?: {
-      placement: VideoEditorTimelineTransition["placement"];
       fromClipId?: string;
       toClipId?: string;
     },
   ) => void;
+  openClipEdgeTransition?: (clipId: string, edge: "in" | "out") => void;
   commit: (
     redo: VideoEditorOperation[],
     undo?: VideoEditorOperation[],
@@ -113,7 +123,7 @@ export function VideoEditorTimeline({
     h: number;
   }>();
   const [contextMenu, setContextMenu] = useState<
-    { clip: VideoEditorClip; left: number; top: number } | undefined
+    TimelineContextMenuState | undefined
   >();
   const contextMenuRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -295,34 +305,7 @@ export function VideoEditorTimeline({
     .map((id) => clipById.get(id))
     .filter((clip): clip is VideoEditorClip => Boolean(clip));
   const hasSelection = selectedClips.length > 0;
-  const transitions = timeline.document.transitions ?? [];
-  const transitionForTrack = (
-    transition: VideoEditorTimelineTransition,
-    trackId: string,
-  ) => {
-    const from = clipById.get(transition.fromClipId ?? "");
-    const to = clipById.get(transition.toClipId ?? "");
-    return (
-      (from?.trackId === trackId || to?.trackId === trackId) &&
-      (transition.placement !== "between" ||
-        (from?.trackId === trackId && to?.trackId === trackId))
-    );
-  };
-  const transitionStyle = (transition: VideoEditorTimelineTransition) => {
-    const from = clipById.get(transition.fromClipId ?? "");
-    const to = clipById.get(transition.toClipId ?? "");
-    const start =
-      transition.placement === "in"
-        ? (to?.timelineStartUs ?? 0)
-        : transition.placement === "out"
-          ? (from?.timelineStartUs ?? 0) + (from?.durationUs ?? 0)
-          : (to?.timelineStartUs ?? 0);
-    const width = transition.placement === "between" ? 52 : 24;
-    return {
-      left: `${(start / 1_000_000) * zoom - width / 2}px`,
-      width: `${width}px`,
-    };
-  };
+  const transitions = seamTransitions(timeline.document.transitions);
 
   const deleteSelected = (
     ripple = false,
@@ -677,32 +660,97 @@ export function VideoEditorTimeline({
                   >
                     {transitions
                       .filter((transition) =>
-                        transitionForTrack(transition, track.id),
+                        transitionBelongsToTrack(
+                          transition,
+                          track.id,
+                          clipById,
+                        ),
                       )
                       .map((transition) => (
                         <button
                           type="button"
                           key={transition.id}
-                          className={`ve-timeline-transition ${transition.placement}${selectedTransitionId === transition.id ? " selected" : ""}`}
-                          style={transitionStyle(transition)}
-                          aria-label={`${transition.placement === "between" ? "接缝" : transition.placement === "in" ? "入场" : "出场"}转场`}
+                          className={`ve-timeline-transition between${selectedTransitionId === transition.id ? " selected" : ""}`}
+                          style={seamTransitionStyle(
+                            transition,
+                            clipById,
+                            zoom,
+                          )}
+                          aria-label="接缝转场"
                           onPointerDown={(event) => event.stopPropagation()}
                           onClick={(event) => {
                             event.stopPropagation();
                             selectTransition?.(transition.id, {
-                              placement: transition.placement,
-                              fromClipId: transition.fromClipId ?? undefined,
-                              toClipId: transition.toClipId ?? undefined,
+                              fromClipId: transition.fromClipId,
+                              toClipId: transition.toClipId,
+                            });
+                          }}
+                          onContextMenu={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            selectTransition?.(transition.id, {
+                              fromClipId: transition.fromClipId,
+                              toClipId: transition.toClipId,
+                            });
+                            setContextMenu({
+                              kind: "seam",
+                              fromClipId: transition.fromClipId,
+                              toClipId: transition.toClipId,
+                              transitionId: transition.id,
+                              left: event.clientX,
+                              top: event.clientY,
                             });
                           }}
                         >
-                          {transition.placement === "between"
-                            ? "转场"
-                            : transition.placement === "in"
-                              ? "入"
-                              : "出"}
+                          转场
+                          <small>
+                            {(transition.durationUs / 1_000_000).toFixed(2)}s
+                          </small>
                         </button>
                       ))}
+                    {emptySeamsForTrack(track.id, clipById, transitions).map(
+                      ({ from, to }) => {
+                      const start = to.timelineStartUs;
+                      const width = 28;
+                      return (
+                        <button
+                          type="button"
+                          key={`seam-${from.id}-${to.id}`}
+                          className="ve-timeline-seam-hit"
+                          style={{
+                            left: `${(start / 1_000_000) * zoom - width / 2}px`,
+                            width: `${width}px`,
+                          }}
+                          aria-label="添加接缝转场"
+                          title="添加接缝转场"
+                          onPointerDown={(event) => event.stopPropagation()}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            selectTransition?.(undefined, {
+                              fromClipId: from.id,
+                              toClipId: to.id,
+                            });
+                          }}
+                          onContextMenu={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            selectTransition?.(undefined, {
+                              fromClipId: from.id,
+                              toClipId: to.id,
+                            });
+                            setContextMenu({
+                              kind: "seam",
+                              fromClipId: from.id,
+                              toClipId: to.id,
+                              left: event.clientX,
+                              top: event.clientY,
+                            });
+                          }}
+                        >
+                          +
+                        </button>
+                      );
+                    })}
                     {(track.clips ?? []).map((clip: VideoEditorClip) => (
                       <div
                         key={clip.id}
@@ -759,6 +807,7 @@ export function VideoEditorTimeline({
                             selectClip(clip.id);
                           }
                           setContextMenu({
+                            kind: "clip",
                             clip,
                             left: event.clientX,
                             top: event.clientY,
@@ -788,6 +837,50 @@ export function VideoEditorTimeline({
                             />
                           ))}
                         </button>
+                        {(
+                          [
+                            ["in", clip.transitionIn],
+                            ["out", clip.transitionOut],
+                          ] as const
+                        ).map(([edge, transition]) => {
+                          if (!transition || transition.durationUs <= 0)
+                            return null;
+                          const clipDurationUs =
+                            trimStates?.find((item) => item.id === clip.id)
+                              ?.durationUs ?? clip.durationUs;
+                          const widthPct = clipEdgeTransitionWidthPercent(
+                            transition.durationUs,
+                            clipDurationUs,
+                          );
+                          if (widthPct <= 0) return null;
+                          const seconds = (
+                            transition.durationUs / 1_000_000
+                          ).toFixed(2);
+                          return (
+                            <button
+                              key={edge}
+                              type="button"
+                              className={`ve-clip-edge-transition ${edge}`}
+                              style={{ width: `${widthPct}%` }}
+                              aria-label={`${clip.name}：${edge === "in" ? "入场" : "出场"}转场 ${seconds}s`}
+                              title={`${edge === "in" ? "入场" : "出场"} ${seconds}s`}
+                              onPointerDown={(event) =>
+                                event.stopPropagation()
+                              }
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                if (!selectedClipIds.includes(clip.id)) {
+                                  selectClip(clip.id);
+                                }
+                                openClipEdgeTransition?.(clip.id, edge);
+                              }}
+                            >
+                              <span>
+                                {edge === "in" ? "入" : "出"} {seconds}s
+                              </span>
+                            </button>
+                          );
+                        })}
                         {(["start", "end"] as const).map((edge) => (
                           <button
                             key={edge}
@@ -827,86 +920,28 @@ export function VideoEditorTimeline({
         </div>
       </div>
       {contextMenu ? (
-        <div
-          className="ve-clip-context-menu"
-          role="menu"
-          ref={contextMenuRef}
-          style={{ left: contextMenu.left, top: contextMenu.top }}
-          onPointerDown={(event) => event.stopPropagation()}
-          onContextMenu={(event) => event.preventDefault()}
-        >
-          <button
-            role="menuitem"
-            onClick={() => toggleClipsMute(contextMenu.clip)}
-          >
-            {clipIsMuted(contextMenu.clip) ? "取消静音" : "静音"}
-          </button>
-          <button
-            role="menuitem"
-            disabled={!onCopyClip}
-            onClick={() => {
-              copyActionClips(contextMenu.clip);
-              setContextMenu(undefined);
-            }}
-          >
-            复制片段
-          </button>
-          <button
-            role="menuitem"
-            disabled={!hasClipboard || !onPasteClip}
-            onClick={() => {
-              setContextMenu(undefined);
-              onPasteClip?.();
-            }}
-          >
-            粘贴片段
-          </button>
-          <button
-            role="menuitem"
-            onClick={() => {
-              const targets = resolveActionClips(contextMenu.clip);
-              setContextMenu(undefined);
-              deleteSelected(false, targets);
-            }}
-          >
-            删除片段
-          </button>
-          {resolveActionClips(contextMenu.clip).some(
-            (clip) => clip.kind === "video",
-          ) && onRequestSegmentExport ? (
-            <button
-              role="menuitem"
-              onClick={() => {
-                setContextMenu(undefined);
-                exportSelectedVideos(contextMenu.clip);
-              }}
-            >
-              <Download aria-hidden /> 导出视频片段
-            </button>
-          ) : null}
-          <button
-            role="menuitem"
-            onClick={() => {
-              setContextMenu(undefined);
-              splitSelected();
-            }}
-          >
-            在播放头处分割
-          </button>
-          {resolveActionClips(contextMenu.clip).some((clip) => {
-            const sourceTrack = tracks.find(
-              (track) => track.id === clip.trackId,
-            );
-            return clip.kind === "video" && sourceTrack?.kind === "mixed";
-          }) ? (
-            <button
-              role="menuitem"
-              onClick={() => separateClips(contextMenu.clip)}
-            >
-              分离轨道
-            </button>
-          ) : null}
-        </div>
+        <VideoEditorTimelineContextMenu
+          contextMenu={contextMenu}
+          contextMenuRef={contextMenuRef}
+          transitions={transitions}
+          tracks={tracks}
+          hasClipboard={hasClipboard}
+          onClose={() => setContextMenu(undefined)}
+          selectTransition={selectTransition}
+          openClipEdgeTransition={openClipEdgeTransition}
+          commit={commit}
+          clipIsMuted={clipIsMuted}
+          toggleClipsMute={toggleClipsMute}
+          copyActionClips={copyActionClips}
+          onCopyClip={onCopyClip}
+          onPasteClip={onPasteClip}
+          resolveActionClips={resolveActionClips}
+          deleteSelected={deleteSelected}
+          exportSelectedVideos={exportSelectedVideos}
+          onRequestSegmentExport={onRequestSegmentExport}
+          splitSelected={splitSelected}
+          separateClips={separateClips}
+        />
       ) : null}
     </section>
   );

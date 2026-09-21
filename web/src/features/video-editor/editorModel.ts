@@ -62,16 +62,12 @@ export function clipPropertyAt(
 }
 
 export function clipOpacityAt(clip: VideoEditorClip, localUs: number) {
+  /** Keyframe/base opacity only; clip-edge and seam fades live in previewTransitions. */
   const base = clip.transform?.opacity ?? 1;
-  let opacity = clipPropertyAt(clip, "opacity", localUs, base);
-  if (clip.transitionIn && clip.transitionIn.durationUs > 0)
-    opacity *= Math.min(1, localUs / clip.transitionIn.durationUs);
-  if (clip.transitionOut && clip.transitionOut.durationUs > 0)
-    opacity *= Math.min(
-      1,
-      (clip.durationUs - localUs) / clip.transitionOut.durationUs,
-    );
-  return Math.max(0, Math.min(1, opacity));
+  return Math.max(
+    0,
+    Math.min(1, clipPropertyAt(clip, "opacity", localUs, base)),
+  );
 }
 
 /** Returns the audio envelope applied by clip-level audio crossfades. */

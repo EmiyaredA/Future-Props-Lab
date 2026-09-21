@@ -16,7 +16,7 @@ from app.apps.video_editor.models import (
     VideoEditorTask,
 )
 from app.apps.video_editor.rendering import PRESETS
-from app.apps.video_editor.schemas import VideoEditorTimelineDocument
+from app.apps.video_editor.schemas import parse_timeline_document
 from app.apps.video_editor.segment_runner import VideoEditorSegmentTaskRunner
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
@@ -394,7 +394,7 @@ class VideoEditorRunner(PollingTaskRunner):
             task = await self._get(session, task_id)
             if task is None:
                 return
-            document = VideoEditorTimelineDocument.model_validate(task.snapshot_document)
+            document = parse_timeline_document(task.snapshot_document)
             payload = dict(task.request_payload)
             asset_ids = {
                 value
@@ -589,7 +589,7 @@ class VideoEditorRunner(PollingTaskRunner):
                         probe["streams"][0]["height"] = baked.height
                 else:
                     output = temp_root / "baked.mp4"
-                    document = VideoEditorTimelineDocument.model_validate(
+                    document = parse_timeline_document(
                         {
                             "settings": {
                                 "width": 1920,

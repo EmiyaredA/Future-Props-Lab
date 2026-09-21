@@ -4282,11 +4282,11 @@ class VideoEditorTimelineTransition(WireModel):
     direction: Literal['left', 'right', 'up', 'down', 'in', 'out'] = Field(default='left', alias='direction')
     duration_us: int = Field(default=..., alias='durationUs', le=10000000.0, gt=0.0)
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
-    from_clip_id: str | None = Field(default=None, alias='fromClipId')
+    from_clip_id: str = Field(default=..., alias='fromClipId', min_length=1, max_length=64)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash'] = Field(default=..., alias='kind')
-    placement: Literal['in', 'out', 'between'] = Field(default=..., alias='placement')
-    to_clip_id: str | None = Field(default=None, alias='toClipId')
+    placement: Literal['between'] = Field(default='between', alias='placement')
+    to_clip_id: str = Field(default=..., alias='toClipId', min_length=1, max_length=64)
 
 class VideoEditorTrack(WireModel):
     clips: list[VideoEditorClip] | None = Field(default=None, alias='clips')
@@ -4309,8 +4309,10 @@ class VideoEditorTransform(WireModel):
     y: float = Field(default=540, alias='y')
 
 class VideoEditorTransition(WireModel):
+    direction: Literal['left', 'right', 'up', 'down', 'in', 'out'] = Field(default='in', alias='direction')
     duration_us: int = Field(default=..., alias='durationUs', ge=0.0, le=10000000.0)
-    kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'audio-crossfade'] = Field(default=..., alias='kind')
+    easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
+    kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'audio-crossfade'] = Field(default=..., alias='kind')
 
 class VideoFramesIn(WireModel):
     max_width: int = Field(default=1280, alias='max_width', ge=64.0, le=1920.0)

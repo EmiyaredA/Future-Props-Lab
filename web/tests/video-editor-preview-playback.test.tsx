@@ -591,4 +591,36 @@ describe("video editor preview playback", () => {
     expect(raf).toHaveBeenCalled();
     unmount();
   });
+
+  it("jumps playhead to the timeline start and end from transport buttons", () => {
+    const setPlayheadUs = vi.fn();
+    const setPlaying = vi.fn();
+    render(
+      <VideoEditorPreview
+        projectId="editor-1"
+        timeline={timeline}
+        assets={assets}
+        playheadUs={1_000_000}
+        setPlayheadUs={setPlayheadUs}
+        playing
+        setPlaying={setPlaying}
+        preciseFrame={false}
+        onPreciseFrameChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "跳到开头" }));
+    expect(setPlaying).toHaveBeenCalledWith(false);
+    expect(setPlayheadUs).toHaveBeenCalledWith(0);
+
+    setPlaying.mockClear();
+    setPlayheadUs.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "跳到结尾" }));
+    expect(setPlaying).toHaveBeenCalledWith(false);
+    expect(setPlayheadUs).toHaveBeenCalledWith(100_000_000);
+    expect(
+      screen.getByText("30 FPS · Space 播放 · ← → 逐帧 · Home/End 跳转"),
+    ).toBeInTheDocument();
+  });
 });

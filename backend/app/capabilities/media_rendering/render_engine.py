@@ -191,6 +191,26 @@ def _run(args: list[str], *, cancel: threading.Event) -> None:
         raise RuntimeError(stderr[-4000:] or "FFmpeg 执行失败")
 
 
+# Coarse input seek lands near a keyframe; fine output seek then positions exactly.
+_DECODER_SEEK_PREROLL_US = 10_000_000
+
+
+def _decoder_seek_args(source_us: int, *, preroll_us: int = _DECODER_SEEK_PREROLL_US) -> list[str]:
+    """Build ffmpeg seek args: optional coarse -ss before -i, accurate -ss after -i."""
+    target = max(0, source_us)
+    if target <= 0:
+        return ["-i"]
+    coarse = max(0, target - max(0, preroll_us))
+    fine = target - coarse
+    args: list[str] = []
+    if coarse > 0:
+        args.extend(["-ss", f"{coarse / 1_000_000:.6f}"])
+    args.append("-i")
+    if fine > 0:
+        args.extend(["-ss", f"{fine / 1_000_000:.6f}"])
+    return args
+
+
 class _VideoDecoder:
     def __init__(
         self,
@@ -200,28 +220,34 @@ class _VideoDecoder:
         canvas_size: tuple[int, int],
         cancel: threading.Event,
         playback_rate: float = 1,
+        *,
+        local_us: int = 0,
     ) -> None:
         self.width, self.height = _video_dimensions(str(path)) or canvas_size
         self.cancel = cancel
+        # Clip-local time of the last frame returned by next()/frame_at().
+        self.local_us = local_us
+        seek_args = _decoder_seek_args(source_us)
+        # Insert the input path after the "-i" placeholder from seek args.
+        command = [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            *seek_args,
+            "-an",
+            "-vf",
+            f"setpts=(PTS-STARTPTS)/{playback_rate:.8g},fps={fps},format=rgba",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "pipe:1",
+        ]
+        input_index = command.index("-i") + 1
+        command.insert(input_index, str(path))
         self.process = subprocess.Popen(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-ss",
-                f"{source_us / 1_000_000:.6f}",
-                "-i",
-                str(path),
-                "-an",
-                "-vf",
-                f"setpts=(PTS-STARTPTS)/{playback_rate:.8g},fps={fps},format=rgba",
-                "-f",
-                "rawvideo",
-                "-pix_fmt",
-                "rgba",
-                "pipe:1",
-            ],
+            command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=True,
@@ -240,6 +266,28 @@ class _VideoDecoder:
         _terminate_process_group(self.process)
 
 
+def _decoder_request_action(
+    decoder_local_us: int | None,
+    requested_local_us: int,
+    frame_us: int,
+) -> tuple[str, int]:
+    """Map a clip-local frame request onto open / hold / advance for a pipe decoder.
+
+    Returns (action, value):
+    - ("open", at_us): recreate the decoder so its first frame is at_us
+    - ("hold", 0): reuse the last emitted frame
+    - ("advance", steps): call next() `steps` times (steps >= 1)
+    """
+    requested = max(0, requested_local_us)
+    step = max(1, frame_us)
+    if decoder_local_us is None or requested < decoder_local_us:
+        return ("open", requested)
+    if requested <= decoder_local_us:
+        return ("hold", 0)
+    steps = max(1, round((requested - decoder_local_us) / step))
+    return ("advance", steps)
+
+
 def _render_segment(
     document: VideoEditorTimelineDocument,
     asset_paths: dict[str, Path],
@@ -256,11 +304,11 @@ def _render_segment(
 ) -> None:
     width, height, fps = RENDER_PRESETS[preset]
     canvas_size = (document.settings.width, document.settings.height)
-    segment_start_us = range_start_us + round(first_frame * 1_000_000 / fps)
+    frame_us = max(1, round(1_000_000 / fps))
     decoders: dict[str, _VideoDecoder] = {}
     image_cache: dict[str, Image.Image] = {}
 
-    def image_for_clip(clip: VideoEditorClip, _local_us: int) -> Image.Image | None:
+    def image_for_clip(clip: VideoEditorClip, local_us: int) -> Image.Image | None:
         path = asset_paths.get(clip.asset_id or "")
         if path is None:
             return None
@@ -270,15 +318,42 @@ def _render_segment(
                     image_cache[clip.id] = source.convert("RGBA")
             return image_cache[clip.id].copy()
         if clip.kind == "video":
+            requested = max(0, local_us)
             decoder = decoders.get(clip.id)
-            if decoder is None:
-                effective_start = max(segment_start_us, clip.timeline_start_us)
-                source_us = source_time_us(clip, effective_start - clip.timeline_start_us)
+            action, value = _decoder_request_action(
+                None if decoder is None else decoder.local_us,
+                requested,
+                frame_us,
+            )
+            if action == "open":
+                if decoder is not None:
+                    decoder.close()
                 decoder = _VideoDecoder(
-                    path, source_us, fps, canvas_size, cancel, clip.playback_rate or 1
+                    path,
+                    source_time_us(clip, value),
+                    fps,
+                    canvas_size,
+                    cancel,
+                    clip.playback_rate or 1,
+                    local_us=value,
                 )
                 decoders[clip.id] = decoder
-            return decoder.next()
+                return decoder.next()
+            if action == "hold":
+                return decoder.last.copy() if decoder and decoder.last else None
+            assert decoder is not None
+            image: Image.Image | None = None
+            for _ in range(value):
+                image = decoder.next()
+                if image is None:
+                    break
+                decoder.local_us += frame_us
+            # Snap the cursor to the requested time so repeated holds and the next
+            # monotonic step stay aligned with evaluator local_us (incl. continuity).
+            decoder.local_us = requested
+            return image if image is not None else (
+                decoder.last.copy() if decoder.last else None
+            )
         return None
 
     renderer = TimelineFrameRenderer(
@@ -507,49 +582,23 @@ def render_document(
 ) -> None:
     _width, _height, fps = RENDER_PRESETS[preset]
     total_frames = round((end_us - start_us) / 1_000_000 * fps)
-    segment_frames = 30 * fps
     with TemporaryDirectory(prefix="video-editor-render-") as temp:
         root = Path(temp)
-        segments: list[Path] = []
-        for first in range(0, total_frames, segment_frames):
-            output = root / f"segment-{len(segments):04d}.mp4"
-            _render_segment(
-                document,
-                asset_paths,
-                output,
-                preset=preset,
-                range_start_us=start_us,
-                first_frame=first,
-                frame_count=min(segment_frames, total_frames - first),
-                total_frames=total_frames,
-                cancel=cancel,
-                progress=progress,
-                capture_frame=capture_frame,
-            )
-            segments.append(output)
-        concat_file = root / "segments.txt"
-        concat_file.write_text(
-            "".join(f"file '{path.as_posix()}'\n" for path in segments), encoding="utf-8"
-        )
+        # One continuous encode: internal 30s chunk+concat restarted decoders with
+        # input-side -ss, which jumped back ~1 GOP at each boundary (e.g. 2:00).
         silent_video = root / "picture.mp4"
-        _run(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                str(concat_file),
-                "-c",
-                "copy",
-                "-y",
-                str(silent_video),
-            ],
+        _render_segment(
+            document,
+            asset_paths,
+            silent_video,
+            preset=preset,
+            range_start_us=start_us,
+            first_frame=0,
+            frame_count=total_frames,
+            total_frames=total_frames,
             cancel=cancel,
+            progress=progress,
+            capture_frame=capture_frame,
         )
         progress(88)
         _mux_audio(

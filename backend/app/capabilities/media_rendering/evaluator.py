@@ -59,17 +59,67 @@ def property_at(clip: VideoEditorClip, name: str, local_us: int, fallback: float
 
 
 def clip_opacity(clip: VideoEditorClip, local_us: int) -> float:
+    """Keyframe/base opacity only; clip-edge fades are applied via clip_edge_visual."""
     opacity = property_at(clip, "opacity", local_us, clip.transform.opacity)
-    if clip.transition_in and clip.transition_in.duration_us:
-        progress = min(1, local_us / clip.transition_in.duration_us)
-        if clip.transition_in.kind in {"crossfade", "fade-black", "fade-white"}:
-            opacity *= progress
-    if clip.transition_out and clip.transition_out.duration_us:
-        remaining = clip.duration_us - local_us
-        progress = min(1, remaining / clip.transition_out.duration_us)
-        if clip.transition_out.kind in {"crossfade", "fade-black", "fade-white"}:
-            opacity *= progress
     return max(0, min(1, opacity))
+
+
+@dataclass(frozen=True)
+class ClipEdgeVisual:
+    visibility: float
+    kind: str
+    progress: float
+    direction: str
+    flash_alpha: int
+
+
+def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | None:
+    """Resolve the active clip-local edge transition at local_us, if any."""
+    if (
+        clip.transition_in
+        and clip.transition_in.duration_us
+        and clip.transition_in.kind != "audio-crossfade"
+        and 0 <= local_us < clip.transition_in.duration_us
+    ):
+        edge = clip.transition_in
+        progress = _transition_progress(local_us, edge.duration_us, edge.easing)
+        flash = (
+            round((1 - progress / 0.55) * 235)
+            if edge.kind == "flash" and progress < 0.55
+            else 0
+        )
+        return ClipEdgeVisual(
+            visibility=progress,
+            kind=edge.kind,
+            progress=progress,
+            direction=edge.direction,
+            flash_alpha=flash,
+        )
+    if (
+        clip.transition_out
+        and clip.transition_out.duration_us
+        and clip.transition_out.kind != "audio-crossfade"
+    ):
+        remaining = clip.duration_us - local_us
+        if 0 <= remaining < clip.transition_out.duration_us:
+            edge = clip.transition_out
+            through = _transition_progress(
+                edge.duration_us - remaining, edge.duration_us, edge.easing
+            )
+            visibility = 1 - through
+            flash = (
+                round((1 - visibility / 0.55) * 235)
+                if edge.kind == "flash" and visibility < 0.55
+                else 0
+            )
+            return ClipEdgeVisual(
+                visibility=visibility,
+                kind=edge.kind,
+                progress=visibility,
+                direction=edge.direction,
+                flash_alpha=flash,
+            )
+    return None
 
 
 def visual_gaps(document: VideoEditorTimelineDocument) -> list[tuple[int, int]]:
@@ -141,6 +191,7 @@ class TimelineFrameRenderer:
                 and any(clip.id == item.to_clip_id for clip in clips)
             ]
             handled_between: set[str] = set()
+            seam_drawn_clips: set[str] = set()
             for clip in clips:
                 local_us = time_us - clip.timeline_start_us
                 between = next(
@@ -156,101 +207,132 @@ class TimelineFrameRenderer:
                     right = next((item for item in clips if item.id == between.to_clip_id), None)
                     if left and right:
                         seam_us = right.timeline_start_us
-                        start_us = seam_us - between.duration_us
-                        if start_us <= time_us < seam_us:
+                        half_us = max(1, between.duration_us // 2)
+                        start_us = seam_us - half_us
+                        end_us = seam_us + half_us
+                        if start_us <= time_us < end_us:
                             progress = _transition_progress(
                                 time_us - start_us,
                                 between.duration_us,
                                 between.easing,
                             )
-                            left_local_us = max(
-                                0, left.duration_us - between.duration_us + time_us - start_us
-                            )
+                            handled_between.add(between.id)
+                            seam_drawn_clips.add(left.id)
+                            seam_drawn_clips.add(right.id)
+                            if between.kind == "flash":
+                                # 前半：结尾闪白出；后半：开头闪白入（入场从切点起只播一次）
+                                if time_us < seam_us:
+                                    left_local_us = max(0, time_us - left.timeline_start_us)
+                                    left_local_us = min(left_local_us, left.duration_us - 1)
+                                    left_layer = self._layer(left, left_local_us)
+                                    if left_layer is not None:
+                                        self._composite_with_edge(
+                                            canvas, left_layer, left, left_local_us
+                                        )
+                                    first = max(
+                                        0.0,
+                                        min(
+                                            1.0,
+                                            (time_us - start_us) / max(1, half_us),
+                                        ),
+                                    )
+                                    flash = Image.new(
+                                        "RGBA",
+                                        canvas.size,
+                                        (255, 255, 255, round(first * 230)),
+                                    )
+                                    canvas.alpha_composite(flash)
+                                else:
+                                    right_local_us = max(0, time_us - seam_us)
+                                    right_local_us = min(
+                                        right_local_us, max(0, right.duration_us - 1)
+                                    )
+                                    right_layer = self._layer(right, right_local_us)
+                                    if right_layer is not None:
+                                        self._composite_with_edge(
+                                            canvas, right_layer, right, right_local_us
+                                        )
+                                    second = max(
+                                        0.0,
+                                        min(
+                                            1.0,
+                                            (time_us - seam_us) / max(1, half_us),
+                                        ),
+                                    )
+                                    flash = Image.new(
+                                        "RGBA",
+                                        canvas.size,
+                                        (255, 255, 255, round((1 - second) * 230)),
+                                    )
+                                    canvas.alpha_composite(flash)
+                                continue
+
+                            # Crossfade / wipe / zoom / blur: blend across the centered window.
+                            if time_us < seam_us:
+                                left_local_us = max(0, time_us - left.timeline_start_us)
+                                left_local_us = min(left_local_us, left.duration_us - 1)
+                            else:
+                                left_local_us = max(0, left.duration_us - 1)
+                            right_local_us = max(0, time_us - start_us)
+                            right_local_us = min(right_local_us, max(0, right.duration_us - 1))
                             left_layer = self._layer(left, left_local_us)
-                            right_layer = self._layer(right, 0)
+                            right_layer = self._layer(right, right_local_us)
+                            left_edge_local = max(
+                                0,
+                                min(left.duration_us - 1, time_us - left.timeline_start_us),
+                            )
+                            right_edge_local = max(0, time_us - right.timeline_start_us)
                             if left_layer is not None:
-                                self._composite(
+                                self._composite_with_edge(
                                     canvas,
                                     left_layer,
                                     left,
                                     left_local_us,
                                     opacity_multiplier=1 - progress,
+                                    edge_local_us=left_edge_local,
                                 )
                             if right_layer is not None:
-                                self._composite(
+                                self._composite_with_edge(
                                     canvas,
                                     right_layer,
                                     right,
-                                    0,
+                                    right_local_us,
                                     opacity_multiplier=progress,
                                     transition_kind=between.kind,
                                     transition_progress=progress,
                                     direction=between.direction,
+                                    edge_local_us=right_edge_local,
                                 )
-                                if between.kind == "flash" and progress > 0.65:
-                                    flash = Image.new(
-                                        "RGBA",
-                                        canvas.size,
-                                        (255, 255, 255, round((1 - progress) * 120)),
-                                    )
-                                    canvas.alpha_composite(flash)
-                            handled_between.add(between.id)
                             continue
-                        if time_us >= seam_us and time_us < seam_us + between.duration_us:
+                        if time_us >= end_us:
                             handled_between.add(between.id)
+                if clip.id in seam_drawn_clips:
+                    continue
                 if not 0 <= local_us < clip.duration_us:
                     continue
-                layer = self._layer(clip, local_us)
-                if layer is None:
-                    continue
-                edge = next(
+                # After a centered between flash/crossfade, keep playing the incoming
+                # clip from the media time already advanced during the second half.
+                incoming_between = next(
                     (
                         item
-                        for item in self.document.transitions
-                        if (
-                            item.placement == "in"
-                            and item.to_clip_id == clip.id
-                            or item.placement == "out"
-                            and item.from_clip_id == clip.id
-                        )
+                        for item in transitions
+                        if item.to_clip_id == clip.id
                     ),
                     None,
                 )
-                progress = None
-                if edge and edge.placement == "in" and local_us < edge.duration_us:
-                    progress = _transition_progress(local_us, edge.duration_us, edge.easing)
-                elif (
-                    edge
-                    and edge.placement == "out"
-                    and clip.duration_us - local_us < edge.duration_us
-                ):
-                    progress = _transition_progress(
-                        edge.duration_us - (clip.duration_us - local_us),
-                        edge.duration_us,
-                        edge.easing,
-                    )
-                if edge and progress is not None:
-                    if edge.placement == "out":
-                        progress = 1 - progress
-                    self._composite(
-                        canvas,
-                        layer,
-                        clip,
-                        local_us,
-                        opacity_multiplier=progress,
-                        transition_kind=edge.kind,
-                        transition_progress=progress,
-                        direction=edge.direction,
-                    )
-                    if edge.kind == "flash" and progress < 0.45:
-                        flash = Image.new(
-                            "RGBA",
-                            canvas.size,
-                            (255, 255, 255, round((1 - progress) * 150)),
-                        )
-                        canvas.alpha_composite(flash)
-                else:
-                    self._composite(canvas, layer, clip, local_us)
+                draw_local_us = local_us
+                if incoming_between and incoming_between.kind != "flash":
+                    half_us = max(1, incoming_between.duration_us // 2)
+                    seam_us = clip.timeline_start_us
+                    if time_us >= seam_us + half_us:
+                        # Continuity: media time was (time - (seam - half)) during blend.
+                        draw_local_us = time_us - (seam_us - half_us)
+                        if draw_local_us >= clip.duration_us:
+                            continue
+                layer = self._layer(clip, draw_local_us)
+                if layer is None:
+                    continue
+                self._composite_with_edge(canvas, layer, clip, draw_local_us)
         if size and canvas.size != size:
             canvas = canvas.resize(size, Image.Resampling.LANCZOS)
         return canvas.convert("RGB")
@@ -317,6 +399,56 @@ class TimelineFrameRenderer:
             return rotated, (center, center)
         cropped = rotated.crop(bounds)
         return cropped, (center - bounds[0], center - bounds[1])
+
+    def _composite_with_edge(
+        self,
+        canvas: Image.Image,
+        layer: Image.Image,
+        clip: VideoEditorClip,
+        local_us: int,
+        *,
+        opacity_multiplier: float = 1,
+        transition_kind: str | None = None,
+        transition_progress: float | None = None,
+        direction: str = "left",
+        edge_local_us: int | None = None,
+    ) -> None:
+        """Composite a layer, multiplying any active clip-local edge transition."""
+        edge = clip_edge_visual(
+            clip, local_us if edge_local_us is None else edge_local_us
+        )
+        if edge is None:
+            self._composite(
+                canvas,
+                layer,
+                clip,
+                local_us,
+                opacity_multiplier=opacity_multiplier,
+                transition_kind=transition_kind,
+                transition_progress=transition_progress,
+                direction=direction,
+            )
+            return
+        # Prefer seam wipe/zoom kind when both apply; still multiply visibility / flash.
+        self._composite(
+            canvas,
+            layer,
+            clip,
+            local_us,
+            opacity_multiplier=opacity_multiplier * edge.visibility,
+            transition_kind=transition_kind or edge.kind,
+            transition_progress=(
+                transition_progress if transition_progress is not None else edge.progress
+            ),
+            direction=direction if transition_kind else edge.direction,
+        )
+        if edge.flash_alpha:
+            flash = Image.new(
+                "RGBA",
+                canvas.size,
+                (255, 255, 255, edge.flash_alpha),
+            )
+            canvas.alpha_composite(flash)
 
     def _composite(
         self,

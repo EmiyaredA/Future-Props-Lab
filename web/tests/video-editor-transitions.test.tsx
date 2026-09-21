@@ -37,7 +37,7 @@ const track: VideoEditorTrack = {
 };
 
 describe("VideoEditorTransitionPanel", () => {
-  it("adds a transition to an adjacent seam", () => {
+  it("adds a seam transition between adjacent clips", () => {
     const commit = vi.fn().mockResolvedValue(undefined);
     render(
       <VideoEditorTransitionPanel
@@ -45,7 +45,7 @@ describe("VideoEditorTransitionPanel", () => {
         tracks={[track]}
         transitions={[]}
         selectedClip={clip("a", 0)}
-        target={{ placement: "between", fromClipId: "a", toClipId: "b" }}
+        target={{ fromClipId: "a", toClipId: "b" }}
         commit={commit}
         onSelectTransition={vi.fn()}
       />,
@@ -70,7 +70,39 @@ describe("VideoEditorTransitionPanel", () => {
     );
   });
 
-  it("updates the selected transition from the library", () => {
+  it("sets a clip-local in transition without touching seams", () => {
+    const commit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <VideoEditorTransitionPanel
+        clips={[clip("a", 0), clip("b", 1_000_000)]}
+        tracks={[track]}
+        transitions={[]}
+        selectedClip={clip("b", 1_000_000)}
+        clipEdgeFocus="in"
+        commit={commit}
+        onSelectTransition={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "闪白" }));
+    fireEvent.click(screen.getByRole("button", { name: "设置入场" }));
+
+    expect(commit).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          type: "setTransition",
+          clipId: "b",
+          edge: "in",
+          transition: expect.objectContaining({
+            kind: "flash",
+          }),
+        }),
+      ],
+      [expect.objectContaining({ type: "setTransition", clipId: "b", edge: "in" })],
+    );
+  });
+
+  it("updates the selected seam transition from the library", () => {
     const commit = vi.fn().mockResolvedValue(undefined);
     render(
       <VideoEditorTransitionPanel

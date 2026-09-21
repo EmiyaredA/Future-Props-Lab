@@ -545,6 +545,13 @@
 .ve-stage-layer {
   position: absolute;
 }
+.ve-transition-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #fff;
+  z-index: 4;
+}
 .ve-stage-layer.selected {
   outline: 1px solid #8374ff;
 }

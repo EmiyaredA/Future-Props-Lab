@@ -16,6 +16,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorTaskListOut,
     VideoEditorTaskOut,
     VideoEditorTimelineDocument,
+    parse_timeline_document,
 )
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
@@ -80,7 +81,7 @@ class VideoEditorSegmentExports:
             if target_canvas is None:
                 raise VideoEditorValidationError("目标工作坊画布不存在", code="target_not_found")
 
-        document = VideoEditorTimelineDocument.model_validate(timeline.document)
+        document = parse_timeline_document(timeline.document)
         clips = {
             clip.id: clip
             for track in document.tracks

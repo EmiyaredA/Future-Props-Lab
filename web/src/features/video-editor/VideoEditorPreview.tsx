@@ -13,6 +13,8 @@ import {
   type CSSProperties,
 } from "react";
 import {
+  ChevronsLeft,
+  ChevronsRight,
   ImageDown,
   Maximize2,
   Pause,
@@ -38,6 +40,10 @@ import {
   VIDEO_EDITOR_CANVAS_WIDTH,
   type VideoProxyCrop,
 } from "./previewGeometry";
+import {
+  mergeFlashOpacity,
+  previewVisualLayers,
+} from "./previewTransitions";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
@@ -77,14 +83,14 @@ function syncMediaClock(
 function ProxyVideo({
   source,
   clip,
-  playheadUs,
+  localUs,
   playing,
   crop,
   chromaKey,
 }: {
   source: string;
   clip: VideoEditorClip;
-  playheadUs: number;
+  localUs: number;
   playing: boolean;
   crop: VideoProxyCrop;
   chromaKey?: VideoEditorClip["chromaKey"];
@@ -95,8 +101,7 @@ function ProxyVideo({
   useEffect(() => {
     const node = video.current;
     if (!node) return;
-    const target =
-      clipSourceTimeUs(clip, playheadUs - clip.timelineStartUs) / 1_000_000;
+    const target = clipSourceTimeUs(clip, localUs) / 1_000_000;
     const rate = clip.playbackRate ?? 1;
     if (node.playbackRate !== rate) node.playbackRate = rate;
     const playStarted = playing && !wasPlayingRef.current;
@@ -106,7 +111,7 @@ function ProxyVideo({
       playStarted,
       toleranceSeconds: PREVIEW_VIDEO_SYNC_TOLERANCE_S,
     });
-  }, [clip, playheadUs, playing]);
+  }, [clip, localUs, playing]);
   useEffect(() => {
     const node = video.current;
     if (!node) return;
@@ -405,18 +410,16 @@ export function VideoEditorPreview({
       (timeline.document.tracks ?? []).flatMap((track) => track.clips ?? []),
     [timeline.document.tracks],
   );
-  const active = (timeline.document.tracks ?? [])
-    .filter(
-      (track) =>
-        (track.kind === "visual" || track.kind === "mixed") && !track.hidden,
-    )
-    .sort((left, right) => right.order - left.order)
-    .flatMap((track) => track.clips ?? [])
-    .filter(
-      (clip) =>
-        clip.timelineStartUs <= playheadUs &&
-        clip.timelineStartUs + clip.durationUs > playheadUs,
-    );
+  const visualLayers = useMemo(
+    () =>
+      previewVisualLayers(
+        timeline.document.tracks ?? [],
+        playheadUs,
+        timeline.document.transitions ?? [],
+      ),
+    [playheadUs, timeline.document.tracks, timeline.document.transitions],
+  );
+  const flashOpacity = mergeFlashOpacity(visualLayers);
   const audioChains = useMemo(
     () => buildPreviewAudioChains(timeline),
     [timeline],
@@ -425,9 +428,10 @@ export function VideoEditorPreview({
   const selectedKeyedClip = allClips.find(
     (clip) => clip.id === selectedClipId && clip.chromaKey?.enabled,
   );
-  const compareClip = active.find(
-    (clip) => clip.id === selectedClipId && clip.chromaKey?.enabled,
-  );
+  const compareClip = visualLayers.find(
+    (layer) =>
+      layer.clip.id === selectedClipId && layer.clip.chromaKey?.enabled,
+  )?.clip;
   const compareActive = compareEnabled && Boolean(compareClip) && !playing;
   const compareButtonTitle = selectedKeyedClip
     ? compareActive
@@ -612,7 +616,7 @@ export function VideoEditorPreview({
             background: timeline.document.settings?.backgroundColor ?? "#000",
           }}
         >
-          {active.map((clip) => {
+          {visualLayers.map(({ clip, localUs, effect }) => {
             const asset = assetMap.get(clip.assetId ?? "");
             const geometry = previewMediaGeometry(clip, asset, {
               width: canvasWidth,
@@ -628,21 +632,14 @@ export function VideoEditorPreview({
               anchor: "center" as const,
               brightness: 1,
             };
-            const localUs = playheadUs - clip.timelineStartUs;
             const x = clipPropertyAt(clip, "x", localUs, transform.x);
             const y = clipPropertyAt(clip, "y", localUs, transform.y);
-            const scaleX = clipPropertyAt(
-              clip,
-              "scaleX",
-              localUs,
-              transform.scaleX,
-            );
-            const scaleY = clipPropertyAt(
-              clip,
-              "scaleY",
-              localUs,
-              transform.scaleY,
-            );
+            const scaleX =
+              clipPropertyAt(clip, "scaleX", localUs, transform.scaleX) *
+              effect.scaleMultiplier;
+            const scaleY =
+              clipPropertyAt(clip, "scaleY", localUs, transform.scaleY) *
+              effect.scaleMultiplier;
             const rotation = clipPropertyAt(
               clip,
               "rotation",
@@ -661,6 +658,10 @@ export function VideoEditorPreview({
                 : transform.anchor === "topLeft"
                   ? "translate(0, 0)"
                   : "translate(-50%, -50%)";
+            const filters = [
+              `brightness(${brightness})`,
+              effect.blurPx > 0 ? `blur(${effect.blurPx}px)` : null,
+            ].filter(Boolean);
             const style = {
               left: `${(x / canvasWidth) * 100}%`,
               top: `${(y / canvasHeight) * 100}%`,
@@ -670,8 +671,10 @@ export function VideoEditorPreview({
               height: geometry
                 ? `${(geometry.height / canvasHeight) * 100}%`
                 : undefined,
-              opacity: clipOpacityAt(clip, localUs),
-              filter: `brightness(${brightness})`,
+              opacity:
+                clipOpacityAt(clip, localUs) * effect.opacityMultiplier,
+              filter: filters.join(" "),
+              clipPath: effect.clipPath,
               transformOrigin:
                 transform.anchor === "bottomCenter"
                   ? "bottom center"
@@ -721,7 +724,7 @@ export function VideoEditorPreview({
                     <ProxyVideo
                       source={asset.proxyUrl}
                       clip={clip}
-                      playheadUs={playheadUs}
+                      localUs={localUs}
                       playing={playing}
                       crop={geometry.proxyCrop}
                       chromaKey={clip.chromaKey}
@@ -748,6 +751,13 @@ export function VideoEditorPreview({
               </div>
             );
           })}
+          {flashOpacity > 0 ? (
+            <div
+              className="ve-transition-flash"
+              style={{ opacity: flashOpacity }}
+              aria-hidden
+            />
+          ) : null}
           {preciseFrame && !playing && !draggingText ? (
             <img
               className="ve-precise-frame"
@@ -816,6 +826,15 @@ export function VideoEditorPreview({
       </div>
       <footer className="ve-transport">
         <button
+          aria-label="跳到开头"
+          onClick={() => {
+            setPlaying(false);
+            setPlayheadUs(0);
+          }}
+        >
+          <ChevronsLeft aria-hidden />
+        </button>
+        <button
           aria-label="上一帧"
           onClick={() => {
             setPlaying(false);
@@ -840,8 +859,17 @@ export function VideoEditorPreview({
         >
           <SkipForward aria-hidden />
         </button>
+        <button
+          aria-label="跳到结尾"
+          onClick={() => {
+            setPlaying(false);
+            setPlayheadUs(timelineDuration(timeline));
+          }}
+        >
+          <ChevronsRight aria-hidden />
+        </button>
         <strong>{formatTime(playheadUs)}</strong>
-        <span>{fps} FPS · Space 播放 · ← → 逐帧</span>
+        <span>{fps} FPS · Space 播放 · ← → 逐帧 · Home/End 跳转</span>
       </footer>
       {frameExport ? (
         <FrameExportDialog

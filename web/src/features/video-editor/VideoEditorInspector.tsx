@@ -17,6 +17,18 @@ const clipKindLabels: Record<VideoEditorClip["kind"], string> = {
   color: "色彩片段",
 };
 
+const visualTransitionLabels: Record<string, string> = {
+  crossfade: "交叉叠化",
+  "fade-black": "黑场淡入",
+  "fade-white": "白场淡入",
+  "wipe-left": "向左擦除",
+  "wipe-right": "向右擦除",
+  zoom: "镜头缩放",
+  blur: "径向模糊",
+  flash: "闪白",
+  "audio-crossfade": "音频淡化",
+};
+
 export function VideoEditorInspector({
   clip,
   disabled = false,
@@ -25,6 +37,7 @@ export function VideoEditorInspector({
   setSpeedRippleEnabled,
   playheadUs,
   commit,
+  onOpenClipEdgeTransition,
 }: {
   clip?: VideoEditorClip;
   disabled?: boolean;
@@ -36,6 +49,7 @@ export function VideoEditorInspector({
     redo: VideoEditorOperation[],
     undo?: VideoEditorOperation[],
   ) => Promise<void>;
+  onOpenClipEdgeTransition?: (clipId: string, edge: "in" | "out") => void;
 }) {
   const [transitionDurations, setTransitionDurations] = useState<
     Record<"in" | "out", number>
@@ -424,21 +438,18 @@ export function VideoEditorInspector({
             </label>
           </section>
         ) : null}
-        {clip.kind === "video" || clip.kind === "audio" ? (
+        {clip.kind === "audio" ? (
           <section className="ve-inspector-section">
             <div className="ve-section-heading">
               <div>
-                <h3>{clip.kind === "audio" ? "淡入淡出" : "转场"}</h3>
-                <p>让片段边缘衔接得更自然</p>
+                <h3>淡入淡出</h3>
+                <p>音频交叉淡化</p>
               </div>
             </div>
             <div className="ve-transition-grid">
               {(["in", "out"] as const).map((edge) => {
                 const transition =
                   edge === "in" ? clip.transitionIn : clip.transitionOut;
-                const kind =
-                  transition?.kind ??
-                  (clip.kind === "audio" ? "audio-crossfade" : "crossfade");
                 const durationUs = transitionDurations[edge];
                 const edgeLabel = edge === "in" ? "淡入" : "淡出";
                 return (
@@ -462,7 +473,12 @@ export function VideoEditorInspector({
                                   type: "setTransition",
                                   clipId: clip.id,
                                   edge,
-                                  transition: { kind, durationUs },
+                                  transition: {
+                                    kind: "audio-crossfade",
+                                    durationUs,
+                                    direction: edge,
+                                    easing: "linear",
+                                  },
                                 },
                           ])
                         }
@@ -524,6 +540,153 @@ export function VideoEditorInspector({
                         }}
                       />
                     </label>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : clip.kind === "video" || clip.kind === "image" ? (
+          <section className="ve-inspector-section">
+            <div className="ve-section-heading">
+              <div>
+                <h3>转场</h3>
+                <p>片段入场 / 出场；接缝转场仍在「转场」面板</p>
+              </div>
+            </div>
+            <div className="ve-transition-grid">
+              {(["in", "out"] as const).map((edge) => {
+                const transition =
+                  edge === "in" ? clip.transitionIn : clip.transitionOut;
+                const durationUs = transitionDurations[edge];
+                const edgeLabel = edge === "in" ? "入场" : "出场";
+                const kindLabel = transition
+                  ? (visualTransitionLabels[transition.kind] ??
+                    transition.kind)
+                  : "未设置";
+                return (
+                  <div
+                    className={`ve-transition-card${transition ? " is-active" : ""}`}
+                    key={edge}
+                  >
+                    <div className="ve-transition-card-header">
+                      <div>
+                        <strong>{edgeLabel}</strong>
+                        <small>{kindLabel}</small>
+                      </div>
+                      <button
+                        type="button"
+                        aria-pressed={Boolean(transition)}
+                        disabled={disabled}
+                        onClick={() =>
+                          void commit(
+                            [
+                              transition
+                                ? {
+                                    type: "setTransition",
+                                    clipId: clip.id,
+                                    edge,
+                                  }
+                                : {
+                                    type: "setTransition",
+                                    clipId: clip.id,
+                                    edge,
+                                    transition: {
+                                      kind: "crossfade",
+                                      durationUs,
+                                      direction: edge,
+                                      easing: "linear",
+                                    },
+                                  },
+                            ],
+                            transition
+                              ? [
+                                  {
+                                    type: "setTransition",
+                                    clipId: clip.id,
+                                    edge,
+                                    transition,
+                                  },
+                                ]
+                              : [
+                                  {
+                                    type: "setTransition",
+                                    clipId: clip.id,
+                                    edge,
+                                  },
+                                ],
+                          )
+                        }
+                      >
+                        {transition ? "取消" : "启用"}
+                      </button>
+                    </div>
+                    <label>
+                      <span>
+                        持续时间 <small>秒</small>
+                      </span>
+                      <input
+                        aria-label={`${edgeLabel}时长（秒）`}
+                        type="number"
+                        min="0"
+                        max={(clip.durationUs / 1_000_000).toFixed(3)}
+                        step="0.1"
+                        disabled={disabled}
+                        value={(durationUs / 1_000_000).toFixed(3)}
+                        onChange={(event) =>
+                          setTransitionDurations((current) => ({
+                            ...current,
+                            [edge]: Math.max(
+                              0,
+                              Math.min(
+                                clip.durationUs,
+                                numberValue(event) * 1_000_000,
+                              ),
+                            ),
+                          }))
+                        }
+                        onBlur={(event) => {
+                          const next = Math.max(
+                            0,
+                            Math.min(
+                              clip.durationUs,
+                              numberValue(event) * 1_000_000,
+                            ),
+                          );
+                          setTransitionDurations((current) => ({
+                            ...current,
+                            [edge]: next,
+                          }));
+                          if (transition)
+                            void update(
+                              {
+                                [edge === "in"
+                                  ? "transitionIn"
+                                  : "transitionOut"]: {
+                                  ...transition,
+                                  durationUs: next,
+                                },
+                              },
+                              {
+                                [edge === "in"
+                                  ? "transitionIn"
+                                  : "transitionOut"]: transition,
+                              },
+                            );
+                        }}
+                      />
+                    </label>
+                    {onOpenClipEdgeTransition ? (
+                      <button
+                        type="button"
+                        className="ve-transition-card-link"
+                        disabled={disabled}
+                        onClick={() =>
+                          onOpenClipEdgeTransition(clip.id, edge)
+                        }
+                      >
+                        {transition ? "更换效果…" : "从效果库选择…"}
+                      </button>
+                    ) : null}
                   </div>
                 );
               })}

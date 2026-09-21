@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.models import VideoEditorTimeline
 from app.apps.video_editor.projects import VideoEditorProjects
-from app.apps.video_editor.schemas import VideoEditorTimelineDocument
+from app.apps.video_editor.schemas import parse_timeline_document
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
@@ -46,7 +46,7 @@ class VideoEditorFrames:
                 timeline.revision,
                 {"revision": timeline.revision, "document": timeline.document},
             )
-        document = VideoEditorTimelineDocument.model_validate(timeline.document)
+        document = parse_timeline_document(timeline.document)
         if without_chroma_clip_id and not any(
             clip.id == without_chroma_clip_id and clip.chroma_key and clip.chroma_key.enabled
             for track in document.tracks
@@ -128,7 +128,7 @@ class VideoEditorFrames:
                     "document": timeline.document,
                 },
             )
-        document = VideoEditorTimelineDocument.model_validate(timeline.document)
+        document = parse_timeline_document(timeline.document)
         clip = next(
             (
                 clip
