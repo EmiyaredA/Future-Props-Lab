@@ -1,0 +1,397 @@
+/* Amadeus visual refresh: compact surfaces, a real square avatar and state frames. */
+:root {
+  --amadeus-bg: #fbf8f4;
+  --amadeus-surface: #fffdfa;
+  --amadeus-surface-raised: #ffffff;
+  --amadeus-line: #eaded5;
+  --amadeus-line-soft: #f3e9e2;
+  --amadeus-ink: #382d29;
+  --amadeus-muted: #927f74;
+  --amadeus-accent: #d86749;
+  --amadeus-accent-soft: #fbe9df;
+  --amadeus-shadow: 0 14px 34px rgb(87 48 28 / 8%);
+}
+
+.amadeus-window {
+  background:
+    radial-gradient(circle at 100% 0, #fff2e9 0, transparent 34%),
+    var(--amadeus-bg);
+  color: var(--amadeus-ink);
+}
+
+.amadeus-header {
+  height: 68px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--amadeus-line);
+  background: rgb(255 253 250 / 92%);
+  box-shadow: 0 4px 18px rgb(101 55 30 / 5%);
+  backdrop-filter: blur(12px);
+}
+
+.amadeus-brand {
+  gap: 11px;
+}
+
+.amadeus-brand strong {
+  color: var(--amadeus-ink);
+  font-size: 16px;
+}
+
+.amadeus-brand small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--amadeus-muted);
+  font-size: 10px;
+}
+
+.amadeus-avatar {
+  display: block;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #f1cdbb;
+  border-radius: 14px;
+  background-color: #fff1e7;
+  background-image: url("/brand/amadeus/amadeus-state-atlas.png");
+  background-repeat: no-repeat;
+  background-size: 400% 700%;
+  box-shadow: 0 4px 12px rgb(194 103 66 / 16%);
+}
+
+.amadeus-avatar-idle,
+.amadeus-avatar-listening,
+.amadeus-avatar-thinking,
+.amadeus-avatar-tool,
+.amadeus-avatar-success,
+.amadeus-avatar-error,
+.amadeus-avatar-paused {
+  animation-duration: 1.15s;
+  animation-iteration-count: infinite;
+  animation-timing-function: steps(1, end);
+}
+
+.amadeus-avatar-idle {
+  background-position: 0 0;
+  animation-name: amadeus-avatar-idle;
+}
+
+.amadeus-avatar-listening {
+  background-position: 0 16.6667%;
+  animation-name: amadeus-avatar-listening;
+}
+
+.amadeus-avatar-thinking {
+  background-position: 0 33.3333%;
+  animation-name: amadeus-avatar-thinking;
+}
+
+.amadeus-avatar-tool {
+  background-position: 0 50%;
+  animation-name: amadeus-avatar-tool;
+  animation-duration: 0.9s;
+}
+
+.amadeus-avatar-success {
+  background-position: 0 66.6667%;
+  animation-name: amadeus-avatar-success;
+  animation-iteration-count: 2;
+}
+
+.amadeus-avatar-error {
+  background-position: 0 83.3333%;
+  animation-name: amadeus-avatar-error;
+  animation-iteration-count: 2;
+}
+
+.amadeus-avatar-paused {
+  background-position: 0 100%;
+  animation-name: amadeus-avatar-paused;
+}
+
+@keyframes amadeus-avatar-idle {
+  0%,
+  100% {
+    background-position: 0 0;
+  }
+  33% {
+    background-position: 33.3333% 0;
+  }
+  66% {
+    background-position: 66.6667% 0;
+  }
+}
+@keyframes amadeus-avatar-listening {
+  0%,
+  100% {
+    background-position: 0 16.6667%;
+  }
+  33% {
+    background-position: 33.3333% 16.6667%;
+  }
+  66% {
+    background-position: 66.6667% 16.6667%;
+  }
+}
+@keyframes amadeus-avatar-thinking {
+  0%,
+  100% {
+    background-position: 0 33.3333%;
+  }
+  33% {
+    background-position: 33.3333% 33.3333%;
+  }
+  66% {
+    background-position: 66.6667% 33.3333%;
+  }
+}
+@keyframes amadeus-avatar-tool {
+  0%,
+  100% {
+    background-position: 0 50%;
+  }
+  33% {
+    background-position: 33.3333% 50%;
+  }
+  66% {
+    background-position: 66.6667% 50%;
+  }
+}
+@keyframes amadeus-avatar-success {
+  0%,
+  100% {
+    background-position: 0 66.6667%;
+  }
+  33% {
+    background-position: 33.3333% 66.6667%;
+  }
+  66% {
+    background-position: 66.6667% 66.6667%;
+  }
+}
+@keyframes amadeus-avatar-error {
+  0%,
+  100% {
+    background-position: 0 83.3333%;
+  }
+  33% {
+    background-position: 33.3333% 83.3333%;
+  }
+  66% {
+    background-position: 66.6667% 83.3333%;
+  }
+}
+@keyframes amadeus-avatar-paused {
+  0%,
+  100% {
+    background-position: 0 100%;
+  }
+  33% {
+    background-position: 33.3333% 100%;
+  }
+  66% {
+    background-position: 66.6667% 100%;
+  }
+}
+
+.amadeus-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c4b4aa;
+}
+
+.amadeus-status-thinking,
+.amadeus-status-tool,
+.amadeus-status-listening {
+  background: var(--amadeus-accent);
+  box-shadow: 0 0 0 3px rgb(216 103 73 / 12%);
+}
+
+.amadeus-status-success {
+  background: #6ca47d;
+}
+.amadeus-status-error {
+  background: #c25549;
+}
+.amadeus-status-paused {
+  background: #a99589;
+}
+
+.amadeus-header-actions {
+  gap: 2px;
+}
+
+.amadeus-header-actions button {
+  width: 32px;
+  height: 32px;
+  color: var(--amadeus-muted);
+}
+
+.amadeus-header-actions button:hover {
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+.amadeus-body {
+  background: transparent;
+}
+
+.amadeus-history {
+  flex-basis: 208px;
+  padding: 13px 10px;
+  background: rgb(255 250 246 / 70%);
+  border-right-color: var(--amadeus-line);
+}
+
+.amadeus-history-head {
+  padding-bottom: 10px;
+}
+
+.amadeus-search,
+.amadeus-history-dialog,
+.amadeus-ref,
+.amadeus-steps,
+.amadeus-composer {
+  border-color: var(--amadeus-line);
+  box-shadow: 0 4px 16px rgb(90 48 27 / 4%);
+}
+
+.amadeus-search {
+  background: var(--amadeus-surface-raised);
+}
+
+.amadeus-history-row.active {
+  background: var(--amadeus-accent-soft);
+}
+
+.amadeus-chat {
+  min-width: 0;
+}
+
+.amadeus-context-summary {
+  padding: 8px 16px;
+  border-bottom-color: var(--amadeus-line-soft);
+  background: rgb(255 253 250 / 55%);
+  color: var(--amadeus-muted);
+}
+
+.amadeus-messages {
+  padding: 16px 18px 10px;
+}
+
+.amadeus-welcome {
+  width: min(100%, 350px);
+  padding: 14px 0 4px;
+}
+
+.amadeus-welcome-avatar {
+  width: 82px;
+  height: 82px;
+  margin-bottom: 14px;
+  padding: 3px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fbd9c5, #fff7f0);
+  box-shadow: 0 10px 24px rgb(194 103 66 / 15%);
+}
+
+.amadeus-welcome-avatar .amadeus-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 19px;
+}
+
+.amadeus-welcome h1 {
+  margin: 0 0 6px;
+  color: var(--amadeus-ink);
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+
+.amadeus-welcome p {
+  margin: 0 0 14px;
+  color: var(--amadeus-muted);
+  line-height: 1.55;
+}
+
+.amadeus-suggestions {
+  display: grid;
+  gap: 7px;
+}
+
+.amadeus-welcome button {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border-color: var(--amadeus-line);
+  background: rgb(255 255 255 / 86%);
+  color: #69574e;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.amadeus-welcome button:hover {
+  border-color: #efbaa3;
+  box-shadow: 0 5px 14px rgb(194 103 66 / 10%);
+  transform: translateY(-1px);
+}
+
+.amadeus-message {
+  margin: 7px 0 15px;
+}
+
+.amadeus-message.user {
+  border-color: #f1d6c8;
+  background: #fff1e8;
+}
+
+.amadeus-bottom {
+  padding: 4px 15px 12px;
+  background: transparent;
+}
+
+.amadeus-composer {
+  padding: 9px 10px 8px;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: var(--amadeus-shadow);
+}
+
+.amadeus-composer textarea {
+  min-height: 44px;
+  font-size: 12px;
+}
+
+.amadeus-toolbar {
+  height: 32px;
+}
+
+.amadeus-toolbar button {
+  color: var(--amadeus-muted);
+}
+
+.amadeus-toolbar button:hover {
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+.amadeus-toolbar .amadeus-send {
+  width: 31px;
+  height: 31px;
+  border-radius: 10px;
+  background: var(--amadeus-accent);
+  box-shadow: 0 5px 12px rgb(216 103 73 / 22%);
+}
+
+.amadeus-model-control > button {
+  border-color: var(--amadeus-line);
+  background: #fff9f5;
+}
+
+@media (max-width: 650px) {
+  .amadeus-header {
+    padding-left: 12px;
+  }
+}

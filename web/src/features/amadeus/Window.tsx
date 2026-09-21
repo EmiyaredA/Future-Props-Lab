@@ -101,6 +101,19 @@ type WorkerEvent = {
   message?: string;
 };
 
+type AvatarState =
+  "idle" | "listening" | "thinking" | "tool" | "success" | "error" | "paused";
+
+const avatarStateLabels: Record<AvatarState, string> = {
+  idle: "待命",
+  listening: "聆听中",
+  thinking: "思考中",
+  tool: "执行中",
+  success: "已完成",
+  error: "需要关注",
+  paused: "已暂停",
+};
+
 function dateGroup(value: string) {
   const today = new Date();
   const item = new Date(value);
@@ -171,6 +184,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
   const [previewReference, setPreviewReference] = useState<Reference | null>(
     null,
   );
+  const [avatarState, setAvatarState] = useState<AvatarState>("idle");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const workerRef = useRef<Worker | undefined>(undefined);
   const modelAbortRef = useRef<AbortController | undefined>(undefined);
@@ -178,10 +192,25 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     conversationId: string;
     actionId: string;
   } | null>(null);
+  const avatarTimerRef = useRef<number | undefined>(undefined);
   const detailRef = useRef<Detail | null>(null);
   const contextRef = useRef<Context[]>([]);
   detailRef.current = detail;
   contextRef.current = contexts;
+
+  const showAvatarState = useCallback(
+    (state: AvatarState, resetAfter?: number) => {
+      if (avatarTimerRef.current) window.clearTimeout(avatarTimerRef.current);
+      setAvatarState(state);
+      if (resetAfter) {
+        avatarTimerRef.current = window.setTimeout(() => {
+          setAvatarState("idle");
+          avatarTimerRef.current = undefined;
+        }, resetAfter);
+      }
+    },
+    [],
+  );
 
   const refreshList = useCallback(async () => {
     const result = await fetchApiJson<{ items: Conversation[] }>(
@@ -251,6 +280,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
       offReference();
       modelAbortRef.current?.abort();
       workerRef.current?.terminate();
+      if (avatarTimerRef.current) window.clearTimeout(avatarTimerRef.current);
     };
   }, [session.me.user.id, session.me.workspace.id, bridge, open, refreshList]);
 
@@ -450,6 +480,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
   };
 
   const stop = () => {
+    showAvatarState("paused", 2200);
     modelAbortRef.current?.abort();
     workerRef.current?.postMessage({ type: "stop" });
     const active = activeActionRef.current;
@@ -589,6 +620,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     const prompt = draft.trim();
     if (!prompt || busy || !modelId) return;
     setBusy(true);
+    showAvatarState("thinking");
     setError("");
     setDraft("");
     setToolSteps([]);
@@ -874,6 +906,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             partialText = "";
             if (text) showStream();
           } else if (data.type === "tool") {
+            showAvatarState("tool");
             setToolSteps((previous) => [
               ...previous.filter((step) => step.name !== data.name),
               { name: data.name || "工具", status: data.status || "running" },
@@ -883,7 +916,14 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             data.type === "error" ||
             data.type === "stopped"
           ) {
-            if (data.type === "error") setError(data.message || "运行失败");
+            if (data.type === "error") {
+              setError(data.message || "运行失败");
+              showAvatarState("error", 3200);
+            } else if (data.type === "stopped") {
+              showAvatarState("paused", 2200);
+            } else {
+              showAvatarState("success", 2600);
+            }
             if (data.type === "stopped")
               setError("任务已停止。执行中的外部操作请检查实际结果。");
             if (text) {
@@ -922,6 +962,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             });
           else {
             setError(String(cause));
+            showAvatarState("error", 3200);
             setBusy(false);
           }
         }
@@ -960,6 +1001,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
       });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
+      showAvatarState("error", 3200);
       setBusy(false);
       setDraft(prompt);
     }
@@ -986,10 +1028,19 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     <div className="amadeus-window">
       <header className="amadeus-header">
         <div className="amadeus-brand">
-          <span className="amadeus-mark">✦</span>
+          <span
+            className={`amadeus-avatar amadeus-avatar-${avatarState}`}
+            role="img"
+            aria-label={`Amadeus：${avatarStateLabels[avatarState]}`}
+          />
           <div>
             <strong>Amadeus</strong>
-            <small>已保存到本机</small>
+            <small>
+              <span
+                className={`amadeus-status-dot amadeus-status-${avatarState}`}
+              />
+              {avatarStateLabels[avatarState]} · 已保存到本机
+            </small>
           </div>
         </div>
         <div className="amadeus-header-actions">
@@ -1256,17 +1307,28 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           <div className="amadeus-messages">
             {!detail?.messages.length && (
               <div className="amadeus-welcome">
-                <div>✦</div>
+                <div className="amadeus-welcome-avatar">
+                  <span
+                    className={`amadeus-avatar amadeus-avatar-${avatarState}`}
+                    role="img"
+                    aria-label={`Amadeus：${avatarStateLabels[avatarState]}`}
+                  />
+                </div>
                 <h1>你好，我是 Amadeus</h1>
                 <p>
                   可以读取当前应用、解释选中的控件，或帮助你完成跨应用工作。
                 </p>
-                <button onClick={() => setDraft("帮我看看当前窗口里的项目")}>
-                  看看当前窗口里的项目
-                </button>
-                <button onClick={() => setDraft("解释一下我选中的对象")}>
-                  解释选中的对象
-                </button>
+                <div className="amadeus-suggestions">
+                  <button onClick={() => setDraft("帮我看看当前窗口里的项目")}>
+                    看看当前窗口里的项目
+                  </button>
+                  <button onClick={() => setDraft("解释一下我选中的对象")}>
+                    解释选中的对象
+                  </button>
+                  <button onClick={() => setDraft("列出当前可用的工具能力")}>
+                    列出可用能力
+                  </button>
+                </div>
               </div>
             )}
             {detail?.messages.map((message) => (
@@ -1477,9 +1539,10 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 <button
                   title="选取控件"
                   aria-label="选取控件"
-                  onClick={() =>
-                    void bridge.setAmadeusPickMode(true, references.length + 1)
-                  }
+                  onClick={() => {
+                    showAvatarState("listening");
+                    void bridge.setAmadeusPickMode(true, references.length + 1);
+                  }}
                 >
                   <MousePointer2 size={17} />
                   <span>选取控件</span>

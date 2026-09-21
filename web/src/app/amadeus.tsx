@@ -9,6 +9,7 @@ import { AmadeusWindow } from "@features/amadeus/Window";
 import "@shared/ui/theme.css";
 import "@app/tailwind.css";
 import "@features/amadeus/window.css";
+import "@features/amadeus/window-theme.css";
 
 const queryClient = new QueryClient();
 function AuthenticatedAmadeus() {
