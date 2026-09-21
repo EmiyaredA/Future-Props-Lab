@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowRight,
   Download,
+  Maximize2,
   MoreHorizontal,
+  Pencil,
   Plus,
   Search,
+  Trash2,
   Upload,
 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
+import { ProjectLibraryCard } from "@shared/ui/project-library";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import {
   createProject,
@@ -23,21 +26,13 @@ import {
 import { Modal } from "./Controls";
 import type { Project } from "./types";
 import "./workshop.css";
-function Cover({ project }: { project: Project }) {
-  const { url } = useApiBlobUrl(project.thumbnail ?? null);
-  return (
-    <div className="l2-project-cover">
-      {url ? (
-        <img src={url} alt={`${project.title}预览`} />
-      ) : (
-        <>
-          <img src="/brand/live2d-workshop-mark.png" alt="" />
-          <span>从分层立绘开始</span>
-        </>
-      )}
-    </div>
-  );
+
+function ProjectThumbnail({ href }: { href: string }) {
+  const { url } = useApiBlobUrl(href);
+  if (!url) return null;
+  return <img className="l2-project-thumb" src={url} alt="" />;
 }
+
 export function ProjectsPage({
   onOpen,
   readOnly = false,
@@ -51,8 +46,8 @@ export function ProjectsPage({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [dialog, setDialog] = useState<"create" | "rename" | "delete" | null>(
-      null,
-    ),
+    null,
+  ),
     [selected, setSelected] = useState<Project | null>(null),
     [title, setTitle] = useState("未命名角色");
   const input = useRef<HTMLInputElement>(null);
@@ -111,8 +106,11 @@ export function ProjectsPage({
       }
       setDialog(null);
     });
+  const filtered = projects.filter((p) =>
+    p.title.toLowerCase().includes(query.trim().toLowerCase()),
+  );
   return (
-    <section className="l2-projects">
+    <section className="workshop-page workshop-projects-page l2-projects">
       <WorkshopAppChrome
         title="角色项目"
         description="让静止的立绘，拥有表情与动作。"
@@ -151,7 +149,7 @@ export function ProjectsPage({
             });
         }}
       />
-      <div className="l2-project-tools">
+      <div className="workshop-toolbar workshop-toolbar-simple l2-project-tools">
         <label>
           <Search size={18} />
           <input
@@ -161,7 +159,6 @@ export function ProjectsPage({
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        <span>{projects.length} 个项目 · 本地工作空间</span>
       </div>
       {error && (
         <p role="alert" className="l2-error">
@@ -169,86 +166,104 @@ export function ProjectsPage({
         </p>
       )}
       {loading ? (
-        <p>正在读取项目…</p>
-      ) : (
-        <div className="l2-project-grid">
-          {projects
-            .filter((p) => p.title.toLowerCase().includes(query.toLowerCase()))
-            .map((p) => (
-              <article key={p.id} className="l2-project-card">
-                <button
-                  className="l2-cover-button"
-                  onClick={() => onOpen(p.id)}
-                >
-                  <Cover project={p} />
-                </button>
-                <div className="l2-project-info">
-                  <h3>{p.title}</h3>
-                  <small>{new Date(p.updatedAt).toLocaleString("zh-CN")}</small>
-                  <footer>
-                    <button onClick={() => onOpen(p.id)}>
-                      打开项目 <ArrowRight size={15} />
-                    </button>
-                    <DropdownMenu.Root>
-                      <DropdownMenu.Trigger aria-label={`${p.title}项目菜单`}>
-                        <MoreHorizontal size={18} />
-                      </DropdownMenu.Trigger>
-                      <DropdownMenu.Portal>
-                        <DropdownMenu.Content className="l2-menu">
-                          <DropdownMenu.Item
-                            onSelect={() =>
-                              void run(() => downloadProject(p.id))
-                            }
-                          >
-                            <Download size={14} />
-                            导出工程
-                          </DropdownMenu.Item>
-                          {!readOnly && (
-                            <>
-                              <DropdownMenu.Item
-                                onSelect={() => {
-                                  setSelected(p);
-                                  setTitle(p.title);
-                                  setDialog("rename");
-                                }}
-                              >
-                                重命名
-                              </DropdownMenu.Item>
-                              <DropdownMenu.Item
-                                onSelect={() => {
-                                  setSelected(p);
-                                  setDialog("delete");
-                                }}
-                              >
-                                删除项目
-                              </DropdownMenu.Item>
-                            </>
-                          )}
-                        </DropdownMenu.Content>
-                      </DropdownMenu.Portal>
-                    </DropdownMenu.Root>
-                  </footer>
-                </div>
-              </article>
-            ))}
-          {!readOnly && (
-            <button
-              className="l2-new-project"
-              onClick={() => {
-                setTitle("未命名角色");
-                setDialog("create");
+        <div className="workshop-state">
+          <strong>正在读取项目…</strong>
+        </div>
+      ) : filtered.length ? (
+        <div className="workshop-project-grid" aria-live="polite">
+          {filtered.map((p) => (
+            <ProjectLibraryCard
+              key={p.id}
+              project={{
+                id: p.id,
+                title: p.title,
+                updated_at: p.updatedAt,
               }}
+              cover="live2d"
+              coverTitle="角色工程"
+              coverDescription="导入分层立绘后开始绑定"
+              coverContent={
+                p.thumbnail ? <ProjectThumbnail href={p.thumbnail} /> : undefined
+              }
+              onOpen={() => onOpen(p.id)}
             >
-              <Plus size={30} />
-              <strong>开始新的角色</strong>
-              <span>分层素材 → 网格绑定 → 表情动画</span>
+              <div className="workshop-project-primary-actions">
+                <button onClick={() => onOpen(p.id)}>
+                  <Maximize2 size={15} />
+                  打开
+                </button>
+              </div>
+              <div className="workshop-project-secondary-actions">
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger aria-label={`${p.title}项目菜单`}>
+                    <MoreHorizontal size={18} />
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content className="l2-menu">
+                      <DropdownMenu.Item
+                        onSelect={() => void run(() => downloadProject(p.id))}
+                      >
+                        <Download size={14} />
+                        导出工程
+                      </DropdownMenu.Item>
+                      {!readOnly && (
+                        <>
+                          <DropdownMenu.Item
+                            onSelect={() => {
+                              setSelected(p);
+                              setTitle(p.title);
+                              setDialog("rename");
+                            }}
+                          >
+                            <Pencil size={14} />
+                            重命名
+                          </DropdownMenu.Item>
+                          <DropdownMenu.Item
+                            onSelect={() => {
+                              setSelected(p);
+                              setDialog("delete");
+                            }}
+                          >
+                            <Trash2 size={14} />
+                            删除项目
+                          </DropdownMenu.Item>
+                        </>
+                      )}
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
+              </div>
+            </ProjectLibraryCard>
+          ))}
+        </div>
+      ) : (
+        <div className="workshop-state">
+          <strong>{query ? "没有匹配的角色项目" : "还没有角色项目"}</strong>
+          <span>
+            {query
+              ? "换个关键词试试，或清空搜索查看全部项目。"
+              : readOnly
+                ? "当前空间暂无可浏览的角色工程。"
+                : "新建项目，或导入 .fpllive2d 工程继续制作。"}
+          </span>
+          {query ? (
+            <button type="button" onClick={() => setQuery("")}>
+              清空搜索
             </button>
-          )}
-          {!projects.length && (
-            <p className="l2-empty">
-              还没有角色项目。
-              {readOnly ? "" : "新建项目，或导入 .fpllive2d 工程继续制作。"}
-            </p>
+          ) : (
+            !readOnly && (
+              <button
+                type="button"
+                className="workshop-primary"
+                onClick={() => {
+                  setTitle("未命名角色");
+                  setDialog("create");
+                }}
+              >
+                <Plus size={16} />
+                新建角色
+              </button>
+            )
           )}
         </div>
       )}
@@ -263,41 +278,61 @@ export function ProjectsPage({
         description={
           dialog === "delete"
             ? `“${selected?.title}”及其素材和导出结果都会删除；正在执行的导出会先取消。`
-            : "创建可编辑的角色工程，随后导入分层 PSD 或透明 PNG。"
+            : dialog === "rename"
+              ? "更新项目显示名称，不影响已导入的分层素材。"
+              : "创建可编辑的角色工程，随后导入分层 PSD 或透明 PNG。"
         }
         open={!!dialog}
         onClose={() => {
           if (!busy) setDialog(null);
         }}
       >
-        {dialog !== "delete" && (
-          <label className="l2-field">
-            项目名称
-            <input
-              autoFocus
-              value={title}
-              maxLength={120}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </label>
-        )}
-        {error && (
-          <p role="alert" className="l2-error">
-            {error}
-          </p>
-        )}
-        <div className="l2-actions">
-          <button disabled={busy} onClick={() => setDialog(null)}>
-            取消
-          </button>
-          <button
-            className="l2-primary"
-            disabled={busy || !title.trim()}
-            onClick={() => void save()}
-          >
-            {busy ? "处理中…" : dialog === "delete" ? "删除项目" : "保存"}
-          </button>
-        </div>
+        <form
+          className="l2-dialog-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!busy && (dialog === "delete" || title.trim())) void save();
+          }}
+        >
+          {dialog !== "delete" && (
+            <label className="l2-field">
+              项目名称
+              <input
+                autoFocus
+                value={title}
+                maxLength={120}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </label>
+          )}
+          {error && (
+            <p role="alert" className="l2-error">
+              {error}
+            </p>
+          )}
+          <div className="l2-actions">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setDialog(null)}
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              className={dialog === "delete" ? "l2-danger-fill" : "l2-primary"}
+              disabled={busy || (dialog !== "delete" && !title.trim())}
+            >
+              {busy
+                ? "处理中…"
+                : dialog === "delete"
+                  ? "删除项目"
+                  : dialog === "rename"
+                    ? "保存名称"
+                    : "创建项目"}
+            </button>
+          </div>
+        </form>
       </Modal>
     </section>
   );

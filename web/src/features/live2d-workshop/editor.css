@@ -23,11 +23,6 @@
   flex: 0 0 auto;
   background: #171e2b;
 }
-.l2-brand {
-  width: 39px;
-  height: 39px;
-  object-fit: contain;
-}
 .l2-title {
   min-width: 80px;
   max-width: 220px;
@@ -55,11 +50,37 @@
 }
 .l2-editor-header nav button[aria-pressed="true"],
 .l2-editor .l2-primary,
-.l2-dialog .l2-primary {
+.l2-editor .l2-dialog .l2-primary {
   color: white;
   background: linear-gradient(135deg, #8165f7, #6848ea);
   border-color: #a38cff70;
   box-shadow: 0 3px 12px #654be825;
+}
+.l2-editor .l2-dialog {
+  background: #222939;
+  color: #e5e8ef;
+  border-color: #434c60;
+}
+.l2-editor .l2-dialog h2 {
+  color: #f2f5fb;
+}
+.l2-editor .l2-dialog-eyebrow {
+  color: #a38cff;
+}
+.l2-editor .l2-dialog-copy {
+  color: #a7b0c2;
+}
+.l2-editor .l2-dialog .l2-actions button:not(.l2-primary):not(.l2-danger-fill) {
+  background: #192132;
+  border-color: #45516a;
+  color: #e5e8ef;
+}
+.l2-editor .l2-dialog .l2-dialog-close {
+  color: #a7b0c2;
+}
+.l2-editor .l2-dialog .l2-dialog-close:hover {
+  background: #2a3344;
+  color: #f2f5fb;
 }
 .l2-header-actions {
   display: flex;
@@ -321,21 +342,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  text-align: center;
   pointer-events: none;
 }
-.l2-canvas-empty img {
-  width: min(38%, 150px);
-  opacity: 0.8;
-}
-.l2-canvas-empty h2 {
-  font-size: 20px;
-  margin: 15px 0 3px;
-}
 .l2-canvas-empty p {
-  color: #8c98ae;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgb(17 23 35 / 72%);
+  color: #9aa6bd;
   font-size: 12px;
+  letter-spacing: 0.01em;
 }
 .l2-canvas-status {
   display: flex;

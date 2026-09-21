@@ -89,12 +89,14 @@ export function Modal({
   open,
   onClose,
   children,
+  eyebrow = "角色项目",
 }: {
   title: string;
   description: string;
   open: boolean;
   onClose: () => void;
   children: ReactNode;
+  eyebrow?: string;
 }) {
   return (
     <Dialog.Root
@@ -106,12 +108,19 @@ export function Modal({
       <Dialog.Portal>
         <Dialog.Overlay className="l2-overlay" />
         <Dialog.Content className="l2-dialog">
-          <Dialog.Title>{title}</Dialog.Title>
-          <Dialog.Description>{description}</Dialog.Description>
-          {children}
-          <Dialog.Close className="l2-dialog-close" aria-label="关闭">
-            <X size={18} />
-          </Dialog.Close>
+          <header className="l2-dialog-header">
+            <div>
+              <span className="l2-dialog-eyebrow">{eyebrow}</span>
+              <Dialog.Title>{title}</Dialog.Title>
+            </div>
+            <Dialog.Close className="l2-dialog-close" aria-label="关闭">
+              <X size={18} />
+            </Dialog.Close>
+          </header>
+          <Dialog.Description className="l2-dialog-copy">
+            {description}
+          </Dialog.Description>
+          <div className="l2-dialog-body">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

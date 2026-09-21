@@ -23,7 +23,7 @@ export function ProjectLibraryCard({
   metadata?: ReactNode;
   description?: string;
   project: ProjectLibraryItem;
-  cover: "canvas" | "galgame" | "video" | "audio" | "director";
+  cover: "canvas" | "galgame" | "video" | "audio" | "director" | "live2d";
   coverTitle: string;
   coverDescription: string;
   onOpen: () => void;

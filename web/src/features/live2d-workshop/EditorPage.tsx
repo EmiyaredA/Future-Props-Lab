@@ -473,11 +473,6 @@ export function EditorPage({
         >
           <ArrowLeft size={18} />
         </button>
-        <img
-          className="l2-brand"
-          src="/brand/live2d-workshop-mark.png"
-          alt="Live2D 工坊"
-        />
         <div className="l2-title">
           <strong>{project.title}</strong>
           <small>

@@ -479,13 +479,7 @@ export function CharacterCanvas({
           </svg>
           {!doc.parts.length && (
             <div className="l2-canvas-empty">
-              <img src="/brand/live2d-workshop-mark.png" alt="" />
-              <h2>让角色动起来</h2>
-              <p>
-                导入分层 PSD 或透明 PNG
-                <br />
-                从网格与参数关键形开始制作
-              </p>
+              <p>画布为空 · 使用顶部「导入素材」添加图层</p>
             </div>
           )}
         </div>
