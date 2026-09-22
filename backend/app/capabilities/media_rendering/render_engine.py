@@ -191,24 +191,53 @@ def _run(args: list[str], *, cancel: threading.Event) -> None:
         raise RuntimeError(stderr[-4000:] or "FFmpeg 执行失败")
 
 
-# Coarse input seek lands near a keyframe; fine output seek then positions exactly.
+# Coarse input seek lands near a keyframe; fine trim in the filtergraph then
+# positions exactly. Output-side `-ss` after `-i` plus `setpts`/`fps` can leak
+# preroll frames on B-frame sources (seen as ~1s-early in-points on export).
 _DECODER_SEEK_PREROLL_US = 10_000_000
 
 
-def _decoder_seek_args(source_us: int, *, preroll_us: int = _DECODER_SEEK_PREROLL_US) -> list[str]:
-    """Build ffmpeg seek args: optional coarse -ss before -i, accurate -ss after -i."""
+def _decoder_seek_plan(
+    source_us: int, *, preroll_us: int = _DECODER_SEEK_PREROLL_US
+) -> tuple[int, float]:
+    """Return (coarse_input_us, fine_trim_seconds) for the pipe decoder.
+
+    `coarse_input_us` is applied as `-ss` before `-i` (0 means omit).
+    `fine_trim_seconds` is applied as `trim=start=` in `-vf` (0 means omit).
+    """
     target = max(0, source_us)
     if target <= 0:
-        return ["-i"]
+        return (0, 0.0)
     coarse = max(0, target - max(0, preroll_us))
-    fine = target - coarse
+    return (coarse, (target - coarse) / 1_000_000)
+
+
+def _decoder_seek_args(source_us: int, *, preroll_us: int = _DECODER_SEEK_PREROLL_US) -> list[str]:
+    """Build ffmpeg argv around `-i` for tests: coarse `-ss`, then `-i`, no fine `-ss`."""
+    coarse_us, _fine_s = _decoder_seek_plan(source_us, preroll_us=preroll_us)
     args: list[str] = []
-    if coarse > 0:
-        args.extend(["-ss", f"{coarse / 1_000_000:.6f}"])
+    if coarse_us > 0:
+        args.extend(["-ss", f"{coarse_us / 1_000_000:.6f}"])
     args.append("-i")
-    if fine > 0:
-        args.extend(["-ss", f"{fine / 1_000_000:.6f}"])
     return args
+
+
+def _decoder_video_filter(
+    source_us: int,
+    fps: int,
+    playback_rate: float,
+    *,
+    preroll_us: int = _DECODER_SEEK_PREROLL_US,
+) -> str:
+    """Build `-vf` graph: optional trim, setpts for rate, fps, rgba."""
+    _coarse_us, fine_s = _decoder_seek_plan(source_us, preroll_us=preroll_us)
+    parts: list[str] = []
+    if fine_s > 0:
+        parts.append(f"trim=start={fine_s:.6f}")
+    parts.append(f"setpts=(PTS-STARTPTS)/{playback_rate:.8g}")
+    parts.append(f"fps={fps}")
+    parts.append("format=rgba")
+    return ",".join(parts)
 
 
 class _VideoDecoder:
@@ -228,7 +257,6 @@ class _VideoDecoder:
         # Clip-local time of the last frame returned by next()/frame_at().
         self.local_us = local_us
         seek_args = _decoder_seek_args(source_us)
-        # Insert the input path after the "-i" placeholder from seek args.
         command = [
             "ffmpeg",
             "-hide_banner",
@@ -237,7 +265,7 @@ class _VideoDecoder:
             *seek_args,
             "-an",
             "-vf",
-            f"setpts=(PTS-STARTPTS)/{playback_rate:.8g},fps={fps},format=rgba",
+            _decoder_video_filter(source_us, fps, playback_rate),
             "-f",
             "rawvideo",
             "-pix_fmt",

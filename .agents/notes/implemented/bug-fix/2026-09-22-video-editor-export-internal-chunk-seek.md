@@ -10,7 +10,7 @@ Status: implemented
 
 ## Decision
 
-成片改为**单次连续编码**整段画面，不再按 30 秒切临时段与 concat。解码器启动改为「粗定位 + 精确输出 seek」：可选的输入侧 `-ss` 只做预卷，真正对齐用 `-i` 之后的 `-ss`（`_decoder_seek_args`）。顺播仍共享同一管道，避免周期性关键帧误差。
+成片改为**单次连续编码**整段画面，不再按 30 秒切临时段与 concat。解码器启动保留「粗 input `-ss` 预卷」；精定位机制后来改为 filtergraph `trim`（不再用 `-i` 后的 fine `-ss`），见 [`2026-09-22-video-editor-export-seek-trim.md`](./2026-09-22-video-editor-export-seek-trim.md)。顺播仍共享同一管道，避免周期性关键帧误差。
 
 ## Alternatives considered
 
@@ -22,6 +22,7 @@ Status: implemented
 
 - **收益**：完整导出在 30s/60s/90s/120s… 不再出现无转场的关键帧回溯；与「分段导出」产品功能无关。
 - **代价**：超长成片的临时画面文件不再拆段，失败时更难从中段续跑（原先也未对用户暴露续跑）；单个 Clip 首次精确定位比纯输入 seek 稍慢，有 10s 预卷限制。
+- **后续**：output `-ss` + `setpts`/`fps` 仍会在 B 帧源泄漏入点前画面，精定位改为 `trim`，见 [`2026-09-22-video-editor-export-seek-trim.md`](./2026-09-22-video-editor-export-seek-trim.md)。
 
 ## Verification
 

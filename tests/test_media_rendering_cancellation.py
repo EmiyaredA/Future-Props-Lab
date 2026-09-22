@@ -12,6 +12,8 @@ from app.capabilities.media_rendering.render_engine import (
     RenderCancelled,
     _decoder_request_action,
     _decoder_seek_args,
+    _decoder_seek_plan,
+    _decoder_video_filter,
     _read_exact,
     _terminate_process_group,
     _wait_for_process,
@@ -91,19 +93,22 @@ def test_decoder_request_action_holds_freezes_and_reseeks() -> None:
     )
 
 
-def test_decoder_seek_args_use_accurate_output_seek() -> None:
+def test_decoder_seek_args_use_trim_for_fine_position() -> None:
     assert _decoder_seek_args(0) == ["-i"]
-    # Short seeks: accurate -ss after -i only (no coarse input seek).
-    assert _decoder_seek_args(1_500_000, preroll_us=10_000_000) == [
-        "-i",
-        "-ss",
-        "1.500000",
-    ]
-    # Long seeks: coarse input -ss then fine output -ss.
+    assert _decoder_seek_plan(0) == (0, 0.0)
+    # Short seeks: no coarse input -ss; fine position is trim in -vf.
+    assert _decoder_seek_args(1_500_000, preroll_us=10_000_000) == ["-i"]
+    assert _decoder_seek_plan(1_500_000, preroll_us=10_000_000) == (0, 1.5)
+    assert _decoder_video_filter(1_500_000, 30, 1, preroll_us=10_000_000) == (
+        "trim=start=1.500000,setpts=(PTS-STARTPTS)/1,fps=30,format=rgba"
+    )
+    # Long seeks: coarse input -ss then fine trim (not output -ss).
     assert _decoder_seek_args(100_000_000, preroll_us=10_000_000) == [
         "-ss",
         "90.000000",
         "-i",
-        "-ss",
-        "10.000000",
     ]
+    assert _decoder_seek_plan(100_000_000, preroll_us=10_000_000) == (90_000_000, 10.0)
+    assert _decoder_video_filter(100_000_000, 30, 1.5, preroll_us=10_000_000) == (
+        "trim=start=10.000000,setpts=(PTS-STARTPTS)/1.5,fps=30,format=rgba"
+    )
