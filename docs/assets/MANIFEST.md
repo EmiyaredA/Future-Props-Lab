@@ -32,6 +32,8 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 
 | 文件 | 用途 | 来源与版本 | 许可证 | SHA-256 | 生产构建 |
 | --- | --- | --- | --- | --- | --- |
+| `web/public/brand/amadeus/amadeus.fpllive2d` | Amadeus 动态头像与可导入的 FPL 原生工程 | 内置 ImageGen 角色原画，经确定性分层、参数和网格打包；[制作说明](amadeus-native-avatar.md) | 仅限内部开发交接，角色无独立再分发授权 | `9e7eef418b7e191820f690b436834c50e560efb0de6b785b1191cc341630472f` | Web 需要 |
+| `web/public/brand/amadeus/amadeus-poster.png` | 动态头像加载、减少动态效果与 WebGL 不可用时的静态回退 | 从同一 `.fpllive2d` 工程确定性渲染；[制作说明](amadeus-native-avatar.md) | 同上 | `45f52bc733acbb218e51781c14bf50a3b42909e743f62b0cacbd3f78701547a0` | Web 需要 |
 | `backend/app/capabilities/media_rendering/assets/NotoSansSC-Regular.ttf` | 确定性中文对白及剪辑文字渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b` | 后端需要 |
 | `backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf` | 确定性中文标题渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `ca094f6b0001fb048ca39ddd797a0cdb0179e1e55c6561e111c49c3e6a61d7b7` | 后端需要 |
 | `web/public/brand/thought-workshop-mark.png` | 思绪工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，菲莉丝角色与既有工坊徽章为参考；[来源与提示词](thought-workshop-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `4706bb94b1d94898ea52f63dfa5167cbda9ad34fe55a25857a4ed9b1e49a12c9` | Web 需要 |
@@ -46,6 +48,8 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 本次迁移不改写既有 Git 历史，只把当前分支上的文件和未来增量改为 LFS 指针。因此旧提交中的二进制
 对象仍会保留在 Git 历史中，仓库体积不会立即下降。新增或替换素材后，应更新本清单的数量/校验值，
 并运行 `npm run lfs:check:pointers`、`npm run lfs:check` 和 `git lfs fsck`。
+
+Amadeus 的两张生成原画保存在 `web/src/features/amadeus/art/`，同样由 Git LFS 管理，但不进入 Web 运行包。它们的 SHA-256 分别为 `f97292f8c0f1d6fa83ee21499f95d80bc691293d38cfb1c4875623e372bde417` 和 `75df70681428cd3f3398de47e95417366fd515a59186196e5834ceaf3475644d`。
 
 ## Live2D 工坊头像
 

@@ -6,15 +6,31 @@ import { StudioAuthGate } from "@app/StudioAuthGate";
 import { useStudioSession } from "@app/StudioSession";
 import { DesktopSetupGate } from "@features/accounts/DesktopSetupGate";
 import { AmadeusWindow } from "@features/amadeus/Window";
+import { applyTheme, loadTheme, useTheme } from "@shared/ui/theme";
 import "@shared/ui/theme.css";
 import "@app/tailwind.css";
 import "@features/amadeus/window.css";
 import "@features/amadeus/window-theme.css";
 
 const queryClient = new QueryClient();
+
+// Amadeus runs in a separate Electron window but shares the Studio origin and
+// localStorage, so useTheme receives updates through the browser storage event.
+function AmadeusThemeSync() {
+  useTheme();
+  return null;
+}
+
+applyTheme(loadTheme(), false);
+
 function AuthenticatedAmadeus() {
   const session = useStudioSession();
-  return <AmadeusWindow session={session} />;
+  return (
+    <>
+      <AmadeusThemeSync />
+      <AmadeusWindow session={session} />
+    </>
+  );
 }
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

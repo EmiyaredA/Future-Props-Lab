@@ -2758,6 +2758,28 @@
         "title": "Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post",
         "type": "object"
       },
+      "BoneWeight": {
+        "additionalProperties": false,
+        "properties": {
+          "boneId": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Boneid",
+            "type": "string"
+          },
+          "weight": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "boneId",
+          "weight"
+        ],
+        "title": "BoneWeight",
+        "type": "object"
+      },
       "CallLogListItem": {
         "properties": {
           "api_key_id": {
@@ -3143,6 +3165,131 @@
         "title": "ChangePasswordIn",
         "type": "object"
       },
+      "CharacterBone": {
+        "additionalProperties": false,
+        "properties": {
+          "damping": {
+            "default": 0.5,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Damping",
+            "type": "number"
+          },
+          "id": {
+            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "offsetX": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Offsetx",
+            "type": "number"
+          },
+          "offsetY": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Offsety",
+            "type": "number"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentid"
+          },
+          "rotation": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Rotation",
+            "type": "number"
+          },
+          "scale": {
+            "default": 1,
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Scale",
+            "type": "number"
+          },
+          "spring": {
+            "default": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Spring",
+            "type": "number"
+          },
+          "x": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 0,
+            "maximum": 100000.0,
+            "minimum": -100000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CharacterBone",
+        "type": "object"
+      },
+      "CharacterCamera": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 4096.0,
+            "title": "Height",
+            "type": "number"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 4096.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "CharacterCamera",
+        "type": "object"
+      },
       "CharacterDeformer": {
         "additionalProperties": false,
         "properties": {
@@ -3253,6 +3400,27 @@
       "CharacterDocument": {
         "additionalProperties": false,
         "properties": {
+          "bones": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterBone"
+            },
+            "maxItems": 128,
+            "title": "Bones",
+            "type": "array"
+          },
+          "cameras": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CharacterCamera"
+            },
+            "propertyNames": {
+              "enum": [
+                "avatar",
+                "stage"
+              ]
+            },
+            "title": "Cameras",
+            "type": "object"
+          },
           "cubismParameterIds": {
             "additionalProperties": {
               "type": "string"
@@ -3284,6 +3452,9 @@
             "title": "Height",
             "type": "integer"
           },
+          "idleBehavior": {
+            "$ref": "#/components/schemas/CharacterIdleBehavior"
+          },
           "motions": {
             "items": {
               "$ref": "#/components/schemas/CharacterMotion"
@@ -3309,8 +3480,8 @@
             "type": "array"
           },
           "schemaVersion": {
-            "const": 2,
-            "default": 2,
+            "const": 3,
+            "default": 3,
             "title": "Schemaversion",
             "type": "integer"
           },
@@ -3374,6 +3545,89 @@
           "name"
         ],
         "title": "CharacterExpression",
+        "type": "object"
+      },
+      "CharacterIdleBehavior": {
+        "additionalProperties": false,
+        "properties": {
+          "blinkParameter": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blinkparameter"
+          },
+          "breathParameter": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Breathparameter"
+          },
+          "gazeXParameter": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gazexparameter"
+          },
+          "gazeYParameter": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gazeyparameter"
+          },
+          "intensity": {
+            "default": 0.5,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Intensity",
+            "type": "number"
+          },
+          "springBones": {
+            "items": {
+              "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Springbones",
+            "type": "array"
+          },
+          "swayParameter": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Swayparameter"
+          }
+        },
+        "title": "CharacterIdleBehavior",
         "type": "object"
       },
       "CharacterMotion": {
@@ -3557,6 +3811,23 @@
             ],
             "title": "Parentid"
           },
+          "skinWeights": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "$ref": "#/components/schemas/BoneWeight"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skinweights"
+          },
           "triangles": {
             "items": {
               "type": "integer"
@@ -3649,6 +3920,15 @@
               }
             ],
             "title": "Motionid"
+          },
+          "playback": {
+            "default": "loop",
+            "enum": [
+              "loop",
+              "onceHold"
+            ],
+            "title": "Playback",
+            "type": "string"
           }
         },
         "title": "CharacterStateBinding",
@@ -20206,6 +20486,32 @@
       "ParameterKeyform": {
         "additionalProperties": false,
         "properties": {
+          "offsetX": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": -100000.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offsetx"
+          },
+          "offsetY": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": -100000.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offsety"
+          },
           "opacity": {
             "anyOf": [
               {

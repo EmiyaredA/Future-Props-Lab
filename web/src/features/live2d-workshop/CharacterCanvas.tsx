@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Application,
-  AlphaMask,
-  Container,
-  Mesh,
-  MeshGeometry,
-  Texture,
-  Assets,
-} from "pixi.js";
+import { Application, Texture, Assets } from "pixi.js";
+import { createPoseMeshes } from "@shared/live2d/mesh";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { Minus, Plus, Scan, Hand, LocateFixed } from "lucide-react";
 import type { Asset, CharacterDocument, Deformer, Mode, Point } from "./types";
@@ -148,43 +141,7 @@ export function CharacterCanvas({
         );
       if (stale) return;
       app.stage.removeChildren().forEach((c) => c.destroy({ children: true }));
-      const container = new Container();
-      const make = (
-        part: PosedPart,
-        visible: boolean,
-        visited = new Set<string>(),
-      ): Mesh | null => {
-        const texture = textures.get(part.assetId);
-        if (!texture || visited.has(part.id)) return null;
-        visited.add(part.id);
-        const mesh = new Mesh({
-          geometry: new MeshGeometry({
-            positions: new Float32Array(
-              part.worldVertices.flatMap((p) => [p.x, p.y]),
-            ),
-            uvs: new Float32Array(part.uvs.flatMap((p) => [p.x, p.y])),
-            indices: new Uint32Array(part.triangles),
-          }),
-          texture,
-        });
-        mesh.alpha = part.opacity;
-        mesh.visible = visible;
-        if (part.maskId) {
-          const maskPart = parts.find((p) => p.id === part.maskId);
-          const mask = maskPart && make(maskPart, true, visited);
-          if (mask) {
-            container.addChild(mask);
-            mesh.addEffect(new AlphaMask({ mask }));
-            mesh.setMask({ channel: "alpha", inverse: false });
-          }
-        }
-        return mesh;
-      };
-      for (const part of parts) {
-        const mesh = make(part, part.visible);
-        if (mesh) container.addChild(mesh);
-      }
-      app.stage.addChild(container);
+      app.stage.addChild(createPoseMeshes(parts, textures).container);
     })().catch((e) => {
       if (!stale) setFailure(e instanceof Error ? e.message : "素材显示失败");
     });

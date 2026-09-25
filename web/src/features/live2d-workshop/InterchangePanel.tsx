@@ -175,7 +175,8 @@ export function InterchangePanel({
       <details className="l2-interchange">
         <summary>Amadeus 执行状态绑定</summary>
         <p className="l2-hint">
-          选择状态可在工坊预览对应表情与动作；头像接入将在模型完成后进行。
+          选择状态可在工坊预览对应表情与动作；内置 Amadeus
+          模型的七种状态现已驱动助手头像。
         </p>
         {states.map(([state, label]) => {
           const binding = doc.stateBindings[state] ?? {};

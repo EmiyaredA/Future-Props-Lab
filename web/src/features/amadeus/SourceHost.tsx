@@ -104,6 +104,7 @@ export function AmadeusSourceHost() {
       label.hidden = false;
     };
     const stop = () => {
+      if (picking) void bridge.finishAmadeusPick?.();
       picking = false;
       target = null;
       tip.hidden = true;

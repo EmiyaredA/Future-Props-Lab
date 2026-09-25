@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld(
     publishAmadeusContext: (value: unknown) => ipcRenderer.invoke("desktop:amadeus-context-publish", value),
     amadeusContexts: () => ipcRenderer.invoke("desktop:amadeus-contexts"),
     setAmadeusPickMode: (enabled: boolean, index?: number) => ipcRenderer.invoke("desktop:amadeus-pick", enabled, index),
+    finishAmadeusPick: () => ipcRenderer.invoke("desktop:amadeus-pick-finished"),
     addAmadeusReference: (value: unknown) => ipcRenderer.invoke("desktop:amadeus-reference", value),
     onAmadeusContexts: (callback: (value: unknown) => void) => {
       const listener = (_event: unknown, value: unknown) => callback(value);
@@ -35,6 +36,11 @@ contextBridge.exposeInMainWorld(
       const listener = (_event: unknown, value: { enabled: boolean; index: number }) => callback(value);
       ipcRenderer.on("desktop:amadeus-pick-command", listener);
       return () => ipcRenderer.removeListener("desktop:amadeus-pick-command", listener);
+    },
+    onAmadeusPickFinished: (callback: () => void) => {
+      const listener = () => callback();
+      ipcRenderer.on("desktop:amadeus-pick-finished", listener);
+      return () => ipcRenderer.removeListener("desktop:amadeus-pick-finished", listener);
     },
     onAmadeusReference: (callback: (value: unknown) => void) => {
       const listener = (_event: unknown, value: unknown) => callback(value);

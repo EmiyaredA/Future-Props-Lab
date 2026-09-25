@@ -457,6 +457,10 @@ class Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_po
     target_language: str | None = Field(default=None, alias='target_language')
     upload: str = Field(default=..., alias='upload')
 
+class BoneWeight(WireModel):
+    bone_id: str = Field(default=..., alias='boneId')
+    weight: float = Field(default=..., alias='weight', le=1.0, gt=0.0)
+
 class CallLogListItem(WireModel):
     api_key_id: str | None = Field(default=None, alias='api_key_id', repr=False)
     api_key_name: str | None = Field(default=None, alias='api_key_name', repr=False)
@@ -519,6 +523,25 @@ class ChangePasswordIn(WireModel):
     current_password: str = Field(default=..., alias='current_password', repr=False)
     new_password: str = Field(default=..., alias='new_password', repr=False)
 
+class CharacterBone(WireModel):
+    damping: float = Field(default=0.5, alias='damping', ge=0.0, le=1.0)
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    offset_x: float = Field(default=0, alias='offsetX', ge=-100000.0, le=100000.0)
+    offset_y: float = Field(default=0, alias='offsetY', ge=-100000.0, le=100000.0)
+    parent_id: str | None = Field(default=None, alias='parentId')
+    rotation: float = Field(default=0, alias='rotation', ge=-100000.0, le=100000.0)
+    scale: float = Field(default=1, alias='scale', le=100.0, gt=0.0)
+    spring: float = Field(default=0, alias='spring', ge=0.0, le=1.0)
+    x: float = Field(default=0, alias='x', ge=-100000.0, le=100000.0)
+    y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
+
+class CharacterCamera(WireModel):
+    height: float = Field(default=..., alias='height', le=4096.0, gt=0.0)
+    width: float = Field(default=..., alias='width', le=4096.0, gt=0.0)
+    x: float = Field(default=..., alias='x', ge=0.0)
+    y: float = Field(default=..., alias='y', ge=0.0)
+
 class CharacterDeformer(WireModel):
     columns: int = Field(default=2, alias='columns', ge=1.0, le=16.0)
     height: float = Field(default=500, alias='height', le=8192.0, gt=0.0)
@@ -535,14 +558,17 @@ class CharacterDeformer(WireModel):
     y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
 
 class CharacterDocument(WireModel):
+    bones: list[CharacterBone] | None = Field(default=None, alias='bones', max_length=128)
+    cameras: dict[str, CharacterCamera] | None = Field(default=None, alias='cameras')
     cubism_parameter_ids: dict[str, str] | None = Field(default=None, alias='cubismParameterIds')
     deformers: list[CharacterDeformer] | None = Field(default=None, alias='deformers', max_length=128)
     expressions: list[CharacterExpression] | None = Field(default=None, alias='expressions', max_length=128)
     height: int = Field(default=1600, alias='height', ge=32.0, le=4096.0)
+    idle_behavior: CharacterIdleBehavior | None = Field(default=None, alias='idleBehavior')
     motions: list[CharacterMotion] | None = Field(default=None, alias='motions', max_length=128)
     parameters: list[CharacterParameter] | None = Field(default=None, alias='parameters', max_length=128)
     parts: list[CharacterPart] | None = Field(default=None, alias='parts', max_length=128)
-    schema_version: Literal[2] = Field(default=2, alias='schemaVersion')
+    schema_version: Literal[3] = Field(default=3, alias='schemaVersion')
     state_bindings: dict[str, CharacterStateBinding] | None = Field(default=None, alias='stateBindings')
     width: int = Field(default=1200, alias='width', ge=32.0, le=4096.0)
 
@@ -550,6 +576,15 @@ class CharacterExpression(WireModel):
     id: str = Field(default=..., alias='id')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     values: dict[str, float] | None = Field(default=None, alias='values')
+
+class CharacterIdleBehavior(WireModel):
+    blink_parameter: str | None = Field(default=None, alias='blinkParameter')
+    breath_parameter: str | None = Field(default=None, alias='breathParameter')
+    gaze_xparameter: str | None = Field(default=None, alias='gazeXParameter')
+    gaze_yparameter: str | None = Field(default=None, alias='gazeYParameter')
+    intensity: float = Field(default=0.5, alias='intensity', ge=0.0, le=1.0)
+    spring_bones: list[str] | None = Field(default=None, alias='springBones', max_length=32)
+    sway_parameter: str | None = Field(default=None, alias='swayParameter')
 
 class CharacterMotion(WireModel):
     duration: int = Field(default=60, alias='duration', ge=1.0, le=36000.0)
@@ -579,6 +614,7 @@ class CharacterPart(WireModel):
     opacity: float = Field(default=1, alias='opacity', ge=0.0, le=1.0)
     order: int = Field(default=0, alias='order', ge=-10000.0, le=10000.0)
     parent_id: str | None = Field(default=None, alias='parentId')
+    skin_weights: list[list[BoneWeight]] | None = Field(default=None, alias='skinWeights')
     triangles: list[int] = Field(default=..., alias='triangles', min_length=3, max_length=24576)
     uvs: list[Point] = Field(default=..., alias='uvs', min_length=3, max_length=4096)
     vertices: list[Point] = Field(default=..., alias='vertices', min_length=3, max_length=4096)
@@ -590,6 +626,7 @@ class CharacterPart(WireModel):
 class CharacterStateBinding(WireModel):
     expression_id: str | None = Field(default=None, alias='expressionId')
     motion_id: str | None = Field(default=None, alias='motionId')
+    playback: Literal['loop', 'onceHold'] = Field(default='loop', alias='playback')
 
 class CharacterTrack(WireModel):
     keys: list[TimeKeyframe] | None = Field(default=None, alias='keys', max_length=1000)
@@ -3121,6 +3158,8 @@ class ParameterBinding(WireModel):
     target_id: str = Field(default=..., alias='targetId')
 
 class ParameterKeyform(WireModel):
+    offset_x: float | None = Field(default=None, alias='offsetX')
+    offset_y: float | None = Field(default=None, alias='offsetY')
     opacity: float | None = Field(default=None, alias='opacity')
     points: list[Point] | None = Field(default=None, alias='points')
     rotation: float | None = Field(default=None, alias='rotation')
@@ -4820,6 +4859,7 @@ Body_upload_library_file_v1_director_desk_library_files_post.model_rebuild()
 Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post.model_rebuild()
 Body_upload_project_file_v1_director_desk_projects__project_id__files_post.model_rebuild()
 Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post.model_rebuild()
+BoneWeight.model_rebuild()
 CallLogListItem.model_rebuild()
 CallLogListOut.model_rebuild()
 CallLogOut.model_rebuild()
@@ -4827,9 +4867,12 @@ CallLogStatsOut.model_rebuild()
 CertificationIn.model_rebuild()
 CertificationOut.model_rebuild()
 ChangePasswordIn.model_rebuild()
+CharacterBone.model_rebuild()
+CharacterCamera.model_rebuild()
 CharacterDeformer.model_rebuild()
 CharacterDocument.model_rebuild()
 CharacterExpression.model_rebuild()
+CharacterIdleBehavior.model_rebuild()
 CharacterMotion.model_rebuild()
 CharacterParameter.model_rebuild()
 CharacterPart.model_rebuild()

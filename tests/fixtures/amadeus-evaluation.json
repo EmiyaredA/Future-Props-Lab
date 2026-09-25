@@ -1,0 +1,520 @@
+{
+  "idle": {
+    "frame": 45,
+    "values": {
+      "ParamAngleX": 2.0,
+      "ParamAngleY": 0.0,
+      "ParamBodySway": 0.0,
+      "ParamHairSwing": 0.0,
+      "ParamBreath": 0.0,
+      "ParamEyeOpen": 1.0,
+      "ParamGazeX": 0.0,
+      "ParamGazeY": 0.0,
+      "ParamBrow": 0.0,
+      "ParamMouthForm": 0.0,
+      "ParamMouthOpenY": 0.0,
+      "ParamHandChin": 0.0
+    },
+    "parts": {
+      "torso": {
+        "opacity": 1,
+        "first": {
+          "x": 320.0,
+          "y": 446.0
+        },
+        "last": {
+          "x": 1017.9999999999999,
+          "y": 1446.9999999999998
+        }
+      },
+      "face": {
+        "opacity": 1,
+        "first": {
+          "x": 403.27625759213356,
+          "y": 285.61241706199246
+        },
+        "last": {
+          "x": 754.7640682755849,
+          "y": 595.4854861418244
+        }
+      },
+      "fringe": {
+        "opacity": 1,
+        "first": {
+          "x": 318.6166951180706,
+          "y": -2.0866591994724786
+        },
+        "last": {
+          "x": 791.0742168972492,
+          "y": 434.7758936867608
+        }
+      },
+      "left-eye": {
+        "opacity": 1,
+        "first": {
+          "x": 396.08101506207305,
+          "y": 309.554607541011
+        },
+        "last": {
+          "x": 553.1472694215879,
+          "y": 424.83770145105586
+        }
+      },
+      "thinking-hand": {
+        "opacity": 0,
+        "first": {
+          "x": 643.0,
+          "y": 710.0
+        },
+        "last": {
+          "x": 751.0,
+          "y": 861.0
+        }
+      }
+    }
+  },
+  "listening": {
+    "frame": 30,
+    "values": {
+      "ParamAngleX": 5.0,
+      "ParamAngleY": -3.0,
+      "ParamBodySway": 0.0,
+      "ParamHairSwing": 0.0,
+      "ParamBreath": 0.0,
+      "ParamEyeOpen": 1.0,
+      "ParamGazeX": 0.0,
+      "ParamGazeY": 0.0,
+      "ParamBrow": 0.3,
+      "ParamMouthForm": 0.1,
+      "ParamMouthOpenY": 0.0,
+      "ParamHandChin": 0.0
+    },
+    "parts": {
+      "torso": {
+        "opacity": 1,
+        "first": {
+          "x": 320.0,
+          "y": 446.0
+        },
+        "last": {
+          "x": 1017.9999999999999,
+          "y": 1446.9999999999998
+        }
+      },
+      "face": {
+        "opacity": 1,
+        "first": {
+          "x": 405.21172836487,
+          "y": 282.85064784798965
+        },
+        "last": {
+          "x": 752.8875878498941,
+          "y": 596.9947178721582
+        }
+      },
+      "fringe": {
+        "opacity": 1,
+        "first": {
+          "x": 324.0733039176866,
+          "y": -5.861243279183782
+        },
+        "last": {
+          "x": 791.1584158580936,
+          "y": 436.74072034458686
+        }
+      },
+      "left-eye": {
+        "opacity": 1,
+        "first": {
+          "x": 397.72452105712284,
+          "y": 306.70314722920375
+        },
+        "last": {
+          "x": 553.3706398541543,
+          "y": 423.89651608350516
+        }
+      },
+      "thinking-hand": {
+        "opacity": 0,
+        "first": {
+          "x": 643.0,
+          "y": 710.0
+        },
+        "last": {
+          "x": 751.0,
+          "y": 861.0
+        }
+      }
+    }
+  },
+  "thinking": {
+    "frame": 48,
+    "values": {
+      "ParamAngleX": -8.0,
+      "ParamAngleY": 6.0,
+      "ParamBodySway": 0.0,
+      "ParamHairSwing": 0.0,
+      "ParamBreath": 0.0,
+      "ParamEyeOpen": 1.0,
+      "ParamGazeX": 0.0,
+      "ParamGazeY": 0.0,
+      "ParamBrow": -0.2,
+      "ParamMouthForm": -0.1,
+      "ParamMouthOpenY": 0.0,
+      "ParamHandChin": 1.0
+    },
+    "parts": {
+      "torso": {
+        "opacity": 1,
+        "first": {
+          "x": 320.0,
+          "y": 446.0
+        },
+        "last": {
+          "x": 1017.9999999999999,
+          "y": 1446.9999999999998
+        }
+      },
+      "face": {
+        "opacity": 1,
+        "first": {
+          "x": 397.00924386069687,
+          "y": 294.05288910818285
+        },
+        "last": {
+          "x": 760.8215195865133,
+          "y": 589.3588796183698
+        }
+      },
+      "fringe": {
+        "opacity": 1,
+        "first": {
+          "x": 300.70675509239464,
+          "y": 10.039103074773948
+        },
+        "last": {
+          "x": 790.5585780207467,
+          "y": 427.30423650167586
+        }
+      },
+      "left-eye": {
+        "opacity": 1,
+        "first": {
+          "x": 390.7947277006454,
+          "y": 318.2681691787594
+        },
+        "last": {
+          "x": 552.4242863935451,
+          "y": 427.06102628224085
+        }
+      },
+      "thinking-hand": {
+        "opacity": 1,
+        "first": {
+          "x": 643.0,
+          "y": 710.0
+        },
+        "last": {
+          "x": 751.0,
+          "y": 861.0
+        }
+      }
+    }
+  },
+  "tool": {
+    "frame": 30,
+    "values": {
+      "ParamAngleX": 0.5,
+      "ParamAngleY": 0.0,
+      "ParamBodySway": 0.0,
+      "ParamHairSwing": 0.0,
+      "ParamBreath": 0.0,
+      "ParamEyeOpen": 1.0,
+      "ParamGazeX": 0.0,
+      "ParamGazeY": 0.0,
+      "ParamBrow": -0.4,
+      "ParamMouthForm": -0.1,
+      "ParamMouthOpenY": 0.0,
+      "ParamHandChin": 0.0
+    },
+    "parts": {
+      "torso": {
+        "opacity": 1,
+        "first": {
+          "x": 320.0,
+          "y": 446.0
+        },
+        "last": {
+          "x": 1017.9999999999999,
+          "y": 1446.9999999999998
+        }
+      },
+      "face": {
+        "opacity": 1,
+        "first": {
+          "x": 402.3180042027571,
+          "y": 286.652130456888
+        },
+        "last": {
+          "x": 755.69215200043,
+          "y": 594.3723145012051
+        }
+      },
+      "fringe": {
+        "opacity": 1,
+        "first": {
+          "x": 315.90257856896733,
+          "y": -0.5244253629261948
+        },
+        "last": {
+          "x": 791.0199102269032,
+          "y": 433.4439158305794
+        }
+      },
+      "left-eye": {
+        "opacity": 1,
+        "first": {
+          "x": 395.2691495291018,
+          "y": 310.6378271903517
+        },
+        "last": {
+          "x": 553.0366933507655,
+          "y": 424.9593129945497
+        }
+      },
+      "thinking-hand": {
+        "opacity": 0,
+        "first": {
+          "x": 643.0,
+          "y": 710.0
+        },
+        "last": {
+          "x": 751.0,
+          "y": 861.0
+        }
+      }
+    }
+  },
+  "success": {
+    "frame": 21,
+    "values": {
+      "ParamAngleX": 0.0,
+      "ParamAngleY": -0.8393263541192528,
+      "ParamBodySway": 0.0,
+      "ParamHairSwing": 0.0,
+      "ParamBreath": 0.0,
+      "ParamEyeOpen": 1.0,
+      "ParamGazeX": 0.0,
+      "ParamGazeY": 0.0,
+      "ParamBrow": 0.3,
+      "ParamMouthForm": 1.0,
+      "ParamMouthOpenY": 0.0,
+      "ParamHandChin": 0.0
+    },
+    "parts": {
+      "torso": {
+        "opacity": 1,
+        "first": {
+          "x": 320.0,
+          "y": 446.0
+        },
+        "last": {
+          "x": 1017.9999999999999,
+          "y": 1446.9999999999998
+        }
+      },
+      "face": {
+        "opacity": 1,
+        "first": {
+          "x": 402.0,
+          "y": 286.8041571840388
+        },
+        "last": {
+          "x": 756.0,
+          "y": 593.8041571840388
+        }
+      },
+      "fringe": {
+        "opacity": 1,
+        "first": {
+          "x": 315.0,
+          "y": -0.195842815961214
+        },
+        "last": {
+          "x": 791.0,
+          "y": 432.8041571840388
+        }
+      },
+      "left-eye": {
+        "opacity": 1,
+        "first": {
+          "x": 395.0,
+          "y": 310.8041571840388
+        },
+        "last": {
+          "x": 553.0,
+          "y": 424.8041571840388
+        }
+      },
+      "thinking-hand": {
+        "opacity": 0,
+        "first": {
+          "x": 643.0,
+          "y": 710.0
+        },
+        "last": {
+          "x": 751.0,
+          "y": 861.0
+        }
+      }
+    }
+  },
+  "error": {
+    "frame": 21,
+    "values": {
+      "ParamAngleX": 4.0441511151570335,
+      "ParamAngleY": 0.0,
+      "ParamBodySway": 0.0,
+      "ParamHairSwing": 0.0,
+      "ParamBreath": 0.0,
+      "ParamEyeOpen": 1.0,
+      "ParamGazeX": 0.0,
+      "ParamGazeY": 0.0,
+      "ParamBrow": -0.6,
+      "ParamMouthForm": -1.0,
+      "ParamMouthOpenY": 0.0,
+      "ParamHandChin": 0.0
+    },
+    "parts": {
+      "torso": {
+        "opacity": 1,
+        "first": {
+          "x": 320.0,
+          "y": 446.0
+        },
+        "last": {
+          "x": 1017.9999999999999,
+          "y": 1446.9999999999998
+        }
+      },
+      "face": {
+        "opacity": 1,
+        "first": {
+          "x": 404.5923234330598,
+          "y": 284.20499229092604
+        },
+        "last": {
+          "x": 753.4883931172471,
+          "y": 596.9933113805728
+        }
+      },
+      "fringe": {
+        "opacity": 1,
+        "first": {
+          "x": 322.33066729645736,
+          "y": -4.1888702125318105
+        },
+        "last": {
+          "x": 791.1351228506761,
+          "y": 436.5915540947558
+        }
+      },
+      "left-eye": {
+        "opacity": 1,
+        "first": {
+          "x": 397.1980216274277,
+          "y": 308.08645583081875
+        },
+        "last": {
+          "x": 553.2991507553114,
+          "y": 424.6730652034212
+        }
+      },
+      "thinking-hand": {
+        "opacity": 0,
+        "first": {
+          "x": 643.0,
+          "y": 710.0
+        },
+        "last": {
+          "x": 751.0,
+          "y": 861.0
+        }
+      }
+    }
+  },
+  "paused": {
+    "frame": 22,
+    "values": {
+      "ParamAngleX": 0.0,
+      "ParamAngleY": 4.947555555555555,
+      "ParamBodySway": 0.0,
+      "ParamHairSwing": 0.0,
+      "ParamBreath": 0.0,
+      "ParamEyeOpen": 0.7,
+      "ParamGazeX": 0.0,
+      "ParamGazeY": 0.0,
+      "ParamBrow": -0.1,
+      "ParamMouthForm": -0.1,
+      "ParamMouthOpenY": 0.0,
+      "ParamHandChin": 0.0
+    },
+    "parts": {
+      "torso": {
+        "opacity": 1,
+        "first": {
+          "x": 320.0,
+          "y": 446.0
+        },
+        "last": {
+          "x": 1017.9999999999999,
+          "y": 1446.9999999999998
+        }
+      },
+      "face": {
+        "opacity": 1,
+        "first": {
+          "x": 402.0,
+          "y": 288.1544296296297
+        },
+        "last": {
+          "x": 756.0,
+          "y": 595.1544296296296
+        }
+      },
+      "fringe": {
+        "opacity": 1,
+        "first": {
+          "x": 315.0,
+          "y": 1.1544296296297034
+        },
+        "last": {
+          "x": 791.0,
+          "y": 434.1544296296297
+        }
+      },
+      "left-eye": {
+        "opacity": 0.7,
+        "first": {
+          "x": 395.0,
+          "y": 312.1544296296297
+        },
+        "last": {
+          "x": 553.0,
+          "y": 426.1544296296297
+        }
+      },
+      "thinking-hand": {
+        "opacity": 0,
+        "first": {
+          "x": 643.0,
+          "y": 710.0
+        },
+        "last": {
+          "x": 751.0,
+          "y": 861.0
+        }
+      }
+    }
+  }
+}

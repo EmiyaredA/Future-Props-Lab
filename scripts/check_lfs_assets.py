@@ -17,6 +17,8 @@ BACKEND_ASSETS = (
     Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"),
 )
 WEB_ASSETS = (
+    Path("web/public/brand/amadeus/amadeus.fpllive2d"),
+    Path("web/public/brand/amadeus/amadeus-poster.png"),
     Path("web/public/brand/live2d-workshop-mark.png"),
     Path("web/public/brand/audio-annotation-mark.png"),
     Path("web/public/brand/director-desk-mark.png"),
@@ -26,6 +28,12 @@ WEB_ASSETS = (
     Path("web/public/voice-vad/ort-wasm-simd-threaded.wasm"),
 )
 EXPECTED_SHA256 = {
+    Path("web/public/brand/amadeus/amadeus.fpllive2d"): (
+        "9e7eef418b7e191820f690b436834c50e560efb0de6b785b1191cc341630472f"
+    ),
+    Path("web/public/brand/amadeus/amadeus-poster.png"): (
+        "45f52bc733acbb218e51781c14bf50a3b42909e743f62b0cacbd3f78701547a0"
+    ),
     Path(
         "web/public/brand/live2d-workshop-mark.png"
     ): "ad615ad25e188543e37dc276592082c87c953f85c8b8bd8039fca44095f17e70",
@@ -209,7 +217,8 @@ def main() -> None:
             "web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,"
             "web/public/brand/presentation-workshop-mark.png,"
             "web/public/brand/audio-annotation-mark.png,"
-            "web/public/brand/director-desk-mark.png,web/public/brand/live2d-workshop-mark.png",
+            "web/public/brand/director-desk-mark.png,web/public/brand/live2d-workshop-mark.png,"
+            "web/public/brand/amadeus/amadeus.fpllive2d,web/public/brand/amadeus/amadeus-poster.png",
         )
 
 

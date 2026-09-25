@@ -6995,6 +6995,13 @@ export interface components {
             /** Upload */
             upload: string;
         };
+        /** BoneWeight */
+        BoneWeight: {
+            /** Boneid */
+            boneId: string;
+            /** Weight */
+            weight: number;
+        };
         /** CallLogListItem */
         CallLogListItem: {
             /** Api Key Id */
@@ -7116,6 +7123,66 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** CharacterBone */
+        CharacterBone: {
+            /**
+             * Damping
+             * @default 0.5
+             */
+            damping: number;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Offsetx
+             * @default 0
+             */
+            offsetX: number;
+            /**
+             * Offsety
+             * @default 0
+             */
+            offsetY: number;
+            /** Parentid */
+            parentId?: string | null;
+            /**
+             * Rotation
+             * @default 0
+             */
+            rotation: number;
+            /**
+             * Scale
+             * @default 1
+             */
+            scale: number;
+            /**
+             * Spring
+             * @default 0
+             */
+            spring: number;
+            /**
+             * X
+             * @default 0
+             */
+            x: number;
+            /**
+             * Y
+             * @default 0
+             */
+            y: number;
+        };
+        /** CharacterCamera */
+        CharacterCamera: {
+            /** Height */
+            height: number;
+            /** Width */
+            width: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
         /** CharacterDeformer */
         CharacterDeformer: {
             /**
@@ -7174,6 +7241,12 @@ export interface components {
         };
         /** CharacterDocument */
         CharacterDocument: {
+            /** Bones */
+            bones?: components["schemas"]["CharacterBone"][];
+            /** Cameras */
+            cameras?: {
+                [key: string]: components["schemas"]["CharacterCamera"];
+            };
             /** Cubismparameterids */
             cubismParameterIds?: {
                 [key: string]: string;
@@ -7187,6 +7260,7 @@ export interface components {
              * @default 1600
              */
             height: number;
+            idleBehavior?: components["schemas"]["CharacterIdleBehavior"];
             /** Motions */
             motions?: components["schemas"]["CharacterMotion"][];
             /** Parameters */
@@ -7195,10 +7269,10 @@ export interface components {
             parts?: components["schemas"]["CharacterPart"][];
             /**
              * Schemaversion
-             * @default 2
+             * @default 3
              * @constant
              */
-            schemaVersion: 2;
+            schemaVersion: 3;
             /** Statebindings */
             stateBindings?: {
                 [key: string]: components["schemas"]["CharacterStateBinding"];
@@ -7219,6 +7293,26 @@ export interface components {
             values?: {
                 [key: string]: number;
             };
+        };
+        /** CharacterIdleBehavior */
+        CharacterIdleBehavior: {
+            /** Blinkparameter */
+            blinkParameter?: string | null;
+            /** Breathparameter */
+            breathParameter?: string | null;
+            /** Gazexparameter */
+            gazeXParameter?: string | null;
+            /** Gazeyparameter */
+            gazeYParameter?: string | null;
+            /**
+             * Intensity
+             * @default 0.5
+             */
+            intensity: number;
+            /** Springbones */
+            springBones?: string[];
+            /** Swayparameter */
+            swayParameter?: string | null;
         };
         /** CharacterMotion */
         CharacterMotion: {
@@ -7307,6 +7401,8 @@ export interface components {
             order: number;
             /** Parentid */
             parentId?: string | null;
+            /** Skinweights */
+            skinWeights?: components["schemas"]["BoneWeight"][][] | null;
             /** Triangles */
             triangles: number[];
             /** Uvs */
@@ -7337,6 +7433,12 @@ export interface components {
             expressionId?: string | null;
             /** Motionid */
             motionId?: string | null;
+            /**
+             * Playback
+             * @default loop
+             * @enum {string}
+             */
+            playback: "loop" | "onceHold";
         };
         /** CharacterTrack */
         CharacterTrack: {
@@ -13656,6 +13758,10 @@ export interface components {
         };
         /** ParameterKeyform */
         ParameterKeyform: {
+            /** Offsetx */
+            offsetX?: number | null;
+            /** Offsety */
+            offsetY?: number | null;
             /** Opacity */
             opacity?: number | null;
             /** Points */

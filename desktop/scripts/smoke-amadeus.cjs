@@ -52,6 +52,8 @@ async function main() {
     const assistant = await until(() => browser.contexts()[0]?.pages().find((item) =>
       item.url().includes("/amadeus.html")));
     await assistant.getByRole("heading", { name: "你好，我是 Amadeus" }).waitFor();
+    await assistant.locator('[data-avatar-renderer="model"]').first().waitFor();
+    assert.equal(await assistant.locator('[data-avatar-state="idle"]').count(), 2);
     assert.equal(await assistant.evaluate(() => window.futurePropsDesktop.amadeusAlwaysOnTop()), true);
     await assistant.getByRole("button", { name: "取消悬浮置顶" }).click();
     assert.equal(await assistant.evaluate(() => window.futurePropsDesktop.amadeusAlwaysOnTop()), false);
@@ -107,9 +109,15 @@ async function main() {
     await until(async () => (await assistant.evaluate(() => window.futurePropsDesktop.amadeusContexts()))
       .some((item) => item.application === "应用首页" && !item.selection && !item.unsaved));
     await assistant.getByRole("button", { name: "选取控件" }).click();
+    await assistant.locator('[data-avatar-state="listening"]').first().waitFor();
     await page.getByRole("button", { name: "新建窗口" }).hover();
     assert.match(await page.locator(".amadeus-picker-label").textContent(), /^1\. 新建窗口/);
     await page.getByRole("button", { name: "新建窗口" }).click();
+    await assistant.locator('[data-avatar-state="idle"]').first().waitFor();
+    await assistant.getByRole("button", { name: "选取控件" }).click();
+    await assistant.locator('[data-avatar-state="listening"]').first().waitFor();
+    await page.keyboard.press("Escape");
+    await assistant.locator('[data-avatar-state="idle"]').first().waitFor();
     assert.equal(browser.contexts()[0].pages().filter((item) =>
       item.url().startsWith("http:") && !item.url().includes("amadeus.html")).length, 1);
     await assistant.getByText(/1\. 新建窗口/).last().waitFor();

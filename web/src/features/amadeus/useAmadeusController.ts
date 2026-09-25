@@ -178,10 +178,14 @@ export function useAmadeusController(session: AccountSessionContext) {
       )
         setReferences((previous) => [...previous, reference].slice(0, 20));
     });
+    const offPickFinished = bridge.onAmadeusPickFinished?.(() => {
+      setAvatarState((current) => (current === "listening" ? "idle" : current));
+    });
     return () => {
       alive = false;
       offContexts();
       offReference();
+      offPickFinished?.();
       modelAbortRef.current?.abort();
       workerRef.current?.terminate();
       approvalRef.current?.reject(new Error("助手窗口已重新载入"));

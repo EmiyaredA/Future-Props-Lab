@@ -1,6 +1,15 @@
 import Delaunator from "delaunator";
+import { evaluate, parameterValues } from "@shared/live2d/pose";
+export {
+  interval,
+  parameterValues,
+  deformerTransform,
+  evaluate,
+} from "@shared/live2d/pose";
+export type { PosedPart } from "@shared/live2d/pose";
 import type {
   Asset,
+  Bone,
   CharacterDocument,
   Deformer,
   Keyform,
@@ -73,165 +82,89 @@ export function makeDeformer(
     points: kind === "warp" ? mesh.vertices : [],
   };
 }
+export function makeBone(
+  doc: CharacterDocument,
+  name = "新骨骼",
+  parentId: string | null = null,
+  x = doc.width / 2,
+  y = doc.height / 2,
+): Bone {
+  return {
+    id: id(),
+    name,
+    parentId,
+    x,
+    y,
+    rotation: 0,
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+    spring: 0,
+    damping: 0.5,
+  };
+}
+export function applyHumanTemplate(doc: CharacterDocument) {
+  if (doc.bones.length) return;
+  const w = doc.width;
+  const h = doc.height;
+  const root = makeBone(doc, "躯干根骨", null, w * 0.5, h * 0.88);
+  const chest = makeBone(doc, "胸肩", root.id, w * 0.5, h * 0.57);
+  const neck = makeBone(doc, "颈部", chest.id, w * 0.5, h * 0.42);
+  const head = makeBone(doc, "头部", neck.id, w * 0.5, h * 0.3);
+  const leftArm = makeBone(doc, "左上臂", chest.id, w * 0.29, h * 0.58);
+  const leftForearm = makeBone(doc, "左前臂", leftArm.id, w * 0.23, h * 0.74);
+  const rightArm = makeBone(doc, "右上臂", chest.id, w * 0.71, h * 0.58);
+  const rightForearm = makeBone(doc, "右前臂", rightArm.id, w * 0.77, h * 0.74);
+  const leftHair = makeBone(doc, "左发束", head.id, w * 0.32, h * 0.3);
+  const rightHair = makeBone(doc, "右发束", head.id, w * 0.68, h * 0.3);
+  const tie = makeBone(doc, "领带", chest.id, w * 0.5, h * 0.54);
+  leftHair.spring = rightHair.spring = tie.spring = 0.5;
+  doc.bones.push(root, chest, neck, head, leftArm, leftForearm, rightArm, rightForearm, leftHair, rightHair, tie);
+  for (const part of doc.parts) {
+    if (part.parentId || part.skinWeights?.length) continue;
+    const name = `${part.group}/${part.name}`.toLowerCase();
+    const centerX = part.x + part.width / 2;
+    const chosen = /左.*(袖|臂|手)/.test(name) ? leftArm
+      : /右.*(袖|臂|手)/.test(name) ? rightArm
+      : /(刘海|眼|眉|口|脸|面|头)/.test(name) ? head
+      : /发/.test(name) ? centerX < w / 2 ? leftHair : rightHair
+      : /领带/.test(name) ? tie : chest;
+    part.skinWeights = part.vertices.map(() => [{ boneId: chosen.id, weight: 1 }]);
+  }
+  doc.idleBehavior.springBones = [leftHair.id, rightHair.id, tie.id];
+}
+
+export function setVertexBoneWeight(part: Part, index: number, boneId: string, amount: number) {
+  if (!part.skinWeights) return;
+  const current = part.skinWeights[index] ?? [];
+  const other = current.filter((item) => item.boneId !== boneId);
+  const bounded = Math.max(0, Math.min(1, amount));
+  if (bounded >= 1 || (!other.length && bounded > 0)) {
+    part.skinWeights[index] = [{ boneId, weight: 1 }];
+    return;
+  }
+  if (!other.length) return;
+  const kept = other.slice(0, bounded > 0 ? 3 : 4);
+  const total = kept.reduce((sum, item) => sum + item.weight, 0);
+  part.skinWeights[index] = [
+    ...(bounded > 0 ? [{ boneId, weight: bounded }] : []),
+    ...kept.map((item) => ({
+      boneId: item.boneId,
+      weight: (item.weight / total) * (1 - bounded),
+    })),
+  ];
+}
 export function triangulate(part: Part) {
   part.triangles = Array.from(
     Delaunator.from(part.uvs.map((p) => [p.x, p.y])).triangles,
   );
-}
-export function interval<T>(
-  keys: T[],
-  value: number,
-  at: (item: T) => number,
-): [T, T, number] {
-  const sorted = [...keys].sort((a, b) => at(a) - at(b));
-  if (value <= at(sorted[0])) return [sorted[0], sorted[0], 0];
-  for (let i = 1; i < sorted.length; i++)
-    if (value <= at(sorted[i]))
-      return [
-        sorted[i - 1],
-        sorted[i],
-        (value - at(sorted[i - 1])) / (at(sorted[i]) - at(sorted[i - 1])),
-      ];
-  return [sorted.at(-1)!, sorted.at(-1)!, 0];
-}
-export function parameterValues(
-  doc: CharacterDocument,
-  frame = 0,
-  motionId?: string,
-  expressionId?: string,
-  overrides: Record<string, number> = {},
-) {
-  const values = Object.fromEntries(
-    doc.parameters.map((p) => [p.id, p.default]),
-  );
-  Object.assign(
-    values,
-    doc.expressions.find((e) => e.id === expressionId)?.values ?? {},
-  );
-  const motion = doc.motions.find((m) => m.id === motionId);
-  for (const track of motion?.tracks ?? [])
-    if (track.keys?.length) {
-      const [a, b, ratio] = interval(track.keys, frame, (k) => k.frame);
-      const t =
-        a.interpolation === "hold"
-          ? 0
-          : a.interpolation === "smooth"
-            ? ratio * ratio * (3 - 2 * ratio)
-            : ratio;
-      values[track.parameterId] = a.value + (b.value - a.value) * t;
-    }
-  Object.assign(values, overrides);
-  for (const p of doc.parameters)
-    values[p.id] = Math.max(p.minimum, Math.min(p.maximum, values[p.id]));
-  return values;
-}
-function sample(keys: Keyform[], value: number) {
-  const [a, b, t] = interval(keys, value, (k) => k.value);
-  const result: Partial<Keyform> = {};
-  for (const field of ["rotation", "scale", "opacity"] as const)
-    if (a[field] != null && b[field] != null)
-      result[field] = a[field]! + (b[field]! - a[field]!) * t;
-  if (a.points && b.points)
-    result.points = a.points.map((p, i) => ({
-      x: p.x + (b.points![i].x - p.x) * t,
-      y: p.y + (b.points![i].y - p.y) * t,
-    }));
-  return result;
-}
-export function deformerTransform(deformers: Deformer[]) {
-  const byId = new Map(deformers.map((d) => [d.id, d]));
-  return (point: Point, parent?: string | null): Point => {
-    let { x, y } = point;
-    const visited = new Set<string>();
-    while (parent && !visited.has(parent)) {
-      visited.add(parent);
-      const d = byId.get(parent);
-      if (!d) break;
-      if (d.kind === "rotation") {
-        const angle = (d.rotation * Math.PI) / 180,
-          dx = (x - d.x) * d.scale,
-          dy = (y - d.y) * d.scale;
-        x = d.x + dx * Math.cos(angle) - dy * Math.sin(angle);
-        y = d.y + dx * Math.sin(angle) + dy * Math.cos(angle);
-      } else {
-        const u = ((x - d.x) / d.width) * d.columns,
-          v = ((y - d.y) / d.height) * d.rows;
-        const col = Math.max(0, Math.min(d.columns - 1, Math.floor(u))),
-          row = Math.max(0, Math.min(d.rows - 1, Math.floor(v)));
-        const tx = u - col,
-          ty = v - row,
-          at = row * (d.columns + 1) + col;
-        const [a, b, c, e] = [
-          at,
-          at + 1,
-          at + d.columns + 1,
-          at + d.columns + 2,
-        ].map((i) => d.points[i]);
-        const blend = (axis: "x" | "y") =>
-          (a[axis] * (1 - tx) + b[axis] * tx) * (1 - ty) +
-          (c[axis] * (1 - tx) + e[axis] * tx) * ty;
-        x = blend("x");
-        y = blend("y");
-      }
-      parent = d.parentId;
-    }
-    return { x, y };
-  };
-}
-export type PosedPart = Part & { worldVertices: Point[] };
-export function evaluate(
-  doc: CharacterDocument,
-  values: Record<string, number>,
-): { parts: PosedPart[]; deformers: Deformer[] } {
-  const parts = copy(doc.parts),
-    deformers = copy(doc.deformers);
-  for (const parameter of doc.parameters)
-    for (const binding of parameter.bindings) {
-      const part = parts.find((p) => p.id === binding.targetId),
-        deformer = deformers.find((d) => d.id === binding.targetId);
-      const base = sample(binding.keys, parameter.default),
-        posed = sample(binding.keys, values[parameter.id] ?? parameter.default);
-      if (part) {
-        if (posed.opacity != null)
-          part.opacity += posed.opacity - base.opacity!;
-        if (posed.points)
-          part.vertices = part.vertices.map((p, i) => ({
-            x: p.x + posed.points![i].x - base.points![i].x,
-            y: p.y + posed.points![i].y - base.points![i].y,
-          }));
-      }
-      if (deformer) {
-        if (posed.rotation != null)
-          deformer.rotation += posed.rotation - base.rotation!;
-        if (posed.scale != null) deformer.scale += posed.scale - base.scale!;
-        if (posed.points)
-          deformer.points = deformer.points.map((p, i) => ({
-            x: p.x + posed.points![i].x - base.points![i].x,
-            y: p.y + posed.points![i].y - base.points![i].y,
-          }));
-      }
-    }
-  for (const d of deformers) d.scale = Math.max(0.001, d.scale);
-  const transform = deformerTransform(deformers);
-  return {
-    parts: parts
-      .map((p) => ({
-        ...p,
-        opacity: Math.max(0, Math.min(1, p.opacity)),
-        worldVertices: p.vertices.map((v) =>
-          transform({ x: v.x + p.x, y: v.y + p.y }, p.parentId),
-        ),
-      }))
-      .sort((a, b) => a.order - b.order),
-    deformers,
-  };
 }
 export function captureKey(
   doc: CharacterDocument,
   parameterId: string,
   targetId: string,
   value: number,
-  shape?: Part | Deformer,
+  shape?: Part | Deformer | Bone,
 ) {
   const parameter = doc.parameters.find((p) => p.id === parameterId)!;
   const pose = shape
@@ -243,18 +176,28 @@ export function captureKey(
   const target =
     shape ??
     pose!.parts.find((p) => p.id === targetId) ??
-    pose!.deformers.find((d) => d.id === targetId)!;
-  const keyFor = (node: Part | Deformer, at: number): Keyform =>
+    pose!.deformers.find((d) => d.id === targetId) ??
+    pose!.bones.find((b) => b.id === targetId)!;
+  const keyFor = (node: Part | Deformer | Bone, at: number): Keyform =>
     "vertices" in node
       ? { value: at, points: copy(node.vertices), opacity: node.opacity }
-      : node.kind === "rotation"
+      : "kind" in node && node.kind === "rotation"
         ? { value: at, rotation: node.rotation, scale: node.scale }
-        : { value: at, points: copy(node.points) };
+        : "kind" in node
+          ? { value: at, points: copy(node.points) }
+          : {
+              value: at,
+              rotation: node.rotation,
+              scale: node.scale,
+              offsetX: node.offsetX,
+              offsetY: node.offsetY,
+            };
   let binding = parameter.bindings.find((b) => b.targetId === targetId);
   if (!binding) {
     const base =
       doc.parts.find((p) => p.id === targetId) ??
-      doc.deformers.find((d) => d.id === targetId)!;
+      doc.deformers.find((d) => d.id === targetId) ??
+      doc.bones.find((b) => b.id === targetId)!;
     binding = { targetId, keys: [keyFor(base, parameter.default)] };
     parameter.bindings.push(binding);
   }

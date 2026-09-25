@@ -37,6 +37,7 @@ class CharacterPart(ValueModel):
     visible: bool = True
     locked: bool = False
     mask_id: Identifier | None = Field(default=None, alias="maskId")
+    skin_weights: list[list[BoneWeight]] | None = Field(default=None, alias="skinWeights")
 
     @model_validator(mode="after")
     def mesh_valid(self) -> CharacterPart:
@@ -46,7 +47,34 @@ class CharacterPart(ValueModel):
             raise ValueError("网格索引越界")
         if any(not 0 <= p.x <= 1 or not 0 <= p.y <= 1 for p in self.uvs):
             raise ValueError("UV 必须位于 0 到 1")
+        if self.skin_weights is not None:
+            if len(self.skin_weights) != len(self.vertices) or self.parent_id:
+                raise ValueError("蒙皮权重必须逐顶点定义，且不能同时挂载变形器")
+            for weights in self.skin_weights:
+                if not 1 <= len(weights) <= 4 or abs(sum(w.weight for w in weights) - 1) > 1e-4:
+                    raise ValueError("每个顶点需要一至四个总和为 1 的骨骼权重")
+                if len({w.bone_id for w in weights}) != len(weights):
+                    raise ValueError("顶点骨骼权重重复")
         return self
+
+
+class CharacterBone(ValueModel):
+    id: Identifier
+    name: str = Field(min_length=1, max_length=120)
+    parent_id: Identifier | None = Field(default=None, alias="parentId")
+    x: Number = 0
+    y: Number = 0
+    rotation: Number = 0
+    scale: float = Field(default=1, gt=0, le=100)
+    offset_x: Number = Field(default=0, alias="offsetX")
+    offset_y: Number = Field(default=0, alias="offsetY")
+    spring: float = Field(default=0, ge=0, le=1)
+    damping: float = Field(default=0.5, ge=0, le=1)
+
+
+class BoneWeight(ValueModel):
+    bone_id: Identifier = Field(alias="boneId")
+    weight: float = Field(gt=0, le=1)
 
 
 class CharacterDeformer(ValueModel):
@@ -77,6 +105,8 @@ class ParameterKeyform(ValueModel):
     rotation: Number | None = None
     scale: float | None = Field(default=None, gt=0, le=100)
     opacity: float | None = Field(default=None, ge=0, le=1)
+    offset_x: Number | None = Field(default=None, alias="offsetX")
+    offset_y: Number | None = Field(default=None, alias="offsetY")
 
 
 class ParameterBinding(ValueModel):
@@ -152,20 +182,41 @@ AmadeusState = Literal["idle", "listening", "thinking", "tool", "success", "erro
 class CharacterStateBinding(ValueModel):
     expression_id: Identifier | None = Field(default=None, alias="expressionId")
     motion_id: Identifier | None = Field(default=None, alias="motionId")
+    playback: Literal["loop", "onceHold"] = "loop"
+
+
+class CharacterCamera(ValueModel):
+    x: float = Field(ge=0, allow_inf_nan=False)
+    y: float = Field(ge=0, allow_inf_nan=False)
+    width: float = Field(gt=0, le=4096, allow_inf_nan=False)
+    height: float = Field(gt=0, le=4096, allow_inf_nan=False)
+
+
+class CharacterIdleBehavior(ValueModel):
+    blink_parameter: Identifier | None = Field(default=None, alias="blinkParameter")
+    gaze_x_parameter: Identifier | None = Field(default=None, alias="gazeXParameter")
+    gaze_y_parameter: Identifier | None = Field(default=None, alias="gazeYParameter")
+    breath_parameter: Identifier | None = Field(default=None, alias="breathParameter")
+    sway_parameter: Identifier | None = Field(default=None, alias="swayParameter")
+    spring_bones: list[Identifier] = Field(default_factory=list, alias="springBones", max_length=32)
+    intensity: float = Field(default=0.5, ge=0, le=1)
 
 
 class CharacterDocument(ValueModel):
-    schema_version: Literal[2] = Field(default=2, alias="schemaVersion")
+    schema_version: Literal[3] = Field(default=3, alias="schemaVersion")
     width: int = Field(default=1200, ge=32, le=4096)
     height: int = Field(default=1600, ge=32, le=4096)
     parts: list[CharacterPart] = Field(default_factory=list, max_length=128)
     deformers: list[CharacterDeformer] = Field(default_factory=list, max_length=128)
+    bones: list[CharacterBone] = Field(default_factory=list, max_length=128)
     parameters: list[CharacterParameter] = Field(default_factory=list, max_length=128)
     expressions: list[CharacterExpression] = Field(default_factory=list, max_length=128)
     motions: list[CharacterMotion] = Field(default_factory=list, max_length=128)
     state_bindings: dict[AmadeusState, CharacterStateBinding] = Field(
         default_factory=dict, alias="stateBindings", max_length=7
     )
+    cameras: dict[Literal["avatar", "stage"], CharacterCamera] = Field(default_factory=dict)
+    idle_behavior: CharacterIdleBehavior = Field(default_factory=CharacterIdleBehavior, alias="idleBehavior")
     cubism_parameter_ids: dict[str, str] = Field(
         default_factory=dict, alias="cubismParameterIds", max_length=128
     )
@@ -173,20 +224,45 @@ class CharacterDocument(ValueModel):
     @model_validator(mode="before")
     @classmethod
     def upgrade_v1(cls, value: Any) -> Any:
-        if isinstance(value, dict) and value.get("schemaVersion", 1) == 1:
-            return {**value, "schemaVersion": 2}
+        if isinstance(value, dict) and value.get("schemaVersion", 1) in (1, 2):
+            bindings = {
+                state: {
+                    **binding,
+                    "playback": "onceHold" if state in {"success", "error", "paused"} else "loop",
+                }
+                for state, binding in value.get("stateBindings", {}).items()
+            }
+            return {**value, "schemaVersion": 3, "stateBindings": bindings}
         return value
 
     @model_validator(mode="after")
     def references_valid(self) -> CharacterDocument:
-        for items in (self.parts + self.deformers, self.parameters, self.expressions, self.motions):
+        for items in (
+            self.parts + self.deformers + self.bones,
+            self.parameters,
+            self.expressions,
+            self.motions,
+        ):
             if len({item.id for item in items}) != len(items):
                 raise ValueError("对象 ID 重复")
-        nodes = {n.id: n for n in self.parts + self.deformers}
+        nodes = {n.id: n for n in self.parts + self.deformers + self.bones}
         deformers = {n.id for n in self.deformers}
+        bones = {n.id for n in self.bones}
         parts = {n.id for n in self.parts}
         parameters = {p.id: p for p in self.parameters}
-        for node in nodes.values():
+        for bone in self.bones:
+            visited = {bone.id}
+            parent = bone.parent_id
+            while parent:
+                if parent not in bones or parent in visited:
+                    raise ValueError("骨骼父级不存在或形成循环")
+                visited.add(parent)
+                parent = nodes[parent].parent_id
+        for part in self.parts:
+            for weights in part.skin_weights or []:
+                if any(weight.bone_id not in bones for weight in weights):
+                    raise ValueError("蒙皮引用的骨骼不存在")
+        for node in self.parts + self.deformers:
             visited = {node.id}
             parent = node.parent_id
             while parent:
@@ -210,12 +286,12 @@ class CharacterDocument(ValueModel):
                 count = (
                     len(target.vertices)
                     if isinstance(target, CharacterPart)
-                    else len(target.points)
+                    else len(target.points) if isinstance(target, CharacterDeformer) else 0
                 )
                 fields = [
                     {
                         name
-                        for name in ("points", "rotation", "scale", "opacity")
+                        for name in ("points", "rotation", "scale", "opacity", "offset_x", "offset_y")
                         if getattr(k, name) is not None
                     }
                     for k in binding.keys
@@ -225,7 +301,8 @@ class CharacterDocument(ValueModel):
                 allowed = (
                     {"points", "opacity"}
                     if isinstance(target, CharacterPart)
-                    else ({"rotation", "scale"} if target.kind == "rotation" else {"points"})
+                    else ({"rotation", "scale", "offset_x", "offset_y"} if isinstance(target, CharacterBone)
+                          else ({"rotation", "scale"} if target.kind == "rotation" else {"points"}))
                 )
                 if not fields[0] <= allowed:
                     raise ValueError("关键形属性不适用于此目标类型")
@@ -236,6 +313,21 @@ class CharacterDocument(ValueModel):
                         key.rotation is not None or key.scale is not None
                     ):
                         raise ValueError("旋转和缩放关键形仅用于旋转变形器")
+        for camera in self.cameras.values():
+            if camera.x + camera.width > self.width or camera.y + camera.height > self.height:
+                raise ValueError("相机位超出画布")
+        behavior = self.idle_behavior
+        for identifier in (
+            behavior.blink_parameter,
+            behavior.gaze_x_parameter,
+            behavior.gaze_y_parameter,
+            behavior.breath_parameter,
+            behavior.sway_parameter,
+        ):
+            if identifier is not None and identifier not in parameters:
+                raise ValueError("待机行为引用的参数不存在")
+        if any(identifier not in bones for identifier in behavior.spring_bones):
+            raise ValueError("待机行为引用的骨骼不存在")
         for expression in self.expressions:
             for key, value in expression.values.items():
                 if (
@@ -281,6 +373,11 @@ def initial_document(width: int = 1200, height: int = 1600) -> CharacterDocument
     return CharacterDocument(
         width=width,
         height=height,
+        cameras={
+            "avatar": CharacterCamera(x=(width - min(width, height * 0.6)) / 2, y=0,
+                                      width=min(width, height * 0.6), height=min(width, height * 0.6)),
+            "stage": CharacterCamera(x=0, y=0, width=width, height=height),
+        },
         parameters=[
             CharacterParameter(id=p[0], name=p[1], minimum=p[2], maximum=p[3], default=p[4])
             for p in presets

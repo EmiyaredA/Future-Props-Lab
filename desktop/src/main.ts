@@ -763,12 +763,17 @@ else {
     ipcMain.handle("desktop:amadeus-pick", (event, enabled: boolean, index?: number) => {
       if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
       const source = activeStudio();
-      if (!source) return;
+      if (!source) return false;
       source.show();
       source.focus();
       source.webContents.send("desktop:amadeus-pick-command", {
         enabled: Boolean(enabled), index: typeof index === "number" && Number.isSafeInteger(index) && index > 0 ? Math.min(index, 20) : 1,
       });
+      return true;
+    });
+    ipcMain.handle("desktop:amadeus-pick-finished", (event) => {
+      if (!isTrustedStudioSender(event)) throw new Error("拒绝非 Studio 页面请求");
+      amadeusWindow?.webContents.send("desktop:amadeus-pick-finished");
     });
     ipcMain.handle("desktop:amadeus-reference", async (event, value: unknown) => {
       if (!isTrustedStudioSender(event) || !amadeusWindow ||

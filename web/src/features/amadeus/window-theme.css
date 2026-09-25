@@ -46,152 +46,43 @@
 }
 
 .amadeus-avatar {
+  position: relative;
   display: block;
   flex: none;
   width: 48px;
   height: 48px;
+  overflow: hidden;
   border: 1px solid #f1cdbb;
   border-radius: 14px;
-  background-color: #fff1e7;
-  background-image: url("/brand/amadeus/amadeus-state-atlas.png");
-  background-repeat: no-repeat;
-  background-size: 400% 700%;
+  background: #fff1e7;
   box-shadow: 0 4px 12px rgb(194 103 66 / 16%);
 }
 
-.amadeus-avatar-idle,
-.amadeus-avatar-listening,
-.amadeus-avatar-thinking,
-.amadeus-avatar-tool,
-.amadeus-avatar-success,
-.amadeus-avatar-error,
-.amadeus-avatar-paused {
-  animation-duration: 1.15s;
-  animation-iteration-count: infinite;
-  animation-timing-function: steps(1, end);
+.amadeus-avatar-poster,
+.amadeus-avatar-canvas,
+.amadeus-avatar-canvas canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.amadeus-avatar-idle {
-  background-position: 0 0;
-  animation-name: amadeus-avatar-idle;
+.amadeus-avatar-poster,
+.amadeus-avatar-canvas canvas {
+  object-fit: cover;
 }
 
-.amadeus-avatar-listening {
-  background-position: 0 16.6667%;
-  animation-name: amadeus-avatar-listening;
+.amadeus-avatar-canvas {
+  opacity: 0;
 }
 
-.amadeus-avatar-thinking {
-  background-position: 0 33.3333%;
-  animation-name: amadeus-avatar-thinking;
+.amadeus-avatar-ready .amadeus-avatar-canvas {
+  opacity: 1;
 }
 
-.amadeus-avatar-tool {
-  background-position: 0 50%;
-  animation-name: amadeus-avatar-tool;
-  animation-duration: 0.9s;
-}
-
-.amadeus-avatar-success {
-  background-position: 0 66.6667%;
-  animation-name: amadeus-avatar-success;
-  animation-iteration-count: 2;
-}
-
-.amadeus-avatar-error {
-  background-position: 0 83.3333%;
-  animation-name: amadeus-avatar-error;
-  animation-iteration-count: 2;
-}
-
-.amadeus-avatar-paused {
-  background-position: 0 100%;
-  animation-name: amadeus-avatar-paused;
-}
-
-@keyframes amadeus-avatar-idle {
-  0%,
-  100% {
-    background-position: 0 0;
-  }
-  33% {
-    background-position: 33.3333% 0;
-  }
-  66% {
-    background-position: 66.6667% 0;
-  }
-}
-@keyframes amadeus-avatar-listening {
-  0%,
-  100% {
-    background-position: 0 16.6667%;
-  }
-  33% {
-    background-position: 33.3333% 16.6667%;
-  }
-  66% {
-    background-position: 66.6667% 16.6667%;
-  }
-}
-@keyframes amadeus-avatar-thinking {
-  0%,
-  100% {
-    background-position: 0 33.3333%;
-  }
-  33% {
-    background-position: 33.3333% 33.3333%;
-  }
-  66% {
-    background-position: 66.6667% 33.3333%;
-  }
-}
-@keyframes amadeus-avatar-tool {
-  0%,
-  100% {
-    background-position: 0 50%;
-  }
-  33% {
-    background-position: 33.3333% 50%;
-  }
-  66% {
-    background-position: 66.6667% 50%;
-  }
-}
-@keyframes amadeus-avatar-success {
-  0%,
-  100% {
-    background-position: 0 66.6667%;
-  }
-  33% {
-    background-position: 33.3333% 66.6667%;
-  }
-  66% {
-    background-position: 66.6667% 66.6667%;
-  }
-}
-@keyframes amadeus-avatar-error {
-  0%,
-  100% {
-    background-position: 0 83.3333%;
-  }
-  33% {
-    background-position: 33.3333% 83.3333%;
-  }
-  66% {
-    background-position: 66.6667% 83.3333%;
-  }
-}
-@keyframes amadeus-avatar-paused {
-  0%,
-  100% {
-    background-position: 0 100%;
-  }
-  33% {
-    background-position: 33.3333% 100%;
-  }
-  66% {
-    background-position: 66.6667% 100%;
-  }
+.amadeus-avatar-ready .amadeus-avatar-poster {
+  opacity: 0;
 }
 
 .amadeus-status-dot {
@@ -394,4 +285,129 @@
   .amadeus-header {
     padding-left: 12px;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --amadeus-bg: #171a18;
+  --amadeus-surface: #1b1f1c;
+  --amadeus-surface-raised: #222723;
+  --amadeus-line: #343b35;
+  --amadeus-line-soft: #2a302b;
+  --amadeus-ink: #ebe5db;
+  --amadeus-muted: #aaa398;
+  --amadeus-accent: #ee805a;
+  --amadeus-accent-soft: #38251f;
+  --amadeus-shadow: 0 14px 34px rgb(0 0 0 / 24%);
+}
+
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] #root {
+  background: var(--amadeus-bg);
+  color: var(--amadeus-ink);
+}
+
+:root[data-theme="dark"] .amadeus-window {
+  background:
+    radial-gradient(circle at 100% 0, #30231e 0, transparent 34%),
+    var(--amadeus-bg);
+}
+
+:root[data-theme="dark"] .amadeus-header,
+:root[data-theme="dark"] .amadeus-context-summary,
+:root[data-theme="dark"] .amadeus-history,
+:root[data-theme="dark"] .amadeus-capabilities,
+:root[data-theme="dark"] .amadeus-files,
+:root[data-theme="dark"] .amadeus-bottom {
+  background: var(--amadeus-surface);
+  border-color: var(--amadeus-line);
+}
+
+:root[data-theme="dark"] .amadeus-search,
+:root[data-theme="dark"] .amadeus-history-dialog,
+:root[data-theme="dark"] .amadeus-ref,
+:root[data-theme="dark"] .amadeus-reference-detail,
+:root[data-theme="dark"] .amadeus-steps,
+:root[data-theme="dark"] .amadeus-approval pre,
+:root[data-theme="dark"] .amadeus-approval button,
+:root[data-theme="dark"] .amadeus-composer,
+:root[data-theme="dark"] .amadeus-model-list,
+:root[data-theme="dark"] .amadeus-model-control > button {
+  background: var(--amadeus-surface-raised);
+  border-color: var(--amadeus-line);
+  color: var(--amadeus-ink);
+}
+
+:root[data-theme="dark"] .amadeus-context-list,
+:root[data-theme="dark"] .amadeus-context-list div,
+:root[data-theme="dark"] .amadeus-file-row,
+:root[data-theme="dark"] .amadeus-capability {
+  border-color: var(--amadeus-line-soft);
+}
+
+:root[data-theme="dark"] .amadeus-header-actions button,
+:root[data-theme="dark"] .amadeus-toolbar button,
+:root[data-theme="dark"] .amadeus-history button,
+:root[data-theme="dark"] .amadeus-ref button {
+  color: var(--amadeus-muted);
+}
+
+:root[data-theme="dark"] .amadeus-header-actions button[aria-pressed="true"],
+:root[data-theme="dark"] .amadeus-reference-detail button,
+:root[data-theme="dark"] .amadeus-files button {
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+:root[data-theme="dark"] .amadeus-ref-thumb {
+  background: var(--amadeus-surface-soft, #2a302b);
+  color: var(--amadeus-accent);
+}
+
+:root[data-theme="dark"] .amadeus-message.user,
+:root[data-theme="dark"] .amadeus-history-row.active,
+:root[data-theme="dark"] .amadeus-welcome button {
+  background: var(--amadeus-accent-soft);
+  border-color: #59372b;
+  color: var(--amadeus-ink);
+}
+
+:root[data-theme="dark"] .amadeus-message.user .amadeus-message-name,
+:root[data-theme="dark"] .amadeus-reference-detail p,
+:root[data-theme="dark"] .amadeus-message.user,
+:root[data-theme="dark"] .amadeus-composer textarea,
+:root[data-theme="dark"] .amadeus-search input,
+:root[data-theme="dark"] .amadeus-history-dialog input {
+  color: var(--amadeus-ink);
+}
+
+:root[data-theme="dark"] .amadeus-history-dialog input {
+  background: var(--amadeus-bg);
+  border-color: var(--amadeus-line);
+}
+
+:root[data-theme="dark"] .amadeus-welcome button:hover,
+:root[data-theme="dark"] .amadeus-header-actions button:hover,
+:root[data-theme="dark"] .amadeus-toolbar button:hover,
+:root[data-theme="dark"] .amadeus-history button:hover,
+:root[data-theme="dark"] .amadeus-ref button:hover {
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+:root[data-theme="dark"] .amadeus-model-list button[aria-selected="true"] {
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+:root[data-theme="dark"] .amadeus-approval {
+  background: #2a211d;
+  border-color: #744535;
+}
+
+:root[data-theme="dark"] .amadeus-approval button:last-child,
+:root[data-theme="dark"] .amadeus-toolbar .amadeus-send {
+  background: var(--amadeus-accent);
+  color: #21140f;
 }

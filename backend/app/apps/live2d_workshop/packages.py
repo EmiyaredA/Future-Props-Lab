@@ -44,7 +44,7 @@ def read_package(data: bytes) -> tuple[str, CharacterDocument, dict]:
             manifest = json.loads(archive.read("manifest.json"))
             if not isinstance(manifest, dict):
                 raise Live2DInvalid("工程清单必须为对象")
-            if manifest.get("format") != "fpllive2d" or manifest.get("version") not in (1, 2):
+            if manifest.get("format") != "fpllive2d" or manifest.get("version") not in (1, 2, 3):
                 raise Live2DInvalid("不支持的工程格式或版本")
             document = CharacterDocument.model_validate(manifest["document"])
             assets = {}
@@ -78,7 +78,7 @@ class Live2DPackages(Live2DProjectsStore):
                     json.dumps(
                         {
                             "format": "fpllive2d",
-                            "version": 2,
+                            "version": 3,
                             "title": title,
                             "document": doc.model_dump(mode="json", by_alias=True),
                         },

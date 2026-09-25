@@ -8,7 +8,7 @@ import {
   Unlock,
   Plus,
 } from "lucide-react";
-import { makeDeformer } from "./model";
+import { applyHumanTemplate, makeBone, makeDeformer } from "./model";
 import type { CharacterDocument, Deformer, Part } from "./types";
 import type { Edit } from "./Inspector";
 
@@ -162,8 +162,43 @@ export function ObjectTree({
             {kind === "rotation" ? "旋转" : "曲面"}
           </button>
         ))}
+        <button
+          disabled={readOnly}
+          onClick={() => edit((d) => {
+            const parent = d.bones.find((bone) => bone.id === selected);
+            const bone = makeBone(d, "新骨骼", parent?.id ?? null);
+            d.bones.push(bone);
+            onSelect(bone.id);
+          })}
+        >
+          <Plus size={13} />骨骼
+        </button>
+      </div>
+      <div className="l2-tree-actions">
+        <button disabled={readOnly || !!doc.bones.length} onClick={() => edit(applyHumanTemplate)}>
+          建立人形半身骨架
+        </button>
       </div>
       <div className="l2-object-list" aria-label="角色对象层级">
+        {doc.bones.length > 0 && (
+          <div className="l2-panel-heading"><h2>骨骼</h2><span>{doc.bones.length}</span></div>
+        )}
+        {doc.bones.map((bone) => {
+          let depth = 0;
+          let parent = bone.parentId;
+          while (parent && depth < doc.bones.length) {
+            depth++;
+            parent = doc.bones.find((item) => item.id === parent)?.parentId ?? null;
+          }
+          return (
+            <div className={`l2-tree-row ${selected === bone.id ? "selected" : ""}`} key={bone.id} style={{ paddingLeft: depth * 12 }}>
+              <button className="l2-tree-name" aria-pressed={selected === bone.id} onClick={() => onSelect(bone.id)}>
+                <span>♢</span><span>{bone.name}</span>
+              </button>
+            </div>
+          );
+        })}
+        {doc.bones.length > 0 && <hr />}
         {children(null, 0)}
       </div>
       {!doc.parts.length && (

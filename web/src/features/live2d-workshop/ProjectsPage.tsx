@@ -13,6 +13,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { ProjectLibraryCard } from "@shared/ui/project-library";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { AMADEUS_PACKAGE_URL } from "@shared/live2d/bundled";
 import {
   createProject,
   cancelExport,
@@ -46,8 +47,8 @@ export function ProjectsPage({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [dialog, setDialog] = useState<"create" | "rename" | "delete" | null>(
-    null,
-  ),
+      null,
+    ),
     [selected, setSelected] = useState<Project | null>(null),
     [title, setTitle] = useState("未命名角色");
   const input = useRef<HTMLInputElement>(null);
@@ -122,6 +123,25 @@ export function ProjectsPage({
                 导入工程
               </button>
               <button
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    const response = await fetch(AMADEUS_PACKAGE_URL);
+                    if (!response.ok)
+                      throw new Error("Amadeus 模型文件无法读取");
+                    const file = new File(
+                      [await response.blob()],
+                      "Amadeus.fpllive2d",
+                      { type: "application/zip" },
+                    );
+                    onOpen((await importProject(file)).id);
+                  })
+                }
+              >
+                <Download size={16} />
+                导入 Amadeus 模型
+              </button>
+              <button
                 className="workshop-primary"
                 onClick={() => {
                   setTitle("未命名角色");
@@ -183,7 +203,9 @@ export function ProjectsPage({
               coverTitle="角色工程"
               coverDescription="导入分层立绘后开始绑定"
               coverContent={
-                p.thumbnail ? <ProjectThumbnail href={p.thumbnail} /> : undefined
+                p.thumbnail ? (
+                  <ProjectThumbnail href={p.thumbnail} />
+                ) : undefined
               }
               onOpen={() => onOpen(p.id)}
             >

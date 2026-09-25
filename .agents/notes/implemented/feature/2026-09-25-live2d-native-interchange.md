@@ -16,7 +16,7 @@ Status: implemented
 
 ## Consequences
 
-本地用户仍通过同一项目、素材及 CAS 文档接口工作。`motion3` 的 Bezier 与不落在帧上的变化按帧采样，`exp3` 的 Add/Multiply 以当前默认值静态化；导入前报告近似、缺失参数、越界与不支持轨道。交接包不是可播放模型；需在 Cubism Editor 重新建模与生成 `.moc3`。物理、贴图集和复杂混合留给后续引擎工作。Amadeus 头像保持现状，模型完成后再接入。
+本地用户仍通过同一项目、素材及 CAS 文档接口工作。`motion3` 的 Bezier 与不落在帧上的变化按帧采样，`exp3` 的 Add/Multiply 以当前默认值静态化；导入前报告近似、缺失参数、越界与不支持轨道。交接包不是可播放模型；需在 Cubism Editor 重新建模与生成 `.moc3`。物理、贴图集和复杂混合留给后续引擎工作。Amadeus 原生头像的后续接入见 [Agent Note](2026-09-26-amadeus-native-avatar.md)。
 
 ## Verification
 

@@ -42,10 +42,10 @@ Future-Props-Lab/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
 │   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
 │   ├── features/      # 账号治理、首页、应用、文件管理、工坊、工具导航、集成中心与模型功能
-│   │   └── amadeus/   # 独立窗口 UI、Pi Worker 和工坊控件选取层
+│   │   └── amadeus/   # 独立窗口 UI、Pi Worker、控件选取与原生动态头像源画
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
-│   └── shared/        # 无业务归属的媒体处理、品牌与主题 UI
+│   └── shared/        # 无业务归属的媒体处理、品牌与主题 UI；live2d/ 提供共用姿态计算与网格渲染
 ├── web/scripts/       # Web 构建与维护脚本；正式视频导出不在这里执行
 ├── web/public/docs/   # 文档中心使用的当前真实界面截图
 ├── web/tests/         # Web 组件测试
@@ -447,3 +447,5 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 ### Live2D 工坊
 
 `web/src/features/live2d-workshop/` 拥有角色项目管理、PSD Worker、PixiJS 网格编辑、参数关键形与动画 UI。`backend/app/apps/live2d_workshop/` 拥有 Workspace 项目 CAS、素材、工程包与导出任务；`backend/app/capabilities/media_rendering/live2d/` 拥有版本化角色文档、确定性参数/变形器求值和 Pillow 三角纹理渲染。素材与输出位于对应 Workspace 的 `applications/live2d-workshop/projects/<id>/{assets,exports}/`。迁移 `r0071_live2d_workshop` 登记角色工程、素材与任务。Cubism 编译、物理、视频、外部输入驱动未启用。
+
+`web/src/shared/live2d/` 提供工坊与 Amadeus 头像共用的纯姿态计算、类型和 PixiJS 网格装配。内置 Amadeus 的原画由 `scripts/build_amadeus_model.py` 打包成 `web/public/brand/amadeus/amadeus.fpllive2d`，用户可通过现有工坊导入 API 主动创建可编辑副本；助手窗口直接读取随应用提供的工程包，不依赖用户 Workspace 项目。

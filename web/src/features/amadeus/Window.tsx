@@ -18,6 +18,7 @@ import ReactMarkdown from "react-markdown";
 import type { AccountSessionContext } from "@features/accounts";
 import { fetchApiJson } from "@platform/api/client";
 import { avatarStateLabels, compactContext } from "./protocol";
+import { AmadeusAvatar } from "./Avatar";
 import { useAmadeusController } from "./useAmadeusController";
 
 export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
@@ -94,11 +95,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     <div className="amadeus-window">
       <header className="amadeus-header">
         <div className="amadeus-brand">
-          <span
-            className={`amadeus-avatar amadeus-avatar-${avatarState}`}
-            role="img"
-            aria-label={`Amadeus：${avatarStateLabels[avatarState]}`}
-          />
+          <AmadeusAvatar state={avatarState} />
           <div>
             <strong>Amadeus</strong>
             <small>
@@ -395,11 +392,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             {!detail?.messages.length && (
               <div className="amadeus-welcome">
                 <div className="amadeus-welcome-avatar">
-                  <span
-                    className={`amadeus-avatar amadeus-avatar-${avatarState}`}
-                    role="img"
-                    aria-label={`Amadeus：${avatarStateLabels[avatarState]}`}
-                  />
+                  <AmadeusAvatar state={avatarState} />
                 </div>
                 <h1>你好，我是 Amadeus</h1>
                 <p>
@@ -629,7 +622,12 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                   aria-label="选取控件"
                   onClick={() => {
                     showAvatarState("listening");
-                    void bridge.setAmadeusPickMode(true, references.length + 1);
+                    void bridge
+                      .setAmadeusPickMode(true, references.length + 1)
+                      .then((started) => {
+                        if (!started) showAvatarState("idle");
+                      })
+                      .catch(() => showAvatarState("idle"));
                   }}
                 >
                   <MousePointer2 size={17} />

@@ -50,7 +50,7 @@ def parameter_values(
 def sample(keys: list[dict], value: float) -> dict:
     a, b, t = interval(keys, value, "value")
     result = {}
-    for field in ("rotation", "scale", "opacity"):
+    for field in ("rotation", "scale", "opacity", "offsetX", "offsetY"):
         if a.get(field) is not None:
             result[field] = a[field] + (b[field] - a[field]) * t
     if a.get("points") is not None:
@@ -63,14 +63,14 @@ def sample(keys: list[dict], value: float) -> dict:
 
 def evaluate(doc: CharacterDocument, values: dict[str, float]) -> tuple[list[dict], list[dict]]:
     data = doc.model_dump(by_alias=True)
-    nodes = {n["id"]: deepcopy(n) for n in data["parts"] + data["deformers"]}
+    nodes = {n["id"]: deepcopy(n) for n in data["parts"] + data["deformers"] + data["bones"]}
     for parameter in data["parameters"]:
         value = values.get(parameter["id"], parameter["default"])
         for binding in parameter["bindings"]:
             target = nodes[binding["targetId"]]
             base = sample(binding["keys"], parameter["default"])
             posed = sample(binding["keys"], value)
-            for field in ("rotation", "scale", "opacity"):
+            for field in ("rotation", "scale", "opacity", "offsetX", "offsetY"):
                 if field in posed:
                     target[field] += posed[field] - base[field]
             if "points" in posed:
@@ -114,12 +114,30 @@ def evaluate(doc: CharacterDocument, values: dict[str, float]) -> tuple[list[dic
             parent = d["parentId"]
         return {"x": x, "y": y}
 
+    def skin(point: dict, weights: list[dict]) -> dict:
+        blended_x = blended_y = 0.0
+        for influence in weights:
+            x, y = point["x"], point["y"]
+            parent = influence["boneId"]
+            while parent:
+                bone = nodes[parent]
+                angle = math.radians(bone["rotation"])
+                dx, dy = (x - bone["x"]) * bone["scale"], (y - bone["y"]) * bone["scale"]
+                x = bone["x"] + dx * math.cos(angle) - dy * math.sin(angle) + bone["offsetX"]
+                y = bone["y"] + dx * math.sin(angle) + dy * math.cos(angle) + bone["offsetY"]
+                parent = bone["parentId"]
+            blended_x += x * influence["weight"]
+            blended_y += y * influence["weight"]
+        return {"x": blended_x, "y": blended_y}
+
     parts = []
     for source in data["parts"]:
         part = nodes[source["id"]]
         part["worldVertices"] = [
+            skin({"x": p["x"] + part["x"], "y": p["y"] + part["y"]}, part["skinWeights"][i])
+            if part["skinWeights"] is not None else
             transform({"x": p["x"] + part["x"], "y": p["y"] + part["y"]}, part["parentId"])
-            for p in part["vertices"]
+            for i, p in enumerate(part["vertices"])
         ]
         parts.append(part)
     return sorted(parts, key=lambda p: p["order"]), [nodes[d["id"]] for d in data["deformers"]]
