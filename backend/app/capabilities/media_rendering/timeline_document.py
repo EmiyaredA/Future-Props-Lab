@@ -87,6 +87,7 @@ class VideoEditorTransition(BaseModel):
         "crossfade",
         "fade-black",
         "fade-white",
+        "wipe",
         "wipe-left",
         "wipe-right",
         "zoom",
@@ -95,23 +96,40 @@ class VideoEditorTransition(BaseModel):
         "audio-crossfade",
     ]
     duration_us: int = Field(alias="durationUs", ge=0, le=10_000_000)
-    direction: Literal["left", "right", "up", "down", "in", "out"] = "in"
+    direction: Literal["left", "right", "up", "down", "in", "out"] = "left"
     easing: Literal["linear", "ease-in", "ease-out", "ease-in-out"] = "linear"
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_effect(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        normalized = dict(value)
+        kind = normalized.get("kind")
+        if kind in {"wipe-left", "wipe-right"}:
+            normalized["kind"] = "wipe"
+            if normalized.get("direction") not in {"left", "right", "up", "down"}:
+                normalized["direction"] = "left" if kind == "wipe-left" else "right"
+        elif normalized.get("direction") in {"in", "out"}:
+            normalized["direction"] = "left"
+        return normalized
 
 
 class VideoEditorTimelineTransition(BaseModel):
-    """Seam transition between two adjacent visual clips."""
+    """Seam transition between visual clips or overlapping audio clips."""
 
     id: str = Field(min_length=1, max_length=64)
     kind: Literal[
         "crossfade",
         "fade-black",
         "fade-white",
+        "wipe",
         "wipe-left",
         "wipe-right",
         "zoom",
         "blur",
         "flash",
+        "audio-crossfade",
     ]
     duration_us: int = Field(alias="durationUs", gt=0, le=10_000_000)
     placement: Literal["between"] = "between"
@@ -126,6 +144,21 @@ class VideoEditorTimelineTransition(BaseModel):
         "out",
     ] = "left"
     easing: Literal["linear", "ease-in", "ease-out", "ease-in-out"] = "linear"
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_effect(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        normalized = dict(value)
+        kind = normalized.get("kind")
+        if kind in {"wipe-left", "wipe-right"}:
+            normalized["kind"] = "wipe"
+            if normalized.get("direction") not in {"left", "right", "up", "down"}:
+                normalized["direction"] = "left" if kind == "wipe-left" else "right"
+        elif normalized.get("direction") in {"in", "out"}:
+            normalized["direction"] = "left"
+        return normalized
 
     @model_validator(mode="after")
     def validate_clip_refs(self) -> VideoEditorTimelineTransition:
@@ -221,12 +254,38 @@ class VideoEditorTimelineDocument(BaseModel):
     transitions: list[VideoEditorTimelineTransition] = Field(default_factory=list)
     tracks: list[VideoEditorTrack] = Field(default_factory=list)
 
+    @model_validator(mode="after")
+    def normalize_audio_seam_durations(self) -> VideoEditorTimelineDocument:
+        clips_by_id = {
+            clip.id: (track, clip) for track in self.tracks for clip in track.clips
+        }
+        for transition in self.transitions:
+            if transition.kind != "audio-crossfade":
+                continue
+            left_item = clips_by_id.get(transition.from_clip_id)
+            right_item = clips_by_id.get(transition.to_clip_id)
+            if not left_item or not right_item:
+                continue
+            left_track, left = left_item
+            right_track, right = right_item
+            if left_track.id != right_track.id or left_track.kind != "audio":
+                continue
+            overlap_start = max(left.timeline_start_us, right.timeline_start_us)
+            overlap_end = min(
+                left.timeline_start_us + left.duration_us,
+                right.timeline_start_us + right.duration_us,
+            )
+            if overlap_end > overlap_start:
+                transition.duration_us = overlap_end - overlap_start
+        return self
+
 
 _CLIP_EDGE_KINDS = {
     "cut",
     "crossfade",
     "fade-black",
     "fade-white",
+    "wipe",
     "wipe-left",
     "wipe-right",
     "zoom",

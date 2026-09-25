@@ -26,6 +26,7 @@ import { fetchApiBlob } from "@platform/api/client";
 import { FrameExportDialog } from "@shared/ui/FrameExportDialog";
 import { exactFramePath, exactFrameUrl, uploadVideoEditorAsset } from "./api";
 import {
+  audioSeamGainAt,
   clipOpacityAt,
   clipAudioGainAt,
   clipPropertyAt,
@@ -41,7 +42,7 @@ import {
   type VideoProxyCrop,
 } from "./previewGeometry";
 import {
-  mergeFlashOpacity,
+  mergeTransitionOverlay,
   previewVisualLayers,
 } from "./previewTransitions";
 import type {
@@ -289,11 +290,15 @@ function buildPreviewAudioChains(
 function ProxyAudioChain({
   source,
   clips,
+  transitions,
+  clipsById,
   playheadUs,
   playing,
 }: {
   source: string;
   clips: VideoEditorClip[];
+  transitions: VideoEditorTimeline["document"]["transitions"];
+  clipsById: Map<string, VideoEditorClip>;
   playheadUs: number;
   playing: boolean;
 }) {
@@ -326,9 +331,10 @@ function ProxyAudioChain({
     node.volume = Math.max(
       0,
       Math.min(1, clipPropertyAt(clip, "volume", localUs, clip.volume)) *
-        clipAudioGainAt(clip, localUs),
+        clipAudioGainAt(clip, localUs) *
+        audioSeamGainAt(clip, playheadUs, transitions ?? [], clipsById),
     );
-  }, [clip, playheadUs, playing]);
+  }, [clip, clipsById, playheadUs, playing, transitions]);
   useEffect(() => {
     const node = audio.current;
     if (!node) return;
@@ -410,6 +416,10 @@ export function VideoEditorPreview({
       (timeline.document.tracks ?? []).flatMap((track) => track.clips ?? []),
     [timeline.document.tracks],
   );
+  const allClipsById = useMemo(
+    () => new Map(allClips.map((clip) => [clip.id, clip])),
+    [allClips],
+  );
   const visualLayers = useMemo(
     () =>
       previewVisualLayers(
@@ -419,7 +429,7 @@ export function VideoEditorPreview({
       ),
     [playheadUs, timeline.document.tracks, timeline.document.transitions],
   );
-  const flashOpacity = mergeFlashOpacity(visualLayers);
+  const transitionOverlay = mergeTransitionOverlay(visualLayers);
   const audioChains = useMemo(
     () => buildPreviewAudioChains(timeline),
     [timeline],
@@ -751,10 +761,13 @@ export function VideoEditorPreview({
               </div>
             );
           })}
-          {flashOpacity > 0 ? (
+          {transitionOverlay.opacity > 0 ? (
             <div
               className="ve-transition-flash"
-              style={{ opacity: flashOpacity }}
+              style={{
+                backgroundColor: transitionOverlay.color,
+                opacity: transitionOverlay.opacity,
+              }}
               aria-hidden
             />
           ) : null}
@@ -817,6 +830,8 @@ export function VideoEditorPreview({
                 key={chain.id}
                 source={asset.proxyUrl}
                 clips={chain.clips}
+                transitions={timeline.document.transitions}
+                clipsById={allClipsById}
                 playheadUs={playheadUs}
                 playing={playing}
               />

@@ -485,6 +485,67 @@ def _volume_expression(clip: VideoEditorClip, clip_local_start_us: int) -> str:
     return "".join(values) + f"{keys[-1].value}" + ")" * len(values)
 
 
+def _easing_expression(value: str, easing: str) -> str:
+    if easing == "ease-in":
+        return f"({value})*({value})"
+    if easing == "ease-out":
+        return f"1-(1-({value}))*(1-({value}))"
+    if easing == "ease-in-out":
+        return f"({value})*({value})*(3-2*({value}))"
+    return value
+
+
+def _audio_transition_gain_expression(
+    document: VideoEditorTimelineDocument,
+    clip: VideoEditorClip,
+    intersection_start_us: int,
+) -> str:
+    """Return the clip-edge and audio-seam gain at filter-local time ``t``."""
+    gains: list[str] = []
+    local_start_s = (intersection_start_us - clip.timeline_start_us) / 1_000_000
+    if (
+        clip.transition_in
+        and clip.transition_in.kind == "audio-crossfade"
+        and clip.transition_in.duration_us > 0
+    ):
+        duration_s = clip.transition_in.duration_us / 1_000_000
+        ratio = f"max(0,min(1,(t+{local_start_s:.6f})/{duration_s:.6f}))"
+        gains.append(_easing_expression(ratio, clip.transition_in.easing))
+    if (
+        clip.transition_out
+        and clip.transition_out.kind == "audio-crossfade"
+        and clip.transition_out.duration_us > 0
+    ):
+        duration_s = clip.transition_out.duration_us / 1_000_000
+        fade_start_s = (clip.duration_us - clip.transition_out.duration_us) / 1_000_000
+        ratio = (
+            f"max(0,min(1,(t+{local_start_s:.6f}-{fade_start_s:.6f})/"
+            f"{duration_s:.6f}))"
+        )
+        gains.append(f"1-({_easing_expression(ratio, clip.transition_out.easing)})")
+
+    clips_by_id = {
+        item.id: item for track in document.tracks if track.kind == "audio" for item in track.clips
+    }
+    for transition in document.transitions:
+        if transition.kind != "audio-crossfade" or clip.id not in {
+            transition.from_clip_id,
+            transition.to_clip_id,
+        }:
+            continue
+        left = clips_by_id.get(transition.from_clip_id)
+        right = clips_by_id.get(transition.to_clip_id)
+        if left is None or right is None:
+            continue
+        overlap_start_us = max(left.timeline_start_us, right.timeline_start_us)
+        duration_s = transition.duration_us / 1_000_000
+        offset_s = (intersection_start_us - overlap_start_us) / 1_000_000
+        ratio = f"max(0,min(1,(t+{offset_s:.6f})/{duration_s:.6f}))"
+        eased = _easing_expression(ratio, transition.easing)
+        gains.append(eased if clip.id == transition.to_clip_id else f"1-({eased})")
+    return "*".join(f"({gain})" for gain in gains) or "1"
+
+
 def _mux_audio(
     document: VideoEditorTimelineDocument,
     asset_paths: dict[str, Path],
@@ -530,27 +591,14 @@ def _mux_audio(
         args.extend(input_args)
         delay_ms = round((intersection_start - start_us) / 1000)
         volume = _volume_expression(clip, intersection_start - clip.timeline_start_us)
+        transition_gain = _audio_transition_gain_expression(document, clip, intersection_start)
         chain = [
             f"[{index}:a]atrim=start=0:end={source_duration:.6f}",
             "asetpts=PTS-STARTPTS",
             *audio_speed_filters(playback_rate),
             "aresample=48000",
-            f"volume='{volume}':eval=frame",
+            f"volume='({volume})*({transition_gain})':eval=frame",
         ]
-        if (
-            clip.transition_in
-            and clip.transition_in.kind == "audio-crossfade"
-            and clip.transition_in.duration_us > 0
-        ):
-            chain.append(f"afade=t=in:st=0:d={clip.transition_in.duration_us / 1_000_000:.6f}")
-        if (
-            clip.transition_out
-            and clip.transition_out.kind == "audio-crossfade"
-            and clip.transition_out.duration_us > 0
-        ):
-            fade_start = max(0, clip_duration - clip.transition_out.duration_us / 1_000_000)
-            fade_duration = clip.transition_out.duration_us / 1_000_000
-            chain.append(f"afade=t=out:st={fade_start:.6f}:d={fade_duration:.6f}")
         chain.append(f"adelay={delay_ms}:all=1[a{index}]")
         filters.append(",".join(chain))
         labels.append(f"[a{index}]")

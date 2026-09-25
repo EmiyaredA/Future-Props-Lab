@@ -14,6 +14,7 @@ from app.capabilities.media_rendering.text_layer import render_text_layer
 from app.capabilities.media_rendering.timeline_document import (
     VideoEditorClip,
     VideoEditorTimelineDocument,
+    VideoEditorTimelineTransition,
 )
 
 
@@ -67,10 +68,26 @@ def clip_opacity(clip: VideoEditorClip, local_us: int) -> float:
 @dataclass(frozen=True)
 class ClipEdgeVisual:
     visibility: float
+    opacity: float
     kind: str
     progress: float
     direction: str
-    flash_alpha: int
+    overlay_color: tuple[int, int, int] | None
+    overlay_alpha: int
+
+
+def _edge_overlay(kind: str, visibility: float) -> tuple[tuple[int, int, int] | None, int]:
+    if kind == "fade-black":
+        return ((0, 0, 0), round((1 - visibility) * 255))
+    if kind == "fade-white":
+        return ((255, 255, 255), round((1 - visibility) * 255))
+    if kind == "flash" and visibility < 0.55:
+        return ((255, 255, 255), round((1 - visibility / 0.55) * 235))
+    return (None, 0)
+
+
+def _edge_opacity(kind: str, visibility: float) -> float:
+    return 1 if kind in {"fade-black", "fade-white", "wipe"} else visibility
 
 
 def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | None:
@@ -83,17 +100,15 @@ def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | N
     ):
         edge = clip.transition_in
         progress = _transition_progress(local_us, edge.duration_us, edge.easing)
-        flash = (
-            round((1 - progress / 0.55) * 235)
-            if edge.kind == "flash" and progress < 0.55
-            else 0
-        )
+        overlay_color, overlay_alpha = _edge_overlay(edge.kind, progress)
         return ClipEdgeVisual(
             visibility=progress,
+            opacity=_edge_opacity(edge.kind, progress),
             kind=edge.kind,
             progress=progress,
             direction=edge.direction,
-            flash_alpha=flash,
+            overlay_color=overlay_color,
+            overlay_alpha=overlay_alpha,
         )
     if (
         clip.transition_out
@@ -107,17 +122,15 @@ def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | N
                 edge.duration_us - remaining, edge.duration_us, edge.easing
             )
             visibility = 1 - through
-            flash = (
-                round((1 - visibility / 0.55) * 235)
-                if edge.kind == "flash" and visibility < 0.55
-                else 0
-            )
+            overlay_color, overlay_alpha = _edge_overlay(edge.kind, visibility)
             return ClipEdgeVisual(
                 visibility=visibility,
+                opacity=_edge_opacity(edge.kind, visibility),
                 kind=edge.kind,
                 progress=visibility,
                 direction=edge.direction,
-                flash_alpha=flash,
+                overlay_color=overlay_color,
+                overlay_alpha=overlay_alpha,
             )
     return None
 
@@ -148,6 +161,16 @@ def visual_gaps(document: VideoEditorTimelineDocument) -> list[tuple[int, int]]:
 class FrameSource:
     image_for_clip: Callable[[VideoEditorClip, int], Image.Image | None]
     font_for_clip: Callable[[VideoEditorClip], Path | None]
+
+
+def _media_local_us(
+    clip: VideoEditorClip, time_us: int, transitions: list[VideoEditorTimelineTransition]
+) -> int:
+    incoming = next((item for item in transitions if item.to_clip_id == clip.id), None)
+    offset = max(1, incoming.duration_us // 2) if incoming and incoming.kind != "flash" else 0
+    # Keep the incoming handle offset through subsequent outgoing transitions;
+    # hold the last frame when the media range is spent.
+    return max(0, min(clip.duration_us - 1, time_us - clip.timeline_start_us + offset))
 
 
 class TimelineFrameRenderer:
@@ -181,24 +204,35 @@ class TimelineFrameRenderer:
         )
         for track in tracks:
             clips = sorted(track.clips, key=lambda item: item.timeline_start_us)
+            clips_by_id = {clip.id: clip for clip in clips}
             transitions = [
                 item
                 for item in self.document.transitions
                 if item.placement == "between"
                 and item.from_clip_id
                 and item.to_clip_id
-                and any(clip.id == item.from_clip_id for clip in clips)
-                and any(clip.id == item.to_clip_id for clip in clips)
+                and item.from_clip_id in clips_by_id
+                and item.to_clip_id in clips_by_id
+            ]
+            active_transitions = [
+                item
+                for item in transitions
+                if clips_by_id[item.to_clip_id].timeline_start_us - max(1, item.duration_us // 2)
+                <= time_us
+                < clips_by_id[item.to_clip_id].timeline_start_us + max(1, item.duration_us // 2)
             ]
             handled_between: set[str] = set()
             seam_drawn_clips: set[str] = set()
+
             for clip in clips:
+                if clip.id in seam_drawn_clips:
+                    continue
                 local_us = time_us - clip.timeline_start_us
                 between = next(
                     (
                         item
-                        for item in transitions
-                        if item.from_clip_id == clip.id or item.to_clip_id == clip.id
+                        for item in active_transitions
+                        if (item.from_clip_id == clip.id or item.to_clip_id == clip.id)
                     ),
                     None,
                 )
@@ -222,12 +256,15 @@ class TimelineFrameRenderer:
                             if between.kind == "flash":
                                 # 前半：结尾闪白出；后半：开头闪白入（入场从切点起只播一次）
                                 if time_us < seam_us:
-                                    left_local_us = max(0, time_us - left.timeline_start_us)
-                                    left_local_us = min(left_local_us, left.duration_us - 1)
+                                    left_local_us = _media_local_us(left, time_us, transitions)
                                     left_layer = self._layer(left, left_local_us)
                                     if left_layer is not None:
                                         self._composite_with_edge(
-                                            canvas, left_layer, left, left_local_us
+                                            canvas,
+                                            left_layer,
+                                            left,
+                                            left_local_us,
+                                            edge_local_us=time_us - left.timeline_start_us,
                                         )
                                     first = max(
                                         0.0,
@@ -243,10 +280,7 @@ class TimelineFrameRenderer:
                                     )
                                     canvas.alpha_composite(flash)
                                 else:
-                                    right_local_us = max(0, time_us - seam_us)
-                                    right_local_us = min(
-                                        right_local_us, max(0, right.duration_us - 1)
-                                    )
+                                    right_local_us = _media_local_us(right, time_us, transitions)
                                     right_layer = self._layer(right, right_local_us)
                                     if right_layer is not None:
                                         self._composite_with_edge(
@@ -267,14 +301,40 @@ class TimelineFrameRenderer:
                                     canvas.alpha_composite(flash)
                                 continue
 
-                            # Crossfade / wipe / zoom / blur: blend across the centered window.
-                            if time_us < seam_us:
-                                left_local_us = max(0, time_us - left.timeline_start_us)
-                                left_local_us = min(left_local_us, left.duration_us - 1)
-                            else:
-                                left_local_us = max(0, left.duration_us - 1)
-                            right_local_us = max(0, time_us - start_us)
-                            right_local_us = min(right_local_us, max(0, right.duration_us - 1))
+                            if between.kind in {"fade-black", "fade-white"}:
+                                color = (
+                                    (0, 0, 0)
+                                    if between.kind == "fade-black"
+                                    else (255, 255, 255)
+                                )
+                                active = left if progress < 0.5 else right
+                                active_local_us = _media_local_us(active, time_us, transitions)
+                                active_layer = self._layer(active, active_local_us)
+                                if active_layer is not None:
+                                    self._composite_with_edge(
+                                        canvas,
+                                        active_layer,
+                                        active,
+                                        active_local_us,
+                                        edge_local_us=max(
+                                            0, time_us - active.timeline_start_us
+                                        ),
+                                    )
+                                overlay_progress = (
+                                    progress * 2 if progress < 0.5 else (1 - progress) * 2
+                                )
+                                canvas.alpha_composite(
+                                    Image.new(
+                                        "RGBA",
+                                        canvas.size,
+                                        (*color, round(overlay_progress * 255)),
+                                    )
+                                )
+                                continue
+
+                            # Crossfade / wipe / zoom / blur across the centered window.
+                            left_local_us = _media_local_us(left, time_us, transitions)
+                            right_local_us = _media_local_us(right, time_us, transitions)
                             left_layer = self._layer(left, left_local_us)
                             right_layer = self._layer(right, right_local_us)
                             left_edge_local = max(
@@ -283,22 +343,36 @@ class TimelineFrameRenderer:
                             )
                             right_edge_local = max(0, time_us - right.timeline_start_us)
                             if left_layer is not None:
+                                left_opacity = 1 if between.kind == "wipe" else 1 - progress
                                 self._composite_with_edge(
                                     canvas,
                                     left_layer,
                                     left,
                                     left_local_us,
-                                    opacity_multiplier=1 - progress,
+                                    opacity_multiplier=left_opacity,
+                                    transition_kind=(
+                                        between.kind if between.kind in {"zoom", "blur"} else None
+                                    ),
+                                    transition_progress=(
+                                        1 - progress
+                                        if between.kind in {"zoom", "blur"}
+                                        else None
+                                    ),
                                     edge_local_us=left_edge_local,
                                 )
                             if right_layer is not None:
+                                right_opacity = 1 if between.kind == "wipe" else progress
                                 self._composite_with_edge(
                                     canvas,
                                     right_layer,
                                     right,
                                     right_local_us,
-                                    opacity_multiplier=progress,
-                                    transition_kind=between.kind,
+                                    opacity_multiplier=right_opacity,
+                                    transition_kind=(
+                                        between.kind
+                                        if between.kind in {"wipe", "zoom", "blur"}
+                                        else None
+                                    ),
                                     transition_progress=progress,
                                     direction=between.direction,
                                     edge_local_us=right_edge_local,
@@ -310,29 +384,13 @@ class TimelineFrameRenderer:
                     continue
                 if not 0 <= local_us < clip.duration_us:
                     continue
-                # After a centered between flash/crossfade, keep playing the incoming
-                # clip from the media time already advanced during the second half.
-                incoming_between = next(
-                    (
-                        item
-                        for item in transitions
-                        if item.to_clip_id == clip.id
-                    ),
-                    None,
-                )
-                draw_local_us = local_us
-                if incoming_between and incoming_between.kind != "flash":
-                    half_us = max(1, incoming_between.duration_us // 2)
-                    seam_us = clip.timeline_start_us
-                    if time_us >= seam_us + half_us:
-                        # Continuity: media time was (time - (seam - half)) during blend.
-                        draw_local_us = time_us - (seam_us - half_us)
-                        if draw_local_us >= clip.duration_us:
-                            continue
+                draw_local_us = _media_local_us(clip, time_us, transitions)
                 layer = self._layer(clip, draw_local_us)
                 if layer is None:
                     continue
-                self._composite_with_edge(canvas, layer, clip, draw_local_us)
+                self._composite_with_edge(
+                    canvas, layer, clip, draw_local_us, edge_local_us=local_us
+                )
         if size and canvas.size != size:
             canvas = canvas.resize(size, Image.Resampling.LANCZOS)
         return canvas.convert("RGB")
@@ -414,9 +472,7 @@ class TimelineFrameRenderer:
         edge_local_us: int | None = None,
     ) -> None:
         """Composite a layer, multiplying any active clip-local edge transition."""
-        edge = clip_edge_visual(
-            clip, local_us if edge_local_us is None else edge_local_us
-        )
+        edge = clip_edge_visual(clip, local_us if edge_local_us is None else edge_local_us)
         if edge is None:
             self._composite(
                 canvas,
@@ -435,20 +491,20 @@ class TimelineFrameRenderer:
             layer,
             clip,
             local_us,
-            opacity_multiplier=opacity_multiplier * edge.visibility,
+            opacity_multiplier=opacity_multiplier * edge.opacity,
             transition_kind=transition_kind or edge.kind,
             transition_progress=(
                 transition_progress if transition_progress is not None else edge.progress
             ),
             direction=direction if transition_kind else edge.direction,
         )
-        if edge.flash_alpha:
-            flash = Image.new(
+        if edge.overlay_color and edge.overlay_alpha:
+            overlay = Image.new(
                 "RGBA",
                 canvas.size,
-                (255, 255, 255, edge.flash_alpha),
+                (*edge.overlay_color, edge.overlay_alpha),
             )
-            canvas.alpha_composite(flash)
+            canvas.alpha_composite(overlay)
 
     def _composite(
         self,
@@ -496,7 +552,7 @@ class TimelineFrameRenderer:
         scale_x = property_at(clip, "scaleX", local_us, transform.scale_x)
         scale_y = property_at(clip, "scaleY", local_us, transform.scale_y)
         if transition_kind == "zoom" and transition_progress is not None:
-            zoom = 1 + 0.22 * transition_progress
+            zoom = 1 + 0.22 * (1 - transition_progress)
             scale_x *= zoom
             scale_y *= zoom
         width = max(1, round(layer.width * scale_x))
@@ -510,7 +566,10 @@ class TimelineFrameRenderer:
             transform.anchor,
             grounded_bottom=(layer.height * ground_ratio if ground_ratio is not None else None),
         )
-        if transition_kind in {"wipe-left", "wipe-right"} and transition_progress is not None:
+        if (
+            transition_kind in {"wipe", "wipe-left", "wipe-right"}
+            and transition_progress is not None
+        ):
             reveal = max(0.0, min(1.0, transition_progress))
             if direction in {"right", "up", "down"}:
                 reveal = 1 - reveal

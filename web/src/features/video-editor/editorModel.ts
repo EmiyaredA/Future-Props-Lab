@@ -3,6 +3,7 @@ import type {
   VideoEditorClip,
   VideoEditorOperation,
   VideoEditorTimeline,
+  VideoEditorTimelineTransition,
   VideoEditorTrack,
 } from "./types";
 
@@ -77,16 +78,58 @@ export function clipAudioGainAt(clip: VideoEditorClip, localUs: number) {
     clip.transitionIn?.kind === "audio-crossfade" &&
     clip.transitionIn.durationUs > 0
   ) {
-    gain *= Math.min(1, Math.max(0, localUs) / clip.transitionIn.durationUs);
+    gain *= ease(
+      Math.min(1, Math.max(0, localUs) / clip.transitionIn.durationUs),
+      clip.transitionIn.easing ?? "linear",
+    );
   }
   if (
     clip.transitionOut?.kind === "audio-crossfade" &&
     clip.transitionOut.durationUs > 0
   ) {
-    gain *= Math.min(
-      1,
-      Math.max(0, clip.durationUs - localUs) / clip.transitionOut.durationUs,
+    gain *= ease(
+      Math.min(
+        1,
+        Math.max(0, clip.durationUs - localUs) /
+          clip.transitionOut.durationUs,
+      ),
+      clip.transitionOut.easing ?? "linear",
     );
+  }
+  return Math.max(0, Math.min(1, gain));
+}
+
+/** Gain contributed by overlap transitions on standalone audio tracks. */
+export function audioSeamGainAt(
+  clip: VideoEditorClip,
+  playheadUs: number,
+  transitions: VideoEditorTimelineTransition[],
+  clipsById: Map<string, VideoEditorClip>,
+) {
+  let gain = 1;
+  for (const transition of transitions) {
+    if (transition.kind !== "audio-crossfade") continue;
+    if (
+      transition.fromClipId !== clip.id &&
+      transition.toClipId !== clip.id
+    )
+      continue;
+    const from = clipsById.get(transition.fromClipId);
+    const to = clipsById.get(transition.toClipId);
+    if (!from || !to || from.trackId !== to.trackId) continue;
+    const startUs = to.timelineStartUs;
+    const endUs = Math.min(
+      from.timelineStartUs + from.durationUs,
+      to.timelineStartUs + to.durationUs,
+    );
+    if (endUs <= startUs || playheadUs < startUs || playheadUs > endUs) {
+      continue;
+    }
+    const progress = ease(
+      (playheadUs - startUs) / Math.max(1, endUs - startUs),
+      transition.easing,
+    );
+    gain *= transition.fromClipId === clip.id ? 1 - progress : progress;
   }
   return Math.max(0, Math.min(1, gain));
 }

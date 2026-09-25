@@ -541,15 +541,69 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
             raise VideoEditorValidationError("接缝转场引用无效", code="invalid_transition_ref")
         from_track, left = from_clip
         to_track, right = to_clip
-        if from_track["id"] != to_track["id"] or from_track["kind"] not in {"visual", "mixed"}:
+        if transition["kind"] == "audio-crossfade":
+            if (
+                from_track["id"] != to_track["id"]
+                or from_track["kind"] != "audio"
+                or left["kind"] != "audio"
+                or right["kind"] != "audio"
+            ):
+                raise VideoEditorValidationError(
+                    "音频接缝必须位于同一音频轨", code="invalid_transition_track"
+                )
+            ordered = sorted(
+                from_track["clips"], key=lambda clip: (clip["timelineStartUs"], clip["id"])
+            )
+            left_index = next(
+                (index for index, clip in enumerate(ordered) if clip["id"] == left["id"]),
+                -1,
+            )
+            if left_index < 0 or left_index + 1 >= len(ordered) or ordered[left_index + 1][
+                "id"
+            ] != right["id"]:
+                raise VideoEditorValidationError(
+                    "音频接缝必须连接时间顺序相邻的片段",
+                    code="transition_not_adjacent",
+                )
+            if (
+                left["timelineStartUs"] >= right["timelineStartUs"]
+                or left["timelineStartUs"] + left["durationUs"]
+                > right["timelineStartUs"] + right["durationUs"]
+            ):
+                raise VideoEditorValidationError(
+                    "音频交叉淡化需要前一片段先开始并先结束",
+                    code="invalid_transition_order",
+                )
+            overlap_start = max(left["timelineStartUs"], right["timelineStartUs"])
+            overlap_end = min(
+                left["timelineStartUs"] + left["durationUs"],
+                right["timelineStartUs"] + right["durationUs"],
+            )
+            if overlap_end <= overlap_start:
+                raise VideoEditorValidationError(
+                    "音频交叉淡化需要两个片段重叠",
+                    code="transition_not_overlapping",
+                )
+            if transition["durationUs"] != overlap_end - overlap_start:
+                raise VideoEditorValidationError(
+                    "音频交叉淡化时长必须等于重叠区",
+                    code="invalid_transition_duration",
+                )
+        elif from_track["id"] != to_track["id"] or from_track["kind"] not in {
+            "visual",
+            "mixed",
+        }:
             raise VideoEditorValidationError(
                 "接缝转场必须位于同一视觉轨", code="invalid_transition_track"
             )
-        if left["kind"] not in {"video", "image"} or right["kind"] not in {"video", "image"}:
+        elif left["kind"] not in {"video", "image"} or right["kind"] not in {
+            "video",
+            "image",
+        }:
             raise VideoEditorValidationError(
                 "接缝转场必须绑定视觉 Clip", code="invalid_transition_track"
             )
-        if left["timelineStartUs"] + left["durationUs"] != right["timelineStartUs"]:
+        elif left["timelineStartUs"] + left["durationUs"] != right["timelineStartUs"]:
             raise VideoEditorValidationError(
                 "接缝转场必须连接相邻 Clip", code="transition_not_adjacent"
             )
@@ -559,7 +613,9 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                 "同一接缝不能重复添加转场", code="duplicate_transition_edge"
             )
         transition_boundaries.add(boundary)
-        if transition["durationUs"] > min(left["durationUs"], right["durationUs"]):
+        if transition["kind"] != "audio-crossfade" and transition["durationUs"] > min(
+            left["durationUs"], right["durationUs"]
+        ):
             raise VideoEditorValidationError(
                 "转场长度不能超过相邻 Clip", code="transition_too_long"
             )

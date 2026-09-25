@@ -10,7 +10,8 @@ export type PreviewTransitionEffect = {
   scaleMultiplier: number;
   blurPx: number;
   clipPath?: string;
-  flashOpacity: number;
+  overlayColor?: "#000000" | "#ffffff";
+  overlayOpacity: number;
   /** Override source local time (seam partners / handle continuity). */
   forceLocalUs?: number;
 };
@@ -50,28 +51,49 @@ function wipeClipPath(
 
 function effectForVisualKind(
   kind: string,
-  progress: number,
+  visibility: number,
   direction: string,
-  flashWhen: "early" | "late" | "none",
+  pulse: boolean,
 ): PreviewTransitionEffect {
+  const normalizedKind =
+    kind === "wipe-left" || kind === "wipe-right" ? "wipe" : kind;
   const effect: PreviewTransitionEffect = {
-    opacityMultiplier: progress,
+    opacityMultiplier:
+      normalizedKind === "wipe" ||
+      normalizedKind === "fade-black" ||
+      normalizedKind === "fade-white"
+        ? 1
+        : visibility,
     scaleMultiplier: 1,
     blurPx: 0,
-    flashOpacity: 0,
+    overlayOpacity: 0,
   };
-  if (kind === "zoom") effect.scaleMultiplier = 1 + 0.22 * progress;
-  if (kind === "blur")
-    effect.blurPx = Math.max(0, Math.round((1 - progress) * 10));
-  if (kind === "wipe-left" || kind === "wipe-right") {
+  if (normalizedKind === "zoom") {
+    effect.scaleMultiplier = 1 + 0.22 * (1 - visibility);
+  }
+  if (normalizedKind === "blur") {
+    effect.blurPx = Math.max(0, (1 - visibility) * 10);
+  }
+  if (normalizedKind === "wipe") {
+    const legacyDirection =
+      kind === "wipe-right"
+        ? "right"
+        : kind === "wipe-left"
+          ? "left"
+          : direction;
     effect.clipPath = wipeClipPath(
-      progress,
-      direction as VideoEditorTimelineTransition["direction"],
+      visibility,
+      legacyDirection as VideoEditorTimelineTransition["direction"],
     );
   }
-  if (kind === "flash" && flashWhen === "early") {
-    const fade = Math.max(0, 1 - progress / 0.55);
-    effect.flashOpacity = fade * 0.92;
+  if (normalizedKind === "fade-black" || normalizedKind === "fade-white") {
+    effect.overlayColor =
+      normalizedKind === "fade-black" ? "#000000" : "#ffffff";
+    effect.overlayOpacity = 1 - visibility;
+  }
+  if (normalizedKind === "flash" && pulse) {
+    effect.overlayColor = "#ffffff";
+    effect.overlayOpacity = Math.max(0, 1 - visibility / 0.55) * 0.92;
   }
   return effect;
 }
@@ -80,19 +102,21 @@ const identityEffect = (): PreviewTransitionEffect => ({
   opacityMultiplier: 1,
   scaleMultiplier: 1,
   blurPx: 0,
-  flashOpacity: 0,
+  overlayOpacity: 0,
 });
 
 function multiplyEffects(
   base: PreviewTransitionEffect,
   extra: PreviewTransitionEffect,
 ): PreviewTransitionEffect {
+  const overlay = extra.overlayOpacity >= base.overlayOpacity ? extra : base;
   return {
     opacityMultiplier: base.opacityMultiplier * extra.opacityMultiplier,
     scaleMultiplier: base.scaleMultiplier * extra.scaleMultiplier,
     blurPx: Math.max(base.blurPx, extra.blurPx),
     clipPath: extra.clipPath ?? base.clipPath,
-    flashOpacity: Math.max(base.flashOpacity, extra.flashOpacity),
+    overlayColor: overlay.overlayColor,
+    overlayOpacity: overlay.overlayOpacity,
     forceLocalUs: base.forceLocalUs ?? extra.forceLocalUs,
   };
 }
@@ -110,16 +134,16 @@ export function clipEdgePreviewEffect(
     localUs >= 0 &&
     localUs < transitionIn.durationUs
   ) {
-    const progress = transitionProgress(
+    const visibility = transitionProgress(
       localUs,
       transitionIn.durationUs,
       transitionIn.easing ?? "linear",
     );
     return effectForVisualKind(
       transitionIn.kind,
-      progress,
-      transitionIn.direction ?? "in",
-      "early",
+      visibility,
+      transitionIn.direction ?? "left",
+      true,
     );
   }
   const transitionOut = clip.transitionOut;
@@ -135,12 +159,11 @@ export function clipEdgePreviewEffect(
         transitionOut.durationUs,
         transitionOut.easing ?? "linear",
       );
-      const visibility = 1 - through;
       return effectForVisualKind(
         transitionOut.kind,
-        visibility,
-        transitionOut.direction ?? "out",
-        "early",
+        1 - through,
+        transitionOut.direction ?? "left",
+        true,
       );
     }
   }
@@ -156,6 +179,50 @@ function seamWindow(between: VideoEditorTimelineTransition, seamUs: number) {
   };
 }
 
+function activeSeamForClip(
+  clip: VideoEditorClip,
+  playheadUs: number,
+  transitions: VideoEditorTimelineTransition[],
+  clipsById: Map<string, VideoEditorClip>,
+) {
+  return transitions.find((item) => {
+    if (
+      item.kind === "audio-crossfade" ||
+      item.placement !== "between" ||
+      (item.fromClipId !== clip.id && item.toClipId !== clip.id)
+    )
+      return false;
+    const left = clipsById.get(item.fromClipId ?? "");
+    const right = clipsById.get(item.toClipId ?? "");
+    if (!left || !right || left.trackId !== right.trackId) return false;
+    const { startUs, endUs } = seamWindow(item, right.timelineStartUs);
+    return startUs <= playheadUs && playheadUs < endUs;
+  });
+}
+
+function mediaLocalUs(
+  clip: VideoEditorClip,
+  playheadUs: number,
+  transitions: VideoEditorTimelineTransition[],
+  clipsById: Map<string, VideoEditorClip>,
+) {
+  const incoming = transitions.find(
+    (item) =>
+      item.kind !== "audio-crossfade" &&
+      item.placement === "between" &&
+      item.toClipId === clip.id &&
+      clipsById.get(item.fromClipId ?? "")?.trackId === clip.trackId,
+  );
+  const offset =
+    incoming && incoming.kind !== "flash"
+      ? Math.max(1, Math.floor(incoming.durationUs / 2))
+      : 0;
+  return Math.max(
+    0,
+    Math.min(clip.durationUs - 1, playheadUs - clip.timelineStartUs + offset),
+  );
+}
+
 /** Resolve DOM-preview effect for one clip at the playhead. */
 export function previewTransitionEffectForClip(
   clip: VideoEditorClip,
@@ -164,11 +231,7 @@ export function previewTransitionEffectForClip(
   clipsById: Map<string, VideoEditorClip>,
 ): PreviewTransitionEffect {
   const localUs = playheadUs - clip.timelineStartUs;
-  const between = transitions.find(
-    (item) =>
-      item.placement === "between" &&
-      (item.fromClipId === clip.id || item.toClipId === clip.id),
-  );
+  const between = activeSeamForClip(clip, playheadUs, transitions, clipsById);
   if (between?.fromClipId && between.toClipId) {
     const left = clipsById.get(between.fromClipId);
     const right = clipsById.get(between.toClipId);
@@ -190,10 +253,13 @@ export function previewTransitionEffectForClip(
             return multiplyEffects(
               {
                 ...identityEffect(),
-                flashOpacity: first * 0.9,
-                forceLocalUs: Math.max(
-                  0,
-                  Math.min(left.durationUs - 1, playheadUs - left.timelineStartUs),
+                overlayColor: "#ffffff",
+                overlayOpacity: first * 0.9,
+                forceLocalUs: mediaLocalUs(
+                  left,
+                  playheadUs,
+                  transitions,
+                  clipsById,
                 ),
               },
               clipEdgePreviewEffect(left, playheadUs - left.timelineStartUs) ??
@@ -208,83 +274,106 @@ export function previewTransitionEffectForClip(
             return multiplyEffects(
               {
                 ...identityEffect(),
-                flashOpacity: (1 - second) * 0.9,
-                forceLocalUs: Math.max(0, playheadUs - seamUs),
+                overlayColor: "#ffffff",
+                overlayOpacity: (1 - second) * 0.9,
+                forceLocalUs: mediaLocalUs(
+                  right,
+                  playheadUs,
+                  transitions,
+                  clipsById,
+                ),
               },
-              clipEdgePreviewEffect(right, playheadUs - right.timelineStartUs) ??
-                identityEffect(),
+              clipEdgePreviewEffect(
+                right,
+                playheadUs - right.timelineStartUs,
+              ) ?? identityEffect(),
             );
           }
-          // Other side stays hidden during its inactive flash half.
           return { ...identityEffect(), opacityMultiplier: 0 };
         }
 
-        if (clip.id === left.id) {
-          const leftLocalUs =
-            playheadUs < seamUs
-              ? Math.max(
-                  0,
-                  Math.min(
-                    left.durationUs - 1,
-                    playheadUs - left.timelineStartUs,
-                  ),
-                )
-              : Math.max(0, left.durationUs - 1);
+        if (between.kind === "fade-black" || between.kind === "fade-white") {
+          const active = progress < 0.5 ? left : right;
+          if (clip.id !== active.id) {
+            return { ...identityEffect(), opacityMultiplier: 0 };
+          }
+          const overlayOpacity =
+            progress < 0.5 ? progress * 2 : (1 - progress) * 2;
           return multiplyEffects(
             {
               ...identityEffect(),
-              opacityMultiplier: 1 - progress,
-              forceLocalUs: leftLocalUs,
+              overlayColor:
+                between.kind === "fade-black" ? "#000000" : "#ffffff",
+              overlayOpacity,
+              forceLocalUs: mediaLocalUs(
+                active,
+                playheadUs,
+                transitions,
+                clipsById,
+              ),
+            },
+            clipEdgePreviewEffect(
+              active,
+              playheadUs - active.timelineStartUs,
+            ) ?? identityEffect(),
+          );
+        }
+
+        if (clip.id === left.id) {
+          const leftEffect =
+            between.kind === "wipe" ||
+            between.kind === "wipe-left" ||
+            between.kind === "wipe-right"
+              ? identityEffect()
+              : effectForVisualKind(
+                  between.kind,
+                  1 - progress,
+                  between.direction,
+                  false,
+                );
+          return multiplyEffects(
+            {
+              ...leftEffect,
+              forceLocalUs: mediaLocalUs(
+                left,
+                playheadUs,
+                transitions,
+                clipsById,
+              ),
             },
             clipEdgePreviewEffect(left, playheadUs - left.timelineStartUs) ??
               identityEffect(),
           );
         }
         if (clip.id === right.id) {
-          const rightLocalUs = Math.max(
-            0,
-            Math.min(right.durationUs - 1, playheadUs - startUs),
-          );
           return multiplyEffects(
             {
               ...effectForVisualKind(
                 between.kind,
                 progress,
                 between.direction,
-                "none",
+                false,
               ),
-              forceLocalUs: rightLocalUs,
+              forceLocalUs: mediaLocalUs(
+                right,
+                playheadUs,
+                transitions,
+                clipsById,
+              ),
             },
             clipEdgePreviewEffect(right, playheadUs - right.timelineStartUs) ??
               identityEffect(),
           );
         }
       }
-
-      // After a non-flash centered window, keep incoming media time continuous
-      // from the window start (matches export evaluator continuity).
-      if (
-        between.kind !== "flash" &&
-        clip.id === between.toClipId &&
-        playheadUs >= endUs
-      ) {
-        const continuousLocalUs = playheadUs - startUs;
-        if (continuousLocalUs >= clip.durationUs) {
-          return { ...identityEffect(), opacityMultiplier: 0 };
-        }
-        return multiplyEffects(
-          {
-            ...identityEffect(),
-            forceLocalUs: continuousLocalUs,
-          },
-          clipEdgePreviewEffect(clip, localUs) ?? identityEffect(),
-        );
-      }
     }
   }
 
   if (localUs < 0) return identityEffect();
-  return clipEdgePreviewEffect(clip, localUs) ?? identityEffect();
+  return {
+    ...(clipEdgePreviewEffect(clip, localUs) ?? identityEffect()),
+    forceLocalUs: mediaLocalUs(clip, playheadUs, transitions, clipsById),
+  };
 }
 
 export type PreviewVisualLayer = {
@@ -324,29 +413,12 @@ export function previewVisualLayers(
       const inRange =
         clip.timelineStartUs <= playheadUs &&
         clip.timelineStartUs + clip.durationUs > playheadUs;
-      const betweenAsTo = transitions.find(
-        (item) =>
-          item.placement === "between" &&
-          item.toClipId === clip.id &&
-          item.fromClipId,
+      const seamPartner = activeSeamForClip(
+        clip,
+        playheadUs,
+        transitions,
+        clipsById,
       );
-      const betweenAsFrom = transitions.find(
-        (item) =>
-          item.placement === "between" &&
-          item.fromClipId === clip.id &&
-          item.toClipId,
-      );
-      const seamPartner =
-        betweenAsTo || betweenAsFrom
-          ? (() => {
-              const between = (betweenAsTo ?? betweenAsFrom)!;
-              const seamUs = betweenAsTo
-                ? clip.timelineStartUs
-                : (clipsById.get(between.toClipId)?.timelineStartUs ?? 0);
-              const { startUs, endUs } = seamWindow(between, seamUs);
-              return startUs <= playheadUs && playheadUs < endUs;
-            })()
-          : false;
       if (!inRange && !seamPartner) continue;
       if (seen.has(clip.id)) continue;
       seen.add(clip.id);
@@ -356,7 +428,7 @@ export function previewVisualLayers(
         transitions,
         clipsById,
       );
-      if (effect.opacityMultiplier <= 0 && effect.flashOpacity <= 0) continue;
+      if (effect.opacityMultiplier <= 0 && effect.overlayOpacity <= 0) continue;
       layers.push({
         clip,
         localUs: effect.forceLocalUs ?? playheadUs - clip.timelineStartUs,
@@ -368,9 +440,15 @@ export function previewVisualLayers(
   return layers;
 }
 
-export function mergeFlashOpacity(layers: PreviewVisualLayer[]) {
+export function mergeTransitionOverlay(layers: PreviewVisualLayer[]) {
   return layers.reduce(
-    (max, layer) => Math.max(max, layer.effect.flashOpacity),
-    0,
+    (current, layer) =>
+      layer.effect.overlayOpacity > current.opacity
+        ? {
+            color: layer.effect.overlayColor ?? "#ffffff",
+            opacity: layer.effect.overlayOpacity,
+          }
+        : current,
+    { color: "#ffffff" as "#000000" | "#ffffff", opacity: 0 },
   );
 }

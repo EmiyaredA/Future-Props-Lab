@@ -27205,7 +27205,7 @@
         "type": "object"
       },
       "VideoEditorTimelineTransition": {
-        "description": "Seam transition between two adjacent visual clips.",
+        "description": "Seam transition between visual clips or overlapping audio clips.",
         "properties": {
           "direction": {
             "default": "left",
@@ -27254,11 +27254,13 @@
               "crossfade",
               "fade-black",
               "fade-white",
+              "wipe",
               "wipe-left",
               "wipe-right",
               "zoom",
               "blur",
-              "flash"
+              "flash",
+              "audio-crossfade"
             ],
             "title": "Kind",
             "type": "string"
@@ -27411,7 +27413,7 @@
         "description": "Clip-local edge transition (fade / wipe / flash on a single clip).",
         "properties": {
           "direction": {
-            "default": "in",
+            "default": "left",
             "enum": [
               "left",
               "right",
@@ -27446,6 +27448,7 @@
               "crossfade",
               "fade-black",
               "fade-white",
+              "wipe",
               "wipe-left",
               "wipe-right",
               "zoom",

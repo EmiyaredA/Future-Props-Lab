@@ -46,6 +46,63 @@ const track = (clips: VideoEditorClip[]): VideoEditorTrack => ({
 });
 
 describe("previewTransitions", () => {
+  it.each(["crossfade", "wipe-left", "zoom", "blur", "flash"] as const)(
+    "keeps chained %s transitions continuous regardless of saved order",
+    (kind) => {
+      const a = clip("a", 0, 4_000_000);
+      const b = clip("b", 4_000_000, 4_000_000);
+      const c = clip("c", 8_000_000, 4_000_000);
+      const transitions: VideoEditorTimelineTransition[] = [
+        {
+          id: "ab",
+          kind: "crossfade",
+          durationUs: 2_000_000,
+          placement: "between",
+          fromClipId: "a",
+          toClipId: "b",
+          direction: "in",
+          easing: "linear",
+        },
+        {
+          id: "bc",
+          kind,
+          durationUs: 4_000_000,
+          placement: "between",
+          fromClipId: "b",
+          toClipId: "c",
+          direction: "in",
+          easing: "linear",
+        },
+      ];
+      for (const ordered of [transitions, [...transitions].reverse()]) {
+        const previous = new Map<string, number>();
+        for (const time of [
+          5_900_000, 6_000_000, 6_100_000, 7_900_000, 8_000_000, 8_100_000,
+          9_900_000, 10_000_000, 11_900_000,
+        ]) {
+          const layers = previewVisualLayers([track([a, b, c])], time, ordered);
+          for (const layer of layers) {
+            expect(layer.localUs).toBeGreaterThanOrEqual(
+              previous.get(layer.clip.id) ?? 0,
+            );
+            previous.set(layer.clip.id, layer.localUs);
+          }
+          if (time === 6_000_000) {
+            expect(layers.find((layer) => layer.clip.id === "b")?.localUs).toBe(
+              3_000_000,
+            );
+          }
+          if (time === 8_100_000 && kind !== "flash") {
+            expect(layers.map((layer) => layer.clip.id)).toEqual(["b", "c"]);
+          }
+          if (time === 11_900_000) {
+            expect(layers.map((layer) => layer.clip.id)).toEqual(["c"]);
+          }
+        }
+      }
+    },
+  );
+
   it("flashes white near the start of a clip-local in transition", () => {
     const target = {
       ...clip("b", 1_000_000),
@@ -75,11 +132,9 @@ describe("previewTransitions", () => {
       easing: "linear",
     };
     // Centered window [1.75s, 2.25s); mid at the seam.
-    const layers = previewVisualLayers(
-      [track([left, right])],
-      2_000_000,
-      [transition],
-    );
+    const layers = previewVisualLayers([track([left, right])], 2_000_000, [
+      transition,
+    ]);
     expect(layers.map((layer) => layer.clip.id)).toEqual(["a", "b"]);
     expect(layers[0]?.effect.opacityMultiplier).toBeCloseTo(0.5, 5);
     expect(layers[1]?.effect.opacityMultiplier).toBeCloseTo(0.5, 5);
@@ -104,7 +159,12 @@ describe("previewTransitions", () => {
       [right.id, right],
     ]);
     // First half: only left, flash rising toward the cut.
-    const out = previewTransitionEffectForClip(left, 1_750_000, [transition], clips);
+    const out = previewTransitionEffectForClip(
+      left,
+      1_750_000,
+      [transition],
+      clips,
+    );
     expect(out.flashOpacity).toBeCloseTo(0.45, 5);
     expect(out.opacityMultiplier).toBe(1);
     const hiddenRight = previewTransitionEffectForClip(

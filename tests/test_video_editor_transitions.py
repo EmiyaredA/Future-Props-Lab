@@ -112,16 +112,10 @@ def test_split_moves_between_reference_and_keeps_clip_edge_fields() -> None:
         },
     )
     left = next(
-        clip
-        for track in split["tracks"]
-        for clip in track["clips"]
-        if clip["id"] == "left"
+        clip for track in split["tracks"] for clip in track["clips"] if clip["id"] == "left"
     )
     right_piece = next(
-        clip
-        for track in split["tracks"]
-        for clip in track["clips"]
-        if clip["id"] == "left-right"
+        clip for track in split["tracks"] for clip in track["clips"] if clip["id"] == "left-right"
     )
     assert "transitionOut" not in left
     assert right_piece.get("transitionOut", {}).get("kind") == "fade-black"
@@ -172,10 +166,7 @@ def test_normalize_migrates_legacy_in_out_onto_clips() -> None:
     ]
     normalized = normalize_legacy_edge_transitions(document)
     right = next(
-        clip
-        for track in normalized["tracks"]
-        for clip in track["clips"]
-        if clip["id"] == "right"
+        clip for track in normalized["tracks"] for clip in track["clips"] if clip["id"] == "right"
     )
     assert right["transitionIn"]["kind"] == "flash"
     assert right["transitionIn"]["durationUs"] == 250_000
@@ -239,9 +230,7 @@ def test_seam_flash_outs_then_ins_without_double_start() -> None:
 
     def image_for_clip(clip, local_us: int):  # type: ignore[no-untyped-def]
         seen.append((clip.id, local_us))
-        return Image.new(
-            "RGBA", (32, 18), "red" if clip.asset_id == "red" else "blue"
-        )
+        return Image.new("RGBA", (32, 18), "red" if clip.asset_id == "red" else "blue")
 
     renderer = TimelineFrameRenderer(
         document,
@@ -298,9 +287,7 @@ def test_crossfade_incoming_media_stays_continuous_after_window() -> None:
 
     def image_for_clip(clip, local_us: int):  # type: ignore[no-untyped-def]
         seen.append((clip.id, local_us))
-        return Image.new(
-            "RGBA", (32, 18), "red" if clip.asset_id == "red" else "blue"
-        )
+        return Image.new("RGBA", (32, 18), "red" if clip.asset_id == "red" else "blue")
 
     renderer = TimelineFrameRenderer(
         document,
@@ -397,7 +384,7 @@ def test_timeline_transition_rejects_non_between_placement() -> None:
 
 def test_add_transition_rejects_edge_placement() -> None:
     document = _document()
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         _apply(
             document,
             {
@@ -413,3 +400,97 @@ def test_add_transition_rejects_edge_placement() -> None:
                 },
             },
         )
+
+
+@pytest.mark.parametrize("kind", ["crossfade", "wipe-left", "zoom", "blur", "flash"])
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_chained_transitions_never_rewind_or_sample_a_clip_twice(kind, reverse_order):
+    clips = [
+        {
+            "id": name,
+            "name": name,
+            "trackId": "v1",
+            "kind": "video",
+            "assetId": name,
+            "timelineStartUs": index * 4_000_000,
+            "durationUs": 4_000_000,
+        }
+        for index, name in enumerate(["a", "b", "c"])
+    ]
+    transitions = [
+        {
+            "id": "ab",
+            "kind": "crossfade",
+            "durationUs": 2_000_000,
+            "placement": "between",
+            "fromClipId": "a",
+            "toClipId": "b",
+        },
+        {
+            "id": "bc",
+            "kind": kind,
+            "durationUs": 4_000_000,
+            "placement": "between",
+            "fromClipId": "b",
+            "toClipId": "c",
+        },
+    ]
+    document = parse_timeline_document(
+        {
+            "tracks": [{"id": "v1", "name": "V1", "order": 0, "kind": "visual", "clips": clips}],
+            "transitions": list(reversed(transitions)) if reverse_order else transitions,
+        }
+    )
+    seen: list[tuple[str, int]] = []
+
+    def sample(clip, local_us):
+        seen.append((clip.id, local_us))
+        return None
+
+    renderer = TimelineFrameRenderer(document, FrameSource(sample, lambda _clip: None))
+    previous: dict[str, int] = {}
+    for time_us in [
+        5_900_000,
+        6_000_000,
+        6_100_000,
+        7_900_000,
+        8_000_000,
+        8_100_000,
+        9_900_000,
+        10_000_000,
+        11_900_000,
+    ]:
+        seen.clear()
+        renderer.render(time_us)
+        assert len({clip_id for clip_id, _ in seen}) == len(seen), seen
+        for clip_id, local_us in seen:
+            assert local_us >= previous.get(clip_id, 0), (time_us, clip_id, previous, seen)
+            previous[clip_id] = local_us
+        if time_us == 6_000_000:
+            assert ("b", 3_000_000) in seen
+        if time_us == 11_900_000:
+            assert any(clip_id == "c" for clip_id, _ in seen)
+
+
+def test_incoming_clip_holds_its_last_frame_until_timeline_end():
+    document = parse_timeline_document(
+        {
+            **_document(),
+            "transitions": [
+                {
+                    "id": "ab",
+                    "kind": "crossfade",
+                    "durationUs": 1_000_000,
+                    "placement": "between",
+                    "fromClipId": "left",
+                    "toClipId": "right",
+                }
+            ],
+        }
+    )
+    seen = []
+    renderer = TimelineFrameRenderer(
+        document, FrameSource(lambda clip, local: seen.append((clip.id, local)), lambda _: None)
+    )
+    renderer.render(1_900_000)
+    assert seen == [("right", 999_999)]

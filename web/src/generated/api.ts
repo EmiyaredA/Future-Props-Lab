@@ -16392,7 +16392,7 @@ export interface components {
         };
         /**
          * VideoEditorTimelineTransition
-         * @description Seam transition between two adjacent visual clips.
+         * @description Seam transition between visual clips or overlapping audio clips.
          */
         VideoEditorTimelineTransition: {
             /**
@@ -16417,7 +16417,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "crossfade" | "fade-black" | "fade-white" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash";
+            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "audio-crossfade";
             /**
              * Placement
              * @default between
@@ -16509,7 +16509,7 @@ export interface components {
         VideoEditorTransition: {
             /**
              * Direction
-             * @default in
+             * @default left
              * @enum {string}
              */
             direction: "left" | "right" | "up" | "down" | "in" | "out";
@@ -16525,7 +16525,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "audio-crossfade";
+            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "audio-crossfade";
         };
         /** VideoFramesIn */
         VideoFramesIn: {
