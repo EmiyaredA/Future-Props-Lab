@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  audioSeamGainAt,
   clipAudioGainAt,
+  clipPropertyAt,
   formatTime,
   frameUs,
   operationsForAsset,
@@ -60,10 +62,17 @@ describe("video editor timeline model", () => {
     if (operation?.type !== "addClip") throw new Error("unexpected operation");
     const clip = {
       ...operation.clip,
-      transitionIn: { kind: "audio-crossfade" as const, durationUs: 1_000_000 },
+      transitionIn: {
+        kind: "audio-crossfade" as const,
+        durationUs: 1_000_000,
+        direction: "left" as const,
+        easing: "linear" as const,
+      },
       transitionOut: {
         kind: "audio-crossfade" as const,
         durationUs: 2_000_000,
+        direction: "left" as const,
+        easing: "linear" as const,
       },
     };
     expect(clipAudioGainAt(clip, 0)).toBe(0);
@@ -75,6 +84,80 @@ describe("video editor timeline model", () => {
         { ...clip, transitionIn: { ...clip.transitionIn, durationUs: 0 } },
         0,
       ),
+    ).toBe(1);
+  });
+
+  it("crossfades overlapping audio clips with the selected easing", () => {
+    const operation = operationsForAsset(video, tracks, 0)[1];
+    if (operation?.type !== "addClip") throw new Error("unexpected operation");
+    const from = {
+      ...operation.clip,
+      id: "from",
+      timelineStartUs: 0,
+      durationUs: 2_000_000,
+    };
+    const to = {
+      ...operation.clip,
+      id: "to",
+      timelineStartUs: 1_000_000,
+      durationUs: 2_000_000,
+    };
+    const clips = new Map([
+      [from.id, from],
+      [to.id, to],
+    ]);
+    const transitions = [
+      {
+        id: "audio-seam",
+        kind: "audio-crossfade" as const,
+        durationUs: 1_000_000,
+        placement: "between" as const,
+        fromClipId: from.id,
+        toClipId: to.id,
+        direction: "left" as const,
+        easing: "ease-in" as const,
+      },
+    ];
+    expect(audioSeamGainAt(from, 1_000_000, transitions, clips)).toBe(1);
+    expect(audioSeamGainAt(to, 1_000_000, transitions, clips)).toBe(0);
+    expect(audioSeamGainAt(from, 1_500_000, transitions, clips)).toBe(0.75);
+    expect(audioSeamGainAt(to, 1_500_000, transitions, clips)).toBe(0.25);
+    expect(audioSeamGainAt(from, 2_000_000, transitions, clips)).toBe(0);
+    expect(audioSeamGainAt(to, 2_000_000, transitions, clips)).toBe(1);
+
+    const fadedTo = {
+      ...to,
+      transitionIn: {
+        kind: "audio-crossfade" as const,
+        durationUs: 1_000_000,
+        direction: "left" as const,
+        easing: "ease-in" as const,
+      },
+      keyframes: [
+        {
+          id: "volume",
+          property: "volume" as const,
+          timeUs: 0,
+          value: 0.4,
+          interpolation: "linear" as const,
+        },
+      ],
+    };
+    const localUs = 500_000;
+    const combined =
+      clipPropertyAt(fadedTo, "volume", localUs, fadedTo.volume) *
+      clipAudioGainAt(fadedTo, localUs) *
+      audioSeamGainAt(fadedTo, 1_500_000, transitions, clips);
+    expect(combined).toBeCloseTo(0.025, 6);
+
+    const extendedFrom = { ...from, durationUs: 3_000_000 };
+    const shortTo = { ...to, durationUs: 1_000_000 };
+    const contained = new Map([
+      [extendedFrom.id, extendedFrom],
+      [shortTo.id, shortTo],
+    ]);
+    expect(
+      audioSeamGainAt(extendedFrom, 2_500_000, transitions, contained),
     ).toBe(1);
   });
 

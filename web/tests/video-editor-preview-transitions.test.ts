@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clipEdgePreviewEffect,
-  mergeFlashOpacity,
+  mergeTransitionOverlay,
   previewTransitionEffectForClip,
   previewVisualLayers,
 } from "@features/video-editor/previewTransitions";
@@ -46,7 +46,7 @@ const track = (clips: VideoEditorClip[]): VideoEditorTrack => ({
 });
 
 describe("previewTransitions", () => {
-  it.each(["crossfade", "wipe-left", "zoom", "blur", "flash"] as const)(
+  it.each(["crossfade", "wipe", "zoom", "blur", "flash"] as const)(
     "keeps chained %s transitions continuous regardless of saved order",
     (kind) => {
       const a = clip("a", 0, 4_000_000);
@@ -115,7 +115,8 @@ describe("previewTransitions", () => {
     };
     const effect = clipEdgePreviewEffect(target, 0);
     expect(effect?.opacityMultiplier).toBe(0);
-    expect(effect?.flashOpacity).toBeCloseTo(0.92, 5);
+    expect(effect?.overlayColor).toBe("#ffffff");
+    expect(effect?.overlayOpacity).toBeCloseTo(0.92, 5);
   });
 
   it("crossfades across a centered seam window", () => {
@@ -138,7 +139,7 @@ describe("previewTransitions", () => {
     expect(layers.map((layer) => layer.clip.id)).toEqual(["a", "b"]);
     expect(layers[0]?.effect.opacityMultiplier).toBeCloseTo(0.5, 5);
     expect(layers[1]?.effect.opacityMultiplier).toBeCloseTo(0.5, 5);
-    expect(mergeFlashOpacity(layers)).toBe(0);
+    expect(mergeTransitionOverlay(layers).opacity).toBe(0);
   });
 
   it("flashes out on the outgoing half then in on the incoming half", () => {
@@ -165,7 +166,7 @@ describe("previewTransitions", () => {
       [transition],
       clips,
     );
-    expect(out.flashOpacity).toBeCloseTo(0.45, 5);
+    expect(out.overlayOpacity).toBeCloseTo(0.45, 5);
     expect(out.opacityMultiplier).toBe(1);
     const hiddenRight = previewTransitionEffectForClip(
       right,
@@ -182,7 +183,7 @@ describe("previewTransitions", () => {
       [transition],
       clips,
     );
-    expect(fadeIn.flashOpacity).toBeCloseTo(0.45, 5);
+    expect(fadeIn.overlayOpacity).toBeCloseTo(0.45, 5);
     expect(fadeIn.forceLocalUs).toBe(250_000);
     const hiddenLeft = previewTransitionEffectForClip(
       left,
@@ -198,7 +199,7 @@ describe("previewTransitions", () => {
     const right = clip("b", 2_000_000);
     const transition: VideoEditorTimelineTransition = {
       id: "t1",
-      kind: "wipe-left",
+      kind: "wipe",
       durationUs: 1_000_000,
       placement: "between",
       fromClipId: left.id,
@@ -216,8 +217,29 @@ describe("previewTransitions", () => {
         [right.id, right],
       ]),
     );
-    expect(effect.clipPath).toBe("inset(0 50.000% 0 0)");
-    expect(effect.opacityMultiplier).toBeCloseTo(0.5, 5);
+    expect(effect.clipPath).toBe("inset(0 0 0 50.000%)");
+    expect(effect.opacityMultiplier).toBe(1);
+  });
+
+  it.each([
+    ["fade-black", "#000000"],
+    ["fade-white", "#ffffff"],
+  ] as const)("uses a full-canvas color overlay for %s", (kind, color) => {
+    const target = {
+      ...clip("b", 0),
+      transitionIn: {
+        kind,
+        durationUs: 1_000_000,
+        direction: "left" as const,
+        easing: "linear" as const,
+      },
+    };
+    const start = clipEdgePreviewEffect(target, 0);
+    const middle = clipEdgePreviewEffect(target, 500_000);
+    expect(start?.opacityMultiplier).toBe(1);
+    expect(start?.overlayColor).toBe(color);
+    expect(start?.overlayOpacity).toBe(1);
+    expect(middle?.overlayOpacity).toBeCloseTo(0.5, 5);
   });
 
   it("keeps incoming media continuous after a non-flash seam window", () => {

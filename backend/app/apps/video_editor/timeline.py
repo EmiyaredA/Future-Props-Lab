@@ -60,6 +60,59 @@ def _remove_transitions_for_clip(document: dict, clip_id: str) -> None:
     ]
 
 
+def _reconcile_audio_crossfades(document: dict) -> None:
+    transitions = document.get("transitions")
+    if not transitions:
+        return
+    clips_by_id = {
+        clip["id"]: (track, clip)
+        for track in document.get("tracks", [])
+        for clip in track.get("clips", [])
+    }
+    reconciled: list[dict] = []
+    for transition in transitions:
+        if transition.get("kind") != "audio-crossfade":
+            reconciled.append(transition)
+            continue
+        from_entry = clips_by_id.get(transition.get("fromClipId"))
+        to_entry = clips_by_id.get(transition.get("toClipId"))
+        if not from_entry or not to_entry:
+            continue
+        from_track, from_clip = from_entry
+        to_track, to_clip = to_entry
+        if (
+            from_track["id"] != to_track["id"]
+            or from_track["kind"] != "audio"
+            or from_clip["kind"] != "audio"
+            or to_clip["kind"] != "audio"
+        ):
+            continue
+        ordered = sorted(
+            from_track["clips"],
+            key=lambda clip: (clip["timelineStartUs"], clip["id"]),
+        )
+        try:
+            from_index = next(
+                index for index, clip in enumerate(ordered) if clip["id"] == from_clip["id"]
+            )
+        except StopIteration:
+            continue
+        if from_index + 1 >= len(ordered) or ordered[from_index + 1]["id"] != to_clip["id"]:
+            continue
+        overlap_us = (
+            min(
+                from_clip["timelineStartUs"] + from_clip["durationUs"],
+                to_clip["timelineStartUs"] + to_clip["durationUs"],
+            )
+            - to_clip["timelineStartUs"]
+        )
+        if overlap_us <= 0 or from_clip["timelineStartUs"] >= to_clip["timelineStartUs"]:
+            continue
+        transition["durationUs"] = overlap_us
+        reconciled.append(transition)
+    document["transitions"] = reconciled
+
+
 def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
     result = deepcopy(document)
     for operation in body.operations:
@@ -468,6 +521,16 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
             transitions[:] = [item for item in transitions if item["id"] != data["transitionId"]]
             if len(transitions) == before:
                 raise VideoEditorValidationError("找不到指定转场", code="transition_not_found")
+    if any(
+        operation.type
+        in {
+            "moveClip",
+            "trimClip",
+            "restoreClipStates",
+        }
+        for operation in body.operations
+    ):
+        _reconcile_audio_crossfades(result)
     return result
 
 
@@ -558,20 +621,18 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                 (index for index, clip in enumerate(ordered) if clip["id"] == left["id"]),
                 -1,
             )
-            if left_index < 0 or left_index + 1 >= len(ordered) or ordered[left_index + 1][
-                "id"
-            ] != right["id"]:
+            if (
+                left_index < 0
+                or left_index + 1 >= len(ordered)
+                or ordered[left_index + 1]["id"] != right["id"]
+            ):
                 raise VideoEditorValidationError(
                     "音频接缝必须连接时间顺序相邻的片段",
                     code="transition_not_adjacent",
                 )
-            if (
-                left["timelineStartUs"] >= right["timelineStartUs"]
-                or left["timelineStartUs"] + left["durationUs"]
-                > right["timelineStartUs"] + right["durationUs"]
-            ):
+            if left["timelineStartUs"] >= right["timelineStartUs"]:
                 raise VideoEditorValidationError(
-                    "音频交叉淡化需要前一片段先开始并先结束",
+                    "音频交叉淡化需要前一片段先开始",
                     code="invalid_transition_order",
                 )
             overlap_start = max(left["timelineStartUs"], right["timelineStartUs"])

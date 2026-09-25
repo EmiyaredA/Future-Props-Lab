@@ -379,9 +379,7 @@ def _render_segment(
             # Snap the cursor to the requested time so repeated holds and the next
             # monotonic step stay aligned with evaluator local_us (incl. continuity).
             decoder.local_us = requested
-            return image if image is not None else (
-                decoder.last.copy() if decoder.last else None
-            )
+            return image if image is not None else (decoder.last.copy() if decoder.last else None)
         return None
 
     renderer = TimelineFrameRenderer(
@@ -518,10 +516,7 @@ def _audio_transition_gain_expression(
     ):
         duration_s = clip.transition_out.duration_us / 1_000_000
         fade_start_s = (clip.duration_us - clip.transition_out.duration_us) / 1_000_000
-        ratio = (
-            f"max(0,min(1,(t+{local_start_s:.6f}-{fade_start_s:.6f})/"
-            f"{duration_s:.6f}))"
-        )
+        ratio = f"max(0,min(1,(t+{local_start_s:.6f}-{fade_start_s:.6f})/{duration_s:.6f}))"
         gains.append(f"1-({_easing_expression(ratio, clip.transition_out.easing)})")
 
     clips_by_id = {
@@ -542,7 +537,10 @@ def _audio_transition_gain_expression(
         offset_s = (intersection_start_us - overlap_start_us) / 1_000_000
         ratio = f"max(0,min(1,(t+{offset_s:.6f})/{duration_s:.6f}))"
         eased = _easing_expression(ratio, transition.easing)
-        gains.append(eased if clip.id == transition.to_clip_id else f"1-({eased})")
+        seam_gain = eased if clip.id == transition.to_clip_id else f"1-({eased})"
+        window_start_s = (overlap_start_us - intersection_start_us) / 1_000_000
+        window_end_s = window_start_s + duration_s
+        gains.append(f"if(between(t,{window_start_s:.6f},{window_end_s:.6f}),{seam_gain},1)")
     return "*".join(f"({gain})" for gain in gains) or "1"
 
 

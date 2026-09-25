@@ -51,15 +51,17 @@ describe("VideoEditorTransitionPanel", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "向左擦除" }));
-    fireEvent.click(screen.getByRole("button", { name: "应用到接缝" }));
+    expect(screen.getAllByRole("button", { name: "擦除" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "擦除" }));
+    fireEvent.click(screen.getByRole("button", { name: "应用到片段之间" }));
 
     expect(commit).toHaveBeenCalledWith(
       [
         expect.objectContaining({
           type: "addTransition",
           transition: expect.objectContaining({
-            kind: "wipe-left",
+            kind: "wipe",
+            direction: "left",
             placement: "between",
             fromClipId: "a",
             toClipId: "b",
@@ -85,7 +87,7 @@ describe("VideoEditorTransitionPanel", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "闪白" }));
-    fireEvent.click(screen.getByRole("button", { name: "设置入场" }));
+    fireEvent.click(screen.getByRole("button", { name: "应用到片段头" }));
 
     expect(commit).toHaveBeenCalledWith(
       [
@@ -98,8 +100,126 @@ describe("VideoEditorTransitionPanel", () => {
           }),
         }),
       ],
-      [expect.objectContaining({ type: "setTransition", clipId: "b", edge: "in" })],
+      [
+        expect.objectContaining({
+          type: "setTransition",
+          clipId: "b",
+          edge: "in",
+        }),
+      ],
     );
+  });
+
+  it("creates an audio crossfade over the complete overlap", () => {
+    const commit = vi.fn().mockResolvedValue(undefined);
+    const audioTrack: VideoEditorTrack = {
+      ...track,
+      id: "a1",
+      kind: "audio",
+      name: "音频 1",
+    };
+    const audioClip = (id: string, start: number): VideoEditorClip =>
+      ({
+        ...clip(id, start),
+        trackId: "a1",
+        kind: "audio",
+        durationUs: 2_000_000,
+      }) as VideoEditorClip;
+    render(
+      <VideoEditorTransitionPanel
+        clips={[audioClip("a", 0), audioClip("b", 1_250_000)]}
+        tracks={[audioTrack]}
+        transitions={[]}
+        target={{ fromClipId: "a", toClipId: "b" }}
+        commit={commit}
+        onSelectTransition={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "音频淡化" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "擦除" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "应用到片段之间" }));
+
+    expect(commit).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          type: "addTransition",
+          transition: expect.objectContaining({
+            kind: "audio-crossfade",
+            durationUs: 750_000,
+            fromClipId: "a",
+            toClipId: "b",
+          }),
+        }),
+      ],
+      [expect.objectContaining({ type: "removeTransition" })],
+    );
+  });
+
+  it("deletes an audio overlap transition with a reversible operation", () => {
+    const commit = vi.fn().mockResolvedValue(undefined);
+    const audioTrack: VideoEditorTrack = {
+      ...track,
+      id: "a1",
+      kind: "audio",
+    };
+    const from = {
+      ...clip("a", 0),
+      trackId: "a1",
+      kind: "audio" as const,
+      durationUs: 2_000_000,
+    };
+    const to = {
+      ...from,
+      id: "b",
+      timelineStartUs: 1_000_000,
+    };
+    const transition = {
+      id: "audio-seam",
+      kind: "audio-crossfade" as const,
+      durationUs: 1_000_000,
+      placement: "between" as const,
+      fromClipId: "a",
+      toClipId: "b",
+      direction: "left" as const,
+      easing: "linear" as const,
+    };
+    render(
+      <VideoEditorTransitionPanel
+        clips={[from, to]}
+        tracks={[audioTrack]}
+        transitions={[transition]}
+        selectedTransitionId="audio-seam"
+        commit={commit}
+        onSelectTransition={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("spinbutton")).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "删除当前转场" }));
+    expect(commit).toHaveBeenCalledWith(
+      [{ type: "removeTransition", transitionId: "audio-seam" }],
+      [{ type: "addTransition", transition }],
+    );
+  });
+
+  it("uses neutral position and easing labels", () => {
+    render(
+      <VideoEditorTransitionPanel
+        clips={[clip("a", 0)]}
+        tracks={[track]}
+        transitions={[]}
+        selectedClip={clip("a", 0)}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onSelectTransition={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "应用到片段头" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "应用到片段尾" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "前慢后快" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "前快后慢" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "两端平滑" })).toBeVisible();
+    expect(screen.queryByText("方向")).toBeNull();
+    expect(screen.queryByText(/入场|出场|淡入|淡出/)).toBeNull();
   });
 
   it("updates the selected seam transition from the library", () => {

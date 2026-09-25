@@ -876,15 +876,19 @@ describe("video editor timeline", () => {
         onDropAsset={vi.fn()}
       />,
     );
-    const clipA = container.querySelector<HTMLElement>('[data-clip-id="short-a"]')!;
-    const clipB = container.querySelector<HTMLElement>('[data-clip-id="short-b"]')!;
+    const clipA = container.querySelector<HTMLElement>(
+      '[data-clip-id="short-a"]',
+    )!;
+    const clipB = container.querySelector<HTMLElement>(
+      '[data-clip-id="short-b"]',
+    )!;
     expect(clipA.style.width).toBe("3.5px");
     expect(clipA.style.left).toBe("0px");
     expect(clipB.style.width).toBe("3.5px");
     expect(clipB.style.left).toBe("7px");
-    expect(parseFloat(clipA.style.left) + parseFloat(clipA.style.width)).toBeLessThan(
-      parseFloat(clipB.style.left),
-    );
+    expect(
+      parseFloat(clipA.style.left) + parseFloat(clipA.style.width),
+    ).toBeLessThan(parseFloat(clipB.style.left));
   });
 
   it("deletes every selected clip from the toolbar", () => {
@@ -1141,10 +1145,14 @@ describe("video editor timeline", () => {
                     transitionIn: {
                       kind: "crossfade",
                       durationUs: 500_000,
+                      direction: "left",
+                      easing: "linear",
                     },
                     transitionOut: {
                       kind: "flash",
                       durationUs: 1_000_000,
+                      direction: "left",
+                      easing: "linear",
                     },
                   },
                 ],
@@ -1167,15 +1175,98 @@ describe("video editor timeline", () => {
     );
 
     const inBand = screen.getByRole("button", {
-      name: "视频：入场转场 0.50s",
+      name: "视频：片段头转场 0.50s",
     });
     const outBand = screen.getByRole("button", {
-      name: "视频：出场转场 1.00s",
+      name: "视频：片段尾转场 1.00s",
     });
     expect(inBand).toHaveStyle({ width: "5%" });
     expect(outBand).toHaveStyle({ width: "10%" });
 
     fireEvent.click(outBand);
     expect(openClipEdgeTransition).toHaveBeenCalledWith("video-left", "out");
+  });
+
+  it("shows add and transition controls across an audio overlap", () => {
+    const base = timeline.document.tracks![0]!.clips![0]!;
+    const first = {
+      ...base,
+      id: "audio-left",
+      trackId: "audio-1",
+      kind: "audio" as const,
+      name: "前一段音频",
+      durationUs: 2_000_000,
+    };
+    const second = {
+      ...first,
+      id: "audio-right",
+      name: "后一段音频",
+      timelineStartUs: 1_000_000,
+    };
+    const selectTransition = vi.fn();
+    const audioTimeline = {
+      ...timeline,
+      document: {
+        ...timeline.document,
+        tracks: [
+          {
+            ...timeline.document.tracks![0]!,
+            id: "audio-1",
+            kind: "audio" as const,
+            clips: [first, second],
+          },
+        ],
+      },
+    };
+    const props = {
+      assets: [],
+      playheadUs: 0,
+      setPlayheadUs: vi.fn(),
+      zoom: 80,
+      scrollLeft: 0,
+      onScrollLeftChange: vi.fn(),
+      selectedClipIds: [],
+      selectClip: vi.fn(),
+      selectTransition,
+      commit: vi.fn().mockResolvedValue(undefined),
+      onDropAsset: vi.fn(),
+    };
+    const { rerender } = render(
+      <VideoEditorTimeline timeline={audioTimeline} {...props} />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "添加片段之间音频淡化" }),
+    );
+    expect(selectTransition).toHaveBeenCalledWith(undefined, {
+      fromClipId: "audio-left",
+      toClipId: "audio-right",
+    });
+
+    rerender(
+      <VideoEditorTimeline
+        timeline={{
+          ...audioTimeline,
+          document: {
+            ...audioTimeline.document,
+            transitions: [
+              {
+                id: "audio-seam",
+                kind: "audio-crossfade",
+                durationUs: 1_000_000,
+                placement: "between",
+                fromClipId: "audio-left",
+                toClipId: "audio-right",
+                direction: "left",
+                easing: "linear",
+              },
+            ],
+          },
+        }}
+        {...props}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "片段之间音频淡化" }),
+    ).toHaveTextContent("音频淡化");
   });
 });

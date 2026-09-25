@@ -31,11 +31,7 @@ describe("VideoEditorInspector clip transitions", () => {
   it("cancels an existing clip-edge transition from the attributes panel", () => {
     const commit = vi.fn().mockResolvedValue(undefined);
     render(
-      <VideoEditorInspector
-        clip={videoClip}
-        playheadUs={0}
-        commit={commit}
-      />,
+      <VideoEditorInspector clip={videoClip} playheadUs={0} commit={commit} />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
@@ -85,7 +81,43 @@ describe("VideoEditorInspector clip transitions", () => {
       [expect.objectContaining({ type: "setTransition", edge: "in" })],
     );
 
-    fireEvent.click(screen.getAllByRole("button", { name: "从效果库选择…" })[0]!);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "从效果库选择…" })[0]!,
+    );
     expect(openEdge).toHaveBeenCalledWith("video-1", "in");
+    expect(screen.getByText("片段头")).toBeVisible();
+    expect(screen.getByText("片段尾")).toBeVisible();
+    expect(screen.queryByText(/入场|出场/)).toBeNull();
+  });
+
+  it("uses audio effect and position names and records a reversible toggle", () => {
+    const commit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <VideoEditorInspector
+        clip={{
+          ...videoClip,
+          kind: "audio",
+          trackId: "a1",
+          transitionOut: undefined,
+        }}
+        playheadUs={0}
+        commit={commit}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "音频转场" })).toBeVisible();
+    expect(screen.getByText("片段头")).toBeVisible();
+    expect(screen.getByText("片段尾")).toBeVisible();
+    expect(screen.queryByText(/淡入|淡出/)).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "启用" })[0]!);
+    expect(commit).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          type: "setTransition",
+          edge: "in",
+          transition: expect.objectContaining({ kind: "audio-crossfade" }),
+        }),
+      ],
+      [expect.objectContaining({ type: "setTransition", edge: "in" })],
+    );
   });
 });

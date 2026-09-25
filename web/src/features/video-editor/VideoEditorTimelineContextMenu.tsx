@@ -93,7 +93,7 @@ export function VideoEditorTimelineContextMenu({
               onClose();
             }}
           >
-            {contextMenu.transitionId ? "编辑接缝转场" : "添加接缝转场"}
+            {contextMenu.transitionId ? "编辑片段之间转场" : "添加片段之间转场"}
           </button>
           {contextMenu.transitionId ? (
             <button
@@ -113,7 +113,7 @@ export function VideoEditorTimelineContextMenu({
                 onClose();
               }}
             >
-              删除接缝转场
+              删除片段之间转场
             </button>
           ) : null}
         </>
@@ -126,7 +126,8 @@ export function VideoEditorTimelineContextMenu({
             {clipIsMuted(contextMenu.clip) ? "取消静音" : "静音"}
           </button>
           {(contextMenu.clip.kind === "video" ||
-            contextMenu.clip.kind === "image") &&
+            contextMenu.clip.kind === "image" ||
+            contextMenu.clip.kind === "audio") &&
           openClipEdgeTransition ? (
             <>
               <button
@@ -137,8 +138,8 @@ export function VideoEditorTimelineContextMenu({
                 }}
               >
                 {contextMenu.clip.transitionIn
-                  ? "编辑入场转场"
-                  : "添加入场转场"}
+                  ? "编辑片段头转场"
+                  : "添加片段头转场"}
               </button>
               <button
                 role="menuitem"
@@ -148,8 +149,8 @@ export function VideoEditorTimelineContextMenu({
                 }}
               >
                 {contextMenu.clip.transitionOut
-                  ? "编辑出场转场"
-                  : "添加出场转场"}
+                  ? "编辑片段尾转场"
+                  : "添加片段尾转场"}
               </button>
             </>
           ) : null}

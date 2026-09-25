@@ -1,7 +1,4 @@
-import type {
-  VideoEditorClip,
-  VideoEditorTimelineTransition,
-} from "./types";
+import type { VideoEditorClip, VideoEditorTimelineTransition } from "./types";
 
 export function seamTransitions(
   transitions: VideoEditorTimelineTransition[] | undefined,
@@ -28,10 +25,22 @@ export function seamTransitionStyle(
   clipById: Map<string, VideoEditorClip>,
   zoom: number,
 ) {
+  const from = clipById.get(transition.fromClipId);
   const to = clipById.get(transition.toClipId);
-  const seamUs = to?.timelineStartUs ?? 0;
-  const durationUs = Math.max(1, transition.durationUs);
-  const startUs = Math.max(0, seamUs - Math.floor(durationUs / 2));
+  const durationUs =
+    transition.kind === "audio-crossfade" && from && to
+      ? Math.max(
+          1,
+          Math.min(
+            from.timelineStartUs + from.durationUs,
+            to.timelineStartUs + to.durationUs,
+          ) - to.timelineStartUs,
+        )
+      : Math.max(1, transition.durationUs);
+  const startUs =
+    transition.kind === "audio-crossfade"
+      ? (to?.timelineStartUs ?? 0)
+      : Math.max(0, (to?.timelineStartUs ?? 0) - Math.floor(durationUs / 2));
   const widthPx = Math.max(6, (durationUs / 1_000_000) * zoom);
   return {
     left: `${(startUs / 1_000_000) * zoom}px`,
@@ -55,6 +64,7 @@ export function emptySeamsForTrack(
   trackId: string,
   clipById: Map<string, VideoEditorClip>,
   transitions: VideoEditorTimelineTransition[],
+  trackKind?: "visual" | "audio" | "mixed",
 ) {
   const trackClips = [...clipById.values()]
     .filter((clip) => clip.trackId === trackId)
@@ -63,9 +73,26 @@ export function emptySeamsForTrack(
   for (let index = 0; index < trackClips.length - 1; index += 1) {
     const from = trackClips[index]!;
     const to = trackClips[index + 1]!;
-    if (from.timelineStartUs + from.durationUs !== to.timelineStartUs) continue;
-    if (from.kind !== "video" && from.kind !== "image") continue;
-    if (to.kind !== "video" && to.kind !== "image") continue;
+    if (trackKind === "audio") {
+      const overlapUs =
+        Math.min(
+          from.timelineStartUs + from.durationUs,
+          to.timelineStartUs + to.durationUs,
+        ) - to.timelineStartUs;
+      if (
+        from.kind !== "audio" ||
+        to.kind !== "audio" ||
+        from.timelineStartUs >= to.timelineStartUs ||
+        overlapUs <= 0
+      )
+        continue;
+    } else {
+      if (from.timelineStartUs + from.durationUs !== to.timelineStartUs) {
+        continue;
+      }
+      if (from.kind !== "video" && from.kind !== "image") continue;
+      if (to.kind !== "video" && to.kind !== "image") continue;
+    }
     const hasBetween = transitions.some(
       (item) => item.fromClipId === from.id && item.toClipId === to.id,
     );

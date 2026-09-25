@@ -38,15 +38,13 @@ function wipeClipPath(
     | VideoEditorTimelineTransition["direction"]
     | VideoEditorTransition["direction"],
 ) {
-  let reveal = Math.max(0, Math.min(1, progress));
-  if (direction === "right" || direction === "up" || direction === "down") {
-    reveal = 1 - reveal;
-  }
+  const reveal = Math.max(0, Math.min(1, progress));
   const hidden = `${((1 - reveal) * 100).toFixed(3)}%`;
-  if (direction === "right") return `inset(0 0 0 ${hidden})`;
+  if (direction === "left") return `inset(0 0 0 ${hidden})`;
+  if (direction === "right") return `inset(0 ${hidden} 0 0)`;
   if (direction === "up") return `inset(${hidden} 0 0 0)`;
   if (direction === "down") return `inset(0 0 ${hidden} 0)`;
-  return `inset(0 ${hidden} 0 0)`;
+  return `inset(0 0 0 ${hidden})`;
 }
 
 function effectForVisualKind(

@@ -7,13 +7,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import {
-  ClipboardPaste,
-  Copy,
-  Magnet,
-  Scissors,
-  Trash2,
-} from "lucide-react";
+import { ClipboardPaste, Copy, Magnet, Scissors, Trash2 } from "lucide-react";
 import { formatTime, newTrack, snapUs } from "./editorModel";
 import { BATCH_OPS_LIMIT } from "./batchClipPatch";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
@@ -676,7 +670,11 @@ export function VideoEditorTimeline({
                             clipById,
                             zoom,
                           )}
-                          aria-label="接缝转场"
+                          aria-label={
+                            transition.kind === "audio-crossfade"
+                              ? "片段之间音频淡化"
+                              : "片段之间转场"
+                          }
                           onPointerDown={(event) => event.stopPropagation()}
                           onClick={(event) => {
                             event.stopPropagation();
@@ -702,15 +700,30 @@ export function VideoEditorTimeline({
                             });
                           }}
                         >
-                          转场
+                          {transition.kind === "audio-crossfade"
+                            ? "音频淡化"
+                            : "转场"}
                           <small>
                             {(transition.durationUs / 1_000_000).toFixed(2)}s
                           </small>
                         </button>
                       ))}
-                    {emptySeamsForTrack(track.id, clipById, transitions).map(
-                      ({ from, to }) => {
-                      const start = to.timelineStartUs;
+                    {emptySeamsForTrack(
+                      track.id,
+                      clipById,
+                      transitions,
+                      track.kind,
+                    ).map(({ from, to }) => {
+                      const overlapUs = Math.max(
+                        0,
+                        from.timelineStartUs +
+                          from.durationUs -
+                          to.timelineStartUs,
+                      );
+                      const start =
+                        track.kind === "audio"
+                          ? to.timelineStartUs + overlapUs / 2
+                          : to.timelineStartUs;
                       const width = 28;
                       return (
                         <button
@@ -721,8 +734,16 @@ export function VideoEditorTimeline({
                             left: `${(start / 1_000_000) * zoom - width / 2}px`,
                             width: `${width}px`,
                           }}
-                          aria-label="添加接缝转场"
-                          title="添加接缝转场"
+                          aria-label={
+                            track.kind === "audio"
+                              ? "添加片段之间音频淡化"
+                              : "添加片段之间转场"
+                          }
+                          title={
+                            track.kind === "audio"
+                              ? "添加片段之间音频淡化"
+                              : "添加片段之间转场"
+                          }
                           onPointerDown={(event) => event.stopPropagation()}
                           onClick={(event) => {
                             event.stopPropagation();
@@ -862,11 +883,9 @@ export function VideoEditorTimeline({
                               type="button"
                               className={`ve-clip-edge-transition ${edge}`}
                               style={{ width: `${widthPct}%` }}
-                              aria-label={`${clip.name}：${edge === "in" ? "入场" : "出场"}转场 ${seconds}s`}
-                              title={`${edge === "in" ? "入场" : "出场"} ${seconds}s`}
-                              onPointerDown={(event) =>
-                                event.stopPropagation()
-                              }
+                              aria-label={`${clip.name}：${edge === "in" ? "片段头" : "片段尾"}转场 ${seconds}s`}
+                              title={`${edge === "in" ? "片段头" : "片段尾"} ${seconds}s`}
+                              onPointerDown={(event) => event.stopPropagation()}
                               onClick={(event) => {
                                 event.stopPropagation();
                                 if (!selectedClipIds.includes(clip.id)) {
@@ -876,7 +895,7 @@ export function VideoEditorTimeline({
                               }}
                             >
                               <span>
-                                {edge === "in" ? "入" : "出"} {seconds}s
+                                {edge === "in" ? "头" : "尾"} {seconds}s
                               </span>
                             </button>
                           );

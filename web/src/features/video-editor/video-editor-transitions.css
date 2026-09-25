@@ -154,6 +154,7 @@
 .effect-fade-white {
   background: linear-gradient(90deg, #e7edf7, #667ba7);
 }
+.effect-wipe::after,
 .effect-wipe-left::after {
   margin-left: auto;
   transform: none;
@@ -174,6 +175,14 @@
 }
 .effect-flash {
   background: linear-gradient(90deg, #5f77a9, #fff, #5f77a9);
+}
+.effect-audio-crossfade {
+  background: linear-gradient(
+    135deg,
+    #243453 0 30%,
+    #8c76e7 48% 52%,
+    #243453 70%
+  );
 }
 
 .ve-transition-editor {

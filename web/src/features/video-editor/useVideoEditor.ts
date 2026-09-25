@@ -24,6 +24,7 @@ import {
 } from "./batchClipPatch";
 import { canPlaceClip, linkedClipIds } from "./timelineSnap";
 import { videoEditorQueryKeys } from "./queryKeys";
+import { reconcileAudioTransitionOperations } from "./audioTransitionOperations";
 import {
   loadVideoEditorWorkspacePreferences,
   storeVideoEditorWorkspacePreferences,
@@ -140,13 +141,18 @@ export function useVideoEditor(projectId: string) {
 
   const commit = useCallback(
     async (redo: VideoEditorOperation[], undo: VideoEditorOperation[] = []) => {
-      await mutation.mutateAsync({ operations: redo });
-      if (undo.length) {
-        setUndoStack((items) => [...items.slice(-99), { redo, undo }]);
+      const reconciled = reconcileAudioTransitionOperations(
+        timeline.data,
+        redo,
+        undo,
+      );
+      await mutation.mutateAsync({ operations: reconciled.redo });
+      if (reconciled.undo.length) {
+        setUndoStack((items) => [...items.slice(-99), reconciled]);
         setRedoStack([]);
       }
     },
-    [mutation],
+    [mutation, timeline.data],
   );
   useEffect(() => {
     if (!canWrite) return;

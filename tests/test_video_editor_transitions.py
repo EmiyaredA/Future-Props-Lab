@@ -68,7 +68,7 @@ def test_independent_transition_crud_is_reversible() -> None:
         "easing": "ease-in-out",
     }
     added = _apply(document, {"type": "addTransition", "transition": transition})
-    assert added["transitions"] == [transition]
+    assert added["transitions"][0] == {**transition, "direction": "left"}
     updated = _apply(
         added,
         {
@@ -174,6 +174,121 @@ def test_normalize_migrates_legacy_in_out_onto_clips() -> None:
     parsed = parse_timeline_document(normalized)
     assert len(parsed.transitions) == 1
     assert parsed.transitions[0].placement == "between"
+    assert parsed.transitions[0].direction == "left"
+
+
+def test_legacy_wipe_kinds_are_saved_as_canonical_wipe() -> None:
+    document = _document()
+    document["tracks"][0]["clips"][0]["transitionOut"] = {
+        "kind": "wipe-right",
+        "durationUs": 200_000,
+        "direction": "out",
+        "easing": "linear",
+    }
+    document["transitions"] = [
+        {
+            "id": "legacy-wipe",
+            "kind": "wipe-left",
+            "durationUs": 200_000,
+            "placement": "between",
+            "fromClipId": "left",
+            "toClipId": "right",
+            "direction": "in",
+        }
+    ]
+    parsed = parse_timeline_document(document)
+    transition = parsed.tracks[0].clips[0].transition_out
+    assert transition is not None
+    assert transition.kind == "wipe"
+    assert transition.direction == "right"
+    saved = parsed.model_dump(mode="json", by_alias=True, exclude_none=True)
+    assert saved["tracks"][0]["clips"][0]["transitionOut"]["kind"] == "wipe"
+    assert saved["tracks"][0]["clips"][0]["transitionOut"]["direction"] == "right"
+    assert saved["transitions"][0]["kind"] == "wipe"
+    assert saved["transitions"][0]["direction"] == "left"
+
+
+def test_audio_crossfade_duration_tracks_overlap_and_zero_overlap_removes_it() -> None:
+    document = {
+        "tracks": [
+            {
+                "id": "a1",
+                "kind": "audio",
+                "name": "音频 1",
+                "order": 0,
+                "clips": [
+                    {
+                        "id": "from",
+                        "trackId": "a1",
+                        "kind": "audio",
+                        "name": "前",
+                        "assetId": "one",
+                        "timelineStartUs": 0,
+                        "durationUs": 2_000_000,
+                    },
+                    {
+                        "id": "to",
+                        "trackId": "a1",
+                        "kind": "audio",
+                        "name": "后",
+                        "assetId": "two",
+                        "timelineStartUs": 1_250_000,
+                        "durationUs": 2_000_000,
+                    },
+                ],
+            }
+        ],
+        "transitions": [
+            {
+                "id": "audio-seam",
+                "kind": "audio-crossfade",
+                "durationUs": 10,
+                "placement": "between",
+                "fromClipId": "from",
+                "toClipId": "to",
+                "direction": "in",
+                "easing": "ease-in-out",
+            }
+        ],
+    }
+    parsed = parse_timeline_document(document)
+    assert parsed.transitions[0].duration_us == 750_000
+    assert parsed.transitions[0].direction == "left"
+
+    trimmed = _apply(
+        document,
+        {
+            "type": "trimClip",
+            "clipId": "from",
+            "timelineStartUs": 0,
+            "durationUs": 1_500_000,
+            "sourceInUs": 0,
+        },
+    )
+    assert trimmed["transitions"][0]["durationUs"] == 250_000
+
+    moved = _apply(
+        document,
+        {
+            "type": "moveClip",
+            "clipId": "to",
+            "trackId": "a1",
+            "timelineStartUs": 2_000_000,
+        },
+    )
+    assert moved["transitions"] == []
+
+    restored = _apply(
+        moved,
+        {
+            "type": "moveClip",
+            "clipId": "to",
+            "trackId": "a1",
+            "timelineStartUs": 1_250_000,
+        },
+        {"type": "addTransition", "transition": document["transitions"][0]},
+    )
+    assert restored["transitions"][0]["durationUs"] == 750_000
 
 
 def test_crossfade_renderer_blends_adjacent_images() -> None:
@@ -206,6 +321,118 @@ def test_crossfade_renderer_blends_adjacent_images() -> None:
     pixel = frame.getpixel((0, 0))
     assert 0 < pixel[0] < 255
     assert 0 < pixel[2] < 255
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    [("fade-black", (0, 0, 0)), ("fade-white", (255, 255, 255))],
+)
+@pytest.mark.parametrize("placement", ["head", "tail", "between"])
+def test_color_transitions_cover_the_full_canvas(kind, expected, placement) -> None:
+    document = _document()
+    if placement == "head":
+        document["tracks"][0]["clips"][0]["transitionIn"] = {
+            "kind": kind,
+            "durationUs": 500_000,
+        }
+        time_us = 0
+    elif placement == "tail":
+        document["tracks"][0]["clips"][0]["transitionOut"] = {
+            "kind": kind,
+            "durationUs": 500_000,
+        }
+        time_us = 999_999
+    else:
+        document["transitions"] = [
+            {
+                "id": "color-seam",
+                "kind": kind,
+                "durationUs": 1_000_000,
+                "placement": "between",
+                "fromClipId": "left",
+                "toClipId": "right",
+            }
+        ]
+        time_us = 1_000_000
+    renderer = TimelineFrameRenderer(
+        parse_timeline_document(document),
+        FrameSource(
+            image_for_clip=lambda clip, _time: Image.new(
+                "RGBA", (32, 18), "red" if clip.asset_id == "red" else "blue"
+            ),
+            font_for_clip=lambda _clip: None,
+        ),
+    )
+    assert renderer.render(time_us).getpixel((960, 540))[:3] == expected
+
+
+def test_color_transition_overlay_is_above_every_visual_track() -> None:
+    document = _document()
+    document["tracks"][0]["order"] = 1
+    document["tracks"][0]["clips"][0]["transitionIn"] = {
+        "kind": "fade-black",
+        "durationUs": 500_000,
+    }
+    document["tracks"].append(
+        {
+            "id": "overlay",
+            "kind": "visual",
+            "name": "上层画面",
+            "order": 0,
+            "clips": [
+                {
+                    "id": "overlay-clip",
+                    "trackId": "overlay",
+                    "kind": "image",
+                    "name": "上层",
+                    "assetId": "green",
+                    "timelineStartUs": 0,
+                    "durationUs": 1_000_000,
+                }
+            ],
+        }
+    )
+    renderer = TimelineFrameRenderer(
+        parse_timeline_document(document),
+        FrameSource(
+            image_for_clip=lambda clip, _time: Image.new(
+                "RGBA", (32, 18), "green" if clip.asset_id == "green" else "red"
+            ),
+            font_for_clip=lambda _clip: None,
+        ),
+    )
+    assert renderer.render(0).getpixel((960, 540))[:3] == (0, 0, 0)
+
+
+def test_wipe_seam_reveals_incoming_without_transparency_fade() -> None:
+    document = parse_timeline_document(
+        {
+            **_document(),
+            "transitions": [
+                {
+                    "id": "wipe",
+                    "kind": "wipe",
+                    "durationUs": 1_000_000,
+                    "placement": "between",
+                    "fromClipId": "left",
+                    "toClipId": "right",
+                    "direction": "left",
+                }
+            ],
+        }
+    )
+    renderer = TimelineFrameRenderer(
+        document,
+        FrameSource(
+            image_for_clip=lambda clip, _time: Image.new(
+                "RGBA", (32, 18), "red" if clip.asset_id == "red" else "blue"
+            ),
+            font_for_clip=lambda _clip: None,
+        ),
+    )
+    frame = renderer.render(1_000_000)
+    assert frame.getpixel((100, 540))[:3] == (255, 0, 0)
+    assert frame.getpixel((1800, 540))[:3] == (0, 0, 255)
 
 
 def test_seam_flash_outs_then_ins_without_double_start() -> None:
@@ -402,7 +629,7 @@ def test_add_transition_rejects_edge_placement() -> None:
         )
 
 
-@pytest.mark.parametrize("kind", ["crossfade", "wipe-left", "zoom", "blur", "flash"])
+@pytest.mark.parametrize("kind", ["crossfade", "wipe", "zoom", "blur", "flash"])
 @pytest.mark.parametrize("reverse_order", [False, True])
 def test_chained_transitions_never_rewind_or_sample_a_clip_twice(kind, reverse_order):
     clips = [

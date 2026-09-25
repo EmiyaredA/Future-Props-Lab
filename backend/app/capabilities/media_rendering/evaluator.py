@@ -185,9 +185,11 @@ class TimelineFrameRenderer:
         self.source = source
         self.without_chroma_clip_id = without_chroma_clip_id
         self._portrait_ground_ratio_by_asset: dict[str, float] = {}
+        self._frame_overlay: tuple[tuple[int, int, int], int] | None = None
 
     def render(self, time_us: int, *, size: tuple[int, int] | None = None) -> Image.Image:
         settings = self.document.settings
+        self._frame_overlay = None
         canvas = Image.new(
             "RGBA",
             (settings.width, settings.height),
@@ -254,7 +256,7 @@ class TimelineFrameRenderer:
                             seam_drawn_clips.add(left.id)
                             seam_drawn_clips.add(right.id)
                             if between.kind == "flash":
-                                # 前半：结尾闪白出；后半：开头闪白入（入场从切点起只播一次）
+                                # 前半在片段尾升白，后半从片段头退白。
                                 if time_us < seam_us:
                                     left_local_us = _media_local_us(left, time_us, transitions)
                                     left_layer = self._layer(left, left_local_us)
@@ -273,12 +275,7 @@ class TimelineFrameRenderer:
                                             (time_us - start_us) / max(1, half_us),
                                         ),
                                     )
-                                    flash = Image.new(
-                                        "RGBA",
-                                        canvas.size,
-                                        (255, 255, 255, round(first * 230)),
-                                    )
-                                    canvas.alpha_composite(flash)
+                                    self._queue_frame_overlay((255, 255, 255), round(first * 230))
                                 else:
                                     right_local_us = _media_local_us(right, time_us, transitions)
                                     right_layer = self._layer(right, right_local_us)
@@ -293,19 +290,14 @@ class TimelineFrameRenderer:
                                             (time_us - seam_us) / max(1, half_us),
                                         ),
                                     )
-                                    flash = Image.new(
-                                        "RGBA",
-                                        canvas.size,
-                                        (255, 255, 255, round((1 - second) * 230)),
+                                    self._queue_frame_overlay(
+                                        (255, 255, 255), round((1 - second) * 230)
                                     )
-                                    canvas.alpha_composite(flash)
                                 continue
 
                             if between.kind in {"fade-black", "fade-white"}:
                                 color = (
-                                    (0, 0, 0)
-                                    if between.kind == "fade-black"
-                                    else (255, 255, 255)
+                                    (0, 0, 0) if between.kind == "fade-black" else (255, 255, 255)
                                 )
                                 active = left if progress < 0.5 else right
                                 active_local_us = _media_local_us(active, time_us, transitions)
@@ -316,20 +308,12 @@ class TimelineFrameRenderer:
                                         active_layer,
                                         active,
                                         active_local_us,
-                                        edge_local_us=max(
-                                            0, time_us - active.timeline_start_us
-                                        ),
+                                        edge_local_us=max(0, time_us - active.timeline_start_us),
                                     )
                                 overlay_progress = (
                                     progress * 2 if progress < 0.5 else (1 - progress) * 2
                                 )
-                                canvas.alpha_composite(
-                                    Image.new(
-                                        "RGBA",
-                                        canvas.size,
-                                        (*color, round(overlay_progress * 255)),
-                                    )
-                                )
+                                self._queue_frame_overlay(color, round(overlay_progress * 255))
                                 continue
 
                             # Crossfade / wipe / zoom / blur across the centered window.
@@ -354,9 +338,7 @@ class TimelineFrameRenderer:
                                         between.kind if between.kind in {"zoom", "blur"} else None
                                     ),
                                     transition_progress=(
-                                        1 - progress
-                                        if between.kind in {"zoom", "blur"}
-                                        else None
+                                        1 - progress if between.kind in {"zoom", "blur"} else None
                                     ),
                                     edge_local_us=left_edge_local,
                                 )
@@ -391,9 +373,18 @@ class TimelineFrameRenderer:
                 self._composite_with_edge(
                     canvas, layer, clip, draw_local_us, edge_local_us=local_us
                 )
+        if self._frame_overlay is not None:
+            color, alpha = self._frame_overlay
+            canvas.alpha_composite(Image.new("RGBA", canvas.size, (*color, alpha)))
         if size and canvas.size != size:
             canvas = canvas.resize(size, Image.Resampling.LANCZOS)
         return canvas.convert("RGB")
+
+    def _queue_frame_overlay(self, color: tuple[int, int, int], alpha: int) -> None:
+        if alpha <= 0:
+            return
+        if self._frame_overlay is None or alpha > self._frame_overlay[1]:
+            self._frame_overlay = (color, alpha)
 
     def _layer(self, clip: VideoEditorClip, local_us: int) -> Image.Image | None:
         if clip.kind == "color":
@@ -499,12 +490,7 @@ class TimelineFrameRenderer:
             direction=direction if transition_kind else edge.direction,
         )
         if edge.overlay_color and edge.overlay_alpha:
-            overlay = Image.new(
-                "RGBA",
-                canvas.size,
-                (*edge.overlay_color, edge.overlay_alpha),
-            )
-            canvas.alpha_composite(overlay)
+            self._queue_frame_overlay(edge.overlay_color, edge.overlay_alpha)
 
     def _composite(
         self,
@@ -571,14 +557,12 @@ class TimelineFrameRenderer:
             and transition_progress is not None
         ):
             reveal = max(0.0, min(1.0, transition_progress))
-            if direction in {"right", "up", "down"}:
-                reveal = 1 - reveal
             mask = Image.new("L", layer.size, 0)
             if direction in {"left", "right"}:
                 width = round(layer.width * reveal)
                 box = (
                     (layer.width - width, 0, layer.width, layer.height)
-                    if direction == "right"
+                    if direction == "left"
                     else (0, 0, width, layer.height)
                 )
             else:

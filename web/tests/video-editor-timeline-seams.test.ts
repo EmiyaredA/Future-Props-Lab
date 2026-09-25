@@ -49,6 +49,40 @@ describe("seamTransitionStyle", () => {
     expect(style.width).toBe("15px");
     expect(style.left).toBe("52.5px");
   });
+
+  it("places audio crossfades across the full overlap", () => {
+    const left = {
+      ...clip("a", 0),
+      trackId: "a1",
+      kind: "audio" as const,
+      durationUs: 2_000_000,
+    };
+    const right = {
+      ...left,
+      id: "b",
+      timelineStartUs: 1_250_000,
+      durationUs: 2_000_000,
+    };
+    const style = seamTransitionStyle(
+      {
+        id: "audio-seam",
+        kind: "audio-crossfade",
+        durationUs: 750_000,
+        placement: "between",
+        fromClipId: left.id,
+        toClipId: right.id,
+        direction: "left",
+        easing: "linear",
+      },
+      new Map([
+        [left.id, left],
+        [right.id, right],
+      ]),
+      40,
+    );
+    expect(style.left).toBe("50px");
+    expect(style.width).toBe("30px");
+  });
 });
 
 describe("clipEdgeTransitionWidthPercent", () => {
