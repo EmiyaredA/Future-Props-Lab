@@ -28,7 +28,8 @@ from app.runtime.db import SessionLocal
 def test_v1_document_upgrades_and_state_references_are_checked():
     old = {"schemaVersion": 1, "width": 128, "height": 128}
     upgraded = CharacterDocument.model_validate(old)
-    assert upgraded.schema_version == 2
+    assert upgraded.schema_version == 3
+    assert set(upgraded.cameras) == {"avatar", "stage"}
     assert upgraded.state_bindings == {}
     assert upgraded.cubism_parameter_ids == {}
     with pytest.raises(ValidationError, match="状态绑定的动作不存在"):
@@ -104,6 +105,36 @@ def test_document_rejects_broken_references(mutation):
         CharacterDocument.model_validate(data)
 
 
+@pytest.mark.parametrize("mutation", ["cycle", "missing", "sum", "too_many", "camera"])
+def test_v3_rejects_invalid_skeleton_and_camera(mutation):
+    data = copy.deepcopy(FIXTURE["document"])
+    data["schemaVersion"] = 3
+    data["bones"] = [
+        {"id": "root", "name": "根", "x": 10, "y": 10},
+        {"id": "child", "name": "子", "parentId": "root", "x": 15, "y": 15},
+    ]
+    data["parts"][0]["parentId"] = None
+    data["parts"][0]["skinWeights"] = [
+        [{"boneId": "root", "weight": 1}] for _ in data["parts"][0]["vertices"]
+    ]
+    data["cameras"] = {
+        "avatar": {"x": 0, "y": 0, "width": 64, "height": 64},
+        "stage": {"x": 0, "y": 0, "width": 128, "height": 128},
+    }
+    if mutation == "cycle":
+        data["bones"][0]["parentId"] = "child"
+    elif mutation == "missing":
+        data["parts"][0]["skinWeights"][0][0]["boneId"] = "absent"
+    elif mutation == "sum":
+        data["parts"][0]["skinWeights"][0][0]["weight"] = 0.5
+    elif mutation == "too_many":
+        data["parts"][0]["skinWeights"][0] = [{"boneId": f"b{i}", "weight": 0.2} for i in range(5)]
+    elif mutation == "camera":
+        data["cameras"]["avatar"]["x"] = 100
+    with pytest.raises(ValidationError):
+        CharacterDocument.model_validate(data)
+
+
 @pytest.mark.parametrize(
     "filename,mode", [("../private", 0), ("/tmp/private", 0), ("link", stat.S_IFLNK), ("a\\b", 0)]
 )
@@ -117,7 +148,7 @@ def test_packages_reject_paths_and_symlinks(filename, mode):
         read_package(buffer.getvalue())
 
 
-def test_v1_package_imports_as_v2_with_original_pixels():
+def test_v1_package_imports_as_v3_with_original_pixels():
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
         archive.writestr(
@@ -134,7 +165,7 @@ def test_v1_package_imports_as_v2_with_original_pixels():
         archive.writestr("assets/texture.png", png())
     title, document, assets = read_package(buffer.getvalue())
     assert title == "旧角色"
-    assert document.schema_version == 2
+    assert document.schema_version == 3
     assert document.state_bindings == {}
     with Image.open(io.BytesIO(assets["texture"][0])) as image:
         assert image.getpixel((0, 0)) == (220, 50, 30, 128)
@@ -205,7 +236,7 @@ async def test_full_character_workflow_cas_packages_exports_and_isolation(monkey
         saved = await client.put(f"{base}/document", json={"expectedRevision": 0, "document": doc})
         assert saved.status_code == 200, saved.text
         assert saved.json()["revision"] == 1
-        assert saved.json()["document"]["schemaVersion"] == 2
+        assert saved.json()["document"]["schemaVersion"] == 3
         stale = await client.put(f"{base}/document", json={"expectedRevision": 0, "document": doc})
         assert stale.status_code == 409
         assert stale.json()["current"]["document"]["parts"][0]["assetId"] == asset_id
@@ -226,7 +257,7 @@ async def test_full_character_workflow_cas_packages_exports_and_isolation(monkey
         package = await client.get(f"{base}/package")
         assert package.status_code == 200, package.text
         with zipfile.ZipFile(io.BytesIO(package.content)) as archive:
-            assert json.loads(archive.read("manifest.json"))["version"] == 2
+            assert json.loads(archive.read("manifest.json"))["version"] == 3
         imported = await client.post(
             "/v1/live2d-workshop/projects/import",
             files={"file": ("role.fpllive2d", package.content, "application/zip")},
@@ -235,8 +266,11 @@ async def test_full_character_workflow_cas_packages_exports_and_isolation(monkey
         imported_doc = (
             await client.get(f"/v1/live2d-workshop/projects/{imported.json()['id']}/document")
         ).json()["document"]
-        assert imported_doc["parameters"] == doc["parameters"]
-        assert imported_doc["stateBindings"] == doc["stateBindings"]
+        assert [(p["id"], p["name"]) for p in imported_doc["parameters"]] == [
+            (p["id"], p["name"]) for p in doc["parameters"]
+        ]
+        assert imported_doc["stateBindings"]["thinking"]["motionId"] == "nod"
+        assert imported_doc["stateBindings"]["thinking"]["expressionId"] == "smile-exp"
         assert imported_doc["cubismParameterIds"] == doc["cubismParameterIds"]
         assert imported_doc["parts"][0]["assetId"] != asset_id
         assert (await client.get(f"{base}/thumbnail")).headers["content-type"] == "image/png"

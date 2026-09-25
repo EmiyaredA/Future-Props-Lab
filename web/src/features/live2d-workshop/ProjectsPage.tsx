@@ -13,14 +13,20 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { ProjectLibraryCard } from "@shared/ui/project-library";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
-import { AMADEUS_PACKAGE_URL } from "@shared/live2d/bundled";
+import {
+  AMADEUS_PACKAGE_URL,
+  BUNDLED_AMADEUS_PROJECT_ID,
+} from "@shared/live2d/bundled";
+import { appearanceKey, inspectAppearance } from "@shared/live2d/appearance";
 import {
   createProject,
   cancelExport,
   listExports,
   deleteProject,
   downloadProject,
+  getDocument,
   importProject,
+  listAssets,
   listProjects,
   renameProject,
 } from "./api";
@@ -37,15 +43,24 @@ function ProjectThumbnail({ href }: { href: string }) {
 export function ProjectsPage({
   onOpen,
   readOnly = false,
+  appearanceScope,
 }: {
   onOpen: (id: string) => void;
   readOnly?: boolean;
+  appearanceScope?: { userId: string; workspaceId: string };
 }) {
   const [projects, setProjects] = useState<Project[]>([]),
     [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [chosenAppearance, setChosenAppearance] = useState(() =>
+    appearanceScope
+      ? localStorage.getItem(
+          appearanceKey(appearanceScope.userId, appearanceScope.workspaceId),
+        )
+      : null,
+  );
   const [dialog, setDialog] = useState<"create" | "rename" | "delete" | null>(
       null,
     ),
@@ -110,6 +125,31 @@ export function ProjectsPage({
   const filtered = projects.filter((p) =>
     p.title.toLowerCase().includes(query.trim().toLowerCase()),
   );
+  const showBuiltin = !query.trim() || "红莉栖 Amadeus 内置案例".toLowerCase().includes(query.trim().toLowerCase());
+  const selectAppearance = (projectId: string | null) =>
+    run(async () => {
+      if (!appearanceScope) return;
+      if (projectId) {
+        const [snapshot, assets] = await Promise.all([
+          getDocument(projectId),
+          listAssets(projectId),
+        ]);
+        const issues = inspectAppearance(
+          snapshot.document as import("./types").CharacterDocument,
+          new Set(assets.items.map((item) => item.id)),
+        );
+        if (issues.length)
+          throw new Error(`无法启用该形象：${issues.join("；")}`);
+      }
+      const key = appearanceKey(
+        appearanceScope.userId,
+        appearanceScope.workspaceId,
+      );
+      if (projectId) localStorage.setItem(key, projectId);
+      else localStorage.removeItem(key);
+      setChosenAppearance(projectId);
+      window.dispatchEvent(new Event("amadeus-appearance-changed"));
+    });
   return (
     <section className="workshop-page workshop-projects-page l2-projects">
       <WorkshopAppChrome
@@ -189,8 +229,39 @@ export function ProjectsPage({
         <div className="workshop-state">
           <strong>正在读取项目…</strong>
         </div>
-      ) : filtered.length ? (
+      ) : filtered.length || showBuiltin ? (
         <div className="workshop-project-grid" aria-live="polite">
+          {showBuiltin && <ProjectLibraryCard
+            project={{ id: BUNDLED_AMADEUS_PROJECT_ID, title: "红莉栖 · Amadeus" }}
+            cover="live2d"
+            coverTitle="内置角色工程"
+            coverDescription="查看分层模型与骨骼绑定"
+            metadata={<span>只读案例</span>}
+            onOpen={() => onOpen(BUNDLED_AMADEUS_PROJECT_ID)}>
+            <div className="workshop-project-primary-actions">
+              <button onClick={() => onOpen(BUNDLED_AMADEUS_PROJECT_ID)}><Maximize2 size={15} />打开</button>
+              {chosenAppearance && <button disabled={busy} onClick={() => void selectAppearance(null)}>设为 Amadeus 形象</button>}
+            </div>
+            <div className="workshop-project-secondary-actions">
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger aria-label="红莉栖内置案例项目菜单"><MoreHorizontal size={18} /></DropdownMenu.Trigger>
+                <DropdownMenu.Portal><DropdownMenu.Content className="l2-menu">
+                  {!readOnly && <DropdownMenu.Item onSelect={() => void run(async () => {
+                    const response = await fetch(AMADEUS_PACKAGE_URL);
+                    if (!response.ok) throw new Error("内置工程包无法读取");
+                    const file = new File([await response.blob()], "Amadeus.fpllive2d", { type: "application/zip" });
+                    onOpen((await importProject(file)).id);
+                  })}><Pencil size={14} />创建可编辑副本</DropdownMenu.Item>}
+                  <DropdownMenu.Item onSelect={() => {
+                    const anchor = document.createElement("a");
+                    anchor.href = AMADEUS_PACKAGE_URL;
+                    anchor.download = "Amadeus.fpllive2d";
+                    anchor.click();
+                  }}><Download size={14} />下载工程</DropdownMenu.Item>
+                </DropdownMenu.Content></DropdownMenu.Portal>
+              </DropdownMenu.Root>
+            </div>
+          </ProjectLibraryCard>}
           {filtered.map((p) => (
             <ProjectLibraryCard
               key={p.id}
@@ -214,6 +285,16 @@ export function ProjectsPage({
                   <Maximize2 size={15} />
                   打开
                 </button>
+                {appearanceScope && (
+                  <button
+                    disabled={busy}
+                    onClick={() => void selectAppearance(p.id)}
+                  >
+                    {chosenAppearance === p.id
+                      ? "当前 Amadeus 形象"
+                      : "设为 Amadeus 形象"}
+                  </button>
+                )}
               </div>
               <div className="workshop-project-secondary-actions">
                 <DropdownMenu.Root>

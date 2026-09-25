@@ -119,22 +119,49 @@ export function applyHumanTemplate(doc: CharacterDocument) {
   const rightHair = makeBone(doc, "右发束", head.id, w * 0.68, h * 0.3);
   const tie = makeBone(doc, "领带", chest.id, w * 0.5, h * 0.54);
   leftHair.spring = rightHair.spring = tie.spring = 0.5;
-  doc.bones.push(root, chest, neck, head, leftArm, leftForearm, rightArm, rightForearm, leftHair, rightHair, tie);
+  doc.bones.push(
+    root,
+    chest,
+    neck,
+    head,
+    leftArm,
+    leftForearm,
+    rightArm,
+    rightForearm,
+    leftHair,
+    rightHair,
+    tie,
+  );
   for (const part of doc.parts) {
     if (part.parentId || part.skinWeights?.length) continue;
     const name = `${part.group}/${part.name}`.toLowerCase();
     const centerX = part.x + part.width / 2;
-    const chosen = /左.*(袖|臂|手)/.test(name) ? leftArm
-      : /右.*(袖|臂|手)/.test(name) ? rightArm
-      : /(刘海|眼|眉|口|脸|面|头)/.test(name) ? head
-      : /发/.test(name) ? centerX < w / 2 ? leftHair : rightHair
-      : /领带/.test(name) ? tie : chest;
-    part.skinWeights = part.vertices.map(() => [{ boneId: chosen.id, weight: 1 }]);
+    const chosen = /左.*(袖|臂|手)/.test(name)
+      ? leftArm
+      : /右.*(袖|臂|手)/.test(name)
+        ? rightArm
+        : /(刘海|眼|眉|口|脸|面|头)/.test(name)
+          ? head
+          : /发/.test(name)
+            ? centerX < w / 2
+              ? leftHair
+              : rightHair
+            : /领带/.test(name)
+              ? tie
+              : chest;
+    part.skinWeights = part.vertices.map(() => [
+      { boneId: chosen.id, weight: 1 },
+    ]);
   }
   doc.idleBehavior.springBones = [leftHair.id, rightHair.id, tie.id];
 }
 
-export function setVertexBoneWeight(part: Part, index: number, boneId: string, amount: number) {
+export function setVertexBoneWeight(
+  part: Part,
+  index: number,
+  boneId: string,
+  amount: number,
+) {
   if (!part.skinWeights) return;
   const current = part.skinWeights[index] ?? [];
   const other = current.filter((item) => item.boneId !== boneId);

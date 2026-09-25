@@ -28,6 +28,7 @@ export function InterchangePanel({
   expressionId,
   setMotion,
   setExpression,
+  onPreviewState,
   readOnly,
 }: {
   doc: CharacterDocument;
@@ -36,6 +37,7 @@ export function InterchangePanel({
   expressionId: string;
   setMotion: (id: string) => void;
   setExpression: (id: string) => void;
+  onPreviewState?: (state: (typeof states)[number][0]) => void;
   readOnly: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
@@ -186,6 +188,7 @@ export function InterchangePanel({
                 onClick={() => {
                   setExpression(binding.expressionId ?? "");
                   setMotion(binding.motionId ?? "");
+                  onPreviewState?.(state);
                 }}
               >
                 {label} · 预览
@@ -228,6 +231,23 @@ export function InterchangePanel({
                     value: item.id,
                     label: item.name,
                   })),
+                ]}
+              />
+              <Choice
+                label={`${label}播放方式`}
+                disabled={readOnly}
+                value={binding.playback ?? "loop"}
+                onChange={(value) =>
+                  edit((draft) => {
+                    draft.stateBindings[state] = {
+                      ...draft.stateBindings[state],
+                      playback: value as "loop" | "onceHold",
+                    };
+                  })
+                }
+                options={[
+                  { value: "loop", label: "循环" },
+                  { value: "onceHold", label: "播放一次并保持末帧" },
                 ]}
               />
             </div>

@@ -9,6 +9,7 @@ from PIL import Image, ImageChops, ImageDraw
 
 from .document import CharacterDocument
 from .evaluate import evaluate, parameter_values
+from .idle import idle_pose
 
 
 def coefficients(dst: list[tuple[float, float]], src: list[tuple[float, float]]) -> tuple | None:
@@ -40,10 +41,15 @@ def render_frame(
     width: int | None = None,
     height: int | None = None,
     crop: tuple[float, float, float, float] | None = None,
+    idle_time_ms: float | None = None,
 ) -> Image.Image:
     width, height = width or doc.width, height or doc.height
     cx, cy, cw, ch = crop or (0, 0, doc.width, doc.height)
-    parts, _ = evaluate(doc, parameter_values(doc, frame, motion_id, expression_id))
+    values = parameter_values(doc, frame, motion_id, expression_id)
+    rotations = {}
+    if idle_time_ms is not None:
+        values, rotations = idle_pose(doc, values, idle_time_ms, motion_id, expression_id)
+    parts, _ = evaluate(doc, values, rotations)
     layers: dict[str, Image.Image] = {}
     for part in parts:
         path = assets.get(part["assetId"])

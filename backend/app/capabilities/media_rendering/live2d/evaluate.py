@@ -61,7 +61,11 @@ def sample(keys: list[dict], value: float) -> dict:
     return result
 
 
-def evaluate(doc: CharacterDocument, values: dict[str, float]) -> tuple[list[dict], list[dict]]:
+def evaluate(
+    doc: CharacterDocument,
+    values: dict[str, float],
+    bone_rotations: dict[str, float] | None = None,
+) -> tuple[list[dict], list[dict]]:
     data = doc.model_dump(by_alias=True)
     nodes = {n["id"]: deepcopy(n) for n in data["parts"] + data["deformers"] + data["bones"]}
     for parameter in data["parameters"]:
@@ -78,6 +82,9 @@ def evaluate(doc: CharacterDocument, values: dict[str, float]) -> tuple[list[dic
                 for index, point in enumerate(posed["points"]):
                     for axis in ("x", "y"):
                         target[field][index][axis] += point[axis] - base["points"][index][axis]
+    for identifier, rotation in (bone_rotations or {}).items():
+        if identifier in nodes and identifier in {bone["id"] for bone in data["bones"]}:
+            nodes[identifier]["rotation"] += rotation
     for node in nodes.values():
         if "opacity" in node:
             node["opacity"] = max(0, min(1, node["opacity"]))
@@ -135,8 +142,8 @@ def evaluate(doc: CharacterDocument, values: dict[str, float]) -> tuple[list[dic
         part = nodes[source["id"]]
         part["worldVertices"] = [
             skin({"x": p["x"] + part["x"], "y": p["y"] + part["y"]}, part["skinWeights"][i])
-            if part["skinWeights"] is not None else
-            transform({"x": p["x"] + part["x"], "y": p["y"] + part["y"]}, part["parentId"])
+            if part["skinWeights"] is not None
+            else transform({"x": p["x"] + part["x"], "y": p["y"] + part["y"]}, part["parentId"])
             for i, p in enumerate(part["vertices"])
         ]
         parts.append(part)

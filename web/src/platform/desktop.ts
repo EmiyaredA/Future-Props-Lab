@@ -16,6 +16,7 @@ export type DesktopBridge = {
   openNewWindow: () => Promise<void>;
   openAmadeus?: () => Promise<void>;
   hideAmadeus?: () => Promise<void>;
+  setAmadeusStageOpen?: (enabled: boolean) => Promise<boolean>;
   amadeusAlwaysOnTop?: () => Promise<boolean>;
   setAmadeusAlwaysOnTop?: (enabled: boolean) => Promise<boolean>;
   publishAmadeusMutation?: (value: unknown) => Promise<void>;

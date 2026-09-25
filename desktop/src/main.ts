@@ -1,4 +1,12 @@
-import { app, BrowserWindow, ipcMain, Menu, screen, session, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  screen,
+  session,
+  shell,
+} from "electron";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Backend } from "./backend";
@@ -33,6 +41,8 @@ app.setName("Future Props Lab");
 
 const studioWindows = new Set<BrowserWindow>();
 let amadeusWindow: BrowserWindow | undefined;
+let amadeusStageOpen = false;
+let amadeusCollapsedWidth = 520;
 const studioContexts = new Map<number, Record<string, unknown>>();
 let focusedStudio: BrowserWindow | undefined;
 let backend: Backend | undefined;
@@ -55,11 +65,15 @@ const recovery = path.join(__dirname, "../ui/startup.html");
 const preload = path.join(__dirname, "preload.js");
 const amadeusBoundsPath = path.join(dataDir, "amadeus-window.json");
 
-type AmadeusWindowPrefs = Partial<Electron.Rectangle> & { alwaysOnTop?: boolean };
+type AmadeusWindowPrefs = Partial<Electron.Rectangle> & {
+  alwaysOnTop?: boolean;
+};
 
 function readAmadeusPrefs(): AmadeusWindowPrefs {
   try {
-    const value = JSON.parse(readFileSync(amadeusBoundsPath, "utf8")) as AmadeusWindowPrefs;
+    const value = JSON.parse(
+      readFileSync(amadeusBoundsPath, "utf8"),
+    ) as AmadeusWindowPrefs;
     return value && typeof value === "object" ? value : {};
   } catch {
     return {};
@@ -97,11 +111,15 @@ function savedAmadeusBounds(): Electron.Rectangle | undefined {
     width: value.width!,
     height: value.height!,
   };
-  const visible = screen.getAllDisplays().some(({ workArea }) =>
-    bounds.x < workArea.x + workArea.width - 80 &&
-    bounds.x + bounds.width > workArea.x + 80 &&
-    bounds.y < workArea.y + workArea.height - 80 &&
-    bounds.y + bounds.height > workArea.y + 80);
+  const visible = screen
+    .getAllDisplays()
+    .some(
+      ({ workArea }) =>
+        bounds.x < workArea.x + workArea.width - 80 &&
+        bounds.x + bounds.width > workArea.x + 80 &&
+        bounds.y < workArea.y + workArea.height - 80 &&
+        bounds.y + bounds.height > workArea.y + 80,
+    );
   return visible ? bounds : undefined;
 }
 
@@ -113,7 +131,10 @@ let amadeusAlwaysOnTopPreference = savedAmadeusAlwaysOnTop();
 
 function saveAmadeusBounds(win: BrowserWindow): void {
   if (win.isDestroyed() || win.isMinimized() || win.isMaximized()) return;
-  writeAmadeusPrefs({ ...win.getBounds(), alwaysOnTop: amadeusAlwaysOnTopPreference });
+  writeAmadeusPrefs({
+    ...win.getBounds(),
+    alwaysOnTop: amadeusAlwaysOnTopPreference,
+  });
 }
 
 function syncAmadeusAlwaysOnTopSurface(): void {
@@ -121,7 +142,9 @@ function syncAmadeusAlwaysOnTopSurface(): void {
   const focused = BrowserWindow.getFocusedWindow();
   const keep =
     amadeusAlwaysOnTopPreference &&
-    Boolean(focused && (studioWindows.has(focused) || focused === amadeusWindow));
+    Boolean(
+      focused && (studioWindows.has(focused) || focused === amadeusWindow),
+    );
   amadeusWindow.setAlwaysOnTop(keep, "floating");
 }
 
@@ -177,7 +200,10 @@ function trackStudio(win: BrowserWindow): void {
   win.on("focus", () => {
     focusedStudio = win;
     queueAmadeusAlwaysOnTopSync();
-    amadeusWindow?.webContents.send("desktop:amadeus-contexts", availableContexts());
+    amadeusWindow?.webContents.send(
+      "desktop:amadeus-contexts",
+      availableContexts(),
+    );
   });
   win.on("blur", queueAmadeusAlwaysOnTopSync);
 }
@@ -186,7 +212,10 @@ function availableContexts() {
   return liveStudioWindows().map((win) => ({
     windowId: win.webContents.id,
     focused: focusedStudio === win,
-    ...(studioContexts.get(win.webContents.id) || { title: win.getTitle(), path: "/" }),
+    ...(studioContexts.get(win.webContents.id) || {
+      title: win.getTitle(),
+      path: "/",
+    }),
   }));
 }
 
@@ -194,11 +223,15 @@ function isTrustedAmadeusSender(event: {
   sender: Electron.WebContents;
   senderFrame: Electron.WebFrameMain | null;
 }): boolean {
-  return Boolean(amadeusWindow && !amadeusWindow.isDestroyed() &&
+  return Boolean(
+    amadeusWindow &&
+    !amadeusWindow.isDestroyed() &&
     event.sender === amadeusWindow.webContents &&
     event.senderFrame === event.sender.mainFrame &&
-    event.senderFrame && trusted(event.senderFrame.url) &&
-    new URL(event.senderFrame.url).pathname === "/amadeus.html");
+    event.senderFrame &&
+    trusted(event.senderFrame.url) &&
+    new URL(event.senderFrame.url).pathname === "/amadeus.html",
+  );
 }
 
 async function showAmadeus(): Promise<void> {
@@ -209,19 +242,39 @@ async function showAmadeus(): Promise<void> {
     queueAmadeusAlwaysOnTopSync();
     return;
   }
-  const workArea = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const workArea = screen.getDisplayNearestPoint(
+    screen.getCursorScreenPoint(),
+  ).workArea;
   const bounds = savedAmadeusBounds();
+  const initialWidth = Math.min(bounds?.width ?? 520, 620);
   const win = new BrowserWindow({
-    width: bounds?.width ?? 520, height: bounds?.height ?? 760, minWidth: 400, minHeight: 500,
-    x: bounds?.x ?? Math.max(workArea.x, workArea.x + workArea.width - 548),
+    width: initialWidth,
+    height: bounds?.height ?? 760,
+    minWidth: 400,
+    minHeight: 500,
+    x: bounds
+      ? Math.min(
+          workArea.x + workArea.width - initialWidth,
+          bounds.x + bounds.width - initialWidth,
+        )
+      : Math.max(workArea.x, workArea.x + workArea.width - 548),
     y: bounds?.y ?? workArea.y + 48,
-    show: false, title: "Amadeus", backgroundColor: "#fffaf6",
+    show: false,
+    title: "Amadeus",
+    backgroundColor: "#fffaf6",
     webPreferences: {
-      preload, sandbox: true, contextIsolation: true, nodeIntegration: false,
-      webSecurity: true, partition: "persist:studio", backgroundThrottling: false,
+      preload,
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: true,
+      partition: "persist:studio",
+      backgroundThrottling: false,
     },
   });
   amadeusWindow = win;
+  amadeusStageOpen = false;
+  amadeusCollapsedWidth = win.getBounds().width;
   syncAmadeusAlwaysOnTopSurface();
   let boundsTimer: ReturnType<typeof setTimeout> | undefined;
   const queueBounds = () => {
@@ -251,7 +304,8 @@ async function showAmadeus(): Promise<void> {
   });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("did-finish-load", () =>
-    win.webContents.send("desktop:amadeus-contexts", availableContexts()));
+    win.webContents.send("desktop:amadeus-contexts", availableContexts()),
+  );
   await win.loadURL(pageOrigin() + "/amadeus.html");
 }
 
@@ -437,7 +491,10 @@ function makeWindow(document = false): BrowserWindow {
     win.on("closed", () => {
       studioWindows.delete(win);
       studioContexts.delete(contentsId);
-      amadeusWindow?.webContents.send("desktop:amadeus-contexts", availableContexts());
+      amadeusWindow?.webContents.send(
+        "desktop:amadeus-contexts",
+        availableContexts(),
+      );
       if (focusedStudio === win) focusedStudio = liveStudioWindows()[0];
       if (quitPending) {
         quitPending.delete(contentsId);
@@ -718,21 +775,58 @@ else {
       if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
       amadeusWindow?.hide();
     });
-    ipcMain.handle("desktop:amadeus-always-on-top", (event, enabled?: unknown) => {
+    ipcMain.handle("desktop:amadeus-stage", (event, enabled: unknown) => {
       if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
-      if (enabled === undefined) return amadeusAlwaysOnTopPreference;
-      if (typeof enabled !== "boolean") throw new Error("置顶偏好无效");
-      return applyAmadeusAlwaysOnTop(enabled);
+      if (typeof enabled !== "boolean") throw new Error("角色舞台状态无效");
+      const win = amadeusWindow;
+      if (!win || win.isDestroyed() || amadeusStageOpen === enabled)
+        return amadeusStageOpen;
+      const bounds = win.getBounds();
+      const area = screen.getDisplayMatching(bounds).workArea;
+      if (enabled) amadeusCollapsedWidth = bounds.width;
+      const width = enabled
+        ? Math.min(area.width, bounds.width + 360)
+        : Math.max(400, amadeusCollapsedWidth);
+      const x = enabled
+        ? Math.max(area.x, bounds.x - (width - bounds.width))
+        : Math.min(
+            area.x + area.width - width,
+            bounds.x + bounds.width - width,
+          );
+      win.setBounds({ ...bounds, x, width }, true);
+      amadeusStageOpen = enabled;
+      return enabled;
     });
+    ipcMain.handle(
+      "desktop:amadeus-always-on-top",
+      (event, enabled?: unknown) => {
+        if (!isTrustedAmadeusSender(event))
+          throw new Error("拒绝非助手页面请求");
+        if (enabled === undefined) return amadeusAlwaysOnTopPreference;
+        if (typeof enabled !== "boolean") throw new Error("置顶偏好无效");
+        return applyAmadeusAlwaysOnTop(enabled);
+      },
+    );
     ipcMain.handle("desktop:amadeus-mutation", (event, value: unknown) => {
-      if (!isTrustedAmadeusSender(event) || !value || typeof value !== "object" ||
-          JSON.stringify(value).length > 1000) throw new Error("资源通知无效");
+      if (
+        !isTrustedAmadeusSender(event) ||
+        !value ||
+        typeof value !== "object" ||
+        JSON.stringify(value).length > 1000
+      )
+        throw new Error("资源通知无效");
       const target = value as { userId?: unknown; workspaceId?: unknown };
-      if (typeof target.userId !== "string" || typeof target.workspaceId !== "string")
+      if (
+        typeof target.userId !== "string" ||
+        typeof target.workspaceId !== "string"
+      )
         throw new Error("资源通知缺少租户范围");
       for (const win of liveStudioWindows()) {
         const context = studioContexts.get(win.webContents.id);
-        if (context?.userId === target.userId && context.workspaceId === target.workspaceId)
+        if (
+          context?.userId === target.userId &&
+          context.workspaceId === target.workspaceId
+        )
           win.webContents.send("desktop:amadeus-mutation", value);
       }
     });
@@ -740,62 +834,111 @@ else {
       if (!isTrustedAmadeusSender(event) || !value || typeof value !== "object")
         throw new Error("引用无效");
       const item = value as { windowId?: number; id?: string };
-      if (!Number.isInteger(item.windowId) || typeof item.id !== "string" || item.id.length > 120)
+      if (
+        !Number.isInteger(item.windowId) ||
+        typeof item.id !== "string" ||
+        item.id.length > 120
+      )
         throw new Error("引用无效");
-      const source = liveStudioWindows().find((win) => win.webContents.id === item.windowId);
+      const source = liveStudioWindows().find(
+        (win) => win.webContents.id === item.windowId,
+      );
       if (!source) return false;
       source.show();
       source.focus();
       source.webContents.send("desktop:amadeus-locate", { id: item.id });
       return true;
     });
-    ipcMain.handle("desktop:amadeus-context-publish", (event, value: unknown) => {
-      if (!isTrustedStudioSender(event)) throw new Error("拒绝非应用页面请求");
-      if (!value || typeof value !== "object" || JSON.stringify(value).length > 12_000)
-        throw new Error("上下文无效");
-      studioContexts.set(event.sender.id, value as Record<string, unknown>);
-      amadeusWindow?.webContents.send("desktop:amadeus-contexts", availableContexts());
-    });
+    ipcMain.handle(
+      "desktop:amadeus-context-publish",
+      (event, value: unknown) => {
+        if (!isTrustedStudioSender(event))
+          throw new Error("拒绝非应用页面请求");
+        if (
+          !value ||
+          typeof value !== "object" ||
+          JSON.stringify(value).length > 12_000
+        )
+          throw new Error("上下文无效");
+        studioContexts.set(event.sender.id, value as Record<string, unknown>);
+        amadeusWindow?.webContents.send(
+          "desktop:amadeus-contexts",
+          availableContexts(),
+        );
+      },
+    );
     ipcMain.handle("desktop:amadeus-contexts", (event) => {
       if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
       return availableContexts();
     });
-    ipcMain.handle("desktop:amadeus-pick", (event, enabled: boolean, index?: number) => {
-      if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
-      const source = activeStudio();
-      if (!source) return false;
-      source.show();
-      source.focus();
-      source.webContents.send("desktop:amadeus-pick-command", {
-        enabled: Boolean(enabled), index: typeof index === "number" && Number.isSafeInteger(index) && index > 0 ? Math.min(index, 20) : 1,
-      });
-      return true;
-    });
+    ipcMain.handle(
+      "desktop:amadeus-pick",
+      (event, enabled: boolean, index?: number) => {
+        if (!isTrustedAmadeusSender(event))
+          throw new Error("拒绝非助手页面请求");
+        const source = activeStudio();
+        if (!source) return false;
+        source.show();
+        source.focus();
+        source.webContents.send("desktop:amadeus-pick-command", {
+          enabled: Boolean(enabled),
+          index:
+            typeof index === "number" &&
+            Number.isSafeInteger(index) &&
+            index > 0
+              ? Math.min(index, 20)
+              : 1,
+        });
+        return true;
+      },
+    );
     ipcMain.handle("desktop:amadeus-pick-finished", (event) => {
-      if (!isTrustedStudioSender(event)) throw new Error("拒绝非 Studio 页面请求");
+      if (!isTrustedStudioSender(event))
+        throw new Error("拒绝非 Studio 页面请求");
       amadeusWindow?.webContents.send("desktop:amadeus-pick-finished");
     });
-    ipcMain.handle("desktop:amadeus-reference", async (event, value: unknown) => {
-      if (!isTrustedStudioSender(event) || !amadeusWindow ||
-          !value || typeof value !== "object") throw new Error("引用来源无效");
-      const item = value as Record<string, unknown>;
-      let thumbnail: string | undefined;
-      const rect = item.rect as Record<string, number> | undefined;
-      if (rect && [rect.x, rect.y, rect.width, rect.height].every(
-        (number) => typeof number === "number" && Number.isFinite(number)) &&
-        rect.width > 0 && rect.height > 0 && rect.width <= 900 && rect.height <= 700) {
-        const win = BrowserWindow.fromWebContents(event.sender);
-        const shot = await win?.webContents.capturePage({
-          x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+    ipcMain.handle(
+      "desktop:amadeus-reference",
+      async (event, value: unknown) => {
+        if (
+          !isTrustedStudioSender(event) ||
+          !amadeusWindow ||
+          !value ||
+          typeof value !== "object"
+        )
+          throw new Error("引用来源无效");
+        const item = value as Record<string, unknown>;
+        let thumbnail: string | undefined;
+        const rect = item.rect as Record<string, number> | undefined;
+        if (
+          rect &&
+          [rect.x, rect.y, rect.width, rect.height].every(
+            (number) => typeof number === "number" && Number.isFinite(number),
+          ) &&
+          rect.width > 0 &&
+          rect.height > 0 &&
+          rect.width <= 900 &&
+          rect.height <= 700
+        ) {
+          const win = BrowserWindow.fromWebContents(event.sender);
+          const shot = await win?.webContents.capturePage({
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+          });
+          thumbnail = shot?.resize({ width: 180 }).toDataURL();
+        }
+        amadeusWindow.webContents.send("desktop:amadeus-reference-added", {
+          ...item,
+          rect: undefined,
+          thumbnail,
+          windowId: event.sender.id,
         });
-        thumbnail = shot?.resize({ width: 180 }).toDataURL();
-      }
-      amadeusWindow.webContents.send("desktop:amadeus-reference-added", {
-        ...item, rect: undefined, thumbnail, windowId: event.sender.id,
-      });
-      amadeusWindow.show();
-      amadeusWindow.focus();
-    });
+        amadeusWindow.show();
+        amadeusWindow.focus();
+      },
+    );
     ipcMain.on("desktop:quit-approved", (event) => {
       if (!isTrustedStudioSender(event) || !quitPending) return;
       quitPending.delete(event.sender.id);

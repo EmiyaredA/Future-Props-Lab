@@ -9,21 +9,25 @@ from PIL import Image
 
 from app.apps.live2d_workshop.packages import read_package
 from app.capabilities.media_rendering.live2d.evaluate import parameter_values
+from app.capabilities.media_rendering.live2d.idle import idle_pose
 from app.capabilities.media_rendering.live2d.render import render_frame
 from app.main import app
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "web/public/brand/amadeus/amadeus.fpllive2d"
 POSTER = ROOT / "web/public/brand/amadeus/amadeus-poster.png"
+STAGE = ROOT / "web/public/brand/amadeus/amadeus-stage-poster.png"
 STATES = ("idle", "listening", "thinking", "tool", "success", "error", "paused")
 
 
 def test_bundled_amadeus_has_editable_layers_and_seven_distinct_poses(tmp_path: Path) -> None:
     title, document, assets = read_package(PACKAGE.read_bytes())
-    assert title == "Amadeus"
-    assert document.schema_version == 2
-    assert len(document.parts) >= 12
-    assert len(document.deformers) >= 3
+    assert title == "红莉栖 · Amadeus"
+    assert document.schema_version == 3
+    assert len(document.parts) >= 18
+    assert len(document.bones) >= 12
+    assert all(part.skin_weights for part in document.parts)
+    assert set(document.cameras) == {"avatar", "stage"}
     assert set(document.state_bindings) == set(STATES)
     paths = {}
     for asset_id, (png, _, _) in assets.items():
@@ -34,6 +38,9 @@ def test_bundled_amadeus_has_editable_layers_and_seven_distinct_poses(tmp_path: 
         assert poster.size == (512, 512)
         assert poster.mode == "RGBA"
         assert poster.getpixel((0, 0))[3] == 0
+    with Image.open(STAGE) as stage:
+        assert stage.size == (512, 768)
+        assert stage.getbbox()
 
     signatures = set()
     for state in STATES:
@@ -47,6 +54,7 @@ def test_bundled_amadeus_has_editable_layers_and_seven_distinct_poses(tmp_path: 
             for parameter in document.parameters
         )
         for size in (48, 76):
+            avatar = document.cameras["avatar"]
             frame = render_frame(
                 document,
                 paths,
@@ -55,11 +63,22 @@ def test_bundled_amadeus_has_editable_layers_and_seven_distinct_poses(tmp_path: 
                 expression_id=expression.id,
                 width=size,
                 height=size,
+                crop=(avatar.x, avatar.y, avatar.width, avatar.height),
             )
             assert frame.getbbox()
             if size == 76:
                 signatures.add(hashlib.sha256(frame.tobytes()).hexdigest())
     assert len(signatures) == len(STATES)
+
+
+def test_idle_pose_respects_active_tracks_and_bone_weights() -> None:
+    _, document, _ = read_package(PACKAGE.read_bytes())
+    binding = document.state_bindings["idle"]
+    values = parameter_values(document, 0, binding.motion_id, binding.expression_id)
+    idle, rotations = idle_pose(document, values, 1700, binding.motion_id, binding.expression_id)
+    assert idle["ParamAngleX"] == values["ParamAngleX"]
+    assert idle["ParamBreath"] != values["ParamBreath"]
+    assert set(rotations) == set(document.idle_behavior.spring_bones)
 
 
 @pytest.mark.asyncio

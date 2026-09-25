@@ -5,7 +5,7 @@ export type ProjectLibraryItem = {
   id: string;
   title: string;
   status?: "draft" | "completed";
-  updated_at: string;
+  updated_at?: string;
 };
 
 export function ProjectLibraryCard({
@@ -52,7 +52,7 @@ export function ProjectLibraryCard({
             </span>
           )}
           {metadata}
-          <small>{relativeTime(project.updated_at)}</small>
+          {project.updated_at && <small>{relativeTime(project.updated_at)}</small>}
         </div>
         <h2>{project.title}</h2>
         {description && <p>{description}</p>}

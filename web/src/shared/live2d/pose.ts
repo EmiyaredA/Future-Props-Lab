@@ -59,7 +59,13 @@ export function parameterValues(
 function sample(keys: Keyform[], value: number) {
   const [a, b, t] = interval(keys, value, (k) => k.value);
   const result: Partial<Keyform> = {};
-  for (const field of ["rotation", "scale", "opacity", "offsetX", "offsetY"] as const)
+  for (const field of [
+    "rotation",
+    "scale",
+    "opacity",
+    "offsetX",
+    "offsetY",
+  ] as const)
     if (a[field] != null && b[field] != null)
       result[field] = a[field]! + (b[field]! - a[field]!) * t;
   if (a.points && b.points)
@@ -133,6 +139,7 @@ export function boneTransform(bones: Bone[]) {
 export function evaluate(
   doc: CharacterDocument,
   values: Record<string, number>,
+  boneRotations: Record<string, number> = {},
 ): { parts: PosedPart[]; deformers: Deformer[]; bones: Bone[] } {
   const parts = copy(doc.parts),
     deformers = copy(doc.deformers),
@@ -173,6 +180,7 @@ export function evaluate(
           bone.offsetY += posed.offsetY - base.offsetY!;
       }
     }
+  for (const bone of bones) bone.rotation += boneRotations[bone.id] ?? 0;
   for (const d of deformers) d.scale = Math.max(0.001, d.scale);
   for (const b of bones) b.scale = Math.max(0.001, b.scale);
   const transform = deformerTransform(deformers);

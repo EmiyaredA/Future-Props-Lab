@@ -127,6 +127,67 @@
 .amadeus-body {
   background: transparent;
 }
+.amadeus-stage {
+  flex: 0 0 min(360px, 44vw);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--amadeus-line);
+  background: radial-gradient(
+    circle at 50% 37%,
+    #f8e8df,
+    var(--amadeus-surface) 72%
+  );
+  overflow: hidden;
+}
+.amadeus-stage-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 13px 16px;
+  color: var(--amadeus-ink);
+  font-size: 12px;
+}
+.amadeus-stage-head small {
+  color: var(--amadeus-muted);
+}
+.amadeus-stage-art {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.amadeus-stage .amadeus-avatar {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.amadeus-stage .amadeus-avatar-poster,
+.amadeus-stage .amadeus-avatar-canvas canvas {
+  object-fit: contain;
+  object-position: center bottom;
+}
+:root[data-theme="dark"] .amadeus-stage {
+  background: radial-gradient(
+    circle at 50% 40%,
+    #382720,
+    var(--amadeus-surface) 72%
+  );
+}
+@media (max-width: 740px) {
+  .amadeus-stage {
+    flex-basis: min(290px, 45vw);
+  }
+  .amadeus-history {
+    flex-basis: 170px;
+  }
+}
 
 .amadeus-history {
   flex-basis: 208px;

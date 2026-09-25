@@ -375,6 +375,10 @@ export default function App() {
         <PageBoundary>
           <Live2DProjectsPage
             readOnly={!workspaceAllows(me.workspace, "content.write")}
+            appearanceScope={{
+              userId: me.user.id,
+              workspaceId: me.workspace.id,
+            }}
             onOpen={(projectId) =>
               navigate("live2d-workshop-editor", projectId)
             }

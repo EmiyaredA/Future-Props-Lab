@@ -12,6 +12,7 @@ export function AnimationLibrary({
   setMotion,
   expressionId,
   setExpression,
+  onPreviewState,
   values,
   overrides,
   setOverrides,
@@ -23,6 +24,16 @@ export function AnimationLibrary({
   setMotion: (id: string) => void;
   expressionId: string;
   setExpression: (id: string) => void;
+  onPreviewState?: (
+    state:
+      | "idle"
+      | "listening"
+      | "thinking"
+      | "tool"
+      | "success"
+      | "error"
+      | "paused",
+  ) => void;
   values: Record<string, number>;
   overrides: Record<string, number>;
   setOverrides: (v: Record<string, number>) => void;
@@ -203,6 +214,7 @@ export function AnimationLibrary({
         expressionId={expressionId}
         setMotion={setMotion}
         setExpression={setExpression}
+        onPreviewState={onPreviewState}
         readOnly={readOnly}
       />
     </>

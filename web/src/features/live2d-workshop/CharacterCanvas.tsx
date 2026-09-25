@@ -32,6 +32,8 @@ export function CharacterCanvas({
   readOnly,
   onSelect,
   onPoint,
+  onVertexSelect,
+  onBonePoint,
   onAddPoint,
   onGesture,
   urls,
@@ -46,6 +48,8 @@ export function CharacterCanvas({
   readOnly: boolean;
   onSelect: (id: string) => void;
   onPoint: (index: number, point: Point) => void;
+  onVertexSelect: (index: number) => void;
+  onBonePoint: (id: string, point: Point) => void;
   onAddPoint: (point: Point) => void;
   onGesture: () => void;
   urls: Record<string, string>;
@@ -58,6 +62,7 @@ export function CharacterCanvas({
     [zoom, setZoom] = useState(1),
     [failure, setFailure] = useState("");
   const drag = useRef<number | null>(null);
+  const boneDrag = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fitRef = useRef(true);
   const [hand, setHand] = useState(false);
@@ -287,14 +292,18 @@ export function CharacterCanvas({
             }}
             onPointerMove={(e) => {
               if (drag.current !== null) onPoint(drag.current, pointer(e));
+              if (boneDrag.current !== null)
+                onBonePoint(boneDrag.current, pointer(e));
             }}
             onPointerUp={(e) => {
               drag.current = null;
+              boneDrag.current = null;
               if (e.currentTarget.hasPointerCapture(e.pointerId))
                 e.currentTarget.releasePointerCapture(e.pointerId);
             }}
             onPointerCancel={() => {
               drag.current = null;
+              boneDrag.current = null;
             }}
           >
             {parts
@@ -340,6 +349,64 @@ export function CharacterCanvas({
                           `${part.worldVertices[n].x},${part.worldVertices[n].y}`,
                       )
                       .join(" ")}
+                  />
+                ))}
+              </g>
+            )}
+            {mode === "rig" && (
+              <g className="l2-rig-overlay">
+                {Object.entries(doc.cameras).map(([name, camera]) => (
+                  <rect
+                    key={name}
+                    x={camera.x}
+                    y={camera.y}
+                    width={camera.width}
+                    height={camera.height}
+                    fill="none"
+                    stroke={name === "avatar" ? "#6ee7c7" : "#efa86a"}
+                    strokeWidth={2}
+                    strokeDasharray="8 5"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+                {doc.bones.map((bone) => {
+                  const parent = doc.bones.find(
+                    (item) => item.id === bone.parentId,
+                  );
+                  return (
+                    parent && (
+                      <line
+                        key={`${bone.id}-line`}
+                        x1={parent.x}
+                        y1={parent.y}
+                        x2={bone.x}
+                        y2={bone.y}
+                        stroke="#79d9fa"
+                        strokeWidth={2}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    )
+                  );
+                })}
+                {doc.bones.map((bone) => (
+                  <circle
+                    key={bone.id}
+                    cx={bone.x}
+                    cy={bone.y}
+                    r={Math.max(doc.width / 120, 6)}
+                    fill={selected === bone.id ? "#ffe38d" : "#82d9ff"}
+                    stroke="#183653"
+                    strokeWidth={2}
+                    aria-label={`骨骼 ${bone.name}`}
+                    onPointerDown={(event) => {
+                      event.stopPropagation();
+                      onSelect(bone.id);
+                      if (!readOnly) {
+                        onGesture();
+                        boneDrag.current = bone.id;
+                        svgRef.current?.setPointerCapture(event.pointerId);
+                      }
+                    }}
                   />
                 ))}
               </g>
@@ -416,6 +483,7 @@ export function CharacterCanvas({
                   }}
                   onPointerDown={(e) => {
                     e.stopPropagation();
+                    onVertexSelect(index);
                     onGesture();
                     drag.current = index;
                     svgRef.current?.setPointerCapture(e.pointerId);

@@ -13,15 +13,21 @@ import {
   Square,
   ChevronDown,
   ChevronRight,
+  PanelRightOpen,
+  PanelRightClose,
 } from "lucide-react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { AccountSessionContext } from "@features/accounts";
 import { fetchApiJson } from "@platform/api/client";
 import { avatarStateLabels, compactContext } from "./protocol";
 import { AmadeusAvatar } from "./Avatar";
+import { useAppearance } from "./useAppearance";
 import { useAmadeusController } from "./useAmadeusController";
 
 export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
+  const [stageOpen, setStageOpen] = useState(false);
+  const appearance = useAppearance(session);
   const {
     bridge,
     detail,
@@ -95,7 +101,11 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     <div className="amadeus-window">
       <header className="amadeus-header">
         <div className="amadeus-brand">
-          <AmadeusAvatar state={avatarState} />
+          <AmadeusAvatar
+            state={avatarState}
+            sourceUrl={appearance.url}
+            camera="avatar"
+          />
           <div>
             <strong>Amadeus</strong>
             <small>
@@ -108,6 +118,24 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           </div>
         </div>
         <div className="amadeus-header-actions">
+          <button
+            title={stageOpen ? "折叠数字人" : "展开数字人"}
+            aria-label={stageOpen ? "折叠数字人" : "展开数字人"}
+            aria-pressed={stageOpen}
+            onClick={() => {
+              const next = !stageOpen;
+              setStageOpen(next);
+              void bridge
+                .setAmadeusStageOpen?.(next)
+                .catch(() => setStageOpen(!next));
+            }}
+          >
+            {stageOpen ? (
+              <PanelRightClose size={17} />
+            ) : (
+              <PanelRightOpen size={17} />
+            )}
+          </button>
           <button
             title={alwaysOnTop ? "取消悬浮置顶" : "保持悬浮在应用上方"}
             aria-label={alwaysOnTop ? "取消悬浮置顶" : "保持悬浮在应用上方"}
@@ -143,6 +171,11 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           </button>
         </div>
       </header>
+      {appearance.notice && (
+        <div className="amadeus-running-banner" role="status">
+          {appearance.notice}
+        </div>
+      )}
       {activeRun && detail?.conversation.id !== activeRun.conversation_id && (
         <div className="amadeus-running-banner">
           <span>Amadeus 正在另一个对话中处理任务</span>
@@ -392,7 +425,11 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             {!detail?.messages.length && (
               <div className="amadeus-welcome">
                 <div className="amadeus-welcome-avatar">
-                  <AmadeusAvatar state={avatarState} />
+                  <AmadeusAvatar
+                    state={avatarState}
+                    sourceUrl={appearance.url}
+                    camera="avatar"
+                  />
                 </div>
                 <h1>你好，我是 Amadeus</h1>
                 <p>
@@ -682,6 +719,21 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             </div>
           </div>
         </main>
+        {stageOpen && (
+          <aside className="amadeus-stage" aria-label="红莉栖数字人舞台">
+            <div className="amadeus-stage-head">
+              <strong>{appearance.name}</strong>
+              <small>{avatarStateLabels[avatarState]}</small>
+            </div>
+            <div className="amadeus-stage-art">
+              <AmadeusAvatar
+                state={avatarState}
+                sourceUrl={appearance.url}
+                camera="stage"
+              />
+            </div>
+          </aside>
+        )}
       </div>
       {previewReference && (
         <div

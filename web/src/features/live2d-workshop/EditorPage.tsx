@@ -15,14 +15,22 @@ import {
 } from "lucide-react";
 import { ApiError } from "@platform/api/client";
 import {
+  AMADEUS_PACKAGE_URL,
+  BUNDLED_AMADEUS_PROJECT_ID,
+} from "@shared/live2d/bundled";
+import { loadAmadeusModel } from "@features/amadeus/avatarModel";
+import {
   getDocument,
   getProject,
+  importProject,
   listAssets,
   retireAsset,
   saveDocument,
   uploadAsset,
 } from "./api";
 import { AnimationLibrary, AnimationTimeline } from "./AnimationPanel";
+import { BonePanel } from "./BonePanel";
+import { CameraBehaviorPanel } from "./CameraBehaviorPanel";
 import { CharacterCanvas } from "./CharacterCanvas";
 import { Modal } from "./Controls";
 import { ExportPanel } from "./ExportPanel";
@@ -56,7 +64,7 @@ import "./editor.css";
 export function EditorPage({
   projectId,
   onBack,
-  readOnly = false,
+  readOnly: inheritedReadOnly = false,
   registerNavigationGuard,
 }: {
   projectId: string;
@@ -66,6 +74,8 @@ export function EditorPage({
     guard: ((proceed: () => void) => boolean) | null,
   ) => void;
 }) {
+  const builtIn = projectId === BUNDLED_AMADEUS_PROJECT_ID;
+  const readOnly = inheritedReadOnly || builtIn;
   const [leftOpen, setLeftOpen] = useState(true),
     [rightOpen, setRightOpen] = useState(true);
   const [project, setProject] = useState<Project | null>(null),
@@ -78,6 +88,16 @@ export function EditorPage({
     [parameterValue, setParameterValue] = useState(0);
   const [motionId, setMotionId] = useState(""),
     [expressionId, setExpressionId] = useState(""),
+    [previewState, setPreviewState] = useState<
+      | "idle"
+      | "listening"
+      | "thinking"
+      | "tool"
+      | "success"
+      | "error"
+      | "paused"
+      | null
+    >(null),
     [overrides, setOverrides] = useState<Record<string, number>>({}),
     [frame, setFrame] = useState(0),
     [playing, setPlaying] = useState(false);
@@ -107,6 +127,32 @@ export function EditorPage({
   useEffect(() => {
     mounted.current = true;
     let live = true;
+    if (builtIn) {
+      void loadAmadeusModel()
+        .then(({ document, urls: bundledUrls }) => {
+          if (!live) return;
+          const now = new Date().toISOString();
+          setProject({
+            id: projectId,
+            title: "红莉栖 · Amadeus（内置案例）",
+            revision: 0,
+            createdAt: now,
+            updatedAt: now,
+            thumbnail: null,
+          });
+          setDoc(document);
+          documentRef.current = document;
+          setUrls(Object.fromEntries(bundledUrls));
+          setAssets([]);
+        })
+        .catch((cause) => {
+          if (live) setError(String(cause));
+        });
+      return () => {
+        live = false;
+        mounted.current = false;
+      };
+    }
     void Promise.all([
       getProject(projectId),
       getDocument(projectId),
@@ -129,7 +175,7 @@ export function EditorPage({
       mounted.current = false;
       importAbort.current?.abort();
     };
-  }, [projectId]);
+  }, [projectId, builtIn]);
   const checkpoint = useCallback(() => {
     if (documentRef.current) {
       history.current.push(copy(documentRef.current));
@@ -269,18 +315,29 @@ export function EditorPage({
       if (acc >= 1) {
         const count = Math.floor(acc);
         acc -= count;
-        setFrame(
-          (f) =>
+        setFrame((f) => {
+          if (
+            previewState &&
+            doc?.stateBindings[previewState]?.motionId === motion.id &&
+            doc.stateBindings[previewState]?.playback === "onceHold"
+          ) {
+            const next = Math.min(motion.duration, f + count);
+            if (next >= motion.duration)
+              queueMicrotask(() => setPlaying(false));
+            return next;
+          }
+          return (
             motion.loopStart +
             ((Math.max(f, motion.loopStart) - motion.loopStart + count) %
-              (motion.loopEnd - motion.loopStart)),
-        );
+              (motion.loopEnd - motion.loopStart))
+          );
+        });
       }
       handle = requestAnimationFrame(tick);
     };
     handle = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(handle);
-  }, [playing, motion]);
+  }, [playing, motion, previewState, doc]);
   const values = useMemo(
     () =>
       doc
@@ -610,6 +667,31 @@ export function EditorPage({
           ))}
         </nav>
         <div className="l2-header-actions">
+          {builtIn && !inheritedReadOnly && (
+            <button
+              onClick={() =>
+                void (async () => {
+                  try {
+                    const response = await fetch(AMADEUS_PACKAGE_URL);
+                    if (!response.ok) throw new Error("内置工程包无法读取");
+                    const file = new File(
+                      [await response.blob()],
+                      "amadeus.fpllive2d",
+                      { type: "application/zip" },
+                    );
+                    await importProject(file);
+                    onBack();
+                  } catch (cause) {
+                    setError(
+                      cause instanceof Error ? cause.message : "复制失败",
+                    );
+                  }
+                })()
+              }
+            >
+              创建可编辑副本
+            </button>
+          )}
           <button
             aria-label="对象面板"
             aria-pressed={leftOpen}
@@ -725,7 +807,17 @@ export function EditorPage({
           </button>
         </div>
       )}
-      {mode === "export" ? (
+      {mode === "export" && builtIn ? (
+        <section className="l2-builtin-export">
+          <h2>内置只读案例</h2>
+          <p>
+            可查看图层、骨骼、蒙皮、参数、动作和状态绑定。创建副本后即可编辑并交付。
+          </p>
+          <a href={AMADEUS_PACKAGE_URL} download="amadeus.fpllive2d">
+            下载原生工程包
+          </a>
+        </section>
+      ) : mode === "export" ? (
         <ExportPanel
           doc={doc}
           projectId={projectId}
@@ -751,6 +843,11 @@ export function EditorPage({
                   }}
                   expressionId={expressionId}
                   setExpression={setExpressionId}
+                  onPreviewState={(state) => {
+                    setPreviewState(state);
+                    setFrame(0);
+                    setPlaying(false);
+                  }}
                   values={values}
                   overrides={overrides}
                   setOverrides={setOverrides}
@@ -784,6 +881,16 @@ export function EditorPage({
                 setVertexIndex(0);
               }}
               onGesture={checkpoint}
+              onVertexSelect={setVertexIndex}
+              onBonePoint={(id, point) =>
+                edit((draft) => {
+                  const bone = draft.bones.find((item) => item.id === id);
+                  if (bone) {
+                    bone.x = point.x;
+                    bone.y = point.y;
+                  }
+                }, false)
+              }
               onPoint={(index, point) => {
                 setVertexIndex(index);
                 const p = localPoint(index, point);
@@ -809,24 +916,48 @@ export function EditorPage({
                   ))}
                 </>
               ) : (
-                <Inspector
-                  doc={doc}
-                  selected={selected}
-                  posed={shape}
-                  mode={mode}
-                  edit={edit}
-                  editShape={editShape}
-                  parameterId={parameterId}
-                  onParameter={changeParameter}
-                  parameterValue={parameterValue}
-                  onValue={setParameterValue}
-                  vertexIndex={vertexIndex}
-                  setVertexIndex={setVertexIndex}
-                  readOnly={readOnly || busy}
-                  confirm={(message, action) =>
-                    setConfirmation({ message, action })
-                  }
-                />
+                <>
+                  {mode === "rig" && (
+                    <BonePanel
+                      doc={doc}
+                      selected={selected}
+                      vertexIndex={vertexIndex}
+                      setVertexIndex={setVertexIndex}
+                      edit={edit}
+                      readOnly={readOnly || busy}
+                    />
+                  )}
+                  {!(
+                    mode === "rig" &&
+                    doc.bones.some((bone) => bone.id === selected)
+                  ) && (
+                    <Inspector
+                      doc={doc}
+                      selected={selected}
+                      posed={shape}
+                      mode={mode}
+                      edit={edit}
+                      editShape={editShape}
+                      parameterId={parameterId}
+                      onParameter={changeParameter}
+                      parameterValue={parameterValue}
+                      onValue={setParameterValue}
+                      vertexIndex={vertexIndex}
+                      setVertexIndex={setVertexIndex}
+                      readOnly={readOnly || busy}
+                      confirm={(message, action) =>
+                        setConfirmation({ message, action })
+                      }
+                    />
+                  )}
+                  {mode === "rig" && (
+                    <CameraBehaviorPanel
+                      doc={doc}
+                      edit={edit}
+                      readOnly={readOnly || busy}
+                    />
+                  )}
+                </>
               )}
             </aside>
           </div>

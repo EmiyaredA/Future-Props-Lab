@@ -18,11 +18,13 @@ export type BundledAvatar = {
   urls: Map<string, string>;
 };
 
-let cached: Promise<BundledAvatar> | null = null;
+const cache = new Map<string, Promise<BundledAvatar>>();
 
-export function loadAmadeusModel(): Promise<BundledAvatar> {
-  cached ??= (async () => {
-    const response = await fetch(AMADEUS_PACKAGE_URL);
+export function loadCharacterModel(url: string): Promise<BundledAvatar> {
+  const existing = cache.get(url);
+  if (existing) return existing;
+  const loading = (async () => {
+    const response = await fetch(url, { credentials: "same-origin" });
     if (!response.ok) throw new Error("Amadeus 模型文件无法读取");
     const files = unzipSync(new Uint8Array(await response.arrayBuffer()));
     const manifestFile = files["manifest.json"];
@@ -34,7 +36,7 @@ export function loadAmadeusModel(): Promise<BundledAvatar> {
     };
     if (
       manifest.format !== "fpllive2d" ||
-      manifest.version !== 2 ||
+      ![2, 3].includes(manifest.version ?? -1) ||
       !manifest.document
     )
       throw new Error("Amadeus 模型格式无效");
@@ -75,11 +77,14 @@ export function loadAmadeusModel(): Promise<BundledAvatar> {
     }
     return { document, urls };
   })().catch((error) => {
-    cached = null;
+    cache.delete(url);
     throw error;
   });
-  return cached;
+  cache.set(url, loading);
+  return loading;
 }
+
+export const loadAmadeusModel = () => loadCharacterModel(AMADEUS_PACKAGE_URL);
 
 export function boundPose(document: CharacterDocument, state: AvatarState) {
   const binding = document.stateBindings[state];

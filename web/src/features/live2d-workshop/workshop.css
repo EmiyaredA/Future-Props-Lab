@@ -69,17 +69,27 @@
     ),
     linear-gradient(
       145deg,
-      color-mix(in srgb, var(--accent-soft, #fff1e8) 88%, var(--surface, #fffdf9)),
+      color-mix(
+        in srgb,
+        var(--accent-soft, #fff1e8) 88%,
+        var(--surface, #fffdf9)
+      ),
       var(--surface-soft, #f7f1ea)
     );
 }
 .l2-projects .workshop-project-cover.live2d .workshop-project-cover-label {
   align-items: flex-start;
 }
-.l2-projects .workshop-project-cover.live2d .workshop-project-cover-label strong {
+.l2-projects
+  .workshop-project-cover.live2d
+  .workshop-project-cover-label
+  strong {
   color: var(--text-strong, #241f1b);
 }
-.l2-projects .workshop-project-cover.live2d .workshop-project-cover-label small {
+.l2-projects
+  .workshop-project-cover.live2d
+  .workshop-project-cover-label
+  small {
   color: var(--muted, #8f8378);
 }
 .l2-projects .workshop-project-cover:has(.l2-project-thumb)::before,
@@ -94,7 +104,8 @@
     linear-gradient(-45deg, transparent 75%, #ece7df 75%) 0 12px / 24px 24px,
     #f7f3ec;
 }
-.l2-projects .workshop-project-cover:has(.l2-project-thumb)
+.l2-projects
+  .workshop-project-cover:has(.l2-project-thumb)
   .workshop-project-cover-content {
   display: none;
 }
@@ -349,7 +360,9 @@
   color: var(--text);
   background: var(--surface);
 }
-[data-theme="dark"] .l2-projects .workshop-project-cover:has(.l2-project-thumb) {
+[data-theme="dark"]
+  .l2-projects
+  .workshop-project-cover:has(.l2-project-thumb) {
   background:
     linear-gradient(45deg, #2a3140 25%, transparent 25%) -12px 0 / 24px 24px,
     linear-gradient(-45deg, #2a3140 25%, transparent 25%) -12px 0 / 24px 24px,
@@ -409,4 +422,3 @@
   background: #735bdf;
   color: white;
 }
-

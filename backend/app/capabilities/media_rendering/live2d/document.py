@@ -216,7 +216,9 @@ class CharacterDocument(ValueModel):
         default_factory=dict, alias="stateBindings", max_length=7
     )
     cameras: dict[Literal["avatar", "stage"], CharacterCamera] = Field(default_factory=dict)
-    idle_behavior: CharacterIdleBehavior = Field(default_factory=CharacterIdleBehavior, alias="idleBehavior")
+    idle_behavior: CharacterIdleBehavior = Field(
+        default_factory=CharacterIdleBehavior, alias="idleBehavior"
+    )
     cubism_parameter_ids: dict[str, str] = Field(
         default_factory=dict, alias="cubismParameterIds", max_length=128
     )
@@ -225,6 +227,9 @@ class CharacterDocument(ValueModel):
     @classmethod
     def upgrade_v1(cls, value: Any) -> Any:
         if isinstance(value, dict) and value.get("schemaVersion", 1) in (1, 2):
+            width = value.get("width", 1200)
+            height = value.get("height", 1600)
+            side = min(width, height * 0.6)
             bindings = {
                 state: {
                     **binding,
@@ -232,7 +237,16 @@ class CharacterDocument(ValueModel):
                 }
                 for state, binding in value.get("stateBindings", {}).items()
             }
-            return {**value, "schemaVersion": 3, "stateBindings": bindings}
+            return {
+                **value,
+                "schemaVersion": 3,
+                "stateBindings": bindings,
+                "cameras": value.get("cameras")
+                or {
+                    "avatar": {"x": (width - side) / 2, "y": 0, "width": side, "height": side},
+                    "stage": {"x": 0, "y": 0, "width": width, "height": height},
+                },
+            }
         return value
 
     @model_validator(mode="after")
@@ -286,12 +300,21 @@ class CharacterDocument(ValueModel):
                 count = (
                     len(target.vertices)
                     if isinstance(target, CharacterPart)
-                    else len(target.points) if isinstance(target, CharacterDeformer) else 0
+                    else len(target.points)
+                    if isinstance(target, CharacterDeformer)
+                    else 0
                 )
                 fields = [
                     {
                         name
-                        for name in ("points", "rotation", "scale", "opacity", "offset_x", "offset_y")
+                        for name in (
+                            "points",
+                            "rotation",
+                            "scale",
+                            "opacity",
+                            "offset_x",
+                            "offset_y",
+                        )
                         if getattr(k, name) is not None
                     }
                     for k in binding.keys
@@ -301,8 +324,11 @@ class CharacterDocument(ValueModel):
                 allowed = (
                     {"points", "opacity"}
                     if isinstance(target, CharacterPart)
-                    else ({"rotation", "scale", "offset_x", "offset_y"} if isinstance(target, CharacterBone)
-                          else ({"rotation", "scale"} if target.kind == "rotation" else {"points"}))
+                    else (
+                        {"rotation", "scale", "offset_x", "offset_y"}
+                        if isinstance(target, CharacterBone)
+                        else ({"rotation", "scale"} if target.kind == "rotation" else {"points"})
+                    )
                 )
                 if not fields[0] <= allowed:
                     raise ValueError("关键形属性不适用于此目标类型")
@@ -374,8 +400,12 @@ def initial_document(width: int = 1200, height: int = 1600) -> CharacterDocument
         width=width,
         height=height,
         cameras={
-            "avatar": CharacterCamera(x=(width - min(width, height * 0.6)) / 2, y=0,
-                                      width=min(width, height * 0.6), height=min(width, height * 0.6)),
+            "avatar": CharacterCamera(
+                x=(width - min(width, height * 0.6)) / 2,
+                y=0,
+                width=min(width, height * 0.6),
+                height=min(width, height * 0.6),
+            ),
             "stage": CharacterCamera(x=0, y=0, width=width, height=height),
         },
         parameters=[
