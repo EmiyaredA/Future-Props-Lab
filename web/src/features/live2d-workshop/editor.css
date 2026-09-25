@@ -131,6 +131,12 @@
 .l2-tree-actions button {
   padding: 5px 7px;
 }
+.l2-tree-actions button[aria-pressed="true"],
+.l2-tree-row button[aria-pressed="true"]:not(.l2-tree-name) {
+  color: #ffe7a8;
+  background: #72573a55;
+  border-radius: 6px;
+}
 .l2-tree-row {
   display: flex;
   border-radius: 7px;

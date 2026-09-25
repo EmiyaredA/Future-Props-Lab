@@ -13,7 +13,7 @@ import {
   Undo2,
   Upload,
 } from "lucide-react";
-import { ApiError } from "@platform/api/client";
+import { ApiError, fetchApiBlob } from "@platform/api/client";
 import {
   AMADEUS_PACKAGE_URL,
   BUNDLED_AMADEUS_PROJECT_ID,
@@ -38,6 +38,7 @@ import { ObjectTree } from "./ObjectTree";
 import { Inspector, type Edit } from "./Inspector";
 import { ParameterStrip } from "./ParameterStrip";
 import { parsePsd } from "./importLayers";
+import { meshFromPng } from "./alphaMesh";
 import { planPsdReimport, pngDimensions } from "./psdReimport";
 import {
   captureKey,
@@ -47,6 +48,7 @@ import {
   evaluate,
   makePart,
   parameterValues,
+  setVertexBoneWeight,
   triangulate,
 } from "./model";
 import type {
@@ -83,6 +85,15 @@ export function EditorPage({
     [assets, setAssets] = useState<Asset[]>([]);
   const [mode, setMode] = useState<Mode>("model"),
     [selected, setSelected] = useState(""),
+    [soloPartId, setSoloPartId] = useState<string | null>(null),
+    [influence, setInfluence] = useState(""),
+    [showWeights, setShowWeights] = useState(false),
+    [weightBrush, setWeightBrush] = useState(false),
+    [brushRadius, setBrushRadius] = useState(65),
+    [brushStrength, setBrushStrength] = useState(1),
+    [poseTrial, setPoseTrial] = useState<
+      Record<string, { rotation: number; offsetX: number; offsetY: number }>
+    >({}),
     [vertexIndex, setVertexIndex] = useState(0),
     [parameterId, setParameterId] = useState("ParamAngleX"),
     [parameterValue, setParameterValue] = useState(0);
@@ -364,10 +375,20 @@ export function EditorPage({
       overrides,
     ],
   );
-  const posed = useMemo(
-    () => (doc ? evaluate(doc, values) : { parts: [], deformers: [] }),
-    [doc, values],
-  );
+  const posed = useMemo(() => {
+    if (!doc) return { parts: [], deformers: [] };
+    const trialDoc = Object.keys(poseTrial).length ? copy(doc) : doc;
+    if (trialDoc !== doc)
+      for (const bone of trialDoc.bones) {
+        const trial = poseTrial[bone.id];
+        if (trial) {
+          bone.rotation += trial.rotation;
+          bone.offsetX += trial.offsetX;
+          bone.offsetY += trial.offsetY;
+        }
+      }
+    return evaluate(trialDoc, values);
+  }, [doc, values, poseTrial]);
   const shape =
     posed.parts.find((p) => p.id === selected) ??
     posed.deformers.find((d) => d.id === selected);
@@ -528,14 +549,19 @@ export function EditorPage({
           asset: Asset;
           layer: (typeof imported)[number];
           index: number;
+          mesh: Awaited<ReturnType<typeof meshFromPng>> | null;
         }[] = [];
         try {
           for (const [index, layer] of imported.entries()) {
             if (abort.signal.aborted) throw new Error("导入已取消");
+            const mesh = plan?.matches.has(index)
+              ? null
+              : await meshFromPng(layer.file);
             uploaded.push({
               asset: await uploadAsset(projectId, layer.file),
               layer,
               index,
+              mesh,
             });
           }
           if (abort.signal.aborted || !mounted.current)
@@ -551,7 +577,7 @@ export function EditorPage({
               draft.width = size.width;
               draft.height = size.height;
             }
-            for (const { asset, layer, index } of uploaded) {
+            for (const { asset, layer, index, mesh } of uploaded) {
               retiredAssets.current.add(asset.id);
               const matchedId = plan?.matches.get(index);
               const matched =
@@ -562,6 +588,7 @@ export function EditorPage({
                 continue;
               }
               const part = makePart(asset, draft, layer.x, layer.y);
+              if (mesh) Object.assign(part, mesh);
               part.name = layer.name ?? part.name;
               part.group = layer.group ?? "";
               part.opacity = layer.opacity ?? 1;
@@ -857,6 +884,8 @@ export function EditorPage({
                 <ObjectTree
                   doc={doc}
                   selected={selected}
+                  soloPartId={soloPartId}
+                  onSoloPart={setSoloPartId}
                   onSelect={(v) => {
                     setSelected(v);
                     setVertexIndex(0);
@@ -868,7 +897,9 @@ export function EditorPage({
             </aside>
             <CharacterCanvas
               doc={doc}
-              parts={posed.parts}
+              parts={posed.parts.filter(
+                (part) => !soloPartId || part.id === soloPartId,
+              )}
               deformers={posed.deformers}
               assets={assets}
               selected={selected}
@@ -876,6 +907,31 @@ export function EditorPage({
               readOnly={readOnly || busy}
               urls={urls}
               onUrl={onUrl}
+              influence={influence || doc.bones[0]?.id || ""}
+              showWeights={showWeights}
+              brush={weightBrush}
+              brushRadius={brushRadius}
+              onWeightBrush={(point) => {
+                const posedPart = posed.parts.find(
+                  (part) => part.id === selected,
+                );
+                const boneId = influence || doc.bones[0]?.id;
+                if (!posedPart?.skinWeights || !boneId) return;
+                const vertices = posedPart.worldVertices.flatMap(
+                  (vertex, index) =>
+                    Math.hypot(vertex.x - point.x, vertex.y - point.y) <=
+                    brushRadius
+                      ? [index]
+                      : [],
+                );
+                if (!vertices.length) return;
+                edit((draft) => {
+                  const part = draft.parts.find((item) => item.id === selected);
+                  if (!part?.skinWeights) return;
+                  for (const index of vertices)
+                    setVertexBoneWeight(part, index, boneId, brushStrength);
+                }, false);
+              }}
               onSelect={(v) => {
                 setSelected(v);
                 setVertexIndex(0);
@@ -925,6 +981,29 @@ export function EditorPage({
                       setVertexIndex={setVertexIndex}
                       edit={edit}
                       readOnly={readOnly || busy}
+                      influence={influence}
+                      setInfluence={setInfluence}
+                      showWeights={showWeights}
+                      setShowWeights={setShowWeights}
+                      brush={weightBrush}
+                      setBrush={setWeightBrush}
+                      brushRadius={brushRadius}
+                      setBrushRadius={setBrushRadius}
+                      brushStrength={brushStrength}
+                      setBrushStrength={setBrushStrength}
+                      trial={
+                        poseTrial[selected] ?? {
+                          rotation: 0,
+                          offsetX: 0,
+                          offsetY: 0,
+                        }
+                      }
+                      setTrial={(trial) =>
+                        setPoseTrial((previous) => ({
+                          ...previous,
+                          [selected]: trial,
+                        }))
+                      }
                     />
                   )}
                   {!(
@@ -945,6 +1024,52 @@ export function EditorPage({
                       vertexIndex={vertexIndex}
                       setVertexIndex={setVertexIndex}
                       readOnly={readOnly || busy}
+                      onFitMesh={() => {
+                        const part = doc.parts.find(
+                          (item) => item.id === selected,
+                        );
+                        const asset = assets.find(
+                          (item) => item.id === part?.assetId,
+                        );
+                        if (!part || !asset) return;
+                        setBusy(true);
+                        void fetchApiBlob(asset.url)
+                          .then(meshFromPng)
+                          .then((mesh) => {
+                            const apply = () =>
+                              edit((draft) => {
+                                const target = draft.parts.find(
+                                  (item) => item.id === part.id,
+                                )!;
+                                clearBindings(draft, part.id);
+                                Object.assign(target, mesh);
+                                target.skinWeights = undefined;
+                                setVertexIndex(0);
+                              });
+                            if (
+                              part.skinWeights ||
+                              doc.parameters.some((parameter) =>
+                                parameter.bindings.some(
+                                  (binding) => binding.targetId === part.id,
+                                ),
+                              )
+                            )
+                              setConfirmation({
+                                message:
+                                  "按透明像素重建网格将清除此图层原有的蒙皮权重和参数关键形。可通过撤销恢复。",
+                                action: apply,
+                              });
+                            else apply();
+                          })
+                          .catch((cause) =>
+                            setError(
+                              cause instanceof Error
+                                ? cause.message
+                                : "网格生成失败",
+                            ),
+                          )
+                          .finally(() => setBusy(false));
+                      }}
                       confirm={(message, action) =>
                         setConfirmation({ message, action })
                       }

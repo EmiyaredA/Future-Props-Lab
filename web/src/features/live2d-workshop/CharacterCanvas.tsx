@@ -38,6 +38,11 @@ export function CharacterCanvas({
   onGesture,
   urls,
   onUrl,
+  influence,
+  showWeights,
+  brush,
+  brushRadius,
+  onWeightBrush,
 }: {
   doc: CharacterDocument;
   parts: PosedPart[];
@@ -54,6 +59,11 @@ export function CharacterCanvas({
   onGesture: () => void;
   urls: Record<string, string>;
   onUrl: (id: string, url: string | null) => void;
+  influence: string;
+  showWeights: boolean;
+  brush: boolean;
+  brushRadius: number;
+  onWeightBrush: (point: Point) => void;
 }) {
   const host = useRef<HTMLDivElement>(null),
     appRef = useRef<Application | null>(null),
@@ -63,6 +73,8 @@ export function CharacterCanvas({
     [failure, setFailure] = useState("");
   const drag = useRef<number | null>(null);
   const boneDrag = useRef<string | null>(null);
+  const brushing = useRef(false);
+  const [brushPoint, setBrushPoint] = useState<Point | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fitRef = useRef(true);
   const [hand, setHand] = useState(false);
@@ -287,10 +299,22 @@ export function CharacterCanvas({
             ref={svgRef}
             viewBox={`0 0 ${doc.width} ${doc.height}`}
             className="l2-canvas-overlay"
+            onPointerDown={(e) => {
+              if (mode !== "rig" || !brush || readOnly || !part || hand) return;
+              e.preventDefault();
+              brushing.current = true;
+              onGesture();
+              onWeightBrush(pointer(e));
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
             onDoubleClick={(e) => {
               if (editable && part && mode === "model") onAddPoint(pointer(e));
             }}
             onPointerMove={(e) => {
+              if (mode === "rig" && brush && part) {
+                setBrushPoint(pointer(e));
+                if (brushing.current) onWeightBrush(pointer(e));
+              }
               if (drag.current !== null) onPoint(drag.current, pointer(e));
               if (boneDrag.current !== null)
                 onBonePoint(boneDrag.current, pointer(e));
@@ -298,14 +322,40 @@ export function CharacterCanvas({
             onPointerUp={(e) => {
               drag.current = null;
               boneDrag.current = null;
+              brushing.current = false;
               if (e.currentTarget.hasPointerCapture(e.pointerId))
                 e.currentTarget.releasePointerCapture(e.pointerId);
             }}
             onPointerCancel={() => {
               drag.current = null;
               boneDrag.current = null;
+              brushing.current = false;
             }}
           >
+            <defs>
+              <filter
+                id="l2-alpha-outline"
+                x="-10%"
+                y="-10%"
+                width="120%"
+                height="120%"
+              >
+                <feMorphology
+                  in="SourceAlpha"
+                  operator="dilate"
+                  radius="3"
+                  result="expanded"
+                />
+                <feComposite
+                  in="expanded"
+                  in2="SourceAlpha"
+                  operator="out"
+                  result="rim"
+                />
+                <feFlood floodColor="#ffe187" result="color" />
+                <feComposite in="color" in2="rim" operator="in" />
+              </filter>
+            </defs>
             {parts
               .filter((p) => p.visible)
               .map((p) => (
@@ -352,6 +402,51 @@ export function CharacterCanvas({
                   />
                 ))}
               </g>
+            )}
+            {part && mode === "model" && urls[part.assetId] && (
+              <image
+                href={urls[part.assetId]}
+                x={part.x}
+                y={part.y}
+                width={part.width}
+                height={part.height}
+                filter="url(#l2-alpha-outline)"
+                pointerEvents="none"
+                aria-label="当前图层透明轮廓"
+              />
+            )}
+            {part && mode === "rig" && showWeights && influence && (
+              <g pointerEvents="none" aria-label="骨骼权重热图">
+                {part.worldVertices.map((vertex, index) => {
+                  const weight =
+                    part.skinWeights?.[index]?.find(
+                      (item) => item.boneId === influence,
+                    )?.weight ?? 0;
+                  return (
+                    <circle
+                      key={index}
+                      cx={vertex.x}
+                      cy={vertex.y}
+                      r={Math.max(doc.width / 105, 5)}
+                      fill={`rgba(${Math.round(255 * weight)},${Math.round(115 * (1 - weight))},${Math.round(255 * (1 - weight))},0.8)`}
+                      stroke="#132032"
+                      strokeWidth={1.5}
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  );
+                })}
+              </g>
+            )}
+            {mode === "rig" && brush && brushPoint && (
+              <circle
+                cx={brushPoint.x}
+                cy={brushPoint.y}
+                r={brushRadius}
+                fill="#ef7a4133"
+                stroke="#efa86a"
+                strokeDasharray="5 5"
+                pointerEvents="none"
+              />
             )}
             {mode === "rig" && (
               <g className="l2-rig-overlay">
@@ -442,6 +537,7 @@ export function CharacterCanvas({
               </g>
             )}
             {editable &&
+              !brush &&
               controls.map((point, index) => (
                 <circle
                   key={index}

@@ -38,6 +38,7 @@ export function Inspector({
   vertexIndex,
   setVertexIndex,
   readOnly,
+  onFitMesh,
   confirm,
 }: {
   doc: CharacterDocument;
@@ -56,6 +57,7 @@ export function Inspector({
   vertexIndex: number;
   setVertexIndex: (i: number) => void;
   readOnly: boolean;
+  onFitMesh: () => void;
   confirm: (message: string, action: () => void) => void;
 }) {
   const node =
@@ -244,6 +246,15 @@ export function Inspector({
           </div>
           {"vertices" in node ? (
             <>
+              {mode === "model" && (
+                <button
+                  className="l2-full"
+                  disabled={locked}
+                  onClick={onFitMesh}
+                >
+                  按透明像素重建贴合网格
+                </button>
+              )}
               <div className="l2-two">
                 <Numeric
                   label="宽度"

@@ -52,6 +52,8 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 
 Amadeus 的选定原画和去表情底画保存在 `web/src/features/amadeus/art/`，同样由 Git LFS 管理，但不进入 Web 运行包。它们的 SHA-256 分别为 `c174be887d90addc18099cc1362ff448c7beb339f62e3ccd4b5e98e3118ba467` 和 `31e77fac842319b0ec96ce73b481c7e295d9732e88c5899044a46080c2d59c0d`。
 
+分层绑定审阅草案的两张隐藏补画也保存在同目录，由 Git LFS 管理，不进入 Web 运行包：`kurisu-under-hair.png` SHA-256 `6ea84e257b6c97002dce5a1f6ee734b9a33270fd5dbf08dcf98b35b037392b75`，`kurisu-hands.png` SHA-256 `f6fb87df1f4da430528c5aece4530211404cffdd79e1a6e20bb82ae6d9318dd1`。[来源、生成提示词和使用范围](amadeus-rig-review.md)。
+
 ## Live2D 工坊头像
 
-- `web/public/brand/live2d-workshop-mark.png`：Live2D 工坊卡片、侧栏与项目入口共用；内置 ImageGen，参考现有徽章与用户指定 Amadeus 形象。[来源与提示词](live2d-workshop-avatar.md)。沿用内部开发交接范围。SHA256：`ad615ad25e188543e37dc276592082c87c953f85c8b8bd8039fca44095f17e70`。
+- `web/public/brand/live2d-workshop-mark.png`：Live2D 工坊卡片、侧栏与项目入口共用；内置 ImageGen，参考现有徽章与用户指定 Amadeus 形象。[来源与提示词](live2d-workshop-avatar.md)。沿用内部开发交接范围。SHA256：`e8b8839472bdfc9923aba39987568392d0619ad834e41b7c96cd039352d6eecd`。

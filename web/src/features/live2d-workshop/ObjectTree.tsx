@@ -7,6 +7,7 @@ import {
   Lock,
   Unlock,
   Plus,
+  Focus,
 } from "lucide-react";
 import { applyHumanTemplate, makeBone, makeDeformer } from "./model";
 import type { CharacterDocument, Deformer, Part } from "./types";
@@ -18,12 +19,16 @@ export function ObjectTree({
   onSelect,
   edit,
   readOnly,
+  soloPartId,
+  onSoloPart,
 }: {
   doc: CharacterDocument;
   selected: string;
   onSelect: (id: string) => void;
   edit: Edit;
   readOnly: boolean;
+  soloPartId: string | null;
+  onSoloPart: (id: string | null) => void;
 }) {
   const [folded, setFolded] = useState<Set<string>>(new Set());
   const toggle = (key: string) =>
@@ -61,6 +66,16 @@ export function ObjectTree({
         </button>
         {"vertices" in node && (
           <>
+            <button
+              aria-label={`${soloPartId === node.id ? "退出独显" : "独显"}${node.name}`}
+              aria-pressed={soloPartId === node.id}
+              title="仅在画布中显示此图层，不修改工程可见性"
+              onClick={() =>
+                onSoloPart(soloPartId === node.id ? null : node.id)
+              }
+            >
+              <Focus size={13} />
+            </button>
             <button
               disabled={readOnly}
               aria-label={`${node.visible ? "隐藏" : "显示"}${node.name}`}

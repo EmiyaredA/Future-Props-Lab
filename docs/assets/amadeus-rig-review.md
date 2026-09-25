@@ -1,0 +1,9 @@
+# 红莉栖分层绑定草案素材
+
+本轮仅用于本地内部审阅，不构成角色素材的独立再分发授权。可见外观以用户确认的 `kurisu-neutral.png` 为准。草案输出于 `.local/output/live2d-rig-review/`，不参与 Web 生产运行资产。
+
+- `kurisu-under-hair.png`：由选定原画经内置 ImageGen 编辑的隐藏底画。提示词要求保持画布与五官位置，移除遮住额头、耳部和衣领的前发，并补出完整额头、耳部、颈部和大褂。仅裁取被正式图层遮住的部分参与绑定，不替换用户确认的可见脸型。
+- `kurisu-hands.png`：内置 ImageGen 参考同一原画生成的一对透明手部。提示词要求匹配原画浅肤色与赛璐璐上色，左右手独立、自然放松、无袖子背景。原画止于腰部且未显示手；草案中的手部作为默认隐藏的备用可编辑图层。
+- `scripts/build_amadeus_rig_draft.py` 将选定原画的可见像素按语义部件分配给独立透明图层，隐藏底画只填关节及遮挡下的空面；不从旧动态图集裁切。`scripts/write_live2d_review_psd.mjs` 从这些 PNG 对应的 RGBA 像素写入 RGB 分层 PSD，并重新解析校验层数。模型和 PSD 保留图层顺序、位置与透明度。
+
+构建与检查：`uv run python scripts/build_amadeus_rig_draft.py`、`uv run python scripts/check_amadeus_rig_draft.py`。正式动作、状态绑定和运行头像切换留待用户验收后制作。

@@ -449,3 +449,4 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 `web/src/features/live2d-workshop/` 拥有角色项目管理、PSD Worker、PixiJS 网格编辑、参数关键形与动画 UI。`backend/app/apps/live2d_workshop/` 拥有 Workspace 项目 CAS、素材、工程包与导出任务；`backend/app/capabilities/media_rendering/live2d/` 拥有版本化角色文档、确定性参数/变形器求值和 Pillow 三角纹理渲染。素材与输出位于对应 Workspace 的 `applications/live2d-workshop/projects/<id>/{assets,exports}/`。迁移 `r0071_live2d_workshop` 登记角色工程、素材与任务。Cubism 编译、物理、视频、外部输入驱动未启用。
 
 `web/src/shared/live2d/` 提供工坊与 Amadeus 头像共用的纯姿态计算、类型和 PixiJS 网格装配。内置 Amadeus 的原画由 `scripts/build_amadeus_model.py` 打包成 `web/public/brand/amadeus/amadeus.fpllive2d`，用户可通过现有工坊导入 API 主动创建可编辑副本；助手窗口直接读取随应用提供的工程包，不依赖用户 Workspace 项目。
+分层绑定审阅草案由 `scripts/build_amadeus_rig_draft.py` 和 `scripts/write_live2d_review_psd.mjs` 生成到 `.local/output/live2d-rig-review/`，`scripts/check_amadeus_rig_draft.py` 校验包与像素；草案在用户验收前不替换内置运行工程。
