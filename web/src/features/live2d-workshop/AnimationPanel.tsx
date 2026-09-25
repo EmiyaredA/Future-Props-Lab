@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Copy, Pause, Play, Plus, Trash2 } from "lucide-react";
 import { Choice, Numeric } from "./Controls";
 import { id, newMotion } from "./model";
+import { InterchangePanel } from "./InterchangePanel";
 import type { Edit } from "./Inspector";
 import type { CharacterDocument, TimeKey } from "./types";
 export function AnimationLibrary({
@@ -143,6 +144,9 @@ export function AnimationLibrary({
               d.expressions = d.expressions.filter(
                 (e) => e.id !== expressionId,
               );
+              for (const binding of Object.values(d.stateBindings))
+                if (binding?.expressionId === expressionId)
+                  binding.expressionId = null;
               setExpression("");
             })
           }
@@ -155,6 +159,8 @@ export function AnimationLibrary({
           onClick={() =>
             edit((d) => {
               d.motions = d.motions.filter((m) => m.id !== motionId);
+              for (const binding of Object.values(d.stateBindings))
+                if (binding?.motionId === motionId) binding.motionId = null;
               setMotion("");
             })
           }
@@ -190,6 +196,15 @@ export function AnimationLibrary({
       <button className="l2-full" onClick={() => setOverrides({})}>
         清除手动预览值
       </button>
+      <InterchangePanel
+        doc={doc}
+        edit={edit}
+        motionId={motionId}
+        expressionId={expressionId}
+        setMotion={setMotion}
+        setExpression={setExpression}
+        readOnly={readOnly}
+      />
     </>
   );
 }

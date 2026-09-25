@@ -4,9 +4,9 @@ export const LIVE2D_WORKSHOP_MODULE = defineApplicationModule({
   definition: {
     id: "live2d-workshop",
     name: "Live2D 工坊",
-    description: "从分层立绘开始，制作网格、参数绑定与角色动画。",
+    description: "从分层立绘制作原生角色，并交接 Cubism 素材与参数动画。",
     category: "visual",
-    capabilities: ["角色", "网格", "参数绑定", "动画", "序列导出"],
+    capabilities: ["角色", "网格", "参数绑定", "动画", "素材交接", "序列导出"],
     path: "/apps/live2d-workshop",
     icon: Network,
     brandImage: "/brand/live2d-workshop-mark.png",

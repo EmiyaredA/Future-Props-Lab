@@ -28,6 +28,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("DELETE", "/v1/live2d-workshop/projects/{project_id}"),
         ("PUT", "/v1/live2d-workshop/projects/{project_id}/document"),
         ("POST", "/v1/live2d-workshop/projects/{project_id}/assets"),
+        ("DELETE", "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}"),
         ("POST", "/v1/live2d-workshop/projects/{project_id}/exports"),
         ("POST", "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/imports"),

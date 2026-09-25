@@ -71,6 +71,10 @@
     "method": "delete_project",
     "resource": "live2d_workshop"
   },
+  "DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}": {
+    "method": "retire_asset",
+    "resource": "live2d_workshop"
+  },
   "DELETE /v1/llm-call-logs/{log_id}": {
     "method": "delete_one",
     "resource": "logs"

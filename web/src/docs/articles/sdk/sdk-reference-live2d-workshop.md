@@ -10,6 +10,7 @@
 | SDK 方法 | HTTP 操作 |
 | --- | --- |
 | [delete_project](#delete-project) | `DELETE /v1/live2d-workshop/projects/{project_id}` |
+| [retire_asset](#retire-asset) | `DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}` |
 | [list_projects](#list-projects) | `GET /v1/live2d-workshop/projects` |
 | [get_project](#get-project) | `GET /v1/live2d-workshop/projects/{project_id}` |
 | [list_assets](#list-assets) | `GET /v1/live2d-workshop/projects/{project_id}/assets` |
@@ -47,6 +48,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## retire_asset {#retire-asset}
+
+`client.live2d_workshop.retire_asset(...)`
+
+**接口**：`DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `asset_id` | path | string | 是 |
+| `expectedRevision` | query | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `Live2DProjectOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

@@ -1,4 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { readPsd } from "ag-psd";
+import { unzipSync } from "fflate";
 import { characterPsd, maskedPsd } from "./fixtures/live2d-character";
 
 async function countRedPixels(page: Page) {
@@ -33,11 +36,14 @@ test("authors a character keyform, animates it, saves and exports separate seque
     path: testInfo.outputPath("01-projects.png"),
     fullPage: true,
   });
-  await page.getByRole("button", { name: "新建角色", exact: true }).click();
+  await page
+    .getByRole("button", { name: "新建角色", exact: true })
+    .first()
+    .click();
   await page.getByLabel("项目名称").fill("Amadeus 角色验收");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "保存", exact: true })
+    .getByRole("button", { name: "创建项目", exact: true })
     .click();
   await expect(page.locator(".l2-editor")).toBeVisible({ timeout: 30_000 });
   await page.locator('input[type="file"]').setInputFiles({
@@ -119,6 +125,31 @@ test("authors a character keyform, animates it, saves and exports separate seque
   await page.getByLabel("微笑动画值", { exact: true }).press("End");
   await page.getByRole("button", { name: "保存为表情", exact: true }).click();
   await page.getByLabel("表情名称").fill("微笑");
+  await page.locator('input[accept*=".motion3.json"]').setInputFiles({
+    name: "温和微笑.exp3.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      JSON.stringify({
+        Version: 3,
+        Type: "Live2D Expression",
+        Parameters: [{ Id: "ParamSmile", Value: 0.3, Blend: "Add" }],
+      }),
+    ),
+  });
+  await expect(
+    page.getByRole("dialog", { name: "导入 Cubism 参数数据" }),
+  ).toContainText("转换提示");
+  await page
+    .getByRole("dialog", { name: "导入 Cubism 参数数据" })
+    .getByRole("button", { name: "导入并保存到工程" })
+    .click();
+  await page.getByText("Amadeus 执行状态绑定", { exact: true }).click();
+  await expect(page.locator(".l2-state-row")).toHaveCount(7);
+  await page.getByRole("button", { name: "思考中表情" }).click();
+  await page.getByRole("menuitem", { name: "微笑", exact: true }).click();
+  await page.getByRole("button", { name: "思考中动作" }).click();
+  await page.getByRole("menuitem", { name: "微笑并点头", exact: true }).click();
+  await page.getByRole("button", { name: "思考中 · 预览" }).click();
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.locator(".l2-title")).toContainText("已保存");
   await page.screenshot({
@@ -127,13 +158,23 @@ test("authors a character keyform, animates it, saves and exports separate seque
   });
   await page.reload();
   await expect(page.locator(".l2-title")).toContainText("已保存");
+  const projectId = new URL(page.url()).pathname.split("/")[4];
+  const savedState = (
+    await (
+      await page.request.get(
+        `/v1/live2d-workshop/projects/${projectId}/document`,
+      )
+    ).json()
+  ).document;
+  expect(savedState.stateBindings.thinking.motionId).toBeTruthy();
+  expect(savedState.stateBindings.thinking.expressionId).toBeTruthy();
   await page.getByRole("button", { name: "动画", exact: true }).click();
   await page.getByRole("button", { name: "动作", exact: true }).click();
   await page.getByRole("menuitem", { name: "微笑并点头", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "点头第30帧", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "导出", exact: true }).click();
+  await page.getByRole("button", { name: "交付", exact: true }).click();
   await page.getByRole("button", { name: "裁切方式" }).click();
   await page.getByRole("menuitem", { name: "自定义裁切" }).click();
   await page.getByLabel("裁切宽度", { exact: true }).fill("64");
@@ -176,10 +217,11 @@ test("imports layered PSD, edits a smile keyform and reports unsupported or dama
   await page.goto("/apps/live2d-workshop");
   await page
     .getByRole("button", { name: "新建角色", exact: true })
+    .first()
     .click({ timeout: 30_000 });
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "保存", exact: true })
+    .getByRole("button", { name: "创建项目", exact: true })
     .click();
   await expect(page.locator(".l2-editor")).toBeVisible({ timeout: 30_000 });
   const upload = page.locator('input[type="file"]');
@@ -239,6 +281,75 @@ test("imports layered PSD, edits a smile keyform and reports unsupported or dama
   ).not.toEqual(
     binding.keys.find((k: { value: number }) => k.value === 0).points,
   );
+  const oldAsset = mouth.assetId;
+  const changedCanvas = Buffer.from(characterPsd());
+  changedCanvas.writeUInt32BE(321, 18);
+  await upload.setInputFiles({
+    name: "changed.psd",
+    mimeType: "image/vnd.adobe.photoshop",
+    buffer: changedCanvas,
+  });
+  await expect(page.getByRole("alert")).toContainText("画布尺寸从");
+  await upload.setInputFiles({
+    name: "character.psd",
+    mimeType: "image/vnd.adobe.photoshop",
+    buffer: characterPsd(),
+  });
+  await expect(
+    page.getByRole("dialog", { name: "确认编辑操作" }),
+  ).toContainText("保留网格与参数绑定");
+  await page
+    .getByRole("dialog", { name: "确认编辑操作" })
+    .getByRole("button", { name: "确认" })
+    .click();
+  await expect(page.locator(".l2-title")).toContainText("有未保存修改");
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(page.locator(".l2-title")).toContainText("已保存");
+  const replaced = (
+    await (
+      await page.request.get(`/v1/live2d-workshop/projects/${id}/document`)
+    ).json()
+  ).document;
+  const newMouth = replaced.parts.find(
+    (p: { name: string }) => p.name === "嘴部",
+  );
+  expect(newMouth.id).toBe(mouth.id);
+  expect(newMouth.assetId).not.toBe(oldAsset);
+  expect(
+    replaced.parameters.find((p: { id: string }) => p.id === "ParamSmile")
+      .bindings[0],
+  ).toEqual(binding);
+  await page.getByRole("button", { name: "交付", exact: true }).click();
+  const handoffEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "下载素材交接包" }).click();
+  const handoff = await handoffEvent;
+  expect(handoff.suggestedFilename()).toBe("character-cubism-handoff.zip");
+  const files = unzipSync(new Uint8Array(readFileSync(await handoff.path())));
+  expect(
+    Object.keys(files).filter((name) => name.startsWith("layers/")),
+  ).toHaveLength(6);
+  const exportedPsd = readPsd(files["character-import.psd"], {
+    useImageData: true,
+    skipCompositeImageData: true,
+  });
+  expect(exportedPsd.width).toBe(256);
+  expect(exportedPsd.height).toBe(320);
+  const sourcePsd = readPsd(characterPsd(), {
+    useImageData: true,
+    skipCompositeImageData: true,
+  });
+  const exportedLayers = exportedPsd.children?.[0].children ?? [];
+  const sourceLayers = sourcePsd.children?.[0].children ?? [];
+  // PSD stores upper layers first, while the FPL renderer draws increasing order last.
+  expect(exportedLayers.map((layer) => layer.name)).toEqual(
+    sourceLayers.map((layer) => layer.name).reverse(),
+  );
+  for (const layer of exportedLayers) {
+    const source = sourceLayers.find((item) => item.name === layer.name)!;
+    expect(layer.left).toBe(source.left);
+    expect(layer.top).toBe(source.top);
+    expect(layer.imageData?.data).toEqual(source.imageData?.data);
+  }
   await page.setViewportSize({ width: 720, height: 900 });
   await page.getByRole("button", { name: "对象面板", exact: true }).click();
   await page.getByRole("button", { name: "属性面板", exact: true }).click();
@@ -259,10 +370,11 @@ test("uses texture alpha for hidden mesh masks instead of geometry or red channe
   await page.goto("/apps/live2d-workshop");
   await page
     .getByRole("button", { name: "新建角色", exact: true })
+    .first()
     .click({ timeout: 30_000 });
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "保存", exact: true })
+    .getByRole("button", { name: "创建项目", exact: true })
     .click();
   await expect(page.locator(".l2-editor")).toBeVisible({ timeout: 30_000 });
   await page.locator('input[type="file"]').setInputFiles({

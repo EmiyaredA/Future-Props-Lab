@@ -24,6 +24,34 @@ from app.capabilities.media_rendering.live2d.render import render_frame
 from app.main import app
 from app.runtime.db import SessionLocal
 
+
+def test_v1_document_upgrades_and_state_references_are_checked():
+    old = {"schemaVersion": 1, "width": 128, "height": 128}
+    upgraded = CharacterDocument.model_validate(old)
+    assert upgraded.schema_version == 2
+    assert upgraded.state_bindings == {}
+    assert upgraded.cubism_parameter_ids == {}
+    with pytest.raises(ValidationError, match="状态绑定的动作不存在"):
+        CharacterDocument.model_validate(
+            {**old, "stateBindings": {"thinking": {"motionId": "missing"}}}
+        )
+    with pytest.raises(ValidationError):
+        CharacterDocument.model_validate({**old, "stateBindings": {"unknown": {}}})
+    with pytest.raises(ValidationError, match="Cubism 参数映射无效"):
+        CharacterDocument.model_validate({**old, "cubismParameterIds": {"missing": "ParamAngleX"}})
+    with pytest.raises(ValidationError, match="Cubism 参数 ID 重复"):
+        CharacterDocument.model_validate(
+            {
+                **old,
+                "cubismParameterIds": {"ParamAngleX": "ParamAngleY"},
+                "parameters": [
+                    {"id": "ParamAngleX", "name": "X", "minimum": -1, "maximum": 1, "default": 0},
+                    {"id": "ParamAngleY", "name": "Y", "minimum": -1, "maximum": 1, "default": 0},
+                ],
+            }
+        )
+
+
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/live2d-evaluation.json").read_text())
 
 
@@ -89,6 +117,73 @@ def test_packages_reject_paths_and_symlinks(filename, mode):
         read_package(buffer.getvalue())
 
 
+def test_v1_package_imports_as_v2_with_original_pixels():
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(
+            "manifest.json",
+            json.dumps(
+                {
+                    "format": "fpllive2d",
+                    "version": 1,
+                    "title": "旧角色",
+                    "document": FIXTURE["document"],
+                }
+            ),
+        )
+        archive.writestr("assets/texture.png", png())
+    title, document, assets = read_package(buffer.getvalue())
+    assert title == "旧角色"
+    assert document.schema_version == 2
+    assert document.state_bindings == {}
+    with Image.open(io.BytesIO(assets["texture"][0])) as image:
+        assert image.getpixel((0, 0)) == (220, 50, 30, 128)
+
+
+@pytest.mark.asyncio
+async def test_reimport_retire_asset_checks_revision_and_document_references():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = (
+            await client.post("/v1/live2d-workshop/projects", json={"title": "重导入"})
+        ).json()
+        base = f"/v1/live2d-workshop/projects/{project['id']}"
+        first = (
+            await client.post(f"{base}/assets", files={"file": ("first.png", png(), "image/png")})
+        ).json()
+        doc = copy.deepcopy(FIXTURE["document"])
+        doc["parts"][0]["assetId"] = first["id"]
+        assert (
+            await client.put(f"{base}/document", json={"expectedRevision": 0, "document": doc})
+        ).status_code == 200
+        assert (
+            await client.delete(f"{base}/assets/{first['id']}", params={"expectedRevision": 1})
+        ).status_code == 422
+        second = (
+            await client.post(
+                f"{base}/assets", files={"file": ("second.png", png((1, 2, 3, 255)), "image/png")}
+            )
+        ).json()
+        assert (
+            await client.delete(f"{base}/assets/{second['id']}", params={"expectedRevision": 0})
+        ).status_code == 409
+        doc["parts"][0]["assetId"] = second["id"]
+        assert (
+            await client.put(f"{base}/document", json={"expectedRevision": 1, "document": doc})
+        ).status_code == 200
+        retired = await client.delete(
+            f"{base}/assets/{first['id']}", params={"expectedRevision": 2}
+        )
+        assert retired.status_code == 200
+        assert retired.json()["revision"] == 3
+        assert (
+            await client.put(f"{base}/document", json={"expectedRevision": 2, "document": doc})
+        ).status_code == 409
+        assert (await client.get(f"{base}/assets/{first['id']}/file")).status_code == 404
+        assert (await client.get(f"{base}/assets/{second['id']}/file")).status_code == 200
+
+
 @pytest.mark.asyncio
 async def test_full_character_workflow_cas_packages_exports_and_isolation(monkeypatch):
     async with httpx.AsyncClient(
@@ -105,9 +200,12 @@ async def test_full_character_workflow_cas_packages_exports_and_isolation(monkey
         asset_id = upload.json()["id"]
         doc = copy.deepcopy(FIXTURE["document"])
         doc["parts"][0]["assetId"] = asset_id
+        doc["stateBindings"] = {"thinking": {"motionId": "nod", "expressionId": "smile-exp"}}
+        doc["cubismParameterIds"] = {"smile": "ParamSmile"}
         saved = await client.put(f"{base}/document", json={"expectedRevision": 0, "document": doc})
         assert saved.status_code == 200, saved.text
         assert saved.json()["revision"] == 1
+        assert saved.json()["document"]["schemaVersion"] == 2
         stale = await client.put(f"{base}/document", json={"expectedRevision": 0, "document": doc})
         assert stale.status_code == 409
         assert stale.json()["current"]["document"]["parts"][0]["assetId"] == asset_id
@@ -127,6 +225,8 @@ async def test_full_character_workflow_cas_packages_exports_and_isolation(monkey
         ).status_code == 422
         package = await client.get(f"{base}/package")
         assert package.status_code == 200, package.text
+        with zipfile.ZipFile(io.BytesIO(package.content)) as archive:
+            assert json.loads(archive.read("manifest.json"))["version"] == 2
         imported = await client.post(
             "/v1/live2d-workshop/projects/import",
             files={"file": ("role.fpllive2d", package.content, "application/zip")},
@@ -136,6 +236,8 @@ async def test_full_character_workflow_cas_packages_exports_and_isolation(monkey
             await client.get(f"/v1/live2d-workshop/projects/{imported.json()['id']}/document")
         ).json()["document"]
         assert imported_doc["parameters"] == doc["parameters"]
+        assert imported_doc["stateBindings"] == doc["stateBindings"]
+        assert imported_doc["cubismParameterIds"] == doc["cubismParameterIds"]
         assert imported_doc["parts"][0]["assetId"] != asset_id
         assert (await client.get(f"{base}/thumbnail")).headers["content-type"] == "image/png"
         preview = await client.get(

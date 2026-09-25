@@ -1694,6 +1694,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}",
+    "sdk": "client.live2d_workshop.retire_asset",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#retire-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/live2d-workshop/projects",
     "sdk": "client.live2d_workshop.list_projects",
     "document": "/docs.html?page=sdk-reference-live2d-workshop#list-projects",

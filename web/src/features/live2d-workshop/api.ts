@@ -55,6 +55,22 @@ export const listAssets = async (id: string) =>
       params: path(id),
     }),
   );
+export const retireAsset = async (
+  id: string,
+  assetId: string,
+  expectedRevision: number,
+) =>
+  unwrap(
+    await api.DELETE(
+      "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}",
+      {
+        params: {
+          path: { project_id: id, asset_id: assetId },
+          query: { expectedRevision },
+        },
+      },
+    ),
+  );
 export const listExports = async (id: string) =>
   unwrap(
     await api.GET("/v1/live2d-workshop/projects/{project_id}/exports", {

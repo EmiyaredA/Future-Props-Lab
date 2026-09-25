@@ -2896,6 +2896,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Retire Asset */
+        delete: operations["retire_asset_v1_live2d_workshop_projects__project_id__assets__asset_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file": {
         parameters: {
             query?: never;
@@ -7157,6 +7174,10 @@ export interface components {
         };
         /** CharacterDocument */
         CharacterDocument: {
+            /** Cubismparameterids */
+            cubismParameterIds?: {
+                [key: string]: string;
+            };
             /** Deformers */
             deformers?: components["schemas"]["CharacterDeformer"][];
             /** Expressions */
@@ -7174,10 +7195,14 @@ export interface components {
             parts?: components["schemas"]["CharacterPart"][];
             /**
              * Schemaversion
-             * @default 1
+             * @default 2
              * @constant
              */
-            schemaVersion: 1;
+            schemaVersion: 2;
+            /** Statebindings */
+            stateBindings?: {
+                [key: string]: components["schemas"]["CharacterStateBinding"];
+            };
             /**
              * Width
              * @default 1200
@@ -7305,6 +7330,13 @@ export interface components {
              * @default 0
              */
             y: number;
+        };
+        /** CharacterStateBinding */
+        CharacterStateBinding: {
+            /** Expressionid */
+            expressionId?: string | null;
+            /** Motionid */
+            motionId?: string | null;
         };
         /** CharacterTrack */
         CharacterTrack: {
@@ -24478,6 +24510,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Live2DAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_asset_v1_live2d_workshop_projects__project_id__assets__asset_id__delete: {
+        parameters: {
+            query: {
+                expectedRevision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Live2DProjectOut"];
                 };
             };
             /** @description Validation Error */

@@ -3253,6 +3253,14 @@
       "CharacterDocument": {
         "additionalProperties": false,
         "properties": {
+          "cubismParameterIds": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 128,
+            "title": "Cubismparameterids",
+            "type": "object"
+          },
           "deformers": {
             "items": {
               "$ref": "#/components/schemas/CharacterDeformer"
@@ -3301,10 +3309,29 @@
             "type": "array"
           },
           "schemaVersion": {
-            "const": 1,
-            "default": 1,
+            "const": 2,
+            "default": 2,
             "title": "Schemaversion",
             "type": "integer"
+          },
+          "stateBindings": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CharacterStateBinding"
+            },
+            "maxProperties": 7,
+            "propertyNames": {
+              "enum": [
+                "idle",
+                "listening",
+                "thinking",
+                "tool",
+                "success",
+                "error",
+                "paused"
+              ]
+            },
+            "title": "Statebindings",
+            "type": "object"
           },
           "width": {
             "default": 1200,
@@ -3594,6 +3621,37 @@
           "triangles"
         ],
         "title": "CharacterPart",
+        "type": "object"
+      },
+      "CharacterStateBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "expressionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expressionid"
+          },
+          "motionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motionid"
+          }
+        },
+        "title": "CharacterStateBinding",
         "type": "object"
       },
       "CharacterTrack": {
@@ -40453,6 +40511,67 @@
           }
         },
         "summary": "Upload Asset",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}": {
+      "delete": {
+        "operationId": "retire_asset_v1_live2d_workshop_projects__project_id__assets__asset_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedRevision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expectedrevision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retire Asset",
         "tags": [
           "live2d-workshop"
         ]

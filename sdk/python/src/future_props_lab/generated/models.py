@@ -535,13 +535,15 @@ class CharacterDeformer(WireModel):
     y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
 
 class CharacterDocument(WireModel):
+    cubism_parameter_ids: dict[str, str] | None = Field(default=None, alias='cubismParameterIds')
     deformers: list[CharacterDeformer] | None = Field(default=None, alias='deformers', max_length=128)
     expressions: list[CharacterExpression] | None = Field(default=None, alias='expressions', max_length=128)
     height: int = Field(default=1600, alias='height', ge=32.0, le=4096.0)
     motions: list[CharacterMotion] | None = Field(default=None, alias='motions', max_length=128)
     parameters: list[CharacterParameter] | None = Field(default=None, alias='parameters', max_length=128)
     parts: list[CharacterPart] | None = Field(default=None, alias='parts', max_length=128)
-    schema_version: Literal[1] = Field(default=1, alias='schemaVersion')
+    schema_version: Literal[2] = Field(default=2, alias='schemaVersion')
+    state_bindings: dict[str, CharacterStateBinding] | None = Field(default=None, alias='stateBindings')
     width: int = Field(default=1200, alias='width', ge=32.0, le=4096.0)
 
 class CharacterExpression(WireModel):
@@ -584,6 +586,10 @@ class CharacterPart(WireModel):
     width: float = Field(default=..., alias='width', le=8192.0, gt=0.0)
     x: float = Field(default=0, alias='x', ge=-100000.0, le=100000.0)
     y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
+
+class CharacterStateBinding(WireModel):
+    expression_id: str | None = Field(default=None, alias='expressionId')
+    motion_id: str | None = Field(default=None, alias='motionId')
 
 class CharacterTrack(WireModel):
     keys: list[TimeKeyframe] | None = Field(default=None, alias='keys', max_length=1000)
@@ -4827,6 +4833,7 @@ CharacterExpression.model_rebuild()
 CharacterMotion.model_rebuild()
 CharacterParameter.model_rebuild()
 CharacterPart.model_rebuild()
+CharacterStateBinding.model_rebuild()
 CharacterTrack.model_rebuild()
 ClipIdOperation.model_rebuild()
 ConversationDetailOut.model_rebuild()

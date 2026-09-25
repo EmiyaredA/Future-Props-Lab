@@ -112,6 +112,19 @@ async def upload_asset(
     return await Live2DProjectsStore(session, workspace_id).upload(project_id, file)
 
 
+@router.delete("/projects/{project_id}/assets/{asset_id}", response_model=Live2DProjectOut)
+async def retire_asset(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    asset_id: str,
+    expected_revision: int = Query(alias="expectedRevision", ge=0),
+) -> Live2DProjectOut:
+    return await Live2DProjectsStore(session, workspace_id).retire_asset(
+        project_id, asset_id, expected_revision
+    )
+
+
 @router.get(
     "/projects/{project_id}/assets/{asset_id}/file",
     response_class=Response,

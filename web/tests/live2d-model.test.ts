@@ -11,7 +11,7 @@ import {
 } from "../src/features/live2d-workshop/model";
 import type { CharacterDocument } from "../src/features/live2d-workshop/types";
 describe("native character parameter evaluation", () => {
-  const document = fixture.document as CharacterDocument;
+  const document = fixture.document as unknown as CharacterDocument;
   it("matches the Python fixture and lets animated parameters override expressions", () => {
     const values = parameterValues(
       document,
@@ -96,7 +96,7 @@ describe("native character parameter evaluation", () => {
 
 describe("keyform insertion", () => {
   it("preserves the isolated parameter interpolation instead of resetting to the base", () => {
-    const doc = copy(fixture.document as CharacterDocument);
+    const doc = copy(fixture.document as unknown as CharacterDocument);
     const values = parameterValues(doc, 0, undefined, undefined, {
       smile: 0.5,
     });

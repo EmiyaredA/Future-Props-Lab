@@ -43,6 +43,10 @@ class Live2DWorkshop:
         'Upload Asset. POST /v1/live2d-workshop/projects/{project_id}/assets'
         return self._client._call('POST', '/v1/live2d-workshop/projects/{project_id}/assets', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.Live2DAssetOut)
 
+    def retire_asset(self, *, project_id: str, asset_id: str, expected_revision: int) -> models.Live2DProjectOut:
+        'Retire Asset. DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}'
+        return self._client._call('DELETE', '/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id), ('expectedRevision', 'query', expected_revision)], response_type=models.Live2DProjectOut)
+
     def asset_file(self, *, project_id: str, asset_id: str) -> Download:
         'Asset File. GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file'
         return self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], response_type=Any)
@@ -126,6 +130,10 @@ class AsyncLive2DWorkshop:
     async def upload_asset(self, *, project_id: str, body: models.Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post | dict, files: dict | list | None = None) -> models.Live2DAssetOut:
         'Upload Asset. POST /v1/live2d-workshop/projects/{project_id}/assets'
         return await self._client._call('POST', '/v1/live2d-workshop/projects/{project_id}/assets', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.Live2DAssetOut)
+
+    async def retire_asset(self, *, project_id: str, asset_id: str, expected_revision: int) -> models.Live2DProjectOut:
+        'Retire Asset. DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}'
+        return await self._client._call('DELETE', '/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id), ('expectedRevision', 'query', expected_revision)], response_type=models.Live2DProjectOut)
 
     async def asset_file(self, *, project_id: str, asset_id: str) -> AsyncDownload:
         'Asset File. GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file'

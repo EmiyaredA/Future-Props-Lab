@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -146,8 +146,16 @@ class CharacterMotion(ValueModel):
         return self
 
 
+AmadeusState = Literal["idle", "listening", "thinking", "tool", "success", "error", "paused"]
+
+
+class CharacterStateBinding(ValueModel):
+    expression_id: Identifier | None = Field(default=None, alias="expressionId")
+    motion_id: Identifier | None = Field(default=None, alias="motionId")
+
+
 class CharacterDocument(ValueModel):
-    schema_version: Literal[1] = Field(default=1, alias="schemaVersion")
+    schema_version: Literal[2] = Field(default=2, alias="schemaVersion")
     width: int = Field(default=1200, ge=32, le=4096)
     height: int = Field(default=1600, ge=32, le=4096)
     parts: list[CharacterPart] = Field(default_factory=list, max_length=128)
@@ -155,6 +163,19 @@ class CharacterDocument(ValueModel):
     parameters: list[CharacterParameter] = Field(default_factory=list, max_length=128)
     expressions: list[CharacterExpression] = Field(default_factory=list, max_length=128)
     motions: list[CharacterMotion] = Field(default_factory=list, max_length=128)
+    state_bindings: dict[AmadeusState, CharacterStateBinding] = Field(
+        default_factory=dict, alias="stateBindings", max_length=7
+    )
+    cubism_parameter_ids: dict[str, str] = Field(
+        default_factory=dict, alias="cubismParameterIds", max_length=128
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def upgrade_v1(cls, value: Any) -> Any:
+        if isinstance(value, dict) and value.get("schemaVersion", 1) == 1:
+            return {**value, "schemaVersion": 2}
+        return value
 
     @model_validator(mode="after")
     def references_valid(self) -> CharacterDocument:
@@ -229,6 +250,22 @@ class CharacterDocument(ValueModel):
                     not parameter.minimum <= k.value <= parameter.maximum for k in track.keys
                 ):
                     raise ValueError("动画参数不存在或越界")
+        expressions = {item.id for item in self.expressions}
+        motions = {item.id for item in self.motions}
+        for binding in self.state_bindings.values():
+            if binding.expression_id and binding.expression_id not in expressions:
+                raise ValueError("状态绑定的表情不存在")
+            if binding.motion_id and binding.motion_id not in motions:
+                raise ValueError("状态绑定的动作不存在")
+        for native_id, external_id in self.cubism_parameter_ids.items():
+            if native_id not in parameters or not 1 <= len(external_id) <= 120:
+                raise ValueError("Cubism 参数映射无效")
+        external_ids: set[str] = set()
+        for native_id in parameters:
+            external_id = self.cubism_parameter_ids.get(native_id, native_id)
+            if external_id in external_ids:
+                raise ValueError("Cubism 参数 ID 重复")
+            external_ids.add(external_id)
         return self
 
 

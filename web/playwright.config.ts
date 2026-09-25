@@ -31,6 +31,13 @@ export default defineConfig({
               ? "Desktop Firefox"
               : "Desktop Chrome"
         ],
+        ...(process.env.FPL_E2E_CHROME_PATH
+          ? {
+              launchOptions: {
+                executablePath: process.env.FPL_E2E_CHROME_PATH,
+              },
+            }
+          : {}),
       },
     },
   ],

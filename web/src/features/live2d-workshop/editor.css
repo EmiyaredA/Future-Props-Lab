@@ -626,6 +626,40 @@
 .l2-notice {
   font-size: 12px;
 }
+.l2-interchange {
+  border: 1px solid #30394c;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 10px 0;
+}
+.l2-interchange > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #d6d4ec;
+}
+.l2-interchange .l2-field {
+  margin-top: 9px;
+}
+.l2-interchange-error {
+  color: #e09a93;
+  white-space: pre-wrap;
+}
+.l2-state-row {
+  border-top: 1px solid #30394c;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.l2-state-row > button {
+  width: 100%;
+  justify-content: flex-start;
+}
+.l2-import-review {
+  max-height: 50vh;
+  overflow: auto;
+}
+.l2-import-review p {
+  margin: 7px 0;
+}
 
 @media (max-width: 1100px) {
   .l2-editor-header {

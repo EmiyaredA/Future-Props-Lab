@@ -10,6 +10,7 @@ import {
 } from "./api";
 import { Choice, Numeric } from "./Controls";
 import { ExportPreview } from "./ExportPreview";
+import { buildCubismHandoff, saveHandoff } from "./psdHandoff";
 import {
   defaultEnd,
   exportCrop,
@@ -358,11 +359,35 @@ export function ExportPanel({
             <Download size={16} />
             下载工程包
           </button>
-          <h3>兼容目标</h3>
-          <p>Cubism 模型包 / CMO3 / 视频尚未支持。</p>
-          <button disabled>实时模型包 · 尚未支持</button>
-          <button disabled>CMO3 · 尚未支持</button>
-          <button disabled>视频 · 后续能力</button>
+          <h3>Cubism 素材交接</h3>
+          <p>
+            导出分层 PSD、逐层 PNG、可映射的动作与表情 JSON。导入 Cubism Editor
+            后仍需重新制作网格和参数绑定。
+          </p>
+          <button
+            disabled={busy || !doc.parts.length}
+            onClick={() =>
+              void run(async () => {
+                await saveSnapshot();
+                const { blob, warnings } = await buildCubismHandoff(
+                  projectId,
+                  doc,
+                );
+                if (currentDoc.current !== doc)
+                  throw new Error("工程在导出期间发生变化，请重新导出");
+                saveHandoff(blob, "character-cubism-handoff.zip");
+                setMessage(
+                  `交接包已生成；其中不包含可运行的 Cubism 模型${warnings.length ? `。${warnings.length} 个参数预设未交换，详见包内 README：${warnings.join("；")}` : ""}`,
+                );
+              })
+            }
+          >
+            <Download size={16} />
+            下载素材交接包
+          </button>
+          <p className="l2-hint">
+            完整运行模型 `.moc3` 与可编辑工程 `.cmo3` 需由 Cubism Editor 生成。
+          </p>
         </article>
       </div>
       {message && (

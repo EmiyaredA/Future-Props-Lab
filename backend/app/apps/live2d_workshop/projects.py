@@ -236,6 +236,45 @@ class Live2DProjectsStore:
             raise Live2DNotFound("素材不存在")
         return path
 
+    async def retire_asset(
+        self, project_id: str, asset_id: str, expected_revision: int
+    ) -> Live2DProjectOut:
+        project = await self.row(project_id)
+        if project.revision != expected_revision:
+            raise RevisionConflictError(
+                expected_revision,
+                project.revision,
+                (await self.document(project_id)).model_dump(mode="json"),
+            )
+        if any(
+            part.asset_id == asset_id
+            for part in CharacterDocument.model_validate(project.document).parts
+        ):
+            raise Live2DInvalid("素材仍被工程引用，不能清理")
+        asset = await self.session.scalar(
+            select(Live2DAsset).where(
+                Live2DAsset.id == asset_id,
+                Live2DAsset.project_id == project_id,
+                Live2DAsset.workspace_id == self.workspace_id,
+            )
+        )
+        if asset is None:
+            raise Live2DNotFound("素材不存在")
+        path = self.root(project_id) / "assets" / f"{asset_id}.png"
+        await patch_revisioned_project(
+            self.session,
+            Live2DProject,
+            project_id,
+            self.workspace_id,
+            expected_revision=expected_revision,
+            values={"revision": expected_revision + 1, "updated_at": utc_now()},
+            load_current=lambda: self.document(project_id),
+        )
+        await self.session.delete(asset)
+        await self.session.commit()
+        path.unlink(missing_ok=True)
+        return await self.get(project_id)
+
     async def upload(self, project_id: str, incoming: IncomingFile) -> Live2DAssetOut:
         await self.row(project_id)
         data = await incoming.read(32 * 1024 * 1024 + 1)

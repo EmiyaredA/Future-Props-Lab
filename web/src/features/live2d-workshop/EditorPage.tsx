@@ -18,6 +18,7 @@ import {
   getDocument,
   getProject,
   listAssets,
+  retireAsset,
   saveDocument,
   uploadAsset,
 } from "./api";
@@ -29,6 +30,7 @@ import { ObjectTree } from "./ObjectTree";
 import { Inspector, type Edit } from "./Inspector";
 import { ParameterStrip } from "./ParameterStrip";
 import { parsePsd } from "./importLayers";
+import { planPsdReimport, pngDimensions } from "./psdReimport";
 import {
   captureKey,
   clearBindings,
@@ -100,6 +102,7 @@ export function EditorPage({
     future = useRef<CharacterDocument[]>([]),
     input = useRef<HTMLInputElement>(null),
     importAbort = useRef<AbortController | null>(null),
+    retiredAssets = useRef(new Set<string>()),
     mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -177,14 +180,32 @@ export function EditorPage({
       at = version.current;
     setSaving(true);
     const pending = saveDocument(projectId, revision.current, snapshot)
-      .then((result) => {
+      .then(async (result) => {
         revision.current = result.revision;
         savedVersion.current = at;
         if (mounted.current) {
           setDirty(version.current !== at);
           setProject((p) => (p ? { ...p, revision: result.revision } : p));
         }
-        return result.revision;
+        const referenced = new Set(snapshot.parts.map((part) => part.assetId));
+        const obsolete = [...retiredAssets.current].filter(
+          (id) => !referenced.has(id),
+        );
+        let latestRevision = result.revision;
+        for (const id of obsolete) {
+          try {
+            const updated = await retireAsset(projectId, id, latestRevision);
+            latestRevision = updated.revision;
+            revision.current = latestRevision;
+            if (mounted.current) setProject(updated);
+            retiredAssets.current.delete(id);
+            if (mounted.current)
+              setAssets((items) => items.filter((item) => item.id !== id));
+          } catch {
+            // The saved document remains valid; the server will reject a referenced asset.
+          }
+        }
+        return latestRevision;
       })
       .catch((e) => {
         if (mounted.current) {
@@ -400,6 +421,8 @@ export function EditorPage({
           y?: number;
           opacity?: number;
           visible?: boolean;
+          width?: number;
+          height?: number;
         }[] = [],
         size: { width: number; height: number } | undefined;
       if (files.some((f) => /\.ps[db]$/i.test(f.name))) {
@@ -416,33 +439,110 @@ export function EditorPage({
           throw new Error("请选择分层 PSD 或透明 PNG");
         imported = files.map((file) => ({ file }));
       }
-      if (doc.parts.length + imported.length > 128)
+      const dimensions = await Promise.all(
+        imported.map((layer) => pngDimensions(layer.file)),
+      );
+      imported = imported.map((layer, index) => ({
+        ...layer,
+        ...dimensions[index],
+      }));
+      const plan = size
+        ? planPsdReimport(
+            doc,
+            imported.map((layer) => ({
+              name: layer.name ?? layer.file.name.replace(/\.png$/i, ""),
+              group: layer.group ?? "",
+              x: layer.x ?? 0,
+              y: layer.y ?? 0,
+              width: layer.width!,
+              height: layer.height!,
+            })),
+            size,
+          )
+        : null;
+      if (plan?.errors.length) throw new Error(plan.errors.join("；"));
+      if (!plan && doc.parts.length + imported.length > 128)
         throw new Error("每个角色最多 128 个部件");
-      const uploaded: { asset: Asset; layer: (typeof imported)[number] }[] = [];
-      for (const layer of imported) {
-        if (abort.signal.aborted) throw new Error("导入已取消");
-        uploaded.push({
-          asset: await uploadAsset(projectId, layer.file),
-          layer,
+      const commit = async () => {
+        if (documentRef.current !== doc)
+          throw new Error("工程在素材检查期间发生变化，请重新导入");
+        setBusy(true);
+        const uploaded: {
+          asset: Asset;
+          layer: (typeof imported)[number];
+          index: number;
+        }[] = [];
+        try {
+          for (const [index, layer] of imported.entries()) {
+            if (abort.signal.aborted) throw new Error("导入已取消");
+            uploaded.push({
+              asset: await uploadAsset(projectId, layer.file),
+              layer,
+              index,
+            });
+          }
+          if (abort.signal.aborted || !mounted.current)
+            throw new Error("导入已取消");
+          if (documentRef.current !== doc)
+            throw new Error("工程在素材上传期间发生变化，请重新导入");
+          setAssets((previous) => [
+            ...previous,
+            ...uploaded.map((item) => item.asset),
+          ]);
+          edit((draft) => {
+            if (size && !draft.parts.length) {
+              draft.width = size.width;
+              draft.height = size.height;
+            }
+            for (const { asset, layer, index } of uploaded) {
+              retiredAssets.current.add(asset.id);
+              const matchedId = plan?.matches.get(index);
+              const matched =
+                matchedId && draft.parts.find((part) => part.id === matchedId);
+              if (matched) {
+                retiredAssets.current.add(matched.assetId);
+                matched.assetId = asset.id;
+                continue;
+              }
+              const part = makePart(asset, draft, layer.x, layer.y);
+              part.name = layer.name ?? part.name;
+              part.group = layer.group ?? "";
+              part.opacity = layer.opacity ?? 1;
+              part.visible = layer.visible ?? true;
+              draft.parts.push(part);
+              setSelected(part.id);
+            }
+          });
+        } catch (exception) {
+          for (const { asset } of uploaded) {
+            try {
+              const updated = await retireAsset(
+                projectId,
+                asset.id,
+                revision.current,
+              );
+              revision.current = updated.revision;
+              retiredAssets.current.delete(asset.id);
+              if (mounted.current) setProject(updated);
+            } catch {
+              // Leave a failed upload unreferenced rather than deleting a newer revision.
+            }
+          }
+          if (mounted.current)
+            setError(
+              exception instanceof Error ? exception.message : "导入失败",
+            );
+        } finally {
+          if (mounted.current) setBusy(false);
+        }
+      };
+      if (plan?.matches.size) {
+        setBusy(false);
+        setConfirmation({
+          message: `${plan.notices.join("；")}。匹配图层仅替换 PNG 像素，保留现有位置、透明度、网格和绑定。`,
+          action: () => void commit(),
         });
-      }
-      if (abort.signal.aborted || !mounted.current) return;
-      setAssets((previous) => [...previous, ...uploaded.map((x) => x.asset)]);
-      edit((d) => {
-        if (size && !d.parts.length) {
-          d.width = size.width;
-          d.height = size.height;
-        }
-        for (const { asset, layer } of uploaded) {
-          const p = makePart(asset, d, layer.x, layer.y);
-          p.name = layer.name ?? p.name;
-          p.group = layer.group ?? "";
-          p.opacity = layer.opacity ?? 1;
-          p.visible = layer.visible ?? true;
-          d.parts.push(p);
-          setSelected(p.id);
-        }
-      });
+      } else await commit();
     } catch (e) {
       if (mounted.current)
         setError(e instanceof Error ? e.message : "导入失败");
@@ -483,7 +583,7 @@ export function EditorPage({
                 : dirty
                   ? "有未保存修改"
                   : "已保存"}{" "}
-            · Live2D 工坊
+            · FPL 原生角色工程
           </small>
         </div>
         <nav>
@@ -492,7 +592,7 @@ export function EditorPage({
               { id: "model", label: "模型", icon: Layers3 },
               { id: "rig", label: "绑定", icon: Network },
               { id: "animation", label: "动画", icon: Play },
-              { id: "export", label: "导出", icon: Download },
+              { id: "export", label: "交付", icon: Download },
             ] as const
           ).map((tab) => (
             <button
@@ -560,7 +660,7 @@ export function EditorPage({
         ref={input}
         hidden
         multiple
-        accept=".png,.psd,.psb"
+        accept=".png,.psd"
         onChange={(e) => {
           const files = Array.from(e.target.files ?? []);
           e.target.value = "";
@@ -647,6 +747,7 @@ export function EditorPage({
                     setMotionId(v);
                     setFrame(0);
                     setPlaying(false);
+                    setOverrides({});
                   }}
                   expressionId={expressionId}
                   setExpression={setExpressionId}
