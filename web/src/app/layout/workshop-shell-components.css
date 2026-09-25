@@ -139,7 +139,7 @@
 
 .workshop-toolbar label svg {
   width: 17px;
-  color: var(--faint);
+  color: var(--muted);
 }
 
 .workshop-toolbar input {
@@ -148,6 +148,12 @@
   border: 0;
   outline: 0;
   background: transparent;
+  color: var(--text-strong);
+}
+
+.workshop-toolbar input::placeholder {
+  color: var(--muted);
+  opacity: 1;
 }
 
 .workshop-toolbar .custom-select-trigger {
@@ -362,7 +368,7 @@
 }
 
 .workshop-project-copy small {
-  color: var(--faint);
+  color: var(--muted);
   font-size: 9.5px;
 }
 
@@ -434,7 +440,7 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: var(--surface);
-  color: var(--muted);
+  color: var(--text);
   font-size: 9.5px;
   font-weight: 650;
   box-shadow: 0 1px 1px rgb(33 30 24 / 4%);

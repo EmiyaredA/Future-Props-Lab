@@ -53,8 +53,8 @@
   --surface-raised: #1e2320;
   --text: #ebe5db;
   --text-strong: #fff8f0;
-  --muted: #afa79a;
-  --faint: #7e807a;
+  --muted: #c2b9ab;
+  --faint: #9a948a;
   --border: #343b35;
   --border-strong: #485049;
   --accent: #ee805a;
@@ -175,7 +175,7 @@ a {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--faint);
+  color: var(--muted);
   font-weight: 600;
 }
 .theme-toggle button.active {

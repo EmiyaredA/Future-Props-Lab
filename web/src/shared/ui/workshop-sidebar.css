@@ -63,7 +63,7 @@
 }
 
 .workshop-brand small {
-  color: var(--faint);
+  color: var(--muted);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -134,7 +134,7 @@
 }
 
 .workshop-back-copy small {
-  color: var(--faint);
+  color: var(--muted);
   font-size: 8px;
 }
 

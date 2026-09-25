@@ -41,9 +41,10 @@
 
 .workshop-app-chrome p {
   margin: 0;
-  color: var(--muted);
+  color: var(--text);
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
+  opacity: 0.82;
 }
 
 .workshop-app-chrome__actions {
@@ -62,8 +63,9 @@
 }
 
 .workshop-app-chrome__theme > span {
-  color: var(--muted);
+  color: var(--text);
   font-size: 12px;
+  font-weight: 600;
 }
 
 .page .workshop-app-chrome {
