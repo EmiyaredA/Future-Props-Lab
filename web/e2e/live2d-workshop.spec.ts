@@ -97,8 +97,8 @@ test("authors a character keyform, animates it, saves and exports separate seque
   await page.getByRole("button", { name: "当前参数", exact: true }).click();
   await page.getByRole("menuitem", { name: "微笑", exact: true }).click();
   await page.getByLabel("参数值", { exact: true }).fill("1");
-  await page.getByLabel("顶点 11", { exact: true }).press("ArrowUp");
-  await page.getByLabel("顶点 15", { exact: true }).press("ArrowUp");
+  await page.locator(".l2-vertex").first().press("ArrowUp");
+  await page.locator(".l2-vertex").last().press("ArrowUp");
   await page
     .locator(".l2-tree-name")
     .filter({ hasText: "旋转变形器" })
@@ -254,8 +254,8 @@ test("imports layered PSD, edits a smile keyform and reports unsupported or dama
   await page.getByRole("button", { name: "当前参数", exact: true }).click();
   await page.getByRole("menuitem", { name: "微笑", exact: true }).click();
   await page.getByLabel("参数值", { exact: true }).fill("1");
-  await page.getByLabel("顶点 11", { exact: true }).press("ArrowUp");
-  await page.getByLabel("顶点 15", { exact: true }).press("ArrowUp");
+  await page.locator(".l2-vertex").first().press("ArrowUp");
+  await page.locator(".l2-vertex").last().press("ArrowUp");
   await expect(page.locator(".l2-keyform-row")).toContainText("1 · 已记录");
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.locator(".l2-title")).toContainText("已保存");
@@ -398,4 +398,54 @@ test("uses texture alpha for hidden mesh masks instead of geometry or red channe
     .poll(async () => Math.abs((await countRedPixels(page)) / before - 0.5))
     .toBeLessThan(0.06);
   await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("inspects layers and weights before recording character animation", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.goto("/apps/live2d-workshop");
+  await page
+    .getByRole("button", { name: "新建角色", exact: true })
+    .first()
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "创建项目", exact: true })
+    .click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "layer-review.psd",
+    mimeType: "image/vnd.adobe.photoshop",
+    buffer: characterPsd(),
+  });
+  await expect(page.locator(".l2-tree-name")).toHaveCount(6);
+  await expect.poll(() => countRedPixels(page)).toBeGreaterThan(1000);
+  await page.getByRole("button", { name: "独显白大褂" }).click();
+  await expect(
+    page.getByRole("button", { name: "退出独显白大褂" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => countRedPixels(page)).toBeLessThan(100);
+  await page.getByRole("button", { name: "退出独显白大褂" }).click();
+  await page.getByRole("button", { name: "建立人形半身骨架" }).click();
+  await page.getByRole("button", { name: "绑定", exact: true }).click();
+  await page.locator(".l2-tree-name").filter({ hasText: "红棕发" }).click();
+  await page.getByRole("button", { name: "权重热图" }).click();
+  await expect(
+    page.getByLabel("骨骼权重热图").locator("circle").first(),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "权重画笔" }).click();
+  await expect(page.getByRole("button", { name: "权重画笔" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(page.locator(".l2-title")).toContainText("已保存");
+  await page
+    .locator(".l2-tree-name")
+    .filter({ hasText: "头部" })
+    .first()
+    .click();
+  await page.getByLabel("试调旋转").fill("5");
+  await expect(page.locator(".l2-title")).toContainText("已保存");
+  await page.getByRole("button", { name: "重置试调姿态" }).click();
 });

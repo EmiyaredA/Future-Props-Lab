@@ -266,6 +266,10 @@ def build() -> None:
     layer_dir.mkdir(exist_ok=True)
     raw_dir = OUT / ".psd-work"
     raw_dir.mkdir(exist_ok=True)
+    for stale in layer_dir.glob("[0-9][0-9]-*.png"):
+        stale.unlink()
+    for stale in raw_dir.glob("*.rgba"):
+        stale.unlink()
     layer_specs: list[tuple[str, str, str, Image.Image, bool]] = []
     # Hidden continuation follows the same parent bones as the visible component.
     inside = bytes(255 if a >= 2 else 0 for a in alpha)
@@ -611,7 +615,7 @@ def build() -> None:
         "stateBindings": {},
         "cameras": {
             "avatar": {"x": 255, "y": 15, "width": 580, "height": 580},
-            "stage": {"x": 0, "y": 0, "width": W, "height": H},
+            "stage": {"x": 0, "y": 0, "width": W, "height": 1370},
         },
         "idleBehavior": {"springBones": [], "intensity": 0},
         "cubismParameterIds": {},
@@ -659,7 +663,7 @@ def build() -> None:
             "ParamHairSwing": 1,
         },
     }
-    contact = Image.new("RGBA", (4 * 400, 3 * 560), "#1a2230")
+    contact = Image.new("RGBA", (4 * 400, 680), "#1a2230")
     draw = ImageDraw.Draw(contact)
     for column, (name, overrides) in enumerate(checks.items()):
         pose_data = doc.model_dump(mode="json", by_alias=True)
@@ -669,7 +673,15 @@ def build() -> None:
             ]
         pose_doc = CharacterDocument.model_validate(pose_data)
         preview = "review-pose" if overrides else None
-        stage = render_frame(pose_doc, source_paths, width=360, height=480, expression_id=preview)
+        stage_camera = cameras["stage"]
+        stage = render_frame(
+            pose_doc,
+            source_paths,
+            width=360,
+            height=480,
+            crop=(stage_camera.x, stage_camera.y, stage_camera.width, stage_camera.height),
+            expression_id=preview,
+        )
         avatar = cameras["avatar"]
         crop = (avatar.x, avatar.y, avatar.width, avatar.height)
         small = render_frame(
@@ -703,7 +715,9 @@ def build() -> None:
         "`layers/` 是逐层透明 PNG；`kurisu-rig-draft.psd` 是同一图层的 RGB 分层工程；"
         "`.fpllive2d` 可用工坊现有导入工程功能创建可编辑副本。\n"
         "`pose-contact-sheet.png` 和各尺寸 PNG 是静态关键姿态审阅图。"
-        "隐藏底画源自原画的局部补绘，手部为备用隐藏图层；正式动画需在验收后制作。\n",
+        "隐藏底画源自原画的局部补绘，手部为备用隐藏图层。"
+        "目前头部侧倾时领口和发束接缝仍可见，应作为绑定验收阻断项继续修整；"
+        "正式动画需在验收后制作。\n",
         encoding="utf-8",
     )
     print(f"{len(parts)} layers, {len(bones)} bones, {len(parameters)} parameters -> {OUT}")

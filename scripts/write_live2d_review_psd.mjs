@@ -31,7 +31,13 @@ writeFileSync(file, Buffer.from(bytes));
 const reopened = readPsd(bytes, { useImageData: true });
 if (reopened.children?.length !== children.length) throw new Error("PSD layer round trip failed");
 for (const [index, layer] of reopened.children.entries()) {
-  if (layer.name !== children[index].name || !layer.imageData?.data?.length)
+  if (
+    layer.name !== children[index].name ||
+    layer.left !== children[index].left ||
+    layer.top !== children[index].top ||
+    !layer.imageData?.data?.length ||
+    !Buffer.from(layer.imageData.data).equals(Buffer.from(children[index].imageData.data))
+  )
     throw new Error(`PSD layer ${index} did not round trip`);
 }
 process.stdout.write(`${children.length} PSD layers verified\n`);

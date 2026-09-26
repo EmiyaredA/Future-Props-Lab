@@ -576,6 +576,16 @@ export function EditorPage({
             if (size && !draft.parts.length) {
               draft.width = size.width;
               draft.height = size.height;
+              const avatarSide = Math.min(size.width, size.height * 0.6);
+              draft.cameras = {
+                avatar: {
+                  x: (size.width - avatarSide) / 2,
+                  y: 0,
+                  width: avatarSide,
+                  height: avatarSide,
+                },
+                stage: { x: 0, y: 0, width: size.width, height: size.height },
+              };
             }
             for (const { asset, layer, index, mesh } of uploaded) {
               retiredAssets.current.add(asset.id);
