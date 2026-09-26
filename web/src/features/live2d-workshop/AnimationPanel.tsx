@@ -5,6 +5,28 @@ import { id, newMotion } from "./model";
 import { InterchangePanel } from "./InterchangePanel";
 import type { Edit } from "./Inspector";
 import type { CharacterDocument, TimeKey } from "./types";
+
+export function AnimationValues({
+  doc,
+  values,
+}: {
+  doc: CharacterDocument;
+  values: Record<string, number>;
+}) {
+  return (
+    <>
+      <h2>预览参数</h2>
+      <p className="l2-hint">拖动时间线或播放动作，检查表情与动作叠加结果。</p>
+      {doc.parameters.map((parameter) => (
+        <div className="l2-value-row" key={parameter.id}>
+          <span>{parameter.name}</span>
+          <strong>{values[parameter.id].toFixed(2)}</strong>
+        </div>
+      ))}
+    </>
+  );
+}
+
 export function AnimationLibrary({
   doc,
   edit,

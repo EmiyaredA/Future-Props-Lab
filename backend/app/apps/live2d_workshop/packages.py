@@ -10,6 +10,7 @@ from pathlib import PurePosixPath
 from sqlalchemy import select
 
 from app.apps.live2d_workshop.cubism import inspect_cubism_package
+from app.apps.live2d_workshop.cubism_attachment import Live2DCubismStore
 from app.apps.live2d_workshop.models import Live2DAsset, Live2DCubismAttachment, Live2DProject
 from app.apps.live2d_workshop.projects import APP, Live2DInvalid, Live2DProjectsStore, decode_png
 from app.capabilities.asset_store.incoming import IncomingFile
@@ -20,7 +21,9 @@ from app.runtime.ids import new_id
 MAX_PACKAGE = 512 * 1024 * 1024
 
 
-def read_package_with_attachment(data: bytes) -> tuple[str, CharacterDocument, dict, tuple[bytes, dict, dict] | None]:
+def read_package_with_attachment(
+    data: bytes,
+) -> tuple[str, CharacterDocument, dict, tuple[bytes, dict, dict] | None]:
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             files = archive.infolist()
@@ -67,8 +70,6 @@ def read_package_with_attachment(data: bytes) -> tuple[str, CharacterDocument, d
                 bindings = cubism.get("stateBindings", {})
                 if not isinstance(bindings, dict):
                     raise Live2DInvalid("Cubism 状态绑定无效")
-                from app.apps.live2d_workshop.cubism_attachment import Live2DCubismStore
-
                 Live2DCubismStore.validate_bindings(bindings, metadata)
                 attachment = source, metadata, bindings
             allowed = {"manifest.json", "thumbnail.png"} | {f"assets/{key}.png" for key in assets}
@@ -102,10 +103,12 @@ class Live2DPackages(Live2DProjectsStore):
         )
         cubism_bytes = None
         if attachment:
-            from app.apps.live2d_workshop.cubism_attachment import Live2DCubismStore
-
             cubism_bytes = await asyncio.to_thread(
-                (await Live2DCubismStore(self.session, self.workspace_id).archive_path(project_id)).read_bytes
+                (
+                    await Live2DCubismStore(self.session, self.workspace_id).archive_path(
+                        project_id
+                    )
+                ).read_bytes
             )
 
         def pack() -> bytes:
@@ -119,7 +122,11 @@ class Live2DPackages(Live2DProjectsStore):
                             "version": 4 if attachment else 3,
                             "title": title,
                             "document": doc.model_dump(mode="json", by_alias=True),
-                            **({"cubism": {"stateBindings": attachment.state_bindings}} if attachment else {}),
+                            **(
+                                {"cubism": {"stateBindings": attachment.state_bindings}}
+                                if attachment
+                                else {}
+                            ),
                         },
                         ensure_ascii=False,
                     ),
@@ -137,12 +144,14 @@ class Live2DPackages(Live2DProjectsStore):
         return await asyncio.to_thread(pack)
 
     async def import_package(
-        self, incoming: IncomingFile,
-        *, attached_source: tuple[bytes, dict, dict] | None = None,
+        self,
+        incoming: IncomingFile,
+        *,
+        attached_source: tuple[bytes, dict, dict] | None = None,
     ):
         data = await incoming.read(MAX_PACKAGE + 1)
         if len(data) > MAX_PACKAGE:
-            raise Live2DInvalid("工程包超过 256 MiB")
+            raise Live2DInvalid("工程包超过 512 MiB")
         title, doc, assets, attachment = await asyncio.to_thread(read_package_with_attachment, data)
         if attached_source:
             if attachment:
@@ -185,9 +194,14 @@ class Live2DPackages(Live2DProjectsStore):
                 path = self.root(row.id) / "cubism" / f"{digest}.zip"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(source)
-                self.session.add(Live2DCubismAttachment(
-                    project_id=row.id, workspace_id=self.workspace_id,
-                    sha256=digest, metadata_json=metadata, state_bindings=bindings,
-                ))
+                self.session.add(
+                    Live2DCubismAttachment(
+                        project_id=row.id,
+                        workspace_id=self.workspace_id,
+                        sha256=digest,
+                        metadata_json=metadata,
+                        state_bindings=bindings,
+                    )
+                )
         await self.session.refresh(row)
         return self.out(row)

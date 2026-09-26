@@ -75,6 +75,10 @@
     "method": "retire_asset",
     "resource": "live2d_workshop"
   },
+  "DELETE /v1/live2d-workshop/projects/{project_id}/cubism": {
+    "method": "remove_cubism",
+    "resource": "live2d_workshop"
+  },
   "DELETE /v1/llm-call-logs/{log_id}": {
     "method": "delete_one",
     "resource": "logs"
@@ -497,6 +501,14 @@
   },
   "GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file": {
     "method": "asset_file",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/cubism": {
+    "method": "get_cubism",
+    "resource": "live2d_workshop"
+  },
+  "GET /v1/live2d-workshop/projects/{project_id}/cubism/package": {
+    "method": "download_cubism",
     "resource": "live2d_workshop"
   },
   "GET /v1/live2d-workshop/projects/{project_id}/document": {
@@ -1407,6 +1419,14 @@
     "method": "upload_asset",
     "resource": "live2d_workshop"
   },
+  "POST /v1/live2d-workshop/projects/{project_id}/cubism/convert": {
+    "method": "convert_cubism",
+    "resource": "live2d_workshop"
+  },
+  "POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight": {
+    "method": "preflight_cubism",
+    "resource": "live2d_workshop"
+  },
   "POST /v1/live2d-workshop/projects/{project_id}/exports": {
     "method": "create_export",
     "resource": "live2d_workshop"
@@ -1790,6 +1810,14 @@
   "PUT /v1/galgame-workshop/projects/{project_id}/story": {
     "method": "put_story",
     "resource": "galgame"
+  },
+  "PUT /v1/live2d-workshop/projects/{project_id}/cubism": {
+    "method": "attach_cubism",
+    "resource": "live2d_workshop"
+  },
+  "PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings": {
+    "method": "save_cubism_bindings",
+    "resource": "live2d_workshop"
   },
   "PUT /v1/live2d-workshop/projects/{project_id}/document": {
     "method": "save_document",

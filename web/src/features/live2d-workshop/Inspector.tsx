@@ -200,190 +200,203 @@ export function Inspector({
         <p className="l2-hint">选择一个部件或变形器查看属性。</p>
       ) : (
         <>
-          <label className="l2-field">
-            名称
-            <input
-              value={node.name}
-              disabled={readOnly}
-              onChange={(e) => property("name", e.target.value)}
-            />
-          </label>
-          {mode === "rig" && (
-            <p className="l2-hint">
-              当前编辑参数关键形；位置、枢轴、层级和遮罩属于基础模型，请在“模型”页调整。默认值处的关键形定义基础形态。
-            </p>
-          )}
-          <Choice
-            label="父变形器"
-            value={node.parentId ?? ""}
-            options={[
-              { value: "", label: "无（画布坐标）" },
-              ...parents(doc, node.id).map((d) => ({
-                value: d.id,
-                label: d.name,
-              })),
-            ]}
-            disabled={locked || mode === "rig"}
-            onChange={(v) => property("parentId", v || null)}
-          />
-          <div className="l2-two">
-            <Numeric
-              label={
-                "kind" in node && node.kind === "rotation" ? "枢轴 X" : "位置 X"
-              }
-              value={node.x}
+          <details className="l2-inspector-group" open>
+            <summary>基础与层级</summary>
+            <label className="l2-field">
+              名称
+              <input
+                value={node.name}
+                disabled={readOnly}
+                onChange={(e) => property("name", e.target.value)}
+              />
+            </label>
+            {mode === "rig" && (
+              <p className="l2-hint">
+                当前编辑参数关键形；位置、枢轴、层级和遮罩属于基础模型，请在“模型”页调整。默认值处的关键形定义基础形态。
+              </p>
+            )}
+            <Choice
+              label="父变形器"
+              value={node.parentId ?? ""}
+              options={[
+                { value: "", label: "无（画布坐标）" },
+                ...parents(doc, node.id).map((d) => ({
+                  value: d.id,
+                  label: d.name,
+                })),
+              ]}
               disabled={locked || mode === "rig"}
-              onChange={(v) => property("x", v)}
+              onChange={(v) => property("parentId", v || null)}
             />
-            <Numeric
-              label={
-                "kind" in node && node.kind === "rotation" ? "枢轴 Y" : "位置 Y"
-              }
-              value={node.y}
-              disabled={locked || mode === "rig"}
-              onChange={(v) => property("y", v)}
-            />
-          </div>
+            <div className="l2-two">
+              <Numeric
+                label={
+                  "kind" in node && node.kind === "rotation"
+                    ? "枢轴 X"
+                    : "位置 X"
+                }
+                value={node.x}
+                disabled={locked || mode === "rig"}
+                onChange={(v) => property("x", v)}
+              />
+              <Numeric
+                label={
+                  "kind" in node && node.kind === "rotation"
+                    ? "枢轴 Y"
+                    : "位置 Y"
+                }
+                value={node.y}
+                disabled={locked || mode === "rig"}
+                onChange={(v) => property("y", v)}
+              />
+            </div>
+          </details>
           {"vertices" in node ? (
             <>
-              {mode === "model" && (
-                <button
-                  className="l2-full"
-                  disabled={locked}
-                  onClick={onFitMesh}
-                >
-                  按透明像素重建贴合网格
-                </button>
-              )}
-              <div className="l2-two">
-                <Numeric
-                  label="宽度"
-                  value={node.width}
-                  min={1}
-                  max={8192}
-                  disabled={locked || mode === "rig"}
-                  onChange={(v) =>
-                    topology((p) => {
-                      const ratio = v / p.width;
-                      p.width = v;
-                      p.vertices.forEach((n) => (n.x *= ratio));
-                    })
-                  }
-                />
-                <Numeric
-                  label="高度"
-                  value={node.height}
-                  min={1}
-                  max={8192}
-                  disabled={locked || mode === "rig"}
-                  onChange={(v) =>
-                    topology((p) => {
-                      const ratio = v / p.height;
-                      p.height = v;
-                      p.vertices.forEach((n) => (n.y *= ratio));
-                    })
-                  }
-                />
-              </div>
-              <Numeric
-                label="不透明度"
-                value={node.opacity}
-                step={0.05}
-                min={0}
-                max={1}
-                disabled={locked}
-                onChange={(v) =>
-                  editShape((n) => {
-                    if ("opacity" in n) n.opacity = v;
-                  })
-                }
-              />
-              <Numeric
-                label="绘制顺序"
-                value={node.order}
-                min={-10000}
-                max={10000}
-                disabled={locked || mode === "rig"}
-                onChange={(v) => property("order", Math.round(v))}
-              />
-              <Choice
-                label="透明度遮罩"
-                value={node.maskId ?? ""}
-                disabled={locked || mode === "rig"}
-                options={[
-                  { value: "", label: "无" },
-                  ...doc.parts
-                    .filter((p) => {
-                      let cursor: string | null | undefined = p.id;
-                      const seen = new Set<string>();
-                      while (cursor) {
-                        if (cursor === node.id || seen.has(cursor))
-                          return false;
-                        seen.add(cursor);
-                        cursor = doc.parts.find((n) => n.id === cursor)?.maskId;
-                      }
-                      return true;
-                    })
-                    .map((p) => ({ value: p.id, label: p.name })),
-                ]}
-                onChange={(v) => property("maskId", v || null)}
-              />
-              <hr />
-              <strong>三角网格 · {node.vertices.length} 顶点</strong>
-              <Numeric
-                label="选中顶点"
-                value={Math.min(vertexIndex + 1, node.vertices.length)}
-                min={1}
-                max={node.vertices.length}
-                onChange={(v) => setVertexIndex(Math.round(v) - 1)}
-              />
-              {node.vertices[vertexIndex] && (
+              <details className="l2-inspector-group" open>
+                <summary>图层与遮罩</summary>
+                {mode === "model" && (
+                  <button
+                    className="l2-full"
+                    disabled={locked}
+                    onClick={onFitMesh}
+                  >
+                    按透明像素重建贴合网格
+                  </button>
+                )}
                 <div className="l2-two">
-                  {(["x", "y"] as const).map((axis) => (
-                    <Numeric
-                      key={axis}
-                      label={axis.toUpperCase()}
-                      value={node.vertices[vertexIndex][axis]}
-                      disabled={locked}
-                      onChange={(v) =>
-                        editShape((n) => {
-                          if ("vertices" in n)
-                            n.vertices[vertexIndex][axis] = v;
-                        })
-                      }
-                    />
-                  ))}
+                  <Numeric
+                    label="宽度"
+                    value={node.width}
+                    min={1}
+                    max={8192}
+                    disabled={locked || mode === "rig"}
+                    onChange={(v) =>
+                      topology((p) => {
+                        const ratio = v / p.width;
+                        p.width = v;
+                        p.vertices.forEach((n) => (n.x *= ratio));
+                      })
+                    }
+                  />
+                  <Numeric
+                    label="高度"
+                    value={node.height}
+                    min={1}
+                    max={8192}
+                    disabled={locked || mode === "rig"}
+                    onChange={(v) =>
+                      topology((p) => {
+                        const ratio = v / p.height;
+                        p.height = v;
+                        p.vertices.forEach((n) => (n.y *= ratio));
+                      })
+                    }
+                  />
                 </div>
-              )}
-              <div className="l2-stack">
-                <button
-                  disabled={locked || mode === "rig"}
-                  onClick={() =>
-                    topology((p) => Object.assign(p, grid(p.width, p.height)))
-                  }
-                >
-                  重新生成 4 × 4 网格
-                </button>
-                <button
-                  disabled={
-                    locked || mode === "rig" || node.vertices.length <= 3
-                  }
-                  onClick={() =>
-                    topology((p) => {
-                      const index = Math.min(
-                        vertexIndex,
-                        p.vertices.length - 1,
-                      );
-                      p.vertices.splice(index, 1);
-                      p.uvs.splice(index, 1);
-                      triangulate(p);
-                      setVertexIndex(0);
+                <Numeric
+                  label="不透明度"
+                  value={node.opacity}
+                  step={0.05}
+                  min={0}
+                  max={1}
+                  disabled={locked}
+                  onChange={(v) =>
+                    editShape((n) => {
+                      if ("opacity" in n) n.opacity = v;
                     })
                   }
-                >
-                  删除选中顶点
-                </button>
-              </div>
+                />
+                <Numeric
+                  label="绘制顺序"
+                  value={node.order}
+                  min={-10000}
+                  max={10000}
+                  disabled={locked || mode === "rig"}
+                  onChange={(v) => property("order", Math.round(v))}
+                />
+                <Choice
+                  label="透明度遮罩"
+                  value={node.maskId ?? ""}
+                  disabled={locked || mode === "rig"}
+                  options={[
+                    { value: "", label: "无" },
+                    ...doc.parts
+                      .filter((p) => {
+                        let cursor: string | null | undefined = p.id;
+                        const seen = new Set<string>();
+                        while (cursor) {
+                          if (cursor === node.id || seen.has(cursor))
+                            return false;
+                          seen.add(cursor);
+                          cursor = doc.parts.find(
+                            (n) => n.id === cursor,
+                          )?.maskId;
+                        }
+                        return true;
+                      })
+                      .map((p) => ({ value: p.id, label: p.name })),
+                  ]}
+                  onChange={(v) => property("maskId", v || null)}
+                />
+              </details>
+              <details className="l2-inspector-group">
+                <summary>三角网格 · {node.vertices.length} 顶点</summary>
+                <Numeric
+                  label="选中顶点"
+                  value={Math.min(vertexIndex + 1, node.vertices.length)}
+                  min={1}
+                  max={node.vertices.length}
+                  onChange={(v) => setVertexIndex(Math.round(v) - 1)}
+                />
+                {node.vertices[vertexIndex] && (
+                  <div className="l2-two">
+                    {(["x", "y"] as const).map((axis) => (
+                      <Numeric
+                        key={axis}
+                        label={axis.toUpperCase()}
+                        value={node.vertices[vertexIndex][axis]}
+                        disabled={locked}
+                        onChange={(v) =>
+                          editShape((n) => {
+                            if ("vertices" in n)
+                              n.vertices[vertexIndex][axis] = v;
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+                <div className="l2-stack">
+                  <button
+                    disabled={locked || mode === "rig"}
+                    onClick={() =>
+                      topology((p) => Object.assign(p, grid(p.width, p.height)))
+                    }
+                  >
+                    重新生成 4 × 4 网格
+                  </button>
+                  <button
+                    disabled={
+                      locked || mode === "rig" || node.vertices.length <= 3
+                    }
+                    onClick={() =>
+                      topology((p) => {
+                        const index = Math.min(
+                          vertexIndex,
+                          p.vertices.length - 1,
+                        );
+                        p.vertices.splice(index, 1);
+                        p.uvs.splice(index, 1);
+                        triangulate(p);
+                        setVertexIndex(0);
+                      })
+                    }
+                  >
+                    删除选中顶点
+                  </button>
+                </div>
+              </details>
             </>
           ) : node.kind === "rotation" ? (
             <>

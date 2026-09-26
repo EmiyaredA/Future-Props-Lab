@@ -137,7 +137,9 @@ export interface CubismAttachment {
 }
 
 export const getCubism = (id: string) =>
-  fetchApiJson<CubismAttachment>(`/v1/live2d-workshop/projects/${encodeURIComponent(id)}/cubism`);
+  fetchApiJson<CubismAttachment>(
+    `/v1/live2d-workshop/projects/${encodeURIComponent(id)}/cubism`,
+  );
 
 export async function preflightCubism(id: string, file: File) {
   const body = new FormData();
@@ -162,11 +164,15 @@ export const saveCubismBindings = (
   id: string,
   revision: number,
   stateBindings: CubismAttachment["stateBindings"],
-) => fetchApiJson<CubismAttachment>(
-  `/v1/live2d-workshop/projects/${encodeURIComponent(id)}/cubism/bindings`,
-  { method: "PUT", body: JSON.stringify({ expectedRevision: revision, stateBindings }),
-    headers: { "Content-Type": "application/json" } },
-);
+) =>
+  fetchApiJson<CubismAttachment>(
+    `/v1/live2d-workshop/projects/${encodeURIComponent(id)}/cubism/bindings`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ expectedRevision: revision, stateBindings }),
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 
 export const removeCubism = (id: string, revision: number) =>
   fetchApiJson<{ deleted: boolean }>(
@@ -175,13 +181,32 @@ export const removeCubism = (id: string, revision: number) =>
   );
 
 export const downloadCubism = (id: string) =>
-  fetchApiBlob(`/v1/live2d-workshop/projects/${encodeURIComponent(id)}/cubism/package`);
+  fetchApiBlob(
+    `/v1/live2d-workshop/projects/${encodeURIComponent(id)}/cubism/package`,
+  );
 
-export async function createCubismCopy(id: string, revision: number, nativePackage: Blob, source: Blob, stateBindings: CubismAttachment["stateBindings"]): Promise<Project> {
+export async function createCubismCopy(
+  id: string,
+  revision: number,
+  nativePackage: Blob,
+  source: Blob,
+  stateBindings: CubismAttachment["stateBindings"],
+): Promise<Project> {
   const body = new FormData();
-  body.append("file", new File([nativePackage], "converted.fpllive2d", { type: "application/zip" }));
-  body.append("source", new File([source], "cubism-runtime.zip", { type: "application/zip" }));
+  body.append(
+    "file",
+    new File([nativePackage], "converted.fpllive2d", {
+      type: "application/zip",
+    }),
+  );
+  body.append(
+    "source",
+    new File([source], "cubism-runtime.zip", { type: "application/zip" }),
+  );
   body.append("expectedRevision", String(revision));
   body.append("stateBindings", JSON.stringify(stateBindings));
-  return fetchApiJson<Project>(`/v1/live2d-workshop/projects/${encodeURIComponent(id)}/cubism/convert`, { method: "POST", body });
+  return fetchApiJson<Project>(
+    `/v1/live2d-workshop/projects/${encodeURIComponent(id)}/cubism/convert`,
+    { method: "POST", body },
+  );
 }

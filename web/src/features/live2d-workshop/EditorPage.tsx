@@ -1,40 +1,35 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  Check,
-  Download,
-  Layers3,
-  Network,
-  PanelLeft,
-  PanelRight,
-  Play,
-  Redo2,
-  Save,
-  Undo2,
-  Upload,
-} from "lucide-react";
 import { ApiError, fetchApiBlob } from "@platform/api/client";
-import {
-  AMADEUS_PACKAGE_URL,
-  BUNDLED_AMADEUS_PROJECT_ID,
-} from "@shared/live2d/bundled";
-import { loadAmadeusModel } from "@features/amadeus/avatarModel";
+import { BUNDLED_AMADEUS_PROJECT_ID } from "@shared/live2d/bundled";
+import { loadAmadeusModel } from "@features/amadeus";
 import {
   getDocument,
   getProject,
-  importProject,
   listAssets,
   retireAsset,
   saveDocument,
   uploadAsset,
 } from "./api";
-import { AnimationLibrary, AnimationTimeline } from "./AnimationPanel";
+import {
+  AnimationLibrary,
+  AnimationTimeline,
+  AnimationValues,
+} from "./AnimationPanel";
 import { BonePanel } from "./BonePanel";
 import { CameraBehaviorPanel } from "./CameraBehaviorPanel";
 import { CharacterCanvas } from "./CharacterCanvas";
 import { CubismWorkspace } from "./CubismWorkspace";
-import { Modal } from "./Controls";
 import { ExportPanel } from "./ExportPanel";
+import { BuiltInExport, EditorDialogs } from "./EditorDialogs";
+import { EditorToolbar } from "./EditorToolbar";
+import {
+  brushVertices,
+  moveBone,
+  moveShapePoint,
+  paintBoneWeights,
+} from "./editorBrush";
+import { restoreSavedDocument } from "./editorRecovery";
+import { inverseDeformedPoint } from "./editorCoordinates";
 import { ObjectTree } from "./ObjectTree";
 import { Inspector, type Edit } from "./Inspector";
 import { ParameterStrip } from "./ParameterStrip";
@@ -45,11 +40,9 @@ import {
   captureKey,
   clearBindings,
   copy,
-  deformerTransform,
   evaluate,
   makePart,
   parameterValues,
-  setVertexBoneWeight,
   triangulate,
 } from "./model";
 import type {
@@ -132,7 +125,6 @@ export function EditorPage({
     savePromise = useRef<Promise<number> | null>(null),
     history = useRef<CharacterDocument[]>([]),
     future = useRef<CharacterDocument[]>([]),
-    input = useRef<HTMLInputElement>(null),
     importAbort = useRef<AbortController | null>(null),
     retiredAssets = useRef(new Set<string>()),
     mounted = useRef(true);
@@ -418,36 +410,8 @@ export function EditorPage({
         if (target) fn(target);
       }, record);
   };
-  const localPoint = (index: number, world: Point): Point => {
-    if (!shape) return world;
-    const isPart = "vertices" in shape;
-    let guess = { ...(isPart ? shape.vertices[index] : shape.points[index]) };
-    const transform = deformerTransform(posed.deformers);
-    const project = (p: Point) =>
-      transform(
-        isPart ? { x: p.x + shape.x, y: p.y + shape.y } : p,
-        shape.parentId,
-      );
-    for (let n = 0; n < 8; n++) {
-      const a = project(guess),
-        b = project({ x: guess.x + 0.01, y: guess.y }),
-        c = project({ x: guess.x, y: guess.y + 0.01 });
-      const dx = world.x - a.x,
-        dy = world.y - a.y;
-      if (Math.abs(dx) + Math.abs(dy) < 0.001) break;
-      const ax = (b.x - a.x) / 0.01,
-        ay = (b.y - a.y) / 0.01,
-        bx = (c.x - a.x) / 0.01,
-        by = (c.y - a.y) / 0.01,
-        det = ax * by - ay * bx;
-      if (Math.abs(det) < 1e-8) break;
-      guess = {
-        x: guess.x + (dx * by - dy * bx) / det,
-        y: guess.y + (dy * ax - dx * ay) / det,
-      };
-    }
-    return guess;
-  };
+  const localPoint = (index: number, world: Point): Point =>
+    inverseDeformedPoint(shape, posed.deformers, index, world);
   const addPoint = (world: Point) => {
     if (!doc || !shape || !("vertices" in shape)) return;
     const point = localPoint(0, world);
@@ -649,6 +613,10 @@ export function EditorPage({
     setParameterId(id);
     setParameterValue(doc?.parameters.find((p) => p.id === id)?.default ?? 0);
   };
+  const selectObject = (id: string) => {
+    setSelected(id);
+    setVertexIndex(0);
+  };
   if (!doc || !project)
     return (
       <div className="l2-loading">
@@ -658,203 +626,60 @@ export function EditorPage({
     );
   return (
     <main className="l2-editor">
-      <header className="l2-editor-header">
-        <button
-          aria-label="返回项目"
-          onClick={() => {
-            if (dirty || busy) setLeaving(() => onBack);
-            else onBack();
-          }}
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <div className="l2-title">
-          <strong>{project.title}</strong>
-          <small>
-            {readOnly
-              ? "只读浏览"
-              : saving
-                ? "正在保存…"
-                : dirty
-                  ? "有未保存修改"
-                  : "已保存"}{" "}
-            · FPL 原生角色工程
-          </small>
-        </div>
-        <nav>
-          {(
-            [
-              { id: "model", label: "模型", icon: Layers3 },
-              { id: "rig", label: "绑定", icon: Network },
-              { id: "animation", label: "动画", icon: Play },
-              { id: "export", label: "交付", icon: Download },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              aria-pressed={mode === tab.id}
-              onClick={() => {
-                setMode(tab.id);
-                setPlaying(false);
-                setOverrides({});
-              }}
-            >
-              <tab.icon size={16} />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-        <div className="l2-header-actions">
-          {builtIn && !inheritedReadOnly && (
-            <button
-              onClick={() =>
-                void (async () => {
-                  try {
-                    const response = await fetch(AMADEUS_PACKAGE_URL);
-                    if (!response.ok) throw new Error("内置工程包无法读取");
-                    const file = new File(
-                      [await response.blob()],
-                      "amadeus.fpllive2d",
-                      { type: "application/zip" },
-                    );
-                    await importProject(file);
-                    onBack();
-                  } catch (cause) {
-                    setError(
-                      cause instanceof Error ? cause.message : "复制失败",
-                    );
-                  }
-                })()
-              }
-            >
-              创建可编辑副本
-            </button>
-          )}
-          <button
-            aria-label="对象面板"
-            aria-pressed={leftOpen}
-            onClick={() => setLeftOpen((v) => !v)}
-          >
-            <PanelLeft size={16} />
-          </button>
-          <button
-            aria-label="属性面板"
-            aria-pressed={rightOpen}
-            onClick={() => setRightOpen((v) => !v)}
-          >
-            <PanelRight size={16} />
-          </button>
-          <button
-            aria-label="撤销"
-            disabled={readOnly || !history.current.length}
-            onClick={() => undo()}
-            data-history={historyTick}
-          >
-            <Undo2 size={16} />
-          </button>
-          <button
-            aria-label="重做"
-            disabled={readOnly || !future.current.length}
-            onClick={() => undo(true)}
-          >
-            <Redo2 size={16} />
-          </button>
-          <button
-            disabled={readOnly || busy}
-            onClick={() => input.current?.click()}
-          >
-            <Upload size={16} />
-            <span>导入素材</span>
-          </button>
-          <button
-            className="l2-primary"
-            disabled={readOnly || saving || conflict || busy}
-            onClick={() => void save().catch(() => {})}
-          >
-            {dirty ? <Save size={16} /> : <Check size={16} />}保存
-          </button>
-        </div>
-      </header>
-      <input
-        type="file"
-        ref={input}
-        hidden
-        multiple
-        accept=".png,.psd"
-        onChange={(e) => {
-          const files = Array.from(e.target.files ?? []);
-          e.target.value = "";
-          if (files.length) void importFiles(files);
+      <EditorToolbar
+        title={project.title}
+        mode={mode}
+        onMode={(next) => {
+          setMode(next);
+          setPlaying(false);
+          setOverrides({});
         }}
+        readOnly={readOnly}
+        saving={saving}
+        dirty={dirty}
+        busy={busy}
+        conflict={conflict}
+        error={error}
+        onError={setError}
+        builtIn={builtIn}
+        inheritedReadOnly={inheritedReadOnly}
+        onBack={onBack}
+        onRequestLeave={() => setLeaving(() => onBack)}
+        leftOpen={leftOpen}
+        onLeftOpen={() => setLeftOpen((value) => !value)}
+        rightOpen={rightOpen}
+        onRightOpen={() => setRightOpen((value) => !value)}
+        canUndo={!!history.current.length}
+        canRedo={!!future.current.length}
+        onUndo={undo}
+        onRedo={() => undo(true)}
+        historyTick={historyTick}
+        onImport={(files) => void importFiles(files)}
+        onCancelImport={() => importAbort.current?.abort()}
+        onSave={() => void save().catch(() => {})}
+        localDocument={doc}
+        onRequestReload={() =>
+          setConfirmation({
+            message: "重新读取将放弃当前未保存修改。请先下载本地文档备份。",
+            action: () => {
+              void restoreSavedDocument({
+                projectId,
+                documentRef,
+                revision,
+                version,
+                savedVersion,
+                history,
+                future,
+                setDoc,
+                setDirty,
+                setConflict,
+              }).catch((cause) => setError(cause.message));
+            },
+          })
+        }
       />
-      {busy && (
-        <div className="l2-notice">
-          正在检查并导入分层素材…
-          <button onClick={() => importAbort.current?.abort()}>取消</button>
-        </div>
-      )}
-      {error && (
-        <div className="l2-error" role="alert">
-          <span>{error}</span>
-          <button onClick={() => setError("")}>关闭提示</button>
-        </div>
-      )}
-      {conflict && (
-        <div className="l2-notice">
-          本地修改已保留。
-          <button
-            onClick={() => {
-              const blob = new Blob(
-                [JSON.stringify(documentRef.current, null, 2)],
-                { type: "application/json" },
-              );
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "character-local-changes.json";
-              a.click();
-              setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }}
-          >
-            下载本地文档备份
-          </button>
-          <button
-            onClick={() =>
-              setConfirmation({
-                message: "重新读取将放弃当前未保存修改。请先下载本地文档备份。",
-                action: () => {
-                  void getDocument(projectId)
-                    .then((r) => {
-                      const value = r.document as CharacterDocument;
-                      documentRef.current = value;
-                      setDoc(value);
-                      revision.current = r.revision;
-                      version.current++;
-                      savedVersion.current = version.current;
-                      setDirty(false);
-                      setConflict(false);
-                      history.current = [];
-                      future.current = [];
-                    })
-                    .catch((e) => setError(e.message));
-                },
-              })
-            }
-          >
-            重新读取服务器版本
-          </button>
-        </div>
-      )}
       {mode === "export" && builtIn ? (
-        <section className="l2-builtin-export">
-          <h2>内置只读案例</h2>
-          <p>
-            可查看图层、骨骼、蒙皮、参数、动作和状态绑定。创建副本后即可编辑并交付。
-          </p>
-          <a href={AMADEUS_PACKAGE_URL} download="amadeus.fpllive2d">
-            下载原生工程包
-          </a>
-        </section>
+        <BuiltInExport />
       ) : mode === "export" ? (
         <ExportPanel
           doc={doc}
@@ -897,10 +722,7 @@ export function EditorPage({
                   selected={selected}
                   soloPartId={soloPartId}
                   onSoloPart={setSoloPartId}
-                  onSelect={(v) => {
-                    setSelected(v);
-                    setVertexIndex(0);
-                  }}
+                  onSelect={selectObject}
                   edit={edit}
                   readOnly={readOnly}
                 />
@@ -915,86 +737,68 @@ export function EditorPage({
               template={doc}
               onRevision={(next) => {
                 revision.current = next;
-                setProject((current) => current ? { ...current, revision: next } : current);
+                setProject((current) =>
+                  current ? { ...current, revision: next } : current,
+                );
               }}
             >
-            <CharacterCanvas
-              doc={doc}
-              parts={posed.parts.filter(
-                (part) => !soloPartId || part.id === soloPartId,
-              )}
-              deformers={posed.deformers}
-              assets={assets}
-              selected={selected}
-              mode={mode}
-              readOnly={readOnly || busy}
-              urls={urls}
-              onUrl={onUrl}
-              influence={influence || doc.bones[0]?.id || ""}
-              showWeights={showWeights}
-              brush={weightBrush}
-              brushRadius={brushRadius}
-              onWeightBrush={(point) => {
-                const posedPart = posed.parts.find(
-                  (part) => part.id === selected,
-                );
-                const boneId = influence || doc.bones[0]?.id;
-                if (!posedPart?.skinWeights || !boneId) return;
-                const vertices = posedPart.worldVertices.flatMap(
-                  (vertex, index) =>
-                    Math.hypot(vertex.x - point.x, vertex.y - point.y) <=
-                    brushRadius
-                      ? [index]
-                      : [],
-                );
-                if (!vertices.length) return;
-                edit((draft) => {
-                  const part = draft.parts.find((item) => item.id === selected);
-                  if (!part?.skinWeights) return;
-                  for (const index of vertices)
-                    setVertexBoneWeight(part, index, boneId, brushStrength);
-                }, false);
-              }}
-              onSelect={(v) => {
-                setSelected(v);
-                setVertexIndex(0);
-              }}
-              onGesture={checkpoint}
-              onVertexSelect={setVertexIndex}
-              onBonePoint={(id, point) =>
-                edit((draft) => {
-                  const bone = draft.bones.find((item) => item.id === id);
-                  if (bone) {
-                    bone.x = point.x;
-                    bone.y = point.y;
-                  }
-                }, false)
-              }
-              onPoint={(index, point) => {
-                setVertexIndex(index);
-                const p = localPoint(index, point);
-                editShape((n) => {
-                  if ("vertices" in n) n.vertices[index] = p;
-                  else n.points[index] = p;
-                }, false);
-              }}
-              onAddPoint={addPoint}
-            />
+              <CharacterCanvas
+                doc={doc}
+                parts={posed.parts.filter(
+                  (part) => !soloPartId || part.id === soloPartId,
+                )}
+                deformers={posed.deformers}
+                assets={assets}
+                selected={selected}
+                mode={mode}
+                readOnly={readOnly || busy}
+                urls={urls}
+                onUrl={onUrl}
+                influence={influence || doc.bones[0]?.id || ""}
+                showWeights={showWeights}
+                brush={weightBrush}
+                brushRadius={brushRadius}
+                onWeightBrush={(point) => {
+                  const posedPart = posed.parts.find(
+                    (part) => part.id === selected,
+                  );
+                  const boneId = influence || doc.bones[0]?.id;
+                  if (!posedPart?.skinWeights || !boneId) return;
+                  const vertices = brushVertices(
+                    posedPart.worldVertices,
+                    point,
+                    brushRadius,
+                  );
+                  if (!vertices.length) return;
+                  edit(
+                    (draft) =>
+                      paintBoneWeights(
+                        draft,
+                        selected,
+                        vertices,
+                        boneId,
+                        brushStrength,
+                      ),
+                    false,
+                  );
+                }}
+                onSelect={selectObject}
+                onGesture={checkpoint}
+                onVertexSelect={setVertexIndex}
+                onBonePoint={(id, point) =>
+                  edit((draft) => moveBone(draft, id, point), false)
+                }
+                onPoint={(index, point) => {
+                  setVertexIndex(index);
+                  const p = localPoint(index, point);
+                  editShape((node) => moveShapePoint(node, index, p), false);
+                }}
+                onAddPoint={addPoint}
+              />
             </CubismWorkspace>
             <aside className="l2-right" hidden={!rightOpen}>
               {mode === "animation" ? (
-                <>
-                  <h2>预览参数</h2>
-                  <p className="l2-hint">
-                    拖动时间线或播放动作，检查表情与动作叠加结果。
-                  </p>
-                  {doc.parameters.map((p) => (
-                    <div className="l2-value-row" key={p.id}>
-                      <span>{p.name}</span>
-                      <strong>{values[p.id].toFixed(2)}</strong>
-                    </div>
-                  ))}
-                </>
+                <AnimationValues doc={doc} values={values} />
               ) : (
                 <>
                   {mode === "rig" && (
@@ -1142,58 +946,32 @@ export function EditorPage({
           )}
         </>
       )}
-      <Modal
-        title="确认编辑操作"
-        description={confirmation?.message ?? ""}
-        open={!!confirmation}
-        onClose={() => setConfirmation(null)}
-      >
-        <div className="l2-actions">
-          <button onClick={() => setConfirmation(null)}>取消</button>
-          <button
-            className="l2-primary"
-            onClick={() => {
-              confirmation?.action();
-              setConfirmation(null);
-            }}
-          >
-            确认
-          </button>
-        </div>
-      </Modal>
-      <Modal
-        title="离开角色编辑器？"
-        description="当前修改尚未保存，或素材仍在导入。可以保存后离开，也可以留在此处继续编辑。"
-        open={!!leaving}
-        onClose={() => setLeaving(null)}
-      >
-        <div className="l2-actions">
-          <button onClick={() => setLeaving(null)}>继续编辑</button>
-          <button
-            onClick={() => {
-              importAbort.current?.abort();
+      <EditorDialogs
+        confirmation={confirmation}
+        onDismissConfirmation={() => setConfirmation(null)}
+        onConfirm={() => {
+          confirmation?.action();
+          setConfirmation(null);
+        }}
+        leaving={!!leaving}
+        onDismissLeaving={() => setLeaving(null)}
+        onDiscard={() => {
+          importAbort.current?.abort();
+          leaving?.();
+          setLeaving(null);
+        }}
+        onSaveLeave={() =>
+          void save()
+            .then(() => {
               leaving?.();
               setLeaving(null);
-            }}
-          >
-            放弃并离开
-          </button>
-          <button
-            className="l2-primary"
-            disabled={busy || saving || conflict}
-            onClick={() =>
-              void save()
-                .then(() => {
-                  leaving?.();
-                  setLeaving(null);
-                })
-                .catch(() => {})
-            }
-          >
-            保存后离开
-          </button>
-        </div>
-      </Modal>
+            })
+            .catch(() => {})
+        }
+        busy={busy}
+        saving={saving}
+        conflict={conflict}
+      />
     </main>
   );
 }

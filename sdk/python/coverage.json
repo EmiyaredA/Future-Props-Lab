@@ -1701,6 +1701,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/live2d-workshop/projects/{project_id}/cubism",
+    "sdk": "client.live2d_workshop.remove_cubism",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#remove-cubism",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/live2d-workshop/projects",
     "sdk": "client.live2d_workshop.list_projects",
     "document": "/docs.html?page=sdk-reference-live2d-workshop#list-projects",
@@ -1725,6 +1732,20 @@
     "http": "GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file",
     "sdk": "client.live2d_workshop.asset_file",
     "document": "/docs.html?page=sdk-reference-live2d-workshop#asset-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/cubism",
+    "sdk": "client.live2d_workshop.get_cubism",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#get-cubism",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/live2d-workshop/projects/{project_id}/cubism/package",
+    "sdk": "client.live2d_workshop.download_cubism",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#download-cubism",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -1806,6 +1827,20 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/live2d-workshop/projects/{project_id}/cubism/convert",
+    "sdk": "client.live2d_workshop.convert_cubism",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#convert-cubism",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight",
+    "sdk": "client.live2d_workshop.preflight_cubism",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#preflight-cubism",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/live2d-workshop/projects/{project_id}/exports",
     "sdk": "client.live2d_workshop.create_export",
     "document": "/docs.html?page=sdk-reference-live2d-workshop#create-export",
@@ -1823,6 +1858,20 @@
     "http": "POST /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel",
     "sdk": "client.live2d_workshop.cancel_export",
     "document": "/docs.html?page=sdk-reference-live2d-workshop#cancel-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/live2d-workshop/projects/{project_id}/cubism",
+    "sdk": "client.live2d_workshop.attach_cubism",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#attach-cubism",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings",
+    "sdk": "client.live2d_workshop.save_cubism_bindings",
+    "document": "/docs.html?page=sdk-reference-live2d-workshop#save-cubism-bindings",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

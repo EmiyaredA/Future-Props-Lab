@@ -8,19 +8,18 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 from fastapi.routing import APIRoute
 
-from app.apps.live2d_workshop.exports import Live2DExportsStore
 from app.apps.live2d_workshop.cubism import MAX_CUBISM_PACKAGE, inspect_cubism_package
 from app.apps.live2d_workshop.cubism_attachment import Live2DCubismStore
+from app.apps.live2d_workshop.exports import Live2DExportsStore
 from app.apps.live2d_workshop.packages import Live2DPackages
 from app.apps.live2d_workshop.projects import Live2DNotFound, Live2DProjectsStore
-from app.runtime.revisions import RevisionConflictError
 from app.apps.live2d_workshop.schemas import (
     Live2DAssetOut,
     Live2DAssets,
     Live2DCreate,
+    Live2DCrop,
     Live2DCubismBindings,
     Live2DCubismOut,
-    Live2DCrop,
     Live2DDocumentOut,
     Live2DExportIn,
     Live2DExportOut,
@@ -32,6 +31,7 @@ from app.apps.live2d_workshop.schemas import (
     Live2DSave,
 )
 from app.deps import SessionDep, WorkspaceDep
+from app.runtime.revisions import RevisionConflictError
 
 
 class CharacterRoute(APIRoute):
@@ -99,7 +99,9 @@ async def get_document(session: SessionDep, workspace_id: WorkspaceDep, project_
 
 @router.post("/projects/{project_id}/cubism/preflight")
 async def preflight_cubism(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
     file: Annotated[UploadFile, File()],
 ) -> dict:
     await Live2DProjectsStore(session, workspace_id).row(project_id)
@@ -114,23 +116,32 @@ async def get_cubism(session: SessionDep, workspace_id: WorkspaceDep, project_id
 
 @router.put("/projects/{project_id}/cubism", response_model=Live2DCubismOut)
 async def attach_cubism(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
     file: Annotated[UploadFile, File()],
     expected_revision: Annotated[int, Form(alias="expectedRevision", ge=0)],
 ):
-    return await Live2DCubismStore(session, workspace_id).attach(project_id, expected_revision, file)
+    return await Live2DCubismStore(session, workspace_id).attach(
+        project_id, expected_revision, file
+    )
 
 
 @router.put("/projects/{project_id}/cubism/bindings", response_model=Live2DCubismOut)
 async def save_cubism_bindings(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, body: Live2DCubismBindings,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    body: Live2DCubismBindings,
 ):
     return await Live2DCubismStore(session, workspace_id).save_bindings(project_id, body)
 
 
 @router.delete("/projects/{project_id}/cubism")
 async def remove_cubism(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
     expected_revision: int = Query(alias="expectedRevision", ge=0),
 ) -> dict[str, bool]:
     await Live2DCubismStore(session, workspace_id).remove(project_id, expected_revision)
@@ -138,7 +149,8 @@ async def remove_cubism(
 
 
 @router.get(
-    "/projects/{project_id}/cubism/package", response_class=Response,
+    "/projects/{project_id}/cubism/package",
+    response_class=Response,
     responses={200: {"content": {"application/zip": {}}}},
 )
 async def download_cubism(session: SessionDep, workspace_id: WorkspaceDep, project_id: str):
@@ -148,7 +160,9 @@ async def download_cubism(session: SessionDep, workspace_id: WorkspaceDep, proje
 
 @router.post("/projects/{project_id}/cubism/convert", response_model=Live2DProjectOut)
 async def convert_cubism(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
     file: Annotated[UploadFile, File()],
     source: Annotated[UploadFile, File()],
     expected_revision: Annotated[int, Form(alias="expectedRevision", ge=0)],
@@ -157,7 +171,9 @@ async def convert_cubism(
     store = Live2DCubismStore(session, workspace_id)
     snapshot = await store.document(project_id)
     if snapshot.revision != expected_revision:
-        raise RevisionConflictError(expected_revision, snapshot.revision, snapshot.model_dump(mode="json"))
+        raise RevisionConflictError(
+            expected_revision, snapshot.revision, snapshot.model_dump(mode="json")
+        )
     runtime = await source.read(MAX_CUBISM_PACKAGE + 1)
     metadata = await asyncio.to_thread(inspect_cubism_package, runtime)
     try:

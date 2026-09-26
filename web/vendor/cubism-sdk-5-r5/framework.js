@@ -14734,5 +14734,6 @@ export {
   CubismFramework,
   CubismMatrix44,
   CubismPhysics,
+  CubismShaderManager_WebGL,
   CubismUserModel
 };

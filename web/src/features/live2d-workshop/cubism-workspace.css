@@ -1,0 +1,169 @@
+.l2-cubism-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: #101622;
+}
+.l2-cubism-toolbar,
+.l2-cubism-statebar,
+.l2-cubism-preflight {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border-bottom: 1px solid #30394f;
+  flex-wrap: wrap;
+}
+.l2-cubism-toolbar span {
+  color: #aeb8cb;
+  margin-right: 5px;
+}
+.l2-cubism-toolbar button,
+.l2-cubism-statebar button,
+.l2-cubism-camera button,
+.l2-cubism-preflight button {
+  min-height: 26px;
+  padding: 3px 7px;
+  font-size: 11px;
+}
+.l2-cubism-toolbar button[aria-pressed="true"],
+.l2-cubism-statebar button[aria-pressed="true"],
+.l2-cubism-camera button[aria-pressed="true"] {
+  background: #57449b;
+  border-color: #9981f4;
+}
+.l2-cubism-statebar > div:first-child {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.l2-cubism-statebar .l2-field {
+  margin: 0;
+  width: min(180px, 26vw);
+}
+.l2-cubism-message {
+  margin: 0;
+  padding: 3px 8px;
+  color: #b9a9df;
+  font-size: 11px;
+}
+.l2-cubism-preflight span {
+  color: #aeb8cb;
+  font-size: 11px;
+}
+.l2-cubism-views {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.l2-cubism-views > * {
+  min-width: 0;
+}
+.l2-cubism-views.split > * {
+  flex: 1 1 50%;
+}
+.l2-cubism-preview {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  background: #111723;
+}
+.l2-cubism-preview canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.l2-cubism-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #111723;
+}
+.l2-cubism-preview .l2-error {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 3;
+  max-width: calc(100% - 16px);
+}
+.l2-cubism-camera {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+}
+.l2-cubism-parameters {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 2;
+  width: min(280px, 45%);
+  max-height: calc(100% - 16px);
+  overflow: auto;
+  background: #1c2436e8;
+  border: 1px solid #343d56;
+  border-radius: 5px;
+  padding: 5px;
+}
+.l2-cubism-parameter {
+  display: grid;
+  grid-template-columns: 1fr 1fr 42px;
+  gap: 4px;
+  align-items: center;
+  font-size: 10px;
+}
+.l2-cubism-parameter span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.l2-cubism-report {
+  flex: 0 0 auto;
+  max-height: 150px;
+  overflow: auto;
+  padding: 5px 8px;
+  border-bottom: 1px solid #4a395e;
+  color: #c8b4dc;
+  background: #241b30;
+  font-size: 11px;
+}
+.l2-cubism-report p {
+  margin: 2px 0;
+}
+.l2-cubism-report button {
+  min-height: 26px;
+  padding: 3px 7px;
+  font-size: 11px;
+}
+.l2-cubism-converted {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  justify-content: center;
+  overflow: auto;
+  background: #111723;
+}
+.l2-cubism-converted span {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+.l2-cubism-converted img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}

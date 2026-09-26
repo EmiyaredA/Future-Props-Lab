@@ -2078,6 +2078,26 @@
         "title": "Body_add_skill_version_v1_integrations_skills__skill_id__versions_post",
         "type": "object"
       },
+      "Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "expectedRevision"
+        ],
+        "title": "Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put",
+        "type": "object"
+      },
       "Body_attachments_v1_thought_workshop_attachments_post": {
         "properties": {
           "upload": {
@@ -2124,6 +2144,37 @@
           "category"
         ],
         "title": "Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post",
+        "type": "object"
+      },
+      "Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "source": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Source",
+            "type": "string"
+          },
+          "stateBindings": {
+            "default": "{}",
+            "title": "Statebindings",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "source",
+          "expectedRevision"
+        ],
+        "title": "Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post",
         "type": "object"
       },
       "Body_create_skill_v1_integrations_skills_post": {
@@ -2337,6 +2388,20 @@
           "upload"
         ],
         "title": "Body_imports_v1_thought_workshop_imports_post",
+        "type": "object"
+      },
+      "Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post",
         "type": "object"
       },
       "Body_put_avatar_v1_account_profile_avatar_put": {
@@ -16094,6 +16159,58 @@
           "height"
         ],
         "title": "Live2DCrop",
+        "type": "object"
+      },
+      "Live2DCubismBindings": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "stateBindings": {
+            "additionalProperties": true,
+            "title": "Statebindings",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "stateBindings"
+        ],
+        "title": "Live2DCubismBindings",
+        "type": "object"
+      },
+      "Live2DCubismOut": {
+        "additionalProperties": false,
+        "properties": {
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "stateBindings": {
+            "additionalProperties": true,
+            "title": "Statebindings",
+            "type": "object"
+          }
+        },
+        "required": [
+          "revision",
+          "sha256",
+          "metadata",
+          "stateBindings"
+        ],
+        "title": "Live2DCubismOut",
         "type": "object"
       },
       "Live2DDocumentOut": {
@@ -40925,6 +41042,348 @@
           }
         },
         "summary": "Asset File",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/cubism": {
+      "delete": {
+        "operationId": "remove_cubism_v1_live2d_workshop_projects__project_id__cubism_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedRevision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expectedrevision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Remove Cubism V1 Live2D Workshop Projects  Project Id  Cubism Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Cubism",
+        "tags": [
+          "live2d-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_cubism_v1_live2d_workshop_projects__project_id__cubism_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DCubismOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Cubism",
+        "tags": [
+          "live2d-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DCubismOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Attach Cubism",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/cubism/bindings": {
+      "put": {
+        "operationId": "save_cubism_bindings_v1_live2d_workshop_projects__project_id__cubism_bindings_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Live2DCubismBindings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DCubismOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Cubism Bindings",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/cubism/convert": {
+      "post": {
+        "operationId": "convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live2DProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Convert Cubism",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/cubism/package": {
+      "get": {
+        "operationId": "download_cubism_v1_live2d_workshop_projects__project_id__cubism_package_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Cubism",
+        "tags": [
+          "live2d-workshop"
+        ]
+      }
+    },
+    "/v1/live2d-workshop/projects/{project_id}/cubism/preflight": {
+      "post": {
+        "operationId": "preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Preflight Cubism V1 Live2D Workshop Projects  Project Id  Cubism Preflight Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preflight Cubism",
         "tags": [
           "live2d-workshop"
         ]

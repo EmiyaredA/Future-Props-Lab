@@ -2930,6 +2930,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/live2d-workshop/projects/{project_id}/cubism": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Cubism */
+        get: operations["get_cubism_v1_live2d_workshop_projects__project_id__cubism_get"];
+        /** Attach Cubism */
+        put: operations["attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put"];
+        post?: never;
+        /** Remove Cubism */
+        delete: operations["remove_cubism_v1_live2d_workshop_projects__project_id__cubism_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/live2d-workshop/projects/{project_id}/cubism/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save Cubism Bindings */
+        put: operations["save_cubism_bindings_v1_live2d_workshop_projects__project_id__cubism_bindings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/live2d-workshop/projects/{project_id}/cubism/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Convert Cubism */
+        post: operations["convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/live2d-workshop/projects/{project_id}/cubism/package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Cubism */
+        get: operations["download_cubism_v1_live2d_workshop_projects__project_id__cubism_package_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/live2d-workshop/projects/{project_id}/cubism/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preflight Cubism */
+        post: operations["preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/live2d-workshop/projects/{project_id}/document": {
         parameters: {
             query?: never;
@@ -6798,6 +6885,13 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put */
+        Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** File */
+            file: string;
+        };
         /** Body_attachments_v1_thought_workshop_attachments_post */
         Body_attachments_v1_thought_workshop_attachments_post: {
             /** Upload */
@@ -6812,6 +6906,20 @@ export interface components {
             category: "character" | "scene" | "cg" | "bgm" | "ambient" | "sfx" | "voice" | "video" | "font" | "other";
             /** Uploads */
             uploads: string[];
+        };
+        /** Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post */
+        Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** File */
+            file: string;
+            /** Source */
+            source: string;
+            /**
+             * Statebindings
+             * @default {}
+             */
+            stateBindings: string;
         };
         /** Body_create_skill_v1_integrations_skills_post */
         Body_create_skill_v1_integrations_skills_post: {
@@ -6882,6 +6990,11 @@ export interface components {
         Body_imports_v1_thought_workshop_imports_post: {
             /** Upload */
             upload: string;
+        };
+        /** Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post */
+        Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post: {
+            /** File */
+            file: string;
         };
         /** Body_put_avatar_v1_account_profile_avatar_put */
         Body_put_avatar_v1_account_profile_avatar_put: {
@@ -12029,6 +12142,30 @@ export interface components {
             x: number;
             /** Y */
             y: number;
+        };
+        /** Live2DCubismBindings */
+        Live2DCubismBindings: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Statebindings */
+            stateBindings: {
+                [key: string]: unknown;
+            };
+        };
+        /** Live2DCubismOut */
+        Live2DCubismOut: {
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Revision */
+            revision: number;
+            /** Sha256 */
+            sha256: string;
+            /** Statebindings */
+            stateBindings: {
+                [key: string]: unknown;
+            };
         };
         /** Live2DDocumentOut */
         Live2DDocumentOut: {
@@ -24682,6 +24819,245 @@ export interface operations {
                 };
                 content: {
                     "image/png": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cubism_v1_live2d_workshop_projects__project_id__cubism_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Live2DCubismOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Live2DCubismOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_cubism_v1_live2d_workshop_projects__project_id__cubism_delete: {
+        parameters: {
+            query: {
+                expectedRevision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_cubism_bindings_v1_live2d_workshop_projects__project_id__cubism_bindings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Live2DCubismBindings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Live2DCubismOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Live2DProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_cubism_v1_live2d_workshop_projects__project_id__cubism_package_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

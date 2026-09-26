@@ -14,6 +14,7 @@ import pytest
 from PIL import Image
 from pydantic import ValidationError
 
+from app.apps.live2d_workshop.cubism import inspect_cubism_package
 from app.apps.live2d_workshop.models import Live2DExport
 from app.apps.live2d_workshop.packages import read_package
 from app.apps.live2d_workshop.projects import Live2DInvalid, Live2DNotFound, Live2DProjectsStore
@@ -60,6 +61,145 @@ def png(color=(220, 50, 30, 128)) -> bytes:
     data = io.BytesIO()
     Image.new("RGBA", (16, 16), color).save(data, format="PNG")
     return data.getvalue()
+
+
+def cubism_zip(*, missing_texture: bool = False, legacy: bool = False) -> bytes:
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as archive:
+        archive.writestr(
+            "role/role.model3.json",
+            json.dumps(
+                {
+                    "Version": 3,
+                    "FileReferences": {
+                        "Moc": "role.moc3",
+                        "Textures": ["textures/atlas.png"],
+                        "Motions": {"Idle": [{"File": "motions/idle.motion3.json"}]},
+                        "Expressions": [{"Name": "Smile", "File": "expressions/smile.exp3.json"}],
+                    },
+                }
+            ),
+        )
+        archive.writestr("role/role.moc3", b"MOC3" + b"\0" * 12)
+        if not missing_texture:
+            archive.writestr("role/textures/atlas.png", png())
+        archive.writestr("role/motions/idle.motion3.json", b"{}")
+        archive.writestr("role/expressions/smile.exp3.json", b"{}")
+        if legacy:
+            archive.writestr("role/old.mtn", b"old")
+    return out.getvalue()
+
+
+def test_cubism_preflight_validates_references_and_legacy_files():
+    metadata = inspect_cubism_package(cubism_zip())
+    assert metadata["modelPath"] == "role/role.model3.json"
+    assert metadata["motions"]["Idle"] == ["role/motions/idle.motion3.json"]
+    with pytest.raises(Live2DInvalid, match="缺失引用"):
+        inspect_cubism_package(cubism_zip(missing_texture=True))
+    with pytest.raises(Live2DInvalid, match="Cubism 2"):
+        inspect_cubism_package(cubism_zip(legacy=True))
+
+
+def test_cubism_preflight_rejects_unsafe_zip_paths():
+    for unsafe in ("../escape.png", "/absolute.png", "folder\\escape.png"):
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w") as archive:
+            archive.writestr(unsafe, png())
+            archive.writestr("role.model3.json", b"{}")
+        with pytest.raises(Live2DInvalid, match="不安全"):
+            inspect_cubism_package(out.getvalue())
+
+
+@pytest.mark.asyncio
+async def test_cubism_attachment_cas_v4_roundtrip_and_conversion_copy():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        source = (
+            await client.post("/v1/live2d-workshop/projects", json={"title": "源角色"})
+        ).json()
+        base = f"/v1/live2d-workshop/projects/{source['id']}"
+        runtime = cubism_zip()
+        preflight = await client.post(
+            f"{base}/cubism/preflight", files={"file": ("role.zip", runtime)}
+        )
+        assert preflight.status_code == 200, preflight.text
+        missing_revision = await client.put(f"{base}/cubism", files={"file": ("role.zip", runtime)})
+        assert missing_revision.status_code == 422
+        attached = await client.put(
+            f"{base}/cubism", data={"expectedRevision": "0"}, files={"file": ("role.zip", runtime)}
+        )
+        assert attached.status_code == 200, attached.text
+        assert attached.json()["revision"] == 1
+        assert attached.json()["stateBindings"] == {"idle": {"motion": "Idle:0"}}
+        assert (await client.get(f"{base}/cubism/package")).content == runtime
+        assert (
+            await client.put(
+                f"{base}/cubism",
+                data={"expectedRevision": "0"},
+                files={"file": ("role.zip", runtime)},
+            )
+        ).status_code == 409
+        mapping = {
+            state: {"motion": "Idle:0", "expression": "Smile"}
+            for state in ("idle", "listening", "thinking", "tool", "success", "error", "paused")
+        }
+        invalid_binding = await client.put(
+            f"{base}/cubism/bindings",
+            json={"expectedRevision": 1, "stateBindings": {"idle": {"motion": "Missing:0"}}},
+        )
+        assert invalid_binding.status_code == 422
+        saved = await client.put(
+            f"{base}/cubism/bindings",
+            json={
+                "expectedRevision": 1,
+                "stateBindings": mapping,
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        exported = await client.get(f"{base}/package")
+        with zipfile.ZipFile(io.BytesIO(exported.content)) as archive:
+            assert json.loads(archive.read("manifest.json"))["version"] == 4
+            assert archive.read("cubism/source.zip") == runtime
+        imported = await client.post(
+            "/v1/live2d-workshop/projects/import",
+            files={
+                "file": ("role.fpllive2d", exported.content, "application/zip"),
+            },
+        )
+        assert imported.status_code == 200, imported.text
+        copied = await client.get(f"/v1/live2d-workshop/projects/{imported.json()['id']}/cubism")
+        assert copied.json()["stateBindings"] == mapping
+        native = io.BytesIO()
+        with zipfile.ZipFile(native, "w") as archive:
+            archive.writestr(
+                "manifest.json",
+                json.dumps(
+                    {
+                        "format": "fpllive2d",
+                        "version": 3,
+                        "title": "转换副本",
+                        "document": {"schemaVersion": 3, "width": 1200, "height": 1600},
+                    }
+                ),
+            )
+        converted = await client.post(
+            f"{base}/cubism/convert",
+            data={
+                "expectedRevision": "2",
+                "stateBindings": json.dumps(mapping),
+            },
+            files={
+                "file": ("converted.fpllive2d", native.getvalue(), "application/zip"),
+                "source": ("runtime.zip", runtime, "application/zip"),
+            },
+        )
+        assert converted.status_code == 200, converted.text
+        assert converted.json()["id"] != source["id"]
+        assert (await client.get(base)).json()["revision"] == 2
+        assert (
+            await client.get(f"/v1/live2d-workshop/projects/{converted.json()['id']}/cubism")
+        ).status_code == 200
 
 
 def test_parameter_evaluator_matches_shared_geometry_and_alpha(tmp_path):

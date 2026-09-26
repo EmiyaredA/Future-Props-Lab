@@ -8,6 +8,18 @@
 
 `/conversations/{id}/files`、`/imports`、`/files/{kind}/{name}` 负责会话文件列表、导入、下载与受版本保护的写入；`/skills/{skill_id}/load` 将当前 Workspace 的技能版本复制到会话目录。脚本仅在 macOS 沙箱可用时运行，拒绝跨会话文件与直接网络访问。完整字段与状态码以生成的 OpenAPI/SDK 参考为准。
 
+## Live2D 工坊 Cubism 对照
+
+以下接口位于 `/v1/live2d-workshop`，只访问当前 Workspace 的 FPL 项目。Cubism 附件是运行包，原生角色文档仍为 v3；挂载和转换均不覆盖原项目文档。
+
+- `POST /projects/{project_id}/cubism/preflight`：上传 ZIP 或由客户端打包的文件夹，检查 `.model3.json`、`.moc3`、贴图、引用路径及格式，返回诊断。旧版 `.moc`、`.mtn` 不支持。
+- `GET/PUT/DELETE /projects/{project_id}/cubism`：读取、挂载或移除 Cubism 附件；`PUT` 使用 `file` 与表单字段 `expectedRevision`，`DELETE` 使用查询参数 `expectedRevision`。仅当运行包有唯一的待机动作组时预填待命映射。
+- `PUT /projects/{project_id}/cubism/bindings`：保存七种执行状态对应的动作和表情，JSON 中包含 `expectedRevision` 与 `stateBindings`。
+- `GET /projects/{project_id}/cubism/package`：下载原样保存的运行包。
+- `POST /projects/{project_id}/cubism/convert`：上传转换出的 `.fpllive2d` 文件、源运行包和 `expectedRevision`，原子创建新的可编辑 FPL 项目；源项目仍保留。转换损失在客户端创建前展示。
+
+附件变更使用项目 revision CAS；缺失 revision 返回 422，冲突返回 409 与当前快照。带附件的工程包导出为 v4，不带附件的工程仍为 v3。预览使用本地官方 Cubism Web SDK R5；`.moc3` 只作为运行资料，不作为 FPL 可编辑源工程。转换后的蒙皮骨骼需要在 FPL 手动建立。详细流程见 [Live2D 工坊设计](../architecture/live2d-workshop.md)。
+
 ## 桌面 Agent 接入
 
 仅桌面部署提供 `/v1/desktop/agent/` 和 `/v1/desktop/ui/`。普通 Web 返回 404。

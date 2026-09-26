@@ -20,7 +20,10 @@ def inspect_cubism_package(data: bytes) -> dict:
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             entries = archive.infolist()
-            if len(entries) > MAX_CUBISM_FILES or sum(e.file_size for e in entries) > MAX_CUBISM_PACKAGE:
+            if (
+                len(entries) > MAX_CUBISM_FILES
+                or sum(e.file_size for e in entries) > MAX_CUBISM_PACKAGE
+            ):
                 raise Live2DInvalid("Cubism 运行包解压大小或文件数过大")
             names: set[str] = set()
             for entry in entries:
@@ -57,7 +60,11 @@ def inspect_cubism_package(data: bytes) -> dict:
                 if not isinstance(value, str) or not value:
                     raise Live2DInvalid(f"{label} 文件路径无效")
                 relative = PurePosixPath(value)
-                if relative.is_absolute() or any(p in ("", ".", "..") for p in relative.parts) or "\\" in value:
+                if (
+                    relative.is_absolute()
+                    or any(p in ("", ".", "..") for p in relative.parts)
+                    or "\\" in value
+                ):
                     raise Live2DInvalid(f"{label} 文件路径不安全")
                 full = str(root / relative)
                 if full not in names:
@@ -80,12 +87,17 @@ def inspect_cubism_package(data: bytes) -> dict:
             for group, items in (refs.get("Motions") or {}).items():
                 if not isinstance(items, list):
                     raise Live2DInvalid("动作组清单无效")
-                motions[group] = [reference(item.get("File") if isinstance(item, dict) else None, "动作") for item in items]
+                motions[group] = [
+                    reference(item.get("File") if isinstance(item, dict) else None, "动作")
+                    for item in items
+                ]
             expressions = []
             for item in refs.get("Expressions") or []:
                 if not isinstance(item, dict) or not isinstance(item.get("Name"), str):
                     raise Live2DInvalid("表情清单无效")
-                expressions.append({"name": item["Name"], "path": reference(item.get("File"), "表情")})
+                expressions.append(
+                    {"name": item["Name"], "path": reference(item.get("File"), "表情")}
+                )
             return {
                 "modelPath": model_path,
                 "mocPath": moc,

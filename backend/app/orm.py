@@ -25,7 +25,12 @@ from app.apps.galgame_workshop.models import (
     GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
-from app.apps.live2d_workshop.models import Live2DAsset, Live2DCubismAttachment, Live2DExport, Live2DProject
+from app.apps.live2d_workshop.models import (
+    Live2DAsset,
+    Live2DCubismAttachment,
+    Live2DExport,
+    Live2DProject,
+)
 from app.apps.motion_compositor.models import (
     MotionDocument,
     MotionOperationBatch,

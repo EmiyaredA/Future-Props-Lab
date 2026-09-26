@@ -51,6 +51,34 @@ class Live2DWorkshop:
         'Asset File. GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file'
         return self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], response_type=Any)
 
+    def remove_cubism(self, *, project_id: str, expected_revision: int) -> dict[str, bool]:
+        'Remove Cubism. DELETE /v1/live2d-workshop/projects/{project_id}/cubism'
+        return self._client._call('DELETE', '/v1/live2d-workshop/projects/{project_id}/cubism', parameters=[('project_id', 'path', project_id), ('expectedRevision', 'query', expected_revision)], response_type=dict[str, bool])
+
+    def get_cubism(self, *, project_id: str) -> models.Live2DCubismOut:
+        'Get Cubism. GET /v1/live2d-workshop/projects/{project_id}/cubism'
+        return self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/cubism', parameters=[('project_id', 'path', project_id)], response_type=models.Live2DCubismOut)
+
+    def attach_cubism(self, *, project_id: str, body: models.Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put | dict, files: dict | list | None = None) -> models.Live2DCubismOut:
+        'Attach Cubism. PUT /v1/live2d-workshop/projects/{project_id}/cubism'
+        return self._client._call('PUT', '/v1/live2d-workshop/projects/{project_id}/cubism', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.Live2DCubismOut)
+
+    def save_cubism_bindings(self, *, project_id: str, body: models.Live2DCubismBindings | dict) -> models.Live2DCubismOut:
+        'Save Cubism Bindings. PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings'
+        return self._client._call('PUT', '/v1/live2d-workshop/projects/{project_id}/cubism/bindings', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.Live2DCubismOut)
+
+    def convert_cubism(self, *, project_id: str, body: models.Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post | dict, files: dict | list | None = None) -> models.Live2DProjectOut:
+        'Convert Cubism. POST /v1/live2d-workshop/projects/{project_id}/cubism/convert'
+        return self._client._call('POST', '/v1/live2d-workshop/projects/{project_id}/cubism/convert', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.Live2DProjectOut)
+
+    def download_cubism(self, *, project_id: str) -> Download:
+        'Download Cubism. GET /v1/live2d-workshop/projects/{project_id}/cubism/package'
+        return self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/cubism/package', parameters=[('project_id', 'path', project_id)], response_type=Any)
+
+    def preflight_cubism(self, *, project_id: str, body: models.Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post | dict, files: dict | list | None = None) -> dict[str, Any]:
+        'Preflight Cubism. POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight'
+        return self._client._call('POST', '/v1/live2d-workshop/projects/{project_id}/cubism/preflight', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=dict[str, Any])
+
     def get_document(self, *, project_id: str) -> models.Live2DDocumentOut:
         'Get Document. GET /v1/live2d-workshop/projects/{project_id}/document'
         return self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/document', parameters=[('project_id', 'path', project_id)], response_type=models.Live2DDocumentOut)
@@ -138,6 +166,34 @@ class AsyncLive2DWorkshop:
     async def asset_file(self, *, project_id: str, asset_id: str) -> AsyncDownload:
         'Asset File. GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file'
         return await self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], response_type=Any)
+
+    async def remove_cubism(self, *, project_id: str, expected_revision: int) -> dict[str, bool]:
+        'Remove Cubism. DELETE /v1/live2d-workshop/projects/{project_id}/cubism'
+        return await self._client._call('DELETE', '/v1/live2d-workshop/projects/{project_id}/cubism', parameters=[('project_id', 'path', project_id), ('expectedRevision', 'query', expected_revision)], response_type=dict[str, bool])
+
+    async def get_cubism(self, *, project_id: str) -> models.Live2DCubismOut:
+        'Get Cubism. GET /v1/live2d-workshop/projects/{project_id}/cubism'
+        return await self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/cubism', parameters=[('project_id', 'path', project_id)], response_type=models.Live2DCubismOut)
+
+    async def attach_cubism(self, *, project_id: str, body: models.Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put | dict, files: dict | list | None = None) -> models.Live2DCubismOut:
+        'Attach Cubism. PUT /v1/live2d-workshop/projects/{project_id}/cubism'
+        return await self._client._call('PUT', '/v1/live2d-workshop/projects/{project_id}/cubism', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.Live2DCubismOut)
+
+    async def save_cubism_bindings(self, *, project_id: str, body: models.Live2DCubismBindings | dict) -> models.Live2DCubismOut:
+        'Save Cubism Bindings. PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings'
+        return await self._client._call('PUT', '/v1/live2d-workshop/projects/{project_id}/cubism/bindings', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.Live2DCubismOut)
+
+    async def convert_cubism(self, *, project_id: str, body: models.Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post | dict, files: dict | list | None = None) -> models.Live2DProjectOut:
+        'Convert Cubism. POST /v1/live2d-workshop/projects/{project_id}/cubism/convert'
+        return await self._client._call('POST', '/v1/live2d-workshop/projects/{project_id}/cubism/convert', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.Live2DProjectOut)
+
+    async def download_cubism(self, *, project_id: str) -> AsyncDownload:
+        'Download Cubism. GET /v1/live2d-workshop/projects/{project_id}/cubism/package'
+        return await self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/cubism/package', parameters=[('project_id', 'path', project_id)], response_type=Any)
+
+    async def preflight_cubism(self, *, project_id: str, body: models.Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post | dict, files: dict | list | None = None) -> dict[str, Any]:
+        'Preflight Cubism. POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight'
+        return await self._client._call('POST', '/v1/live2d-workshop/projects/{project_id}/cubism/preflight', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=dict[str, Any])
 
     async def get_document(self, *, project_id: str) -> models.Live2DDocumentOut:
         'Get Document. GET /v1/live2d-workshop/projects/{project_id}/document'

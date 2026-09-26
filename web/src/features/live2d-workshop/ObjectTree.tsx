@@ -168,7 +168,9 @@ export function ObjectTree({
           <button
             key={kind}
             title={kind === "rotation" ? "新建旋转变形器" : "新建曲面变形器"}
-            aria-label={kind === "rotation" ? "新建旋转变形器" : "新建曲面变形器"}
+            aria-label={
+              kind === "rotation" ? "新建旋转变形器" : "新建曲面变形器"
+            }
             disabled={readOnly}
             onClick={() =>
               edit((d) => {
@@ -217,53 +219,64 @@ export function ObjectTree({
       <div className="l2-object-list" aria-label="角色对象层级">
         {matches ? (
           <>
-            {doc.bones.filter((item) => item.name.toLocaleLowerCase().includes(matches)).map((bone) => (
-              <div className={`l2-tree-row ${selected === bone.id ? "selected" : ""}`} key={bone.id}>
-                <button className="l2-tree-name" onClick={() => onSelect(bone.id)}>♢ {bone.name}</button>
-              </div>
-            ))}
+            {doc.bones
+              .filter((item) => item.name.toLocaleLowerCase().includes(matches))
+              .map((bone) => (
+                <div
+                  className={`l2-tree-row ${selected === bone.id ? "selected" : ""}`}
+                  key={bone.id}
+                >
+                  <button
+                    className="l2-tree-name"
+                    onClick={() => onSelect(bone.id)}
+                  >
+                    ♢ {bone.name}
+                  </button>
+                </div>
+              ))}
             {[...doc.deformers, ...doc.parts]
               .filter((item) => item.name.toLocaleLowerCase().includes(matches))
               .map((item) => row(item, 0))}
-            {![...doc.bones, ...doc.deformers, ...doc.parts].some((item) => item.name.toLocaleLowerCase().includes(matches)) && (
-              <p className="l2-hint">没有匹配对象</p>
-            )}
+            {![...doc.bones, ...doc.deformers, ...doc.parts].some((item) =>
+              item.name.toLocaleLowerCase().includes(matches),
+            ) && <p className="l2-hint">没有匹配对象</p>}
           </>
         ) : (
           <>
-        {doc.bones.length > 0 && (
-          <div className="l2-panel-heading">
-            <h2>骨骼</h2>
-            <span>{doc.bones.length}</span>
-          </div>
-        )}
-        {doc.bones.map((bone) => {
-          let depth = 0;
-          let parent = bone.parentId;
-          while (parent && depth < doc.bones.length) {
-            depth++;
-            parent =
-              doc.bones.find((item) => item.id === parent)?.parentId ?? null;
-          }
-          return (
-            <div
-              className={`l2-tree-row ${selected === bone.id ? "selected" : ""}`}
-              key={bone.id}
-              style={{ paddingLeft: depth * 12 }}
-            >
-              <button
-                className="l2-tree-name"
-                aria-pressed={selected === bone.id}
-                onClick={() => onSelect(bone.id)}
-              >
-                <span>♢</span>
-                <span>{bone.name}</span>
-              </button>
-            </div>
-          );
-        })}
-        {doc.bones.length > 0 && <hr />}
-        {children(null, 0)}
+            {doc.bones.length > 0 && (
+              <div className="l2-panel-heading">
+                <h2>骨骼</h2>
+                <span>{doc.bones.length}</span>
+              </div>
+            )}
+            {doc.bones.map((bone) => {
+              let depth = 0;
+              let parent = bone.parentId;
+              while (parent && depth < doc.bones.length) {
+                depth++;
+                parent =
+                  doc.bones.find((item) => item.id === parent)?.parentId ??
+                  null;
+              }
+              return (
+                <div
+                  className={`l2-tree-row ${selected === bone.id ? "selected" : ""}`}
+                  key={bone.id}
+                  style={{ paddingLeft: depth * 12 }}
+                >
+                  <button
+                    className="l2-tree-name"
+                    aria-pressed={selected === bone.id}
+                    onClick={() => onSelect(bone.id)}
+                  >
+                    <span>♢</span>
+                    <span>{bone.name}</span>
+                  </button>
+                </div>
+              );
+            })}
+            {doc.bones.length > 0 && <hr />}
+            {children(null, 0)}
           </>
         )}
       </div>

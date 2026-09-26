@@ -336,6 +336,8 @@ MIGRATIONS += (Migration(r0071_live2d_workshop.MIGRATION_ID, r0071_live2d_worksh
 
 MIGRATIONS += (Migration(r0072_amadeus_runs.MIGRATION_ID, r0072_amadeus_runs.SQL),)
 
-MIGRATIONS += (Migration(r0073_live2d_cubism_attachment.MIGRATION_ID, r0073_live2d_cubism_attachment.SQL),)
+MIGRATIONS += (
+    Migration(r0073_live2d_cubism_attachment.MIGRATION_ID, r0073_live2d_cubism_attachment.SQL),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

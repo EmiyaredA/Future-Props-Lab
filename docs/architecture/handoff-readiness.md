@@ -1,6 +1,6 @@
 # 开发交付说明
 
-最新登记迁移为 `r0071_live2d_workshop`（原生角色工程、素材与序列导出）；`r0070_amadeus`（Amadeus 本地会话、消息和审批执行记录）；`r0066_motion_compositor` 建立特效制作项目、文档、操作批次、素材归属与导出任务。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。
+最新登记迁移为 `r0073_live2d_cubism_attachment`（Live2D 工坊 Cubism 对照附件）；`r0072_amadeus_runs` 记录 Amadeus 执行过程；`r0071_live2d_workshop` 建立原生角色工程、素材与序列导出。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。
 
 账号治理迁移为 `r0050_workspace_governance`，追加在思绪工坊历史迁移之后。扩展固定成员角色并保存邀请目标角色，保留旧数据；升级影响见[账号与工作区治理](../reference/account-governance.md)。
 

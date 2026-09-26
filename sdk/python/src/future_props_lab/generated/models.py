@@ -348,12 +348,22 @@ class Body_add_skill_version_v1_integrations_skills__skill_id__versions_post(Wir
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
 
+class Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    file: str = Field(default=..., alias='file')
+
 class Body_attachments_v1_thought_workshop_attachments_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
 class Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post(WireModel):
     category: Literal['character', 'scene', 'cg', 'bgm', 'ambient', 'sfx', 'voice', 'video', 'font', 'other'] = Field(default=..., alias='category')
     uploads: list[str] = Field(default=..., alias='uploads')
+
+class Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    file: str = Field(default=..., alias='file')
+    source: str = Field(default=..., alias='source')
+    state_bindings: str = Field(default='{}', alias='stateBindings')
 
 class Body_create_skill_v1_integrations_skills_post(WireModel):
     enabled: bool = Field(default=False, alias='enabled')
@@ -393,6 +403,9 @@ class Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post(W
 
 class Body_imports_v1_thought_workshop_imports_post(WireModel):
     upload: str = Field(default=..., alias='upload')
+
+class Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post(WireModel):
+    file: str = Field(default=..., alias='file')
 
 class Body_put_avatar_v1_account_profile_avatar_put(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -2454,6 +2467,16 @@ class Live2DCrop(WireModel):
     width: float = Field(default=..., alias='width', le=4096.0, gt=0.0)
     x: float = Field(default=..., alias='x', ge=0.0)
     y: float = Field(default=..., alias='y', ge=0.0)
+
+class Live2DCubismBindings(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    state_bindings: dict[str, Any] = Field(default=..., alias='stateBindings')
+
+class Live2DCubismOut(WireModel):
+    metadata: dict[str, Any] = Field(default=..., alias='metadata')
+    revision: int = Field(default=..., alias='revision')
+    sha256: str = Field(default=..., alias='sha256')
+    state_bindings: dict[str, Any] = Field(default=..., alias='stateBindings')
 
 class Live2DDocumentOut(WireModel):
     document: CharacterDocument = Field(default=..., alias='document')
@@ -4832,8 +4855,10 @@ AudioGenerationTaskCreateIn.model_rebuild()
 AuthMeOut.model_rebuild()
 BatchDeleteIn.model_rebuild()
 Body_add_skill_version_v1_integrations_skills__skill_id__versions_post.model_rebuild()
+Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put.model_rebuild()
 Body_attachments_v1_thought_workshop_attachments_post.model_rebuild()
 Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post.model_rebuild()
+Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post.model_rebuild()
 Body_create_skill_v1_integrations_skills_post.model_rebuild()
 Body_import_file_v1_amadeus_conversations__conversation_id__imports_post.model_rebuild()
 Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post.model_rebuild()
@@ -4845,6 +4870,7 @@ Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post.m
 Body_import_project_v1_live2d_workshop_projects_import_post.model_rebuild()
 Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post.model_rebuild()
 Body_imports_v1_thought_workshop_imports_post.model_rebuild()
+Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post.model_rebuild()
 Body_put_avatar_v1_account_profile_avatar_put.model_rebuild()
 Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post.model_rebuild()
 Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post.model_rebuild()
@@ -5142,6 +5168,8 @@ Live2DAssets.model_rebuild()
 Live2DCombination.model_rebuild()
 Live2DCreate.model_rebuild()
 Live2DCrop.model_rebuild()
+Live2DCubismBindings.model_rebuild()
+Live2DCubismOut.model_rebuild()
 Live2DDocumentOut.model_rebuild()
 Live2DExportIn.model_rebuild()
 Live2DExportOut.model_rebuild()

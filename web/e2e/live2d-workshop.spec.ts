@@ -46,7 +46,7 @@ test("authors a character keyform, animates it, saves and exports separate seque
     .getByRole("button", { name: "创建项目", exact: true })
     .click();
   await expect(page.locator(".l2-editor")).toBeVisible({ timeout: 30_000 });
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[accept=".png,.psd"]').setInputFiles({
     name: "Amadeus.psd",
     mimeType: "image/vnd.adobe.photoshop",
     buffer: characterPsd(),
@@ -224,7 +224,7 @@ test("imports layered PSD, edits a smile keyform and reports unsupported or dama
     .getByRole("button", { name: "创建项目", exact: true })
     .click();
   await expect(page.locator(".l2-editor")).toBeVisible({ timeout: 30_000 });
-  const upload = page.locator('input[type="file"]');
+  const upload = page.locator('input[accept=".png,.psd"]');
   await upload.setInputFiles({
     name: "unsupported.psd",
     mimeType: "image/vnd.adobe.photoshop",
@@ -377,7 +377,7 @@ test("uses texture alpha for hidden mesh masks instead of geometry or red channe
     .getByRole("button", { name: "创建项目", exact: true })
     .click();
   await expect(page.locator(".l2-editor")).toBeVisible({ timeout: 30_000 });
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[accept=".png,.psd"]').setInputFiles({
     name: "mask.psd",
     mimeType: "image/vnd.adobe.photoshop",
     buffer: maskedPsd(),
@@ -413,7 +413,7 @@ test("inspects layers and weights before recording character animation", async (
     .getByRole("dialog")
     .getByRole("button", { name: "创建项目", exact: true })
     .click();
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[accept=".png,.psd"]').setInputFiles({
     name: "layer-review.psd",
     mimeType: "image/vnd.adobe.photoshop",
     buffer: characterPsd(),

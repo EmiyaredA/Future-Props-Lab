@@ -14,7 +14,7 @@
 
 ## 格式与求值
 
-原生文档 `schemaVersion: 3` 包含画布、部件、三角网格/UV、变形器、骨骼/蒙皮、头像与舞台相机位、待机映射、参数绑定、表情、动作、`stateBindings` 和 `cubismParameterIds`，独立于数据库 `revision`。v1/v2 数据在读取时适配为 v3，下次正常保存写回 v3；旧 `.fpllive2d` 仍可导入，新导出包清单版本为 3。数据库无需迁移。旋转围绕枢轴；曲面使用规则格点分片双线性插值。每个参数按关键形值分段线性插值，并减去该参数默认值处的形态，再增量叠加到目标默认形态。完成参数叠加后，从子到父依次应用变形器或骨骼蒙皮。前后端共享 `tests/fixtures/live2d-evaluation.json` 验证数值。
+原生文档 `schemaVersion: 3` 包含画布、部件、三角网格/UV、变形器、骨骼/蒙皮、头像与舞台相机位、待机映射、参数绑定、表情、动作、`stateBindings` 和 `cubismParameterIds`，独立于数据库 `revision`。v1/v2 数据在读取时适配为 v3，下次正常保存写回 v3；旧 `.fpllive2d` 仍可导入。没有 Cubism 附件时导出包清单版本为 3；带附件时版本为 4，并包含 `cubism/source.zip` 与状态映射。旋转围绕枢轴；曲面使用规则格点分片双线性插值。每个参数按关键形值分段线性插值，并减去该参数默认值处的形态，再增量叠加到目标默认形态。完成参数叠加后，从子到父依次应用变形器或骨骼蒙皮。前后端共享 `tests/fixtures/live2d-evaluation.json` 验证数值。
 
 ## 红莉栖分层与绑定验收草案
 
@@ -22,13 +22,19 @@
 
 当前草案的头部侧倾预览在领口和长发交界仍有细碎接缝；这属于绑定审阅尚未通过的可见问题，不能据此把草案升级为内置运行模型。半身相机位取景至原画腰部边界之前，以免骨骼试调时露出原始画布裁断处。
 
-`.fpllive2d` 为 ZIP，包含格式/版本清单、文档、所引用 PNG 和缩略图；导入重新分配素材 ID，保留部件、绑定及动画。拒绝目录穿越、绝对路径、符号链接、重复条目、额外文件、未知版本和缺失素材。限制解压后总大小 256 MiB。
+`.fpllive2d` 为 ZIP，包含格式/版本清单、文档、所引用 PNG 和缩略图；导入重新分配素材 ID，保留部件、绑定及动画。带附件的 v4 包原样保留 Cubism 运行文件；附件不改变 FPL 文档的可编辑性。拒绝目录穿越、绝对路径、符号链接、重复条目、额外文件、未知版本和缺失素材。附件使工程包总解压上限提高到 512 MiB。
 
 PSD 解析在 Worker 内运行，限制 128 MiB、4096 边长、128 图层及 6400 万解码像素。PSB、非 RGB8、调整/文字/智能对象图层、图层效果、矢量遮罩、剪贴及非普通混合模式均停止导入并报告。分组遮罩、分组透明度和带羽化/密度/相对坐标的遮罩要求先栅格化，避免静默改变画面。
 
 ## 持久化与 API
 
-业务归 `backend/app/apps/live2d_workshop/`，纯文档/参数与 Pillow 渲染归 `capabilities/media_rendering/live2d/`，Web 归 `features/live2d-workshop/`。迁移 `r0071_live2d_workshop` 新增项目、素材和导出任务表，根资源直接记录 Workspace。运行文件在对应 Workspace 的 `applications/live2d-workshop/projects/<id>/{assets,exports}/`，使用既有项目文件事务。
+业务归 `backend/app/apps/live2d_workshop/`，纯文档/参数与 Pillow 渲染归 `capabilities/media_rendering/live2d/`，Web 归 `features/live2d-workshop/`。迁移 `r0071_live2d_workshop` 新增项目、素材和导出任务表；`r0073_live2d_cubism_attachment` 新增一对一附件记录。根资源直接记录 Workspace。运行文件在对应 Workspace 的 `applications/live2d-workshop/projects/<id>/{assets,exports,cubism}/`，使用既有项目文件事务。
+
+模型页支持 FPL、Cubism、并排视图。可上传含 `.model3.json`、`.moc3`、贴图与引用文件的 ZIP，或在浏览器选择文件夹后打包；预检检查路径、引用、版本和官方 SDK 实际加载结果。旧 `.moc/.mtn` 拒绝导入。挂载后官方 Cubism Web SDK 5-r.5 在工坊内播放动作、表情和物理，支持参数试调、头像/半身取景与七状态映射；面板隐藏时停止绘制，减少动态效果时显示定帧。SDK Core、Framework 和着色器来自用户提供的官方压缩包，只用于本地内部验证。`.moc3` 属于运行文件，不能在 FPL 中直接编辑。
+
+“尽力转换”从 SDK 读取绘制部件、UV、网格与参数，采样单参数关键值并导入可映射的动作/表情，再生成新 FPL 工程。转换前显示容量阻断、物理/姿势/遮罩/混合近似和中性姿态对照；不生成原版骨骼树。确认后创建新的可编辑项目，源项目及挂载附件保持原样。预检与转换都不把 `.moc3` 称为源工程，转换也不承诺还原复杂参数组合。
+
+`/v1/live2d-workshop/projects/{id}/cubism` 提供附件读取、挂载与移除；`/preflight` 检查源包，`/package` 下载原始运行包，`/bindings` 保存七状态映射，`/convert` 经源项目 revision CAS 创建新项目。写入都以项目 revision CAS 保护；附件随 Workspace 隔离，并在项目删除时清理。Web 使用固定版本的 SDK，不从 Open-LLM-VTuber 复制角色素材。对外发布支持任意模型导入的产品前仍须核查 Live2D 可扩展应用许可。
 
 `/v1/live2d-workshop` 的项目、文档、素材、工程包、预览、预检和任务操作全部登记 `content.read`/`content.write` 权限。新增清理不再被当前文档引用的素材的 DELETE 操作，必须携带 `expectedRevision`；仍被引用的素材拒绝删除。清理在同一事务内递增项目 revision 并返回最新项目快照，避免并发保存重新引用已删除素材。公共类型由 OpenAPI 生成，Python SDK 通过 `client.live2d_workshop` 访问。写入与删除携带 `expectedRevision`，冲突返回 409 及当前快照；外空间 ID 返回 404。预览、预检和导出都绑定明确的已保存 revision；存在未保存编辑时前端停止发起，后端对 revision 漂移返回冲突。桌面 Agent 白名单没有自动放开新增业务操作。
 
@@ -36,7 +42,7 @@ PSD 解析在 Worker 内运行，限制 128 MiB、4096 边长、128 图层及 64
 
 ## 范围与验证
 
-本版不是 Cubism 编译器，不提供 CMO3、MOC3、视频、物理模拟、贴图集、复杂混合、多参数联合修正或外部实时输入。Cubism 交接只覆盖素材与参数动画文件，不接入 SDK/Core。制作用完整画布，方形仅为输出裁切。受支持 PSD 的最终外观仍需用户预览确认。
+本版不是 Cubism 编译器，不编辑 `.cmo3` 或编译 `.moc3`，也不把 Cubism 物理、贴图集、复杂混合或多参数联合修正转换成 FPL 原生能力。Cubism 的物理由官方 SDK 原样预览；原生工程制作仍使用完整画布。受支持 PSD 的最终外观与转换副本的差异均需用户预览确认。本轮不切换 Amadeus 运行头像。
 
 - `tests/test_live2d_workshop.py`：几何与透明边缘、非法引用/拓扑、临时迁移、项目 CAS、素材隔离、工程包往返、分组序列、任务取消和中断恢复。
 - `tests/test_live2d_permissions.py`：真实会话权限与跨 Workspace 隔离。
