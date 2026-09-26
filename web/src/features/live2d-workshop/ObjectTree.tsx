@@ -8,6 +8,7 @@ import {
   Unlock,
   Plus,
   Focus,
+  Search,
 } from "lucide-react";
 import { applyHumanTemplate, makeBone, makeDeformer } from "./model";
 import type { CharacterDocument, Deformer, Part } from "./types";
@@ -31,6 +32,8 @@ export function ObjectTree({
   onSoloPart: (id: string | null) => void;
 }) {
   const [folded, setFolded] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+  const matches = query.trim().toLocaleLowerCase();
   const toggle = (key: string) =>
     setFolded((previous) => {
       const next = new Set(previous);
@@ -164,6 +167,8 @@ export function ObjectTree({
         {(["rotation", "warp"] as const).map((kind) => (
           <button
             key={kind}
+            title={kind === "rotation" ? "新建旋转变形器" : "新建曲面变形器"}
+            aria-label={kind === "rotation" ? "新建旋转变形器" : "新建曲面变形器"}
             disabled={readOnly}
             onClick={() =>
               edit((d) => {
@@ -178,6 +183,7 @@ export function ObjectTree({
           </button>
         ))}
         <button
+          title="新建骨骼"
           disabled={readOnly}
           onClick={() =>
             edit((d) => {
@@ -191,16 +197,40 @@ export function ObjectTree({
           <Plus size={13} />
           骨骼
         </button>
-      </div>
-      <div className="l2-tree-actions">
         <button
+          title="建立人形半身骨架"
           disabled={readOnly || !!doc.bones.length}
           onClick={() => edit(applyHumanTemplate)}
         >
-          建立人形半身骨架
+          人形
         </button>
       </div>
+      <label className="l2-tree-search">
+        <Search size={13} aria-hidden="true" />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="搜索图层、骨骼、变形器"
+          aria-label="搜索角色对象"
+        />
+      </label>
       <div className="l2-object-list" aria-label="角色对象层级">
+        {matches ? (
+          <>
+            {doc.bones.filter((item) => item.name.toLocaleLowerCase().includes(matches)).map((bone) => (
+              <div className={`l2-tree-row ${selected === bone.id ? "selected" : ""}`} key={bone.id}>
+                <button className="l2-tree-name" onClick={() => onSelect(bone.id)}>♢ {bone.name}</button>
+              </div>
+            ))}
+            {[...doc.deformers, ...doc.parts]
+              .filter((item) => item.name.toLocaleLowerCase().includes(matches))
+              .map((item) => row(item, 0))}
+            {![...doc.bones, ...doc.deformers, ...doc.parts].some((item) => item.name.toLocaleLowerCase().includes(matches)) && (
+              <p className="l2-hint">没有匹配对象</p>
+            )}
+          </>
+        ) : (
+          <>
         {doc.bones.length > 0 && (
           <div className="l2-panel-heading">
             <h2>骨骼</h2>
@@ -234,6 +264,8 @@ export function ObjectTree({
         })}
         {doc.bones.length > 0 && <hr />}
         {children(null, 0)}
+          </>
+        )}
       </div>
       {!doc.parts.length && (
         <p className="l2-hint">使用顶部“导入素材”添加角色图层。</p>

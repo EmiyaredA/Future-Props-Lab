@@ -57,6 +57,18 @@ class Live2DAssets(ValueModel):
     items: list[Live2DAssetOut]
 
 
+class Live2DCubismOut(ValueModel):
+    revision: int
+    sha256: str
+    metadata: dict
+    state_bindings: dict = Field(alias="stateBindings")
+
+
+class Live2DCubismBindings(ValueModel):
+    expected_revision: int = Field(alias="expectedRevision", ge=0)
+    state_bindings: dict = Field(alias="stateBindings")
+
+
 class Live2DCombination(ValueModel):
     expression_id: Identifier | None = Field(default=None, alias="expressionId")
     motion_id: Identifier | None = Field(default=None, alias="motionId")

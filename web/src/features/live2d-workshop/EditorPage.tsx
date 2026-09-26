@@ -32,6 +32,7 @@ import { AnimationLibrary, AnimationTimeline } from "./AnimationPanel";
 import { BonePanel } from "./BonePanel";
 import { CameraBehaviorPanel } from "./CameraBehaviorPanel";
 import { CharacterCanvas } from "./CharacterCanvas";
+import { CubismWorkspace } from "./CubismWorkspace";
 import { Modal } from "./Controls";
 import { ExportPanel } from "./ExportPanel";
 import { ObjectTree } from "./ObjectTree";
@@ -905,6 +906,18 @@ export function EditorPage({
                 />
               )}
             </aside>
+            <CubismWorkspace
+              projectId={projectId}
+              revision={revision.current}
+              dirty={dirty}
+              readOnly={readOnly}
+              enabled={!builtIn}
+              template={doc}
+              onRevision={(next) => {
+                revision.current = next;
+                setProject((current) => current ? { ...current, revision: next } : current);
+              }}
+            >
             <CharacterCanvas
               doc={doc}
               parts={posed.parts.filter(
@@ -967,6 +980,7 @@ export function EditorPage({
               }}
               onAddPoint={addPoint}
             />
+            </CubismWorkspace>
             <aside className="l2-right" hidden={!rightOpen}>
               {mode === "animation" ? (
                 <>

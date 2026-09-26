@@ -45,6 +45,18 @@ class Live2DAsset(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class Live2DCubismAttachment(Base):
+    __tablename__ = "live2d_cubism_attachments"
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("live2d_projects.id", ondelete="CASCADE"), primary_key=True
+    )
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    sha256: Mapped[str] = mapped_column(String(64))
+    metadata_json: Mapped[dict] = mapped_column("metadata", JSON)
+    state_bindings: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 class Live2DExport(Base):
     __tablename__ = "live2d_exports"
     __table_args__ = (UniqueConstraint("project_id", "request_id"),)
