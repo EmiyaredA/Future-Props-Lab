@@ -544,7 +544,7 @@ def build() -> None:
             -30,
             30,
             0,
-            [scalar("bone-head", "rotation", [(-30, -6), (0, 0), (30, 6)])],
+            [scalar("bone-neck", "rotation", [(-30, -6), (0, 0), (30, 6)])],
         ),
         parameter(
             "ParamBodySway",
