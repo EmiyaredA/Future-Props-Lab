@@ -1244,6 +1244,213 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/creative-workshop/installations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Install */
+        post: operations["install_v1_creative_workshop_installations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/installations/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Install */
+        post: operations["preview_install_v1_creative_workshop_installations_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/installations/{installation_id}/stdio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Configure Stdio */
+        post: operations["configure_stdio_v1_creative_workshop_installations__installation_id__stdio_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Items */
+        get: operations["list_items_v1_creative_workshop_items_get"];
+        put?: never;
+        /** Create Item */
+        post: operations["create_item_v1_creative_workshop_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/items/from-integration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Item */
+        post: operations["import_item_v1_creative_workshop_items_from_integration_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Item */
+        get: operations["get_item_v1_creative_workshop_items__item_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Item */
+        patch: operations["update_item_v1_creative_workshop_items__item_id__patch"];
+        trace?: never;
+    };
+    "/v1/creative-workshop/items/{item_id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Item Cover */
+        get: operations["item_cover_v1_creative_workshop_items__item_id__cover_get"];
+        put?: never;
+        /** Upload Cover */
+        post: operations["upload_cover_v1_creative_workshop_items__item_id__cover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/items/{item_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Item */
+        post: operations["publish_item_v1_creative_workshop_items__item_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/items/{item_id}/skill-archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Skill */
+        post: operations["upload_skill_v1_creative_workshop_items__item_id__skill_archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/items/{item_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Item */
+        post: operations["withdraw_item_v1_creative_workshop_items__item_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/releases/{release_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Release */
+        get: operations["get_release_v1_creative_workshop_releases__release_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/creative-workshop/releases/{release_id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Release Cover */
+        get: operations["release_cover_v1_creative_workshop_releases__release_id__cover_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/demo-services/model/chat/completions": {
         parameters: {
             query?: never;
@@ -7045,6 +7252,13 @@ export interface components {
             /** Files */
             files: string[];
         };
+        /** Body_upload_cover_v1_creative_workshop_items__item_id__cover_post */
+        Body_upload_cover_v1_creative_workshop_items__item_id__cover_post: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** File */
+            file: string;
+        };
         /** Body_upload_file_v1_files_post */
         Body_upload_file_v1_files_post: {
             /** Display Name */
@@ -7082,6 +7296,13 @@ export interface components {
         Body_upload_project_file_v1_director_desk_projects__project_id__files_post: {
             /** Upload */
             upload: string;
+        };
+        /** Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post */
+        Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** File */
+            file: string;
         };
         /** Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post */
         Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post: {
@@ -7614,6 +7835,260 @@ export interface components {
             model_id?: string | null;
             /** Title */
             title?: string | null;
+        };
+        /** CreativeDraftIn */
+        CreativeDraftIn: {
+            /** Components */
+            components?: string[];
+            /**
+             * Cover Preset
+             * @default sunrise
+             * @enum {string}
+             */
+            cover_preset: "sunrise" | "violet" | "ocean" | "mint";
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "tool_api" | "mcp" | "skill" | "bundle";
+            /** Manifest */
+            manifest?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** CreativeDraftUpdateIn */
+        CreativeDraftUpdateIn: {
+            /** Components */
+            components?: string[];
+            /**
+             * Cover Preset
+             * @default sunrise
+             * @enum {string}
+             */
+            cover_preset: "sunrise" | "violet" | "ocean" | "mint";
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "tool_api" | "mcp" | "skill" | "bundle";
+            /** Manifest */
+            manifest?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** CreativeImportIn */
+        CreativeImportIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "tool_api" | "mcp" | "skill";
+            /** Source Id */
+            source_id: string;
+        };
+        /** CreativeInstallOut */
+        CreativeInstallOut: {
+            /**
+             * Already Installed
+             * @default false
+             */
+            already_installed: boolean;
+            /** Id */
+            id: string;
+            /** Release Id */
+            release_id: string;
+            /** Resources */
+            resources: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** CreativeInstallPartOut */
+        CreativeInstallPartOut: {
+            /** Already Installed */
+            already_installed: boolean;
+            /** Conflict */
+            conflict: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "tool_api" | "mcp" | "skill";
+            /** Pending Setup */
+            pending_setup: boolean;
+            /** Release Id */
+            release_id: string;
+            /** Target Name */
+            target_name: string;
+            /** Title */
+            title: string;
+        };
+        /** CreativeInstallPreviewIn */
+        CreativeInstallPreviewIn: {
+            /** Names */
+            names?: {
+                [key: string]: string;
+            };
+            /** Release Id */
+            release_id: string;
+        };
+        /** CreativeInstallPreviewOut */
+        CreativeInstallPreviewOut: {
+            /** Installable */
+            installable: boolean;
+            /** Parts */
+            parts: components["schemas"]["CreativeInstallPartOut"][];
+            /** Release Id */
+            release_id: string;
+        };
+        /** CreativeItemOut */
+        CreativeItemOut: {
+            /** Author Name */
+            author_name: string;
+            /** Author User Id */
+            author_user_id: string;
+            /** Components */
+            components: string[];
+            /** Cover Preset */
+            cover_preset: string;
+            /** Cover Url */
+            cover_url: string | null;
+            /** Created At */
+            created_at: string;
+            /** Current Release Id */
+            current_release_id: string | null;
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Installable */
+            installable: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "tool_api" | "mcp" | "skill" | "bundle";
+            /** Manifest */
+            manifest: {
+                [key: string]: unknown;
+            };
+            /** Origin Workspace Id */
+            origin_workspace_id: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "withdrawn";
+            /** Summary */
+            summary: string;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
+            /** Version */
+            version: number | null;
+        };
+        /** CreativePageOut */
+        CreativePageOut: {
+            /** Items */
+            items: components["schemas"]["CreativeItemOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** CreativeReleaseOut */
+        CreativeReleaseOut: {
+            /** Author Name */
+            author_name: string;
+            /** Components */
+            components: string[];
+            /** Cover Preset */
+            cover_preset: string;
+            /** Cover Url */
+            cover_url: string | null;
+            /** Created At */
+            created_at: string;
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Installable */
+            installable: boolean;
+            /** Item Id */
+            item_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "tool_api" | "mcp" | "skill" | "bundle";
+            /** Manifest */
+            manifest: {
+                [key: string]: unknown;
+            };
+            /** Summary */
+            summary: string;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+        };
+        /** CreativeRevisionIn */
+        CreativeRevisionIn: {
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** CreativeStdioSetupIn */
+        CreativeStdioSetupIn: {
+            /** Arguments */
+            arguments?: string[];
+            /** Command */
+            command: string;
+            /** Environment */
+            environment?: {
+                [key: string]: string;
+            };
+            /** Release Id */
+            release_id: string;
         };
         /** CrossWorkspaceLogOut */
         CrossWorkspaceLogOut: {
@@ -20513,6 +20988,511 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthMeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    install_v1_creative_workshop_installations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreativeInstallPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeInstallOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_install_v1_creative_workshop_installations_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreativeInstallPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeInstallPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    configure_stdio_v1_creative_workshop_installations__installation_id__stdio_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                installation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreativeStdioSetupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeInstallOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_items_v1_creative_workshop_items_get: {
+        parameters: {
+            query?: {
+                kind?: string | null;
+                q?: string;
+                mine?: boolean;
+                cursor?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativePageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_item_v1_creative_workshop_items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreativeDraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_item_v1_creative_workshop_items_from_integration_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreativeImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_item_v1_creative_workshop_items__item_id__get: {
+        parameters: {
+            query?: {
+                draft?: boolean;
+            };
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_item_v1_creative_workshop_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreativeDraftUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    item_cover_v1_creative_workshop_items__item_id__cover_get: {
+        parameters: {
+            query?: {
+                draft?: boolean;
+            };
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_cover_v1_creative_workshop_items__item_id__cover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_cover_v1_creative_workshop_items__item_id__cover_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_item_v1_creative_workshop_items__item_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreativeRevisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_skill_v1_creative_workshop_items__item_id__skill_archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_item_v1_creative_workshop_items__item_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreativeRevisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_release_v1_creative_workshop_releases__release_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreativeReleaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_cover_v1_creative_workshop_releases__release_id__cover_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

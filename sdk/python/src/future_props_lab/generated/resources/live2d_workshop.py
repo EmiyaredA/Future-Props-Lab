@@ -238,4 +238,3 @@ class AsyncLive2DWorkshop:
     async def thumbnail(self, *, project_id: str) -> AsyncDownload:
         'Thumbnail. GET /v1/live2d-workshop/projects/{project_id}/thumbnail'
         return await self._client._call('GET', '/v1/live2d-workshop/projects/{project_id}/thumbnail', parameters=[('project_id', 'path', project_id)], response_type=Any)
-

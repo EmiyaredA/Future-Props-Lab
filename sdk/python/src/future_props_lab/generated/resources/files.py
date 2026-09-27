@@ -174,4 +174,3 @@ class AsyncFiles:
     async def extract_video_frames(self, *, asset_id: str, body: models.VideoFramesIn | dict) -> AsyncDownload:
         'Extract Video Frames. POST /v1/files/{asset_id}/frames'
         return await self._client._call('POST', '/v1/files/{asset_id}/frames', parameters=[('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=Any)
-

@@ -158,4 +158,3 @@ class AsyncDirector:
     async def call_tool(self, *, project_id: str, body: models.DirectorToolCall | dict) -> models.DirectorToolOut:
         'Call Tool. POST /v1/director-desk/projects/{project_id}/tools'
         return await self._client._call('POST', '/v1/director-desk/projects/{project_id}/tools', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.DirectorToolOut)
-

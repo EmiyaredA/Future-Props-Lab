@@ -62,4 +62,3 @@ class AsyncTemplates:
     async def history(self, *, role: Literal['super_admin', 'admin', 'member']) -> list[models.TemplateSyncJobOut]:
         'History. GET /v1/platform/model-service-templates/{role}/sync-jobs'
         return await self._client._call('GET', '/v1/platform/model-service-templates/{role}/sync-jobs', parameters=[('role', 'path', role)], response_type=list[models.TemplateSyncJobOut])
-

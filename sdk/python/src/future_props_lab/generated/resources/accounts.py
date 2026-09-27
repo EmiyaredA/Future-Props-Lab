@@ -166,4 +166,3 @@ class AsyncAccounts:
     async def reauth(self, *, body: models.ReauthIn | dict) -> Any:
         'Reauth. POST /v1/auth/reauth'
         return await self._client._call('POST', '/v1/auth/reauth', parameters=[], body=body, media_type='application/json', response_type=Any)
-

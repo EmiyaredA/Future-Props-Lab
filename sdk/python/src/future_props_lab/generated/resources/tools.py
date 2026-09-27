@@ -38,4 +38,3 @@ class AsyncTools:
     async def record_use(self, *, tool_id: str) -> models.ToolNavigationItemOut:
         'Record Use. POST /v1/tool-navigation/tools/{tool_id}/use'
         return await self._client._call('POST', '/v1/tool-navigation/tools/{tool_id}/use', parameters=[('tool_id', 'path', tool_id)], response_type=models.ToolNavigationItemOut)
-

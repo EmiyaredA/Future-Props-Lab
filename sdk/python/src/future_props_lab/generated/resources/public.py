@@ -38,4 +38,3 @@ class AsyncPublic:
     async def story(self, *, project_id: str) -> models.PublicGalgameStoryOut:
         'Story. GET /v1/public-workspace/galgame-projects/{project_id}/story'
         return await self._client._call('GET', '/v1/public-workspace/galgame-projects/{project_id}/story', parameters=[('project_id', 'path', project_id)], response_type=models.PublicGalgameStoryOut)
-

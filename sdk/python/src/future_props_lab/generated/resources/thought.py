@@ -238,4 +238,3 @@ class AsyncThought:
     async def restore_note(self, *, note_id: str, body: models.ThoughtNoteTransitionIn | dict) -> models.ThoughtNoteOut:
         'Restore Note. POST /v1/thought-workshop/notes/{note_id}/restore'
         return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/restore', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
-

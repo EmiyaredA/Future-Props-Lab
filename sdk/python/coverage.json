@@ -518,6 +518,111 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/creative-workshop/items",
+    "sdk": "client.creative_workshop.list_items",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#list-items",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/creative-workshop/items/{item_id}",
+    "sdk": "client.creative_workshop.get_item",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#get-item",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/creative-workshop/items/{item_id}/cover",
+    "sdk": "client.creative_workshop.item_cover",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#item-cover",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/creative-workshop/releases/{release_id}",
+    "sdk": "client.creative_workshop.get_release",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#get-release",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/creative-workshop/releases/{release_id}/cover",
+    "sdk": "client.creative_workshop.release_cover",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#release-cover",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/creative-workshop/items/{item_id}",
+    "sdk": "client.creative_workshop.update_item",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#update-item",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/installations",
+    "sdk": "client.creative_workshop.install",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#install",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/installations/preview",
+    "sdk": "client.creative_workshop.preview_install",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#preview-install",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/installations/{installation_id}/stdio",
+    "sdk": "client.creative_workshop.configure_stdio",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#configure-stdio",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/items",
+    "sdk": "client.creative_workshop.create_item",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#create-item",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/items/from-integration",
+    "sdk": "client.creative_workshop.import_item",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#import-item",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/items/{item_id}/cover",
+    "sdk": "client.creative_workshop.upload_cover",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#upload-cover",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/items/{item_id}/publish",
+    "sdk": "client.creative_workshop.publish_item",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#publish-item",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/items/{item_id}/skill-archive",
+    "sdk": "client.creative_workshop.upload_skill",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#upload-skill",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/creative-workshop/items/{item_id}/withdraw",
+    "sdk": "client.creative_workshop.withdraw_item",
+    "document": "/docs.html?page=sdk-reference-creative-workshop#withdraw-item",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/platform/demo-services",
     "sdk": "client.demo.services",
     "document": "/docs.html?page=sdk-reference-demo#services",

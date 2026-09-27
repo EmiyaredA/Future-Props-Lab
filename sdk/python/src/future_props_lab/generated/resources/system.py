@@ -30,4 +30,3 @@ class AsyncSystem:
     async def ready(self) -> dict[str, str]:
         'Ready. GET /ready'
         return await self._client._call('GET', '/ready', parameters=[], response_type=dict[str, str])
-

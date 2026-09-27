@@ -102,4 +102,3 @@ class AsyncDesktop:
     async def acknowledge(self, *, request_id: str, body: models.DesktopOpenAck | dict) -> models.DesktopOpenOut:
         'Acknowledge. POST /v1/desktop/ui/requests/{request_id}/ack'
         return await self._client._call('POST', '/v1/desktop/ui/requests/{request_id}/ack', parameters=[('request_id', 'path', request_id)], body=body, media_type='application/json', response_type=models.DesktopOpenOut)
-

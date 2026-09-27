@@ -435,6 +435,10 @@ class Body_upload_asset_v1_video_editor_projects__project_id__assets_post(WireMo
 class Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post(WireModel):
     files: list[str] = Field(default=..., alias='files')
 
+class Body_upload_cover_v1_creative_workshop_items__item_id__cover_post(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    file: str = Field(default=..., alias='file')
+
 class Body_upload_file_v1_files_post(WireModel):
     display_name: str | None = Field(default=None, alias='display_name')
     folder_id: str | None = Field(default=None, alias='folder_id')
@@ -456,6 +460,10 @@ class Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets
 
 class Body_upload_project_file_v1_director_desk_projects__project_id__files_post(WireModel):
     upload: str = Field(default=..., alias='upload')
+
+class Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    file: str = Field(default=..., alias='file')
 
 class Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post(WireModel):
     abbreviations: bool | None = Field(default=None, alias='abbreviations')
@@ -670,6 +678,107 @@ class ConversationPatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     model_id: str | None = Field(default=None, alias='model_id')
     title: str | None = Field(default=None, alias='title')
+
+class CreativeDraftIn(WireModel):
+    components: list[str] | None = Field(default=None, alias='components', max_length=30)
+    cover_preset: Literal['sunrise', 'violet', 'ocean', 'mint'] = Field(default='sunrise', alias='cover_preset')
+    description: str = Field(default='', alias='description', max_length=10000)
+    kind: Literal['tool_api', 'mcp', 'skill', 'bundle'] = Field(default=..., alias='kind')
+    manifest: dict[str, Any] | None = Field(default=None, alias='manifest')
+    summary: str = Field(default='', alias='summary', max_length=500)
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=12)
+    title: str = Field(default='', alias='title', max_length=120)
+
+class CreativeDraftUpdateIn(WireModel):
+    components: list[str] | None = Field(default=None, alias='components', max_length=30)
+    cover_preset: Literal['sunrise', 'violet', 'ocean', 'mint'] = Field(default='sunrise', alias='cover_preset')
+    description: str = Field(default='', alias='description', max_length=10000)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    kind: Literal['tool_api', 'mcp', 'skill', 'bundle'] = Field(default=..., alias='kind')
+    manifest: dict[str, Any] | None = Field(default=None, alias='manifest')
+    summary: str = Field(default='', alias='summary', max_length=500)
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=12)
+    title: str = Field(default='', alias='title', max_length=120)
+
+class CreativeImportIn(WireModel):
+    kind: Literal['tool_api', 'mcp', 'skill'] = Field(default=..., alias='kind')
+    source_id: str = Field(default=..., alias='source_id')
+
+class CreativeInstallOut(WireModel):
+    already_installed: bool = Field(default=False, alias='already_installed')
+    id: str = Field(default=..., alias='id')
+    release_id: str = Field(default=..., alias='release_id')
+    resources: list[dict[str, Any]] = Field(default=..., alias='resources')
+
+class CreativeInstallPartOut(WireModel):
+    already_installed: bool = Field(default=..., alias='already_installed')
+    conflict: bool = Field(default=..., alias='conflict')
+    kind: Literal['tool_api', 'mcp', 'skill'] = Field(default=..., alias='kind')
+    pending_setup: bool = Field(default=..., alias='pending_setup')
+    release_id: str = Field(default=..., alias='release_id')
+    target_name: str = Field(default=..., alias='target_name')
+    title: str = Field(default=..., alias='title')
+
+class CreativeInstallPreviewIn(WireModel):
+    names: dict[str, str] | None = Field(default=None, alias='names')
+    release_id: str = Field(default=..., alias='release_id')
+
+class CreativeInstallPreviewOut(WireModel):
+    installable: bool = Field(default=..., alias='installable')
+    parts: list[CreativeInstallPartOut] = Field(default=..., alias='parts')
+    release_id: str = Field(default=..., alias='release_id')
+
+class CreativeItemOut(WireModel):
+    author_name: str = Field(default=..., alias='author_name')
+    author_user_id: str = Field(default=..., alias='author_user_id')
+    components: list[str] = Field(default=..., alias='components')
+    cover_preset: str = Field(default=..., alias='cover_preset')
+    cover_url: str | None = Field(default=..., alias='cover_url')
+    created_at: str = Field(default=..., alias='created_at')
+    current_release_id: str | None = Field(default=..., alias='current_release_id')
+    description: str = Field(default=..., alias='description')
+    id: str = Field(default=..., alias='id')
+    installable: bool = Field(default=..., alias='installable')
+    kind: Literal['tool_api', 'mcp', 'skill', 'bundle'] = Field(default=..., alias='kind')
+    manifest: dict[str, Any] = Field(default=..., alias='manifest')
+    origin_workspace_id: str = Field(default=..., alias='origin_workspace_id')
+    revision: int = Field(default=..., alias='revision')
+    status: Literal['draft', 'published', 'withdrawn'] = Field(default=..., alias='status')
+    summary: str = Field(default=..., alias='summary')
+    tags: list[str] = Field(default=..., alias='tags')
+    title: str = Field(default=..., alias='title')
+    updated_at: str = Field(default=..., alias='updated_at')
+    version: int | None = Field(default=..., alias='version')
+
+class CreativePageOut(WireModel):
+    items: list[CreativeItemOut] = Field(default=..., alias='items')
+    next_cursor: str | None = Field(default=None, alias='next_cursor')
+
+class CreativeReleaseOut(WireModel):
+    author_name: str = Field(default=..., alias='author_name')
+    components: list[str] = Field(default=..., alias='components')
+    cover_preset: str = Field(default=..., alias='cover_preset')
+    cover_url: str | None = Field(default=..., alias='cover_url')
+    created_at: str = Field(default=..., alias='created_at')
+    description: str = Field(default=..., alias='description')
+    id: str = Field(default=..., alias='id')
+    installable: bool = Field(default=..., alias='installable')
+    item_id: str = Field(default=..., alias='item_id')
+    kind: Literal['tool_api', 'mcp', 'skill', 'bundle'] = Field(default=..., alias='kind')
+    manifest: dict[str, Any] = Field(default=..., alias='manifest')
+    summary: str = Field(default=..., alias='summary')
+    tags: list[str] = Field(default=..., alias='tags')
+    title: str = Field(default=..., alias='title')
+    version: int = Field(default=..., alias='version')
+
+class CreativeRevisionIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+
+class CreativeStdioSetupIn(WireModel):
+    arguments: list[str] | None = Field(default=None, alias='arguments', max_length=64)
+    command: str = Field(default=..., alias='command', min_length=1, max_length=1024)
+    environment: dict[str, str] | None = Field(default=None, alias='environment')
+    release_id: str = Field(default=..., alias='release_id')
 
 class CrossWorkspaceLogOut(WireModel):
     api_key_id: str | None = Field(default=None, alias='api_key_id', repr=False)
@@ -4878,12 +4987,14 @@ Body_upload_asset_v1_model_inference_assets_post.model_rebuild()
 Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post.model_rebuild()
 Body_upload_asset_v1_video_editor_projects__project_id__assets_post.model_rebuild()
 Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post.model_rebuild()
+Body_upload_cover_v1_creative_workshop_items__item_id__cover_post.model_rebuild()
 Body_upload_file_v1_files_post.model_rebuild()
 Body_upload_generation_assets_v1_model_test_generation_assets_post.model_rebuild()
 Body_upload_image_v1_thought_workshop_images_post.model_rebuild()
 Body_upload_library_file_v1_director_desk_library_files_post.model_rebuild()
 Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post.model_rebuild()
 Body_upload_project_file_v1_director_desk_projects__project_id__files_post.model_rebuild()
+Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post.model_rebuild()
 Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post.model_rebuild()
 BoneWeight.model_rebuild()
 CallLogListItem.model_rebuild()
@@ -4909,6 +5020,18 @@ ConversationDetailOut.model_rebuild()
 ConversationListOut.model_rebuild()
 ConversationOut.model_rebuild()
 ConversationPatchIn.model_rebuild()
+CreativeDraftIn.model_rebuild()
+CreativeDraftUpdateIn.model_rebuild()
+CreativeImportIn.model_rebuild()
+CreativeInstallOut.model_rebuild()
+CreativeInstallPartOut.model_rebuild()
+CreativeInstallPreviewIn.model_rebuild()
+CreativeInstallPreviewOut.model_rebuild()
+CreativeItemOut.model_rebuild()
+CreativePageOut.model_rebuild()
+CreativeReleaseOut.model_rebuild()
+CreativeRevisionIn.model_rebuild()
+CreativeStdioSetupIn.model_rebuild()
 CrossWorkspaceLogOut.model_rebuild()
 CrossWorkspaceLogPage.model_rebuild()
 CurrentUserOut.model_rebuild()

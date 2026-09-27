@@ -19,6 +19,7 @@ from app.console.routes.account_management import router as management_router
 from app.console.routes.accounts import router as accounts_router
 from app.console.routes.amadeus import require_amadeus_session
 from app.console.routes.amadeus import router as amadeus_router
+from app.console.routes.creative_workshop import router as creative_workshop_router
 from app.console.routes.desktop import require_desktop
 from app.console.routes.desktop import router as desktop_router
 from app.console.routes.desktop_agent import router as desktop_agent_router
@@ -144,3 +145,4 @@ api_router.include_router(
 )
 
 api_router.include_router(live2d_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(creative_workshop_router, dependencies=[Depends(require_studio_auth)])

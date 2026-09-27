@@ -126,4 +126,3 @@ class AsyncModels:
     async def update_supplier(self, *, supplier_id: str, body: models.ModelSupplierIn | dict) -> models.ModelSupplierMutationOut:
         'Update Supplier. PATCH /v1/model-suppliers/{supplier_id}'
         return await self._client._call('PATCH', '/v1/model-suppliers/{supplier_id}', parameters=[('supplier_id', 'path', supplier_id)], body=body, media_type='application/json', response_type=models.ModelSupplierMutationOut)
-

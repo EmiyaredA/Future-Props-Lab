@@ -44,12 +44,13 @@ export default defineConfig({
   webServer: [
     {
       command:
+        "PYTHONPATH=.. " +
         "FPL_SECRETS_KEY=Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys= " +
         `FPL_DATABASE_PATH=${databasePath} ` +
         `CORS_ORIGINS=http://127.0.0.1:${webPort} ` +
         "FPL_E2E_PASSWORD=E2E-Password-2026! " +
         "../.venv/bin/python ../scripts/e2e_account.py && " +
-        "FPL_SECRETS_KEY=Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys= " +
+        "PYTHONPATH=.. FPL_SECRETS_KEY=Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys= " +
         `FPL_DATABASE_PATH=${databasePath} ` +
         `CORS_ORIGINS=http://127.0.0.1:${webPort} ` +
         `../.venv/bin/uvicorn app.main:app --app-dir ../backend --host 127.0.0.1 --port ${apiPort}`,
@@ -57,7 +58,7 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: "npm run dev",
+      command: process.env.FPL_E2E_WEB_COMMAND || "npm run dev",
       env: {
         FPL_VITE_CACHE_DIR: join(
           mkdtempSync(join(tmpdir(), "fpl-e2e-vite-")),

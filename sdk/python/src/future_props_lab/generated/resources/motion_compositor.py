@@ -182,4 +182,3 @@ class AsyncMotionCompositor:
     async def export_snapshot(self, *, project_id: str) -> Any:
         'Export Snapshot. GET /v1/motion-compositor/projects/{project_id}/snapshot'
         return await self._client._call('GET', '/v1/motion-compositor/projects/{project_id}/snapshot', parameters=[('project_id', 'path', project_id)], response_type=Any)
-

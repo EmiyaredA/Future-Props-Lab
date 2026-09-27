@@ -20,7 +20,8 @@ Future-Props-Lab/
 │   ├── runtime/       # 配置、数据库、CAS/轮询、操作批回执、ID/时间工厂与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
-│   │   └── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
+│   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
+│   │   └── creative_workshop/ # 跨 Workspace 公开创作版本、草稿、安装事务与文件校验
 │   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame / director_desk / motion_compositor）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具收藏与最近使用；自有 models/schemas/routes
@@ -42,7 +43,8 @@ Future-Props-Lab/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
 │   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
 │   ├── features/      # 账号治理、首页、应用、文件管理、工坊、工具导航、集成中心与模型功能
-│   │   └── amadeus/   # 独立窗口 UI、Pi Worker、控件选取与原生动态头像源画
+│   │   ├── amadeus/   # 独立窗口 UI、Pi Worker、控件选取与原生动态头像源画
+│   │   └── creative-workshop/ # 广场、创作、版本详情、能力选择与安装引导
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
 │   └── shared/        # 无业务归属的媒体处理、品牌与主题 UI；live2d/ 提供共用姿态计算与网格渲染
@@ -148,6 +150,10 @@ Future-Props-Lab/
 - `integrations/` 拥有独立于工具导航的 Workspace 集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
+- `console/creative_workshop/` 拥有同一部署内共享的创作目录。草稿按作者和当前 Workspace 隔离；
+  公开版本和方案包引用跨 Workspace 只读，不能经集成中心直接读取其他 Workspace 的配置。
+  安装记录属于目标 Workspace，安装事务只复制已公开的允许字段和 Skill 文件；凭据留空，
+  stdio MCP 待目标 Workspace 管理员填写本机命令。
 - `apps/audio_annotation/` 管理 Workspace 级录音标注任务，根项目直接保存 `workspace_id` 并引用
   公共文件库中的音频；说话人/片段文档与最多双声道的预计算波形分别使用独立 revision CAS，
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
@@ -269,6 +275,10 @@ Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共
 或系统命令。工具 API、MCP 和校验记录用例显式接收已鉴权 Workspace。
 
 Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。
+创意工坊封面、Skill 草稿与公开版本分别保存在
+`workspaces/<workspace-id>/creative-workshop/{covers,skill-drafts,skill-releases}/`；
+目标 Workspace 安装后的 Skill 副本回到其 `integrations/skills/`。备份数据库时必须同时保留
+整个 `workspaces/` 树，才能恢复创作封面、公开 Skill 版本和安装副本。
 本地临时分镜、场景图、导出结果、下载与研究草稿统一放在仓库根目录 `.local/`
 （`scratch/`、`output/`、`tmp/`、`downloads/`、`research/`），与 `.runtime/`
 一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建

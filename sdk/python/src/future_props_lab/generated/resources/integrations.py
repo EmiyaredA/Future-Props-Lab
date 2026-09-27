@@ -182,4 +182,3 @@ class AsyncIntegrations:
     async def validate_tool_api(self, *, integration_id: str, body: models.ToolApiValidateIn | dict) -> models.ToolApiValidationOut:
         'Validate Tool Api. POST /v1/integrations/tool-apis/{integration_id}/validate'
         return await self._client._call('POST', '/v1/integrations/tool-apis/{integration_id}/validate', parameters=[('integration_id', 'path', integration_id)], body=body, media_type='application/json', response_type=models.ToolApiValidationOut)
-

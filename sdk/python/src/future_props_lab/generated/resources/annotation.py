@@ -142,4 +142,3 @@ class AsyncAnnotation:
     async def import_transcription(self, *, body: models.AudioAnnotationTranscriptionTaskImportIn | models.AudioAnnotationTranscriptionJsonImportIn | dict) -> models.AudioAnnotationProjectOut:
         'Import Transcription. POST /v1/audio-annotation/transcription-imports'
         return await self._client._call('POST', '/v1/audio-annotation/transcription-imports', parameters=[], body=body, media_type='application/json', response_type=models.AudioAnnotationProjectOut)
-

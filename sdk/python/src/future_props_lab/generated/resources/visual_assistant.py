@@ -78,4 +78,3 @@ class AsyncVisualAssistant:
     async def resolve_approval(self, *, project_id: str, conversation_id: str, run_id: str, approval_id: str, body: models.VisualAssistantApprovalIn | dict) -> models.VisualAssistantApprovalOut:
         'Resolve Approval. POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}'
         return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}', parameters=[('project_id', 'path', project_id), ('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id), ('approval_id', 'path', approval_id)], body=body, media_type='application/json', response_type=models.VisualAssistantApprovalOut)
-

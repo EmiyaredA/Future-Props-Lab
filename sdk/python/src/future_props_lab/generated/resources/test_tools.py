@@ -62,4 +62,3 @@ class AsyncTestTools:
     async def execute_tool(self, *, tool_id: str, body: models.ModelTestToolExecuteIn | dict) -> models.ModelTestToolCallOut:
         'Execute Tool. POST /v1/model-test/tools/{tool_id}/execute'
         return await self._client._call('POST', '/v1/model-test/tools/{tool_id}/execute', parameters=[('tool_id', 'path', tool_id)], body=body, media_type='application/json', response_type=models.ModelTestToolCallOut)
-

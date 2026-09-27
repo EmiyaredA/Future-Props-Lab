@@ -254,4 +254,3 @@ class AsyncTesting:
     async def transcription_input_content(self, *, task_id: str) -> Any:
         'Transcription Input Content. GET /v1/model-test/transcription-tasks/{task_id}/input-content'
         return await self._client._call('GET', '/v1/model-test/transcription-tasks/{task_id}/input-content', parameters=[('task_id', 'path', task_id)], response_type=Any)
-

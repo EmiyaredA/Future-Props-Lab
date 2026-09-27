@@ -278,4 +278,3 @@ class AsyncVideo:
     async def apply_timeline_operations(self, *, project_id: str, body: models.VideoEditorTimelineBatchIn | dict) -> models.VideoEditorTimelineOut:
         'Apply Timeline Operations. POST /v1/video-editor/projects/{project_id}/timeline/operations'
         return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/timeline/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VideoEditorTimelineOut)
-

@@ -110,4 +110,3 @@ class AsyncWorkspaces:
     async def set_active_workspace(self, *, body: models.WorkspaceSwitchIn | dict) -> models.WorkspaceOut:
         'Set Active Workspace. POST /v1/account/workspaces/switch'
         return await self._client._call('POST', '/v1/account/workspaces/switch', parameters=[], body=body, media_type='application/json', response_type=models.WorkspaceOut)
-

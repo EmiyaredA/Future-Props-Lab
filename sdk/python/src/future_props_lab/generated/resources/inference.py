@@ -118,4 +118,3 @@ class AsyncInference:
     async def stream_text(self, *, body: models.InferenceTextIn | dict) -> AsyncEventStream:
         'Stream Text. POST /v1/model-inference/text/stream'
         return await self._client._call('POST', '/v1/model-inference/text/stream', parameters=[], body=body, media_type='application/json', response_type=Any)
-

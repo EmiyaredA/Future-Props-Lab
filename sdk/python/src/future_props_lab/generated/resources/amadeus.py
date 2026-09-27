@@ -262,4 +262,3 @@ class AsyncAmadeus:
     async def script_capability(self) -> dict[str, bool]:
         'Script Capability. GET /v1/amadeus/script-capability'
         return await self._client._call('GET', '/v1/amadeus/script-capability', parameters=[], response_type=dict[str, bool])
-

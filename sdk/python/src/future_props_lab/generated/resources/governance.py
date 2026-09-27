@@ -142,4 +142,3 @@ class AsyncGovernance:
     async def patch_quotas(self, *, body: models.RuntimeQuotasIn | dict) -> models.RuntimeQuotasOut:
         'Patch Quotas. PATCH /v1/platform/runtime-quotas'
         return await self._client._call('PATCH', '/v1/platform/runtime-quotas', parameters=[], body=body, media_type='application/json', response_type=models.RuntimeQuotasOut)
-

@@ -76,6 +76,7 @@ from db.migrations.versions import (
     r0072_amadeus_runs,
     r0073_live2d_cubism_attachment,
     r0074_live2d_editable_runtime,
+    r0075_creative_workshop,
 )
 
 
@@ -344,5 +345,7 @@ MIGRATIONS += (
 MIGRATIONS += (
     Migration(r0074_live2d_editable_runtime.MIGRATION_ID, r0074_live2d_editable_runtime.SQL),
 )
+
+MIGRATIONS += (Migration(r0075_creative_workshop.MIGRATION_ID, r0075_creative_workshop.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

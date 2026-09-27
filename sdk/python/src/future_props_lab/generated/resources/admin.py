@@ -78,4 +78,3 @@ class AsyncAdmin:
     async def add_workspace(self, *, body: models.WorkspaceCreateIn | dict) -> models.WorkspaceOut:
         'Add Workspace. POST /v1/platform/workspaces'
         return await self._client._call('POST', '/v1/platform/workspaces', parameters=[], body=body, media_type='application/json', response_type=models.WorkspaceOut)
-

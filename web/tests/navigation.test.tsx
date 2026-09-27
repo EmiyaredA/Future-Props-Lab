@@ -40,15 +40,18 @@ test("renders integrations after tools and before the base model group", () => {
   const navigation = screen.getByRole("navigation", { name: "栏目导航" });
   const navigationButtons = within(navigation).getAllByRole("button");
   expect(navigationButtons[0]).toHaveAccessibleName("首页");
-  expect(navigationButtons[1]).toHaveAccessibleName("应用");
-  expect(navigationButtons[2]).toHaveAccessibleName("文件管理");
-  expect(navigationButtons[3]).toHaveAccessibleName("工具导航");
-  expect(navigationButtons[4]).toHaveAccessibleName("集成中心");
-  expect(navigationButtons[5]).toHaveAccessibleName("基模型");
+  expect(navigationButtons[1]).toHaveAccessibleName("创意工坊");
+  expect(navigationButtons[2]).toHaveAccessibleName("应用");
+  expect(navigationButtons[3]).toHaveAccessibleName("文件管理");
+  expect(navigationButtons[4]).toHaveAccessibleName("工具导航");
+  expect(navigationButtons[5]).toHaveAccessibleName("集成中心");
+  expect(navigationButtons[6]).toHaveAccessibleName("基模型");
   fireEvent.click(screen.getByRole("button", { name: "首页" }));
   expect(navigate).toHaveBeenCalledWith("home");
   fireEvent.click(screen.getByRole("button", { name: "应用" }));
   expect(navigate).toHaveBeenCalledWith("apps");
+  fireEvent.click(screen.getByRole("button", { name: "创意工坊" }));
+  expect(navigate).toHaveBeenCalledWith("creative-workshop");
   fireEvent.click(screen.getByRole("button", { name: "文件管理" }));
   expect(navigate).toHaveBeenCalledWith("files");
   fireEvent.click(screen.getByRole("button", { name: "工具导航" }));
@@ -99,6 +102,14 @@ test("uses home as the default and parses deep application routes", () => {
   expect(parsePage("/")).toBe("home");
   expect(parsePage("/unknown")).toBe("home");
   expect(parsePage("/home")).toBe("home");
+  expect(parsePage("/creative-workshop")).toBe("creative-workshop");
+  expect(parseRoute("/creative-workshop/edit/item-1")).toEqual({
+    page: "creative-workshop-editor",
+    projectId: "item-1",
+  });
+  expect(pathFor("creative-workshop-detail", "item-1")).toBe(
+    "/creative-workshop/item/item-1",
+  );
   expect(parsePage("/apps")).toBe("apps");
   expect(parsePage("/apps/visual-workshop/projects/project-1/assets")).toBe(
     "visual-workshop-assets",

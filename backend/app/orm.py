@@ -77,6 +77,9 @@ from app.console.amadeus.models import (
     AmadeusRun,
     AmadeusRunEvent,
 )
+from app.console.creative_workshop.models import (
+    CreativeInstallation,
+)
 from app.console.models import (
     AuthSession,
     ManagementApiKey,
@@ -266,6 +269,7 @@ TENANT_MODELS = (
     McpIntegration,
     SkillIntegration,
     IntegrationCheck,
+    CreativeInstallation,
 )
 
 

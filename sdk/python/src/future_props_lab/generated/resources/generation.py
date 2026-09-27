@@ -94,4 +94,3 @@ class AsyncGeneration:
     async def create_image_composition(self, *, project_id: str, body: models.ImageCompositionCreateIn | dict) -> models.GenerationBatchOut:
         'Create Image Composition. POST /v1/visual-workshop/projects/{project_id}/image-compositions'
         return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/image-compositions', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.GenerationBatchOut)
-

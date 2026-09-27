@@ -62,4 +62,3 @@ class AsyncLogs:
     async def reproduction_bundle(self, *, log_id: str) -> AsyncDownload:
         'Reproduction Bundle. GET /v1/llm-call-logs/{log_id}/reproduction-bundle'
         return await self._client._call('GET', '/v1/llm-call-logs/{log_id}/reproduction-bundle', parameters=[('log_id', 'path', log_id)], response_type=Any)
-

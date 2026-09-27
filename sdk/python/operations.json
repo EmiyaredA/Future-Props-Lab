@@ -299,6 +299,26 @@
     "method": "me",
     "resource": "accounts"
   },
+  "GET /v1/creative-workshop/items": {
+    "method": "list_items",
+    "resource": "creative_workshop"
+  },
+  "GET /v1/creative-workshop/items/{item_id}": {
+    "method": "get_item",
+    "resource": "creative_workshop"
+  },
+  "GET /v1/creative-workshop/items/{item_id}/cover": {
+    "method": "item_cover",
+    "resource": "creative_workshop"
+  },
+  "GET /v1/creative-workshop/releases/{release_id}": {
+    "method": "get_release",
+    "resource": "creative_workshop"
+  },
+  "GET /v1/creative-workshop/releases/{release_id}/cover": {
+    "method": "release_cover",
+    "resource": "creative_workshop"
+  },
   "GET /v1/demo-services/tools/{tool}": {
     "method": "example_tool",
     "resource": "demo_calls"
@@ -927,6 +947,10 @@
     "method": "patch_project",
     "resource": "annotation"
   },
+  "PATCH /v1/creative-workshop/items/{item_id}": {
+    "method": "update_item",
+    "resource": "creative_workshop"
+  },
   "PATCH /v1/director-desk/projects/{project_id}": {
     "method": "patch_project",
     "resource": "director"
@@ -1198,6 +1222,42 @@
   "POST /v1/auth/register": {
     "method": "registration",
     "resource": "governance"
+  },
+  "POST /v1/creative-workshop/installations": {
+    "method": "install",
+    "resource": "creative_workshop"
+  },
+  "POST /v1/creative-workshop/installations/preview": {
+    "method": "preview_install",
+    "resource": "creative_workshop"
+  },
+  "POST /v1/creative-workshop/installations/{installation_id}/stdio": {
+    "method": "configure_stdio",
+    "resource": "creative_workshop"
+  },
+  "POST /v1/creative-workshop/items": {
+    "method": "create_item",
+    "resource": "creative_workshop"
+  },
+  "POST /v1/creative-workshop/items/from-integration": {
+    "method": "import_item",
+    "resource": "creative_workshop"
+  },
+  "POST /v1/creative-workshop/items/{item_id}/cover": {
+    "method": "upload_cover",
+    "resource": "creative_workshop"
+  },
+  "POST /v1/creative-workshop/items/{item_id}/publish": {
+    "method": "publish_item",
+    "resource": "creative_workshop"
+  },
+  "POST /v1/creative-workshop/items/{item_id}/skill-archive": {
+    "method": "upload_skill",
+    "resource": "creative_workshop"
+  },
+  "POST /v1/creative-workshop/items/{item_id}/withdraw": {
+    "method": "withdraw_item",
+    "resource": "creative_workshop"
   },
   "POST /v1/demo-services/model/chat/completions": {
     "method": "mock_completion",

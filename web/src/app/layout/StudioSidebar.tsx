@@ -42,6 +42,15 @@ function AppsIcon() {
   );
 }
 
+function CreativeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
+      <path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z" />
+    </svg>
+  );
+}
+
 function CompassIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden>
@@ -243,6 +252,14 @@ function StudioChrome({
       icon: <HomeIcon />,
       active: page === "home",
       page: "home",
+    },
+    {
+      id: "creative-workshop",
+      label: "创意工坊",
+      shortLabel: "工坊",
+      icon: <CreativeIcon />,
+      active: page.startsWith("creative-workshop"),
+      page: "creative-workshop",
     },
     {
       id: "apps",

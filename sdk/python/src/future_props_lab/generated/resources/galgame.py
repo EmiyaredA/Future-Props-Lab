@@ -430,4 +430,3 @@ class AsyncGalgame:
     async def get_story_migration_status(self) -> models.GalgameStoryMigrationStatusOut:
         'Get Story Migration Status. GET /v1/galgame-workshop/story-migrations/status'
         return await self._client._call('GET', '/v1/galgame-workshop/story-migrations/status', parameters=[], response_type=models.GalgameStoryMigrationStatusOut)
-

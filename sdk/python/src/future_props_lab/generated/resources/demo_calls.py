@@ -30,4 +30,3 @@ class AsyncDemoCalls:
     async def example_tool(self, *, tool: str, q: str | Unset = UNSET, id: str | Unset = UNSET, order_id: str | Unset = UNSET) -> Any:
         'Example Tool. GET /v1/demo-services/tools/{tool}'
         return await self._client._call('GET', '/v1/demo-services/tools/{tool}', parameters=[('tool', 'path', tool), ('q', 'query', q), ('id', 'query', id), ('order_id', 'query', order_id)], response_type=Any)
-

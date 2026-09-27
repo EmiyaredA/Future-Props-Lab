@@ -84,7 +84,7 @@ Web 开发代理已经为 `/v1` 开启 WebSocket upgrade。HTTPS 生产反向代
 显示连接失败。实时语音 VAD 的 ONNX、worklet 与 WASM 位于 `web/public/voice-vad/`，
 `npm run setup` 会同步资源，构建会校验资源没有缺失或过期。麦克风浏览器权限通常要求 HTTPS 或本机来源。
 
-应用启动时自动执行迁移。手动运行 `npm run db:migrate` 可重复确认迁移，`npm run db:migrate:check` 用于发现待执行迁移或 checksum 漂移。Skill ZIP、解压总量与文件数量可通过上述三个变量限制，根 `SKILL.md` 固定最多 256 KiB。模型测试图片固定为每张最多 8 MiB；语音识别不会自动切片，自定义 Pro 端点单文件最多 100 MB，其余当前模型最多 10 MB，均无需环境变量配置。备份时应先停止应用，再同时复制 SQLite 数据库及数据库同级的 `workspaces/`（包含 Skill 版本）、`profiles/`、`library/assets/`、`applications/`、`model-test/attachments/`、`model-test/references/`、`model-test/generated/` 文件目录，以确保元数据和原始文件一致。
+应用启动时自动执行迁移。手动运行 `npm run db:migrate` 可重复确认迁移，`npm run db:migrate:check` 用于发现待执行迁移或 checksum 漂移。Skill ZIP、解压总量与文件数量可通过上述三个变量限制，根 `SKILL.md` 固定最多 256 KiB。模型测试图片固定为每张最多 8 MiB；语音识别不会自动切片，自定义 Pro 端点单文件最多 100 MB，其余当前模型最多 10 MB，均无需环境变量配置。备份时应先停止应用，再同时复制 SQLite 数据库及数据库同级的 `workspaces/`（包含集成 Skill 版本和 `creative-workshop/{covers,skill-drafts,skill-releases}/`）、`profiles/`、`library/assets/`、`applications/`、`model-test/attachments/`、`model-test/references/`、`model-test/generated/` 文件目录，以确保元数据和原始文件一致。
 
 `npm run setup` 不安装 Chromium。FFmpeg 与 FFprobe 必须可从系统命令路径调用；Chromium 仅用于
 Playwright E2E，按 Playwright 的安装说明单独准备，不参与正式视频导出。

@@ -261,7 +261,7 @@ def generate(schema, mapping):
             ]
             for args in operations:
                 lines += method_source(*args, asynchronous)
-        files[TARGET / "resources" / f"{resource}.py"] = "\n".join(lines) + "\n"
+        files[TARGET / "resources" / f"{resource}.py"] = "\n".join(lines).rstrip() + "\n"
         init.append(f"from .{resource} import {class_name}, Async{class_name}")
         sync_names.append(f"{resource!r}: {class_name}")
         async_names.append(f"{resource!r}: Async{class_name}")

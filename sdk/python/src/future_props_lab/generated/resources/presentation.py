@@ -70,4 +70,3 @@ class AsyncPresentation:
     async def apply_presentation_operations(self, *, project_id: str, body: models.PresentationOperationsIn | dict) -> models.PresentationProjectOut:
         'Apply Presentation Operations. POST /v1/presentation-workshop/projects/{project_id}/operations'
         return await self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
-

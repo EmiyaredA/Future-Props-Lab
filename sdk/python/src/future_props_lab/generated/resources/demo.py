@@ -46,4 +46,3 @@ class AsyncDemo:
     async def action(self, *, service_id: Literal['mock_model', 'example_tools'], body: models.DemoActionIn | dict) -> models.DemoServiceOut:
         'Action. POST /v1/platform/demo-services/{service_id}/actions'
         return await self._client._call('POST', '/v1/platform/demo-services/{service_id}/actions', parameters=[('service_id', 'path', service_id)], body=body, media_type='application/json', response_type=models.DemoServiceOut)
-

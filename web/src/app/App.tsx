@@ -58,6 +58,11 @@ const ApplicationCenterPage = lazy(() =>
     default: module.ApplicationCenterPage,
   })),
 );
+const CreativeWorkshopPage = lazy(() =>
+  import("@features/creative-workshop/CreativeWorkshopPage").then((module) => ({
+    default: module.CreativeWorkshopPage,
+  })),
+);
 const FileManagementPage = lazy(() =>
   import("@features/files").then((module) => ({
     default: module.FileManagementPage,
@@ -177,6 +182,7 @@ export default function App() {
       "audio-annotation": "音频标注工坊",
       "director-desk": "导演台",
       "live2d-workshop": "Live2D 工坊",
+      "creative-workshop": "创意工坊",
     };
     const application =
       Object.entries(applications).find(([prefix]) =>
@@ -704,6 +710,21 @@ export default function App() {
       <PageBoundary>
         {page === "home" ? (
           <HomePage onNavigate={navigatePath} />
+        ) : page.startsWith("creative-workshop") ? (
+          <CreativeWorkshopPage
+            mode={
+              page as
+                | "creative-workshop"
+                | "creative-workshop-mine"
+                | "creative-workshop-new"
+                | "creative-workshop-editor"
+                | "creative-workshop-detail"
+            }
+            itemId={route.projectId}
+            canWrite={workspaceAllows(me.workspace, "content.write")}
+            canInstall={workspaceAllows(me.workspace, "configuration.manage")}
+            navigate={(next, id) => navigate(next, id)}
+          />
         ) : page === "apps" ? (
           <ApplicationCenterPage
             applications={APPLICATION_DEFINITIONS}

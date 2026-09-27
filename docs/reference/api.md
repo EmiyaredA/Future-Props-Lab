@@ -1,5 +1,28 @@
 # API 参考
 
+## 创意工坊
+
+`/v1/creative-workshop` 只在同一部署内共享。已登录用户凭 `content.read` 浏览公开创作；
+`GET /items?mine=true` 只返回当前作者在当前 Workspace 的作品和草稿。`GET /releases/{release_id}`
+读取一个仍公开的固定能力版本，供方案包展示原作者与版本。公开查询不读取其他 Workspace 的集成表。
+
+- `POST /items` 创建工具 API、MCP、Skill 或方案包草稿；`PATCH /items/{id}` 用
+  `expected_revision` 更新自己的草稿，冲突返回 409。`POST /items/{id}/cover` 和
+  `/skill-archive` 上传封面或经过安全 ZIP 校验的 Skill。
+- `POST /items/from-integration` 从当前 Workspace 已有集成导入允许公开的字段，要求
+  `configuration.manage`；加密凭据、本机命令与环境变量不进入创作。
+- `POST /items/{id}/publish` 创建不可变发布版本；方案包的 `components` 引用已发布的
+  工具 API、MCP、Skill 版本 ID，三类可以分别为空，合计至少一项。`POST /items/{id}/withdraw`
+  撤回当前作品，阻止新安装；既有安装副本保留。
+- `POST /installations/preview` 检查依赖、重复安装与目标名称冲突；提交 `names` 可调整各能力
+  在目标 Workspace 的名称。`POST /installations` 在一次事务中复制整套能力，失败回滚。
+  工具 API、HTTP MCP 不复制凭据且默认禁用；Skill 沿用 ZIP 验证并以禁用状态复制；
+  stdio MCP 留在待配置状态。管理员以 `POST /installations/{id}/stdio` 提交本机命令，
+  再到集成中心校验和启用。
+
+创作发布后立即公开。安装记录识别同一版本的重复安装，不覆盖已有目标配置；后续发布新版本也
+不会自动改变目标 Workspace 的副本。首版方案包提供集合安装和建议步骤，不编排运行。
+
 ## Amadeus 桌面助手
 
 `/v1/amadeus` 使用当前账号和 Workspace 的 Studio Session。会话、消息引用快照、操作提议与批准保存在本机 SQLite；会话文件放在该 Workspace 的独立目录。`GET/POST /conversations` 和 `GET/PATCH/DELETE /conversations/{id}` 管理历史，消息追加与会话修改使用 `expected_revision`，冲突返回 409。`POST /model-turn/stream` 流式返回模型文本和工具调用，不向前端提供供应商密钥。

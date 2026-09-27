@@ -7,6 +7,11 @@ export type StudioPage =
   | "management-services"
   | "management-permissions"
   | "home"
+  | "creative-workshop"
+  | "creative-workshop-mine"
+  | "creative-workshop-new"
+  | "creative-workshop-editor"
+  | "creative-workshop-detail"
   | "apps"
   | "files"
   | "tools"
@@ -140,6 +145,28 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
     };
   if (pathname.startsWith("/tools/audio-annotation"))
     return { page: "audio-annotation-projects" };
+  const creativeEditor = pathname.match(
+    /^\/creative-workshop\/edit\/([^/]+)\/?$/,
+  );
+  if (creativeEditor)
+    return {
+      page: "creative-workshop-editor",
+      projectId: decodeURIComponent(creativeEditor[1]),
+    };
+  const creativeDetail = pathname.match(
+    /^\/creative-workshop\/item\/([^/]+)\/?$/,
+  );
+  if (creativeDetail)
+    return {
+      page: "creative-workshop-detail",
+      projectId: decodeURIComponent(creativeDetail[1]),
+    };
+  if (pathname.startsWith("/creative-workshop/mine"))
+    return { page: "creative-workshop-mine" };
+  if (pathname.startsWith("/creative-workshop/new"))
+    return { page: "creative-workshop-new" };
+  if (pathname.startsWith("/creative-workshop"))
+    return { page: "creative-workshop" };
   if (pathname.startsWith("/apps")) return { page: "apps" };
   if (pathname.startsWith("/files")) return { page: "files" };
   if (pathname.startsWith("/integrations/mcp"))
@@ -184,6 +211,15 @@ export function pathFor(
     "management-services": "/management/services",
     "management-permissions": "/management/permissions",
     home: "/home",
+    "creative-workshop": "/creative-workshop",
+    "creative-workshop-mine": "/creative-workshop/mine",
+    "creative-workshop-new": "/creative-workshop/new",
+    "creative-workshop-editor": projectId
+      ? `/creative-workshop/edit/${encodeURIComponent(projectId)}`
+      : "/creative-workshop/mine",
+    "creative-workshop-detail": projectId
+      ? `/creative-workshop/item/${encodeURIComponent(projectId)}`
+      : "/creative-workshop",
     apps: "/apps",
     files: "/files",
     tools: "/tools",
