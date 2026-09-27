@@ -47,6 +47,9 @@ export function useAmadeusController(session: AccountSessionContext) {
   const [mcpServers, setMcpServers] = useState<Capability[]>([]);
   const [skills, setSkills] = useState<Capability[]>([]);
   const [loaded, setLoaded] = useState<string[]>([]);
+  const [loadedConversationId, setLoadedConversationId] = useState<
+    string | null
+  >(null);
   const [approval, setApproval] = useState<Approval | null>(null);
   const [renameItem, setRenameItem] = useState<Conversation | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
@@ -211,6 +214,7 @@ export function useAmadeusController(session: AccountSessionContext) {
   useEffect(() => {
     if (!conversationId) {
       setLoaded([]);
+      setLoadedConversationId(null);
       return;
     }
     try {
@@ -222,15 +226,16 @@ export function useAmadeusController(session: AccountSessionContext) {
     } catch {
       setLoaded([]);
     }
+    setLoadedConversationId(conversationId);
   }, [conversationId]);
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || loadedConversationId !== conversationId) return;
     localStorage.setItem(
       `amadeus-loaded:${conversationId}`,
       JSON.stringify(loaded),
     );
-  }, [loaded, conversationId]);
+  }, [loaded, conversationId, loadedConversationId]);
 
   const refreshCapabilities = useCallback(async () => {
     try {
@@ -261,13 +266,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     setCapabilitiesOpen(!capabilitiesOpen);
     if (!capabilitiesOpen) await refreshCapabilities();
   };
-  const toggleLoaded = (key: string) =>
-    setLoaded((previous) =>
-      previous.includes(key)
-        ? previous.filter((item) => item !== key)
-        : [...previous, key],
-    );
-
   const decideApproval = (allow: boolean) =>
     decideAmadeusApproval({
       allow,
@@ -942,6 +940,7 @@ export function useAmadeusController(session: AccountSessionContext) {
     mcpServers,
     skills,
     loaded,
+    setLoaded,
     approval,
     renameItem,
     setRenameItem,
@@ -968,7 +967,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     showAvatarState,
     open,
     openCapabilities,
-    toggleLoaded,
     decideApproval,
     stop,
     create,

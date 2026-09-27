@@ -22,6 +22,7 @@ import type { AccountSessionContext } from "@features/accounts";
 import { fetchApiJson } from "@platform/api/client";
 import { avatarStateLabels, compactContext } from "./protocol";
 import { AmadeusAvatar } from "./Avatar";
+import { CapabilityDialog } from "./CapabilityDialog";
 import { useAppearance } from "./useAppearance";
 import { useAmadeusController } from "./useAmadeusController";
 
@@ -57,6 +58,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     mcpServers,
     skills,
     loaded,
+    setLoaded,
     approval,
     renameItem,
     setRenameItem,
@@ -83,7 +85,6 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     showAvatarState,
     open,
     openCapabilities,
-    toggleLoaded,
     decideApproval,
     stop,
     create,
@@ -299,82 +300,6 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 </div>
               ))}
               <small>手动引用会显示在输入框上方</small>
-            </div>
-          )}
-          {capabilitiesOpen && (
-            <div className="amadeus-capabilities">
-              <div className="amadeus-capabilities-head">
-                <strong>能力</strong>
-                <button
-                  onClick={() => setCapabilitiesOpen(false)}
-                  aria-label="收起能力"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-              <section>
-                <h3>会话脚本</h3>
-                <p>
-                  Python 与受限 Shell ·{" "}
-                  {scriptAvailable
-                    ? "系统沙箱可用 · 执行前确认"
-                    : "系统沙箱不可用"}
-                </p>
-              </section>
-              <section>
-                <h3>FPL 工具 · {registeredOperations}</h3>
-                <p>
-                  当前 Workspace
-                  已登记的业务操作，按应用按需加载；读取自动执行，修改逐项确认。
-                </p>
-              </section>
-              {(
-                [
-                  { title: "工具 API", prefix: "toolapi", items: toolApis },
-                  { title: "MCP", prefix: "mcp", items: mcpServers },
-                  { title: "Skills", prefix: "skill", items: skills },
-                ] as const
-              ).map((group) => (
-                <section key={group.title}>
-                  <h3>
-                    {group.title} · {group.items.length}
-                  </h3>
-                  {!group.items.length && <p>暂无资源</p>}
-                  {group.items.map((item) => (
-                    <label key={item.id} className="amadeus-capability">
-                      <input
-                        type="checkbox"
-                        checked={loaded.includes(`${group.prefix}:${item.id}`)}
-                        disabled={!item.enabled}
-                        onChange={() =>
-                          toggleLoaded(`${group.prefix}:${item.id}`)
-                        }
-                      />
-                      <span>
-                        <strong>{item.name}</strong>
-                        <small>
-                          {item.status_message ||
-                            item.description ||
-                            "来自集成中心"}
-                        </small>
-                      </span>
-                      <em className={item.status === "failed" ? "failed" : ""}>
-                        {!item.enabled
-                          ? "不可用"
-                          : loaded.includes(`${group.prefix}:${item.id}`)
-                            ? "已加载"
-                            : item.status === "failed"
-                              ? group.prefix === "skill"
-                                ? item.status_message?.includes("依赖")
-                                  ? "依赖缺失"
-                                  : "不可用"
-                                : "连接异常"
-                              : "可用"}
-                      </em>
-                    </label>
-                  ))}
-                </section>
-              ))}
             </div>
           )}
           {filesOpen && (
@@ -811,6 +736,21 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             <pre>{filePreview.text}</pre>
           </section>
         </div>
+      )}
+      {capabilitiesOpen && (
+        <CapabilityDialog
+          selected={loaded}
+          toolApis={toolApis}
+          mcpServers={mcpServers}
+          skills={skills}
+          scriptAvailable={scriptAvailable}
+          registeredOperations={registeredOperations}
+          onClose={() => setCapabilitiesOpen(false)}
+          onApply={(next) => {
+            setLoaded(next);
+            setCapabilitiesOpen(false);
+          }}
+        />
       )}
     </div>
   );

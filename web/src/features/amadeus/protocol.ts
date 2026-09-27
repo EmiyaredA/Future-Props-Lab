@@ -67,6 +67,7 @@ export type Capability = {
   id: string;
   name: string;
   description: string;
+  tags?: string[];
   enabled: boolean;
   status: string;
   revision: number;

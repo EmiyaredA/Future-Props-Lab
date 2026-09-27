@@ -1,0 +1,598 @@
+.amadeus-capability-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgb(39 31 27 / 38%);
+  backdrop-filter: blur(2px);
+}
+
+.amadeus-capability-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(880px, 100%);
+  max-height: min(820px, calc(100vh - 44px));
+  overflow: hidden;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 18px;
+  background: var(--amadeus-surface);
+  box-shadow: 0 24px 80px rgb(49 32 23 / 24%);
+  color: var(--amadeus-ink);
+}
+
+.amadeus-capability-dialog-head {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 22px 25px 14px;
+}
+
+.amadeus-capability-dialog-head h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.amadeus-capability-dialog-head p {
+  margin: 5px 0 0;
+  color: var(--amadeus-muted);
+  font-size: 13px;
+}
+
+.amadeus-capability-dialog-head > button,
+.amadeus-capability-search > button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--amadeus-muted);
+}
+
+.amadeus-capability-dialog-head > button:hover,
+.amadeus-capability-search > button:hover {
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+.amadeus-capability-tabs {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0 24px;
+  border-bottom: 1px solid var(--amadeus-line);
+}
+
+.amadeus-capability-tabs button {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  color: var(--amadeus-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.amadeus-capability-tabs button::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: transparent;
+  content: "";
+}
+
+.amadeus-capability-tabs button[aria-selected="true"] {
+  color: var(--amadeus-accent);
+}
+
+.amadeus-capability-tabs button[aria-selected="true"]::after {
+  background: var(--amadeus-accent);
+}
+
+.amadeus-capability-tabs button > small {
+  display: grid;
+  min-width: 23px;
+  height: 22px;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--amadeus-bg);
+  color: var(--amadeus-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.amadeus-capability-tabs button > em {
+  color: var(--amadeus-muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.amadeus-capability-dialog-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 15px 24px 12px;
+}
+
+.amadeus-capability-scope-note {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--amadeus-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.amadeus-capability-scope-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--amadeus-accent);
+}
+
+.amadeus-capability-search {
+  display: flex;
+  flex: none;
+  height: 42px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px 0 13px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 10px;
+  background: var(--amadeus-surface-raised);
+  color: var(--amadeus-muted);
+}
+
+.amadeus-capability-search:focus-within {
+  border-color: var(--amadeus-accent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--amadeus-accent) 13%, transparent);
+}
+
+.amadeus-capability-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--amadeus-ink);
+  font-size: 13px;
+}
+
+.amadeus-capability-search input::placeholder {
+  color: var(--amadeus-muted);
+  opacity: 0.8;
+}
+
+.amadeus-capability-search > button {
+  width: 25px;
+  height: 25px;
+}
+
+.amadeus-capability-tag-filter {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  margin-top: 10px;
+}
+
+.amadeus-capability-tag-label {
+  flex: none;
+  color: var(--amadeus-muted);
+  font-size: 10px;
+}
+
+.amadeus-capability-tag-label small {
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  opacity: 0.75;
+}
+
+.amadeus-capability-tags {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 1px 0 3px;
+  scrollbar-width: thin;
+}
+
+.amadeus-capability-tags button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 27px;
+  padding: 0 10px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 999px;
+  background: var(--amadeus-surface-raised);
+  color: var(--amadeus-muted);
+  font-size: 11px;
+}
+
+.amadeus-capability-tags button[aria-pressed="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--amadeus-accent) 35%,
+    var(--amadeus-line)
+  );
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+.amadeus-capability-tags button small {
+  font-size: 9px;
+  opacity: 0.75;
+}
+
+.amadeus-capability-list {
+  min-height: 130px;
+  flex: 1;
+  overflow: auto;
+  margin-top: 12px;
+  border: 1px solid var(--amadeus-line-soft);
+  border-radius: 11px;
+  background: var(--amadeus-surface-raised);
+}
+
+.amadeus-capability-option {
+  position: relative;
+  display: flex;
+  min-height: 67px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--amadeus-line-soft);
+  cursor: pointer;
+}
+
+.amadeus-capability-option:last-child {
+  border-bottom: 0;
+}
+
+.amadeus-capability-option:hover,
+.amadeus-capability-option.is-selected {
+  background: color-mix(
+    in srgb,
+    var(--amadeus-accent) 5%,
+    var(--amadeus-surface-raised)
+  );
+}
+
+.amadeus-capability-option > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.amadeus-capability-check {
+  display: grid;
+  flex: none;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 1.5px solid #baa99e;
+  border-radius: 5px;
+  color: white;
+}
+
+.amadeus-capability-option > input:focus-visible + .amadeus-capability-check {
+  outline: 3px solid color-mix(in srgb, var(--amadeus-accent) 25%, transparent);
+}
+
+.amadeus-capability-option > input:checked + .amadeus-capability-check {
+  border-color: var(--amadeus-accent);
+  background: var(--amadeus-accent);
+}
+
+.amadeus-capability-option > input:disabled + .amadeus-capability-check {
+  background: var(--amadeus-bg);
+  cursor: not-allowed;
+}
+
+.amadeus-capability-option-icon {
+  display: grid;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--amadeus-line-soft);
+  border-radius: 10px;
+  background: var(--amadeus-bg);
+  color: var(--amadeus-muted);
+}
+
+.amadeus-capability-option-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.amadeus-capability-option-copy strong,
+.amadeus-capability-option-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amadeus-capability-option-copy strong {
+  color: var(--amadeus-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.amadeus-capability-option-copy small {
+  color: var(--amadeus-muted);
+  font-size: 11px;
+}
+
+.amadeus-capability-option-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.amadeus-capability-option-tags em {
+  max-width: 140px;
+  overflow: hidden;
+  padding: 2px 6px;
+  border: 1px solid var(--amadeus-line-soft);
+  border-radius: 999px;
+  background: var(--amadeus-bg);
+  color: var(--amadeus-muted);
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amadeus-capability-option > em {
+  flex: none;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #edf3eb;
+  color: #547957;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.amadeus-capability-option > em.is-warning {
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+.amadeus-capability-option > em.is-muted {
+  background: var(--amadeus-bg);
+  color: var(--amadeus-muted);
+}
+
+.amadeus-capability-empty {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  color: var(--amadeus-muted);
+  font-size: 13px;
+}
+
+.amadeus-capability-runtime {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 2px 0;
+  color: var(--amadeus-muted);
+  font-size: 10px;
+}
+
+.amadeus-capability-runtime b {
+  color: var(--amadeus-ink);
+  font-weight: 500;
+}
+
+.amadeus-capability-dialog-foot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--amadeus-line-soft);
+  color: var(--amadeus-muted);
+  font-size: 12px;
+}
+
+.amadeus-capability-dialog-foot > span small {
+  color: var(--amadeus-muted);
+  opacity: 0.82;
+}
+
+.amadeus-capability-dialog-foot > div {
+  display: flex;
+  flex: none;
+  gap: 9px;
+}
+
+.amadeus-capability-dialog-foot button {
+  min-height: 39px;
+  padding: 0 17px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 9px;
+  background: var(--amadeus-surface-raised);
+  color: var(--amadeus-ink);
+  font-size: 13px;
+}
+
+.amadeus-capability-dialog-foot button:focus-visible,
+.amadeus-capability-tabs button:focus-visible,
+.amadeus-capability-dialog-head > button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--amadeus-accent) 30%, transparent);
+  outline-offset: 2px;
+}
+
+.amadeus-capability-dialog-foot button.is-primary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-color: var(--amadeus-accent);
+  background: var(--amadeus-accent);
+  color: white;
+  font-weight: 600;
+}
+
+.amadeus-capability-dialog-foot button.is-primary small {
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: rgb(255 255 255 / 22%);
+  font-size: 10px;
+}
+
+@media (max-width: 560px) {
+  .amadeus-capability-backdrop {
+    padding: 10px;
+  }
+
+  .amadeus-capability-dialog {
+    max-height: calc(100vh - 20px);
+    border-radius: 14px;
+  }
+
+  .amadeus-capability-dialog-head {
+    padding: 17px 17px 12px;
+  }
+
+  .amadeus-capability-tabs {
+    padding: 0 10px;
+  }
+
+  .amadeus-capability-tabs button {
+    gap: 5px;
+    font-size: 12px;
+  }
+
+  .amadeus-capability-tabs button > em {
+    display: none;
+  }
+
+  .amadeus-capability-dialog-body {
+    padding: 12px;
+  }
+
+  .amadeus-capability-tag-filter {
+    gap: 6px;
+  }
+
+  .amadeus-capability-tag-label small {
+    display: none;
+  }
+
+  .amadeus-capability-option {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .amadeus-capability-option-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .amadeus-capability-option > em {
+    max-width: 75px;
+    overflow: hidden;
+    padding: 4px 6px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .amadeus-capability-runtime {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .amadeus-capability-dialog-foot {
+    padding: 12px;
+  }
+
+  .amadeus-capability-dialog-foot > span small {
+    display: none;
+  }
+
+  .amadeus-capability-dialog-foot button {
+    padding: 0 11px;
+  }
+}
+
+:root[data-theme="dark"] .amadeus-capability-dialog {
+  border-color: var(--amadeus-line);
+  background: var(--amadeus-surface);
+}
+
+:root[data-theme="dark"] .amadeus-capability-tabs,
+:root[data-theme="dark"] .amadeus-capability-dialog-foot {
+  border-color: var(--amadeus-line);
+}
+
+:root[data-theme="dark"] .amadeus-capability-search,
+:root[data-theme="dark"] .amadeus-capability-list,
+:root[data-theme="dark"] .amadeus-capability-tags button,
+:root[data-theme="dark"] .amadeus-capability-dialog-foot button.is-secondary {
+  border-color: var(--amadeus-line);
+  background: var(--amadeus-surface-raised);
+  color: var(--amadeus-ink);
+}
+
+:root[data-theme="dark"] .amadeus-capability-tags button[aria-pressed="true"] {
+  border-color: #69402f;
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
+
+:root[data-theme="dark"] .amadeus-capability-option {
+  border-color: var(--amadeus-line-soft);
+}
+
+:root[data-theme="dark"] .amadeus-capability-option-tags em {
+  border-color: var(--amadeus-line);
+  background: var(--amadeus-bg);
+  color: var(--amadeus-muted);
+}
+
+:root[data-theme="dark"] .amadeus-capability-option > em {
+  background: #26362a;
+  color: #a4c9a7;
+}
+
+:root[data-theme="dark"] .amadeus-capability-option > em.is-warning {
+  background: var(--amadeus-accent-soft);
+  color: var(--amadeus-accent);
+}
