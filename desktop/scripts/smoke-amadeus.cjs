@@ -82,7 +82,7 @@ async function main() {
     await assistant.getByRole("button", { name: "新建对话", exact: true }).click();
     await assistant.getByRole("button", { name: "能力", exact: true }).click();
     await assistant.getByText("工具 API", { exact: false }).first().waitFor();
-    await assistant.getByRole("button", { name: "能力", exact: true }).click();
+    await assistant.getByRole("button", { name: "关闭能力配置" }).click();
     await assistant.getByRole("button", { name: "会话文件", exact: true }).click();
     await assistant.getByText("暂无文件").waitFor();
     await assistant.getByRole("button", { name: "收起会话文件" }).click();
@@ -93,6 +93,36 @@ async function main() {
     })));
     await until(async () => (await assistant.evaluate(() => window.futurePropsDesktop.amadeusContexts()))
       .some((item) => item.projectId === "sample-project" && item.selection?.name === "开场画面" && item.unsaved));
+    const contextPanel = assistant.getByRole("region", { name: "当前上下文" });
+    await contextPanel.getByText("示例画布").waitFor();
+    await contextPanel.getByText("开场画面 · 图像").waitFor();
+    assert.equal(await contextPanel.getByRole("button", { name: "收起详情" })
+      .getAttribute("aria-expanded"), "true");
+    if (process.env.FPL_AMADEUS_CONTEXT_SCREENSHOT)
+      await assistant.screenshot({ path: process.env.FPL_AMADEUS_CONTEXT_SCREENSHOT });
+    const originalViewport = assistant.viewportSize();
+    const originalTheme = await assistant.evaluate(() => document.documentElement.dataset.theme);
+    await assistant.setViewportSize({ width: 400, height: 500 });
+    await assistant.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
+    const narrowLayout = await assistant.evaluate(() => ({
+      viewportWidth: innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      contextBottom: document.querySelector(".amadeus-context-panel").getBoundingClientRect().bottom,
+      composerTop: document.querySelector(".amadeus-bottom").getBoundingClientRect().top,
+      composerBottom: document.querySelector(".amadeus-bottom").getBoundingClientRect().bottom,
+      panelBackground: getComputedStyle(document.querySelector(".amadeus-context-panel")).backgroundColor,
+    }));
+    assert.ok(narrowLayout.documentWidth <= narrowLayout.viewportWidth, "narrow context must not overflow horizontally");
+    assert.ok(narrowLayout.contextBottom < narrowLayout.composerTop, "chat must remain between context and composer");
+    assert.ok(narrowLayout.composerBottom <= 500, "composer must stay in the viewport");
+    assert.equal(narrowLayout.panelBackground, "rgb(27, 31, 28)");
+    if (process.env.FPL_AMADEUS_CONTEXT_NARROW_SCREENSHOT)
+      await assistant.screenshot({ path: process.env.FPL_AMADEUS_CONTEXT_NARROW_SCREENSHOT });
+    await assistant.evaluate((theme) => {
+      if (theme) document.documentElement.dataset.theme = theme;
+      else delete document.documentElement.dataset.theme;
+    }, originalTheme);
+    if (originalViewport) await assistant.setViewportSize(originalViewport);
     await assistant.evaluate(async () => {
       const source = (await window.futurePropsDesktop.amadeusContexts())
         .find((item) => item.projectId === "sample-project");
@@ -121,7 +151,7 @@ async function main() {
     assert.equal(browser.contexts()[0].pages().filter((item) =>
       item.url().startsWith("http:") && !item.url().includes("amadeus.html")).length, 1);
     await assistant.getByText(/1\. 新建窗口/).last().waitFor();
-    console.log("PASS Amadeus singleton, always-on-top, history, capabilities, files, context reset and safe control picking");
+    console.log("PASS Amadeus singleton, always-on-top, history, capabilities, files, context UI, context reset and safe control picking");
   } catch (error) {
     console.error(output.slice(-2000));
     throw error;

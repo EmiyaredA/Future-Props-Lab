@@ -210,52 +210,6 @@ button {
   display: flex;
   flex-direction: column;
 }
-.amadeus-context-summary {
-  flex: none;
-  border: 0;
-  border-bottom: 1px solid #f2e5db;
-  background: #fffaf5;
-  color: #89786c;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 9px 16px;
-  font-size: 12px;
-  text-align: left;
-}
-.amadeus-context-list {
-  border-bottom: 1px solid #efdfd5;
-  padding: 9px 16px;
-  font-size: 12px;
-  max-height: 180px;
-  overflow: auto;
-}
-.amadeus-context-list small {
-  display: block;
-  color: #aa9a8f;
-  margin: 5px 0;
-}
-.amadeus-context-list div {
-  padding: 6px 0;
-  border-bottom: 1px solid #f3e9e2;
-}
-.amadeus-context-list strong {
-  font-weight: 600;
-}
-.amadeus-context-list span {
-  display: block;
-  color: #8a7e74;
-  margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.amadeus-context-list em {
-  color: #d65f40;
-  font-size: 10px;
-  font-style: normal;
-  margin-left: 7px;
-}
 .amadeus-messages {
   min-height: 0;
   flex: 1;

@@ -221,13 +221,6 @@
   min-width: 0;
 }
 
-.amadeus-context-summary {
-  padding: 8px 16px;
-  border-bottom-color: var(--amadeus-line-soft);
-  background: rgb(255 253 250 / 55%);
-  color: var(--amadeus-muted);
-}
-
 .amadeus-messages {
   padding: 16px 18px 10px;
 }
@@ -376,7 +369,6 @@ html[data-theme="dark"] #root {
 }
 
 :root[data-theme="dark"] .amadeus-header,
-:root[data-theme="dark"] .amadeus-context-summary,
 :root[data-theme="dark"] .amadeus-history,
 :root[data-theme="dark"] .amadeus-capabilities,
 :root[data-theme="dark"] .amadeus-files,
@@ -400,8 +392,6 @@ html[data-theme="dark"] #root {
   color: var(--amadeus-ink);
 }
 
-:root[data-theme="dark"] .amadeus-context-list,
-:root[data-theme="dark"] .amadeus-context-list div,
 :root[data-theme="dark"] .amadeus-file-row,
 :root[data-theme="dark"] .amadeus-capability {
   border-color: var(--amadeus-line-soft);

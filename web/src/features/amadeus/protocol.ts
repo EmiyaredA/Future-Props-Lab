@@ -46,6 +46,7 @@ export type Detail = {
 export type Context = {
   windowId: number;
   application?: string;
+  title?: string;
   projectId?: string;
   selection?: { name: string; value: string };
   unsaved?: boolean;
@@ -138,10 +139,6 @@ export function dateGroup(value: string) {
   if (item.toDateString() === today.toDateString()) return "今天";
   today.setDate(today.getDate() - 1);
   return item.toDateString() === today.toDateString() ? "昨天" : "更早";
-}
-
-export function compactContext(items: Context[]) {
-  return `${items.length} 个窗口 · ${new Set(items.map((item) => item.application || "研究所")).size} 个应用`;
 }
 
 export function safeReadPath(value: unknown) {

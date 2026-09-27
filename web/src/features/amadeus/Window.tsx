@@ -12,7 +12,6 @@ import {
   Send,
   Square,
   ChevronDown,
-  ChevronRight,
   PanelRightOpen,
   PanelRightClose,
 } from "lucide-react";
@@ -20,9 +19,10 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { AccountSessionContext } from "@features/accounts";
 import { fetchApiJson } from "@platform/api/client";
-import { avatarStateLabels, compactContext } from "./protocol";
+import { avatarStateLabels } from "./protocol";
 import { AmadeusAvatar } from "./Avatar";
 import { CapabilityDialog } from "./CapabilityDialog";
+import { ContextPanel } from "./ContextPanel";
 import { useAppearance } from "./useAppearance";
 import { useAmadeusController } from "./useAmadeusController";
 
@@ -34,8 +34,6 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     detail,
     historyOpen,
     setHistoryOpen,
-    contextOpen,
-    setContextOpen,
     search,
     setSearch,
     references,
@@ -272,36 +270,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           </aside>
         )}
         <main className="amadeus-chat">
-          <button
-            className="amadeus-context-summary"
-            onClick={() => setContextOpen(!contextOpen)}
-          >
-            {contextOpen ? (
-              <ChevronDown size={15} />
-            ) : (
-              <ChevronRight size={15} />
-            )}
-            当前上下文 · {compactContext(scopedContexts)}
-          </button>
-          {contextOpen && (
-            <div className="amadeus-context-list">
-              <small>自动获取的环境信息</small>
-              {scopedContexts.map((item) => (
-                <div key={item.windowId}>
-                  <strong>{item.application || "研究所"}</strong>
-                  {item.focused && <em>活动窗口</em>}
-                  <span>
-                    {item.projectId || item.path || "首页"}
-                    {item.unsaved ? " · 有未保存更改" : ""}
-                    {item.selection
-                      ? ` · 选中：${item.selection.name}（${item.selection.value}）`
-                      : ""}
-                  </span>
-                </div>
-              ))}
-              <small>手动引用会显示在输入框上方</small>
-            </div>
-          )}
+          <ContextPanel items={scopedContexts} />
           {filesOpen && (
             <div className="amadeus-files">
               <div className="amadeus-capabilities-head">

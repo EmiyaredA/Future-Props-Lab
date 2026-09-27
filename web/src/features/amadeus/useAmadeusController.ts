@@ -29,7 +29,6 @@ export function useAmadeusController(session: AccountSessionContext) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [contexts, setContexts] = useState<Context[]>([]);
-  const [contextOpen, setContextOpen] = useState(false);
   const [references, setReferences] = useState<Reference[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -916,8 +915,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     detail,
     historyOpen,
     setHistoryOpen,
-    contextOpen,
-    setContextOpen,
     search,
     setSearch,
     references,
