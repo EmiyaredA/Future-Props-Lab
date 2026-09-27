@@ -32,11 +32,12 @@ function Header({
   return (
     <header className="creative-header">
       <div>
-        <div className="creative-eyebrow">
-          FUTURE PROPS LAB · CREATIVE WORKSHOP
-        </div>
         <h1>创意工坊</h1>
-        <p>发现、分享与组合可复用的工具能力</p>
+        <p>
+          {mode === "creative-workshop-mine"
+            ? "管理已发布作品与草稿"
+            : "发现、分享与组合可复用的工具能力"}
+        </p>
       </div>
       <div className="creative-header-actions">
         <button
@@ -147,24 +148,6 @@ function Listing({
       : items;
   return (
     <>
-      <div className="creative-section-heading">
-        <div>
-          <h2>{mine ? "我的创作" : "创意广场"}</h2>
-          <p>
-            {mine
-              ? "管理已发布作品与草稿。修改已发布作品会生成新版本。"
-              : "探索同一部署内所有工作区公开的能力与组合方案。"}
-          </p>
-        </div>
-        {mine && canWrite && (
-          <button
-            className="creative-secondary"
-            onClick={() => navigate("creative-workshop-new")}
-          >
-            新建创作
-          </button>
-        )}
-      </div>
       <div className="creative-toolbar">
         <label className="creative-search">
           <span aria-hidden>⌕</span>

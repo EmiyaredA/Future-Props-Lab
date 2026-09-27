@@ -77,6 +77,10 @@ test("public square searches and opens a published item", async () => {
     />,
   );
   expect(await screen.findByText("天气接口")).toBeInTheDocument();
+  expect(screen.getAllByText("创意广场")).toHaveLength(1);
+  expect(
+    screen.queryByRole("heading", { name: "创意广场" }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "＋ 发布创作" }),
   ).not.toBeInTheDocument();
