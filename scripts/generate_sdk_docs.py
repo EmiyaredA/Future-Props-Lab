@@ -21,6 +21,7 @@ LABELS = {
     "inference": "独立模型调用",
     "files": "文件管理",
     "integrations": "集成中心",
+    "creative_workshop": "创意工坊",
     "tools": "工具导航",
     "visual": "视觉工坊",
     "generation": "工坊生成任务",

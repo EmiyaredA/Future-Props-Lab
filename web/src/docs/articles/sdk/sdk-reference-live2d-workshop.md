@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 14, "title": "live2d_workshop方法参考", "lead": "client.live2d_workshop 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 15, "title": "live2d_workshop方法参考", "lead": "client.live2d_workshop 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # live2d_workshop方法参考
 
@@ -11,10 +11,13 @@
 | --- | --- |
 | [delete_project](#delete-project) | `DELETE /v1/live2d-workshop/projects/{project_id}` |
 | [retire_asset](#retire-asset) | `DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}` |
+| [remove_cubism](#remove-cubism) | `DELETE /v1/live2d-workshop/projects/{project_id}/cubism` |
 | [list_projects](#list-projects) | `GET /v1/live2d-workshop/projects` |
 | [get_project](#get-project) | `GET /v1/live2d-workshop/projects/{project_id}` |
 | [list_assets](#list-assets) | `GET /v1/live2d-workshop/projects/{project_id}/assets` |
 | [asset_file](#asset-file) | `GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file` |
+| [get_cubism](#get-cubism) | `GET /v1/live2d-workshop/projects/{project_id}/cubism` |
+| [download_cubism](#download-cubism) | `GET /v1/live2d-workshop/projects/{project_id}/cubism/package` |
 | [get_document](#get-document) | `GET /v1/live2d-workshop/projects/{project_id}/document` |
 | [list_exports](#list-exports) | `GET /v1/live2d-workshop/projects/{project_id}/exports` |
 | [get_export](#get-export) | `GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}` |
@@ -26,9 +29,13 @@
 | [create_project](#create-project) | `POST /v1/live2d-workshop/projects` |
 | [import_project](#import-project) | `POST /v1/live2d-workshop/projects/import` |
 | [upload_asset](#upload-asset) | `POST /v1/live2d-workshop/projects/{project_id}/assets` |
+| [convert_cubism](#convert-cubism) | `POST /v1/live2d-workshop/projects/{project_id}/cubism/convert` |
+| [preflight_cubism](#preflight-cubism) | `POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight` |
 | [create_export](#create-export) | `POST /v1/live2d-workshop/projects/{project_id}/exports` |
 | [preflight](#preflight) | `POST /v1/live2d-workshop/projects/{project_id}/exports/preflight` |
 | [cancel_export](#cancel-export) | `POST /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel` |
+| [attach_cubism](#attach-cubism) | `PUT /v1/live2d-workshop/projects/{project_id}/cubism` |
+| [save_cubism_bindings](#save-cubism-bindings) | `PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings` |
 | [save_document](#save-document) | `PUT /v1/live2d-workshop/projects/{project_id}/document` |
 
 ## delete_project {#delete-project}
@@ -69,6 +76,26 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `Live2DProjectOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## remove_cubism {#remove-cubism}
+
+`client.live2d_workshop.remove_cubism(...)`
+
+**接口**：`DELETE /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `expectedRevision` | query | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -145,6 +172,44 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `image/png` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_cubism {#get-cubism}
+
+`client.live2d_workshop.get_cubism(...)`
+
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `Live2DCubismOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## download_cubism {#download-cubism}
+
+`client.live2d_workshop.download_cubism(...)`
+
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/cubism/package`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/zip` · `object`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -382,6 +447,55 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## convert_cubism {#convert-cubism}
+
+`client.live2d_workshop.convert_cubism(...)`
+
+**接口**：`POST /v1/live2d-workshop/projects/{project_id}/cubism/convert`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | multipart/form-data | Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post | 是 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+| `body.file` | 请求体 | string | 是 |
+| `body.source` | 请求体 | string | 是 |
+| `body.stateBindings` | 请求体 | string | 否 |
+
+文件通过 `files={字段名: (文件名, 二进制文件对象, MIME)}` 传入；其他表单字段放在 `body`。
+
+**响应**：
+- `200` · `application/json` · `Live2DProjectOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## preflight_cubism {#preflight-cubism}
+
+`client.live2d_workshop.preflight_cubism(...)`
+
+**接口**：`POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | multipart/form-data | Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post | 是 |
+| `body.file` | 请求体 | string | 是 |
+
+文件通过 `files={字段名: (文件名, 二进制文件对象, MIME)}` 传入；其他表单字段放在 `body`。
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## create_export {#create-export}
 
 `client.live2d_workshop.create_export(...)`
@@ -457,6 +571,52 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `Live2DExportOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## attach_cubism {#attach-cubism}
+
+`client.live2d_workshop.attach_cubism(...)`
+
+**接口**：`PUT /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | multipart/form-data | Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put | 是 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+| `body.file` | 请求体 | string | 是 |
+
+文件通过 `files={字段名: (文件名, 二进制文件对象, MIME)}` 传入；其他表单字段放在 `body`。
+
+**响应**：
+- `200` · `application/json` · `Live2DCubismOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## save_cubism_bindings {#save-cubism-bindings}
+
+`client.live2d_workshop.save_cubism_bindings(...)`
+
+**接口**：`PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | Live2DCubismBindings | 是 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+| `body.stateBindings` | 请求体 | object | 是 |
+
+**响应**：
+- `200` · `application/json` · `Live2DCubismOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
