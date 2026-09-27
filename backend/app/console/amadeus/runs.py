@@ -11,6 +11,7 @@ from app.console.amadeus.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,
+    AmadeusQuestion,
     AmadeusRun,
     AmadeusRunEvent,
 )
@@ -26,7 +27,9 @@ from app.runtime.operation_receipts import OperationError
 from app.runtime.time import utc_now
 
 ACTIVE = frozenset({"running", "cancelling"})
-TERMINAL = frozenset({"completed", "failed", "cancelled", "interrupted"})
+TERMINAL = frozenset(
+    {"completed", "failed", "cancelled", "interrupted", "waiting_question", "waiting_approval"}
+)
 MAX_PARTIAL_TEXT = 100_000
 MAX_EVENT_BYTES = 1024 * 1024
 
@@ -48,6 +51,8 @@ def _run(row: AmadeusRun) -> RunOut:
         id=row.id,
         conversation_id=row.conversation_id,
         model_id=row.model_id,
+        mode=row.mode,
+        source_run_id=row.source_run_id,
         status=row.status,
         context=row.context_json,
         references=row.references_json,
@@ -114,12 +119,56 @@ class Runs:
 
     async def create(self, conversation_id: str, body: RunCreateIn) -> RunDetailOut:
         await self._conversation(conversation_id)
+        unresolved_question = await self.session.scalar(
+            select(AmadeusQuestion.id).where(
+                AmadeusQuestion.conversation_id == conversation_id,
+                AmadeusQuestion.workspace_id == self.principal.workspace_id,
+                AmadeusQuestion.user_id == self.principal.user_id,
+                AmadeusQuestion.status == "pending",
+            )
+        )
+        unresolved_action = await self.session.scalar(
+            select(AmadeusAction.id).where(
+                AmadeusAction.conversation_id == conversation_id,
+                AmadeusAction.workspace_id == self.principal.workspace_id,
+                AmadeusAction.user_id == self.principal.user_id,
+                AmadeusAction.run_id.is_not(None),
+                AmadeusAction.status.in_(("pending", "approved", "running")),
+            )
+        )
+        if unresolved_question or unresolved_action:
+            raise OperationError("请先处理当前提问或审批", "interaction_pending", 409)
+        if body.source_run_id:
+            source = await self.get(conversation_id, body.source_run_id)
+            if source.status == "completed" and source.mode == "plan":
+                if body.mode != "agent":
+                    raise OperationError("计划只能切换到 Agent 执行", "invalid_continuation", 422)
+            elif source.status == "waiting_question":
+                question = await self.session.scalar(
+                    select(AmadeusQuestion).where(AmadeusQuestion.run_id == source.id)
+                )
+                if question is None or question.status != "answered" or body.mode != source.mode:
+                    raise OperationError("提问尚未回答", "invalid_continuation", 409)
+            elif source.status == "waiting_approval":
+                action = await self.session.scalar(
+                    select(AmadeusAction).where(AmadeusAction.run_id == source.id)
+                )
+                if (
+                    action is None
+                    or action.status not in {"completed", "failed", "rejected", "cancelled"}
+                    or body.mode != "agent"
+                ):
+                    raise OperationError("操作尚未完成或结果待核实", "invalid_continuation", 409)
+            else:
+                raise OperationError("来源运行不可继续", "invalid_continuation", 409)
         now = utc_now()
         row = AmadeusRun(
             conversation_id=conversation_id,
             workspace_id=self.principal.workspace_id,
             user_id=self.principal.user_id,
             model_id=body.model_id,
+            mode=body.mode,
+            source_run_id=body.source_run_id,
             status="running",
             active_owner_key=f"{self.principal.workspace_id}:{self.principal.user_id}",
             context_json=body.context,
@@ -134,7 +183,9 @@ class Runs:
             await self.session.commit()
         except IntegrityError as exc:
             await self.session.rollback()
-            raise OperationError("已有任务正在运行", "run_already_active", 409) from exc
+            raise OperationError(
+                "已有任务正在运行或继续请求已处理", "run_already_active", 409
+            ) from exc
         return await self.detail(conversation_id, row.id)
 
     async def detail(self, conversation_id: str, run_id: str) -> RunDetailOut:
@@ -232,6 +283,40 @@ class Runs:
         await self.session.commit()
         return _run(row)
 
+    async def pause_for_approval(self, conversation_id: str, run_id: str) -> RunDetailOut:
+        row = await self.get(conversation_id, run_id)
+        if row.status != "running" or row.mode != "agent":
+            raise OperationError("运行不可等待审批", "run_not_active", 409)
+        pending = await self.session.scalar(
+            select(AmadeusAction.id).where(
+                AmadeusAction.run_id == row.id, AmadeusAction.status == "pending"
+            )
+        )
+        if pending is None:
+            raise OperationError("没有待审批操作", "approval_conflict", 409)
+        now = utc_now()
+        row.status = "waiting_approval"
+        row.active_owner_key = None
+        row.finished_at = row.updated_at = now
+        await self._save_partial(row)
+        await self.session.commit()
+        return await self.detail(conversation_id, run_id)
+
+    async def _save_partial(self, row: AmadeusRun) -> None:
+        if row.partial_text and not row.response_message_id:
+            message = AmadeusMessage(
+                conversation_id=row.conversation_id,
+                workspace_id=row.workspace_id,
+                role="assistant",
+                content=row.partial_text,
+                references_json=[],
+                run_id=row.id,
+                status=row.status,
+            )
+            self.session.add(message)
+            await self.session.flush()
+            row.response_message_id = message.id
+
     async def finish(
         self, conversation_id: str, run_id: str, status: str, error_message: str | None
     ) -> RunDetailOut:
@@ -245,19 +330,7 @@ class Runs:
         row.active_owner_key = None
         row.error_message = error_message
         row.finished_at = row.updated_at = now
-        if row.partial_text and not row.response_message_id:
-            message = AmadeusMessage(
-                conversation_id=row.conversation_id,
-                workspace_id=row.workspace_id,
-                role="assistant",
-                content=row.partial_text,
-                references_json=[],
-                run_id=row.id,
-                status=status,
-            )
-            self.session.add(message)
-            await self.session.flush()
-            row.response_message_id = message.id
+        await self._save_partial(row)
         await self.session.execute(
             update(AmadeusAction)
             .where(AmadeusAction.run_id == row.id, AmadeusAction.status == "pending")

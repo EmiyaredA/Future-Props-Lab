@@ -711,6 +711,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer Question */
+        post: operations["answer_question_v1_amadeus_conversations__conversation_id__questions__question_id__answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/amadeus/conversations/{conversation_id}/runs": {
         parameters: {
             query?: never;
@@ -808,6 +825,40 @@ export interface paths {
         put?: never;
         /** Heartbeat Run */
         post: operations["heartbeat_run_v1_amadeus_conversations__conversation_id__runs__run_id__heartbeat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause Run For Approval */
+        post: operations["pause_run_for_approval_v1_amadeus_conversations__conversation_id__runs__run_id__pause_approval_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Question */
+        post: operations["create_question_v1_amadeus_conversations__conversation_id__runs__run_id__question_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6514,6 +6565,11 @@ export interface components {
             status: string;
             /** Tool Name */
             tool_name: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** AddClipOperation */
         AddClipOperation: {
@@ -7800,6 +7856,8 @@ export interface components {
             conversation: components["schemas"]["ConversationOut"];
             /** Messages */
             messages: components["schemas"]["MessageOut"][];
+            /** Questions */
+            questions?: components["schemas"]["QuestionOut"][];
         };
         /** ConversationListOut */
         ConversationListOut: {
@@ -14050,6 +14108,8 @@ export interface components {
             model_id: string;
             /** Run Id */
             run_id?: string | null;
+            /** Subagent Id */
+            subagent_id?: string | null;
             /** System */
             system: string;
             /** Tools */
@@ -14892,6 +14952,61 @@ export interface components {
             /** Workspace Name */
             workspace_name: string;
         };
+        /** QuestionAnswerIn */
+        QuestionAnswerIn: {
+            /** Answer */
+            answer: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** QuestionIn */
+        QuestionIn: {
+            /**
+             * Allow Text
+             * @default true
+             */
+            allow_text: boolean;
+            /** Options */
+            options?: string[];
+            /** Prompt */
+            prompt: string;
+            /** Tool Call Id */
+            tool_call_id: string;
+        };
+        /** QuestionOut */
+        QuestionOut: {
+            /** Allow Text */
+            allow_text: boolean;
+            /** Answer */
+            answer: {
+                [key: string]: string;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Options */
+            options: string[];
+            /** Prompt */
+            prompt: string;
+            /** Run Id */
+            run_id: string;
+            /** Status */
+            status: string;
+            /** Tool Call Id */
+            tool_call_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** QuotaLimit */
         QuotaLimit: {
             /** Realtime Voice */
@@ -15291,10 +15406,18 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             }[];
+            /**
+             * Mode
+             * @default agent
+             * @enum {string}
+             */
+            mode: "agent" | "plan";
             /** Model Id */
             model_id: string;
             /** References */
             references?: components["schemas"]["Reference"][];
+            /** Source Run Id */
+            source_run_id?: string | null;
         };
         /** RunDetailOut */
         RunDetailOut: {
@@ -15310,7 +15433,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "assistant_delta" | "assistant_message" | "tool_call" | "tool_result" | "status" | "error";
+            kind: "assistant_delta" | "assistant_message" | "tool_call" | "tool_result" | "status" | "error" | "question" | "subagent_start" | "subagent_finish";
             /** Payload */
             payload?: {
                 [key: string]: unknown;
@@ -15374,12 +15497,19 @@ export interface components {
             heartbeat_at: string;
             /** Id */
             id: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "agent" | "plan";
             /** Model Id */
             model_id: string;
             /** Partial Text */
             partial_text: string;
             /** References */
             references: components["schemas"]["Reference"][];
+            /** Source Run Id */
+            source_run_id: string | null;
             /** Status */
             status: string;
             /**
@@ -19816,6 +19946,42 @@ export interface operations {
             };
         };
     };
+    answer_question_v1_amadeus_conversations__conversation_id__questions__question_id__answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_runs_v1_amadeus_conversations__conversation_id__runs_get: {
         parameters: {
             query?: never;
@@ -20037,6 +20203,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_run_for_approval_v1_amadeus_conversations__conversation_id__runs__run_id__pause_approval_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_question_v1_amadeus_conversations__conversation_id__runs__run_id__question_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionOut"];
                 };
             };
             /** @description Validation Error */

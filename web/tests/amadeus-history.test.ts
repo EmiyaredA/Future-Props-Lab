@@ -1,7 +1,63 @@
 import { describe, expect, it } from "vitest";
-import { buildAgentHistory } from "../src/features/amadeus/history";
+import {
+  buildAgentHistory,
+  conversationTimeline,
+} from "../src/features/amadeus/history";
 
 describe("Amadeus durable tool transcript", () => {
+  it("links approval only to the write call after an earlier read", () => {
+    const events = [
+      {
+        sequence: 1,
+        kind: "tool_call",
+        created_at: "2026-09-27T00:00:01Z",
+        payload: { tool_call_id: "read", tool_name: "fpl_read", arguments: {} },
+      },
+      {
+        sequence: 2,
+        kind: "tool_call",
+        created_at: "2026-09-27T00:00:02Z",
+        payload: {
+          tool_call_id: "write",
+          tool_name: "video_timeline_batch",
+          arguments: {},
+        },
+      },
+    ];
+    const action = {
+      id: "action",
+      run_id: "run",
+      tool_name: "video_timeline_batch",
+      arguments: {},
+      arguments_sha256: "0".repeat(64),
+      status: "pending",
+      created_at: "2026-09-27T00:00:02Z",
+      updated_at: "2026-09-27T00:00:02Z",
+    };
+    const timeline = conversationTimeline(
+      [],
+      [
+        {
+          run: {
+            id: "run",
+            conversation_id: "conversation",
+            model_id: "mock",
+            status: "waiting_approval",
+            partial_text: "",
+          },
+          events,
+        },
+      ],
+      [action],
+      [],
+    );
+    expect(
+      timeline
+        .filter((item) => item.kind === "tool")
+        .map((item) => item.action?.id),
+    ).toEqual([undefined, "action"]);
+  });
+
   it("restores tool calls and results before the saved assistant reply", () => {
     const history = buildAgentHistory(
       [

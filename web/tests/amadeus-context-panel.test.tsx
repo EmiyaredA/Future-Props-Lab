@@ -18,12 +18,36 @@ const context = (
 describe("Amadeus current context panel", () => {
   it("shows an empty state when no Studio window is available", () => {
     render(<ContextPanel items={[]} />);
-    expect(screen.getByText("0 个窗口 · 0 个应用")).toBeInTheDocument();
+    expect(screen.getByText("0 个窗口")).toBeInTheDocument();
     expect(screen.getByText("暂未连接研究所窗口")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /展开|收起/ })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "收起当前上下文" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("button", { name: "展开全部" })).toBeNull();
   });
 
-  it("opens one or two windows by default with the title, path and selection", () => {
+  it("collapses the whole context card independently of its window details", () => {
+    const view = render(
+      <ContextPanel items={[context(1, { focused: true })]} />,
+    );
+    expect(screen.getByText("页面 1")).toBeInTheDocument();
+    expect(screen.queryByText("1 个窗口")).toBeNull();
+    expect(screen.queryByText("活动窗口")).toBeNull();
+    expect(screen.queryByText("暂无选中控件")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "收起当前上下文" }));
+    expect(
+      screen.getByRole("button", { name: "展开当前上下文" }),
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("页面 1")).not.toBeVisible();
+    view.rerender(<ContextPanel items={[context(1), context(2)]} />);
+    expect(
+      screen.getByRole("button", { name: "展开当前上下文" }),
+    ).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(screen.getByRole("button", { name: "展开当前上下文" }));
+    expect(screen.getByText("页面 1")).toBeVisible();
+  });
+
+  it("shows only useful window details without a second toggle", () => {
     const items = [
       context(1, {
         application: "视觉创作工坊",
@@ -36,21 +60,21 @@ describe("Amadeus current context panel", () => {
       context(2),
     ];
     render(<ContextPanel items={items} />);
-    expect(screen.getByRole("button", { name: "收起详情" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(screen.queryByRole("button", { name: "收起详情" })).toBeNull();
     expect(screen.getByText("秋日晚霞")).toBeInTheDocument();
-    expect(
-      screen.getByText("/visual-workshop/projects/scene"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("秋日晚霞").closest("article")).toHaveAttribute(
+      "title",
+      "/visual-workshop/projects/scene",
+    );
     expect(screen.getByText("人物高光 · 图层 12")).toBeInTheDocument();
-    expect(screen.getByText("活动窗口")).toBeInTheDocument();
+    expect(screen.getByLabelText("活动窗口")).toBeInTheDocument();
     expect(screen.getByText("未保存")).toBeInTheDocument();
     expect(screen.getByText("页面 2")).toBeInTheDocument();
+    expect(screen.queryByText("暂无选中控件")).toBeNull();
+    expect(screen.getByText("2 个窗口")).toBeInTheDocument();
   });
 
-  it("summarizes longer context and groups expanded windows with the active one first", () => {
+  it("summarizes longer context and expands windows with the active one first", () => {
     const items = [
       context(1, { application: "演示工坊", title: "第一份演示" }),
       context(2, { application: "思绪工坊", title: "项目笔记" }),
@@ -64,14 +88,12 @@ describe("Amadeus current context panel", () => {
       context(4, { application: "演示工坊", title: "第二份演示" }),
     ];
     render(<ContextPanel items={items} />);
-    expect(screen.getByText("4 个窗口 · 3 个应用")).toBeInTheDocument();
+    expect(screen.getByText("4 个窗口")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "展开全部" })).toHaveAttribute(
       "aria-expanded",
       "false",
     );
-    expect(screen.getByText("还有 3 个窗口")).toBeInTheDocument();
-    expect(screen.getByText("演示工坊 2")).toBeInTheDocument();
-    expect(screen.getByText("思绪工坊 1")).toBeInTheDocument();
+    expect(screen.getByText("其余 3 个窗口")).toBeInTheDocument();
     expect(screen.getByText("人物高光 · 图层 12")).toBeInTheDocument();
     expect(screen.queryByText("第一份演示")).toBeNull();
 
@@ -81,24 +103,20 @@ describe("Amadeus current context panel", () => {
       "aria-expanded",
       "true",
     );
-    expect(
-      within(details).getAllByText(/视觉创作工坊|演示工坊|思绪工坊/)[0],
-    ).toHaveTextContent("视觉创作工坊");
+    expect(within(details).getAllByRole("article")[0]).toHaveTextContent(
+      "很长的项目标题",
+    );
     expect(within(details).getByText("第二份演示")).toBeInTheDocument();
   });
 
-  it("preserves manual choice within a density tier and resets it when crossing tiers", () => {
+  it("preserves the long-list choice until its density tier changes", () => {
     const one = [context(1)];
     const two = [context(1), context(2)];
     const three = [context(1), context(2), context(3)];
     const four = [...three, context(4)];
     const view = render(<ContextPanel items={one} />);
-    fireEvent.click(screen.getByRole("button", { name: "收起详情" }));
     view.rerender(<ContextPanel items={two} />);
-    expect(screen.getByRole("button", { name: "展开全部" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
+    expect(screen.queryByRole("button", { name: "展开全部" })).toBeNull();
     view.rerender(<ContextPanel items={three} />);
     expect(screen.getByRole("button", { name: "展开全部" })).toHaveAttribute(
       "aria-expanded",
@@ -111,10 +129,7 @@ describe("Amadeus current context panel", () => {
       "true",
     );
     view.rerender(<ContextPanel items={two} />);
-    expect(screen.getByRole("button", { name: "收起详情" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(screen.queryByRole("button", { name: "收起详情" })).toBeNull();
   });
 
   it("uses current bridge data and falls back to the first window if none is focused", () => {

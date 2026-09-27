@@ -11,6 +11,7 @@ from app.console.amadeus.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,
+    AmadeusQuestion,
     AmadeusRun,
 )
 from app.console.amadeus.schemas import (
@@ -21,6 +22,7 @@ from app.console.amadeus.schemas import (
     ConversationOut,
     MessageIn,
     MessageOut,
+    QuestionOut,
 )
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
@@ -111,6 +113,17 @@ class Conversations:
                 .order_by(AmadeusAction.created_at, AmadeusAction.id)
             )
         ).all()
+        questions = (
+            await self.session.scalars(
+                select(AmadeusQuestion)
+                .where(
+                    AmadeusQuestion.conversation_id == row.id,
+                    AmadeusQuestion.workspace_id == self.principal.workspace_id,
+                    AmadeusQuestion.user_id == self.principal.user_id,
+                )
+                .order_by(AmadeusQuestion.created_at, AmadeusQuestion.id)
+            )
+        ).all()
         return ConversationDetailOut(
             conversation=_conversation(row),
             messages=[_message(item) for item in messages],
@@ -124,8 +137,24 @@ class Conversations:
                     result=item.result_json,
                     run_id=item.run_id,
                     created_at=item.created_at,
+                    updated_at=item.updated_at,
                 )
                 for item in actions
+            ],
+            questions=[
+                QuestionOut(
+                    id=item.id,
+                    run_id=item.run_id,
+                    tool_call_id=item.tool_call_id,
+                    prompt=item.prompt,
+                    options=item.options_json,
+                    allow_text=item.allow_text,
+                    status=item.status,
+                    answer=item.answer_json,
+                    created_at=item.created_at,
+                    updated_at=item.updated_at,
+                )
+                for item in questions
             ],
         )
 
@@ -222,6 +251,7 @@ class Conversations:
                     AmadeusRun.workspace_id == self.principal.workspace_id,
                     AmadeusRun.user_id == self.principal.user_id,
                     AmadeusRun.status == "running",
+                    AmadeusRun.mode == "agent",
                 )
             )
             if run is None:
@@ -247,6 +277,7 @@ class Conversations:
             result=row.result_json,
             run_id=row.run_id,
             created_at=row.created_at,
+            updated_at=row.updated_at,
         )
 
     async def decide(self, identity: str, action_id: str, body: ActionDecisionIn) -> ActionOut:
@@ -265,7 +296,7 @@ class Conversations:
             active = await self.session.scalar(
                 select(AmadeusRun.id).where(
                     AmadeusRun.id == row.run_id,
-                    AmadeusRun.status == "running",
+                    AmadeusRun.status.in_(("running", "waiting_approval")),
                 )
             )
             if active is None:
@@ -296,4 +327,5 @@ class Conversations:
             result=row.result_json,
             run_id=row.run_id,
             created_at=row.created_at,
+            updated_at=row.updated_at,
         )

@@ -51,6 +51,7 @@ class ConversationDetailOut(BaseModel):
     conversation: ConversationOut
     messages: list[MessageOut]
     actions: list[ActionOut] = Field(default_factory=list)
+    questions: list[QuestionOut] = Field(default_factory=list)
 
 
 class MessageIn(BaseModel):
@@ -77,6 +78,7 @@ class ActionOut(BaseModel):
     result: dict[str, Any] | None
     run_id: str | None = None
     created_at: datetime
+    updated_at: datetime
 
 
 class ActionDecisionIn(BaseModel):
@@ -92,11 +94,14 @@ class ModelTurnIn(BaseModel):
     messages: list[dict[str, Any]] = Field(min_length=1, max_length=200)
     tools: list[dict[str, Any]] = Field(default_factory=list, max_length=100)
     run_id: str | None = None
+    subagent_id: str | None = Field(default=None, max_length=120)
 
 
 class RunCreateIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     model_id: str = Field(min_length=1, max_length=160)
+    mode: Literal["agent", "plan"] = "agent"
+    source_run_id: str | None = None
     context: list[dict[str, Any]] = Field(default_factory=list, max_length=32)
     references: list[Reference] = Field(default_factory=list, max_length=20)
     capabilities: list[str] = Field(default_factory=list, max_length=100)
@@ -111,6 +116,9 @@ class RunEventIn(BaseModel):
         "tool_result",
         "status",
         "error",
+        "question",
+        "subagent_start",
+        "subagent_finish",
     ]
     payload: dict[str, Any] = Field(default_factory=dict)
     idempotency_key: str = Field(min_length=1, max_length=120)
@@ -136,6 +144,8 @@ class RunOut(BaseModel):
     id: str
     conversation_id: str
     model_id: str
+    mode: Literal["agent", "plan"]
+    source_run_id: str | None
     status: str
     context: list[dict[str, Any]]
     references: list[Reference]
@@ -151,6 +161,33 @@ class RunOut(BaseModel):
 class RunDetailOut(BaseModel):
     run: RunOut
     events: list[RunEventOut]
+
+
+class QuestionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tool_call_id: str = Field(min_length=1, max_length=120)
+    prompt: str = Field(min_length=1, max_length=2000)
+    options: list[str] = Field(default_factory=list, max_length=5)
+    allow_text: bool = True
+
+
+class QuestionAnswerIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    answer: str = Field(min_length=1, max_length=2000)
+    note: str = Field(default="", max_length=2000)
+
+
+class QuestionOut(BaseModel):
+    id: str
+    run_id: str
+    tool_call_id: str
+    prompt: str
+    options: list[str]
+    allow_text: bool
+    status: str
+    answer: dict[str, str] | None
+    created_at: datetime
+    updated_at: datetime
 
 
 class ModelTurnOut(BaseModel):

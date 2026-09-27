@@ -18,6 +18,7 @@ from app.console.amadeus.files import (
 )
 from app.console.amadeus.fpl_operations import call_operation, operation_catalog
 from app.console.amadeus.model_bridge import stream_model_turn
+from app.console.amadeus.questions import Questions
 from app.console.amadeus.runs import Runs
 from app.console.amadeus.schemas import (
     ActionDecisionIn,
@@ -33,6 +34,9 @@ from app.console.amadeus.schemas import (
     MessageIn,
     ModelTurnIn,
     ModelTurnOut,
+    QuestionAnswerIn,
+    QuestionIn,
+    QuestionOut,
     RunCreateIn,
     RunDetailOut,
     RunEventIn,
@@ -56,6 +60,35 @@ def require_amadeus_session(principal: StudioAuth) -> None:
 
 def _error(exc: OperationError) -> HTTPException:
     return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+
+
+READ_TOOLS = frozenset(
+    {
+        "fpl_read",
+        "fpl_operations",
+        "fpl_operation_read",
+        "list_work_files",
+        "read_work_file",
+        "read_skill_file",
+    }
+)
+
+
+async def validate_model_turn(session, principal, body: ModelTurnIn) -> None:
+    if not body.run_id:
+        if body.subagent_id:
+            raise OperationError("子任务必须属于运行", "invalid_subagent", 422)
+        return
+    run = await Runs(session, principal).get_by_id(body.run_id)
+    if run.status != "running":
+        raise OperationError("运行已经结束", "run_not_active", 409)
+    if body.subagent_id and run.mode != "agent":
+        raise OperationError("Plan 模式不能委派子任务", "invalid_subagent", 422)
+    allowed = READ_TOOLS if body.subagent_id else READ_TOOLS | {"ask_user"}
+    if (run.mode == "plan" or body.subagent_id) and any(
+        item.get("name") not in allowed for item in body.tools
+    ):
+        raise OperationError("只读运行不能调用写工具", "write_tool_forbidden", 422)
 
 
 @router.get("/conversations", response_model=ConversationListOut)
@@ -102,6 +135,53 @@ async def get_run(
 ) -> RunDetailOut:
     try:
         return await Runs(session, principal).detail(conversation_id, run_id)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/conversations/{conversation_id}/runs/{run_id}/pause-approval",
+    response_model=RunDetailOut,
+)
+async def pause_run_for_approval(
+    session: SessionDep, principal: StudioAuth, conversation_id: str, run_id: str
+) -> RunDetailOut:
+    try:
+        return await Runs(session, principal).pause_for_approval(conversation_id, run_id)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/conversations/{conversation_id}/runs/{run_id}/question",
+    response_model=QuestionOut,
+)
+async def create_question(
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    run_id: str,
+    body: QuestionIn,
+) -> QuestionOut:
+    try:
+        return await Questions(session, principal).create(conversation_id, run_id, body)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/conversations/{conversation_id}/questions/{question_id}/answer",
+    response_model=QuestionOut,
+)
+async def answer_question(
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    question_id: str,
+    body: QuestionAnswerIn,
+) -> QuestionOut:
+    try:
+        return await Questions(session, principal).answer(conversation_id, question_id, body)
     except OperationError as exc:
         raise _error(exc) from None
 
@@ -338,10 +418,7 @@ async def model_turn(session: SessionDep, principal: StudioAuth, body: ModelTurn
     calls: list[dict] = []
     usage: dict = {}
     try:
-        if body.run_id:
-            run = await Runs(session, principal).get_by_id(body.run_id)
-            if run.status != "running":
-                raise OperationError("运行已经结束", "run_not_active", 409)
+        await validate_model_turn(session, principal, body)
         credential = await snapshot_from_principal(session, principal)
         async for line in stream_model_turn(session, principal.workspace_id, body, credential):
             event = json.loads(line)
@@ -363,10 +440,7 @@ async def model_turn_stream(
         raise HTTPException(403, {"code": "insufficient_permission", "message": "没有模型调用权限"})
 
     try:
-        if body.run_id:
-            run = await Runs(session, principal).get_by_id(body.run_id)
-            if run.status != "running":
-                raise OperationError("运行已经结束", "run_not_active", 409)
+        await validate_model_turn(session, principal, body)
         credential = await snapshot_from_principal(session, principal)
     except OperationError as exc:
         raise _error(exc) from None

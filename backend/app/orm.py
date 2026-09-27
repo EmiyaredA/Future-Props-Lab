@@ -74,6 +74,7 @@ from app.console.amadeus.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,
+    AmadeusQuestion,
     AmadeusRun,
     AmadeusRunEvent,
 )
@@ -226,6 +227,7 @@ TENANT_MODELS = (
     AmadeusAction,
     AmadeusRun,
     AmadeusRunEvent,
+    AmadeusQuestion,
     ModelInferenceAsset,
     ModelInferenceTask,
     ProjectOperationReceipt,

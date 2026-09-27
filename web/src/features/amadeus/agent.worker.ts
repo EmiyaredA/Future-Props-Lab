@@ -28,6 +28,7 @@ type LoadedTool = {
 };
 type Start = {
   type: "start";
+  mode: "agent" | "plan";
   runId: string;
   modelId: string;
   prompt: string;
@@ -106,7 +107,11 @@ function emptyMessage(model: Model<string>): AssistantMessage {
   };
 }
 
-async function stream(model: Model<string>, context: TranscriptContext) {
+async function stream(
+  model: Model<string>,
+  context: TranscriptContext,
+  subagentId?: string,
+) {
   const events = createAssistantMessageEventStream();
   void (async () => {
     const partial = emptyMessage(model);
@@ -164,6 +169,7 @@ async function stream(model: Model<string>, context: TranscriptContext) {
         {
           model_id: model.id,
           run_id: activeRunId,
+          subagent_id: subagentId,
           system: getCurrentSystemPrompt(context.messages),
           messages,
           tools: getCurrentTools(context.messages).map((tool) => ({
@@ -365,6 +371,30 @@ const readSkillFileTool: AgentTool = {
   },
 };
 
+const askUserTool: AgentTool = {
+  name: "ask_user",
+  label: "向用户提问",
+  description:
+    "只在缺少关键选择时提一个问题。可提供最多五个选项，允许用户补充文字。任务会暂停，等待用户回答。",
+  parameters: Type.Object({
+    question: Type.String(),
+    options: Type.Optional(Type.Array(Type.String(), { maxItems: 5 })),
+    allow_text: Type.Optional(Type.Boolean()),
+  }),
+  async execute(id, params) {
+    await rpc("ask-user", {
+      tool_call_id: id,
+      ...(params as Record<string, unknown>),
+    });
+    return {
+      content: [{ type: "text", text: "等待用户回答" }],
+      details: undefined,
+    };
+  },
+  replay: "never",
+  executionMode: "sequential",
+};
+
 const writeScriptTool: AgentTool = {
   name: "write_script",
   label: "创建会话脚本",
@@ -534,33 +564,122 @@ self.onmessage = (
     replay: "never",
     executionMode: "sequential",
   }));
+  const readOnlyTools: AgentTool[] = [
+    readTool,
+    operationCatalogTool,
+    registeredReadTool,
+    listFilesTool,
+    readFileTool,
+    readSkillFileTool,
+  ];
+  const delegateTool: AgentTool = {
+    name: "delegate_readonly",
+    label: "并行只读调查",
+    description:
+      "仅在有两个相互独立的调查任务时并行委派。子任务只能读取，不能提问、审批或修改数据；简单任务请自己完成。",
+    parameters: Type.Object({
+      tasks: Type.Array(Type.String(), { minItems: 2, maxItems: 2 }),
+    }),
+    async execute(_id, params) {
+      const tasks = (params as { tasks: string[] }).tasks;
+      const findings = await Promise.all(
+        tasks.map(async (task, index) => {
+          const childId = `${_id}:${index + 1}`;
+          self.postMessage({
+            type: "subagent",
+            status: "running",
+            id: childId,
+            name: task,
+          });
+          const child = new Agent({
+            initialState: {
+              model,
+              messages: [],
+              systemPrompt:
+                "你是 Amadeus 的只读子任务。只能使用提供的读取工具；简要报告查到的事实和依据，不作修改，不向用户提问。",
+              tools: readOnlyTools,
+            },
+            streamFn: (childModel, context) =>
+              stream(childModel, context, childId),
+            toolExecution: "sequential",
+          });
+          const timeout = setTimeout(() => child.abort(), 90_000);
+          try {
+            await child.prompt(
+              `${task}\n\n[原任务与窗口上下文] ${input.prompt}`,
+            );
+            const reply = [...child.state.messages]
+              .reverse()
+              .find((item) => item.role === "assistant");
+            const summary =
+              reply?.role === "assistant"
+                ? reply.content
+                    .filter((part) => part.type === "text")
+                    .map((part) => part.text)
+                    .join("")
+                    .slice(0, 4000)
+                : "未取得调查结果";
+            self.postMessage({
+              type: "subagent",
+              status: child.state.errorMessage ? "failed" : "done",
+              id: childId,
+              name: task,
+              result: summary,
+            });
+            return { task, summary };
+          } catch (cause) {
+            const summary =
+              cause instanceof Error ? cause.message : "调查未完成";
+            self.postMessage({
+              type: "subagent",
+              status: "failed",
+              id: childId,
+              name: task,
+              result: summary,
+            });
+            return { task, summary };
+          } finally {
+            clearTimeout(timeout);
+          }
+        }),
+      );
+      return {
+        content: [{ type: "text", text: JSON.stringify(findings) }],
+        details: undefined,
+      };
+    },
+    replay: "never",
+    executionMode: "sequential",
+  };
   agent = new Agent({
     initialState: {
       model,
       messages,
       systemPrompt:
-        "你是 Future Props Lab 的 Amadeus。只根据当前授权 Workspace 的上下文操作。先读取，修改前等待用户确认。不要假设界面状态。\n" +
+        (input.mode === "plan"
+          ? "你是 Future Props Lab 的 Amadeus，当前处于 Plan 模式。只读取当前授权 Workspace 的信息，给出简短、可执行的计划，不修改项目。需要关键选择时使用 ask_user。不要假设界面状态。\n"
+          : "你是 Future Props Lab 的 Amadeus，当前处于 Agent 模式。只根据当前授权 Workspace 的上下文操作。先读取，修改前等待用户确认。简单任务自己完成；只有两个独立调查任务时才使用只读委派。不要假设界面状态。\n") +
         input.skills
           .map(
             (skill) =>
               `<skill name="${skill.name}">\n${skill.content}\n</skill>`,
           )
           .join("\n"),
-      tools: [
-        readTool,
-        operationCatalogTool,
-        registeredReadTool,
-        registeredWriteTool,
-        listFilesTool,
-        readFileTool,
-        readSkillFileTool,
-        videoTimelineTool,
-        writeScriptTool,
-        runScriptTool,
-        ...loadedTools,
-      ],
+      tools:
+        input.mode === "plan"
+          ? [...readOnlyTools, askUserTool]
+          : [
+              ...readOnlyTools,
+              askUserTool,
+              delegateTool,
+              registeredWriteTool,
+              videoTimelineTool,
+              writeScriptTool,
+              runScriptTool,
+              ...loadedTools,
+            ],
     },
-    streamFn: stream,
+    streamFn: (currentModel, context) => stream(currentModel, context),
     toolExecution: "sequential",
   });
   agent.subscribe((output) => {
@@ -576,7 +695,9 @@ self.onmessage = (
     if (output.type === "tool_execution_start")
       self.postMessage({
         type: "tool",
+        id: output.toolCallId,
         name: output.toolName,
+        arguments: output.args,
         status: "running",
       });
     if (output.type === "tool_execution_end")

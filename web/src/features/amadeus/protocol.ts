@@ -34,13 +34,30 @@ export type SavedAction = {
   status: string;
   arguments: Record<string, unknown>;
   result?: Record<string, unknown>;
+  run_id?: string | null;
+  arguments_sha256: string;
   created_at: string;
+  updated_at: string;
+};
+
+export type SavedQuestion = {
+  id: string;
+  run_id: string;
+  tool_call_id: string;
+  prompt: string;
+  options: string[];
+  allow_text: boolean;
+  status: string;
+  answer: { answer: string; note: string } | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type Detail = {
   conversation: Conversation;
   messages: ChatMessage[];
   actions: SavedAction[];
+  questions?: SavedQuestion[];
 };
 
 export type Context = {
@@ -86,12 +103,19 @@ export type Approval = {
   arguments_sha256: string;
   conversationId: string;
   runId: string;
-  resolve: (value: unknown) => void;
-  reject: (error: Error) => void;
+  status: string;
 };
 
 export type WorkerEvent = {
-  type: "rpc" | "delta" | "message" | "tool" | "done" | "error" | "stopped";
+  type:
+    | "rpc"
+    | "delta"
+    | "message"
+    | "tool"
+    | "subagent"
+    | "done"
+    | "error"
+    | "stopped";
   id?: number | string;
   method?: string;
   payload?: unknown;
@@ -100,12 +124,15 @@ export type WorkerEvent = {
   status?: string;
   message?: string;
   result?: unknown;
+  arguments?: Record<string, unknown>;
 };
 
 export type Run = {
   id: string;
   conversation_id: string;
   model_id: string;
+  mode?: "agent" | "plan";
+  source_run_id?: string | null;
   status: string;
   partial_text: string;
   error_message?: string | null;
@@ -117,6 +144,7 @@ export type RunDetail = {
     sequence: number;
     kind: string;
     payload: Record<string, unknown>;
+    created_at?: string;
   }>;
 };
 

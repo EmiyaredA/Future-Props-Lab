@@ -40,6 +40,7 @@ def _out(row: AmadeusAction) -> ActionOut:
         result=row.result_json,
         run_id=row.run_id,
         created_at=row.created_at,
+        updated_at=row.updated_at,
     )
 
 
@@ -78,7 +79,7 @@ async def execute_action(
                 AmadeusRun.id == row.run_id,
                 AmadeusRun.workspace_id == principal.workspace_id,
                 AmadeusRun.user_id == principal.user_id,
-                AmadeusRun.status == "running",
+                AmadeusRun.status.in_(("running", "waiting_approval")),
             )
         )
         if active is None:

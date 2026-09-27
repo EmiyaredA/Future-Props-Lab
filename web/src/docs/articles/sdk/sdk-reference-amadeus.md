@@ -30,11 +30,14 @@
 | [files_open_folder](#files-open-folder) | `POST /v1/amadeus/conversations/{conversation_id}/files/open-folder` |
 | [import_file](#import-file) | `POST /v1/amadeus/conversations/{conversation_id}/imports` |
 | [append_message](#append-message) | `POST /v1/amadeus/conversations/{conversation_id}/messages` |
+| [answer_question](#answer-question) | `POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer` |
 | [create_run](#create-run) | `POST /v1/amadeus/conversations/{conversation_id}/runs` |
 | [cancel_run](#cancel-run) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel` |
 | [append_run_event](#append-run-event) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events` |
 | [finish_run](#finish-run) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish` |
 | [heartbeat_run](#heartbeat-run) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat` |
+| [pause_run_for_approval](#pause-run-for-approval) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval` |
+| [create_question](#create-question) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question` |
 | [skill_load](#skill-load) | `POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load` |
 | [model_turn](#model-turn) | `POST /v1/amadeus/model-turn` |
 | [model_turn_stream](#model-turn-stream) | `POST /v1/amadeus/model-turn/stream` |
@@ -467,6 +470,29 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## answer_question {#answer-question}
+
+`client.amadeus.answer_question(...)`
+
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `conversation_id` | path | string | 是 |
+| `question_id` | path | string | 是 |
+| `body` | application/json | QuestionAnswerIn | 是 |
+| `body.answer` | 请求体 | string | 是 |
+| `body.note` | 请求体 | string | 否 |
+
+**响应**：
+- `200` · `application/json` · `QuestionOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## create_run {#create-run}
 
 `client.amadeus.create_run(...)`
@@ -483,8 +509,10 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body` | application/json | RunCreateIn | 是 |
 | `body.capabilities` | 请求体 | array | 否 |
 | `body.context` | 请求体 | array | 否 |
+| `body.mode` | 请求体 | agent / plan | 否 |
 | `body.model_id` | 请求体 | string | 是 |
 | `body.references` | 请求体 | array | 否 |
+| `body.source_run_id` | 请求体 | string / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `RunDetailOut`
@@ -527,7 +555,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `run_id` | path | string | 是 |
 | `body` | application/json | RunEventIn | 是 |
 | `body.idempotency_key` | 请求体 | string | 是 |
-| `body.kind` | 请求体 | assistant_delta / assistant_message / tool_call / tool_result / status / error | 是 |
+| `body.kind` | 请求体 | assistant_delta / assistant_message / tool_call / tool_result / status / error / question / subagent_start / subagent_finish | 是 |
 | `body.payload` | 请求体 | object | 否 |
 
 **响应**：
@@ -578,6 +606,51 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## pause_run_for_approval {#pause-run-for-approval}
+
+`client.amadeus.pause_run_for_approval(...)`
+
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `conversation_id` | path | string | 是 |
+| `run_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `RunDetailOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_question {#create-question}
+
+`client.amadeus.create_question(...)`
+
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `conversation_id` | path | string | 是 |
+| `run_id` | path | string | 是 |
+| `body` | application/json | QuestionIn | 是 |
+| `body.allow_text` | 请求体 | boolean | 否 |
+| `body.options` | 请求体 | array | 否 |
+| `body.prompt` | 请求体 | string | 是 |
+| `body.tool_call_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `QuestionOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## skill_load {#skill-load}
 
 `client.amadeus.skill_load(...)`
@@ -614,6 +687,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.messages` | 请求体 | array | 是 |
 | `body.model_id` | 请求体 | string | 是 |
 | `body.run_id` | 请求体 | string / null | 否 |
+| `body.subagent_id` | 请求体 | string / null | 否 |
 | `body.system` | 请求体 | string | 是 |
 | `body.tools` | 请求体 | array | 否 |
 
@@ -638,6 +712,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.messages` | 请求体 | array | 是 |
 | `body.model_id` | 请求体 | string | 是 |
 | `body.run_id` | 请求体 | string / null | 否 |
+| `body.subagent_id` | 请求体 | string / null | 否 |
 | `body.system` | 请求体 | string | 是 |
 | `body.tools` | 请求体 | array | 否 |
 

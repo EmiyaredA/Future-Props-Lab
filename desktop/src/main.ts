@@ -14,6 +14,10 @@ import { AgentGateway } from "./agent";
 import { credentialHeader, externalUrl, isServiceUrl } from "./security";
 import { DevelopmentGateway } from "./development-gateway";
 import { DevelopmentSession } from "./development";
+import {
+  collapsedAmadeusBounds,
+  initialAmadeusBounds,
+} from "./amadeus-window-geometry";
 
 const isDevelopment =
   !app.isPackaged &&
@@ -132,7 +136,11 @@ let amadeusAlwaysOnTopPreference = savedAmadeusAlwaysOnTop();
 function saveAmadeusBounds(win: BrowserWindow): void {
   if (win.isDestroyed() || win.isMinimized() || win.isMaximized()) return;
   writeAmadeusPrefs({
-    ...win.getBounds(),
+    ...collapsedAmadeusBounds(
+      win.getBounds(),
+      amadeusStageOpen,
+      amadeusCollapsedWidth,
+    ),
     alwaysOnTop: amadeusAlwaysOnTopPreference,
   });
 }
@@ -234,6 +242,24 @@ function isTrustedAmadeusSender(event: {
   );
 }
 
+function applyAmadeusStageOpen(enabled: boolean): boolean {
+  const win = amadeusWindow;
+  if (!win || win.isDestroyed() || amadeusStageOpen === enabled)
+    return amadeusStageOpen;
+  const bounds = win.getBounds();
+  const area = screen.getDisplayMatching(bounds).workArea;
+  if (enabled) amadeusCollapsedWidth = bounds.width;
+  const width = enabled
+    ? Math.min(area.width, bounds.width + 360)
+    : Math.max(400, amadeusCollapsedWidth);
+  const x = enabled
+    ? Math.max(area.x, bounds.x - (width - bounds.width))
+    : Math.min(area.x + area.width - width, bounds.x + bounds.width - width);
+  win.setBounds({ ...bounds, x, width }, true);
+  amadeusStageOpen = enabled;
+  return enabled;
+}
+
 async function showAmadeus(): Promise<void> {
   if (quitting || state.phase !== "ready" || !pageOrigin()) return;
   if (amadeusWindow && !amadeusWindow.isDestroyed()) {
@@ -246,19 +272,11 @@ async function showAmadeus(): Promise<void> {
     screen.getCursorScreenPoint(),
   ).workArea;
   const bounds = savedAmadeusBounds();
-  const initialWidth = Math.min(bounds?.width ?? 520, 620);
+  const initialBounds = initialAmadeusBounds(bounds, workArea);
   const win = new BrowserWindow({
-    width: initialWidth,
-    height: bounds?.height ?? 760,
+    ...initialBounds,
     minWidth: 400,
     minHeight: 500,
-    x: bounds
-      ? Math.min(
-          workArea.x + workArea.width - initialWidth,
-          bounds.x + bounds.width - initialWidth,
-        )
-      : Math.max(workArea.x, workArea.x + workArea.width - 548),
-    y: bounds?.y ?? workArea.y + 48,
     show: false,
     title: "Amadeus",
     backgroundColor: "#fffaf6",
@@ -303,9 +321,10 @@ async function showAmadeus(): Promise<void> {
     event.preventDefault();
   });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  win.webContents.on("did-finish-load", () =>
-    win.webContents.send("desktop:amadeus-contexts", availableContexts()),
-  );
+  win.webContents.on("did-finish-load", () => {
+    applyAmadeusStageOpen(false);
+    win.webContents.send("desktop:amadeus-contexts", availableContexts());
+  });
   await win.loadURL(pageOrigin() + "/amadeus.html");
 }
 
@@ -778,24 +797,7 @@ else {
     ipcMain.handle("desktop:amadeus-stage", (event, enabled: unknown) => {
       if (!isTrustedAmadeusSender(event)) throw new Error("拒绝非助手页面请求");
       if (typeof enabled !== "boolean") throw new Error("角色舞台状态无效");
-      const win = amadeusWindow;
-      if (!win || win.isDestroyed() || amadeusStageOpen === enabled)
-        return amadeusStageOpen;
-      const bounds = win.getBounds();
-      const area = screen.getDisplayMatching(bounds).workArea;
-      if (enabled) amadeusCollapsedWidth = bounds.width;
-      const width = enabled
-        ? Math.min(area.width, bounds.width + 360)
-        : Math.max(400, amadeusCollapsedWidth);
-      const x = enabled
-        ? Math.max(area.x, bounds.x - (width - bounds.width))
-        : Math.min(
-            area.x + area.width - width,
-            bounds.x + bounds.width - width,
-          );
-      win.setBounds({ ...bounds, x, width }, true);
-      amadeusStageOpen = enabled;
-      return enabled;
+      return applyAmadeusStageOpen(enabled);
     });
     ipcMain.handle(
       "desktop:amadeus-always-on-top",

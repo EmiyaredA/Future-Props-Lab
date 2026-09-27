@@ -1,0 +1,133 @@
+.amadeus-tool-card,
+.amadeus-interaction-card {
+  max-width: 100%;
+  margin: 10px 0 16px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 12px;
+  background: var(--amadeus-surface-raised);
+  color: var(--amadeus-text);
+  font-size: 12px;
+}
+
+.amadeus-tool-card details {
+  min-width: 0;
+}
+
+.amadeus-tool-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.amadeus-tool-card summary span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amadeus-tool-card summary small {
+  flex: none;
+  color: var(--amadeus-muted);
+}
+
+.amadeus-tool-card pre {
+  max-height: 210px;
+  margin: 0 10px 10px;
+  padding: 9px;
+  overflow: auto;
+  border-radius: 7px;
+  background: var(--amadeus-surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+
+.amadeus-tool-card ul {
+  margin: 0 12px 10px;
+  padding-left: 16px;
+}
+
+.amadeus-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 12px 10px;
+}
+
+.amadeus-inline-action,
+.amadeus-card-actions button,
+.amadeus-interaction-card button {
+  border: 1px solid var(--amadeus-line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-accent);
+  font-size: 12px;
+}
+
+.amadeus-inline-action {
+  margin: 3px 0 10px;
+}
+
+.amadeus-tool-card > .amadeus-inline-action {
+  margin-left: 12px;
+}
+
+.amadeus-interaction-card {
+  padding: 12px;
+}
+
+.amadeus-interaction-card p {
+  margin: 8px 0;
+}
+
+.amadeus-interaction-card input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 8px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-text);
+}
+
+.amadeus-question-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.amadeus-question-options button[aria-pressed="true"],
+.amadeus-mode-switch button[aria-pressed="true"] {
+  background: color-mix(
+    in srgb,
+    var(--amadeus-accent) 16%,
+    var(--amadeus-surface)
+  );
+  color: var(--amadeus-accent);
+}
+
+.amadeus-mode-switch {
+  display: inline-flex;
+  gap: 1px;
+  padding: 2px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 8px;
+}
+
+.amadeus-toolbar .amadeus-mode-switch button {
+  padding: 3px 5px;
+  border-radius: 6px;
+}
+
+@media (max-width: 600px) {
+  .amadeus-mode-switch {
+    order: 1;
+  }
+}

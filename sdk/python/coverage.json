@@ -336,6 +336,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer",
+    "sdk": "client.amadeus.answer_question",
+    "document": "/docs.html?page=sdk-reference-amadeus#answer-question",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/amadeus/conversations/{conversation_id}/runs",
     "sdk": "client.amadeus.create_run",
     "document": "/docs.html?page=sdk-reference-amadeus#create-run",
@@ -367,6 +374,20 @@
     "http": "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat",
     "sdk": "client.amadeus.heartbeat_run",
     "document": "/docs.html?page=sdk-reference-amadeus#heartbeat-run",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval",
+    "sdk": "client.amadeus.pause_run_for_approval",
+    "document": "/docs.html?page=sdk-reference-amadeus#pause-run-for-approval",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question",
+    "sdk": "client.amadeus.create_question",
+    "document": "/docs.html?page=sdk-reference-amadeus#create-question",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

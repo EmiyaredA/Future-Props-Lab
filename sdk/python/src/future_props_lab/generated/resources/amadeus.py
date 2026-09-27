@@ -75,6 +75,10 @@ class Amadeus:
         'Append Message. POST /v1/amadeus/conversations/{conversation_id}/messages'
         return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/messages', parameters=[('conversation_id', 'path', conversation_id)], body=body, media_type='application/json', response_type=models.ConversationDetailOut)
 
+    def answer_question(self, *, conversation_id: str, question_id: str, body: models.QuestionAnswerIn | dict) -> models.QuestionOut:
+        'Answer Question. POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer', parameters=[('conversation_id', 'path', conversation_id), ('question_id', 'path', question_id)], body=body, media_type='application/json', response_type=models.QuestionOut)
+
     def list_runs(self, *, conversation_id: str) -> list[models.RunDetailOut]:
         'List Runs. GET /v1/amadeus/conversations/{conversation_id}/runs'
         return self._client._call('GET', '/v1/amadeus/conversations/{conversation_id}/runs', parameters=[('conversation_id', 'path', conversation_id)], response_type=list[models.RunDetailOut])
@@ -102,6 +106,14 @@ class Amadeus:
     def heartbeat_run(self, *, conversation_id: str, run_id: str) -> models.RunOut:
         'Heartbeat Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat'
         return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunOut)
+
+    def pause_run_for_approval(self, *, conversation_id: str, run_id: str) -> models.RunDetailOut:
+        'Pause Run For Approval. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunDetailOut)
+
+    def create_question(self, *, conversation_id: str, run_id: str, body: models.QuestionIn | dict) -> models.QuestionOut:
+        'Create Question. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.QuestionOut)
 
     def skill_load(self, *, conversation_id: str, skill_id: str) -> dict[str, str]:
         'Skill Load. POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load'
@@ -203,6 +215,10 @@ class AsyncAmadeus:
         'Append Message. POST /v1/amadeus/conversations/{conversation_id}/messages'
         return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/messages', parameters=[('conversation_id', 'path', conversation_id)], body=body, media_type='application/json', response_type=models.ConversationDetailOut)
 
+    async def answer_question(self, *, conversation_id: str, question_id: str, body: models.QuestionAnswerIn | dict) -> models.QuestionOut:
+        'Answer Question. POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer', parameters=[('conversation_id', 'path', conversation_id), ('question_id', 'path', question_id)], body=body, media_type='application/json', response_type=models.QuestionOut)
+
     async def list_runs(self, *, conversation_id: str) -> list[models.RunDetailOut]:
         'List Runs. GET /v1/amadeus/conversations/{conversation_id}/runs'
         return await self._client._call('GET', '/v1/amadeus/conversations/{conversation_id}/runs', parameters=[('conversation_id', 'path', conversation_id)], response_type=list[models.RunDetailOut])
@@ -230,6 +246,14 @@ class AsyncAmadeus:
     async def heartbeat_run(self, *, conversation_id: str, run_id: str) -> models.RunOut:
         'Heartbeat Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat'
         return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunOut)
+
+    async def pause_run_for_approval(self, *, conversation_id: str, run_id: str) -> models.RunDetailOut:
+        'Pause Run For Approval. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunDetailOut)
+
+    async def create_question(self, *, conversation_id: str, run_id: str, body: models.QuestionIn | dict) -> models.QuestionOut:
+        'Create Question. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.QuestionOut)
 
     async def skill_load(self, *, conversation_id: str, skill_id: str) -> dict[str, str]:
         'Skill Load. POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load'

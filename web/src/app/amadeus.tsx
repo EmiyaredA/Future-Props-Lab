@@ -12,6 +12,8 @@ import "@app/tailwind.css";
 import "@features/amadeus/window.css";
 import "@features/amadeus/window-theme.css";
 import "@features/amadeus/context-panel.css";
+import "@features/amadeus/side-rail.css";
+import "@features/amadeus/activity-feed.css";
 import "@features/amadeus/capability-dialog.css";
 
 const queryClient = new QueryClient();

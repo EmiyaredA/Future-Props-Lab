@@ -21,57 +21,41 @@ function title(item: Context) {
 function selection(item: Context) {
   const name = item.selection?.name.trim() || "";
   const value = item.selection?.value.trim() || "";
-  if (!name && !value) return "暂无选中控件";
+  if (!name && !value) return "";
   return name && value && name !== value ? `${name} · ${value}` : name || value;
 }
 
 function ContextCard({
   item,
-  compact = false,
+  showFocus,
 }: {
   item: Context;
-  compact?: boolean;
+  showFocus: boolean;
 }) {
+  const selected = selection(item);
   return (
-    <article className={`amadeus-context-card${compact ? " is-compact" : ""}`}>
-      <div className="amadeus-context-card-head">
-        <div className="amadeus-context-identity">
-          <span className="amadeus-context-app-mark" aria-hidden="true">
-            {application(item).slice(0, 1)}
-          </span>
-          <div className="amadeus-context-identity-text">
-            <span className="amadeus-context-app-name">
-              {application(item)}
-            </span>
-            <strong className="amadeus-context-title">{title(item)}</strong>
-          </div>
-        </div>
-        <div className="amadeus-context-tags">
-          {item.focused && (
-            <span className="amadeus-context-tag is-active">活动窗口</span>
-          )}
-          {item.unsaved && (
-            <span className="amadeus-context-tag is-unsaved">未保存</span>
-          )}
-        </div>
+    <article className="amadeus-context-card" title={item.path?.trim()}>
+      <div className="amadeus-context-card-title">
+        {showFocus && item.focused && (
+          <span
+            className="amadeus-context-focus-dot"
+            aria-label="活动窗口"
+            title="活动窗口"
+          />
+        )}
+        <strong>{title(item)}</strong>
       </div>
-      {compact ? (
-        <div className="amadeus-context-selection-preview">
-          <span>当前选中</span>
-          <span>{selection(item)}</span>
-        </div>
-      ) : (
-        <div className="amadeus-context-card-details">
-          <div>
-            <small>页面路径</small>
-            <span>{item.path?.trim() || "当前页面"}</span>
-          </div>
-          <div>
-            <small>当前选中</small>
-            <span>{selection(item)}</span>
-          </div>
-        </div>
-      )}
+      <div
+        className={`amadeus-context-card-meta${selected ? " has-selection" : ""}`}
+      >
+        <span>{application(item)}</span>
+        {selected && (
+          <span className="amadeus-context-selected">{selected}</span>
+        )}
+        {item.unsaved && (
+          <span className="amadeus-context-unsaved">未保存</span>
+        )}
+      </div>
     </article>
   );
 }
@@ -79,109 +63,102 @@ function ContextCard({
 function ContextPanelState({
   items,
   density,
+  sectionOpen,
+  setSectionOpen,
 }: {
   items: Context[];
   density: Density;
+  sectionOpen: boolean;
+  setSectionOpen: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(density === "short");
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const panelId = useId();
   const detailsId = useId();
   const featured = items.find((item) => item.focused) || items[0];
-  const appCount = new Set(items.map(application)).size;
   const remaining = items.filter(
     (item) => item.windowId !== featured?.windowId,
   );
-  const remainingApps = new Map<string, number>();
-  for (const item of remaining) {
-    const name = application(item);
-    remainingApps.set(name, (remainingApps.get(name) || 0) + 1);
-  }
-  const otherApps = [...remainingApps];
   const ordered = featured ? [featured, ...remaining] : [];
-  const groups = new Map<string, Context[]>();
-  for (const item of ordered) {
-    const name = application(item);
-    groups.set(name, [...(groups.get(name) || []), item]);
-  }
+  const visible =
+    density === "long" && !detailsOpen && featured ? [featured] : ordered;
 
   return (
     <section className="amadeus-context-panel" aria-label="当前上下文">
-      <div className="amadeus-context-heading-row">
-        <div className="amadeus-context-heading">
-          <span className="amadeus-context-icon" aria-hidden="true">
-            <Layers3 size={15} />
-          </span>
-          <strong>当前上下文</strong>
-          <span className="amadeus-context-count">
-            {items.length} 个窗口 · {appCount} 个应用
-          </span>
-        </div>
-        {density !== "empty" && (
-          <button
-            type="button"
-            className="amadeus-context-toggle"
-            aria-expanded={open}
-            aria-controls={open ? detailsId : undefined}
-            onClick={() => setOpen((value) => !value)}
-          >
-            {open ? "收起详情" : "展开全部"}
-            {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-          </button>
+      <button
+        type="button"
+        className="amadeus-context-heading"
+        aria-label={sectionOpen ? "收起当前上下文" : "展开当前上下文"}
+        aria-expanded={sectionOpen}
+        aria-controls={panelId}
+        onClick={() => setSectionOpen(!sectionOpen)}
+      >
+        <span className="amadeus-context-icon" aria-hidden="true">
+          <Layers3 size={15} />
+        </span>
+        <strong>当前上下文</strong>
+        {items.length !== 1 && (
+          <span className="amadeus-context-count">{items.length} 个窗口</span>
+        )}
+        {sectionOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+      <div id={panelId} hidden={!sectionOpen} className="amadeus-context-body">
+        {density === "empty" ? (
+          <p className="amadeus-context-empty">暂未连接研究所窗口</p>
+        ) : (
+          <>
+            <div
+              id={detailsId}
+              className="amadeus-context-details"
+              role={detailsOpen && density === "long" ? "region" : undefined}
+              aria-label={
+                detailsOpen && density === "long" ? "窗口上下文详情" : undefined
+              }
+            >
+              {visible.map((item) => (
+                <ContextCard
+                  key={item.windowId}
+                  item={item}
+                  showFocus={items.length > 1}
+                />
+              ))}
+            </div>
+            {density === "long" && (
+              <div className="amadeus-context-summary-footer">
+                {!detailsOpen && <span>其余 {remaining.length} 个窗口</span>}
+                <button
+                  type="button"
+                  className="amadeus-context-toggle"
+                  aria-expanded={detailsOpen}
+                  aria-controls={detailsId}
+                  onClick={() => setDetailsOpen((value) => !value)}
+                >
+                  {detailsOpen ? "收起详情" : "展开全部"}
+                  {detailsOpen ? (
+                    <ChevronUp size={13} />
+                  ) : (
+                    <ChevronDown size={13} />
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
-      {density === "empty" ? (
-        <p className="amadeus-context-empty">暂未连接研究所窗口</p>
-      ) : open ? (
-        <div
-          id={detailsId}
-          className="amadeus-context-details"
-          role="region"
-          aria-label="窗口上下文详情"
-        >
-          {density === "long"
-            ? [...groups].map(([name, members]) => (
-                <div className="amadeus-context-group" key={name}>
-                  <div className="amadeus-context-group-heading">
-                    {name} <span>{members.length}</span>
-                  </div>
-                  {members.map((item) => (
-                    <ContextCard key={item.windowId} item={item} />
-                  ))}
-                </div>
-              ))
-            : ordered.map((item) => (
-                <ContextCard key={item.windowId} item={item} />
-              ))}
-        </div>
-      ) : (
-        <div className="amadeus-context-summary-card">
-          <ContextCard item={featured} compact />
-          {remaining.length > 0 && (
-            <div className="amadeus-context-summary-footer">
-              <div className="amadeus-context-app-pills">
-                {otherApps.slice(0, 3).map(([name, count]) => (
-                  <span className="amadeus-context-app-pill" key={name}>
-                    {name} {count}
-                  </span>
-                ))}
-                {otherApps.length > 3 && (
-                  <span className="amadeus-context-app-pill">
-                    +{otherApps.length - 3} 个应用
-                  </span>
-                )}
-              </div>
-              <span className="amadeus-context-remaining">
-                还有 {remaining.length} 个窗口
-              </span>
-            </div>
-          )}
-        </div>
-      )}
     </section>
   );
 }
 
 export function ContextPanel({ items }: { items: Context[] }) {
+  const [sectionOpen, setSectionOpen] = useState(true);
   const density: Density =
     items.length === 0 ? "empty" : items.length <= 2 ? "short" : "long";
-  return <ContextPanelState key={density} density={density} items={items} />;
+  return (
+    <ContextPanelState
+      key={density}
+      density={density}
+      items={items}
+      sectionOpen={sectionOpen}
+      setSectionOpen={setSectionOpen}
+    />
+  );
 }

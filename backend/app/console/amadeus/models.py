@@ -94,6 +94,10 @@ class AmadeusRun(Base):
     )
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
     model_id: Mapped[str] = mapped_column(String(36))
+    mode: Mapped[str] = mapped_column(String(12), default="agent")
+    source_run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("amadeus_runs.id", ondelete="SET NULL"), unique=True, nullable=True
+    )
     status: Mapped[str] = mapped_column(String(24))
     active_owner_key: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     context_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
@@ -107,6 +111,34 @@ class AmadeusRun(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class AmadeusQuestion(Base):
+    __tablename__ = "amadeus_questions"
+    __table_args__ = (
+        UniqueConstraint("run_id"),
+        Index("ix_amadeus_questions_conversation_created", "conversation_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    conversation_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("amadeus_conversations.id", ondelete="CASCADE")
+    )
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("amadeus_runs.id", ondelete="CASCADE")
+    )
+    workspace_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    tool_call_id: Mapped[str] = mapped_column(String(120))
+    prompt: Mapped[str] = mapped_column(Text)
+    options_json: Mapped[list[str]] = mapped_column(JSON, default=list)
+    allow_text: Mapped[bool] = mapped_column(default=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    answer_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
 class AmadeusRunEvent(Base):

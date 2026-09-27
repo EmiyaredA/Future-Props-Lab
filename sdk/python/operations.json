@@ -1143,6 +1143,10 @@
     "method": "append_message",
     "resource": "amadeus"
   },
+  "POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer": {
+    "method": "answer_question",
+    "resource": "amadeus"
+  },
   "POST /v1/amadeus/conversations/{conversation_id}/runs": {
     "method": "create_run",
     "resource": "amadeus"
@@ -1161,6 +1165,14 @@
   },
   "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat": {
     "method": "heartbeat_run",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval": {
+    "method": "pause_run_for_approval",
+    "resource": "amadeus"
+  },
+  "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question": {
+    "method": "create_question",
     "resource": "amadeus"
   },
   "POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load": {

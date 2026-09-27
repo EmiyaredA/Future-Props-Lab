@@ -12,15 +12,17 @@ import {
   Send,
   Square,
   ChevronDown,
+  ChevronUp,
   PanelRightOpen,
   PanelRightClose,
 } from "lucide-react";
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useId, useState } from "react";
 import type { AccountSessionContext } from "@features/accounts";
 import { fetchApiJson } from "@platform/api/client";
 import { avatarStateLabels } from "./protocol";
 import { AmadeusAvatar } from "./Avatar";
+import { ActivityFeed } from "./ActivityFeed";
 import { CapabilityDialog } from "./CapabilityDialog";
 import { ContextPanel } from "./ContextPanel";
 import { useAppearance } from "./useAppearance";
@@ -28,6 +30,7 @@ import { useAmadeusController } from "./useAmadeusController";
 
 export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
   const [stageOpen, setStageOpen] = useState(false);
+  const historyRegionId = useId();
   const appearance = useAppearance(session);
   const {
     bridge,
@@ -40,6 +43,9 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     setReferences,
     draft,
     setDraft,
+    mode,
+    setMode,
+    runs,
     busy,
     saving,
     activeRun,
@@ -57,7 +63,6 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     skills,
     loaded,
     setLoaded,
-    approval,
     renameItem,
     setRenameItem,
     renameTitle,
@@ -84,6 +89,8 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     open,
     openCapabilities,
     decideApproval,
+    answerQuestion,
+    continueRun,
     stop,
     create,
     rename,
@@ -150,6 +157,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           <button
             title="历史对话"
             aria-label="历史对话"
+            aria-pressed={historyOpen}
             onClick={() => setHistoryOpen(!historyOpen)}
           >
             <History size={17} />
@@ -184,137 +192,178 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
         </div>
       )}
       <div className="amadeus-body">
-        {historyOpen && (
-          <aside className="amadeus-history">
+        <aside className="amadeus-side-rail" aria-label="对话侧栏">
+          <ContextPanel items={scopedContexts} />
+          <section
+            className={`amadeus-history${historyOpen ? " is-open" : ""}`}
+            aria-label="对话历史"
+          >
             <div className="amadeus-history-head">
-              <strong>对话历史</strong>
+              <button
+                type="button"
+                className="amadeus-history-toggle"
+                aria-label={historyOpen ? "收起对话历史" : "展开对话历史"}
+                aria-expanded={historyOpen}
+                aria-controls={historyRegionId}
+                onClick={() => setHistoryOpen(!historyOpen)}
+              >
+                <strong>对话历史</strong>
+                {historyOpen ? (
+                  <ChevronUp size={15} />
+                ) : (
+                  <ChevronDown size={15} />
+                )}
+              </button>
               <button onClick={() => void create()}>
                 <Plus size={15} />
                 新建
               </button>
             </div>
-            <label className="amadeus-search">
-              <Search size={15} />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="搜索本地对话"
-              />
-            </label>
-            {groups.map((group) => (
-              <section key={group.name}>
-                <h3>{group.name}</h3>
-                {group.items.map((item) => (
-                  <div
-                    className={`amadeus-history-row ${detail?.conversation.id === item.id ? "active" : ""}`}
-                    key={item.id}
+            <div
+              id={historyRegionId}
+              className="amadeus-history-content"
+              hidden={!historyOpen}
+            >
+              <label className="amadeus-search">
+                <Search size={15} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="搜索本地对话"
+                />
+              </label>
+              <div className="amadeus-history-list">
+                {groups.map((group) => (
+                  <section key={group.name}>
+                    <h3>{group.name}</h3>
+                    {group.items.map((item) => (
+                      <div
+                        className={`amadeus-history-row ${detail?.conversation.id === item.id ? "active" : ""}`}
+                        key={item.id}
+                      >
+                        <button
+                          className="amadeus-history-title"
+                          onClick={() => void open(item.id)}
+                        >
+                          {item.title}
+                        </button>
+                        <button
+                          title="重命名"
+                          onClick={() => {
+                            setRenameItem(item);
+                            setRenameTitle(item.title);
+                          }}
+                        >
+                          ⋯
+                        </button>
+                        <button
+                          title={busy ? "请先停止当前任务" : "删除"}
+                          disabled={busy}
+                          onClick={() => setDeleteItem(item)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </section>
+                ))}
+                {renameItem && (
+                  <form
+                    className="amadeus-history-dialog"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void rename(renameItem, renameTitle);
+                    }}
                   >
+                    <strong>重命名对话</strong>
+                    <input
+                      autoFocus
+                      value={renameTitle}
+                      onChange={(event) => setRenameTitle(event.target.value)}
+                    />
+                    <div>
+                      <button type="button" onClick={() => setRenameItem(null)}>
+                        取消
+                      </button>
+                      <button type="submit">保存</button>
+                    </div>
+                  </form>
+                )}
+                {deleteItem && (
+                  <div className="amadeus-history-dialog">
+                    <strong>删除「{deleteItem.title}」？</strong>
+                    <p>这会同时删除本地消息与会话文件。</p>
+                    <div>
+                      <button onClick={() => setDeleteItem(null)}>取消</button>
+                      <button onClick={() => void remove(deleteItem)}>
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        </aside>
+        <main className="amadeus-chat">
+          <Dialog.Root open={filesOpen} onOpenChange={setFilesOpen}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="amadeus-files-overlay" />
+              <Dialog.Content className="amadeus-files" aria-label="会话文件">
+                <div className="amadeus-capabilities-head">
+                  <Dialog.Title>会话文件</Dialog.Title>
+                  <button
+                    aria-label="收起会话文件"
+                    onClick={() => setFilesOpen(false)}
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+                {!detail && <p>新建对话后可导入文件。</p>}
+                {detail && (
+                  <button
+                    onClick={() =>
+                      void fetchApiJson(
+                        `/v1/amadeus/conversations/${detail.conversation.id}/files/open-folder`,
+                        { method: "POST" },
+                      ).catch((cause) =>
+                        setError(
+                          cause instanceof Error
+                            ? cause.message
+                            : String(cause),
+                        ),
+                      )
+                    }
+                  >
+                    在访达中打开目录
+                  </button>
+                )}
+                {!workFiles.length && <p>暂无文件</p>}
+                {workFiles.map((item) => (
+                  <div
+                    className="amadeus-file-row"
+                    key={`${item.kind}/${item.name}`}
+                  >
+                    <span>
+                      {item.kind} / {item.name} · {Math.ceil(item.bytes / 1024)}{" "}
+                      KiB
+                    </span>
                     <button
-                      className="amadeus-history-title"
-                      onClick={() => void open(item.id)}
-                    >
-                      {item.title}
-                    </button>
-                    <button
-                      title="重命名"
                       onClick={() => {
-                        setRenameItem(item);
-                        setRenameTitle(item.title);
+                        setFilesOpen(false);
+                        void previewFile(item);
                       }}
                     >
-                      ⋯
+                      预览
                     </button>
-                    <button
-                      title={busy ? "请先停止当前任务" : "删除"}
-                      disabled={busy}
-                      onClick={() => setDeleteItem(item)}
-                    >
-                      ×
+                    <button onClick={() => void downloadFile(item)}>
+                      下载
                     </button>
                   </div>
                 ))}
-              </section>
-            ))}
-            {renameItem && (
-              <form
-                className="amadeus-history-dialog"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void rename(renameItem, renameTitle);
-                }}
-              >
-                <strong>重命名对话</strong>
-                <input
-                  autoFocus
-                  value={renameTitle}
-                  onChange={(event) => setRenameTitle(event.target.value)}
-                />
-                <div>
-                  <button type="button" onClick={() => setRenameItem(null)}>
-                    取消
-                  </button>
-                  <button type="submit">保存</button>
-                </div>
-              </form>
-            )}
-            {deleteItem && (
-              <div className="amadeus-history-dialog">
-                <strong>删除「{deleteItem.title}」？</strong>
-                <p>这会同时删除本地消息与会话文件。</p>
-                <div>
-                  <button onClick={() => setDeleteItem(null)}>取消</button>
-                  <button onClick={() => void remove(deleteItem)}>删除</button>
-                </div>
-              </div>
-            )}
-          </aside>
-        )}
-        <main className="amadeus-chat">
-          <ContextPanel items={scopedContexts} />
-          {filesOpen && (
-            <div className="amadeus-files">
-              <div className="amadeus-capabilities-head">
-                <strong>会话文件</strong>
-                <button
-                  aria-label="收起会话文件"
-                  onClick={() => setFilesOpen(false)}
-                >
-                  <X size={15} />
-                </button>
-              </div>
-              {!detail && <p>新建对话后可导入文件。</p>}
-              {detail && (
-                <button
-                  onClick={() =>
-                    void fetchApiJson(
-                      `/v1/amadeus/conversations/${detail.conversation.id}/files/open-folder`,
-                      { method: "POST" },
-                    ).catch((cause) =>
-                      setError(
-                        cause instanceof Error ? cause.message : String(cause),
-                      ),
-                    )
-                  }
-                >
-                  在访达中打开目录
-                </button>
-              )}
-              {!workFiles.length && <p>暂无文件</p>}
-              {workFiles.map((item) => (
-                <div
-                  className="amadeus-file-row"
-                  key={`${item.kind}/${item.name}`}
-                >
-                  <span>
-                    {item.kind} / {item.name} · {Math.ceil(item.bytes / 1024)}{" "}
-                    KiB
-                  </span>
-                  <button onClick={() => void previewFile(item)}>预览</button>
-                  <button onClick={() => void downloadFile(item)}>下载</button>
-                </div>
-              ))}
-            </div>
-          )}
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
           <div className="amadeus-messages">
             {!detail?.messages.length && (
               <div className="amadeus-welcome">
@@ -342,44 +391,17 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 </div>
               </div>
             )}
-            {detail?.messages.map((message) => (
-              <article
-                key={message.id}
-                className={`amadeus-message ${message.role}`}
-              >
-                <div className="amadeus-message-name">
-                  {message.role === "user" ? "你" : "✦ Amadeus"}
-                </div>
-                {message.references?.length > 0 && (
-                  <div className="amadeus-message-refs">
-                    {message.references.map((item, index) => (
-                      <button
-                        key={`${item.id}-${index}`}
-                        className="amadeus-ref"
-                        onClick={() => setPreviewReference(item)}
-                      >
-                        <span className="amadeus-ref-thumb">
-                          {item.thumbnail ? (
-                            <img src={item.thumbnail} alt="" />
-                          ) : (
-                            "▧"
-                          )}
-                        </span>
-                        <span>
-                          <strong>{item.name}</strong>
-                          <small>
-                            {item.application}
-                            {item.value ? ` · ${item.value}` : ""}
-                          </small>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <ReactMarkdown>{message.content}</ReactMarkdown>
-              </article>
-            ))}
-            {toolSteps.length > 0 && (
+            {detail && (
+              <ActivityFeed
+                detail={detail}
+                runs={runs}
+                onReference={setPreviewReference}
+                onApproval={decideApproval}
+                onAnswer={answerQuestion}
+                onContinue={continueRun}
+              />
+            )}
+            {busy && toolSteps.length > 0 && (
               <details className="amadeus-steps" open={busy}>
                 <summary>执行步骤 · {toolSteps.length}</summary>
                 {toolSteps.map((step) => (
@@ -394,69 +416,12 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 ))}
               </details>
             )}
-            {scriptOutput && (
+            {busy && scriptOutput && (
               <details className="amadeus-steps" open={busy}>
                 <summary>脚本输出</summary>
                 <pre>{scriptOutput}</pre>
               </details>
             )}
-            {!!detail?.actions.length && (
-              <details className="amadeus-steps">
-                <summary>历史操作 · {detail.actions.length}</summary>
-                {detail.actions.map((action) => (
-                  <details key={action.id}>
-                    <summary>
-                      {action.tool_name} ·{" "}
-                      {action.status === "completed"
-                        ? "已完成"
-                        : action.status === "failed"
-                          ? "失败"
-                          : action.status === "unknown"
-                            ? "结果待核实"
-                            : action.status === "rejected"
-                              ? "已拒绝"
-                              : "待处理"}
-                    </summary>
-                    <pre>
-                      {JSON.stringify(
-                        { arguments: action.arguments, result: action.result },
-                        null,
-                        2,
-                      )}
-                    </pre>
-                  </details>
-                ))}
-              </details>
-            )}
-            {approval &&
-              detail?.conversation.id === approval.conversationId && (
-                <section className="amadeus-approval">
-                  <strong>确认执行 · {approval.tool_name}</strong>
-                  {Array.isArray(approval.arguments.operations) && (
-                    <ol className="amadeus-operation-list">
-                      {approval.arguments.operations.map((operation, index) => (
-                        <li key={index}>
-                          第 {index + 1} 项 ·{" "}
-                          {operation &&
-                          typeof operation === "object" &&
-                          "type" in operation
-                            ? String(operation.type)
-                            : "操作"}
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                  <pre>{JSON.stringify(approval.arguments, null, 2)}</pre>
-                  <div>
-                    <button onClick={() => void decideApproval(false)}>
-                      拒绝
-                    </button>
-                    <button onClick={() => void decideApproval(true)}>
-                      批准并执行
-                    </button>
-                  </div>
-                </section>
-              )}
           </div>
           <div className="amadeus-bottom">
             {error && (
@@ -572,6 +537,26 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                   <Boxes size={17} />
                   <span>能力 {loaded.length || ""}</span>
                 </button>
+                <div
+                  className="amadeus-mode-switch"
+                  role="group"
+                  aria-label="运行模式"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={mode === "agent"}
+                    onClick={() => setMode("agent")}
+                  >
+                    Agent
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={mode === "plan"}
+                    onClick={() => setMode("plan")}
+                  >
+                    Plan
+                  </button>
+                </div>
                 <div className="amadeus-spacer" />
                 <div className="amadeus-model-control">
                   <button

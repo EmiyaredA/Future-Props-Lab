@@ -1,6 +1,6 @@
 # 开发交付说明
 
-最新登记迁移为 `r0075_creative_workshop`（创意工坊草稿、公开版本与安装记录）；`r0074_live2d_editable_runtime` 和 `r0073_live2d_cubism_attachment` 扩展 Live2D 工坊；`r0072_amadeus_runs` 记录 Amadeus 执行过程。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。
+最新登记迁移为 `r0076_amadeus_workflows`（Amadeus 模式、继续来源与持久提问）；`r0075_creative_workshop` 记录创意工坊草稿、公开版本与安装记录；`r0074_live2d_editable_runtime` 和 `r0073_live2d_cubism_attachment` 扩展 Live2D 工坊。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。
 
 账号治理迁移为 `r0050_workspace_governance`，追加在思绪工坊历史迁移之后。扩展固定成员角色并保存邀请目标角色，保留旧数据；升级影响见[账号与工作区治理](../reference/account-governance.md)。
 
@@ -54,7 +54,7 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 
 ## 迁移与兼容状态
 
-- 当前 migration registry 最新版本为 `r0070_amadeus`；交接前通过
+- 当前 migration registry 最新版本为 `r0076_amadeus_workflows`；交接前通过
   `npm run db:migrate:check` 只读确认目标数据库处于同一连续前缀。
 - migration 只允许在 `db/migrations/versions/` 追加并登记，不得改写已登记版本、checksum 或
   `schema_migrations`。

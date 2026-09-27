@@ -87,6 +87,7 @@ class ActionOut(WireModel):
     run_id: str | None = Field(default=None, alias='run_id')
     status: str = Field(default=..., alias='status')
     tool_name: str = Field(default=..., alias='tool_name')
+    updated_at: datetime = Field(default=..., alias='updated_at')
 
 class AddClipOperation(WireModel):
     clip: VideoEditorClip = Field(default=..., alias='clip')
@@ -662,6 +663,7 @@ class ConversationDetailOut(WireModel):
     actions: list[ActionOut] | None = Field(default=None, alias='actions')
     conversation: ConversationOut = Field(default=..., alias='conversation')
     messages: list[MessageOut] = Field(default=..., alias='messages')
+    questions: list[QuestionOut] | None = Field(default=None, alias='questions')
 
 class ConversationListOut(WireModel):
     items: list[ConversationOut] = Field(default=..., alias='items')
@@ -3185,6 +3187,7 @@ class ModelTurnIn(WireModel):
     messages: list[dict[str, Any]] = Field(default=..., alias='messages', min_length=1, max_length=200)
     model_id: str = Field(default=..., alias='model_id')
     run_id: str | None = Field(default=None, alias='run_id')
+    subagent_id: str | None = Field(default=None, alias='subagent_id')
     system: str = Field(default=..., alias='system', max_length=100000)
     tools: list[dict[str, Any]] | None = Field(default=None, alias='tools', max_length=100)
 
@@ -3513,6 +3516,28 @@ class PublicWorkspaceProjectionOut(WireModel):
     workspace_id: str = Field(default=..., alias='workspace_id')
     workspace_name: str = Field(default=..., alias='workspace_name')
 
+class QuestionAnswerIn(WireModel):
+    answer: str = Field(default=..., alias='answer', min_length=1, max_length=2000)
+    note: str = Field(default='', alias='note', max_length=2000)
+
+class QuestionIn(WireModel):
+    allow_text: bool = Field(default=True, alias='allow_text')
+    options: list[str] | None = Field(default=None, alias='options', max_length=5)
+    prompt: str = Field(default=..., alias='prompt', min_length=1, max_length=2000)
+    tool_call_id: str = Field(default=..., alias='tool_call_id', min_length=1, max_length=120)
+
+class QuestionOut(WireModel):
+    allow_text: bool = Field(default=..., alias='allow_text')
+    answer: dict[str, str] | None = Field(default=..., alias='answer')
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    options: list[str] = Field(default=..., alias='options')
+    prompt: str = Field(default=..., alias='prompt')
+    run_id: str = Field(default=..., alias='run_id')
+    status: str = Field(default=..., alias='status')
+    tool_call_id: str = Field(default=..., alias='tool_call_id')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
 class QuotaLimit(WireModel):
     realtime_voice: int = Field(default=..., alias='realtime_voice', ge=0.0, le=1024.0)
     total: int = Field(default=..., alias='total', ge=0.0, le=1024.0)
@@ -3696,8 +3721,10 @@ class RolePolicy(WireModel):
 class RunCreateIn(WireModel):
     capabilities: list[str] | None = Field(default=None, alias='capabilities', max_length=100)
     context: list[dict[str, Any]] | None = Field(default=None, alias='context', max_length=32)
+    mode: Literal['agent', 'plan'] = Field(default='agent', alias='mode')
     model_id: str = Field(default=..., alias='model_id', min_length=1, max_length=160)
     references: list[Reference] | None = Field(default=None, alias='references', max_length=20)
+    source_run_id: str | None = Field(default=None, alias='source_run_id')
 
 class RunDetailOut(WireModel):
     events: list[RunEventOut] = Field(default=..., alias='events')
@@ -3705,7 +3732,7 @@ class RunDetailOut(WireModel):
 
 class RunEventIn(WireModel):
     idempotency_key: str = Field(default=..., alias='idempotency_key', min_length=1, max_length=120)
-    kind: Literal['assistant_delta', 'assistant_message', 'tool_call', 'tool_result', 'status', 'error'] = Field(default=..., alias='kind')
+    kind: Literal['assistant_delta', 'assistant_message', 'tool_call', 'tool_result', 'status', 'error', 'question', 'subagent_start', 'subagent_finish'] = Field(default=..., alias='kind')
     payload: dict[str, Any] | None = Field(default=None, alias='payload')
 
 class RunEventOut(WireModel):
@@ -3730,9 +3757,11 @@ class RunOut(WireModel):
     finished_at: datetime | None = Field(default=..., alias='finished_at')
     heartbeat_at: datetime = Field(default=..., alias='heartbeat_at')
     id: str = Field(default=..., alias='id')
+    mode: Literal['agent', 'plan'] = Field(default=..., alias='mode')
     model_id: str = Field(default=..., alias='model_id')
     partial_text: str = Field(default=..., alias='partial_text')
     references: list[Reference] = Field(default=..., alias='references')
+    source_run_id: str | None = Field(default=..., alias='source_run_id')
     status: str = Field(default=..., alias='status')
     updated_at: datetime = Field(default=..., alias='updated_at')
 
@@ -5417,6 +5446,9 @@ PublicGalgameProjectOut.model_rebuild()
 PublicGalgameStoryOut.model_rebuild()
 PublicVisualProjectOut.model_rebuild()
 PublicWorkspaceProjectionOut.model_rebuild()
+QuestionAnswerIn.model_rebuild()
+QuestionIn.model_rebuild()
+QuestionOut.model_rebuild()
 QuotaLimit.model_rebuild()
 RealtimeNumberParameterOut.model_rebuild()
 RealtimeVoiceMicrophoneOut.model_rebuild()

@@ -15,7 +15,6 @@ type ApprovalOptions = {
     conversationId: string;
     actionId: string;
   } | null>;
-  setApproval: Dispatch<SetStateAction<Approval | null>>;
   setDetail: Dispatch<SetStateAction<Detail | null>>;
   setError: Dispatch<SetStateAction<string>>;
   setScriptOutput: Dispatch<SetStateAction<string>>;
@@ -29,7 +28,6 @@ export async function decideAmadeusApproval({
   bridge,
   detailRef,
   activeActionRef,
-  setApproval,
   setDetail,
   setError,
   setScriptOutput,
@@ -54,29 +52,28 @@ export async function decideAmadeusApproval({
     )
   ) {
     setError("目标项目有未保存的编辑。请先在原窗口保存，再确认这项操作。");
-    return;
+    return false;
   }
-  setApproval(null);
   try {
-    await fetchApiJson(
-      `/v1/amadeus/conversations/${conversationId}/actions/${current.id}/decision`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          arguments_sha256: current.arguments_sha256,
-          approve: allow,
-        }),
-      },
-    );
+    if (current.status === "pending")
+      await fetchApiJson(
+        `/v1/amadeus/conversations/${conversationId}/actions/${current.id}/decision`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            arguments_sha256: current.arguments_sha256,
+            approve: allow,
+          }),
+        },
+      );
     if (!allow) {
       const snapshot = await fetchApiJson<Detail>(
         `/v1/amadeus/conversations/${conversationId}`,
       );
       if (detailRef.current?.conversation.id === conversationId)
         setDetail(snapshot);
-      current.resolve({ rejected: true, message: "用户拒绝执行" });
-      return;
+      return true;
     }
     activeActionRef.current = { conversationId, actionId: current.id };
     let outcome: { status: string; result?: Record<string, unknown> };
@@ -148,9 +145,14 @@ export async function decideAmadeusApproval({
     );
     if (detailRef.current?.conversation.id === conversationId)
       setDetail(snapshot);
-    current.resolve(outcome);
+    if (outcome.status === "unknown") {
+      setError("操作结果待核实；不会自动重试。");
+      return false;
+    }
+    return true;
   } catch (cause) {
-    current.reject(cause instanceof Error ? cause : new Error(String(cause)));
+    setError(cause instanceof Error ? cause.message : String(cause));
+    return false;
   } finally {
     activeActionRef.current = null;
   }

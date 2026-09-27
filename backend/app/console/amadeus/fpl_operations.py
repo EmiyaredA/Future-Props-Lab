@@ -9,6 +9,7 @@ from urllib.parse import quote
 import httpx
 
 from app.console.governance.desktop_agent import MANIFEST
+from app.runtime.desktop import DESKTOP_HEADER
 from app.runtime.operation_receipts import OperationError
 
 PARAMETER = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
@@ -122,6 +123,10 @@ async def call_operation(
     for header in ("cookie", "x-csrf-token"):
         if request_headers.get(header):
             headers[header] = request_headers[header]
+    # The nested ASGI request remains inside the server. Preserve the desktop
+    # transport credential from the already-authenticated parent request.
+    if request_headers.get(DESKTOP_HEADER):
+        headers[DESKTOP_HEADER] = request_headers[DESKTOP_HEADER]
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
         base_url="http://fpl-internal",

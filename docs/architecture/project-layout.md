@@ -93,14 +93,14 @@ Future-Props-Lab/
   `web/src/features/accounts/DesktopSetupGate.tsx` 拥有首用表单，`platform/desktop.ts` 只定义固定桥接。
   桌面版配置和数据规则见 [macOS 桌面构建](../operations/desktop-macos.md)。
 
-- `console/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、参数摘要审批与执行记录；
+- `console/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、Agent/Plan 运行、持久提问、参数摘要审批与执行记录；
   视频时间线执行由 `apps/video_editor/assistant_operations.py` 提供公共入口，在 `app/api.py` 装配，
   避免 Console 反向依赖工坊实现。`fpl_operations.py` 只允许调用桌面 Agent 明确登记的业务 HTTP 操作，
   由原路由重新校验 Workspace、权限和资源版本。
   `console/routes/amadeus.py` 只暴露协议。会话文件存于
   `workspaces/<workspace-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号与 Workspace
   读取隔离，文件访问拒绝符号链接和目录穿越。模型桥接仅使用现有供应商适配器和服务端凭据。
-  `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Pi Worker 与控件选取；
+  `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Pi Worker、只读子任务、对话时间线与控件选取；
   `vendor/pi/SOURCE.md` 记录固定源码与许可证。沙箱脚本运行器由桌面构建单独打包，
   不复用携带后端凭据的服务进程。
 

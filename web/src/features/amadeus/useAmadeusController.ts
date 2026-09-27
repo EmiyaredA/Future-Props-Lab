@@ -3,10 +3,15 @@ import { fetchApiJson, requestApi } from "@platform/api/client";
 import type { DesktopBridge } from "@platform/desktop";
 import type { AccountSessionContext } from "@features/accounts";
 import { decideAmadeusApproval } from "./approval";
+import { submitAmadeusAnswer } from "./answerQuestion";
+import { configuredCapabilities } from "./configuredCapabilities";
 import { conversationActions } from "./conversationActions";
+import { groupConversations } from "./conversationGroups";
+import { formatAmadeusPrompt } from "./formatPrompt";
 import { buildAgentHistory } from "./history";
+import { createRunEventRecorder } from "./runEvents";
+import { streamTurn } from "./streamTurn";
 import {
-  dateGroup,
   safeReadPath,
   type Approval,
   type AvatarState,
@@ -18,6 +23,7 @@ import {
   type Reference,
   type Run,
   type RunDetail,
+  type SavedQuestion,
   type WorkerEvent,
   type WorkFile,
 } from "./protocol";
@@ -26,11 +32,13 @@ export function useAmadeusController(session: AccountSessionContext) {
   const bridge = window.futurePropsDesktop as Required<DesktopBridge>;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
   const [search, setSearch] = useState("");
   const [contexts, setContexts] = useState<Context[]>([]);
   const [references, setReferences] = useState<Reference[]>([]);
   const [draft, setDraft] = useState("");
+  const [mode, setMode] = useState<"agent" | "plan">("agent");
+  const [runs, setRuns] = useState<RunDetail[]>([]);
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeRun, setActiveRun] = useState<Run | null>(null);
@@ -49,7 +57,6 @@ export function useAmadeusController(session: AccountSessionContext) {
   const [loadedConversationId, setLoadedConversationId] = useState<
     string | null
   >(null);
-  const [approval, setApproval] = useState<Approval | null>(null);
   const [renameItem, setRenameItem] = useState<Conversation | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const [deleteItem, setDeleteItem] = useState<Conversation | null>(null);
@@ -78,14 +85,12 @@ export function useAmadeusController(session: AccountSessionContext) {
     actionId: string;
   } | null>(null);
   const activeRunRef = useRef<Run | null>(null);
-  const approvalRef = useRef<Approval | null>(null);
   const avatarTimerRef = useRef<number | undefined>(undefined);
   const detailRef = useRef<Detail | null>(null);
   const contextRef = useRef<Context[]>([]);
   detailRef.current = detail;
   contextRef.current = contexts;
   activeRunRef.current = activeRun;
-  approvalRef.current = approval;
 
   const showAvatarState = useCallback(
     (state: AvatarState, resetAfter?: number) => {
@@ -109,10 +114,13 @@ export function useAmadeusController(session: AccountSessionContext) {
     return result.items;
   }, []);
   const open = useCallback(async (id: string) => {
-    const next = await fetchApiJson<Detail>(`/v1/amadeus/conversations/${id}`);
+    const [next, history] = await Promise.all([
+      fetchApiJson<Detail>(`/v1/amadeus/conversations/${id}`),
+      fetchApiJson<RunDetail[]>(`/v1/amadeus/conversations/${id}/runs`),
+    ]);
     setDetail(next);
+    setRuns(history);
     detailRef.current = next;
-    setHistoryOpen(false);
     setReferences([]);
     setAttachments([]);
     setFilesOpen(false);
@@ -190,7 +198,6 @@ export function useAmadeusController(session: AccountSessionContext) {
       offPickFinished?.();
       modelAbortRef.current?.abort();
       workerRef.current?.terminate();
-      approvalRef.current?.reject(new Error("助手窗口已重新载入"));
       const run = activeRunRef.current;
       if (run)
         void fetchApiJson(
@@ -265,26 +272,8 @@ export function useAmadeusController(session: AccountSessionContext) {
     setCapabilitiesOpen(!capabilitiesOpen);
     if (!capabilitiesOpen) await refreshCapabilities();
   };
-  const decideApproval = (allow: boolean) =>
-    decideAmadeusApproval({
-      allow,
-      current: approval,
-      contexts,
-      session,
-      bridge,
-      detailRef,
-      activeActionRef,
-      setApproval,
-      setDetail,
-      setError,
-      setScriptOutput,
-    });
-
   const stop = () => {
     showAvatarState("paused", 2200);
-    const pendingApproval = approval;
-    setApproval(null);
-    pendingApproval?.reject(new Error("用户停止了任务"));
     modelAbortRef.current?.abort();
     workerRef.current?.postMessage({ type: "stop" });
     const run = activeRunRef.current;
@@ -342,9 +331,28 @@ export function useAmadeusController(session: AccountSessionContext) {
     setFilePreview,
   });
 
-  const send = async () => {
-    const prompt = draft.trim();
+  const send = async (options?: {
+    prompt: string;
+    sourceRunId: string;
+    mode: "agent" | "plan";
+  }) => {
+    const prompt = options?.prompt || draft.trim();
     if (!prompt || busy || !modelId) return;
+    if (
+      !options &&
+      (detailRef.current?.questions?.some(
+        (item) => item.status === "pending",
+      ) ||
+        detailRef.current?.actions.some(
+          (item) =>
+            item.run_id &&
+            ["pending", "approved", "running"].includes(item.status),
+        ))
+    ) {
+      setError("请先处理当前提问或审批。");
+      return;
+    }
+    const runMode = options?.mode || mode;
     const referenceSnapshot = references;
     const contextSnapshot = contexts.filter(
       (item) =>
@@ -354,7 +362,7 @@ export function useAmadeusController(session: AccountSessionContext) {
     setBusy(true);
     showAvatarState("thinking");
     setError("");
-    setDraft("");
+    if (!options) setDraft("");
     setToolSteps([]);
     setScriptOutput("");
     let startedRun: Run | null = null;
@@ -366,84 +374,53 @@ export function useAmadeusController(session: AccountSessionContext) {
           "/v1/amadeus/conversations",
           { method: "POST" },
         );
-        current = { conversation: created, messages: [], actions: [] };
+        current = {
+          conversation: created,
+          messages: [],
+          actions: [],
+          questions: [],
+        };
         setDetail(current);
       }
       const previousRuns = await fetchApiJson<RunDetail[]>(
         `/v1/amadeus/conversations/${current.conversation.id}/runs`,
       );
-      const history = buildAgentHistory(current.messages, previousRuns);
-      const updated = await fetchApiJson<Detail>(
-        `/v1/amadeus/conversations/${current.conversation.id}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            expected_revision: current.conversation.revision,
-            role: "user",
-            content: prompt,
-            references: referenceSnapshot.map(({ windowId, ...item }) => ({
-              ...item,
-              window_id: windowId,
-            })),
-          }),
-        },
+      const history = buildAgentHistory(
+        current.messages,
+        previousRuns,
+        current.actions,
+        current.questions || [],
       );
+      const updated = options
+        ? current
+        : await fetchApiJson<Detail>(
+            `/v1/amadeus/conversations/${current.conversation.id}/messages`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                expected_revision: current.conversation.revision,
+                role: "user",
+                content: prompt,
+                references: referenceSnapshot.map(({ windowId, ...item }) => ({
+                  ...item,
+                  window_id: windowId,
+                })),
+              }),
+            },
+          );
       setDetail(updated);
       detailRef.current = updated;
       setReferences([]);
       await refreshList();
-      const configuredTools: Array<{
-        name: string;
-        key: string;
-        label: string;
-        description: string;
-        schema: Record<string, unknown>;
-      }> = [];
-      for (const item of toolApis.filter(
-        (item) => loaded.includes(`toolapi:${item.id}`) && item.enabled,
-      ))
-        configuredTools.push({
-          name: `amadeus_api_${configuredTools.length}`,
-          key: `tool_api:${item.id}`,
-          label: item.name,
-          description: item.description || item.name,
-          schema: item.parameters_schema || { type: "object" },
-        });
-      for (const item of mcpServers.filter(
-        (item) => loaded.includes(`mcp:${item.id}`) && item.enabled,
-      )) {
-        const found = await fetchApiJson<
-          Array<{
-            name: string;
-            description: string;
-            input_schema: Record<string, unknown>;
-          }>
-        >(`/v1/integrations/mcp/${item.id}/tools`);
-        for (const tool of found)
-          configuredTools.push({
-            name: `amadeus_mcp_${configuredTools.length}`,
-            key: `mcp:${item.id}:${tool.name}`,
-            label: `${item.name} · ${tool.name}`,
-            description: tool.description,
-            schema: tool.input_schema || { type: "object" },
-          });
-      }
-      const loadedSkills = await Promise.all(
-        skills
-          .filter((item) => loaded.includes(`skill:${item.id}`) && item.enabled)
-          .map(async (item) => ({
-            id: item.id,
-            ...(await fetchApiJson<{
-              name: string;
-              version: string;
-              content: string;
-            }>(
-              `/v1/amadeus/conversations/${updated.conversation.id}/skills/${item.id}/load`,
-              { method: "POST" },
-            )),
-          })),
-      );
+      const configured = await configuredCapabilities({
+        mode: runMode,
+        conversationId: updated.conversation.id,
+        loaded,
+        toolApis,
+        mcpServers,
+        skills,
+      });
       const runDetail = await fetchApiJson<RunDetail>(
         `/v1/amadeus/conversations/${updated.conversation.id}/runs`,
         {
@@ -451,6 +428,8 @@ export function useAmadeusController(session: AccountSessionContext) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model_id: modelId,
+            mode: runMode,
+            source_run_id: options?.sourceRunId,
             context: contextSnapshot.map((item) => ({
               application: item.application,
               projectId: item.projectId,
@@ -467,6 +446,7 @@ export function useAmadeusController(session: AccountSessionContext) {
         },
       );
       const run = runDetail.run;
+      setRuns((previous) => [...previous, runDetail]);
       startedRun = run;
       setActiveRun(run);
       activeRunRef.current = run;
@@ -484,31 +464,21 @@ export function useAmadeusController(session: AccountSessionContext) {
       let text = "";
       let partialText = "";
       let pendingDelta = "";
-      let eventIndex = 0;
       let deltaTimer: number | undefined;
-      let persistence = Promise.resolve();
-      const persistEvent = (kind: string, payload: Record<string, unknown>) => {
-        const idempotencyKey = `${kind}-${++eventIndex}`;
-        persistence = persistence.then(async () => {
-          await fetchApiJson(
-            `/v1/amadeus/conversations/${conversationId}/runs/${run.id}/events`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                kind,
-                payload,
-                idempotency_key: idempotencyKey,
-              }),
-            },
-          );
-        });
-        return persistence;
-      };
+      const recorder = createRunEventRecorder(conversationId, run.id, (saved) =>
+        setRuns((previous) =>
+          previous.map((item) =>
+            item.run.id === run.id
+              ? { ...item, events: [...item.events, saved] }
+              : item,
+          ),
+        ),
+      );
+      const persistEvent = recorder.append;
       const flushDelta = () => {
         if (deltaTimer) window.clearTimeout(deltaTimer);
         deltaTimer = undefined;
-        if (!pendingDelta) return persistence;
+        if (!pendingDelta) return recorder.wait();
         const value = pendingDelta;
         pendingDelta = "";
         return persistEvent("assistant_delta", { text: value });
@@ -541,58 +511,14 @@ export function useAmadeusController(session: AccountSessionContext) {
           if (data.type === "rpc") {
             let value: unknown;
             if (data.method === "model-turn-stream") {
-              const controller = new AbortController();
-              modelAbortRef.current = controller;
-              try {
-                const response = await requestApi(
-                  "/v1/amadeus/model-turn/stream",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data.payload),
-                    signal: controller.signal,
-                  },
-                );
-                const reader = response.body?.getReader();
-                if (!reader) throw new Error("模型流不可用");
-                const decoder = new TextDecoder();
-                let buffer = "";
-                let result: unknown;
-                while (true) {
-                  const { done, value: chunk } = await reader.read();
-                  if (done) break;
-                  buffer += decoder.decode(chunk, { stream: true });
-                  const lines = buffer.split("\n");
-                  buffer = lines.pop() || "";
-                  for (const line of lines) {
-                    if (!line) continue;
-                    const event = JSON.parse(line) as {
-                      type: string;
-                      text?: string;
-                      tool_calls?: unknown[];
-                      usage?: unknown;
-                      message?: string;
-                    };
-                    if (event.type === "delta")
-                      worker.postMessage({
-                        type: "rpc-delta",
-                        id: data.id,
-                        text: event.text || "",
-                      });
-                    else if (event.type === "end")
-                      result = {
-                        tool_calls: event.tool_calls,
-                        usage: event.usage,
-                      };
-                    else if (event.type === "error")
-                      throw new Error(event.message || "模型调用失败");
-                  }
-                }
-                if (!result) throw new Error("模型流提前中断");
-                value = result;
-              } finally {
-                modelAbortRef.current = undefined;
-              }
+              value = await streamTurn(
+                data.payload,
+                data.id,
+                worker,
+                (controller) => {
+                  modelAbortRef.current = controller;
+                },
+              );
             } else if (data.method === "fpl-read")
               value = await fetchApiJson(safeReadPath(data.payload));
             else if (data.method === "fpl-operations") {
@@ -656,7 +582,7 @@ export function useAmadeusController(session: AccountSessionContext) {
                 path: string;
               };
               if (
-                !loadedSkills.some(
+                !configured.skills.some(
                   (item) =>
                     item.id === requested.skill_id &&
                     item.version === requested.version,
@@ -699,41 +625,70 @@ export function useAmadeusController(session: AccountSessionContext) {
                   ))
               )
                 throw new Error("能力未加载");
-              const action = await fetchApiJson<{
-                id: string;
-                tool_name: string;
-                arguments: Record<string, unknown>;
-                arguments_sha256: string;
-              }>(`/v1/amadeus/conversations/${conversationId}/actions`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  tool_name: requested.tool_name,
-                  run_id: run.id,
-                  arguments:
-                    builtInTool || registeredTool
-                      ? requested.arguments
-                      : {
-                          input: requested.arguments,
-                          revision: tool!.revision,
-                        },
-                }),
-              });
-              await persistEvent("tool_call", {
-                tool_call_id: requested.tool_call_id,
-                tool_name: requested.tool_name,
-                arguments: requested.arguments,
-                action_id: action.id,
-              });
-              value = await new Promise((resolve, reject) =>
-                setApproval({
-                  ...action,
-                  conversationId,
-                  runId: run.id,
-                  resolve,
-                  reject,
-                }),
+              await fetchApiJson(
+                `/v1/amadeus/conversations/${conversationId}/actions`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    tool_name: requested.tool_name,
+                    run_id: run.id,
+                    arguments:
+                      builtInTool || registeredTool
+                        ? requested.arguments
+                        : {
+                            input: requested.arguments,
+                            revision: tool!.revision,
+                          },
+                  }),
+                },
               );
+              await flushDelta();
+              await recorder.wait();
+              await fetchApiJson<RunDetail>(
+                `/v1/amadeus/conversations/${conversationId}/runs/${run.id}/pause-approval`,
+                { method: "POST" },
+              );
+              await open(conversationId);
+              setBusy(false);
+              if (runMode === "plan") setMode("agent");
+              setActiveRun(null);
+              activeRunRef.current = null;
+              if (heartbeatTimer) window.clearInterval(heartbeatTimer);
+              worker.terminate();
+              workerRef.current = undefined;
+              return;
+            } else if (data.method === "ask-user") {
+              const requested = data.payload as {
+                tool_call_id: string;
+                question: string;
+                options?: string[];
+                allow_text?: boolean;
+              };
+              await flushDelta();
+              await recorder.wait();
+              await fetchApiJson<SavedQuestion>(
+                `/v1/amadeus/conversations/${conversationId}/runs/${run.id}/question`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    tool_call_id: requested.tool_call_id,
+                    prompt: requested.question,
+                    options: requested.options || [],
+                    allow_text: requested.allow_text !== false,
+                  }),
+                },
+              );
+              await open(conversationId);
+              setBusy(false);
+              if (runMode === "plan") setMode("agent");
+              setActiveRun(null);
+              activeRunRef.current = null;
+              if (heartbeatTimer) window.clearInterval(heartbeatTimer);
+              worker.terminate();
+              workerRef.current = undefined;
+              return;
             } else throw new Error("未知工具请求");
             worker.postMessage({ type: "rpc-result", id: data.id, value });
           } else if (data.type === "delta") {
@@ -745,19 +700,37 @@ export function useAmadeusController(session: AccountSessionContext) {
             text += `${text && data.text ? "\n\n" : ""}${data.text || ""}`;
             partialText = "";
             if (text) showStream();
+            if (data.text)
+              await persistEvent("assistant_message", { text: data.text });
           } else if (data.type === "tool") {
             showAvatarState("tool");
             setToolSteps((previous) => [
               ...previous.filter((step) => step.name !== data.name),
               { name: data.name || "工具", status: data.status || "running" },
             ]);
-            if (data.status !== "running")
+            if (data.status === "running")
+              await persistEvent("tool_call", {
+                tool_call_id: data.id,
+                tool_name: data.name,
+                arguments: data.arguments || {},
+              });
+            else
               await persistEvent("tool_result", {
                 tool_call_id: data.id,
                 name: data.name,
                 status: data.status,
                 result: data.result,
               });
+          } else if (data.type === "subagent") {
+            await persistEvent(
+              data.status === "running" ? "subagent_start" : "subagent_finish",
+              {
+                id: data.id,
+                task: data.name,
+                status: data.status,
+                result: data.result,
+              },
+            );
           } else if (
             data.type === "done" ||
             data.type === "error" ||
@@ -775,7 +748,7 @@ export function useAmadeusController(session: AccountSessionContext) {
               setError("任务已停止。执行中的外部操作请检查实际结果。");
             setSaving(true);
             await flushDelta();
-            await persistence;
+            await recorder.wait();
             const terminal =
               data.type === "done"
                 ? "completed"
@@ -793,14 +766,10 @@ export function useAmadeusController(session: AccountSessionContext) {
                 }),
               },
             );
-            const persisted = await fetchApiJson<Detail>(
-              `/v1/amadeus/conversations/${conversationId}`,
-            );
-            if (detailRef.current?.conversation.id === conversationId) {
-              setDetail(persisted);
-              detailRef.current = persisted;
-            }
+            if (detailRef.current?.conversation.id === conversationId)
+              await open(conversationId);
             setBusy(false);
+            if (runMode === "plan") setMode("agent");
             setSaving(false);
             setActiveRun(null);
             activeRunRef.current = null;
@@ -842,30 +811,12 @@ export function useAmadeusController(session: AccountSessionContext) {
       };
       worker.postMessage({
         type: "start",
+        mode: runMode,
         modelId,
-        prompt:
-          `${prompt}\n\n[当前窗口] ${JSON.stringify(
-            contextSnapshot.map((item) => ({
-              application: item.application,
-              projectId: item.projectId,
-              path: item.path,
-              unsaved: item.unsaved,
-              selection: item.selection,
-            })),
-          )}\n` +
-          (referenceSnapshot.length
-            ? `[手动引用] ${JSON.stringify(
-                referenceSnapshot.map((item) => ({
-                  name: item.name,
-                  application: item.application,
-                  value: item.value,
-                  source: item.source,
-                })),
-              )} `
-            : ""),
+        prompt: formatAmadeusPrompt(prompt, contextSnapshot, referenceSnapshot),
         history,
-        tools: configuredTools,
-        skills: loadedSkills,
+        tools: configured.tools,
+        skills: configured.skills,
         runId: run.id,
       });
     } catch (cause) {
@@ -893,22 +844,79 @@ export function useAmadeusController(session: AccountSessionContext) {
     }
   };
 
+  const continueRun = async (
+    sourceRunId: string,
+    nextMode: "agent" | "plan",
+    prompt: string,
+  ) => {
+    const id = detailRef.current?.conversation.id;
+    if (!id || busy) return;
+    setMode(nextMode);
+    await open(id);
+    await send({ sourceRunId, mode: nextMode, prompt });
+  };
+
+  const decideApproval = async (actionId: string, allow: boolean) => {
+    const saved = detailRef.current?.actions.find(
+      (item) => item.id === actionId,
+    );
+    if (!saved || !saved.run_id) return;
+    const current: Approval = {
+      id: saved.id,
+      tool_name: saved.tool_name,
+      arguments: saved.arguments,
+      arguments_sha256: saved.arguments_sha256,
+      status: saved.status,
+      conversationId: detailRef.current!.conversation.id,
+      runId: saved.run_id,
+    };
+    const handled = await decideAmadeusApproval({
+      allow,
+      current,
+      contexts,
+      session,
+      bridge,
+      detailRef,
+      activeActionRef,
+      setDetail,
+      setError,
+      setScriptOutput,
+    });
+    await open(current.conversationId);
+    if (handled)
+      await continueRun(
+        current.runId,
+        "agent",
+        allow
+          ? "根据刚才已批准的工具结果继续，先核对当前项目状态。"
+          : "刚才的操作被拒绝。继续说明可行的下一步，不再执行该操作。",
+      );
+  };
+
+  const answerQuestion = async (
+    question: SavedQuestion,
+    answer: string,
+    note: string,
+  ) => {
+    const id = detailRef.current?.conversation.id;
+    if (!id || busy) return;
+    await submitAmadeusAnswer(id, question, answer, note);
+    await continueRun(
+      question.run_id,
+      runs.find((item) => item.run.id === question.run_id)?.run.mode || "agent",
+      "用户已经回答提问。根据已保存的答案继续。",
+    );
+  };
+
   const scopedContexts = contexts.filter(
     (item) =>
       item.userId === session.me.user.id &&
       item.workspaceId === session.me.workspace.id,
   );
-  const groups = useMemo(() => {
-    const filtered = conversations.filter((item) =>
-      item.title.toLowerCase().includes(search.toLowerCase()),
-    );
-    return ["今天", "昨天", "更早"]
-      .map((name) => ({
-        name,
-        items: filtered.filter((item) => dateGroup(item.updated_at) === name),
-      }))
-      .filter((group) => group.items.length);
-  }, [conversations, search]);
+  const groups = useMemo(
+    () => groupConversations(conversations, search),
+    [conversations, search],
+  );
 
   return {
     bridge,
@@ -921,6 +929,9 @@ export function useAmadeusController(session: AccountSessionContext) {
     setReferences,
     draft,
     setDraft,
+    mode,
+    setMode,
+    runs,
     busy,
     saving,
     activeRun,
@@ -938,7 +949,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     skills,
     loaded,
     setLoaded,
-    approval,
     renameItem,
     setRenameItem,
     renameTitle,
@@ -965,6 +975,8 @@ export function useAmadeusController(session: AccountSessionContext) {
     open,
     openCapabilities,
     decideApproval,
+    answerQuestion,
+    continueRun,
     stop,
     create,
     rename,

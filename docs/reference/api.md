@@ -29,6 +29,8 @@
 
 `GET /operations` 只列出桌面 Agent 明确登记的 FPL 业务操作，`POST /operations/read` 只执行其 GET 操作。修改操作先通过 `/conversations/{id}/actions` 创建提议，`/decision` 以参数摘要批准，`/execute` 单次执行；脚本可用 `/execute/stream` 接收逐段输出，`/cancel` 可取消正在运行的任务。外部调用的未知结果不自动重试。原业务路由再次检查身份、权限、Workspace 和资源版本。Tool API、MCP、脚本与视频时间线操作使用同一批准流程。
 
+`POST /conversations/{id}/runs` 的 `mode` 为 `agent` 或 `plan`，默认 `agent`；`source_run_id` 将计划、已回答的问题或已完成的审批连接到新的运行，并且同一来源只允许继续一次。Plan 运行仅可读取和提问，不能提出写操作；带 `subagent_id` 的模型调用也只接受只读工具。`POST /runs/{run_id}/question` 持久保存单个问题并暂停运行，`POST /questions/{question_id}/answer` 只接受一次回答；审批通过 `/runs/{run_id}/pause-approval` 暂停后仍可在窗口重开时处理。`GET /conversations/{id}` 返回待处理提问与操作。审批执行结果为 `unknown` 时必须人工核实，不会自动继续或重试。
+
 `/conversations/{id}/files`、`/imports`、`/files/{kind}/{name}` 负责会话文件列表、导入、下载与受版本保护的写入；`/skills/{skill_id}/load` 将当前 Workspace 的技能版本复制到会话目录。脚本仅在 macOS 沙箱可用时运行，拒绝跨会话文件与直接网络访问。完整字段与状态码以生成的 OpenAPI/SDK 参考为准。
 
 ## Live2D 工坊 Cubism 对照

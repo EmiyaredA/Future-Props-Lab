@@ -489,6 +489,11 @@
           "tool_name": {
             "title": "Tool Name",
             "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
           }
         },
         "required": [
@@ -498,7 +503,8 @@
           "arguments_sha256",
           "status",
           "result",
-          "created_at"
+          "created_at",
+          "updated_at"
         ],
         "title": "ActionOut",
         "type": "object"
@@ -4114,6 +4120,13 @@
               "$ref": "#/components/schemas/MessageOut"
             },
             "title": "Messages",
+            "type": "array"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionOut"
+            },
+            "title": "Questions",
             "type": "array"
           }
         },
@@ -20588,6 +20601,18 @@
             ],
             "title": "Run Id"
           },
+          "subagent_id": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subagent Id"
+          },
           "system": {
             "maxLength": 100000,
             "title": "System",
@@ -22648,6 +22673,137 @@
         "title": "PublicWorkspaceProjectionOut",
         "type": "object"
       },
+      "QuestionAnswerIn": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Answer",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "answer"
+        ],
+        "title": "QuestionAnswerIn",
+        "type": "object"
+      },
+      "QuestionIn": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_text": {
+            "default": true,
+            "title": "Allow Text",
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Options",
+            "type": "array"
+          },
+          "prompt": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "tool_call_id": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Tool Call Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool_call_id",
+          "prompt"
+        ],
+        "title": "QuestionIn",
+        "type": "object"
+      },
+      "QuestionOut": {
+        "properties": {
+          "allow_text": {
+            "title": "Allow Text",
+            "type": "boolean"
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tool_call_id": {
+            "title": "Tool Call Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "run_id",
+          "tool_call_id",
+          "prompt",
+          "options",
+          "allow_text",
+          "status",
+          "answer",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "QuestionOut",
+        "type": "object"
+      },
       "QuotaLimit": {
         "properties": {
           "realtime_voice": {
@@ -23642,6 +23798,15 @@
             "title": "Context",
             "type": "array"
           },
+          "mode": {
+            "default": "agent",
+            "enum": [
+              "agent",
+              "plan"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
           "model_id": {
             "maxLength": 160,
             "minLength": 1,
@@ -23655,6 +23820,17 @@
             "maxItems": 20,
             "title": "References",
             "type": "array"
+          },
+          "source_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Run Id"
           }
         },
         "required": [
@@ -23699,7 +23875,10 @@
               "tool_call",
               "tool_result",
               "status",
-              "error"
+              "error",
+              "question",
+              "subagent_start",
+              "subagent_finish"
             ],
             "title": "Kind",
             "type": "string"
@@ -23852,6 +24031,14 @@
             "title": "Id",
             "type": "string"
           },
+          "mode": {
+            "enum": [
+              "agent",
+              "plan"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
           "model_id": {
             "title": "Model Id",
             "type": "string"
@@ -23867,6 +24054,17 @@
             "title": "References",
             "type": "array"
           },
+          "source_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Run Id"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -23881,6 +24079,8 @@
           "id",
           "conversation_id",
           "model_id",
+          "mode",
+          "source_run_id",
           "status",
           "context",
           "references",
@@ -33787,6 +33987,67 @@
         ]
       }
     },
+    "/v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer": {
+      "post": {
+        "operationId": "answer_question_v1_amadeus_conversations__conversation_id__questions__question_id__answer_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "question_id",
+            "required": true,
+            "schema": {
+              "title": "Question Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionAnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Answer Question",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
     "/v1/amadeus/conversations/{conversation_id}/runs": {
       "get": {
         "operationId": "list_runs_v1_amadeus_conversations__conversation_id__runs_get",
@@ -34153,6 +34414,118 @@
           }
         },
         "summary": "Heartbeat Run",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval": {
+      "post": {
+        "operationId": "pause_run_for_approval_v1_amadeus_conversations__conversation_id__runs__run_id__pause_approval_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pause Run For Approval",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question": {
+      "post": {
+        "operationId": "create_question_v1_amadeus_conversations__conversation_id__runs__run_id__question_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Question",
         "tags": [
           "amadeus"
         ]
