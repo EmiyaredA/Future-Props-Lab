@@ -9,6 +9,10 @@
 - 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
   为唯一完整索引；新增目录或改变职责时同步更新该文件。
 - Python 命令与临时诊断优先通过 `uv run` 执行。
+- 代理为仓库任务主动生成且需要落盘或保留的临时输入、诊断文件、截图、渲染中间结果、导出草稿和本地验收产物，
+  必须统一放在仓库根目录的 `.local/` 下，并按能力或任务使用清晰的子目录；创建前先用 `git check-ignore`
+  确认目标路径已被忽略。不得在仓库根目录或受版本控制目录另建 `scene-output/`、`output/`、`tmp/`
+  等临时产物目录。用户明确指定的正式交付路径和工具自身不可配置的短生命周期系统临时文件不受此限制。
 - 仓库二进制资产使用 Git LFS；缺少对象时先按路径选择性 `git lfs pull`，不得把 LFS 指针当作字体、
   模型或图片内容处理。
 - 后端持久配置只放在 `backend/config.toml`，按分组使用 TOML 原生类型；进程环境变量可供测试与部署覆盖。
