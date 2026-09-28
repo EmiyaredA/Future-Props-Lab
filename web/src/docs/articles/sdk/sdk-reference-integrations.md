@@ -19,6 +19,7 @@
 | [skill](#skill) | `GET /v1/integrations/skills/{skill_id}` |
 | [skill_versions](#skill-versions) | `GET /v1/integrations/skills/{skill_id}/versions` |
 | [skill_version_content](#skill-version-content) | `GET /v1/integrations/skills/{skill_id}/versions/{version}/content` |
+| [skill_version_markdown](#skill-version-markdown) | `GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md` |
 | [tool_apis](#tool-apis) | `GET /v1/integrations/tool-apis` |
 | [tool_api](#tool-api) | `GET /v1/integrations/tool-apis/{integration_id}` |
 | [update_mcp](#update-mcp) | `PATCH /v1/integrations/mcp/{integration_id}` |
@@ -220,6 +221,26 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## skill_version_markdown {#skill-version-markdown}
+
+`client.integrations.skill_version_markdown(...)`
+
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `skill_id` | path | string | 是 |
+| `version` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `SkillMarkdownOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

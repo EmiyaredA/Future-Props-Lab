@@ -11,6 +11,7 @@ export type McpTool = components["schemas"]["McpToolOut"];
 export type Skill = components["schemas"]["SkillOut"];
 export type SkillCatalog = components["schemas"]["SkillCatalogOut"];
 export type SkillVersion = components["schemas"]["SkillVersionOut"];
+export type SkillMarkdown = components["schemas"]["SkillMarkdownOut"];
 
 export const getToolApis = async () =>
   unwrap(await api.GET("/v1/integrations/tool-apis"));
@@ -155,6 +156,16 @@ export const getSkillVersions = async (current: Skill) =>
     await api.GET("/v1/integrations/skills/{skill_id}/versions", {
       params: { path: { skill_id: current.id } },
     }),
+  );
+
+export const getSkillMarkdown = async (current: Skill, version: string) =>
+  unwrap(
+    await api.GET(
+      "/v1/integrations/skills/{skill_id}/versions/{version}/skill-md",
+      {
+        params: { path: { skill_id: current.id, version } },
+      },
+    ),
   );
 
 export const downloadSkillVersion = (current: Skill, version: string) =>

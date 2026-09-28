@@ -3028,6 +3028,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/integrations/skills/{skill_id}/versions/{version}/skill-md": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Skill Version Markdown */
+        get: operations["skill_version_markdown_v1_integrations_skills__skill_id__versions__version__skill_md_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/integrations/tool-apis": {
         parameters: {
             query?: never;
@@ -15695,6 +15712,13 @@ export interface components {
             /** Version Count */
             version_count: number;
         };
+        /** SkillMarkdownOut */
+        SkillMarkdownOut: {
+            /** Content */
+            content: string;
+            /** Version */
+            version: string;
+        };
         /** SkillOut */
         SkillOut: {
             /** Created At */
@@ -25527,6 +25551,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skill_version_markdown_v1_integrations_skills__skill_id__versions__version__skill_md_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillMarkdownOut"];
                 };
             };
             /** @description Validation Error */

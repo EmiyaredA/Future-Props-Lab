@@ -17,6 +17,7 @@ import {
   deleteSkill,
   downloadSkillVersion,
   getSkills,
+  getSkillMarkdown,
   getSkillVersions,
   updateSkill,
   type Skill,
@@ -147,6 +148,17 @@ export function SkillPanel({
   const [addingTo, setAddingTo] = useState<Skill | null>(null);
   const [viewing, setViewing] = useState<Skill | null>(null);
   const [details, setDetails] = useState<Skill | null>(null);
+  const [detailVersion, setDetailVersion] = useState("");
+  const detailVersionsQuery = useQuery({
+    queryKey: integrationKeys.versions(details?.id ?? ""),
+    queryFn: () => getSkillVersions(details!),
+    enabled: Boolean(details),
+  });
+  const markdownQuery = useQuery({
+    queryKey: integrationKeys.skillMarkdown(details?.id ?? "", detailVersion),
+    queryFn: () => getSkillMarkdown(details!, detailVersion),
+    enabled: Boolean(details && detailVersion),
+  });
   const versionsQuery = useQuery({
     queryKey: integrationKeys.versions(viewing?.id ?? ""),
     queryFn: () => getSkillVersions(viewing!),
@@ -318,7 +330,7 @@ export function SkillPanel({
     }
     const item = catalog.items.find((item) => item.id === request.resource_id);
     if (!item) throw new Error("Skill 不存在");
-    if (request.view === "details") setDetails(item);
+    if (request.view === "details") openDetails(item);
     else if (request.view === "versions") {
       await client.fetchQuery({
         queryKey: integrationKeys.versions(item.id),
@@ -343,6 +355,10 @@ export function SkillPanel({
     } catch (error) {
       setNotice(errorMessage(error));
     }
+  };
+  const openDetails = (skill: Skill) => {
+    setDetails(skill);
+    setDetailVersion(skill.default_version);
   };
   const download = async (skill: Skill, version: string) => {
     try {
@@ -425,7 +441,7 @@ export function SkillPanel({
                   type="button"
                   className="skill-details-trigger"
                   aria-label={`查看 ${item.name} 详情`}
-                  onClick={() => setDetails(item)}
+                  onClick={() => openDetails(item)}
                 >
                   查看详情
                 </button>
@@ -515,7 +531,11 @@ export function SkillPanel({
         </aside>
       </div>
       {details ? (
-        <IntegrationModal title="Skill 详情" onClose={() => setDetails(null)}>
+        <IntegrationModal
+          title="Skill 详情"
+          onClose={() => setDetails(null)}
+          wide
+        >
           <div className="skill-details">
             <h3>{details.name}</h3>
             <p>{details.description || "暂无说明"}</p>
@@ -526,6 +546,34 @@ export function SkillPanel({
                 <small>无标签</small>
               )}
             </div>
+            <div className="skill-markdown-heading">
+              <h4>SKILL.md</h4>
+              {detailVersionsQuery.data &&
+              detailVersionsQuery.data.length > 1 ? (
+                <CustomSelect
+                  ariaLabel="查看 Skill 版本"
+                  value={detailVersion}
+                  options={detailVersionsQuery.data.map((version) => ({
+                    value: version.version,
+                    label: version.version,
+                  }))}
+                  onChange={setDetailVersion}
+                />
+              ) : (
+                <span>{detailVersion}</span>
+              )}
+            </div>
+            {markdownQuery.isPending ? (
+              <p role="status">正在加载 SKILL.md…</p>
+            ) : markdownQuery.isError ? (
+              <p role="alert">
+                SKILL.md 加载失败：{errorMessage(markdownQuery.error)}
+              </p>
+            ) : (
+              <pre className="skill-markdown-content">
+                {markdownQuery.data.content}
+              </pre>
+            )}
           </div>
         </IntegrationModal>
       ) : null}

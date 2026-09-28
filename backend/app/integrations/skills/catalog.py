@@ -18,12 +18,17 @@ from app.integrations.common import (
 from app.integrations.models import SkillIntegration, SkillVersion
 from app.integrations.schemas import (
     SkillCatalogOut,
+    SkillMarkdownOut,
     SkillOut,
     SkillTagsIn,
     SkillUpdateIn,
     SkillVersionOut,
 )
-from app.integrations.skills.archive import SkillArchiveStorage, StagedSkillArchive
+from app.integrations.skills.archive import (
+    SKILL_MD_MAX_BYTES,
+    SkillArchiveStorage,
+    StagedSkillArchive,
+)
 from app.orm import require_workspace_id
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
@@ -314,6 +319,33 @@ class SkillCatalog:
         self.storage.purge_delete(staged)
 
     async def version_zip(self, skill_id: str, version: str) -> tuple[str, bytes]:
+        root = await self._version_root(skill_id, version)
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(root.rglob("*")):
+                if path.is_file():
+                    archive.write(path, path.relative_to(root).as_posix())
+        return f"skill-{skill_id}-{version}.zip", buffer.getvalue()
+
+    async def version_markdown(self, skill_id: str, version: str) -> SkillMarkdownOut:
+        root = await self._version_root(skill_id, version)
+        try:
+            path = next(
+                (item for item in root.iterdir() if item.name.casefold() == "skill.md"), None
+            )
+            if path is None or path.is_symlink() or not path.is_file():
+                raise IntegrationNotFoundError("SKILL.md 不存在")
+            with path.open("rb") as source:
+                data = source.read(SKILL_MD_MAX_BYTES + 1)
+            if len(data) > SKILL_MD_MAX_BYTES:
+                raise IntegrationValidationError("SKILL.md 超过 256 KiB 限制")
+            return SkillMarkdownOut(version=version, content=data.decode("utf-8"))
+        except UnicodeDecodeError as exc:
+            raise IntegrationValidationError("SKILL.md 必须使用 UTF-8") from exc
+        except OSError as exc:
+            raise IntegrationNotFoundError("SKILL.md 不可读取") from exc
+
+    async def _version_root(self, skill_id: str, version: str) -> Path:
         await self._get(skill_id)
         row = (
             await self.session.execute(
@@ -330,9 +362,4 @@ class SkillCatalog:
         root = self.storage.final_path(skill_id, version)
         if not root.is_relative_to(self.storage.root.resolve()) or not root.is_dir():
             raise IntegrationNotFoundError("Skill 版本内容不存在")
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            for path in sorted(root.rglob("*")):
-                if path.is_file():
-                    archive.write(path, path.relative_to(root).as_posix())
-        return f"skill-{skill_id}-{version}.zip", buffer.getvalue()
+        return root

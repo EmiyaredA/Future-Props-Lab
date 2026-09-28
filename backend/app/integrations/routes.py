@@ -25,6 +25,7 @@ from app.integrations.schemas import (
     McpUpdateIn,
     McpValidationOut,
     SkillCatalogOut,
+    SkillMarkdownOut,
     SkillOut,
     SkillTagsIn,
     SkillUpdateIn,
@@ -338,3 +339,13 @@ async def skill_version_content(
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.get("/skills/{skill_id}/versions/{version}/skill-md", response_model=SkillMarkdownOut)
+async def skill_version_markdown(
+    session: SessionDep, workspace_id: WorkspaceDep, skill_id: str, version: str
+) -> SkillMarkdownOut:
+    try:
+        return await SkillCatalog(session, workspace_id).version_markdown(skill_id, version)
+    except (IntegrationNotFoundError, IntegrationValidationError) as exc:
+        _raise_integration(exc)

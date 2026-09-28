@@ -326,6 +326,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/integrations/skills/{skill_id}"),
         ("GET", "/v1/integrations/skills/{skill_id}/versions"),
         ("GET", "/v1/integrations/skills/{skill_id}/versions/{version}/content"),
+        ("GET", "/v1/integrations/skills/{skill_id}/versions/{version}/skill-md"),
         ("GET", "/v1/integrations/tool-apis"),
         ("GET", "/v1/integrations/tool-apis/{integration_id}"),
         ("GET", "/v1/model-categories"),

@@ -3837,6 +3837,10 @@ class SkillCatalogOut(WireModel):
     items: list[SkillOut] = Field(default=..., alias='items')
     version_count: int = Field(default=..., alias='version_count')
 
+class SkillMarkdownOut(WireModel):
+    content: str = Field(default=..., alias='content')
+    version: str = Field(default=..., alias='version')
+
 class SkillOut(WireModel):
     created_at: str = Field(default=..., alias='created_at')
     default_version: str = Field(default=..., alias='default_version')
@@ -5498,6 +5502,7 @@ SetAssetOrganizationOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()
 SetTransitionOperation.model_rebuild()
 SkillCatalogOut.model_rebuild()
+SkillMarkdownOut.model_rebuild()
 SkillOut.model_rebuild()
 SkillUpdateIn.model_rebuild()
 SkillVersionOut.model_rebuild()

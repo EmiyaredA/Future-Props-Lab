@@ -24499,6 +24499,24 @@
         "title": "SkillCatalogOut",
         "type": "object"
       },
+      "SkillMarkdownOut": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "content"
+        ],
+        "title": "SkillMarkdownOut",
+        "type": "object"
+      },
       "SkillOut": {
         "properties": {
           "created_at": {
@@ -42119,6 +42137,57 @@
           }
         },
         "summary": "Skill Version Content",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/skills/{skill_id}/versions/{version}/skill-md": {
+      "get": {
+        "operationId": "skill_version_markdown_v1_integrations_skills__skill_id__versions__version__skill_md_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillMarkdownOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skill Version Markdown",
         "tags": [
           "integrations"
         ]

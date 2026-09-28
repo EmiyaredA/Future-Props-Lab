@@ -71,6 +71,10 @@ class Integrations:
         'Skill Version Content. GET /v1/integrations/skills/{skill_id}/versions/{version}/content'
         return self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/content', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=Any)
 
+    def skill_version_markdown(self, *, skill_id: str, version: str) -> models.SkillMarkdownOut:
+        'Skill Version Markdown. GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md'
+        return self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/skill-md', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=models.SkillMarkdownOut)
+
     def tool_apis(self) -> models.ToolApiCatalogOut:
         'Tool Apis. GET /v1/integrations/tool-apis'
         return self._client._call('GET', '/v1/integrations/tool-apis', parameters=[], response_type=models.ToolApiCatalogOut)
@@ -158,6 +162,10 @@ class AsyncIntegrations:
     async def skill_version_content(self, *, skill_id: str, version: str) -> Any:
         'Skill Version Content. GET /v1/integrations/skills/{skill_id}/versions/{version}/content'
         return await self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/content', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=Any)
+
+    async def skill_version_markdown(self, *, skill_id: str, version: str) -> models.SkillMarkdownOut:
+        'Skill Version Markdown. GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md'
+        return await self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/skill-md', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=models.SkillMarkdownOut)
 
     async def tool_apis(self) -> models.ToolApiCatalogOut:
         'Tool Apis. GET /v1/integrations/tool-apis'

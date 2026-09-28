@@ -6,7 +6,9 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { SkillPanel } from "@features/integrations/SkillPanel";
 import {
   createSkill,
+  getSkillMarkdown,
   getSkills,
+  getSkillVersions,
   updateSkill,
   type Skill,
 } from "@features/integrations/api";
@@ -17,6 +19,8 @@ vi.mock("@features/integrations/api", async () => ({
     "@features/integrations/api",
   )),
   getSkills: vi.fn(),
+  getSkillVersions: vi.fn(),
+  getSkillMarkdown: vi.fn(),
   createSkill: vi.fn(),
   updateSkill: vi.fn(),
 }));
@@ -93,6 +97,47 @@ beforeEach(() => {
     },
   );
   vi.mocked(createSkill).mockResolvedValue(base);
+  vi.mocked(getSkillVersions).mockResolvedValue([
+    {
+      id: "version-1",
+      version: "v1",
+      name: base.name,
+      description: base.description,
+      content_sha256: "sha",
+      file_count: 1,
+      expanded_bytes: 80,
+      created_at: base.created_at,
+    },
+    {
+      id: "version-2",
+      version: "v2",
+      name: base.name,
+      description: "Updated instructions",
+      content_sha256: "sha2",
+      file_count: 1,
+      expanded_bytes: 90,
+      created_at: base.created_at,
+    },
+  ]);
+  vi.mocked(getSkillMarkdown).mockImplementation(async (_skill, version) => ({
+    version,
+    content: `# ${version} instructions`,
+  }));
+});
+
+test("shows SKILL.md for the default and selected version to read-only viewers", async () => {
+  const user = setup(false);
+  await user.click(
+    await screen.findByRole("button", { name: "查看 h3-prompt-writing 详情" }),
+  );
+  const dialog = screen.getByRole("dialog");
+  expect(await within(dialog).findByText("# v1 instructions")).toBeVisible();
+  await user.click(
+    within(dialog).getByRole("combobox", { name: "查看 Skill 版本" }),
+  );
+  await user.click(within(dialog).getByRole("option", { name: "v2" }));
+  expect(await within(dialog).findByText("# v2 instructions")).toBeVisible();
+  expect(getSkillMarkdown).toHaveBeenCalledWith(base, "v2");
 });
 
 test("edits normalized tags, clears them and preserves version settings", async () => {
@@ -264,6 +309,11 @@ for (const canManage of [true, false]) {
     }
     const close = dialog.getByRole("button", { name: "关闭" });
     await waitFor(() => expect(close).toHaveFocus());
+    await user.tab();
+    const versionSelect = await dialog.findByRole("combobox", {
+      name: "查看 Skill 版本",
+    });
+    expect(versionSelect).toHaveFocus();
     await user.tab();
     expect(close).toHaveFocus();
     await user.keyboard("{Escape}");

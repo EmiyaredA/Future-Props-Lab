@@ -282,6 +282,11 @@ class SkillVersionOut(BaseModel):
     created_at: str
 
 
+class SkillMarkdownOut(BaseModel):
+    version: str
+    content: str
+
+
 class SkillCatalogOut(BaseModel):
     items: list[SkillOut]
     enabled_count: int

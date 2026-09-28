@@ -20,10 +20,6 @@ from app.integrations.mcp.client import (
     DiscoveryResult,
     OfficialMcpDiscoveryClient,
 )
-from app.integrations.skills.archive import SkillArchiveStorage
-from app.integrations.skills.catalog import SkillCatalog
-from app.integrations.tool_apis import ToolApiCatalog
-from app.main import app
 from app.integrations.models import (
     IntegrationCheck,
     McpDiscoveredTool,
@@ -32,11 +28,15 @@ from app.integrations.models import (
     SkillVersion,
     ToolApiIntegration,
 )
+from app.integrations.schemas import McpCreateIn, ToolApiCreateIn
+from app.integrations.skills.archive import SkillArchiveStorage
+from app.integrations.skills.catalog import SkillCatalog
+from app.integrations.tool_apis import ToolApiCatalog
+from app.main import app
 from app.orm import bind_workspace
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.outbound_urls import require_safe_integration_http_url
-from app.integrations.schemas import McpCreateIn, ToolApiCreateIn
 
 
 async def _clear_integrations() -> None:
@@ -422,6 +422,25 @@ async def test_skill_zip_versions_download_and_rejects_unsafe_members() -> None:
         )
         assert switched.status_code == 200
         assert switched.json()["default_version"] == "v2"
+        markdown_v1 = await client.get(
+            f"/v1/integrations/skills/{created['id']}/versions/v1/skill-md"
+        )
+        assert markdown_v1.status_code == 200
+        assert markdown_v1.json() == {
+            "version": "v1",
+            "content": "---\nname: demo-skill\ndescription: A local test skill\n---\n# Test\n",
+        }
+        markdown_v2 = await client.get(
+            f"/v1/integrations/skills/{created['id']}/versions/v2/skill-md"
+        )
+        assert markdown_v2.status_code == 200
+        assert "Second immutable version" in markdown_v2.json()["content"]
+        missing_version = await client.get(
+            f"/v1/integrations/skills/{created['id']}/versions/v3/skill-md"
+        )
+        assert missing_version.status_code == 404
+        unknown_skill = await client.get("/v1/integrations/skills/unknown/versions/v1/skill-md")
+        assert unknown_skill.status_code == 404
         download = await client.get(f"/v1/integrations/skills/{created['id']}/versions/v1/content")
         assert download.status_code == 200
         assert download.headers["content-type"] == "application/zip"
@@ -440,4 +459,7 @@ async def test_skill_zip_versions_download_and_rejects_unsafe_members() -> None:
             params={"expected_revision": switched.json()["revision"]},
         )
         assert deleted.status_code == 200
+        assert (
+            await client.get(f"/v1/integrations/skills/{created['id']}/versions/v1/skill-md")
+        ).status_code == 404
     await _clear_integrations()

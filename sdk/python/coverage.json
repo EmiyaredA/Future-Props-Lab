@@ -1736,6 +1736,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md",
+    "sdk": "client.integrations.skill_version_markdown",
+    "document": "/docs.html?page=sdk-reference-integrations#skill-version-markdown",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/integrations/tool-apis",
     "sdk": "client.integrations.tool_apis",
     "document": "/docs.html?page=sdk-reference-integrations#tool-apis",
