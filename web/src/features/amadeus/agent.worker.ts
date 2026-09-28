@@ -1,4 +1,5 @@
 import { Agent, type AgentTool } from "@earendil-works/pi-agent-core";
+import { normalizeOperationBody } from "./operationArguments";
 import {
   createAssistantMessageEventStream,
   getCurrentSystemPrompt,
@@ -287,7 +288,7 @@ const registeredWriteTool: AgentTool = {
   name: "fpl_operation_write",
   label: "执行已登记业务操作",
   description:
-    "执行 fpl_operations 返回的 POST/PATCH/PUT/DELETE 操作。必须使用当前资源版本，执行前展示完整参数并等待用户批准。",
+    "执行 fpl_operations 返回的 POST/PATCH/PUT/DELETE 操作。body 应为 JSON 对象，不要序列化成字符串。必须使用当前资源版本，执行前展示完整参数并等待用户批准。",
   parameters: Type.Object({
     operation: Type.String(),
     path_params: Type.Optional(Type.Record(Type.String(), Type.String())),
@@ -304,7 +305,12 @@ const registeredWriteTool: AgentTool = {
     const value = await rpc<unknown>("invoke", {
       tool_call_id: _id,
       tool_name: `fpl_operation:${operation}`,
-      arguments: arguments_,
+      arguments: {
+        ...arguments_,
+        ...(arguments_.body === undefined
+          ? {}
+          : { body: normalizeOperationBody(arguments_.body) }),
+      },
     });
     return {
       content: [{ type: "text", text: JSON.stringify(value) }],

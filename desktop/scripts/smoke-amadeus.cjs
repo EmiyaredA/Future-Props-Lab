@@ -515,7 +515,7 @@ async function main() {
                 arguments: {
                   operation: "visual.apply_canvas_operations",
                   path_params: { project_id: projectId },
-                  body: {
+                  body: JSON.stringify({
                     expected_revision: 0,
                     request_id: "amadeus-video-draft-smoke",
                     operations: [
@@ -526,7 +526,7 @@ async function main() {
                         value: videoNode,
                       },
                     ],
-                  },
+                  }),
                 },
               },
             ];

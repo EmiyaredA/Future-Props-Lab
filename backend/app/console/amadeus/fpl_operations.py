@@ -137,18 +137,31 @@ async def call_operation(
     if len(response.content) > RESPONSE_LIMIT:
         raise OperationError("操作结果超过 1 MiB", "result_too_large", 422)
     if response.status_code >= 400:
+        code = "operation_failed"
+        message = f"业务操作返回 HTTP {response.status_code}"
         try:
-            detail = response.json().get("detail", {})
-            code = (
-                detail.get("code", "operation_failed")
-                if isinstance(detail, dict)
-                else "operation_failed"
-            )
+            payload = response.json()
         except ValueError:
-            code = "operation_failed"
-        raise OperationError(
-            f"业务操作返回 HTTP {response.status_code}", code, response.status_code
-        )
+            payload = None
+        if isinstance(payload, dict):
+            if isinstance(payload.get("code"), str):
+                code = payload["code"]
+            if isinstance(payload.get("detail"), str):
+                message += f"：{payload['detail'][:300]}"
+            errors = payload.get("errors")
+            if isinstance(errors, list) and errors:
+                first = errors[0]
+                if isinstance(first, dict):
+                    location = first.get("loc")
+                    field = (
+                        ".".join(str(part) for part in location)
+                        if isinstance(location, list)
+                        else "body"
+                    )
+                    explanation = first.get("msg")
+                    if isinstance(explanation, str):
+                        message += f"（{field}: {explanation[:300]}）"
+        raise OperationError(message, code, response.status_code)
     if not response.headers.get("content-type", "").startswith("application/json"):
         raise OperationError("此操作的二进制响应暂不支持", "unsupported_result", 422)
     return {"status_code": response.status_code, "result": response.json()}

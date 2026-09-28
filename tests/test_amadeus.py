@@ -337,6 +337,35 @@ async def test_amadeus_registered_fpl_operations_read_and_approved_write() -> No
         )
         assert visual_read.status_code == 200
         assert visual_read.json()["result"]["revision"] == 0
+        malformed_action = (
+            await client.post(
+                root + "/actions",
+                json={
+                    "tool_name": "fpl_operation:visual.apply_canvas_operations",
+                    "arguments": {
+                        "path_params": {"project_id": visual["id"]},
+                        "body": (
+                            '{"expected_revision": 0, "request_id": "json-string", '
+                            '"operations": []}'
+                        ),
+                    },
+                },
+            )
+        ).json()
+        assert (
+            await client.post(
+                root + f"/actions/{malformed_action['id']}/decision",
+                json={
+                    "arguments_sha256": malformed_action["arguments_sha256"],
+                    "approve": True,
+                },
+            )
+        ).status_code == 200
+        rejected = await client.post(root + f"/actions/{malformed_action['id']}/execute")
+        assert rejected.status_code == 200, rejected.text
+        assert rejected.json()["status"] == "failed"
+        assert rejected.json()["result"]["code"] == "validation_error"
+        assert "body:" in rejected.json()["result"]["message"]
         visual_action = (
             await client.post(
                 root + "/actions",
