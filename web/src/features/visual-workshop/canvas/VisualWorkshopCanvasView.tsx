@@ -259,6 +259,7 @@ export function VisualWorkshopCanvasView({
           saveState={saveState}
           assistantOpen={assistantOpen}
           assetsOpen={assetsOpen}
+          createMenuOpen={!!contextMenu}
           onBack={onBack}
           onStartTitleEditing={() => setEditingTitle(true)}
           onTitleChange={setTitle}
@@ -271,6 +272,10 @@ export function VisualWorkshopCanvasView({
             else setEditingTitle(false);
           }}
           onCreate={(event) => {
+            if (contextMenu) {
+              setContextMenu(undefined);
+              return;
+            }
             const surfaceBounds = surface.current?.getBoundingClientRect();
             const buttonBounds = event.currentTarget.getBoundingClientRect();
             if (!surfaceBounds) return;

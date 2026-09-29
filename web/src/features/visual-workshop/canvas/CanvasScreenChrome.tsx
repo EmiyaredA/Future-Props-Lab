@@ -29,6 +29,7 @@ type CanvasScreenChromeProps = {
   saveState: "saving" | "saved" | "conflict" | "error";
   assistantOpen: boolean;
   assetsOpen: boolean;
+  createMenuOpen: boolean;
   controls: ComponentProps<typeof CanvasViewControls>;
   onBack: () => void;
   onStartTitleEditing: () => void;
@@ -47,6 +48,7 @@ export function CanvasScreenChrome({
   saveState,
   assistantOpen,
   assetsOpen,
+  createMenuOpen,
   controls,
   onBack,
   onStartTitleEditing,
@@ -139,6 +141,7 @@ export function CanvasScreenChrome({
         <button
           type="button"
           aria-label="添加内容"
+          aria-expanded={createMenuOpen}
           title="添加内容"
           onClick={onCreate}
         >

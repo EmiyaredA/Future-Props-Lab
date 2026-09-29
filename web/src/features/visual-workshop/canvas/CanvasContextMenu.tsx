@@ -38,6 +38,12 @@ export function CanvasContextMenu({
   useEffect(() => {
     const node = menu.current;
     if (!node) return;
+    const outsidePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !node.contains(event.target)) {
+        if (skipFocusRestoreRef) skipFocusRestoreRef.current = true;
+        close.current();
+      }
+    };
     const previous = document.activeElement as HTMLElement | null;
     const buttons = [
       ...node.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
@@ -59,8 +65,10 @@ export function CanvasContextMenu({
       ]?.focus();
     };
     node.addEventListener("keydown", key);
+    document.addEventListener("pointerdown", outsidePointerDown);
     return () => {
       node.removeEventListener("keydown", key);
+      document.removeEventListener("pointerdown", outsidePointerDown);
       if (skipFocusRestoreRef?.current) {
         skipFocusRestoreRef.current = false;
         return;
