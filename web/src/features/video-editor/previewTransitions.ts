@@ -12,6 +12,7 @@ export type PreviewTransitionEffect = {
   clipPath?: string;
   overlayColor?: "#000000" | "#ffffff";
   overlayOpacity: number;
+  eyelidProgress?: number;
   /** Override source local time (seam partners / handle continuity). */
   forceLocalUs?: number;
 };
@@ -66,6 +67,10 @@ function effectForVisualKind(
     blurPx: 0,
     overlayOpacity: 0,
   };
+  if (normalizedKind === "eyelid") {
+    effect.opacityMultiplier = 1;
+    effect.eyelidProgress = Math.max(0, Math.min(1, visibility));
+  }
   if (normalizedKind === "zoom") {
     effect.scaleMultiplier = 1 + 0.22 * (1 - visibility);
   }
@@ -115,6 +120,7 @@ function multiplyEffects(
     clipPath: extra.clipPath ?? base.clipPath,
     overlayColor: overlay.overlayColor,
     overlayOpacity: overlay.overlayOpacity,
+    eyelidProgress: extra.eyelidProgress ?? base.eyelidProgress,
     forceLocalUs: base.forceLocalUs ?? extra.forceLocalUs,
   };
 }
@@ -242,6 +248,30 @@ export function previewTransitionEffectForClip(
           between.durationUs,
           between.easing,
         );
+        if (between.kind === "eyelid") {
+          const active = progress < 0.5 ? left : right;
+          if (clip.id !== active.id) {
+            return { ...identityEffect(), opacityMultiplier: 0 };
+          }
+          const opening =
+            progress < 0.5 ? 1 - progress * 2 : (progress - 0.5) * 2;
+          return multiplyEffects(
+            {
+              ...identityEffect(),
+              eyelidProgress: opening,
+              forceLocalUs: mediaLocalUs(
+                active,
+                playheadUs,
+                transitions,
+                clipsById,
+              ),
+            },
+            clipEdgePreviewEffect(
+              active,
+              playheadUs - active.timelineStartUs,
+            ) ?? identityEffect(),
+          );
+        }
         if (between.kind === "flash") {
           if (clip.id === left.id && playheadUs < seamUs) {
             const first = Math.max(
@@ -441,12 +471,29 @@ export function previewVisualLayers(
 export function mergeTransitionOverlay(layers: PreviewVisualLayer[]) {
   return layers.reduce(
     (current, layer) =>
-      layer.effect.overlayOpacity > current.opacity
-        ? {
-            color: layer.effect.overlayColor ?? "#ffffff",
-            opacity: layer.effect.overlayOpacity,
-          }
-        : current,
-    { color: "#ffffff" as "#000000" | "#ffffff", opacity: 0 },
+      layer.effect.eyelidProgress !== undefined
+        ? { ...current, eyelidProgress: layer.effect.eyelidProgress }
+        : layer.effect.overlayOpacity > current.opacity
+          ? {
+              color: layer.effect.overlayColor ?? "#ffffff",
+              opacity: layer.effect.overlayOpacity,
+              eyelidProgress: current.eyelidProgress,
+            }
+          : current,
+    {
+      color: "#ffffff" as "#000000" | "#ffffff",
+      opacity: 0,
+      eyelidProgress: undefined as number | undefined,
+    },
   );
+}
+
+export function eyelidOverlayPaths(opening: number) {
+  const amount = Math.max(0, Math.min(1, opening));
+  const edge = 50 * (1 - amount);
+  const control = edge - amount * 30;
+  return {
+    upper: `M0 0H100V${edge}Q50 ${control} 0 ${edge}Z`,
+    lower: `M0 100H100V${100 - edge}Q50 ${100 - control} 0 ${100 - edge}Z`,
+  };
 }

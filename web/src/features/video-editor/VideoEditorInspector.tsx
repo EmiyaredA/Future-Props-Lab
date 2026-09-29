@@ -27,6 +27,7 @@ const visualTransitionLabels: Record<string, string> = {
   zoom: "镜头缩放",
   blur: "径向模糊",
   flash: "闪白",
+  eyelid: "闭眼睁眼",
   "audio-crossfade": "音频淡化",
 };
 

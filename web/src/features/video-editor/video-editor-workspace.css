@@ -552,6 +552,15 @@
   background: #fff;
   z-index: 4;
 }
+.ve-transition-eyelids {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: #000;
+  z-index: 5;
+}
 .ve-stage-layer.selected {
   outline: 1px solid #8374ff;
 }

@@ -87,7 +87,7 @@ def _edge_overlay(kind: str, visibility: float) -> tuple[tuple[int, int, int] | 
 
 
 def _edge_opacity(kind: str, visibility: float) -> float:
-    return 1 if kind in {"fade-black", "fade-white", "wipe"} else visibility
+    return 1 if kind in {"fade-black", "fade-white", "wipe", "eyelid"} else visibility
 
 
 def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | None:
@@ -186,10 +186,12 @@ class TimelineFrameRenderer:
         self.without_chroma_clip_id = without_chroma_clip_id
         self._portrait_ground_ratio_by_asset: dict[str, float] = {}
         self._frame_overlay: tuple[tuple[int, int, int], int] | None = None
+        self._eyelid_progress: float | None = None
 
     def render(self, time_us: int, *, size: tuple[int, int] | None = None) -> Image.Image:
         settings = self.document.settings
         self._frame_overlay = None
+        self._eyelid_progress = None
         canvas = Image.new(
             "RGBA",
             (settings.width, settings.height),
@@ -316,6 +318,32 @@ class TimelineFrameRenderer:
                                 self._queue_frame_overlay(color, round(overlay_progress * 255))
                                 continue
 
+                            if between.kind == "eyelid":
+                                opening = (
+                                    1 - progress * 2
+                                    if time_us < seam_us
+                                    else (progress - 0.5) * 2
+                                )
+                                self._eyelid_progress = max(0.0, min(1.0, opening))
+                                active = left if time_us < seam_us else right
+                                active_local_us = _media_local_us(active, time_us, transitions)
+                                active_layer = self._layer(active, active_local_us)
+                                if active_layer is not None:
+                                    self._composite_with_edge(
+                                        canvas,
+                                        active_layer,
+                                        active,
+                                        active_local_us,
+                                        edge_local_us=max(
+                                            0,
+                                            min(
+                                                active.duration_us - 1,
+                                                time_us - active.timeline_start_us,
+                                            ),
+                                        ),
+                                    )
+                                continue
+
                             # Crossfade / wipe / zoom / blur across the centered window.
                             left_local_us = _media_local_us(left, time_us, transitions)
                             right_local_us = _media_local_us(right, time_us, transitions)
@@ -373,12 +401,45 @@ class TimelineFrameRenderer:
                 self._composite_with_edge(
                     canvas, layer, clip, draw_local_us, edge_local_us=local_us
                 )
+        if self._eyelid_progress is not None:
+            self._draw_eyelid_overlay(canvas, self._eyelid_progress)
         if self._frame_overlay is not None:
             color, alpha = self._frame_overlay
             canvas.alpha_composite(Image.new("RGBA", canvas.size, (*color, alpha)))
         if size and canvas.size != size:
             canvas = canvas.resize(size, Image.Resampling.LANCZOS)
         return canvas.convert("RGB")
+
+    @staticmethod
+    def _draw_eyelid_overlay(canvas: Image.Image, opening: float) -> None:
+        """Draw curved upper and lower eyelids around a centered eye-shaped opening."""
+        opening = max(0.0, min(1.0, opening))
+        if opening >= 1:
+            return
+        width, height = canvas.size
+        edge_y = height * (1 - opening) / 2
+        curve_y = edge_y - height * opening * 0.3
+        steps = max(24, width // 16)
+        top_curve = [
+            (
+                round(width * index / steps),
+                round(
+                    height
+                    * (
+                        edge_y / height
+                        + 2 * (curve_y / height - edge_y / height) * t * (1 - t)
+                    )
+                ),
+            )
+            for index in range(steps + 1)
+            for t in [index / steps]
+        ]
+        bottom_curve = [(x, height - y) for x, y in top_curve]
+        draw = ImageDraw.Draw(canvas)
+        draw.polygon([(0, 0), (width, 0), *reversed(top_curve)], fill=(0, 0, 0, 255))
+        draw.polygon(
+            [(0, height), (width, height), *bottom_curve], fill=(0, 0, 0, 255)
+        )
 
     def _queue_frame_overlay(self, color: tuple[int, int, int], alpha: int) -> None:
         if alpha <= 0:
@@ -476,6 +537,8 @@ class TimelineFrameRenderer:
                 direction=direction,
             )
             return
+        if edge.kind == "eyelid":
+            self._eyelid_progress = edge.progress
         # Prefer seam wipe/zoom kind when both apply; still multiply visibility / flash.
         self._composite(
             canvas,

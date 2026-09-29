@@ -435,6 +435,62 @@ def test_wipe_seam_reveals_incoming_without_transparency_fade() -> None:
     assert frame.getpixel((1800, 540))[:3] == (0, 0, 255)
 
 
+def test_eyelid_seam_closes_switches_and_opens_with_curved_edges() -> None:
+    document = parse_timeline_document(
+        {
+            **_document(),
+            "transitions": [
+                {
+                    "id": "eyelid",
+                    "kind": "eyelid",
+                    "durationUs": 1_000_000,
+                    "placement": "between",
+                    "fromClipId": "left",
+                    "toClipId": "right",
+                    "easing": "linear",
+                }
+            ],
+        }
+    )
+    renderer = TimelineFrameRenderer(
+        document,
+        FrameSource(
+            image_for_clip=lambda clip, _time: Image.new(
+                "RGBA", (32, 18), "red" if clip.asset_id == "red" else "blue"
+            ),
+            font_for_clip=lambda _clip: None,
+        ),
+    )
+
+    opening_out = renderer.render(750_000)
+    assert opening_out.getpixel((960, 540))[:3] == (255, 0, 0)
+    assert opening_out.getpixel((960, 10))[:3] == (0, 0, 0)
+    assert renderer.render(1_000_000).getpixel((960, 540))[:3] == (0, 0, 0)
+    opening_in = renderer.render(1_250_000)
+    assert opening_in.getpixel((960, 540))[:3] == (0, 0, 255)
+    assert opening_in.getpixel((960, 10))[:3] == (0, 0, 0)
+
+
+@pytest.mark.parametrize("edge", ["transitionIn", "transitionOut"])
+def test_eyelid_clip_edges_close_the_frame(edge: str) -> None:
+    document = _document()
+    document["tracks"][0]["clips"][0][edge] = {
+        "kind": "eyelid",
+        "durationUs": 500_000,
+        "easing": "linear",
+    }
+    time_us = 0 if edge == "transitionIn" else 999_999
+    renderer = TimelineFrameRenderer(
+        parse_timeline_document(document),
+        FrameSource(
+            image_for_clip=lambda _clip, _time: Image.new("RGBA", (32, 18), "red"),
+            font_for_clip=lambda _clip: None,
+        ),
+    )
+
+    assert renderer.render(time_us).getpixel((960, 540))[:3] == (0, 0, 0)
+
+
 def test_seam_flash_outs_then_ins_without_double_start() -> None:
     document = parse_timeline_document(
         {

@@ -4494,7 +4494,7 @@ class VideoEditorTimelineTransition(WireModel):
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
     from_clip_id: str = Field(default=..., alias='fromClipId', min_length=1, max_length=64)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
-    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'audio-crossfade'] = Field(default=..., alias='kind')
+    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'eyelid', 'audio-crossfade'] = Field(default=..., alias='kind')
     placement: Literal['between'] = Field(default='between', alias='placement')
     to_clip_id: str = Field(default=..., alias='toClipId', min_length=1, max_length=64)
 
@@ -4522,7 +4522,7 @@ class VideoEditorTransition(WireModel):
     direction: Literal['left', 'right', 'up', 'down', 'in', 'out'] = Field(default='left', alias='direction')
     duration_us: int = Field(default=..., alias='durationUs', ge=0.0, le=10000000.0)
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
-    kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'audio-crossfade'] = Field(default=..., alias='kind')
+    kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'eyelid', 'audio-crossfade'] = Field(default=..., alias='kind')
 
 class VideoFramesIn(WireModel):
     max_width: int = Field(default=1280, alias='max_width', ge=64.0, le=1920.0)

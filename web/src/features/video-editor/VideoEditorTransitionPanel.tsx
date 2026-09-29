@@ -81,6 +81,14 @@ const definitions: TransitionDefinition[] = [
     media: "visual",
   },
   {
+    kind: "eyelid",
+    label: "闭眼睁眼",
+    category: "风格",
+    direction: "left",
+    description: "上下眼睑弧形合拢，切换画面后再睁开",
+    media: "visual",
+  },
+  {
     kind: "audio-crossfade",
     label: "音频淡化",
     category: "音频",
@@ -98,6 +106,7 @@ const categories = [
   "缩放",
   "模糊",
   "光效",
+  "风格",
   "音频",
 ];
 const defaultDurationUs = 500_000;

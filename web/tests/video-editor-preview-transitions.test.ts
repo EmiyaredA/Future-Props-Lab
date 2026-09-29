@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clipEdgePreviewEffect,
+  eyelidOverlayPaths,
   mergeTransitionOverlay,
   previewTransitionEffectForClip,
   previewVisualLayers,
@@ -46,6 +47,67 @@ const track = (clips: VideoEditorClip[]): VideoEditorTrack => ({
 });
 
 describe("previewTransitions", () => {
+  it("closes at the seam, switches scenes while closed, then opens", () => {
+    const left = clip("a", 0);
+    const right = clip("b", 2_000_000);
+    const transition: VideoEditorTimelineTransition = {
+      id: "eyelid",
+      kind: "eyelid",
+      durationUs: 1_000_000,
+      placement: "between",
+      fromClipId: left.id,
+      toClipId: right.id,
+      direction: "left",
+      easing: "linear",
+    };
+    const clips = new Map([
+      [left.id, left],
+      [right.id, right],
+    ]);
+
+    const closing = previewVisualLayers([track([left, right])], 1_750_000, [
+      transition,
+    ]);
+    expect(closing).toHaveLength(1);
+    expect(closing[0]?.clip.id).toBe(left.id);
+    expect(closing[0]?.effect.eyelidProgress).toBeCloseTo(0.5, 5);
+
+    const closed = previewVisualLayers([track([left, right])], 2_000_000, [
+      transition,
+    ]);
+    expect(closed).toHaveLength(1);
+    expect(closed[0]?.clip.id).toBe(right.id);
+    expect(mergeTransitionOverlay(closed).eyelidProgress).toBe(0);
+
+    const opening = previewTransitionEffectForClip(
+      right,
+      2_250_000,
+      [transition],
+      clips,
+    );
+    expect(opening.eyelidProgress).toBeCloseTo(0.5, 5);
+    expect(eyelidOverlayPaths(1).upper).toBe("M0 0H100V0Q50 -30 0 0Z");
+  });
+
+  it.each(["transitionIn", "transitionOut"] as const)(
+    "uses the same eyelid opening for clip %s",
+    (edge) => {
+      const target = {
+        ...clip("a", 0),
+        [edge]: {
+          kind: "eyelid",
+          durationUs: 1_000_000,
+          direction: "left",
+          easing: "linear",
+        },
+      } as VideoEditorClip;
+      const localUs = edge === "transitionIn" ? 250_000 : 1_750_000;
+      expect(
+        clipEdgePreviewEffect(target, localUs)?.eyelidProgress,
+      ).toBeCloseTo(0.25, 5);
+    },
+  );
+
   it.each(["crossfade", "wipe", "zoom", "blur", "flash"] as const)(
     "keeps chained %s transitions continuous regardless of saved order",
     (kind) => {

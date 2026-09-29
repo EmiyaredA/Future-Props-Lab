@@ -42,6 +42,7 @@ import {
   type VideoProxyCrop,
 } from "./previewGeometry";
 import {
+  eyelidOverlayPaths,
   mergeTransitionOverlay,
   previewVisualLayers,
 } from "./previewTransitions";
@@ -681,8 +682,7 @@ export function VideoEditorPreview({
               height: geometry
                 ? `${(geometry.height / canvasHeight) * 100}%`
                 : undefined,
-              opacity:
-                clipOpacityAt(clip, localUs) * effect.opacityMultiplier,
+              opacity: clipOpacityAt(clip, localUs) * effect.opacityMultiplier,
               filter: filters.join(" "),
               clipPath: effect.clipPath,
               transformOrigin:
@@ -770,6 +770,21 @@ export function VideoEditorPreview({
               }}
               aria-hidden
             />
+          ) : null}
+          {transitionOverlay.eyelidProgress !== undefined ? (
+            <svg
+              className="ve-transition-eyelids"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <path
+                d={eyelidOverlayPaths(transitionOverlay.eyelidProgress).upper}
+              />
+              <path
+                d={eyelidOverlayPaths(transitionOverlay.eyelidProgress).lower}
+              />
+            </svg>
           ) : null}
           {preciseFrame && !playing && !draggingText ? (
             <img

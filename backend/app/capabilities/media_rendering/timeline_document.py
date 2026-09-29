@@ -93,6 +93,7 @@ class VideoEditorTransition(BaseModel):
         "zoom",
         "blur",
         "flash",
+        "eyelid",
         "audio-crossfade",
     ]
     duration_us: int = Field(alias="durationUs", ge=0, le=10_000_000)
@@ -129,6 +130,7 @@ class VideoEditorTimelineTransition(BaseModel):
         "zoom",
         "blur",
         "flash",
+        "eyelid",
         "audio-crossfade",
     ]
     duration_us: int = Field(alias="durationUs", gt=0, le=10_000_000)

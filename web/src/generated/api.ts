@@ -17321,7 +17321,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "audio-crossfade";
+            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "eyelid" | "audio-crossfade";
             /**
              * Placement
              * @default between
@@ -17429,7 +17429,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "audio-crossfade";
+            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "eyelid" | "audio-crossfade";
         };
         /** VideoFramesIn */
         VideoFramesIn: {
