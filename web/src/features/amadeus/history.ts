@@ -28,6 +28,7 @@ export type TimelineItem =
       name: string;
       arguments: Record<string, unknown>;
       result?: unknown;
+      eventStatus?: string;
       action?: SavedAction;
       children: Array<{
         id: string;
@@ -128,7 +129,10 @@ export function conversationTimeline(
         calls.set(`${run.run.id}:${callId}`, item);
       } else if (event.kind === "tool_result") {
         const item = calls.get(`${run.run.id}:${callId}`);
-        if (item) item.result = payload.result;
+        if (item) {
+          item.result = payload.result;
+          item.eventStatus = String(payload.status || "done");
+        }
       } else if (event.kind === "subagent_start") {
         const parent = [...calls.values()]
           .reverse()

@@ -1,0 +1,546 @@
+.amadeus-window {
+  --amadeus-soft-accent: color-mix(
+    in srgb,
+    var(--amadeus-accent) 11%,
+    var(--amadeus-surface)
+  );
+  --amadeus-soft-green: color-mix(in srgb, #59a27b 13%, var(--amadeus-surface));
+  --amadeus-danger: #b75447;
+}
+
+.amadeus-chat {
+  background: var(--amadeus-bg);
+}
+
+.amadeus-messages {
+  padding: 24px clamp(16px, 3vw, 42px) 32px;
+}
+
+.amadeus-message {
+  max-width: 860px;
+  line-height: 1.65;
+}
+
+.amadeus-message.user {
+  margin: 0 0 22px auto;
+  padding: 16px 20px;
+  border: 1px solid
+    color-mix(in srgb, var(--amadeus-accent) 20%, var(--amadeus-line));
+  border-radius: 18px;
+  background: var(--amadeus-soft-accent);
+}
+
+.amadeus-message.assistant {
+  margin: 0 0 16px;
+  padding: 0 2px;
+}
+
+.amadeus-message-name,
+.amadeus-card-kicker {
+  color: var(--amadeus-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.amadeus-message p,
+.amadeus-artifact-card p {
+  overflow-wrap: anywhere;
+}
+
+.amadeus-artifact-card,
+.amadeus-action-card,
+.amadeus-interaction-card {
+  width: min(100%, 860px);
+  margin: 14px 0 24px;
+  overflow: hidden;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 17px;
+  background: var(--amadeus-surface-raised);
+  box-shadow: 0 8px 28px rgb(60 38 26 / 5%);
+  color: var(--amadeus-ink);
+}
+
+.amadeus-message .amadeus-artifact-card {
+  margin: 10px 0 0;
+}
+
+.amadeus-artifact-card > header,
+.amadeus-action-card > header {
+  padding: 18px 20px 15px;
+  border-bottom: 1px solid var(--amadeus-line-soft);
+  background: linear-gradient(
+    110deg,
+    var(--amadeus-soft-accent),
+    transparent 72%
+  );
+}
+
+.amadeus-artifact-card h3,
+.amadeus-action-card h3 {
+  margin: 6px 0 0;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.amadeus-artifact-content {
+  padding: 8px 20px 15px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.amadeus-plan-steps {
+  display: grid;
+  gap: 13px;
+  margin: 18px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.amadeus-plan-steps li {
+  display: flex;
+  gap: 12px;
+}
+
+.amadeus-plan-steps li > span {
+  display: grid;
+  flex: none;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--amadeus-soft-accent);
+  color: var(--amadeus-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.amadeus-plan-steps strong {
+  font-size: 13px;
+}
+.amadeus-plan-steps p {
+  margin: 3px 0 0;
+  color: var(--amadeus-muted);
+}
+.amadeus-card-muted {
+  margin: 8px 20px 14px;
+  color: var(--amadeus-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.amadeus-old-artifact {
+  padding: 11px 18px;
+  color: var(--amadeus-muted);
+  font-size: 12px;
+}
+.amadeus-old-artifact summary {
+  cursor: pointer;
+}
+.amadeus-old-artifact .amadeus-artifact-content {
+  padding: 8px 0 0;
+  color: var(--amadeus-ink);
+}
+.amadeus-feedback-message summary {
+  cursor: pointer;
+  color: var(--amadeus-ink);
+  font-weight: 600;
+}
+.amadeus-feedback-message pre {
+  max-height: 240px;
+  overflow: auto;
+  margin: 10px 0 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--amadeus-surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+
+.amadeus-card-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--amadeus-line-soft);
+}
+
+.amadeus-card-controls button,
+.amadeus-execution-inspector button,
+.amadeus-rail-close {
+  border: 1px solid var(--amadeus-line);
+  border-radius: 9px;
+  padding: 7px 11px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-ink);
+  font-size: 12px;
+}
+
+.amadeus-card-controls button.primary {
+  border-color: var(--amadeus-accent);
+  background: var(--amadeus-accent);
+  color: #fff;
+}
+
+.amadeus-card-controls button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.amadeus-card-controls button[aria-pressed="true"] {
+  color: var(--amadeus-accent);
+  background: var(--amadeus-soft-accent);
+}
+
+.amadeus-card-editor {
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--amadeus-line-soft);
+  background: color-mix(in srgb, var(--amadeus-surface) 75%, var(--amadeus-bg));
+}
+
+.amadeus-card-editor > label {
+  display: block;
+  margin: 0 0 12px;
+  color: var(--amadeus-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.amadeus-card-editor textarea,
+.amadeus-param-field input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 9px;
+  background: var(--amadeus-surface-raised);
+  color: var(--amadeus-ink);
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.amadeus-card-editor > label:first-child textarea {
+  min-height: 120px;
+}
+.amadeus-card-editor > label:not(:first-child) textarea {
+  min-height: 64px;
+}
+.amadeus-card-editor > small[role="alert"] {
+  display: block;
+  color: var(--amadeus-danger);
+}
+.amadeus-card-editor .amadeus-card-controls {
+  padding: 10px 0 0;
+  border: 0;
+}
+
+.amadeus-action-card.is-risk {
+  border-color: color-mix(
+    in srgb,
+    var(--amadeus-danger) 45%,
+    var(--amadeus-line)
+  );
+}
+.amadeus-action-card.is-risk > header {
+  background: color-mix(
+    in srgb,
+    var(--amadeus-danger) 11%,
+    var(--amadeus-surface)
+  );
+}
+.amadeus-action-summary {
+  display: grid;
+  grid-template-columns: 75px minmax(0, 1fr);
+  gap: 8px 10px;
+  padding: 15px 20px 8px;
+  font-size: 12px;
+}
+.amadeus-action-summary span {
+  color: var(--amadeus-muted);
+}
+.amadeus-action-summary strong {
+  overflow-wrap: anywhere;
+}
+.amadeus-action-changes { margin: 7px 20px 4px; padding: 11px 13px; border-radius: 10px; background: var(--amadeus-soft-accent); font-size: 12px; }
+.amadeus-action-changes strong { color: var(--amadeus-ink); }
+.amadeus-action-changes ul { margin: 7px 0 0; padding-left: 17px; color: var(--amadeus-muted); }
+.amadeus-action-changes li { margin: 3px 0; overflow-wrap: anywhere; }
+.amadeus-action-details {
+  padding: 5px 20px 16px;
+  font-size: 12px;
+}
+.amadeus-action-details summary {
+  color: var(--amadeus-accent);
+  cursor: pointer;
+}
+.amadeus-action-details pre,
+.amadeus-inspector-detail pre {
+  max-height: 310px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--amadeus-bg);
+  color: var(--amadeus-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.amadeus-param-tree {
+  max-height: 330px;
+  overflow: auto;
+  padding: 3px 0 10px;
+}
+.amadeus-param-group {
+  margin: 5px 0;
+}
+.amadeus-param-group summary {
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: var(--amadeus-soft-accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+.amadeus-param-group > div {
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--amadeus-line);
+}
+.amadeus-param-group small,
+.amadeus-param-field small {
+  margin-left: 7px;
+  color: var(--amadeus-muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.amadeus-param-field {
+  display: block;
+  margin: 8px 0;
+  font-size: 12px;
+}
+.amadeus-param-field > span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.amadeus-param-field textarea {
+  min-height: 34px;
+}
+.amadeus-param-field button {
+  margin-top: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 7px;
+  background: var(--amadeus-surface-raised);
+  color: var(--amadeus-ink);
+}
+
+.amadeus-milestone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: min(100%, 860px);
+  margin: 9px 0 18px;
+  padding: 9px 13px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 10px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-muted);
+  text-align: left;
+  font-size: 12px;
+}
+.amadeus-milestone small {
+  color: var(--amadeus-accent);
+}
+.amadeus-milestone.is-risk,
+.amadeus-run-status {
+  color: var(--amadeus-danger);
+}
+.amadeus-run-status {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 9px;
+  background: color-mix(
+    in srgb,
+    var(--amadeus-danger) 10%,
+    var(--amadeus-surface)
+  );
+  font-size: 12px;
+}
+
+.amadeus-execution-inspector {
+  display: flex;
+  flex: 0 0 300px;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--amadeus-line);
+  background: var(--amadeus-surface);
+  color: var(--amadeus-ink);
+}
+.amadeus-execution-inspector > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--amadeus-line);
+}
+.amadeus-execution-inspector > header small {
+  color: var(--amadeus-accent);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.amadeus-execution-inspector > header h2 {
+  margin: 3px 0 0;
+  font-size: 15px;
+}
+.amadeus-inspector-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+}
+.amadeus-inspector-stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.amadeus-inspector-stats > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--amadeus-soft-accent);
+}
+.amadeus-inspector-stats b {
+  font-size: 17px;
+}
+.amadeus-inspector-stats span {
+  color: var(--amadeus-muted);
+  font-size: 10px;
+}
+.amadeus-inspector-run {
+  margin: 0 0 16px;
+}
+.amadeus-inspector-run h3 {
+  margin: 0 0 7px;
+  color: var(--amadeus-muted);
+  font-size: 11px;
+}
+.amadeus-inspector-run h3 small {
+  float: right;
+  font-weight: 400;
+}
+.amadeus-inspector-run button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 3px 0;
+  padding: 9px;
+  text-align: left;
+}
+.amadeus-inspector-run button[aria-pressed="true"] {
+  border-color: var(--amadeus-accent);
+  background: var(--amadeus-soft-accent);
+}
+.amadeus-inspector-run button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.amadeus-inspector-run button small {
+  flex: none;
+  color: #448761;
+}
+.amadeus-inspector-run button small.is-risk {
+  color: var(--amadeus-danger);
+}
+.amadeus-inspector-detail {
+  padding: 13px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 11px;
+  background: var(--amadeus-surface-raised);
+}
+.amadeus-inspector-detail h3 {
+  margin: 0 0 9px;
+  font-size: 12px;
+}
+.amadeus-inspector-facts {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 7px;
+  margin-bottom: 10px;
+  font-size: 11px;
+}
+.amadeus-inspector-facts span {
+  color: var(--amadeus-muted);
+}
+.amadeus-inspector-facts strong {
+  overflow-wrap: anywhere;
+}
+.amadeus-inspector-detail details summary {
+  cursor: pointer;
+  color: var(--amadeus-accent);
+  font-size: 11px;
+}
+.amadeus-inspector-detail ul {
+  padding-left: 17px;
+  font-size: 11px;
+}
+.amadeus-rail-close {
+  display: none;
+}
+
+@media (max-width: 1119px) {
+  .amadeus-execution-inspector {
+    position: absolute;
+    z-index: 12;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(360px, calc(100vw - 32px));
+    box-shadow: -15px 0 35px rgb(25 20 17 / 18%);
+  }
+}
+
+@media (max-width: 700px) {
+  .amadeus-side-rail {
+    display: none;
+  }
+  .amadeus-side-rail.is-open {
+    position: absolute;
+    z-index: 13;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    width: min(300px, calc(100vw - 60px));
+    box-shadow: 15px 0 35px rgb(25 20 17 / 18%);
+  }
+  .amadeus-rail-close {
+    display: block;
+    align-self: flex-end;
+  }
+  .amadeus-message.user {
+    padding: 12px 14px;
+  }
+  .amadeus-artifact-card > header,
+  .amadeus-action-card > header {
+    padding: 15px;
+  }
+  .amadeus-artifact-content {
+    padding: 8px 15px 14px;
+  }
+  .amadeus-card-controls {
+    justify-content: flex-start;
+    padding: 12px 14px;
+  }
+}

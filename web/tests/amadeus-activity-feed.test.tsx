@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ActivityFeed } from "../src/features/amadeus/ActivityFeed";
+import {
+  ActivityFeed,
+  ExecutionInspector,
+} from "../src/features/amadeus/ActivityFeed";
+import { buildDisplayTimeline } from "../src/features/amadeus/displayTimeline";
 import type { Detail, RunDetail } from "../src/features/amadeus/protocol";
 
 const at = "2026-09-27T00:00:00Z";
@@ -52,8 +56,8 @@ function show(current: Detail, runs: RunDetail[]) {
 }
 
 describe("Amadeus activity feed", () => {
-  it("folds two read-only child investigations into one tool card", () => {
-    show(detail, [
+  it("groups child investigations in the execution inspector", () => {
+    const runs: RunDetail[] = [
       {
         run: {
           id: "agent-run",
@@ -90,10 +94,18 @@ describe("Amadeus activity feed", () => {
           ]),
         ],
       },
-    ]);
-    expect(screen.getAllByText("并行调查")).toHaveLength(1);
-    expect(screen.getByText("检查素材 · 完成")).not.toBeVisible();
-    fireEvent.click(screen.getByText("并行调查"));
+    ];
+    show(detail, runs);
+    expect(screen.getByRole("button", { name: /部分步骤失败/ })).toBeVisible();
+    render(
+      <ExecutionInspector
+        tools={buildDisplayTimeline(detail, runs).tools}
+        runs={runs}
+        selected={null}
+        onSelect={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByText("检查素材 · 完成")).toBeVisible();
     expect(screen.getByText("检查时间线 · 完成")).toBeVisible();
   });
@@ -155,7 +167,7 @@ describe("Amadeus activity feed", () => {
         ],
       },
     ]);
-    expect(screen.getByText(/调整视频时间线/)).toBeTruthy();
+    expect(screen.getAllByText(/调整视频时间线/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "批准并执行" }));
     expect(onApproval).toHaveBeenCalledWith("action", true);
   });

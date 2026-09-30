@@ -61,6 +61,11 @@ const pending = new Map<
   }
 >();
 
+function base64ByteSize(value: string): number {
+  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor((value.length * 3) / 4) - padding);
+}
+
 function rpc<T>(method: string, payload: unknown): Promise<T> {
   const id = ++sequence;
   self.postMessage({ type: "rpc", id, method, payload } satisfies RpcRequest);
@@ -137,15 +142,32 @@ async function stream(
                 })),
             };
           if (message.role === "toolResult")
-            return {
-              role: "tool",
-              text: message.content
-                .filter((part) => part.type === "text")
-                .map((part) => part.text)
-                .join(""),
-              tool_call_id: message.toolCallId,
-              tool_name: message.toolName,
-            };
+            return [
+              {
+                role: "tool",
+                text: message.content
+                  .filter((part) => part.type === "text")
+                  .map((part) => part.text)
+                  .join(""),
+                tool_call_id: message.toolCallId,
+                tool_name: message.toolName,
+              },
+              ...(message.content.some((part) => part.type === "image")
+                ? [
+                    {
+                      role: "user",
+                      text: `以下图像由只读工具 ${message.toolName} 返回，供本轮分析：`,
+                      images: message.content
+                        .filter((part) => part.type === "image")
+                        .map((part) => ({
+                          data_base64: part.data,
+                          mime_type: part.mimeType,
+                          byte_size: base64ByteSize(part.data),
+                        })),
+                    },
+                  ]
+                : []),
+            ];
           return {
             role: "user",
             text:
@@ -155,8 +177,19 @@ async function stream(
                     .filter((part) => part.type === "text")
                     .map((part) => part.text)
                     .join(""),
+            images:
+              typeof message.content === "string"
+                ? []
+                : message.content
+                    .filter((part) => part.type === "image")
+                    .map((part) => ({
+                      data_base64: part.data,
+                      mime_type: part.mimeType,
+                      byte_size: base64ByteSize(part.data),
+                    })),
           };
-        });
+        })
+        .flat();
       let streamText = "";
       const reply = await rpcStream<{
         tool_calls: Array<{
@@ -377,6 +410,43 @@ const readSkillFileTool: AgentTool = {
   },
 };
 
+const videoReferenceTool: AgentTool = {
+  name: "inspect_video_reference",
+  label: "查看视频参考帧",
+  description:
+    "只读地抽取当前 Workspace 视频素材的 4 或 9 个指定时间点，返回带时间标记的压缩联系表供视觉分析。不要请求音轨，不会保存图像或生成视频。",
+  parameters: Type.Object({
+    asset_id: Type.String(),
+    positions_ms: Type.Array(Type.Integer(), { minItems: 4, maxItems: 9 }),
+  }),
+  async execute(_id, params) {
+    const value = await rpc<{
+      mime_type: string;
+      data_base64: string;
+      byte_size: number;
+      positions_ms: number[];
+    }>("video-reference-read", params);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            byte_size: value.byte_size,
+            positions_ms: value.positions_ms,
+            note: "联系表只在本轮上下文中使用。",
+          }),
+        },
+        {
+          type: "image",
+          data: value.data_base64,
+          mimeType: value.mime_type,
+        },
+      ],
+      details: undefined,
+    };
+  },
+};
+
 const askUserTool: AgentTool = {
   name: "ask_user",
   label: "向用户提问",
@@ -399,6 +469,39 @@ const askUserTool: AgentTool = {
   },
   replay: "never",
   executionMode: "sequential",
+};
+
+const presentArtifactTool: AgentTool = {
+  name: "present_artifact",
+  label: "交付计划或内容草稿",
+  description:
+    "将最终计划或供用户修改的内容草稿交付为卡片。plan 必须提供具体 steps；draft 的 body 是完整 Markdown 正文。此工具只展示内容，不保存到项目，也不执行计划。每次运行只交付一份最终产物。",
+  parameters: Type.Object({
+    kind: Type.Union([Type.Literal("plan"), Type.Literal("draft")]),
+    title: Type.String(),
+    body: Type.String(),
+    steps: Type.Optional(
+      Type.Array(Type.Object({ title: Type.String(), detail: Type.String() })),
+    ),
+  }),
+  async execute(_id, params) {
+    const artifact = params as {
+      kind: "plan" | "draft";
+      title: string;
+      body: string;
+      steps?: Array<{ title: string; detail: string }>;
+    };
+    if (
+      !artifact.title.trim() ||
+      !artifact.body.trim() ||
+      (artifact.kind === "plan" && !artifact.steps?.length)
+    )
+      throw new Error("计划或草稿内容不完整");
+    return {
+      content: [{ type: "text", text: "产物已展示给用户，尚未写入项目。" }],
+      details: undefined,
+    };
+  },
 };
 
 const writeScriptTool: AgentTool = {
@@ -513,7 +616,7 @@ self.onmessage = (
     provider: "fpl",
     baseUrl: "",
     reasoning: false,
-    input: ["text"],
+    input: ["text", "image"],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: 128_000,
     maxTokens: 4096,
@@ -577,6 +680,7 @@ self.onmessage = (
     listFilesTool,
     readFileTool,
     readSkillFileTool,
+    videoReferenceTool,
   ];
   const delegateTool: AgentTool = {
     name: "delegate_readonly",
@@ -663,8 +767,8 @@ self.onmessage = (
       messages,
       systemPrompt:
         (input.mode === "plan"
-          ? "你是 Future Props Lab 的 Amadeus，当前处于 Plan 模式。只读取当前授权 Workspace 的信息，给出简短、可执行的计划，不修改项目。需要关键选择时使用 ask_user。不要假设界面状态。\n"
-          : "你是 Future Props Lab 的 Amadeus，当前处于 Agent 模式。只根据当前授权 Workspace 的上下文操作。先读取，修改前等待用户确认。简单任务自己完成；只有两个独立调查任务时才使用只读委派。不要假设界面状态。\n") +
+          ? "你是 Future Props Lab 的 Amadeus，当前处于 Plan 模式。只读取当前授权 Workspace 的信息，不修改项目。完成计划时调用 present_artifact，kind=plan，列出可执行步骤。需要关键选择时使用 ask_user。不要假设界面状态。\n"
+          : "你是 Future Props Lab 的 Amadeus，当前处于 Agent 模式。只根据当前授权 Workspace 的上下文操作。先读取，修改前等待用户确认。用户要求先看内容草稿时调用 present_artifact，kind=draft，不要把草稿写入项目。简单任务自己完成；只有两个独立调查任务时才使用只读委派。不要假设界面状态。\n") +
         input.skills
           .map(
             (skill) =>
@@ -673,10 +777,11 @@ self.onmessage = (
           .join("\n"),
       tools:
         input.mode === "plan"
-          ? [...readOnlyTools, askUserTool]
+          ? [...readOnlyTools, askUserTool, presentArtifactTool]
           : [
               ...readOnlyTools,
               askUserTool,
+              presentArtifactTool,
               delegateTool,
               registeredWriteTool,
               videoTimelineTool,
@@ -712,7 +817,14 @@ self.onmessage = (
         id: output.toolCallId,
         name: output.toolName,
         status: output.isError ? "failed" : "done",
-        result: output.result,
+        result:
+          output.toolName === "inspect_video_reference"
+            ? {
+                content: output.result.content.filter(
+                  (part: { type: string }) => part.type === "text",
+                ),
+              }
+            : output.result,
       });
   });
   void agent.prompt(input.prompt).then(

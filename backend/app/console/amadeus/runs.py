@@ -140,9 +140,11 @@ class Runs:
             raise OperationError("请先处理当前提问或审批", "interaction_pending", 409)
         if body.source_run_id:
             source = await self.get(conversation_id, body.source_run_id)
-            if source.status == "completed" and source.mode == "plan":
-                if body.mode != "agent":
-                    raise OperationError("计划只能切换到 Agent 执行", "invalid_continuation", 422)
+            if source.status == "completed":
+                if not (
+                    body.mode == source.mode or (source.mode == "plan" and body.mode == "agent")
+                ):
+                    raise OperationError("运行模式不能这样继续", "invalid_continuation", 422)
             elif source.status == "waiting_question":
                 question = await self.session.scalar(
                     select(AmadeusQuestion).where(AmadeusQuestion.run_id == source.id)

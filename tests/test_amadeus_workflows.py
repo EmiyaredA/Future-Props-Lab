@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
 
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
+from app.console.amadeus.schemas import ModelTurnIn
+from app.console.routes.amadeus import validate_model_turn
 from app.console.models.accounts import User
 from app.main import app
 from app.orm import bind_workspace
@@ -33,6 +36,42 @@ async def _test_user() -> None:
                 )
             )
             await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_completed_plan_and_agent_runs_accept_one_same_mode_revision() -> None:
+    await _test_user()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        conversation = (await client.post("/v1/amadeus/conversations")).json()
+        root = f"/v1/amadeus/conversations/{conversation['id']}"
+        for mode in ("plan", "agent"):
+            original = await client.post(root + "/runs", json={"model_id": "mock", "mode": mode})
+            assert original.status_code == 200, original.text
+            original_id = original.json()["run"]["id"]
+            assert (
+                await client.post(
+                    root + f"/runs/{original_id}/finish", json={"status": "completed"}
+                )
+            ).status_code == 200
+            revised = await client.post(
+                root + "/runs",
+                json={"model_id": "mock", "mode": mode, "source_run_id": original_id},
+            )
+            assert revised.status_code == 200, revised.text
+            assert revised.json()["run"]["source_run_id"] == original_id
+            assert (
+                await client.post(
+                    root + f"/runs/{revised.json()['run']['id']}/finish",
+                    json={"status": "completed"},
+                )
+            ).status_code == 200
+            duplicate = await client.post(
+                root + "/runs",
+                json={"model_id": "mock", "mode": mode, "source_run_id": original_id},
+            )
+            assert duplicate.status_code == 409
 
 
 def test_amadeus_workflow_migration_on_temporary_database(tmp_path: Path) -> None:
@@ -76,6 +115,18 @@ async def test_amadeus_plan_to_agent_adds_video_draft_after_restored_approval() 
             await client.post(root + "/runs", json={"model_id": "mock", "mode": "plan"})
         ).json()["run"]
         assert plan["mode"] == "plan"
+        async with SessionLocal() as session:
+            await validate_model_turn(
+                session,
+                SimpleNamespace(workspace_id="default", user_id="test-user"),
+                ModelTurnIn(
+                    model_id="mock",
+                    run_id=plan["id"],
+                    system="Plan",
+                    messages=[{"role": "user", "text": prompt}],
+                    tools=[{"name": "present_artifact", "parameters_schema": {}}],
+                ),
+            )
         forbidden = await client.post(
             root + "/actions",
             json={

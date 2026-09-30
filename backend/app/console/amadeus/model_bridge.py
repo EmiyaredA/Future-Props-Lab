@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 from collections.abc import AsyncIterator
 from time import monotonic
 from uuid import uuid4
 
-from app.capabilities.agents.harness.contracts import AgentMessage, ToolCall, ToolSpec
+from app.capabilities.agents.harness.contracts import AgentMessage, ImageInput, ToolCall, ToolSpec
 from app.console.amadeus.schemas import ModelTurnIn
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.inference.catalog import get_model
@@ -16,6 +17,63 @@ from app.llm.models import LlmCallLog
 from app.llm.providers.agent import HttpAgentAdapter
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
+from app.runtime.operation_receipts import OperationError
+
+MAX_IMAGE_BYTES = 350 * 1024
+MAX_TOTAL_IMAGE_BYTES = 700 * 1024
+MAX_IMAGES_PER_TURN = 4
+
+
+def _message_images(messages: list[dict]) -> list[tuple[ImageInput, ...]]:
+    result: list[tuple[ImageInput, ...]] = []
+    total = 0
+    count = 0
+    for message in messages:
+        raw_images = message.get("images", [])
+        if not isinstance(raw_images, list):
+            raise OperationError("模型图片输入无效", "invalid_image", 422)
+        images: list[ImageInput] = []
+        for raw in raw_images:
+            if not isinstance(raw, dict):
+                raise OperationError("模型图片输入无效", "invalid_image", 422)
+            mime_type = raw.get("mime_type")
+            encoded = raw.get("data_base64")
+            if mime_type not in {"image/jpeg", "image/png", "image/webp"} or not isinstance(
+                encoded, str
+            ):
+                raise OperationError("模型图片格式不支持", "invalid_image", 422)
+            try:
+                decoded = base64.b64decode(encoded, validate=True)
+            except (ValueError, TypeError) as exc:
+                raise OperationError("模型图片数据无效", "invalid_image", 422) from exc
+            size = len(decoded)
+            if not size or size > MAX_IMAGE_BYTES:
+                raise OperationError("单张模型图片不得超过 350 KiB", "image_too_large", 422)
+            count += 1
+            total += size
+            if count > MAX_IMAGES_PER_TURN or total > MAX_TOTAL_IMAGE_BYTES:
+                raise OperationError("模型图片总量超出限制", "image_too_large", 422)
+            images.append(ImageInput(mime_type, encoded, size))
+        result.append(tuple(images))
+    return result
+
+
+def _audit_messages(messages: list[dict]) -> list[dict]:
+    return [
+        {
+            **message,
+            "images": [
+                {
+                    "mime_type": image.get("mime_type"),
+                    "byte_size": image.get("byte_size"),
+                }
+                for image in message.get("images", [])
+            ],
+        }
+        if message.get("images")
+        else message
+        for message in messages
+    ]
 
 
 async def stream_model_turn(
@@ -34,10 +92,12 @@ async def stream_model_turn(
         base_url=provider.base_url,
         api_key=decrypt_secret(provider.api_key_ciphertext),
     )
+    image_groups = _message_images(body.messages)
     messages = [
         AgentMessage(
             role=str(item.get("role", "")),
             text=str(item.get("text", "")),
+            images=image_groups[index],
             tool_call_id=str(item.get("tool_call_id", "")),
             tool_name=str(item.get("tool_name", "")),
             tool_calls=tuple(
@@ -49,7 +109,7 @@ async def stream_model_turn(
                 for call in item.get("tool_calls", [])
             ),
         )
-        for item in body.messages
+        for index, item in enumerate(body.messages)
     ]
     tools = [
         ToolSpec(
@@ -122,7 +182,10 @@ async def stream_model_turn(
                         provider_kind=provider_kind,
                         model=slug,
                         trace_id=body.run_id or log_id,
-                        request_payload=body.model_dump(mode="json"),
+                        request_payload={
+                            **body.model_dump(mode="json"),
+                            "messages": _audit_messages(body.messages),
+                        },
                         response_payload={"text": text, "tool_calls": calls},
                         latency_ms=int((monotonic() - started) * 1000),
                         status="success" if success else "error",

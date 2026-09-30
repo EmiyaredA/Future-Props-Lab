@@ -70,6 +70,7 @@ READ_TOOLS = frozenset(
         "list_work_files",
         "read_work_file",
         "read_skill_file",
+        "inspect_video_reference",
     }
 )
 
@@ -84,7 +85,7 @@ async def validate_model_turn(session, principal, body: ModelTurnIn) -> None:
         raise OperationError("运行已经结束", "run_not_active", 409)
     if body.subagent_id and run.mode != "agent":
         raise OperationError("Plan 模式不能委派子任务", "invalid_subagent", 422)
-    allowed = READ_TOOLS if body.subagent_id else READ_TOOLS | {"ask_user"}
+    allowed = READ_TOOLS if body.subagent_id else READ_TOOLS | {"ask_user", "present_artifact"}
     if (run.mode == "plan" or body.subagent_id) and any(
         item.get("name") not in allowed for item in body.tools
     ):

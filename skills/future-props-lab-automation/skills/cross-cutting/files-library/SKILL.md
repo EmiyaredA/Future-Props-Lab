@@ -34,6 +34,17 @@ description: Operates Future Props Lab workspace files library via files.*—fol
 1. 上传或列表拿到 `id`。
 2. 将 `id` 用于标注创建、视频 `import_assets`、视觉导入等。
 3. 下载/预览加 `--output`（若适用）。
+4. Amadeus 需要理解画布关联视频时，优先使用内置 `inspect_video_reference` 工具，让代表帧进入当前多模态上下文；它只接受当前 Workspace 的视频素材，不读取音轨，也不保存联系表。
+
+需要在独立脚本或本地多模态流程中查看帧时，使用既有 SDK/CLI 抽帧接口输出 4 帧或 9 帧联系表；CLI 的 POST 操作需要先申请写作用途授权，但抽帧本身只生成临时文件，不修改库素材：
+
+```bash
+printf '%s' '{"asset_id":"<video-asset-id>","body":{"positions_ms":[0,1000,2000,3000],"max_width":640,"output":"grid"}}' \
+  | fpl call files.extract_video_frames --input - \
+  --output /path/to/video-frames.png
+```
+
+提示词 Skill 应先读取联系表和 Skill 中的参考文件，再描述动作、镜头节奏及场景变化；不能只根据文件名推断视频内容。
 
 ## 最小可运行示例
 

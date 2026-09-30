@@ -17,12 +17,13 @@ import {
   PanelRightClose,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { AccountSessionContext } from "@features/accounts";
 import { fetchApiJson } from "@platform/api/client";
 import { avatarStateLabels } from "./protocol";
 import { AmadeusAvatar } from "./Avatar";
-import { ActivityFeed } from "./ActivityFeed";
+import { ActivityFeed, ExecutionInspector } from "./ActivityFeed";
+import { buildDisplayTimeline } from "./displayTimeline";
 import { CapabilityDialog } from "./CapabilityDialog";
 import { ContextPanel } from "./ContextPanel";
 import { useAppearance } from "./useAppearance";
@@ -30,6 +31,24 @@ import { useAmadeusController } from "./useAmadeusController";
 
 export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
   const [stageOpen, setStageOpen] = useState(false);
+  const [railOpen, setRailOpen] = useState(() => window.innerWidth >= 700);
+  const [inspectorOpen, setInspectorOpen] = useState(
+    () => window.innerWidth >= 1120,
+  );
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const wasWide = useRef(window.innerWidth >= 700);
+  useEffect(() => {
+    const onResize = () => {
+      const wide = window.innerWidth >= 700;
+      if (wide !== wasWide.current) {
+        wasWide.current = wide;
+        setRailOpen(wide);
+      }
+      if (window.innerWidth < 1120) setInspectorOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const historyRegionId = useId();
   const appearance = useAppearance(session);
   const {
@@ -54,8 +73,6 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     models,
     modelId,
     setModelId,
-    toolSteps,
-    scriptOutput,
     capabilitiesOpen,
     setCapabilitiesOpen,
     toolApis,
@@ -89,6 +106,8 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     open,
     openCapabilities,
     decideApproval,
+    reviseApproval,
+    reviseArtifact,
     answerQuestion,
     continueRun,
     stop,
@@ -103,6 +122,8 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     scopedContexts,
     groups,
   } = useAmadeusController(session);
+  const display = detail ? buildDisplayTimeline(detail, runs) : null;
+  const hasExecution = !!display?.tools.length;
   return (
     <div className="amadeus-window">
       <header className="amadeus-header">
@@ -124,6 +145,23 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           </div>
         </div>
         <div className="amadeus-header-actions">
+          {hasExecution && (
+            <button
+              title={inspectorOpen ? "收起执行详情" : "查看执行详情"}
+              aria-label={inspectorOpen ? "收起执行详情" : "查看执行详情"}
+              aria-pressed={inspectorOpen}
+              onClick={() => {
+                setInspectorOpen(!inspectorOpen);
+                if (!inspectorOpen) setStageOpen(false);
+              }}
+            >
+              {inspectorOpen ? (
+                <PanelRightClose size={17} />
+              ) : (
+                <PanelRightOpen size={17} />
+              )}
+            </button>
+          )}
           <button
             title={stageOpen ? "折叠数字人" : "展开数字人"}
             aria-label={stageOpen ? "折叠数字人" : "展开数字人"}
@@ -131,6 +169,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             onClick={() => {
               const next = !stageOpen;
               setStageOpen(next);
+              if (next) setInspectorOpen(false);
               void bridge
                 .setAmadeusStageOpen?.(next)
                 .catch(() => setStageOpen(!next));
@@ -157,8 +196,11 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           <button
             title="历史对话"
             aria-label="历史对话"
-            aria-pressed={historyOpen}
-            onClick={() => setHistoryOpen(!historyOpen)}
+            aria-pressed={railOpen}
+            onClick={() => {
+              setRailOpen(!railOpen);
+              if (!railOpen) setHistoryOpen(true);
+            }}
           >
             <History size={17} />
           </button>
@@ -192,7 +234,18 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
         </div>
       )}
       <div className="amadeus-body">
-        <aside className="amadeus-side-rail" aria-label="对话侧栏">
+        <aside
+          className={`amadeus-side-rail${railOpen ? " is-open" : ""}`}
+          aria-label="对话侧栏"
+        >
+          <button
+            className="amadeus-rail-close"
+            type="button"
+            aria-label="收起对话侧栏"
+            onClick={() => setRailOpen(false)}
+          >
+            ×
+          </button>
           <ContextPanel items={scopedContexts} />
           <section
             className={`amadeus-history${historyOpen ? " is-open" : ""}`}
@@ -395,32 +448,24 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
               <ActivityFeed
                 detail={detail}
                 runs={runs}
+                display={display || undefined}
                 onReference={setPreviewReference}
                 onApproval={decideApproval}
+                onReviseApproval={reviseApproval}
+                onReviseArtifact={reviseArtifact}
                 onAnswer={answerQuestion}
                 onContinue={continueRun}
+                onInspect={(runId) => {
+                  const selected = display?.tools.find(
+                    (item) => item.runId === runId,
+                  );
+                  setSelectedTool(
+                    selected ? `${selected.runId}:${selected.callId}` : null,
+                  );
+                  setStageOpen(false);
+                  setInspectorOpen(true);
+                }}
               />
-            )}
-            {busy && toolSteps.length > 0 && (
-              <details className="amadeus-steps" open={busy}>
-                <summary>执行步骤 · {toolSteps.length}</summary>
-                {toolSteps.map((step) => (
-                  <div key={step.name}>
-                    {step.name} ·{" "}
-                    {step.status === "done"
-                      ? "已完成"
-                      : step.status === "failed"
-                        ? "失败"
-                        : "进行中"}
-                  </div>
-                ))}
-              </details>
-            )}
-            {busy && scriptOutput && (
-              <details className="amadeus-steps" open={busy}>
-                <summary>脚本输出</summary>
-                <pre>{scriptOutput}</pre>
-              </details>
             )}
           </div>
           <div className="amadeus-bottom">
@@ -598,6 +643,15 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             </div>
           </div>
         </main>
+        {hasExecution && inspectorOpen && (
+          <ExecutionInspector
+            tools={display!.tools}
+            runs={runs}
+            selected={selectedTool}
+            onSelect={setSelectedTool}
+            onClose={() => setInspectorOpen(false)}
+          />
+        )}
         {stageOpen && (
           <aside className="amadeus-stage" aria-label="红莉栖数字人舞台">
             <div className="amadeus-stage-head">

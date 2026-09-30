@@ -121,9 +121,10 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Regression: rollback expires ORM rows; settle must not touch them again."""
+    from sqlalchemy import delete
+
     from app.capabilities.agents.harness.contracts import ModelTextDelta, ModelTurnEnd, Usage
     from app.llm.providers import agent as agent_mod
-    from sqlalchemy import delete
 
     async with SessionLocal() as session:
         provider = ModelProvider(
@@ -164,9 +165,7 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
         tools=[],
     )
     async with SessionLocal() as session:
-        events = [
-            json.loads(item) async for item in stream_model_turn(session, "default", request)
-        ]
+        events = [json.loads(item) async for item in stream_model_turn(session, "default", request)]
     assert [event["type"] for event in events] == ["delta", "end"]
     assert events[0]["text"] == "probe"
     assert events[-1]["tool_calls"] == []
@@ -435,8 +434,18 @@ async def test_amadeus_skill_keeps_loaded_version(
     (tmp_path / "session" / "skills" / "skill" / "v1" / "guide.txt").write_text("固定版本附属文件")
     resource = skills.read_skill_file("default", "conversation", "skill", "v1", "guide.txt")
     assert resource["content"] == "固定版本附属文件"
+    with pytest.raises(OperationError, match="文件不存在"):
+        skills.read_skill_file("default", "conversation", "skill", "v1", "missing.txt")
     with pytest.raises(OperationError, match="路径无效"):
         skills.read_skill_file("default", "conversation", "skill", "v1", "../v2/SKILL.md")
+    (tmp_path / "session" / "skills" / "skill" / "v1" / "binary.txt").write_bytes(b"\xff")
+    with pytest.raises(OperationError, match="不是 UTF-8"):
+        skills.read_skill_file("default", "conversation", "skill", "v1", "binary.txt")
+    (tmp_path / "session" / "skills" / "skill" / "v1" / "large.txt").write_bytes(
+        b"x" * (skills.MAX_SKILL_FILE_BYTES + 1)
+    )
+    with pytest.raises(OperationError, match="超过 1 MiB"):
+        skills.read_skill_file("default", "conversation", "skill", "v1", "large.txt")
 
 
 @pytest.mark.asyncio

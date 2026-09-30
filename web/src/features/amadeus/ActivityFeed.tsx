@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { conversationTimeline } from "./history";
+import { buildDisplayTimeline, type ToolStep } from "./displayTimeline";
+import { ArtifactCard, ApprovalCard } from "./RevisionCards";
 import type { Detail, Reference, RunDetail, SavedQuestion } from "./protocol";
 
 function safeJson(value: unknown) {
@@ -13,6 +14,8 @@ function safeJson(value: unknown) {
 }
 
 function toolLabel(name: string) {
+  if (name.startsWith("fpl_operation:"))
+    return `更新业务资源 · ${name.slice("fpl_operation:".length)}`;
   const labels: Record<string, string> = {
     fpl_read: "读取应用数据",
     fpl_operations: "查找可用操作",
@@ -21,8 +24,35 @@ function toolLabel(name: string) {
     delegate_readonly: "并行调查",
     run_script: "运行脚本",
     write_script: "创建脚本",
+    inspect_video_reference: "检查参考视频帧",
   };
   return labels[name] || name;
+}
+
+function feedbackTitle(content: string) {
+  if (content.startsWith("请根据我修订的计划重新思考"))
+    return "你提交了计划修订";
+  if (content.startsWith("请根据我修订的草稿重新思考"))
+    return "你提交了草稿修订";
+  if (content.startsWith("旧提案已撤回。请重新读取目标"))
+    return "你修改了写入参数，旧提案已撤回";
+  return null;
+}
+
+function stepTarget(step: ToolStep) {
+  const arguments_ = step.action?.arguments || step.arguments;
+  const pathParams = arguments_.path_params;
+  const nested =
+    pathParams && typeof pathParams === "object" && "project_id" in pathParams
+      ? pathParams.project_id
+      : undefined;
+  return String(
+    arguments_.project_id ||
+      nested ||
+      arguments_.operation ||
+      arguments_.path ||
+      "",
+  );
 }
 
 function QuestionCard({
@@ -127,6 +157,185 @@ function QuestionCard({
   );
 }
 
+export function ExecutionInspector({
+  tools,
+  runs,
+  selected,
+  onSelect,
+  onClose,
+}: {
+  tools: ToolStep[];
+  runs: RunDetail[];
+  selected: string | null;
+  onSelect: (key: string) => void;
+  onClose: () => void;
+}) {
+  const groups = runs
+    .map((run) => ({
+      run: run.run,
+      steps: tools.filter((step) => step.runId === run.run.id),
+    }))
+    .filter((group) => group.steps.length);
+  const legacy = tools.filter(
+    (step) => !runs.some((run) => run.run.id === step.runId),
+  );
+  if (legacy.length)
+    groups.push({
+      run: {
+        id: "legacy",
+        mode: "agent",
+        status: "completed",
+      } as RunDetail["run"],
+      steps: legacy,
+    });
+  const active =
+    tools.find((step) => `${step.runId}:${step.callId}` === selected) ||
+    tools.at(-1);
+  return (
+    <aside className="amadeus-execution-inspector" aria-label="执行详情">
+      <header>
+        <div>
+          <small>RUN TRACE</small>
+          <h2>执行详情</h2>
+        </div>
+        <button type="button" aria-label="收起执行详情" onClick={onClose}>
+          ×
+        </button>
+      </header>
+      <div className="amadeus-inspector-scroll">
+        <div className="amadeus-inspector-stats">
+          <div>
+            <b>{tools.length}</b>
+            <span>工具调用</span>
+          </div>
+          <div>
+            <b>
+              {
+                tools.filter(
+                  (tool) =>
+                    tool.displayStatus === "failed" ||
+                    tool.displayStatus === "unknown" ||
+                    tool.displayStatus === "interrupted" ||
+                    tool.displayStatus === "pending" ||
+                    tool.displayStatus === "approved",
+                ).length
+              }
+            </b>
+            <span>待处理／异常</span>
+          </div>
+        </div>
+        {groups.map((group, index) => (
+          <section className="amadeus-inspector-run" key={group.run.id}>
+            <h3>
+              {index + 1} ·{" "}
+              {group.run.mode === "plan" ? "制定计划" : "Agent 运行"}{" "}
+              <small>
+                {group.run.status === "completed"
+                  ? "已完成"
+                  : group.run.status === "running"
+                    ? "进行中"
+                    : group.run.status === "waiting_approval"
+                      ? "等待批准"
+                      : group.run.status === "waiting_question"
+                        ? "等待回答"
+                        : group.run.status === "interrupted"
+                          ? "已中断"
+                          : group.run.status}
+              </small>
+            </h3>
+            {group.steps.map((step) => {
+              const key = `${step.runId}:${step.callId}`;
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  aria-pressed={key === `${active?.runId}:${active?.callId}`}
+                  onClick={() => onSelect(key)}
+                >
+                  <span>{toolLabel(step.action?.tool_name || step.name)}</span>
+                  <small
+                    className={
+                      step.displayStatus === "failed" ||
+                      step.displayStatus === "unknown" ||
+                      step.displayStatus === "interrupted"
+                        ? "is-risk"
+                        : ""
+                    }
+                  >
+                    {step.displayStatus === "completed"
+                      ? "✓"
+                      : step.displayStatus === "failed"
+                        ? "失败"
+                        : step.displayStatus === "unknown"
+                          ? "待核实"
+                          : step.displayStatus === "pending"
+                            ? "待批准"
+                            : step.displayStatus === "rejected"
+                              ? "已撤回"
+                              : step.displayStatus === "interrupted"
+                                ? "已中断"
+                                : step.displayStatus === "cancelled"
+                                  ? "已取消"
+                                  : "⋯"}
+                  </small>
+                </button>
+              );
+            })}
+          </section>
+        ))}
+        {active && (
+          <section className="amadeus-inspector-detail">
+            <h3>{toolLabel(active.action?.tool_name || active.name)}</h3>
+            <div className="amadeus-inspector-facts">
+              <span>状态</span>
+              <strong>
+                {active.displayStatus === "completed"
+                  ? "已完成"
+                  : active.displayStatus === "pending"
+                    ? "待批准"
+                    : active.displayStatus === "unknown"
+                      ? "结果待核实"
+                      : active.displayStatus === "failed"
+                        ? "失败"
+                        : active.displayStatus}
+              </strong>
+              {stepTarget(active) && (
+                <>
+                  <span>目标</span>
+                  <strong>{stepTarget(active)}</strong>
+                </>
+              )}
+            </div>
+            {active.children.length > 0 && (
+              <ul>
+                {active.children.map((child) => (
+                  <li key={child.id}>
+                    {child.task} ·{" "}
+                    {child.status === "done"
+                      ? "完成"
+                      : child.status === "failed"
+                        ? "失败"
+                        : "进行中"}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <details>
+              <summary>展开完整参数与回执</summary>
+              <pre>
+                {safeJson({
+                  arguments: active.action?.arguments || active.arguments,
+                  result: active.action?.result ?? active.result,
+                })}
+              </pre>
+            </details>
+          </section>
+        )}
+      </div>
+    </aside>
+  );
+}
+
 export function ActivityFeed({
   detail,
   runs,
@@ -134,6 +343,10 @@ export function ActivityFeed({
   onApproval,
   onAnswer,
   onContinue,
+  onReviseArtifact = async () => undefined,
+  onReviseApproval = async () => undefined,
+  onInspect,
+  display,
 }: {
   detail: Detail;
   runs: RunDetail[];
@@ -149,27 +362,49 @@ export function ActivityFeed({
     mode: "agent" | "plan",
     prompt: string,
   ) => Promise<void>;
+  onReviseArtifact?: (
+    runId: string,
+    kind: "plan" | "draft",
+    content: string,
+    note: string,
+  ) => Promise<void>;
+  onReviseApproval?: (
+    actionId: string,
+    arguments_: Record<string, unknown>,
+    note: string,
+  ) => Promise<void>;
+  onInspect?: (runId: string) => void;
+  display?: ReturnType<typeof buildDisplayTimeline>;
 }) {
-  const timeline = conversationTimeline(
-    detail.messages,
-    runs,
-    detail.actions || [],
-    detail.questions || [],
-  );
+  const { entries } = display || buildDisplayTimeline(detail, runs);
   const runById = new Map(runs.map((item) => [item.run.id, item.run]));
   const continued = new Set(
     runs.map((item) => item.run.source_run_id).filter(Boolean),
   );
+  const latestArtifacts = new Map<string, string>();
+  for (const item of entries)
+    if (item.kind === "artifact")
+      latestArtifacts.set(
+        `${item.artifact.runId}:${item.artifact.kind}`,
+        item.artifact.callId,
+      );
+  const artifactRuns = new Set(
+    entries
+      .filter((item) => item.kind === "artifact")
+      .map((item) => item.artifact.runId),
+  );
   return (
     <>
-      {timeline.map((item) => {
+      {entries.map((item) => {
         if (item.kind === "message") {
           const message = item.message;
+          const feedback =
+            message.role === "user" ? feedbackTitle(message.content) : null;
           const run = message.run_id ? runById.get(message.run_id) : undefined;
-          const showPlanAction =
+          const legacyPlan =
             run?.mode === "plan" &&
             run.status === "completed" &&
-            !continued.has(run.id);
+            !artifactRuns.has(run.id);
           return (
             <article
               key={`message:${message.id}`}
@@ -208,20 +443,33 @@ export function ActivityFeed({
                   ))}
                 </div>
               )}
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-              {showPlanAction && (
-                <button
-                  className="amadeus-inline-action"
-                  onClick={() =>
-                    void onContinue(
-                      run.id,
+              {feedback ? (
+                <details className="amadeus-feedback-message">
+                  <summary>{feedback} · 查看意见</summary>
+                  <pre>{message.content}</pre>
+                </details>
+              ) : legacyPlan ? (
+                <ArtifactCard
+                  artifact={{
+                    kind: "plan",
+                    title: "执行计划",
+                    body: message.content,
+                    steps: [],
+                    runId: run.id,
+                    callId: message.id,
+                  }}
+                  current={!continued.has(run.id)}
+                  onRevise={onReviseArtifact}
+                  onExecute={(id) =>
+                    onContinue(
+                      id,
                       "agent",
                       "按照上一份计划执行。先重新读取当前项目状态和版本；修改前等待用户审批。",
                     )
                   }
-                >
-                  执行计划
-                </button>
+                />
+              ) : (
+                <ReactMarkdown>{message.content}</ReactMarkdown>
               )}
             </article>
           );
@@ -240,99 +488,82 @@ export function ActivityFeed({
               mode={runById.get(item.question.run_id)?.mode || "agent"}
             />
           );
-        const action = item.action;
-        const status =
-          action?.status ||
-          (item.result === undefined ? "running" : "completed");
+        if (item.kind === "artifact")
+          return (
+            <ArtifactCard
+              key={`artifact:${item.artifact.runId}:${item.artifact.callId}`}
+              artifact={item.artifact}
+              current={
+                !continued.has(item.artifact.runId) &&
+                latestArtifacts.get(
+                  `${item.artifact.runId}:${item.artifact.kind}`,
+                ) === item.artifact.callId &&
+                runById.get(item.artifact.runId)?.status === "completed"
+              }
+              onRevise={onReviseArtifact}
+              onExecute={(id) =>
+                onContinue(
+                  id,
+                  "agent",
+                  "按照上一份计划执行。先重新读取当前项目状态和版本；修改前等待用户审批。",
+                )
+              }
+            />
+          );
+        if (item.kind === "milestone")
+          return (
+            <button
+              type="button"
+              key={`milestone:${item.runId}`}
+              className={`amadeus-milestone ${item.status === "failed" ? "is-risk" : ""}`}
+              onClick={() => onInspect?.(item.runId)}
+            >
+              <span>
+                {item.status === "failed"
+                  ? "部分步骤失败"
+                  : item.status === "running"
+                    ? "正在检查"
+                    : "已完成检查"}{" "}
+                · {item.count} 次调用
+              </span>
+              <small>查看执行详情 →</small>
+            </button>
+          );
+        const tool = item.tool;
+        const status = tool.displayStatus;
         const canContinue =
-          action &&
-          action.run_id &&
+          !!tool.action?.run_id &&
           ["completed", "failed", "rejected", "cancelled"].includes(status) &&
-          !continued.has(item.runId);
-        const target = String(
-          item.arguments.project_id ||
-            item.arguments.operation ||
-            item.arguments.path ||
-            "",
-        );
+          !continued.has(tool.runId);
         return (
-          <div
-            className="amadeus-tool-card"
-            key={`tool:${item.runId}:${item.callId}`}
-          >
-            <details>
-              <summary>
-                <span>
-                  {toolLabel(item.name)}
-                  {target ? ` · ${target}` : ""}
-                </span>
-                <small>
-                  {status === "completed"
-                    ? "已完成"
-                    : status === "failed"
-                      ? "失败"
-                      : status === "unknown"
-                        ? "结果待核实"
-                        : status === "rejected"
-                          ? "已拒绝"
-                          : status === "running"
-                            ? "进行中"
-                            : "待确认"}
-                </small>
-              </summary>
-              {!!item.children.length && (
-                <ul>
-                  {item.children.map((child) => (
-                    <li key={child.id}>
-                      {child.task} ·{" "}
-                      {child.status === "done"
-                        ? "完成"
-                        : child.status === "failed"
-                          ? "失败"
-                          : "进行中"}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <pre>
-                {safeJson({
-                  arguments: item.arguments,
-                  result: action?.result ?? item.result,
-                })}
-              </pre>
-            </details>
-            {action?.run_id &&
-              ["pending", "approved"].includes(action.status) && (
-                <div className="amadeus-card-actions">
-                  {action.status === "pending" && (
-                    <button onClick={() => void onApproval(action.id, false)}>
-                      拒绝
-                    </button>
-                  )}
-                  <button onClick={() => void onApproval(action.id, true)}>
-                    {action.status === "approved"
-                      ? "执行已批准操作"
-                      : "批准并执行"}
-                  </button>
-                </div>
-              )}
-            {canContinue && (
-              <button
-                className="amadeus-inline-action"
-                onClick={() =>
-                  void onContinue(
-                    item.runId,
-                    "agent",
-                    "根据已保存的工具结果继续。先核对当前项目状态。",
-                  )
-                }
-              >
-                继续对话
-              </button>
-            )}
-          </div>
+          <ApprovalCard
+            key={`action:${tool.runId}:${tool.callId}`}
+            tool={tool}
+            onApproval={onApproval}
+            onRevise={onReviseApproval}
+            onContinue={onContinue}
+            canContinue={canContinue}
+          />
         );
       })}
+      {runs
+        .filter((item) =>
+          ["failed", "cancelled", "interrupted"].includes(item.run.status),
+        )
+        .map((item) => (
+          <div
+            key={`run-status:${item.run.id}`}
+            className="amadeus-run-status"
+            role="status"
+          >
+            {item.run.status === "failed"
+              ? "运行失败"
+              : item.run.status === "cancelled"
+                ? "运行已取消"
+                : "运行已中断"}
+            {item.run.error_message ? ` · ${item.run.error_message}` : ""}
+          </div>
+        ))}
     </>
   );
 }

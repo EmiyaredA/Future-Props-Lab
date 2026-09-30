@@ -11,6 +11,7 @@ import { formatAmadeusPrompt } from "./formatPrompt";
 import { buildAgentHistory } from "./history";
 import { createRunEventRecorder } from "./runEvents";
 import { streamTurn } from "./streamTurn";
+import { encodeVideoContactSheet } from "./videoReference";
 import {
   safeReadPath,
   type Approval,
@@ -335,6 +336,7 @@ export function useAmadeusController(session: AccountSessionContext) {
     prompt: string;
     sourceRunId: string;
     mode: "agent" | "plan";
+    feedback?: string;
   }) => {
     const prompt = options?.prompt || draft.trim();
     if (!prompt || busy || !modelId) return;
@@ -353,7 +355,7 @@ export function useAmadeusController(session: AccountSessionContext) {
       return;
     }
     const runMode = options?.mode || mode;
-    const referenceSnapshot = references;
+    const referenceSnapshot = options ? [] : references;
     const contextSnapshot = contexts.filter(
       (item) =>
         item.userId === session.me.user.id &&
@@ -391,27 +393,30 @@ export function useAmadeusController(session: AccountSessionContext) {
         current.actions,
         current.questions || [],
       );
-      const updated = options
-        ? current
-        : await fetchApiJson<Detail>(
-            `/v1/amadeus/conversations/${current.conversation.id}/messages`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                expected_revision: current.conversation.revision,
-                role: "user",
-                content: prompt,
-                references: referenceSnapshot.map(({ windowId, ...item }) => ({
-                  ...item,
-                  window_id: windowId,
-                })),
-              }),
-            },
-          );
+      const updated =
+        options && !options.feedback
+          ? current
+          : await fetchApiJson<Detail>(
+              `/v1/amadeus/conversations/${current.conversation.id}/messages`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  expected_revision: current.conversation.revision,
+                  role: "user",
+                  content: options?.feedback || prompt,
+                  references: options
+                    ? []
+                    : referenceSnapshot.map(({ windowId, ...item }) => ({
+                        ...item,
+                        window_id: windowId,
+                      })),
+                }),
+              },
+            );
       setDetail(updated);
       detailRef.current = updated;
-      setReferences([]);
+      if (!options) setReferences([]);
       await refreshList();
       const configured = await configuredCapabilities({
         mode: runMode,
@@ -597,6 +602,27 @@ export function useAmadeusController(session: AccountSessionContext) {
                   .split("/")
                   .map(encodeURIComponent)
                   .join("/")}`,
+              );
+            } else if (data.method === "video-reference-read") {
+              const requested = data.payload as {
+                asset_id: string;
+                positions_ms: number[];
+              };
+              const response = await requestApi(
+                `/v1/files/${encodeURIComponent(requested.asset_id)}/frames`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    positions_ms: requested.positions_ms,
+                    max_width: 640,
+                    output: "grid",
+                  }),
+                },
+              );
+              value = await encodeVideoContactSheet(
+                await response.blob(),
+                requested.positions_ms,
               );
             } else if (data.method === "invoke") {
               const requested = data.payload as {
@@ -840,7 +866,7 @@ export function useAmadeusController(session: AccountSessionContext) {
       setError(cause instanceof Error ? cause.message : String(cause));
       showAvatarState("error", 3200);
       setBusy(false);
-      setDraft(prompt);
+      if (!options) setDraft(prompt);
     }
   };
 
@@ -848,12 +874,69 @@ export function useAmadeusController(session: AccountSessionContext) {
     sourceRunId: string,
     nextMode: "agent" | "plan",
     prompt: string,
+    feedback?: string,
   ) => {
     const id = detailRef.current?.conversation.id;
     if (!id || busy) return;
     setMode(nextMode);
     await open(id);
-    await send({ sourceRunId, mode: nextMode, prompt });
+    await send({ sourceRunId, mode: nextMode, prompt, feedback });
+  };
+
+  const reviseArtifact = async (
+    sourceRunId: string,
+    kind: "plan" | "draft",
+    content: string,
+    note: string,
+  ) => {
+    const label = kind === "plan" ? "计划" : "草稿";
+    const feedback = `请根据我修订的${label}重新思考并交付新版本。\n\n[我的修订]\n${content}\n\n[补充说明]\n${note || "无"}`;
+    if (feedback.length > 90_000)
+      throw new Error("修订内容过长，请缩短后重试。");
+    await continueRun(
+      sourceRunId,
+      kind === "plan" ? "plan" : "agent",
+      feedback,
+      feedback,
+    );
+  };
+
+  const reviseApproval = async (
+    actionId: string,
+    arguments_: Record<string, unknown>,
+    note: string,
+  ) => {
+    const saved = detailRef.current?.actions.find(
+      (item) => item.id === actionId,
+    );
+    if (!saved || !saved.run_id || saved.status !== "pending" || busy)
+      throw new Error("这份审批已不可修订，请刷新对话。");
+    const feedback = `旧提案已撤回。请重新读取目标及最新版本，参考我修订的完整参数重新拟案；不要直接执行。\n\n[参数草案]\n${JSON.stringify(arguments_, null, 2)}\n\n[补充说明]\n${note || "无"}`;
+    if (feedback.length > 90_000)
+      throw new Error("修订参数过长，请缩短后重试。");
+    const current: Approval = {
+      id: saved.id,
+      tool_name: saved.tool_name,
+      arguments: saved.arguments,
+      arguments_sha256: saved.arguments_sha256,
+      status: saved.status,
+      conversationId: detailRef.current!.conversation.id,
+      runId: saved.run_id,
+    };
+    const withdrawn = await decideAmadeusApproval({
+      allow: false,
+      current,
+      contexts,
+      session,
+      bridge,
+      detailRef,
+      activeActionRef,
+      setDetail,
+      setError,
+      setScriptOutput,
+    });
+    if (!withdrawn) throw new Error("撤回旧审批失败");
+    await continueRun(saved.run_id, "agent", feedback, feedback);
   };
 
   const decideApproval = async (actionId: string, allow: boolean) => {
@@ -975,6 +1058,8 @@ export function useAmadeusController(session: AccountSessionContext) {
     open,
     openCapabilities,
     decideApproval,
+    reviseApproval,
+    reviseArtifact,
     answerQuestion,
     continueRun,
     stop,
