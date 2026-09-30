@@ -1,7 +1,8 @@
 .visual-canvas {
   position: relative;
   height: 100vh;
-  overflow: hidden;
+  /* Offscreen nodes must not scroll the shell and displace its controls. */
+  overflow: clip;
   background: var(--bg);
   color: var(--text);
 }

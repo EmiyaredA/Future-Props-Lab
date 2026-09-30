@@ -464,6 +464,26 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.getByText("图片1").dblclick();
   await expect(page.getByRole("dialog", { name: "图片1" })).toBeVisible();
   await page.getByRole("button", { name: "关闭媒体预览" }).click();
+  await page.evaluate(() => {
+    const farInput = document.createElement("input");
+    farInput.style.position = "absolute";
+    farInput.style.left = "6000px";
+    document.querySelector(".visual-canvas-world")!.append(farInput);
+    farInput.focus();
+    farInput.remove();
+  });
+  await expect(
+    page.getByRole("button", { name: "返回项目列表" }),
+  ).toBeInViewport();
+  await expect(
+    page.getByRole("navigation", { name: "画布工具" }),
+  ).toBeInViewport();
+  await expect(page.getByLabel("画布视图控制")).toBeInViewport();
+  expect(
+    await page
+      .locator(".visual-canvas-surface")
+      .evaluate((surface) => surface.scrollLeft),
+  ).toBe(0);
   const outputPort = page.getByRole("button", {
     name: "从图片1创建连线",
   });

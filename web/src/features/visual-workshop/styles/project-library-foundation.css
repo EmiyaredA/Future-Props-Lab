@@ -40,7 +40,8 @@
   position: absolute;
   z-index: 0;
   inset: 0;
-  overflow: hidden;
+  /* Focus may reach distant nodes, but the canvas chrome stays anchored. */
+  overflow: clip;
   cursor: default;
   touch-action: none;
   background-color: color-mix(in srgb, var(--bg) 90%, #030405);
