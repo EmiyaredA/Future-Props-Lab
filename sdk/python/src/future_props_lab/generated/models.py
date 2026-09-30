@@ -659,6 +659,26 @@ class ClipIdOperation(WireModel):
     new_clip_id: str | None = Field(default=None, alias='newClipId')
     type: Literal['removeClip', 'duplicateClip', 'rippleDelete', 'unlinkClips'] = Field(default=..., alias='type')
 
+class CodexSourceRestore(WireModel):
+    expected_revision: str = Field(default=..., alias='expected_revision', min_length=1)
+
+class CodexSourceState(WireModel):
+    backup_available: bool = Field(default=..., alias='backup_available')
+    base_url: str = Field(default=..., alias='base_url')
+    config_path: str = Field(default=..., alias='config_path')
+    env_key: str = Field(default=..., alias='env_key')
+    managed: bool = Field(default=..., alias='managed')
+    model: str = Field(default=..., alias='model')
+    provider: str = Field(default=..., alias='provider')
+    revision: str = Field(default=..., alias='revision')
+
+class CodexSourceUpdate(WireModel):
+    base_url: str = Field(default='', alias='base_url')
+    env_key: str = Field(default='', alias='env_key')
+    expected_revision: str = Field(default=..., alias='expected_revision', min_length=1)
+    model: str = Field(default='', alias='model')
+    source: str = Field(default=..., alias='source')
+
 class ConversationDetailOut(WireModel):
     actions: list[ActionOut] | None = Field(default=None, alias='actions')
     conversation: ConversationOut = Field(default=..., alias='conversation')
@@ -5049,6 +5069,9 @@ CharacterPart.model_rebuild()
 CharacterStateBinding.model_rebuild()
 CharacterTrack.model_rebuild()
 ClipIdOperation.model_rebuild()
+CodexSourceRestore.model_rebuild()
+CodexSourceState.model_rebuild()
+CodexSourceUpdate.model_rebuild()
 ConversationDetailOut.model_rebuild()
 ConversationListOut.model_rebuild()
 ConversationOut.model_rebuild()

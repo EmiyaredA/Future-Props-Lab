@@ -11,6 +11,18 @@ class Tools:
     def __init__(self, client):
         self._client = client
 
+    def get_codex_source(self) -> models.CodexSourceState:
+        'Get Codex Source. GET /v1/tool-navigation/codex-source'
+        return self._client._call('GET', '/v1/tool-navigation/codex-source', parameters=[], response_type=models.CodexSourceState)
+
+    def put_codex_source(self, *, body: models.CodexSourceUpdate | dict) -> models.CodexSourceState:
+        'Put Codex Source. PUT /v1/tool-navigation/codex-source'
+        return self._client._call('PUT', '/v1/tool-navigation/codex-source', parameters=[], body=body, media_type='application/json', response_type=models.CodexSourceState)
+
+    def post_codex_source_restore(self, *, body: models.CodexSourceRestore | dict) -> models.CodexSourceState:
+        'Post Codex Source Restore. POST /v1/tool-navigation/codex-source/restore'
+        return self._client._call('POST', '/v1/tool-navigation/codex-source/restore', parameters=[], body=body, media_type='application/json', response_type=models.CodexSourceState)
+
     def get_state(self) -> models.ToolNavigationStateOut:
         'Get State. GET /v1/tool-navigation/state'
         return self._client._call('GET', '/v1/tool-navigation/state', parameters=[], response_type=models.ToolNavigationStateOut)
@@ -26,6 +38,18 @@ class Tools:
 class AsyncTools:
     def __init__(self, client):
         self._client = client
+
+    async def get_codex_source(self) -> models.CodexSourceState:
+        'Get Codex Source. GET /v1/tool-navigation/codex-source'
+        return await self._client._call('GET', '/v1/tool-navigation/codex-source', parameters=[], response_type=models.CodexSourceState)
+
+    async def put_codex_source(self, *, body: models.CodexSourceUpdate | dict) -> models.CodexSourceState:
+        'Put Codex Source. PUT /v1/tool-navigation/codex-source'
+        return await self._client._call('PUT', '/v1/tool-navigation/codex-source', parameters=[], body=body, media_type='application/json', response_type=models.CodexSourceState)
+
+    async def post_codex_source_restore(self, *, body: models.CodexSourceRestore | dict) -> models.CodexSourceState:
+        'Post Codex Source Restore. POST /v1/tool-navigation/codex-source/restore'
+        return await self._client._call('POST', '/v1/tool-navigation/codex-source/restore', parameters=[], body=body, media_type='application/json', response_type=models.CodexSourceState)
 
     async def get_state(self) -> models.ToolNavigationStateOut:
         'Get State. GET /v1/tool-navigation/state'

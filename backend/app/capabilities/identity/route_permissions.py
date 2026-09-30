@@ -416,6 +416,9 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/generation-tasks"),
     ),
     "configuration.manage": (
+        ("GET", "/v1/tool-navigation/codex-source"),
+        ("PUT", "/v1/tool-navigation/codex-source"),
+        ("POST", "/v1/tool-navigation/codex-source/restore"),
         ("POST", "/v1/creative-workshop/items/from-integration"),
         ("POST", "/v1/creative-workshop/installations/preview"),
         ("POST", "/v1/creative-workshop/installations"),

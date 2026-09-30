@@ -34,13 +34,16 @@ function item(toolId: string, changes: Record<string, unknown> = {}) {
   };
 }
 
-function renderPage(onOpenInternal = vi.fn()) {
+function renderPage(onOpenInternal = vi.fn(), canManageCodex = false) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   render(
     <QueryClientProvider client={client}>
-      <ToolNavigationPage onOpenInternal={onOpenInternal} />
+      <ToolNavigationPage
+        onOpenInternal={onOpenInternal}
+        canManageCodex={canManageCodex}
+      />
     </QueryClientProvider>,
   );
   return { onOpenInternal };
@@ -121,6 +124,15 @@ test("opens the internal video frame exporter and records usage", async () => {
   await user.click(screen.getByRole("button", { name: "打开视频帧导出" }));
   expect(onOpenInternal).toHaveBeenCalledWith("/tools/video-frame-exporter");
   expect(recordToolUse).toHaveBeenCalledWith("video-frame-exporter");
+});
+
+test("shows the Codex model source only to desktop administrators", async () => {
+  const user = userEvent.setup();
+  const onOpenInternal = vi.fn();
+  renderPage(onOpenInternal, true);
+  await screen.findByText("还没有收藏工具");
+  await user.click(screen.getByRole("button", { name: "打开Codex 模型源" }));
+  expect(onOpenInternal).toHaveBeenCalledWith("/tools/codex-model-source");
 });
 
 test("does not present first-party applications or features as tool cards", async () => {

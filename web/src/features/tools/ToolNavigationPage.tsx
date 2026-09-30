@@ -83,8 +83,10 @@ function ToolListItem({
 
 export function ToolNavigationPage({
   onOpenInternal,
+  canManageCodex = false,
 }: {
   onOpenInternal: (path: string) => void;
+  canManageCodex?: boolean;
 }) {
   const canWrite = useWorkspacePermission("content.write");
   const queryClient = useQueryClient();
@@ -163,6 +165,7 @@ export function ToolNavigationPage({
   const filteredTools = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("zh-CN");
     return TOOLS.filter((tool) => {
+      if (tool.id === "codex-model-source" && !canManageCodex) return false;
       if (category !== "all" && tool.category !== category) return false;
       if (
         tag &&
@@ -184,30 +187,40 @@ export function ToolNavigationPage({
         .toLocaleLowerCase("zh-CN")
         .includes(needle);
     });
-  }, [category, query, tag]);
+  }, [canManageCodex, category, query, tag]);
 
   const favorites = useMemo(
     () =>
       (stateQuery.data?.items ?? [])
-        .filter((item) => item.is_favorite && TOOL_BY_ID.has(item.tool_id))
+        .filter(
+          (item) =>
+            item.is_favorite &&
+            TOOL_BY_ID.has(item.tool_id) &&
+            (item.tool_id !== "codex-model-source" || canManageCodex),
+        )
         .sort((left, right) =>
           String(right.favorite_updated_at).localeCompare(
             String(left.favorite_updated_at),
           ),
         )
         .slice(0, 5),
-    [stateQuery.data],
+    [canManageCodex, stateQuery.data],
   );
 
   const recent = useMemo(
     () =>
       (stateQuery.data?.items ?? [])
-        .filter((item) => item.last_used_at && TOOL_BY_ID.has(item.tool_id))
+        .filter(
+          (item) =>
+            item.last_used_at &&
+            TOOL_BY_ID.has(item.tool_id) &&
+            (item.tool_id !== "codex-model-source" || canManageCodex),
+        )
         .sort((left, right) =>
           String(right.last_used_at).localeCompare(String(left.last_used_at)),
         )
         .slice(0, 5),
-    [stateQuery.data],
+    [canManageCodex, stateQuery.data],
   );
 
   const openTool = (tool: ToolDefinition) => {

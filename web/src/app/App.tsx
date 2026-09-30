@@ -83,6 +83,11 @@ const VideoFrameExporterPage = lazy(() =>
     default: module.VideoFrameExporterPage,
   })),
 );
+const CodexModelSourcePage = lazy(() =>
+  import("@features/tools/CodexModelSourcePage").then((module) => ({
+    default: module.CodexModelSourcePage,
+  })),
+);
 const AudioAnnotationProjectsPage = lazy(
   AUDIO_ANNOTATION_MODULE.pages.projects,
 );
@@ -733,7 +738,12 @@ export default function App() {
         ) : page === "files" ? (
           <FileManagementPage />
         ) : page === "tools" ? (
-          <ToolNavigationPage onOpenInternal={navigatePath} />
+          <ToolNavigationPage
+            onOpenInternal={navigatePath}
+            canManageCodex={
+              Boolean(window.futurePropsDesktop) && me.user.is_platform_admin
+            }
+          />
         ) : page.startsWith("integrations-") ? (
           <IntegrationCenterPage
             registerNavigationGuard={registerNavigationGuard}
@@ -757,6 +767,8 @@ export default function App() {
           />
         ) : page === "video-frame-exporter" ? (
           <VideoFrameExporterPage onBack={() => navigate("tools")} />
+        ) : page === "codex-model-source" ? (
+          <CodexModelSourcePage onBack={() => navigate("tools")} />
         ) : page === "model-test" ? (
           <ModelTestPage
             initialModelId={catalogTestModel}

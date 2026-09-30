@@ -5473,6 +5473,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tool-navigation/codex-source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Codex Source */
+        get: operations["get_codex_source_v1_tool_navigation_codex_source_get"];
+        /** Put Codex Source */
+        put: operations["put_codex_source_v1_tool_navigation_codex_source_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/codex-source/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Codex Source Restore */
+        post: operations["post_codex_source_restore_v1_tool_navigation_codex_source_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tool-navigation/state": {
         parameters: {
             query?: never;
@@ -7865,6 +7900,52 @@ export interface components {
              * @enum {string}
              */
             type: "duplicateClip" | "removeClip" | "rippleDelete" | "unlinkClips";
+        };
+        /** CodexSourceRestore */
+        CodexSourceRestore: {
+            /** Expected Revision */
+            expected_revision: string;
+        };
+        /** CodexSourceState */
+        CodexSourceState: {
+            /** Backup Available */
+            backup_available: boolean;
+            /** Base Url */
+            base_url: string;
+            /** Config Path */
+            config_path: string;
+            /** Env Key */
+            env_key: string;
+            /** Managed */
+            managed: boolean;
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Revision */
+            revision: string;
+        };
+        /** CodexSourceUpdate */
+        CodexSourceUpdate: {
+            /**
+             * Base Url
+             * @default
+             */
+            base_url: string;
+            /**
+             * Env Key
+             * @default
+             */
+            env_key: string;
+            /** Expected Revision */
+            expected_revision: string;
+            /**
+             * Model
+             * @default
+             */
+            model: string;
+            /** Source */
+            source: string;
         };
         /** ConversationDetailOut */
         ConversationDetailOut: {
@@ -31646,6 +31727,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_codex_source_v1_tool_navigation_codex_source_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexSourceState"];
+                };
+            };
+        };
+    };
+    put_codex_source_v1_tool_navigation_codex_source_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodexSourceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexSourceState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_codex_source_restore_v1_tool_navigation_codex_source_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodexSourceRestore"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexSourceState"];
                 };
             };
             /** @description Validation Error */

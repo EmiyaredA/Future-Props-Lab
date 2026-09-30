@@ -24,7 +24,7 @@ Future-Props-Lab/
 │   │   └── creative_workshop/ # 跨 Workspace 公开创作版本、草稿、安装事务与文件校验
 │   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame / director_desk / motion_compositor）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
-│   ├── tool_navigation/ # 工具收藏与最近使用；自有 models/schemas/routes
+│   ├── tool_navigation/ # 工具目录状态与桌面 Codex 模型源配置；自有 models/schemas/routes
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
 │   └── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 ├── db/migrations/
@@ -145,8 +145,9 @@ Future-Props-Lab/
   这些模块不拥有 Bot、工具调用、知识库、电话或持久化实时会话。
 - 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
-- 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 只持久化稳定工具 ID 对应的收藏与
-  最近使用状态，不复制工具名称、分类或外部网址。
+- 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 持久化稳定工具 ID 对应的收藏与
+  最近使用状态，不复制工具名称、分类或外部网址。其 Codex 模型源用例仅在桌面私有传输内
+  读取和修改当前用户的 `CODEX_HOME/config.toml`，不进入 Workspace 数据库。
 - `integrations/` 拥有独立于工具导航的 Workspace 集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。

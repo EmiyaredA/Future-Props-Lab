@@ -19,6 +19,7 @@ export type StudioPage =
   | "integrations-mcp"
   | "integrations-skills"
   | "video-frame-exporter"
+  | "codex-model-source"
   | "model-test"
   | "model-test-tools"
   | "model-service"
@@ -177,6 +178,8 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
     return { page: "integrations-tool-apis" };
   if (pathname.startsWith("/tools/video-frame-exporter"))
     return { page: "video-frame-exporter" };
+  if (pathname.startsWith("/tools/codex-model-source"))
+    return { page: "codex-model-source" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
   const modelTestTool = pathname.match(/^\/model-test-tools\/([^/]+)\/?$/);
   if (modelTestTool)
@@ -227,6 +230,7 @@ export function pathFor(
     "integrations-mcp": "/integrations/mcp",
     "integrations-skills": "/integrations/skills",
     "video-frame-exporter": "/tools/video-frame-exporter",
+    "codex-model-source": "/tools/codex-model-source",
     "model-test": "/model-test",
     "model-test-tools": projectId
       ? `/model-test-tools/${encodeURIComponent(projectId)}`

@@ -4103,6 +4103,103 @@
         "title": "ClipIdOperation",
         "type": "object"
       },
+      "CodexSourceRestore": {
+        "properties": {
+          "expected_revision": {
+            "minLength": 1,
+            "title": "Expected Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "CodexSourceRestore",
+        "type": "object"
+      },
+      "CodexSourceState": {
+        "properties": {
+          "backup_available": {
+            "title": "Backup Available",
+            "type": "boolean"
+          },
+          "base_url": {
+            "title": "Base Url",
+            "type": "string"
+          },
+          "config_path": {
+            "title": "Config Path",
+            "type": "string"
+          },
+          "env_key": {
+            "title": "Env Key",
+            "type": "string"
+          },
+          "managed": {
+            "title": "Managed",
+            "type": "boolean"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "config_path",
+          "revision",
+          "provider",
+          "model",
+          "base_url",
+          "env_key",
+          "managed",
+          "backup_available"
+        ],
+        "title": "CodexSourceState",
+        "type": "object"
+      },
+      "CodexSourceUpdate": {
+        "properties": {
+          "base_url": {
+            "default": "",
+            "title": "Base Url",
+            "type": "string"
+          },
+          "env_key": {
+            "default": "",
+            "title": "Env Key",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minLength": 1,
+            "title": "Expected Revision",
+            "type": "string"
+          },
+          "model": {
+            "default": "",
+            "title": "Model",
+            "type": "string"
+          },
+          "source": {
+            "pattern": "^(openai|custom)$",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "source"
+        ],
+        "title": "CodexSourceUpdate",
+        "type": "object"
+      },
       "ConversationDetailOut": {
         "properties": {
           "actions": {
@@ -51404,6 +51501,107 @@
         "summary": "Restore Note",
         "tags": [
           "thought-workshop"
+        ]
+      }
+    },
+    "/v1/tool-navigation/codex-source": {
+      "get": {
+        "operationId": "get_codex_source_v1_tool_navigation_codex_source_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodexSourceState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Codex Source",
+        "tags": [
+          "tool-navigation"
+        ]
+      },
+      "put": {
+        "operationId": "put_codex_source_v1_tool_navigation_codex_source_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodexSourceUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodexSourceState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Codex Source",
+        "tags": [
+          "tool-navigation"
+        ]
+      }
+    },
+    "/v1/tool-navigation/codex-source/restore": {
+      "post": {
+        "operationId": "post_codex_source_restore_v1_tool_navigation_codex_source_restore_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodexSourceRestore"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodexSourceState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Codex Source Restore",
+        "tags": [
+          "tool-navigation"
         ]
       }
     },

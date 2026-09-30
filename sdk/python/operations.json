@@ -815,6 +815,10 @@
     "method": "note_history_detail",
     "resource": "thought"
   },
+  "GET /v1/tool-navigation/codex-source": {
+    "method": "get_codex_source",
+    "resource": "tools"
+  },
   "GET /v1/tool-navigation/state": {
     "method": "get_state",
     "resource": "tools"
@@ -1751,6 +1755,10 @@
     "method": "restore_note",
     "resource": "thought"
   },
+  "POST /v1/tool-navigation/codex-source/restore": {
+    "method": "post_codex_source_restore",
+    "resource": "tools"
+  },
   "POST /v1/tool-navigation/tools/{tool_id}/use": {
     "method": "record_use",
     "resource": "tools"
@@ -1922,6 +1930,10 @@
   "PUT /v1/thought-workshop/notes/{note_id}": {
     "method": "put_note",
     "resource": "thought"
+  },
+  "PUT /v1/tool-navigation/codex-source": {
+    "method": "put_codex_source",
+    "resource": "tools"
   },
   "PUT /v1/visual-workshop/projects/{project_id}/canvas": {
     "method": "put_canvas",

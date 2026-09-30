@@ -45,6 +45,7 @@ from app.llm.routes.models import (
     model_test_transcription,
     suppliers,
 )
+from app.tool_navigation.codex_source_routes import router as codex_source_router
 from app.tool_navigation.routes import router as tool_navigation_router
 
 register_video_executor(apply_assistant_timeline_batch)
@@ -89,6 +90,7 @@ api_router.include_router(
 api_router.include_router(
     tool_navigation_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
+api_router.include_router(codex_source_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(
     integrations_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )

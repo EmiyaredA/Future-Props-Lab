@@ -199,7 +199,10 @@ function StudioChrome({
     loadSecondaryCollapsed,
   );
 
-  const toolsActive = page === "tools" || page === "video-frame-exporter";
+  const toolsActive =
+    page === "tools" ||
+    page === "video-frame-exporter" ||
+    page === "codex-model-source";
   const integrationsActive = page.startsWith("integrations-");
   const infrastructurePages: StudioPage[] = [
     "model-test",
