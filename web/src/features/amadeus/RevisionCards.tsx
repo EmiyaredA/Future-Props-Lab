@@ -38,7 +38,11 @@ function restoreMasked(value: unknown, original: unknown): unknown {
 function proposedChanges(arguments_: Record<string, unknown>): string[] {
   let body: unknown = arguments_.body || arguments_;
   if (typeof body === "string") {
-    try { body = JSON.parse(body); } catch { return ["提交文本内容"]; }
+    try {
+      body = JSON.parse(body);
+    } catch {
+      return ["提交文本内容"];
+    }
   }
   if (!body || typeof body !== "object" || Array.isArray(body)) return [];
   const document = body as Record<string, unknown>;
@@ -47,20 +51,42 @@ function proposedChanges(arguments_: Record<string, unknown>): string[] {
       if (!item || typeof item !== "object") return "更新一项内容";
       const operation = item as Record<string, unknown>;
       const value = operation.value;
-      const title = value && typeof value === "object" && "title" in value
-        ? String(value.title)
-        : String(operation.id || operation.entity || "资源");
-      const verb = operation.action === "insert" ? "新增" : operation.action === "delete" ? "删除" : "更新";
+      const title =
+        value && typeof value === "object" && "title" in value
+          ? String(value.title)
+          : String(operation.id || operation.entity || "资源");
+      const verb =
+        operation.action === "insert"
+          ? "新增"
+          : operation.action === "delete"
+            ? "删除"
+            : "更新";
       return `${verb}${String(operation.entity || "内容")} · ${title.slice(0, 56)}`;
     });
   return Object.entries(document)
-    .filter(([key]) => !sensitiveKey.test(key) && !/^(expected_revision|revision|request_id)$/.test(key))
+    .filter(
+      ([key]) =>
+        !sensitiveKey.test(key) &&
+        !/^(expected_revision|revision|request_id)$/.test(key),
+    )
     .slice(0, 3)
     .map(([key, value]) => {
-      const label = key === "prompt" ? "提示词" : key === "content" ? "内容" : key === "title" ? "标题" : key;
-      const detail = typeof value === "string" || typeof value === "number" || typeof value === "boolean"
-        ? String(value).slice(0, 100)
-        : Array.isArray(value) ? `${value.length} 项` : "结构化内容";
+      const label =
+        key === "prompt"
+          ? "提示词"
+          : key === "content"
+            ? "内容"
+            : key === "title"
+              ? "标题"
+              : key;
+      const detail =
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean"
+          ? String(value).slice(0, 100)
+          : Array.isArray(value)
+            ? `${value.length} 项`
+            : "结构化内容";
       return `${label} · ${detail}`;
     });
 }
@@ -398,7 +424,16 @@ export function ApprovalCard({
         <span>操作</span>
         <strong>{String(operation || title)}</strong>
       </div>
-      {!!changes.length && <div className="amadeus-action-changes"><strong>拟变更内容</strong><ul>{changes.map((change, index) => <li key={index}>{change}</li>)}</ul></div>}
+      {!!changes.length && (
+        <div className="amadeus-action-changes">
+          <strong>拟变更内容</strong>
+          <ul>
+            {changes.map((change, index) => (
+              <li key={index}>{change}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <details className="amadeus-action-details">
         <summary>查看完整参数与回执</summary>
         <pre>
