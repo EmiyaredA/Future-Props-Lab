@@ -18,6 +18,7 @@ import {
   collapsedAmadeusBounds,
   initialAmadeusBounds,
 } from "./amadeus-window-geometry";
+import { PetWindowController } from "./pet-window";
 
 const isDevelopment =
   !app.isPackaged &&
@@ -67,6 +68,14 @@ const development = isDevelopment
 const pageOrigin = () => gateway?.origin || backend?.origin || "";
 const recovery = path.join(__dirname, "../ui/startup.html");
 const preload = path.join(__dirname, "preload.js");
+const petController = new PetWindowController({
+  preload,
+  pageOrigin,
+  trusted,
+  isStudioSender: isTrustedStudioSender,
+  showStudio,
+  canOpen: () => !quitting && state.phase === "ready",
+});
 const amadeusBoundsPath = path.join(dataDir, "amadeus-window.json");
 
 type AmadeusWindowPrefs = Partial<Electron.Rectangle> & {
@@ -214,6 +223,9 @@ function trackStudio(win: BrowserWindow): void {
     );
   });
   win.on("blur", queueAmadeusAlwaysOnTopSync);
+  win.on("closed", () => {
+    petController.detachStudio(win.webContents.id);
+  });
 }
 
 function availableContexts() {
@@ -614,6 +626,7 @@ async function start(navigate = true): Promise<boolean> {
 }
 
 async function shutdown(): Promise<void> {
+  petController.close();
   await agent?.stop();
   await backend?.stop();
   await gateway?.stop();
@@ -690,6 +703,7 @@ else {
             }
             quitting = true;
             quitPending = null;
+            petController.close();
             amadeusWindow?.destroy();
             for (const win of liveStudioWindows()) win.close();
             if (liveStudioWindows().length === 0) void shutdown();
@@ -786,6 +800,7 @@ else {
         if (!win) throw new Error("拒绝非应用页面请求");
         return action(win);
       });
+    petController.installIpc();
     ipcMain.handle("desktop:amadeus-open", (event) => {
       if (!isTrustedStudioSender(event)) throw new Error("拒绝非应用页面请求");
       return showAmadeus();

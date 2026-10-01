@@ -1,6 +1,10 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { fetchApiJson, requestApi } from "@platform/api/client";
 import type { Conversation, Detail, Reference, WorkFile } from "./protocol";
+import {
+  conversationConflict,
+  CONVERSATION_CONFLICT_MESSAGE,
+} from "./revisionConflict";
 
 type Options = {
   detailRef: MutableRefObject<Detail | null>;
@@ -53,11 +57,31 @@ export function conversationActions(options: Options) {
       setRenameItem(null);
       return;
     }
-    await fetchApiJson(`/v1/amadeus/conversations/${item.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ expected_revision: item.revision, title }),
-    });
+    try {
+      await fetchApiJson(`/v1/amadeus/conversations/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expected_revision: item.revision, title }),
+      });
+    } catch (cause) {
+      const current = conversationConflict(cause);
+      if (current) {
+        setRenameItem(current);
+        setError(CONVERSATION_CONFLICT_MESSAGE);
+        try {
+          await refreshList();
+          if (detailRef.current?.conversation.id === item.id)
+            await open(item.id);
+        } catch (refreshError) {
+          setError(
+            `${CONVERSATION_CONFLICT_MESSAGE} 刷新失败：${String(refreshError)}`,
+          );
+        }
+        return;
+      }
+      setError(cause instanceof Error ? cause.message : String(cause));
+      return;
+    }
     await refreshList();
     if (detailRef.current?.conversation.id === item.id) await open(item.id);
     setRenameItem(null);
@@ -67,10 +91,30 @@ export function conversationActions(options: Options) {
       setError("请先停止当前任务，再删除会话和工作文件。");
       return;
     }
-    await requestApi(
-      `/v1/amadeus/conversations/${item.id}?expected_revision=${item.revision}`,
-      { method: "DELETE" },
-    );
+    try {
+      await requestApi(
+        `/v1/amadeus/conversations/${item.id}?expected_revision=${item.revision}`,
+        { method: "DELETE" },
+      );
+    } catch (cause) {
+      const current = conversationConflict(cause);
+      if (current) {
+        setDeleteItem(current);
+        setError(CONVERSATION_CONFLICT_MESSAGE);
+        try {
+          await refreshList();
+          if (detailRef.current?.conversation.id === item.id)
+            await open(item.id);
+        } catch (refreshError) {
+          setError(
+            `${CONVERSATION_CONFLICT_MESSAGE} 刷新失败：${String(refreshError)}`,
+          );
+        }
+        return;
+      }
+      setError(cause instanceof Error ? cause.message : String(cause));
+      return;
+    }
     const next = await refreshList();
     if (detailRef.current?.conversation.id === item.id) {
       if (next[0]) await open(next[0].id);

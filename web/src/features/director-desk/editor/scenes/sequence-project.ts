@@ -1,21 +1,12 @@
-import {assertMediaResources,type MediaResource} from '../media/model.ts';
+import { assertMediaResources, type MediaResource } from '../media/model.ts';
 import { assertProject, clone, type Project } from '../model.ts';
-import { assertModelResources, type ModelResource } from '../resources/project-resources.ts';
+import { assertModelResources } from '../resources/project-resources.ts';
 import { assertLockedEntitiesUnchanged } from '../editor/invariants.ts';
-import { assertContinuityOrigin, type ContinuityOrigin } from './continuity-origin.ts';
+import { assertContinuityOrigin } from './continuity-origin.ts';
 
 /** Version 3 is the whole production document. The renderer still receives one ordinary Project. */
-export interface SceneDocument {
-    format: 'director-desk';
-    version: 3;
-    name: string;
-    activeSceneId: string;
-    resources: ModelResource[];
-    media?: MediaResource[];
-    scenes: SceneEntry[];
-}
-export interface SceneEntry { id: string; name: string; state: SceneState; origin?: ContinuityOrigin }
-export type SceneState = Pick<Project, 'duration' | 'fps' | 'aspect' | 'room' | 'entities' | 'cuts' | 'references' | 'production' | 'floors' | 'zones' | 'editorView' | 'creationMode' | 'referenceLabels' | 'lighting'>;
+import type { SceneDocument, SceneEntry, SceneState } from './scene-document-types.ts';
+export type { SceneDocument, SceneEntry, SceneState } from './scene-document-types.ts';
 const stateKeys = ['duration', 'fps', 'aspect', 'room', 'entities', 'cuts', 'references', 'production', 'floors', 'zones', 'editorView', 'creationMode', 'referenceLabels', 'lighting'] as const;
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const validId = (id: unknown): id is string => typeof id === 'string' && /^[\p{L}\p{N}_:.-]{1,200}$/u.test(id);

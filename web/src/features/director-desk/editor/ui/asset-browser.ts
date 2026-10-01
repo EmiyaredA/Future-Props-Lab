@@ -85,6 +85,7 @@ export function createAssetBrowser(ctx: AppContext) {
             }
         })();
     }
-    libraryPreferences.subscribe(() => { if (host?.isConnected && ctx.sidebarTab === 'assets') render(host); });
+    const unsubscribe = libraryPreferences.subscribe(() => { if (host?.isConnected && ctx.sidebarTab === 'assets') render(host); });
+    ctx.signal.addEventListener('abort', () => { unsubscribe(); generation++; observer?.disconnect(); host = undefined; }, { once: true });
     return { render, leave() { generation++; observer?.disconnect(); host = undefined; } };
 }

@@ -64,7 +64,7 @@ class AssetStorage:
                 / "projects"
                 / project_id
             ).resolve()
-        if application_id == "live2d-workshop":
+        if application_id in {"live2d-workshop", "desktop-pet"}:
             return (
                 self.settings.runtime_path
                 / "applications"

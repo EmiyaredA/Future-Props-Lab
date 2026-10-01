@@ -1,5 +1,5 @@
 import { PerspectiveCamera, Vector2 } from 'three';
-import type { CameraEffects } from './camera-effects.ts';
+import type { CameraEffects } from './camera-effects-types.ts';
 import { numberAt } from '../animation/channels.ts';
 export interface LensProjection { type: 'barrel' | 'pincushion' | 'fisheye'; amount: number }
 const lenses = new WeakMap<PerspectiveCamera, LensProjection>();

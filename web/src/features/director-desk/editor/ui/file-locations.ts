@@ -2,7 +2,7 @@ import type { AppContext } from '../app-context.ts';
 
 export function mountFileLocations(ctx: AppContext) {
     const bridge = window.directorDesktop;
-    if (!bridge?.files) return;
+    if (!bridge?.files) return () => {};
     const button = document.createElement('button'); button.id = 'file-locations-open'; button.className = 'subtle'; button.textContent = '文件位置';
     document.querySelector('.header-actions')!.prepend(button);
     button.onclick = async () => {
@@ -23,9 +23,10 @@ export function mountFileLocations(ctx: AppContext) {
             finally { buttons.forEach(b => b.disabled = false); }
         };
     };
-    bridge.onSaveBeforeClose?.(async () => {
+    const unsubscribe = bridge.onSaveBeforeClose?.(async () => {
         const saved = await ctx.saveProject();
         if (saved) ctx.busy = true; // Keep edits blocked until the main process closes this window.
         return saved;
     });
+    return () => { unsubscribe?.(); button.remove(); };
 }

@@ -26,9 +26,7 @@ import {
   X,
 } from "lucide-react";
 import {
-  createVideoEditorAssetBake,
   deleteVideoEditorAsset,
-  getVideoEditorAssetBake,
   getVideoEditorTimeline,
   listVideoEditorAssets,
   applyVideoEditorOperations,
@@ -47,6 +45,7 @@ import {
 } from "./assetOrganization";
 import { videoEditorQueryKeys } from "./queryKeys";
 import { VideoEditorAssetAddMenu } from "./VideoEditorAssetAddMenu";
+import { bakeSelectedAssets } from "./bakeAssets";
 import {
   VideoEditorAssetBatchSelectionHeader,
   VideoEditorAssetBatchToolbar,
@@ -159,30 +158,23 @@ export function VideoEditorAssetPanel({
       queryKey: videoEditorQueryKeys.assets(projectId),
     });
   const placeInFolder = async (folderId: string, ids: string[]) => {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        const [timeline, latestAssets] = await Promise.all([
-          getVideoEditorTimeline(projectId),
-          listVideoEditorAssets(projectId),
-        ]);
-        const complete = completeAssetOrganization(
-          timeline.document.assetOrganization,
-          latestAssets.items,
-        );
-        if (!complete.folders.some((folder) => folder.id === folderId))
-          throw new Error("目标文件夹已不存在");
-        const next = moveAssetsInOrganization(complete, ids, folderId);
-        const saved = await applyVideoEditorOperations(
-          projectId,
-          timeline.revision,
-          [{ type: "setAssetOrganization", organization: next }],
-        );
-        client.setQueryData(videoEditorQueryKeys.timeline(projectId), saved);
-        return;
-      } catch (error) {
-        if (attempt === 2) throw error;
-      }
-    }
+    const [timeline, latestAssets] = await Promise.all([
+      getVideoEditorTimeline(projectId),
+      listVideoEditorAssets(projectId),
+    ]);
+    const complete = completeAssetOrganization(
+      timeline.document.assetOrganization,
+      latestAssets.items,
+    );
+    if (!complete.folders.some((folder) => folder.id === folderId))
+      throw new Error("目标文件夹已不存在");
+    const next = moveAssetsInOrganization(complete, ids, folderId);
+    const saved = await applyVideoEditorOperations(
+      projectId,
+      timeline.revision,
+      [{ type: "setAssetOrganization", organization: next }],
+    );
+    client.setQueryData(videoEditorQueryKeys.timeline(projectId), saved);
   };
   const upload = useMutation({
     mutationFn: async ({
@@ -395,81 +387,22 @@ export function VideoEditorAssetPanel({
   };
 
   const bakeSelected = async () => {
-    const candidates = selectedAssets.filter(
-      (asset) => asset.mediaKind === "video" || asset.mediaKind === "image",
-    );
-    const skippedKind = selectedAssets.filter(
-      (asset) => asset.mediaKind !== "video" && asset.mediaKind !== "image",
-    );
-    const notReady = candidates.filter(
-      (asset) => asset.processingStatus !== "ready",
-    );
-    const missingChroma = candidates.filter(
-      (asset) =>
-        asset.processingStatus === "ready" &&
-        !asset.defaultEffects?.chromaKey?.enabled,
-    );
-    const targets = candidates.filter(
-      (asset) =>
-        asset.processingStatus === "ready" &&
-        asset.defaultEffects?.chromaKey?.enabled,
-    );
-    if (!targets.length) {
-      const reasons = [
-        skippedKind.length ? `${skippedKind.length} 个类型不支持` : "",
-        notReady.length ? `${notReady.length} 个尚未就绪` : "",
-        missingChroma.length
-          ? `${missingChroma.length} 个未设置启用中的默认抠像`
-          : "",
-      ].filter(Boolean);
-      setBatchMessage(
-        reasons.length
-          ? `没有可烘焙的素材（${reasons.join("，")}）`
-          : "没有可烘焙的素材",
-      );
-      return;
-    }
     setBatchBusy(true);
-    const failed: string[] = [];
-    let completed = 0;
-    for (const [index, asset] of targets.entries()) {
-      setBatchMessage(`正在烘焙 ${index + 1} / ${targets.length}`);
-      try {
-        let task = await createVideoEditorAssetBake(
-          projectId,
-          asset.id,
-          asset.revision ?? 0,
-        );
-        while (task.status === "queued" || task.status === "running") {
-          await new Promise((resolve) => window.setTimeout(resolve, 1000));
-          task = await getVideoEditorAssetBake(projectId, task.id);
-        }
-        if (task.status !== "completed") {
-          failed.push(
-            `${asset.displayName}：${task.error || task.status || "烘焙失败"}`,
-          );
-          continue;
-        }
-        completed += 1;
-      } catch (error) {
-        failed.push(
-          `${asset.displayName}：${apiErrorMessage(error, "烘焙失败")}`,
-        );
-      }
-    }
-    setBatchBusy(false);
-    refresh();
-    void client.invalidateQueries({
-      queryKey: videoEditorQueryKeys.timeline(projectId),
-    });
-    const parts = [`已烘焙 ${completed} 个素材`];
-    if (skippedKind.length || notReady.length || missingChroma.length) {
-      parts.push(
-        `跳过 ${skippedKind.length + notReady.length + missingChroma.length} 个`,
+    try {
+      const baked = await bakeSelectedAssets(
+        projectId,
+        selectedAssets,
+        setBatchMessage,
       );
+      if (baked) {
+        refresh();
+        void client.invalidateQueries({
+          queryKey: videoEditorQueryKeys.timeline(projectId),
+        });
+      }
+    } finally {
+      setBatchBusy(false);
     }
-    if (failed.length) parts.push(`失败：${failed.slice(0, 3).join("；")}`);
-    setBatchMessage(parts.join("。"));
   };
 
   const saveFolderName = (

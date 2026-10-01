@@ -73,5 +73,7 @@ export function bindTimelineZoom(ctx: AppContext) {
         // the thumb geometry under the pointer and causes a page-sized jump.
         // Wheel/edge gestures explicitly extend the content before scrolling it.
     });
-    new ResizeObserver(() => { extendTimelineView(ctx, ctx.time); sizeTimeline(); }).observe(container);
+    const observer = new ResizeObserver(() => { extendTimelineView(ctx, ctx.time); sizeTimeline(); });
+    observer.observe(container);
+    ctx.signal.addEventListener('abort', () => observer.disconnect(), { once: true });
 }

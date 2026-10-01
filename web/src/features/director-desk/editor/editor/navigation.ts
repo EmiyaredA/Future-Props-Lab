@@ -9,17 +9,17 @@ export function bindNavigation(ctx: AppContext) {
     const navigationKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'KeyR', 'KeyF', 'ShiftLeft', 'ShiftRight']);
     canvas.tabIndex = 0;
     canvas.title = '点击布景后：WASD 移动 · Q/E 转向 · R/F 升降 · Shift 加速';
-    canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }));
+    canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }), { signal: ctx.signal });
     const enabled = () => document.activeElement === canvas && ctx.mode !== 'shot' && !ctx.busy && !ctx.engine.exporting && !ctx.engine.dragging && !document.querySelector('#modal-root')!.children.length;
     document.addEventListener('keydown', event => {
         if (!enabled() || event.ctrlKey || event.metaKey || event.altKey || !navigationKeys.has(event.code)) return;
         event.preventDefault();
         keys.add(event.code);
-    });
-    document.addEventListener('keyup', event => keys.delete(event.code));
-    canvas.addEventListener('blur', () => keys.clear());
-    window.addEventListener('blur', () => keys.clear());
-    document.addEventListener('visibilitychange', () => keys.clear());
+    }, { signal: ctx.signal });
+    document.addEventListener('keyup', event => keys.delete(event.code), { signal: ctx.signal });
+    canvas.addEventListener('blur', () => keys.clear(), { signal: ctx.signal });
+    window.addEventListener('blur', () => keys.clear(), { signal: ctx.signal });
+    document.addEventListener('visibilitychange', () => keys.clear(), { signal: ctx.signal });
     return {
         update(delta: number) {
             if (!enabled()) { keys.clear(); return; }

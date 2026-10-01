@@ -12,6 +12,7 @@ from app.apps.audio_annotation.models import (
     AudioAnnotationProject,
     AudioAnnotationWaveform,
 )
+from app.apps.desktop_pet.models import DesktopPetProject
 from app.apps.director_desk.models import DirectorDeskProject, DirectorDeskUserMotion
 from app.apps.galgame_workshop.models import (
     GalgameAnnotationImportTask,
@@ -134,6 +135,7 @@ CATALOG_MODELS: dict[str, type] = {
 DESKTOP_UI_ROOTS: dict[str, type] = {
     "annotation": AudioAnnotationProject,
     "director": DirectorDeskProject,
+    "pet": DesktopPetProject,
     "galgame": GalgameWorkshopProject,
     "knowledge": ThoughtKnowledgeBase,
     "mcp": McpIntegration,
@@ -178,6 +180,7 @@ LAYOUT_PROJECT_MODELS: dict[str, type] = {
     "video-editor": VideoEditorProject,
     "motion-compositor": MotionProject,
     "live2d-workshop": Live2DProject,
+    "desktop-pet": DesktopPetProject,
 }
 
 # Ensure reference mappers are registered on Base.metadata for capability queries.
@@ -218,6 +221,7 @@ _ = (
 )
 
 TENANT_MODELS = (
+    DesktopPetProject,
     Live2DProject,
     Live2DAsset,
     Live2DCubismAttachment,

@@ -25,7 +25,7 @@
 
 ## Amadeus 桌面助手
 
-`/v1/amadeus` 使用当前账号和 Workspace 的 Studio Session。会话、消息引用快照、操作提议与批准保存在本机 SQLite；会话文件放在该 Workspace 的独立目录。`GET/POST /conversations` 和 `GET/PATCH/DELETE /conversations/{id}` 管理历史，消息追加与会话修改使用 `expected_revision`，冲突返回 409。`POST /model-turn/stream` 流式返回模型文本和工具调用，不向前端提供供应商密钥。
+`/v1/amadeus` 使用当前账号和 Workspace 的 Studio Session。会话、消息引用快照、操作提议与批准保存在本机 SQLite；会话文件放在该 Workspace 的独立目录。`GET/POST /conversations` 和 `GET/PATCH/DELETE /conversations/{id}` 管理历史，消息追加、会话修改与删除使用 `expected_revision`。冲突返回 `409 revision_conflict`，包含 `expected_revision`、`current_revision` 和当前会话摘要 `current`；客户端重新读取详情后由用户决定是否重试，不自动重放写入。`POST /model-turn/stream` 流式返回模型文本和工具调用，不向前端提供供应商密钥。
 
 `GET /operations` 只列出桌面 Agent 明确登记的 FPL 业务操作，`POST /operations/read` 只执行其 GET 操作。修改操作先通过 `/conversations/{id}/actions` 创建提议，`/decision` 以参数摘要批准，`/execute` 单次执行；脚本可用 `/execute/stream` 接收逐段输出，`/cancel` 可取消正在运行的任务。外部调用的未知结果不自动重试。原业务路由再次检查身份、权限、Workspace 和资源版本。Tool API、MCP、脚本与视频时间线操作使用同一批准流程。
 
@@ -1008,6 +1008,19 @@ ID 集合使用 `insert/update/remove/move/duplicate`，`value` 字段采用对�
 - `GET /v1/audio-annotation/projects/{project_id}/export`：携带文档 revision，导出项目 JSON 或 SRT；不完整标注不能导出 SRT。
 - `GET /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio`：提取已保存片段的 PCM WAV；`POST` 到同层 `transcribe-saved` 使用已有识别能力，返回识别结果，后续通过版本化编辑保存。
 - `POST /v1/files/{asset_id}/frames`：从已上传视频按毫秒位置提取最多 25 帧，返回 PNG 文件 ZIP；4 或 9 帧可输出宫格图。仅使用当前身份可读的文件。
+
+## 桌宠工坊
+
+桌宠 API 按服务端身份隔离 Workspace，读取需要 `content.read`，变更需要 `content.write`。`POST /v1/desktop-pet/projects` 传 `sourceProjectId`、`sourceRevision` 和名称，从同空间已保存的 Live2D 工程复制角色文档及用到的 PNG 素材。来源被修改或删除后，桌宠仍读取自己的固定快照。
+
+- `GET/POST /v1/desktop-pet/projects`：列表与创建。
+- `GET/PATCH/DELETE /v1/desktop-pet/projects/{project_id}`：元数据读取、重命名和删除；变更提供 `expectedRevision`。
+- `GET/PUT /v1/desktop-pet/projects/{project_id}/document`：读取角色快照、配置和鉴权素材 URL；保存整体配置需要 `expectedRevision`。
+- `PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}`：multipart PNG 上传，附 `expectedRevision`；替换图必须与来源部件素材尺寸相同，单张最多 16 MiB。
+- `POST /v1/desktop-pet/projects/{project_id}/sync-source`：显式更新来源，提交桌宠及来源 revision；动作、表情、部件与换肤尺寸不兼容时保留旧快照。
+- `GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file`：仅读取该桌宠当前快照或皮肤引用的 PNG。
+
+整体配置限制为最多 20 套皮肤、六种事件、最多四个悬停按钮。事件可绑定来源动作与表情 ID、气泡文字及内置提示音。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或工程包导入导出接口。
 
 ## 独立模型调用
 

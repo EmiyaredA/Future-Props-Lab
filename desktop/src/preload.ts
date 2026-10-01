@@ -10,6 +10,19 @@ contextBridge.exposeInMainWorld(
     minimize: () => ipcRenderer.invoke("desktop:minimize"),
     close: () => ipcRenderer.invoke("desktop:close"),
     openNewWindow: () => ipcRenderer.invoke("desktop:open-new-window"),
+    openPet: (projectId: string) =>
+      ipcRenderer.invoke("desktop:pet-open", projectId),
+    closePet: () => ipcRenderer.invoke("desktop:pet-close"),
+    petStatus: () => ipcRenderer.invoke("desktop:pet-status"),
+    publishPetContext: (
+      value: { userId: string; workspaceId: string } | null,
+    ) => ipcRenderer.invoke("desktop:pet-context", value),
+    setPetInteractive: (interactive: boolean) =>
+      ipcRenderer.invoke("desktop:pet-hit", interactive),
+    movePet: (x: number, y: number) =>
+      ipcRenderer.invoke("desktop:pet-move", x, y),
+    hidePet: () => ipcRenderer.invoke("desktop:pet-hide"),
+    showStudioFromPet: () => ipcRenderer.invoke("desktop:pet-show-studio"),
     openAmadeus: () => ipcRenderer.invoke("desktop:amadeus-open"),
     hideAmadeus: () => ipcRenderer.invoke("desktop:amadeus-hide"),
     setAmadeusStageOpen: (enabled: boolean) =>

@@ -123,7 +123,7 @@ export function mountModelControl(ctx: AppContext) {
             ctx.toast(committed ? `已录制 ${(recording.time - recording.start).toFixed(2)} 秒，播放可回看；Ctrl+Z 撤销` : '已取消录制，原走位保留');
         }
     }
-    trigger.addEventListener('click', open);
+    trigger.addEventListener('click', open, { signal: ctx.signal });
     // Capture keys before the editor's shortcuts and ignore typing into unrelated inputs.
     document.addEventListener('keydown', event => {
         if (!take && !panel.hidden && event.code === 'Escape') { panel.hidden = true; return; }
@@ -135,9 +135,9 @@ export function mountModelControl(ctx: AppContext) {
         else if (event.code === 'Enter') finish(true);
         else if (event.code === 'Space') { if (!event.repeat) togglePause(); }
         else if (!paused) keys.add(event.code);
-    }, true);
-    document.addEventListener('keyup', event => keys.delete(event.code), true);
+    }, { capture: true, signal: ctx.signal });
+    document.addEventListener('keyup', event => keys.delete(event.code), { capture: true, signal: ctx.signal });
     const suspend = () => { keys.clear(); if (take && !paused) togglePause(false); };
-    window.addEventListener('blur', suspend);
-    document.addEventListener('visibilitychange', () => { if (document.hidden) suspend(); });
+    window.addEventListener('blur', suspend, { signal: ctx.signal });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) suspend(); }, { signal: ctx.signal });
 }

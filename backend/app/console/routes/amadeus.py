@@ -28,6 +28,7 @@ from app.console.amadeus.schemas import (
     ConversationListOut,
     ConversationOut,
     ConversationPatchIn,
+    ConversationRevisionConflictOut,
     FileListOut,
     FileOut,
     FileWriteIn,
@@ -250,7 +251,11 @@ async def get_conversation(
         raise _error(exc) from None
 
 
-@router.patch("/conversations/{conversation_id}", response_model=ConversationOut)
+@router.patch(
+    "/conversations/{conversation_id}",
+    response_model=ConversationOut,
+    responses={409: {"model": ConversationRevisionConflictOut}},
+)
 async def patch_conversation(
     session: SessionDep, principal: StudioAuth, conversation_id: str, body: ConversationPatchIn
 ) -> ConversationOut:
@@ -262,7 +267,10 @@ async def patch_conversation(
         raise _error(exc) from None
 
 
-@router.delete("/conversations/{conversation_id}")
+@router.delete(
+    "/conversations/{conversation_id}",
+    responses={409: {"model": ConversationRevisionConflictOut}},
+)
 async def delete_conversation(
     session: SessionDep,
     principal: StudioAuth,
@@ -276,7 +284,11 @@ async def delete_conversation(
         raise _error(exc) from None
 
 
-@router.post("/conversations/{conversation_id}/messages", response_model=ConversationDetailOut)
+@router.post(
+    "/conversations/{conversation_id}/messages",
+    response_model=ConversationDetailOut,
+    responses={409: {"model": ConversationRevisionConflictOut}},
+)
 async def append_message(
     session: SessionDep, principal: StudioAuth, conversation_id: str, body: MessageIn
 ) -> ConversationDetailOut:

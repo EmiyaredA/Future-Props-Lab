@@ -1,10 +1,9 @@
 import type { AssetDefinition } from './types.ts';
 import { quadrupedParameterSchema } from './animal-options.ts';
 
-export interface QuadrupedShape {
-    body: number; leg: number; neck: number; head: number; muzzle: number; ear: number; tail: number;
-    width: number; hoof?: boolean; horn?: boolean; species: 'dog' | 'cat' | 'rabbit' | 'rodent' | 'horse' | 'cow' | 'sheep' | 'pig' | 'deer' | 'turtle' | 'lizard' | 'camel' | 'bear' | 'lion' | 'tiger' | 'elephant' | 'giraffe' | 'gorilla';
-}
+import type { QuadrupedShape } from './shape-types.ts';
+export type { QuadrupedShape } from './shape-types.ts';
+
 const base: QuadrupedShape = { body: .7, leg: .42, neck: .14, head: .16, muzzle: .10, ear: .13, tail: .4, width: .17, species: 'dog' };
 const presets: Array<{ id: string; name: string; height: number; group: string; shape: Partial<QuadrupedShape>; aliases: string[] }> = [
     { id: 'animal-dog-small', name: '小型犬', height: .38, group: '宠物', shape: { body: .65, leg: .32, ear: .17 }, aliases: ['狗', '宠物犬', 'dog'] },

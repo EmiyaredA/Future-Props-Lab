@@ -69,25 +69,7 @@ export function mountDirectorEditor(host: {
     projectId?: string;
     onSave?: (document: SceneDocument) => Promise<void>;
 } = {}): () => void {
-    const tracked: Array<[EventTarget, string, EventListenerOrEventListenerObject, AddEventListenerOptions | boolean | undefined]> = [];
-    const documentAdd = document.addEventListener.bind(document);
-    const windowAdd = window.addEventListener.bind(window);
-    document.addEventListener = ((
-        type: string,
-        listener: EventListenerOrEventListenerObject,
-        options?: AddEventListenerOptions | boolean,
-    ) => {
-        tracked.push([document, type, listener, options]);
-        documentAdd(type, listener, options);
-    }) as typeof document.addEventListener;
-    window.addEventListener = ((
-        type: string,
-        listener: EventListenerOrEventListenerObject,
-        options?: AddEventListenerOptions | boolean,
-    ) => {
-        tracked.push([window, type, listener, options]);
-        windowAdd(type, listener, options);
-    }) as typeof window.addEventListener;
+    const lifecycle = new AbortController();
     let alive = true;
 
     let project = startingProject(host), selected = project.entities[0].id, inspectorTab = 'base', sidebarTab = 'scene', assetFilter = '全部', query = '';
@@ -106,6 +88,7 @@ export function mountDirectorEditor(host: {
         () => { $('#save-status').textContent = host.onSave ? '已保存到工程' : '自动恢复已保存'; },
         () => { $('#save-status').textContent = '请手动保存项目'; toast(host.onSave ? '工程保存失败' : '自动恢复保存失败，请导出项目文件备份', true); });
     let inspectorSeekTimer: ReturnType<typeof setTimeout> | undefined;
+    const toastTimers = new Set<ReturnType<typeof setTimeout>>();
     let aborter: AbortController | null = null;
     let transformError: Error | undefined;
     mountLayout(project);
@@ -154,7 +137,7 @@ export function mountDirectorEditor(host: {
         },
     });
     function current() { return project.entities.find(e => e.id === selected); }
-    function toast(message: string, error = false) { const el = document.createElement('div'); el.className = 'toast' + (error ? ' error' : ''); el.textContent = message; $('#toasts').append(el); while ($('#toasts').children.length > 3) $('#toasts').firstElementChild!.remove(); setTimeout(() => el.remove(), 5000); }
+    function toast(message: string, error = false) { if (!alive) return; const el = document.createElement('div'); el.className = 'toast' + (error ? ' error' : ''); el.textContent = message; $('#toasts').append(el); while ($('#toasts').children.length > 3) $('#toasts').firstElementChild!.remove(); const timer = setTimeout(() => { toastTimers.delete(timer); el.remove(); }, 5000); toastTimers.add(timer); }
     function changed(rebuild = true) { revision++; dirty = true; time = Math.max(0, time); if (!current()) selected = project.entities.find(e => e.kind === 'actor')?.id ?? project.entities[0].id; engine.selected = selected; $('#save-status').textContent = '正在保存恢复副本…'; if (rebuild)
         engine.rebuild(project);
     else {
@@ -333,6 +316,7 @@ export function mountDirectorEditor(host: {
         }
     } if (alive) requestAnimationFrame(frame); }
     const uiContext: AppContext = {
+        signal: lifecycle.signal,
         get project() { return project; }, set project(value) { project = value; },
         get selected() { return selected; }, set selected(value) { selected = value; },
         get inspectorTab() { return inspectorTab; }, set inspectorTab(value) { inspectorTab = value; },
@@ -355,7 +339,7 @@ export function mountDirectorEditor(host: {
     bindEvents(uiContext);
     const navigation = bindNavigation(uiContext);
     mountModelControl(uiContext);
-    bindResizableLayout();
+    bindResizableLayout(lifecycle.signal);
     const sidebarUI = createSidebar(uiContext);
     const inspectorUI = createInspector(uiContext);
     const timelineUI = createTimeline(uiContext);
@@ -366,34 +350,35 @@ export function mountDirectorEditor(host: {
     const releaseAgent = host.projectId
         ? attachDirectorAgentSession(host.projectId, (name, args) => toolService.call(name, args))
         : () => {};
-    mountFileLocations(uiContext);
-    mountSettings(uiContext);
+    const releaseFileLocations = mountFileLocations(uiContext);
+    const releaseSettings = mountSettings(uiContext);
     bindLiveFields(uiContext, editingTools.mutateField);
-    mountUpdates(async run => {
+    const releaseUpdates = mountUpdates(async run => {
         if (busy || history.pending || draft) throw Error('请先完成当前编辑或导出');
         busy = true; playing = false;
         try { await recoverySave.flush(); await run(); } finally { busy = false; }
     });
-    mountApplicationMenu();
+    mountApplicationMenu(lifecycle.signal);
     renderPanels();
     engine.select(selected);
     if (alive) requestAnimationFrame(frame);
     if (host.onSave) {
         if (!hasScenes(host.document)) recoverySave.request();
-    } else void recover().then(async p => { if (p && revision === 0) {
+    } else void recover().then(async p => { if (alive && p && revision === 0) {
         await prepareDocumentModels(engine.externalModels, p);
+        if (!alive) return;
         if (revision !== 0 || busy || history.pending || draft) { engine.externalModels.retain([project, ...history.undoStack, ...history.redoStack]); return; }
         selectClip(null);project = history.reset(p);
         selected = history.restoredSelection!; time = 0; preview = 'program';
         engine.selected = selected; engine.rebuild(project);
         renderPanels();
         dirty = true; toast('已恢复上次工作');
-    } }).catch(() => toast('未能读取自动恢复或模型资源，可以打开手动保存的项目文件'));
+    } }).catch(() => { if (alive) toast('未能读取自动恢复或模型资源，可以打开手动保存的项目文件'); });
     const onBeforeUnload = (event: BeforeUnloadEvent) => { if (dirty || busy || history.pending || draft) {
         event.preventDefault();
         event.returnValue = '';
     } };
-    window.addEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener('beforeunload', onBeforeUnload, { signal: lifecycle.signal });
     if (import.meta.env.DEV) {
         if (!document.title.endsWith(' · 开发测试版')) document.title += ' · 开发测试版';
         Object.assign(window, { __director: { callTool: (name: string, args: Record<string, unknown> = {}) => toolService.call(name, args), getProject: () => clone(project), getDocument: () => history.document(), getEngine: () => engine, setTime: (t: number) => { playing = false; seek(t); }, setPreview: (id: string) => { preview = id; renderCameras(); }, replaceProject: (p: Project | SceneDocument) => { selectClip(null);project = history.reset(p); revision++; selected = project.entities[0].id; time = 0; engine.rebuild(project); renderPanels(); }, signature: () => engine.projectionSignature(), exportForTest: async (opts: Parameters<typeof import('./export.ts')['exportVideo']>[1]) => { const { exportVideo } = await import('./export.ts'); const blob = await exportVideo(engine, opts, new AbortController().signal, () => { }); return blob ? Array.from(new Uint8Array(await blob.arrayBuffer())) : []; } } });
@@ -430,14 +415,17 @@ export function mountDirectorEditor(host: {
 
     return () => {
         alive = false;
+        lifecycle.abort();
+        recoverySave.dispose();
+        releaseUpdates();
+        releaseSettings();
+        releaseFileLocations();
         releaseAgent();
         releaseControls();
-        document.addEventListener = documentAdd as typeof document.addEventListener;
-        window.addEventListener = windowAdd as typeof window.addEventListener;
-        for (const [target, type, listener, options] of tracked)
-            target.removeEventListener(type, listener, options);
-        window.removeEventListener("beforeunload", onBeforeUnload);
+        inspectorUI.dispose();
         clearTimeout(inspectorSeekTimer);
+        for (const timer of toastTimers) clearTimeout(timer);
+        toastTimers.clear();
         engine.dispose();
         delete (window as Window & { __director?: unknown }).__director;
     };

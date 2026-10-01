@@ -26,6 +26,7 @@ from app.console.amadeus.schemas import (
 )
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
+from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 
 
@@ -158,16 +159,22 @@ class Conversations:
             ],
         )
 
-    @staticmethod
-    def _revision(row, expected: int) -> None:
+    async def _revision(self, row: AmadeusConversation, expected: int) -> None:
         if row.revision != expected:
-            raise OperationError("对话已更新，请刷新后重试", "revision_conflict", 409)
+            await self._conflict(row.id, expected)
+
+    async def _conflict(self, identity: str, expected: int) -> None:
+        await self.session.rollback()
+        current = await self._get(identity)
+        raise RevisionConflictError(
+            expected, current.revision, _conversation(current).model_dump(mode="json")
+        )
 
     async def patch(
         self, identity: str, expected: int, title: str | None, model_id: str | None
     ) -> ConversationOut:
         row = await self._get(identity)
-        self._revision(row, expected)
+        await self._revision(row, expected)
         values = {"revision": expected + 1, "updated_at": utc_now()}
         if title is not None:
             values["title"] = title.strip()
@@ -179,15 +186,14 @@ class Conversations:
             .values(**values)
         )
         if changed.rowcount != 1:
-            await self.session.rollback()
-            raise OperationError("对话已更新，请刷新后重试", "revision_conflict", 409)
+            await self._conflict(identity, expected)
         await self.session.commit()
         await self.session.refresh(row)
         return _conversation(row)
 
     async def delete(self, identity: str, expected: int) -> None:
         row = await self._get(identity)
-        self._revision(row, expected)
+        await self._revision(row, expected)
         running = await self.session.scalar(
             select(AmadeusRun.id).where(
                 AmadeusRun.conversation_id == identity,
@@ -206,15 +212,14 @@ class Conversations:
             )
         )
         if removed.rowcount != 1:
-            await self.session.rollback()
-            raise OperationError("对话已更新，请刷新后重试", "revision_conflict", 409)
+            await self._conflict(identity, expected)
         await self.session.commit()
         if folder.is_dir():
             await asyncio.to_thread(shutil.rmtree, folder)
 
     async def add_message(self, identity: str, body: MessageIn) -> ConversationDetailOut:
         row = await self._get(identity)
-        self._revision(row, body.expected_revision)
+        await self._revision(row, body.expected_revision)
         values = {"revision": body.expected_revision + 1, "updated_at": utc_now()}
         if row.title == "新对话" and body.role == "user":
             values["title"] = body.content[:48].replace("\n", " ")
@@ -227,8 +232,7 @@ class Conversations:
             .values(**values)
         )
         if changed.rowcount != 1:
-            await self.session.rollback()
-            raise OperationError("对话已更新，请刷新后重试", "revision_conflict", 409)
+            await self._conflict(identity, body.expected_revision)
         self.session.add(
             AmadeusMessage(
                 conversation_id=row.id,

@@ -414,9 +414,7 @@ export function ApprovalCard({
                         ? "已取消"
                         : "执行中"}
         </span>
-        <h3>
-          {title} · {target}
-        </h3>
+        <h3>{title}</h3>
       </header>
       <div className="amadeus-action-summary">
         <span>目标</span>

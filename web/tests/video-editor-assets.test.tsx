@@ -203,7 +203,7 @@ describe("video editor asset panel", () => {
       await screen.findByRole("button", { name: /重试将 1 个素材归入/ }),
     ).toBeVisible();
     expect(screen.getByText(/暂在“未分类”/)).toBeVisible();
-    expect(applyVideoEditorOperations).toHaveBeenCalledTimes(3);
+    expect(applyVideoEditorOperations).toHaveBeenCalledTimes(1);
   });
 
   it("selects folder assets for ordered batch actions", async () => {

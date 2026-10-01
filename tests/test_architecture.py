@@ -35,11 +35,16 @@ WEB_APP_UNITS = (
     "video-editor",
     "motion-compositor",
     "live2d-workshop",
+    "desktop-pet",
     "visual-workshop",
     "director-desk",
 )
-# Explicit finished-media handoffs are the only cross-app calls.
-ALLOWED_APP_HANDOFFS = {("video-editor", "visual-workshop"), ("motion-compositor", "video-editor")}
+# Only explicit public handoffs may cross app boundaries.
+ALLOWED_APP_HANDOFFS = {
+    ("video-editor", "visual-workshop"),
+    ("motion-compositor", "video-editor"),
+    ("desktop-pet", "live2d-workshop"),
+}
 
 FORBIDDEN_BACKEND_DIRECTORIES = {"domain", "platform", "product", "services"}
 # Hard-cut legacy package roots from the runtime/capabilities restructure.
@@ -143,6 +148,27 @@ def _web_imports(path: Path) -> set[str]:
     imports: set[str] = set()
     for pattern in (FROM_IMPORT_PATTERN, SIDE_EFFECT_IMPORT_PATTERN, DYNAMIC_IMPORT_PATTERN):
         imports.update(pattern.findall(source))
+    return imports
+
+
+def _web_runtime_imports(path: Path) -> set[str]:
+    """TypeScript erases type-only imports; only emitted imports can cycle at runtime."""
+    source = path.read_text(encoding="utf-8")
+    imports = set(SIDE_EFFECT_IMPORT_PATTERN.findall(source))
+    imports.update(DYNAMIC_IMPORT_PATTERN.findall(source))
+    statement = re.compile(
+        r"\b(?:import|export)\s+(.*?)\s+from\s+[\"']([^\"']+)[\"']",
+        re.DOTALL,
+    )
+    for match in statement.finditer(source):
+        clause = match.group(1).strip()
+        if clause.startswith("type "):
+            continue
+        if clause.startswith("{") and all(
+            item.strip().startswith("type ") for item in clause[1:-1].split(",") if item.strip()
+        ):
+            continue
+        imports.add(match.group(2))
     return imports
 
 
@@ -737,7 +763,7 @@ def test_web_production_modules_have_no_import_cycles() -> None:
     graph = {
         path: {
             target
-            for specifier in _web_imports(path)
+            for specifier in _web_runtime_imports(path)
             if (target := _resolve_web_module(path, specifier)) in files
         }
         for path in files
@@ -762,7 +788,7 @@ def test_web_production_modules_have_no_import_cycles() -> None:
 
     for path in files:
         visit(path)
-    assert not cycles, "TypeScript 生产模块不得形成导入循环：\n" + "\n".join(
+    assert not cycles, "TypeScript 生产模块不得形成运行时导入循环：\n" + "\n".join(
         " -> ".join(cycle) for cycle in sorted(cycles)
     )
 
@@ -1058,6 +1084,20 @@ def test_apps_only_cross_each_other_through_declared_handoffs() -> None:
     assert not violations, "App 之间只能通过已登记的交接用例并经公共入口互相依赖：\n" + "\n".join(
         violations
     )
+
+
+def test_desktop_pet_only_reads_live2d_public_snapshot() -> None:
+    assert ("desktop-pet", "live2d-workshop") in ALLOWED_APP_HANDOFFS
+    pet_root = BACKEND_APP / "apps" / "desktop_pet"
+    imports = {
+        node.module
+        for path in pet_root.rglob("*.py")
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+        if isinstance(node, ast.ImportFrom)
+        and node.module
+        and node.module.startswith("app.apps.live2d_workshop")
+    }
+    assert imports == {"app.apps.live2d_workshop.public"}
 
 
 def test_css_uses_semantic_source_files_and_read_only_bundle_budgets() -> None:

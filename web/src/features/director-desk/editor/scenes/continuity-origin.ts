@@ -1,12 +1,7 @@
-import type { SceneState } from './sequence-project.ts';
-import { getFrameCount, type ProductionNote, type Vec3 } from '../model.ts';
+import { getFrameCount } from '../model.ts';
 
-export interface EndingObject { key: string; entityId: string | null; memberIndex: number | null; name: string; kind: string; position: Vec3; forward: Vec3; action: string | null; enabled: boolean; bounds: { min: Vec3; max: Vec3 } | null }
-export interface ContinuityOrigin {
-    version: 1; sceneId: string; sceneName: string; sourceHash: string;
-    frameIndex: number; time: number; fps: number; duration: number;
-    state: SceneState; notes: ProductionNote[]; objects: EndingObject[]; cameraId: string;
-}
+import type { ContinuityOrigin } from './scene-document-types.ts';
+export type { ContinuityOrigin, EndingObject } from './scene-document-types.ts';
 export function assertContinuityOrigin(input: unknown): asserts input is ContinuityOrigin {
     const o = input as ContinuityOrigin, finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
     const vec = (v: unknown) => Array.isArray(v) && v.length === 3 && v.every(finite);

@@ -3,8 +3,9 @@ type Layout = Record<Boundary, number>;
 const defaults: Layout = { sidebar: 228, inspector: 320, timeline: 210, split: 51.2 };
 const storageKey = 'director-layout-v1';
 
-export function bindResizableLayout() {
+export function bindResizableLayout(signal: AbortSignal) {
     const root = document.documentElement;
+    let cancelActiveDrag: (() => void) | undefined;
     let layout = { ...defaults };
     try {
         const saved = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
@@ -43,7 +44,7 @@ export function bindResizableLayout() {
         handle.setAttribute('aria-orientation', key === 'timeline' ? 'horizontal' : 'vertical');
         handle.title = `拖动调整${label} · 双击复位 · 方向键微调`;
         document.querySelector(parent)!.append(handle);
-        handle.addEventListener('dblclick', () => { layout[key] = defaults[key]; apply(); save(); });
+        handle.addEventListener('dblclick', () => { layout[key] = defaults[key]; apply(); save(); }, { signal });
         handle.addEventListener('keydown', event => {
             const step = key === 'split' ? 2 : 10;
             if (['ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowUp', 'Home'].includes(event.key)) {
@@ -52,7 +53,7 @@ export function bindResizableLayout() {
                 layout[key] = event.key === 'Home' ? defaults[key] : layout[key] + (grow.includes(event.key) ? step : -step);
                 apply(); save();
             }
-        });
+        }, { signal });
         handle.addEventListener('pointerdown', event => {
             if (event.button !== 0) return;
             event.preventDefault(); event.stopPropagation();
@@ -70,13 +71,17 @@ export function bindResizableLayout() {
                 window.removeEventListener('blur', cancel);
                 if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
                 root.classList.remove('resizing-layout'); save();
+                cancelActiveDrag = undefined;
             };
             const cancel = () => finish();
+            cancelActiveDrag = cancel;
             handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', finish); handle.addEventListener('pointercancel', finish);
             window.addEventListener('blur', cancel);
-        });
+        }, { signal });
+        signal.addEventListener('abort', () => handle.remove(), { once: true });
     }
-    document.querySelector('#reset-layout')!.addEventListener('click', () => { layout = { ...defaults }; apply(); save(); });
-    window.addEventListener('resize', apply);
+    signal.addEventListener('abort', () => cancelActiveDrag?.(), { once: true });
+    document.querySelector('#reset-layout')!.addEventListener('click', () => { layout = { ...defaults }; apply(); save(); }, { signal });
+    window.addEventListener('resize', apply, { signal });
     apply();
 }

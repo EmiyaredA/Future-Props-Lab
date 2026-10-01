@@ -1,6 +1,6 @@
 import { Mesh, Object3D } from 'three';
 import { isAnimalAsset } from '../asset-catalog.ts';
-import type { Engine } from '../engine.ts';
+import type { SpatialSceneView } from './scene-view.ts';
 import { shotEntityVisible } from '../scenes/camera-visibility.ts';
 import { modelNodeHidden } from '../resources/model-node-visibility.ts';
 export interface SceneTarget { key: string; entityId: string | null; name: string; root: Object3D; meshes: Mesh[]; head?: Object3D; person: boolean }
@@ -10,7 +10,7 @@ export function meshesOf(root: Object3D, exclude?: Object3D): Mesh[] {
     visit(root); return meshes;
 }
 /** Visibility flags from the editor preview are intentionally ignored; project state is authoritative. */
-export function sceneTargets(engine: Engine, cameraId?: string): SceneTarget[] {
+export function sceneTargets(engine: SpatialSceneView, cameraId?: string): SceneTarget[] {
     const targets: SceneTarget[] = [], config = cameraId === undefined ? null : engine.cameraEntity(cameraId).camera!;
     for (const e of engine.project.entities) {
         if (e.kind === 'camera' || e.light || !shotEntityVisible(engine.project, e, config)) continue;

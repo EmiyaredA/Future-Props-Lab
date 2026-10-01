@@ -2,16 +2,17 @@ import type { UpdateState } from '../updates/types.ts';
 import { icon, editorRoot } from './common.ts';
 import './update-panel.css';
 export function mountUpdates(prepareInstall: (run: () => Promise<void>) => Promise<void>) {
-    const bridge = window.directorDesktop; if (!bridge) return;
+    const bridge = window.directorDesktop; if (!bridge) return () => {};
     const button = document.createElement('button'); button.id = 'update-toggle'; button.className = 'icon-button subtle'; button.innerHTML = icon('download');button.title='软件更新';button.setAttribute('aria-label','软件更新');
     document.querySelector('.header-actions')!.prepend(button);
     const dialog = document.createElement('dialog'); dialog.id = 'update-panel'; dialog.setAttribute('aria-label', '软件更新');
     dialog.innerHTML = `<header><strong>软件更新</strong><button id="update-close" aria-label="关闭更新窗口">×</button></header><p id="update-version"></p><textarea id="update-message" readonly aria-label="更新状态"></textarea><progress id="update-progress" max="100" value="0"></progress><textarea id="update-notes" readonly aria-label="版本说明" placeholder="发现新版本后显示更新说明"></textarea><div class="update-actions"><button id="update-check">检查更新</button><button id="update-download">下载更新</button><button id="update-install">重启安装</button></div><button id="update-page">打开下载页</button><details><summary>更新设置</summary><label>检查来源<select id="update-source"><option value="auto">网站 + GitHub（取较新版本）</option><option value="website">仅网站</option><option value="github">仅 GitHub</option></select></label><label>网站更新目录<input id="update-url" type="url"/></label><p class="update-auto">每次启动检查；不会自动下载或安装。</p><button id="update-save">保存设置</button></details><p id="update-mode"></p>`;
     editorRoot().append(dialog);
     const find = <T extends HTMLElement>(id: string) => dialog.querySelector<T>('#update-' + id)!;
-    let state: UpdateState | undefined, working = false;
+    let state: UpdateState | undefined, working = false, disposed = false;
     const notified = new Set<string>();
     const render = (next: UpdateState, fields = false) => {
+        if (disposed) return;
         state = next;
         find('version').textContent = `当前 ${next.currentVersion}${next.version ? '  →  ' + next.version : ''}`;
         find<HTMLTextAreaElement>('message').value = next.message; find<HTMLTextAreaElement>('notes').value = next.notes;
@@ -28,12 +29,12 @@ export function mountUpdates(prepareInstall: (run: () => Promise<void>) => Promi
         if (fields) { find<HTMLSelectElement>('source').value = next.config.source; find<HTMLInputElement>('url').value = next.config.url; }
     };
     const request = async (action: Parameters<typeof bridge.update>[0], data?: unknown) => {
-        const result = await bridge.update(action, data); if (!result.ok || !result.data) throw Error(result.error || '更新请求失败'); render(result.data, action === 'save' || action === 'state');
+        const result = await bridge.update(action, data); if (disposed) return; if (!result.ok || !result.data) throw Error(result.error || '更新请求失败'); render(result.data, action === 'save' || action === 'state');
     };
     const run = async (action: () => Promise<void>) => {
         if (working) return; working = true; if (state) render(state);
-        try { await action(); } catch (e) { find<HTMLTextAreaElement>('message').value = e instanceof Error ? e.message : '更新操作失败'; }
-        finally { working = false; if (state) { const message = find<HTMLTextAreaElement>('message').value; render(state); find<HTMLTextAreaElement>('message').value = message; } }
+        try { await action(); } catch (e) { if (!disposed) find<HTMLTextAreaElement>('message').value = e instanceof Error ? e.message : '更新操作失败'; }
+        finally { working = false; if (!disposed && state) { const message = find<HTMLTextAreaElement>('message').value; render(state); find<HTMLTextAreaElement>('message').value = message; } }
     };
     button.onclick = () => { dialog.showModal(); void run(() => request('state')); };
     find('close').onclick = () => dialog.close();
@@ -41,5 +42,6 @@ export function mountUpdates(prepareInstall: (run: () => Promise<void>) => Promi
     for (const action of ['check', 'download', 'page'] as const) find(action).onclick = () => { void run(() => request(action)); };
     find('save').onclick = () => { void run(() => request('save', { source: find<HTMLSelectElement>('source').value, url: find<HTMLInputElement>('url').value, automatic: true })); };
     find('install').onclick = () => { void run(() => prepareInstall(() => request('install'))); };
-    bridge.onUpdate(next => render(next)); void run(() => request('state'));
+    const unsubscribe = bridge.onUpdate(next => render(next)); void run(() => request('state'));
+    return () => { disposed = true; unsubscribe(); dialog.remove(); button.remove(); };
 }

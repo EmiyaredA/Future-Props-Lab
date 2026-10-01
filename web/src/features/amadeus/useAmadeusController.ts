@@ -6,10 +6,15 @@ import { decideAmadeusApproval } from "./approval";
 import { submitAmadeusAnswer } from "./answerQuestion";
 import { configuredCapabilities } from "./configuredCapabilities";
 import { conversationActions } from "./conversationActions";
+import { useAmadeusData } from "./useAmadeusData";
 import { groupConversations } from "./conversationGroups";
 import { formatAmadeusPrompt } from "./formatPrompt";
 import { buildAgentHistory } from "./history";
 import { createRunEventRecorder } from "./runEvents";
+import {
+  conversationConflict,
+  CONVERSATION_CONFLICT_MESSAGE,
+} from "./revisionConflict";
 import { streamTurn } from "./streamTurn";
 import { encodeVideoContactSheet } from "./videoReference";
 import {
@@ -107,142 +112,36 @@ export function useAmadeusController(session: AccountSessionContext) {
     [],
   );
 
-  const refreshList = useCallback(async () => {
-    const result = await fetchApiJson<{ items: Conversation[] }>(
-      "/v1/amadeus/conversations",
-    );
-    setConversations(result.items);
-    return result.items;
-  }, []);
-  const open = useCallback(async (id: string) => {
-    const [next, history] = await Promise.all([
-      fetchApiJson<Detail>(`/v1/amadeus/conversations/${id}`),
-      fetchApiJson<RunDetail[]>(`/v1/amadeus/conversations/${id}/runs`),
-    ]);
-    setDetail(next);
-    setRuns(history);
-    detailRef.current = next;
-    setReferences([]);
-    setAttachments([]);
-    setFilesOpen(false);
-    setWorkFiles([]);
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    const owner = `${session.me.user.id}:${session.me.workspace.id}`;
-    setDetail(null);
-    setReferences([]);
-    void refreshList()
-      .then((items) => {
-        if (!alive) return;
-        const saved = localStorage.getItem(`amadeus-current:${owner}`);
-        const selected = items.find((item) => item.id === saved) || items[0];
-        if (selected) void open(selected.id);
-      })
-      .catch((cause) => setError(String(cause)));
-    void fetchApiJson<RunDetail | null>("/v1/amadeus/runs/active")
-      .then(async (running) => {
-        if (!alive || !running) return;
-        const path = `/v1/amadeus/conversations/${running.run.conversation_id}/runs/${running.run.id}/finish`;
-        const interrupted = await fetchApiJson<RunDetail>(path, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "interrupted",
-            error_message:
-              "助手窗口已重新载入，任务中断；未确认结果的操作不会自动重试。",
-          }),
-        });
-        if (!alive) return;
-        setActiveRun(null);
-        setBusy(false);
-        setError(interrupted.run.error_message || "上次任务已中断。");
-        await open(interrupted.run.conversation_id);
-      })
-      .catch((cause) => setError(String(cause)));
-    void fetchApiJson<{ items: ModelOption[] }>("/v1/model-inference/options")
-      .then((value) => {
-        if (alive) {
-          setModels(value.items.filter((item) => item.id));
-          setModelId(value.items[0]?.id || "");
-        }
-      })
-      .catch(() => setModels([]));
-    void bridge.amadeusContexts().then((value) => {
-      if (alive) setContexts(value as Context[]);
-    });
-    void bridge.amadeusAlwaysOnTop().then((value) => {
-      if (alive && typeof value === "boolean") setAlwaysOnTop(value);
-    });
-    const offContexts = bridge.onAmadeusContexts((value) =>
-      setContexts(value as Context[]),
-    );
-    const offReference = bridge.onAmadeusReference((value) => {
-      const reference = value as Reference;
-      const origin = contextRef.current.find(
-        (item) => item.windowId === reference.windowId,
-      );
-      if (
-        origin?.userId === session.me.user.id &&
-        origin.workspaceId === session.me.workspace.id
-      )
-        setReferences((previous) => [...previous, reference].slice(0, 20));
-    });
-    const offPickFinished = bridge.onAmadeusPickFinished?.(() => {
-      setAvatarState((current) => (current === "listening" ? "idle" : current));
-    });
-    return () => {
-      alive = false;
-      offContexts();
-      offReference();
-      offPickFinished?.();
-      modelAbortRef.current?.abort();
-      workerRef.current?.terminate();
-      const run = activeRunRef.current;
-      if (run)
-        void fetchApiJson(
-          `/v1/amadeus/conversations/${run.conversation_id}/runs/${run.id}/cancel`,
-          { method: "POST" },
-        ).catch(() => undefined);
-      if (avatarTimerRef.current) window.clearTimeout(avatarTimerRef.current);
-    };
-  }, [session.me.user.id, session.me.workspace.id, bridge, open, refreshList]);
-
-  const conversationId = detail?.conversation.id;
-  useEffect(() => {
-    if (!conversationId) return;
-    localStorage.setItem(
-      `amadeus-current:${session.me.user.id}:${session.me.workspace.id}`,
-      conversationId,
-    );
-  }, [conversationId, session.me.user.id, session.me.workspace.id]);
-
-  useEffect(() => {
-    if (!conversationId) {
-      setLoaded([]);
-      setLoadedConversationId(null);
-      return;
-    }
-    try {
-      setLoaded(
-        JSON.parse(
-          localStorage.getItem(`amadeus-loaded:${conversationId}`) || "[]",
-        ),
-      );
-    } catch {
-      setLoaded([]);
-    }
-    setLoadedConversationId(conversationId);
-  }, [conversationId]);
-
-  useEffect(() => {
-    if (!conversationId || loadedConversationId !== conversationId) return;
-    localStorage.setItem(
-      `amadeus-loaded:${conversationId}`,
-      JSON.stringify(loaded),
-    );
-  }, [loaded, conversationId, loadedConversationId]);
+  const { refreshList, open } = useAmadeusData({
+    session,
+    bridge,
+    detail,
+    detailRef,
+    contextRef,
+    modelAbortRef,
+    workerRef,
+    activeRunRef,
+    avatarTimerRef,
+    loaded,
+    loadedConversationId,
+    setConversations,
+    setDetail,
+    setRuns,
+    setActiveRun,
+    setBusy,
+    setReferences,
+    setAttachments,
+    setFilesOpen,
+    setWorkFiles,
+    setError,
+    setModels,
+    setModelId,
+    setContexts,
+    setAlwaysOnTop,
+    setAvatarState,
+    setLoaded,
+    setLoadedConversationId,
+  });
 
   const refreshCapabilities = useCallback(async () => {
     try {
@@ -339,7 +238,13 @@ export function useAmadeusController(session: AccountSessionContext) {
     feedback?: string;
   }) => {
     const prompt = options?.prompt || draft.trim();
-    if (!prompt || busy || !modelId) return;
+    if (!prompt || busy || !modelId) {
+      if (options?.feedback)
+        throw new Error(
+          busy ? "Agent 正在运行，请稍后重试。" : "请先选择模型。",
+        );
+      return;
+    }
     if (
       !options &&
       (detailRef.current?.questions?.some(
@@ -847,6 +752,7 @@ export function useAmadeusController(session: AccountSessionContext) {
       });
     } catch (cause) {
       if (heartbeatTimer) window.clearInterval(heartbeatTimer);
+      if (!options) setDraft(prompt);
       if (startedRun)
         void fetchApiJson(
           `/v1/amadeus/conversations/${startedRun.conversation_id}/runs/${startedRun.id}/finish`,
@@ -863,10 +769,21 @@ export function useAmadeusController(session: AccountSessionContext) {
           setActiveRun(null);
           activeRunRef.current = null;
         });
-      setError(cause instanceof Error ? cause.message : String(cause));
+      const conflict = conversationConflict(cause);
+      if (conflict) {
+        if (detailRef.current?.conversation.id === conflict.id) {
+          try {
+            await refreshList();
+            await open(conflict.id);
+          } catch {
+            // The submitted text remains in the draft even if refresh fails.
+          }
+        }
+        setError(CONVERSATION_CONFLICT_MESSAGE);
+      } else setError(cause instanceof Error ? cause.message : String(cause));
       showAvatarState("error", 3200);
       setBusy(false);
-      if (!options) setDraft(prompt);
+      if (options?.feedback) throw cause;
     }
   };
 

@@ -1536,6 +1536,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/desktop-pet/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Projects */
+        get: operations["list_projects_v1_desktop_pet_projects_get"];
+        put?: never;
+        /** Create Project */
+        post: operations["create_project_v1_desktop_pet_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop-pet/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_project_v1_desktop_pet_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Project */
+        delete: operations["delete_project_v1_desktop_pet_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Project */
+        patch: operations["patch_project_v1_desktop_pet_projects__project_id__patch"];
+        trace?: never;
+    };
+    "/v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Asset File */
+        get: operations["asset_file_v1_desktop_pet_projects__project_id__assets__asset_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop-pet/projects/{project_id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["get_document_v1_desktop_pet_projects__project_id__document_get"];
+        /** Save Document */
+        put: operations["save_document_v1_desktop_pet_projects__project_id__document_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upload Skin Replacement */
+        put: operations["upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop-pet/projects/{project_id}/sync-source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync Source */
+        post: operations["sync_source_v1_desktop_pet_projects__project_id__sync_source_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/desktop/agent/capabilities": {
         parameters: {
             query?: never;
@@ -7412,6 +7518,13 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put */
+        Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** File */
+            file: string;
+        };
         /** Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post */
         Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post: {
             /** Abbreviations */
@@ -7991,6 +8104,35 @@ export interface components {
             model_id?: string | null;
             /** Title */
             title?: string | null;
+        };
+        /** ConversationRevisionConflictOut */
+        ConversationRevisionConflictOut: {
+            /**
+             * Code
+             * @constant
+             */
+            code: "revision_conflict";
+            current: components["schemas"]["ConversationOut"];
+            /** Current Revision */
+            current_revision: number;
+            /** Detail */
+            detail: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Instance */
+            instance: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: 409;
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "about:blank";
         };
         /** CreativeDraftIn */
         CreativeDraftIn: {
@@ -14560,6 +14702,153 @@ export interface components {
             revision: number;
             value: components["schemas"]["PermissionPolicy"];
         };
+        /** PetConfig */
+        PetConfig: {
+            /** Activeskinid */
+            activeSkinId?: string | null;
+            /** Events */
+            events?: {
+                [key: string]: components["schemas"]["PetReaction"];
+            };
+            habits?: components["schemas"]["PetHabits"];
+            /**
+             * Schemaversion
+             * @default 1
+             * @constant
+             */
+            schemaVersion: 1;
+            /** Skins */
+            skins?: components["schemas"]["PetSkin"][];
+        };
+        /** PetCreate */
+        PetCreate: {
+            /** Sourceprojectid */
+            sourceProjectId: string;
+            /** Sourcerevision */
+            sourceRevision: number;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** PetDocumentOut */
+        PetDocumentOut: {
+            /** Asseturls */
+            assetUrls: {
+                [key: string]: string;
+            };
+            character: components["schemas"]["CharacterDocument"];
+            config: components["schemas"]["PetConfig"];
+            /** Revision */
+            revision: number;
+            /** Sourcerevision */
+            sourceRevision: number;
+        };
+        /** PetHabits */
+        PetHabits: {
+            /**
+             * Bubbles
+             * @default true
+             */
+            bubbles: boolean;
+            /**
+             * Draggable
+             * @default true
+             */
+            draggable: boolean;
+            /** Hoveractions */
+            hoverActions?: ("dress" | "roam" | "hide" | "settings")[];
+            /**
+             * Roam
+             * @default calm
+             * @enum {string}
+             */
+            roam: "free" | "calm" | "off";
+            /**
+             * Size
+             * @default 220
+             */
+            size: number;
+            /**
+             * Sound
+             * @default true
+             */
+            sound: boolean;
+        };
+        /** PetPatch */
+        PetPatch: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Title */
+            title: string;
+        };
+        /** PetProjectOut */
+        PetProjectOut: {
+            /** Createdat */
+            createdAt: string;
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Sourceprojectid */
+            sourceProjectId: string;
+            /** Sourcerevision */
+            sourceRevision: number;
+            /** Sourcetitle */
+            sourceTitle: string;
+            /** Title */
+            title: string;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** PetProjectsOut */
+        PetProjectsOut: {
+            /** Items */
+            items: components["schemas"]["PetProjectOut"][];
+        };
+        /** PetReaction */
+        PetReaction: {
+            /**
+             * Bubble
+             * @default
+             */
+            bubble: string;
+            /** Expressionid */
+            expressionId?: string | null;
+            /** Motionid */
+            motionId?: string | null;
+            /**
+             * Sound
+             * @default none
+             * @enum {string}
+             */
+            sound: "none" | "tap" | "chime";
+        };
+        /** PetSave */
+        PetSave: {
+            config: components["schemas"]["PetConfig"];
+            /** Expectedrevision */
+            expectedRevision: number;
+        };
+        /** PetSkin */
+        PetSkin: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Replacements */
+            replacements?: {
+                [key: string]: string;
+            };
+        };
+        /** PetSync */
+        PetSync: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Sourcerevision */
+            sourceRevision: number;
+        };
         /** Point */
         Point: {
             /** X */
@@ -19638,6 +19927,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRevisionConflictOut"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -19671,6 +19969,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversationOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRevisionConflictOut"];
                 };
             };
             /** @description Validation Error */
@@ -20038,6 +20345,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversationDetailOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRevisionConflictOut"];
                 };
             };
             /** @description Validation Error */
@@ -21900,6 +22216,330 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_projects_v1_desktop_pet_projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetProjectsOut"];
+                };
+            };
+        };
+    };
+    create_project_v1_desktop_pet_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PetCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_v1_desktop_pet_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_v1_desktop_pet_projects__project_id__delete: {
+        parameters: {
+            query: {
+                expectedRevision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_project_v1_desktop_pet_projects__project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PetPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    asset_file_v1_desktop_pet_projects__project_id__assets__asset_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_v1_desktop_pet_projects__project_id__document_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_document_v1_desktop_pet_projects__project_id__document_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PetSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                skin_id: string;
+                source_asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_source_v1_desktop_pet_projects__project_id__sync_source_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PetSync"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetDocumentOut"];
                 };
             };
             /** @description Validation Error */

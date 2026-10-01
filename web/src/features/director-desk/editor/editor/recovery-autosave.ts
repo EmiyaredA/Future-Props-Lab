@@ -4,6 +4,7 @@ export class RecoveryAutosave {
     private requested = 0;
     private saved = 0;
     private active: Promise<void> | undefined;
+    private disposed = false;
     private write: (force: boolean) => Promise<boolean>;
     private onSaved: () => void;
     private onError: (error: unknown) => void;
@@ -12,13 +13,15 @@ export class RecoveryAutosave {
         onError: (error: unknown) => void, delay = 500) {
         this.write=write;this.onSaved=onSaved;this.onError=onError;this.delay=delay;
     }
-    request() { this.requested++; this.schedule(); }
+    request() { if (this.disposed) return; this.requested++; this.schedule(); }
     private schedule() {
+        if (this.disposed) return;
         clearTimeout(this.timer);
         this.timer = setTimeout(() => { this.timer = undefined; void this.run(false).catch(() => {}); }, this.delay);
     }
     private async run(force: boolean): Promise<void> {
-        if (this.active) { await this.active; if(force) return this.run(true); return; }
+        if (this.disposed) return;
+        if (this.active) { await this.active; if(force && !this.disposed) return this.run(true); return; }
         if (this.saved === this.requested && !force) return;
         const version = this.requested;
         let retry = false;
@@ -26,15 +29,16 @@ export class RecoveryAutosave {
             try {
                 if (!await this.write(force)) { if(force) throw Error('请先完成当前编辑或导出'); retry = true; return; }
                 this.saved = version;
-                if (version === this.requested) this.onSaved();
-            } catch(error) { if(version === this.requested) this.onError(error); throw error; }
+                if (!this.disposed && version === this.requested) this.onSaved();
+            } catch(error) { if(!this.disposed && version === this.requested) this.onError(error); throw error; }
         })();
         try { await this.active; }
         finally {
             this.active = undefined;
-            if (retry || version !== this.requested) this.schedule();
+            if (!this.disposed && (retry || version !== this.requested)) this.schedule();
         }
     }
     /** Explicit recovery before an update waits for older writes, then captures the latest state. */
     async flush() { clearTimeout(this.timer); this.timer = undefined; await this.run(true); }
+    dispose() { this.disposed = true; clearTimeout(this.timer); this.timer = undefined; }
 }

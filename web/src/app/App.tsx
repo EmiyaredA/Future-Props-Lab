@@ -1,5 +1,6 @@
 import { PageErrorBoundary } from "./PageErrorBoundary";
 import { LIVE2D_WORKSHOP_MODULE } from "@features/live2d-workshop/module";
+import { DESKTOP_PET_MODULE } from "@features/desktop-pet/module";
 import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { workspaceAllows } from "@features/accounts/permissions";
@@ -140,6 +141,12 @@ const Live2DEditorPage = lazy(() =>
     default: m.EditorPage,
   })),
 );
+const DesktopPetProjectsPage = lazy(() =>
+  import("@features/desktop-pet/ProjectsPage").then((m) => ({ default: m.ProjectsPage })),
+);
+const DesktopPetEditorPage = lazy(() =>
+  import("@features/desktop-pet/EditorPage").then((m) => ({ default: m.EditorPage })),
+);
 
 const MotionCompositorProjectsPage = lazy(() =>
   import("@features/motion-compositor/ProjectsPage").then((m) => ({
@@ -176,6 +183,12 @@ export default function App() {
   routeRef.current = route;
   const page = route.page;
   useEffect(() => {
+    void window.futurePropsDesktop?.publishPetContext?.({
+      userId: me.user.id,
+      workspaceId: me.workspace.id,
+    });
+  }, [me.user.id, me.workspace.id]);
+  useEffect(() => {
     const key = String(page);
     const applications: Record<string, string> = {
       "presentation-workshop": "演示工坊",
@@ -187,6 +200,7 @@ export default function App() {
       "audio-annotation": "音频标注工坊",
       "director-desk": "导演台",
       "live2d-workshop": "Live2D 工坊",
+      "desktop-pet": "桌宠工坊",
       "creative-workshop": "创意工坊",
     };
     const application =
@@ -393,6 +407,36 @@ export default function App() {
             onOpen={(projectId) =>
               navigate("live2d-workshop-editor", projectId)
             }
+          />
+        </PageBoundary>
+      </WorkshopShell>
+    );
+
+  if (page === "desktop-pet-editor" && route.projectId)
+    return (
+      <PageBoundary>
+        <DesktopPetEditorPage
+          key={route.projectId}
+          projectId={route.projectId}
+          onBack={() => navigate("desktop-pet-projects")}
+          readOnly={!workspaceAllows(me.workspace, "content.write")}
+          registerNavigationGuard={registerNavigationGuard}
+        />
+      </PageBoundary>
+    );
+
+  if (page === "desktop-pet-projects")
+    return (
+      <WorkshopShell
+        module={DESKTOP_PET_MODULE}
+        page={page}
+        navigate={(next) => navigate(next as WorkshopPage)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          <DesktopPetProjectsPage
+            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            onOpen={(id) => navigate("desktop-pet-editor", id)}
           />
         </PageBoundary>
       </WorkshopShell>

@@ -9,6 +9,7 @@ export const desktopSurfaces = {
   "desktop/ui/startup.html": "desktop/scripts/smoke.cjs",
   "desktop-setup": "desktop/scripts/smoke.cjs",
   "web/amadeus.html": "desktop/scripts/smoke-amadeus.cjs",
+  "web/pet.html": "desktop/scripts/smoke-pet.cjs",
 } as const;
 
 // Every application route must name its responsive scenario owner.
@@ -56,6 +57,8 @@ export const responsiveOwners = {
   "video-editor-tasks": "shell",
   "live2d-workshop-projects": "shell",
   "live2d-workshop-editor": "editors",
+  "desktop-pet-projects": "shell",
+  "desktop-pet-editor": "editors",
   "motion-compositor-projects": "shell",
   "motion-compositor-editor": "editors",
   "audio-annotation-projects": "shell",
@@ -102,6 +105,7 @@ export const staticPaths = [
   "/apps/video-editor/tasks",
   "/apps/motion-compositor",
   "/apps/live2d-workshop",
+  "/apps/desktop-pet",
   "/apps/audio-annotation",
   "/apps/director-desk",
   "/docs.html",

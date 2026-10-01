@@ -2,11 +2,9 @@ import type { AssetDefinition } from './types.ts';
 import { creatureParameterSchema } from './animal-options.ts';
 import { BIRD_JOINTS, FISH_JOINTS, SERPENT_JOINTS } from '../joint-schema.ts';
 
-export interface CreatureShape {
-    rig: 'bird' | 'fish' | 'serpent';
-    species: 'chicken' | 'duck' | 'pigeon' | 'eagle' | 'pterosaur' | 'fish' | 'shark' | 'snake';
-    height: number; body: number; width: number; leg: number; neck: number; wing: number;
-}
+import type { CreatureShape } from './shape-types.ts';
+export type { CreatureShape } from './shape-types.ts';
+
 const presets: Array<{ name: string; aliases: string[]; shape: CreatureShape }> = [
     { name: '鸡', aliases: ['家禽', 'chicken'], shape: { rig: 'bird', species: 'chicken', height: .5, body: .5, width: .18, leg: .18, neck: .22, wing: .24 } },
     { name: '鸭', aliases: ['家禽', 'duck'], shape: { rig: 'bird', species: 'duck', height: .45, body: .65, width: .2, leg: .12, neck: .2, wing: .28 } },

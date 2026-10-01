@@ -100,6 +100,8 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0073_live2d_cubism_attachment",),
             ("r0074_live2d_editable_runtime",),
             ("r0075_creative_workshop",),
+            ("r0076_amadeus_workflows",),
+            ("r0077_desktop_pet",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

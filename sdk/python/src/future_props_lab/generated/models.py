@@ -466,6 +466,10 @@ class Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post(
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
 
+class Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    file: str = Field(default=..., alias='file')
+
 class Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post(WireModel):
     abbreviations: bool | None = Field(default=None, alias='abbreviations')
     enable_punctuation: bool | None = Field(default=None, alias='enable_punctuation')
@@ -700,6 +704,17 @@ class ConversationPatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     model_id: str | None = Field(default=None, alias='model_id')
     title: str | None = Field(default=None, alias='title')
+
+class ConversationRevisionConflictOut(WireModel):
+    code: Literal['revision_conflict'] = Field(default=..., alias='code')
+    current: ConversationOut = Field(default=..., alias='current')
+    current_revision: int = Field(default=..., alias='current_revision')
+    detail: str = Field(default=..., alias='detail')
+    expected_revision: int = Field(default=..., alias='expected_revision')
+    instance: str = Field(default=..., alias='instance')
+    status: Literal[409] = Field(default=..., alias='status')
+    title: str = Field(default=..., alias='title')
+    type: Literal['about:blank'] = Field(default=..., alias='type')
 
 class CreativeDraftIn(WireModel):
     components: list[str] | None = Field(default=None, alias='components', max_length=30)
@@ -3333,6 +3348,69 @@ class PermissionPolicyOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     value: PermissionPolicy = Field(default=..., alias='value')
 
+class PetConfig(WireModel):
+    active_skin_id: str | None = Field(default=None, alias='activeSkinId')
+    events: dict[str, PetReaction] | None = Field(default=None, alias='events')
+    habits: PetHabits | None = Field(default=None, alias='habits')
+    schema_version: Literal[1] = Field(default=1, alias='schemaVersion')
+    skins: list[PetSkin] | None = Field(default=None, alias='skins', max_length=20)
+
+class PetCreate(WireModel):
+    source_project_id: str = Field(default=..., alias='sourceProjectId', min_length=1, max_length=36)
+    source_revision: int = Field(default=..., alias='sourceRevision', ge=0.0)
+    title: str = Field(default='', alias='title', max_length=120)
+
+class PetDocumentOut(WireModel):
+    asset_urls: dict[str, str] = Field(default=..., alias='assetUrls')
+    character: CharacterDocument = Field(default=..., alias='character')
+    config: PetConfig = Field(default=..., alias='config')
+    revision: int = Field(default=..., alias='revision')
+    source_revision: int = Field(default=..., alias='sourceRevision')
+
+class PetHabits(WireModel):
+    bubbles: bool = Field(default=True, alias='bubbles')
+    draggable: bool = Field(default=True, alias='draggable')
+    hover_actions: list[Literal['dress', 'roam', 'hide', 'settings']] | None = Field(default=None, alias='hoverActions', max_length=4)
+    roam: Literal['free', 'calm', 'off'] = Field(default='calm', alias='roam')
+    size: int = Field(default=220, alias='size', ge=160.0, le=300.0)
+    sound: bool = Field(default=True, alias='sound')
+
+class PetPatch(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class PetProjectOut(WireModel):
+    created_at: str = Field(default=..., alias='createdAt')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    source_project_id: str = Field(default=..., alias='sourceProjectId')
+    source_revision: int = Field(default=..., alias='sourceRevision')
+    source_title: str = Field(default=..., alias='sourceTitle')
+    title: str = Field(default=..., alias='title')
+    updated_at: str = Field(default=..., alias='updatedAt')
+
+class PetProjectsOut(WireModel):
+    items: list[PetProjectOut] = Field(default=..., alias='items')
+
+class PetReaction(WireModel):
+    bubble: str = Field(default='', alias='bubble', max_length=140)
+    expression_id: str | None = Field(default=None, alias='expressionId')
+    motion_id: str | None = Field(default=None, alias='motionId')
+    sound: Literal['none', 'tap', 'chime'] = Field(default='none', alias='sound')
+
+class PetSave(WireModel):
+    config: PetConfig = Field(default=..., alias='config')
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+
+class PetSkin(WireModel):
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=60)
+    replacements: dict[str, Any] | None = Field(default=None, alias='replacements')
+
+class PetSync(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    source_revision: int = Field(default=..., alias='sourceRevision', ge=0.0)
+
 class Point(WireModel):
     x: float = Field(default=..., alias='x', ge=-100000.0, le=100000.0)
     y: float = Field(default=..., alias='y', ge=-100000.0, le=100000.0)
@@ -5048,6 +5126,7 @@ Body_upload_library_file_v1_director_desk_library_files_post.model_rebuild()
 Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post.model_rebuild()
 Body_upload_project_file_v1_director_desk_projects__project_id__files_post.model_rebuild()
 Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post.model_rebuild()
+Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put.model_rebuild()
 Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post.model_rebuild()
 BoneWeight.model_rebuild()
 CallLogListItem.model_rebuild()
@@ -5076,6 +5155,7 @@ ConversationDetailOut.model_rebuild()
 ConversationListOut.model_rebuild()
 ConversationOut.model_rebuild()
 ConversationPatchIn.model_rebuild()
+ConversationRevisionConflictOut.model_rebuild()
 CreativeDraftIn.model_rebuild()
 CreativeDraftUpdateIn.model_rebuild()
 CreativeImportIn.model_rebuild()
@@ -5443,6 +5523,17 @@ ParameterKeyform.model_rebuild()
 PermissionPolicy.model_rebuild()
 PermissionPolicyIn.model_rebuild()
 PermissionPolicyOut.model_rebuild()
+PetConfig.model_rebuild()
+PetCreate.model_rebuild()
+PetDocumentOut.model_rebuild()
+PetHabits.model_rebuild()
+PetPatch.model_rebuild()
+PetProjectOut.model_rebuild()
+PetProjectsOut.model_rebuild()
+PetReaction.model_rebuild()
+PetSave.model_rebuild()
+PetSkin.model_rebuild()
+PetSync.model_rebuild()
 Point.model_rebuild()
 PresentationCrop.model_rebuild()
 PresentationDocument.model_rebuild()

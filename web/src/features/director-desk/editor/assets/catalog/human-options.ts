@@ -1,5 +1,5 @@
 import type { AssetParameter } from './types.ts';
-import type { HumanProportions } from './humans.ts';
+import type { HumanProportions } from './shape-types.ts';
 
 export const HUMAN_RATIO_FIELDS = { shoulder: '肩宽', pelvis: '胯宽', torso: '躯干长度', thigh: '大腿长度', shin: '小腿长度', upperArm: '上臂长度', forearm: '前臂长度', head: '头部大小', girth: '身体厚度' } as const;
 export const BODY_OUTFITS = [undefined, 'casual', 'dress', 'robe', 'armor', 'uniform'] as const;

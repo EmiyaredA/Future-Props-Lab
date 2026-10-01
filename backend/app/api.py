@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.apps.audio_annotation.routes import router as audio_annotation_router
+from app.apps.desktop_pet.routes import router as desktop_pet_router
 from app.apps.director_desk.routes import router as director_desk_router
 from app.apps.galgame_workshop.routes import router as galgame_workshop_router
 from app.apps.live2d_workshop.routes import router as live2d_router
@@ -147,4 +148,5 @@ api_router.include_router(
 )
 
 api_router.include_router(live2d_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(desktop_pet_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(creative_workshop_router, dependencies=[Depends(require_studio_auth)])

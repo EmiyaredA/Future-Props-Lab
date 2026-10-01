@@ -14,6 +14,19 @@ export type DesktopBridge = {
   minimize: () => Promise<void>;
   close: () => Promise<void>;
   openNewWindow: () => Promise<void>;
+  openPet?: (projectId: string) => Promise<void>;
+  closePet?: () => Promise<void>;
+  petStatus?: () => Promise<{ projectId: string | null; visible: boolean }>;
+  publishPetContext?: (
+    value: { userId: string; workspaceId: string } | null,
+  ) => Promise<void>;
+  setPetInteractive?: (interactive: boolean) => Promise<void>;
+  movePet?: (
+    x: number,
+    y: number,
+  ) => Promise<{ x: number; y: number; width: number; height: number }>;
+  hidePet?: () => Promise<void>;
+  showStudioFromPet?: () => Promise<void>;
   openAmadeus?: () => Promise<void>;
   hideAmadeus?: () => Promise<void>;
   setAmadeusStageOpen?: (enabled: boolean) => Promise<boolean>;

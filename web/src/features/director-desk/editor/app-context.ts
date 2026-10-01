@@ -7,6 +7,7 @@ import type { SceneDocument } from './scenes/sequence-project.ts';
 import type { SceneContext } from './scenes/sequence-session.ts';
 /** UI modules receive an explicit application boundary; they never own the scene or persistence. */
 export interface AppContext {
+    readonly signal: AbortSignal;
     addAsset(id: string, position?: Vec3): void;
     addGroundPoint(position: Vec3): void;
     retimePath(e: Entity, start: number, end: number): void;

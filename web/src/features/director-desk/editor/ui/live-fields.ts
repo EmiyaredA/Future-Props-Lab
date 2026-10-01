@@ -37,9 +37,9 @@ export function bindLiveFields(ctx: AppContext, mutate: (key: string, value: str
             syncFloorElevations(ctx.project,ctx.history.pending!);syncStructureLinks(ctx.project,ctx.history.pending!);
             ctx.engine.project=ctx.project;ctx.engine.sample(ctx.time);ctx.engine.refreshHelpers();
         } catch {finish(true);}
-    },true);
-    document.addEventListener('change',event=>{if(event.target===input){event.stopImmediatePropagation();finish();}else if(event.target && completed.has(event.target))event.stopImmediatePropagation();},true);
-    document.addEventListener('focusout',event=>{if(event.target===input)finish();},true);
-    document.addEventListener('keydown',event=>{if(!input)return;if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();finish(true);}else if(event.key==='Enter'){event.preventDefault();finish();}},true);
-    window.addEventListener('blur',()=>finish());
+    }, { capture: true, signal: ctx.signal });
+    document.addEventListener('change',event=>{if(event.target===input){event.stopImmediatePropagation();finish();}else if(event.target && completed.has(event.target))event.stopImmediatePropagation();}, { capture: true, signal: ctx.signal });
+    document.addEventListener('focusout',event=>{if(event.target===input)finish();}, { capture: true, signal: ctx.signal });
+    document.addEventListener('keydown',event=>{if(!input)return;if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();finish(true);}else if(event.key==='Enter'){event.preventDefault();finish();}}, { capture: true, signal: ctx.signal });
+    window.addEventListener('blur',()=>finish(), { signal: ctx.signal });
 }

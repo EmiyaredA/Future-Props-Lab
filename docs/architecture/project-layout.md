@@ -5,6 +5,7 @@
 
 ```text
 Future-Props-Lab/
+├── .agents/skills/    # 仓库级 Codex Agent Skills；watch 为固定上游版本的视频分析 Skill
 ├── .agents/notes/     # 工程决策 Note；按 lifecycle/class 分类，不承载产品文档中心正文
 ├── .agents/agent-note-templates/ # proposed/implemented/rejected Note 模板
 ├── .github/workflows/ # 冻结依赖的 Python/Web 质量检查与 Chromium E2E
@@ -22,7 +23,7 @@ Future-Props-Lab/
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
 │   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   │   └── creative_workshop/ # 跨 Workspace 公开创作版本、草稿、安装事务与文件校验
-│   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame / director_desk / motion_compositor）
+│   ├── apps/          # 已垂直切片的产品 App（含 live2d_workshop / desktop_pet）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具目录状态与桌面 Codex 模型源配置；自有 models/schemas/routes
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
@@ -101,6 +102,7 @@ Future-Props-Lab/
   `workspaces/<workspace-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号与 Workspace
   读取隔离，文件访问拒绝符号链接和目录穿越。模型桥接仅使用现有供应商适配器和服务端凭据。
   `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Pi Worker、只读子任务、对话时间线与控件选取；
+  `useAmadeusData.ts` 管理账号、Workspace 和会话范围内的读取与订阅，`revisionConflict.ts` 解释会话 CAS 冲突；
   `vendor/pi/SOURCE.md` 记录固定源码与许可证。沙箱脚本运行器由桌面构建单独打包，
   不复用携带后端凭据的服务进程。
 
@@ -415,6 +417,10 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 `director_desk_user_motions` 只保存动作元数据，模型包放在 `applications/director-desk/library/`。
 迁移 `r0064_director_desk` 建立项目表，`r0065_director_desk_motions` 追加动作表。
 `web/src/features/director-desk/` 拥有项目列表、`.director` 导入导出和三维编辑器，查询键在 `queryKeys.ts`。
+编辑器的 `model.ts` 是类型及公共入口，`model-constants.ts`、`model-creation.ts`、`model-validation.ts`
+分别维护常量与复制、对象创建、项目校验；`assets/catalog/shape-types.ts` 保存资产形状契约，
+`cinematography/camera-effects-types.ts` 保存镜头效果类型，`scenes/scene-document-types.ts` 保存戏段快照类型，
+`spatial/scene-view.ts` 定义空间报告所需的只读场景接口。编辑器实例用 AbortSignal 管理监听器生命周期。
 编辑器内存仍使用内嵌字节；保存前换成文件引用，打开时再还原。
 外部 Agent 经 `fpl` 调用项目、文件和动作库；场景工具只在该工程的编辑器已打开时执行，不另建 MCP。
 
@@ -453,6 +459,7 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
 - `skills/future-props-lab-automation/`：官方自动化 Agent Skill 包（根 `SKILL.md` 名 `future-props-lab-automation`）。叶子 skill 目录名必须等于 frontmatter `name`，可单独或组合安装；每个叶子内联「前置」与最小 `fpl` 示例。校验：`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。只指导通过 `fpl`/SDK 操作产品，不修改本仓库源码；见该处 `README.md`。
+- `.agents/skills/watch/`：仓库级第三方视频分析 Agent Skill，包含上游脚本、许可证与固定提交来源记录；仅供 Codex 在本仓库发现，不参与 Future Props Lab 产品构建。应用内 Skills 通过正式 ZIP 导入 API 单独管理。
 - `backend/app/capabilities/asset_store/image_crop.py` 与 `capabilities/asset_store/schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存；HTTP 适配在 `capabilities/asset_store/routes/image_crop.py`。
 
 ### Live2D 工坊
@@ -460,4 +467,6 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 `web/src/features/live2d-workshop/` 拥有角色项目管理、PSD Worker、PixiJS 网格编辑、参数关键形、动画 UI、Cubism 对照预览和尽力转换。`web/vendor/cubism-sdk-5-r5/` 保存用户提供的官方 SDK Core、Framework 源码与本地构建；`web/public/cubism-shaders/` 保存对应 WebGL 着色器。`backend/app/apps/live2d_workshop/` 拥有 Workspace 项目 CAS、素材、Cubism 附件、工程包与导出任务；`backend/app/capabilities/media_rendering/live2d/` 拥有版本化角色文档、确定性参数/变形器求值和 Pillow 三角纹理渲染。素材与输出位于对应 Workspace 的 `applications/live2d-workshop/projects/<id>/{assets,exports,cubism}/`。迁移 `r0071_live2d_workshop` 登记角色工程、素材与任务；`r0073_live2d_cubism_attachment` 登记附件。Cubism 编译、原生物理、视频和外部输入驱动未启用。
 
 `web/src/shared/live2d/` 提供工坊与 Amadeus 头像共用的纯姿态计算、类型和 PixiJS 网格装配。内置 Amadeus 的原画由 `scripts/build_amadeus_model.py` 打包成 `web/public/brand/amadeus/amadeus.fpllive2d`，用户可通过现有工坊导入 API 主动创建可编辑副本；助手窗口直接读取随应用提供的工程包，不依赖用户 Workspace 项目。
+
+`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、皮肤 PNG 与配置 CAS；只通过 `apps/live2d_workshop/public.py` 的 Workspace 只读入口取得来源。素材位于当前 Workspace 的 `applications/desktop-pet/projects/<id>/assets/{source,skins}/`，迁移 `r0077_desktop_pet` 登记根项目。`web/src/features/desktop-pet/` 拥有项目页、编辑器、PixiJS 预览和独立 `web/pet.html` 运行页。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/main.ts` 约束单只透明窗口、点击穿透和多屏可用区；主应用负责手动启动及关闭。
 分层绑定审阅草案由 `scripts/build_amadeus_rig_draft.py` 和 `scripts/write_live2d_review_psd.mjs` 生成到 `.local/output/live2d-rig-review/`，`scripts/check_amadeus_rig_draft.py` 校验包与像素；草案在用户验收前不替换内置运行工程。

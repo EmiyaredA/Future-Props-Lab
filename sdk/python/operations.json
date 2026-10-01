@@ -27,6 +27,10 @@
     "method": "delete_project",
     "resource": "annotation"
   },
+  "DELETE /v1/desktop-pet/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "desktop_pet"
+  },
   "DELETE /v1/director-desk/motions/{motion_key}": {
     "method": "delete_motion",
     "resource": "director"
@@ -322,6 +326,22 @@
   "GET /v1/demo-services/tools/{tool}": {
     "method": "example_tool",
     "resource": "demo_calls"
+  },
+  "GET /v1/desktop-pet/projects": {
+    "method": "list_projects",
+    "resource": "desktop_pet"
+  },
+  "GET /v1/desktop-pet/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "desktop_pet"
+  },
+  "GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file": {
+    "method": "asset_file",
+    "resource": "desktop_pet"
+  },
+  "GET /v1/desktop-pet/projects/{project_id}/document": {
+    "method": "get_document",
+    "resource": "desktop_pet"
   },
   "GET /v1/desktop/agent/capabilities": {
     "method": "capabilities",
@@ -959,6 +979,10 @@
     "method": "update_item",
     "resource": "creative_workshop"
   },
+  "PATCH /v1/desktop-pet/projects/{project_id}": {
+    "method": "patch_project",
+    "resource": "desktop_pet"
+  },
   "PATCH /v1/director-desk/projects/{project_id}": {
     "method": "patch_project",
     "resource": "director"
@@ -1282,6 +1306,14 @@
   "POST /v1/demo-services/model/chat/completions": {
     "method": "mock_completion",
     "resource": "demo_calls"
+  },
+  "POST /v1/desktop-pet/projects": {
+    "method": "create_project",
+    "resource": "desktop_pet"
+  },
+  "POST /v1/desktop-pet/projects/{project_id}/sync-source": {
+    "method": "sync_source",
+    "resource": "desktop_pet"
   },
   "POST /v1/desktop/agent/pairings": {
     "method": "begin_pairing",
@@ -1886,6 +1918,14 @@
   "PUT /v1/audio-annotation/projects/{project_id}/waveform": {
     "method": "put_waveform",
     "resource": "annotation"
+  },
+  "PUT /v1/desktop-pet/projects/{project_id}/document": {
+    "method": "save_document",
+    "resource": "desktop_pet"
+  },
+  "PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}": {
+    "method": "upload_skin_replacement",
+    "resource": "desktop_pet"
   },
   "PUT /v1/director-desk/motions/{motion_key}": {
     "method": "save_motion",

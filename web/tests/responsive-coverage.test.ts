@@ -12,7 +12,7 @@ test("every route and independent HTML entry has a responsive scenario", () => {
     0,
     source.indexOf("export type VisualWorkshopPage"),
   );
-  const pages = [...unions.matchAll(/\|\s*"([a-z-]+)"/g)].map(
+  const pages = [...unions.matchAll(/\|\s*"([a-z0-9-]+)"/g)].map(
     (match) => match[1],
   );
   expect(Object.keys(responsiveOwners).sort()).toEqual(pages.sort());
@@ -27,10 +27,14 @@ test("every route and independent HTML entry has a responsive scenario", () => {
   ).toEqual(
     [
       "audio-annotation-editor",
+      "creative-workshop-detail",
+      "creative-workshop-editor",
       "director-desk-editor",
+      "desktop-pet-editor",
       "galgame-workshop-editor",
       "galgame-workshop-overview",
       "galgame-workshop-preview",
+      "live2d-workshop-editor",
       "motion-compositor-editor",
       "presentation-workshop-editor",
       "thought-workshop-editor",
@@ -44,7 +48,12 @@ test("every route and independent HTML entry has a responsive scenario", () => {
   const html = [
     ...build.matchAll(/resolve\(__dirname, "([^"]+\.html)"\)/g),
   ].map((match) => match[1]);
-  expect(html.sort()).toEqual(["amadeus.html", "docs.html", "index.html"]);
+  expect(html.sort()).toEqual([
+    "amadeus.html",
+    "docs.html",
+    "index.html",
+    "pet.html",
+  ]);
   expect(publicSurfaces).toEqual([
     "login",
     "account-workspace",

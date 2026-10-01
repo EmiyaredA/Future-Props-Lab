@@ -2,7 +2,7 @@ import './application-menu.css';
 import { editorRoot } from './common.ts';
 
 /** Move existing controls, preserving their handlers, state and unique IDs. */
-export function mountApplicationMenu() {
+export function mountApplicationMenu(signal: AbortSignal) {
     const bar = document.createElement('nav');
     bar.className = 'application-menu'; bar.setAttribute('aria-label', '应用菜单');
     document.querySelector('.topbar .brand')!.after(bar);
@@ -76,16 +76,20 @@ export function mountApplicationMenu() {
             const index = items.indexOf(document.activeElement as HTMLElement);
             items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
         });
-        window.addEventListener('resize', place);
+        window.addEventListener('resize', place, { signal });
     }
     bar.addEventListener('pointerover', event => {
         const next = menus.find(m => m.trigger === event.target);
         if (next && menus.some(m => m.menu.matches(':popover-open')) && !next.menu.matches(':popover-open')) next.menu.showPopover();
     });
     const update = document.querySelector('#update-toggle');
-    if (update) new MutationObserver(() => {
-        bar.querySelector('[data-menu="help"]')?.classList.toggle('has-update', update.classList.contains('has-update'));
-    }).observe(update, { attributes: true, attributeFilter: ['class'] });
+    if (update) {
+        const observer = new MutationObserver(() => {
+            bar.querySelector('[data-menu="help"]')?.classList.toggle('has-update', update.classList.contains('has-update'));
+        });
+        observer.observe(update, { attributes: true, attributeFilter: ['class'] });
+        signal.addEventListener('abort', () => observer.disconnect(), { once: true });
+    }
     document.querySelector('.side-bottom')?.remove();
     document.querySelector('.header-actions .top-separator')?.remove();
 }

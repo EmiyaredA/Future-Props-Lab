@@ -18,10 +18,12 @@ export function createSceneObjectBrowser(ctx: AppContext, refresh: () => void) {
         if (!target) return;
         event.stopPropagation(); page += Number(target.dataset.objectPage); refresh();
     });
-    new ResizeObserver(() => {
+    const observer = new ResizeObserver(() => {
         const next = Math.max(1, Math.floor((content.clientHeight - 112) / 34));
         if (next !== rows) { rows = next; if (ctx.sidebarTab === 'scene') refresh(); }
-    }).observe(content);
+    });
+    observer.observe(content);
+    ctx.signal.addEventListener('abort', () => observer.disconnect(), { once: true });
     return { render() {
         if (floor && floor !== '*' && !ctx.project.floors?.some(f => f.id === floor)) floor = '*';
         if (ctx.query !== lastQuery) { page = 0; lastQuery = ctx.query; }

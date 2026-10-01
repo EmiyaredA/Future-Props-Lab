@@ -40,6 +40,7 @@ export default defineConfig(({ mode }) => ({
         studio: resolve(__dirname, "index.html"),
         docs: resolve(__dirname, "docs.html"),
         amadeus: resolve(__dirname, "amadeus.html"),
+        pet: resolve(__dirname, "pet.html"),
       },
       output: {
         manualChunks(id) {

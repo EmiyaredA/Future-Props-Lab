@@ -1,4 +1,5 @@
 import { LIVE2D_WORKSHOP_MODULE } from "@features/live2d-workshop/module";
+import { DESKTOP_PET_MODULE } from "@features/desktop-pet/module";
 import { AUDIO_ANNOTATION_MODULE } from "@features/audio-annotation/module";
 import { DIRECTOR_DESK_MODULE } from "@features/director-desk/module";
 import { PRESENTATION_WORKSHOP_MODULE } from "@features/presentation-workshop/module";
@@ -16,6 +17,7 @@ export const APPLICATION_MODULES = [
   VIDEO_EDITOR_MODULE,
   MOTION_COMPOSITOR_MODULE,
   LIVE2D_WORKSHOP_MODULE,
+  DESKTOP_PET_MODULE,
   AUDIO_ANNOTATION_MODULE,
   DIRECTOR_DESK_MODULE,
 ] as const;
@@ -52,6 +54,7 @@ export {
   VIDEO_EDITOR_MODULE,
   MOTION_COMPOSITOR_MODULE,
   LIVE2D_WORKSHOP_MODULE,
+  DESKTOP_PET_MODULE,
   VISUAL_WORKSHOP_MODULE,
 };
 

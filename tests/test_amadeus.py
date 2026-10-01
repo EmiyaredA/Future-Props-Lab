@@ -629,6 +629,23 @@ async def test_amadeus_conversation_references_cas_and_owner() -> None:
             f"/v1/amadeus/conversations/{conversation['id']}/messages", json=body
         )
         assert stale.status_code == 409
+        conflict = stale.json()
+        assert conflict["code"] == "revision_conflict"
+        assert conflict["expected_revision"] == conversation["revision"]
+        assert conflict["current_revision"] == saved.json()["conversation"]["revision"]
+        assert conflict["current"] == saved.json()["conversation"]
+        stale_patch = await client.patch(
+            f"/v1/amadeus/conversations/{conversation['id']}",
+            json={"expected_revision": conversation["revision"], "title": "不能覆盖"},
+        )
+        assert stale_patch.status_code == 409
+        assert stale_patch.json()["current"] == conflict["current"]
+        stale_delete = await client.delete(
+            f"/v1/amadeus/conversations/{conversation['id']}",
+            params={"expected_revision": conversation["revision"]},
+        )
+        assert stale_delete.status_code == 409
+        assert stale_delete.json()["current"] == conflict["current"]
         detail = await client.get(f"/v1/amadeus/conversations/{conversation['id']}")
         assert detail.json()["messages"][0]["references"][0]["value"] == "80%"
     async with SessionLocal() as session:
@@ -656,6 +673,11 @@ async def test_amadeus_concurrent_message_cas_allows_one_writer() -> None:
             client.post(path, json={"expected_revision": 0, "role": "user", "content": "第二条"}),
         )
         assert sorted(response.status_code for response in results) == [200, 409]
+        conflict = next(response.json() for response in results if response.status_code == 409)
+        assert conflict["code"] == "revision_conflict"
+        assert conflict["expected_revision"] == 0
+        assert conflict["current_revision"] == 1
+        assert conflict["current"]["revision"] == 1
         detail = (await client.get(f"/v1/amadeus/conversations/{conversation['id']}")).json()
         assert detail["conversation"]["revision"] == 1
         assert len(detail["messages"]) == 1

@@ -763,6 +763,76 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/desktop-pet/projects/{project_id}",
+    "sdk": "client.desktop_pet.delete_project",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/desktop-pet/projects",
+    "sdk": "client.desktop_pet.list_projects",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/desktop-pet/projects/{project_id}",
+    "sdk": "client.desktop_pet.get_project",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file",
+    "sdk": "client.desktop_pet.asset_file",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#asset-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/desktop-pet/projects/{project_id}/document",
+    "sdk": "client.desktop_pet.get_document",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#get-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/desktop-pet/projects/{project_id}",
+    "sdk": "client.desktop_pet.patch_project",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#patch-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/desktop-pet/projects",
+    "sdk": "client.desktop_pet.create_project",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/desktop-pet/projects/{project_id}/sync-source",
+    "sdk": "client.desktop_pet.sync_source",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#sync-source",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/desktop-pet/projects/{project_id}/document",
+    "sdk": "client.desktop_pet.save_document",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#save-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}",
+    "sdk": "client.desktop_pet.upload_skin_replacement",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#upload-skin-replacement",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/director-desk/motions/{motion_key}",
     "sdk": "client.director.delete_motion",
     "document": "/docs.html?page=sdk-reference-director#delete-motion",

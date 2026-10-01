@@ -6,8 +6,8 @@ import { worldContactAnchors } from '../assets/contact-anchors.ts';
 import { worldStructurePorts } from '../building/structure-ports.ts';
 import { staticStructure } from '../building/structure-links.ts';
 import { shotEntityVisible } from '../scenes/camera-visibility.ts';
-import type { Engine } from '../engine.ts';
-import type { Action, Entity, Vec3 } from '../model.ts';
+import type { SpatialSceneView } from './scene-view.ts';
+import type { Action, Entity, Project, Vec3 } from '../model.ts';
 import { nativeSample, nativeSourceTime } from '../resources/native-animation.ts';
 import { crowdAnimationPhase } from '../resources/retarget-animation.ts';
 import { retargetClipTime, locomotionPlaybackRate } from '../animation/locomotion.ts';
@@ -55,13 +55,13 @@ export interface SpatialReport {
     camera: { id: string; name: string; position: Vec3; forward: Vec3; focal: number; hiddenWalls: string[]; hiddenEntityIds: string[]; hiddenHeadEntityId: string | null };
     counts: { entities: number; people: number; enabledPeople: number; animals?: number; enabledAnimals?: number; crowdMembersIncluded: boolean };
     objects: SpatialObject[];
-    floors?: Engine['project']['floors'];
-    zones?: Engine['project']['zones'];
+    floors?: Project['floors'];
+    zones?: Project['zones'];
     limitations: string[];
 }
 
 /** Read an already sampled scene. Query orchestration/restoration belongs to Engine. */
-export function collectSpatialReport(engine: Engine, cameraId: string, includeCrowdMembers: boolean, occlusionKeys: string[] = []): SpatialReport {
+export function collectSpatialReport(engine: SpatialSceneView, cameraId: string, includeCrowdMembers: boolean, occlusionKeys: string[] = []): SpatialReport {
     const p = engine.project, cameraEntity = engine.cameraEntity(cameraId), config = cameraEntity.camera!;
     const camera = engine.getShotCamera(cameraId), objects: SpatialObject[] = [];
     const hiddenHeadId = config.mode === 'pov' && engine.rigs.has(config.targetId) ? config.targetId : null;

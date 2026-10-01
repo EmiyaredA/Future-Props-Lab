@@ -39,6 +39,10 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
   const identityRequest = useRef(0);
   const [status, setStatus] = useState<Status>("checking");
   const [me, setMe] = useState<AuthMe | null>(null);
+  useEffect(() => {
+    if (status === "signed-out")
+      void window.futurePropsDesktop?.publishPetContext?.(null);
+  }, [status]);
   useResourceBroadcastSync(queryClient, status === "signed-in");
   identityRef.current = me;
   const [registration, setRegistration] = useState(false);
@@ -92,6 +96,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       setStatus("signed-out");
     };
     const workspaceChanged = () => {
+      void window.futurePropsDesktop?.publishPetContext?.(null);
       const event = new CustomEvent("future-props:before-workspace-switch", {
         cancelable: true,
         detail: () => window.location.reload(),

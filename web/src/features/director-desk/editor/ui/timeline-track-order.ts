@@ -20,7 +20,7 @@ export function bindTrackOrder(ctx: AppContext) {
         if (to < 0 || to >= order.length) return;
         [order[from],order[to]] = [order[to],order[from]]; save(order);
         host.querySelector<HTMLElement>(`[data-track-key="${CSS.escape(row.dataset.trackKey!)}"] [data-track-grip]`)?.focus();
-    });
+    }, { signal: ctx.signal });
     host.addEventListener('pointerdown', event => {
         const grip = (event.target as HTMLElement).closest<HTMLElement>('[data-track-grip]');
         if (!grip || event.button !== 0 || ctx.busy || ctx.history.pending || ctx.draft) return;
@@ -72,10 +72,11 @@ export function bindTrackOrder(ctx: AppContext) {
             host.removeEventListener('pointermove',move); host.removeEventListener('pointerup',up); host.removeEventListener('pointercancel',cancelled); host.removeEventListener('lostpointercapture',cancelled);
             window.removeEventListener('blur',cancelled); window.removeEventListener('keydown',escape);
             window.removeEventListener('mouseup',mouseUp,true);
+            ctx.signal.removeEventListener('abort',cancelled);
             if (host.hasPointerCapture(event.pointerId)) host.releasePointerCapture(event.pointerId);
             delete host.dataset.trackReordering; delete document.querySelector<HTMLElement>('.director-desk-root')?.dataset.trackReordering; row.classList.remove('track-reordering'); ghost.remove(); marker.remove();
             const now = ctx.scenes.context;
-            if (ctx.project !== project || now.sessionId !== scene.sessionId || now.sceneId !== scene.sceneId) return;
+            if (ctx.signal.aborted || ctx.project !== project || now.sessionId !== scene.sessionId || now.sceneId !== scene.sceneId) return;
             const order = others.map(item=>item.key); order.splice(destination,0,row.dataset.trackKey!);
             if (!cancel && moved && order.join('\0') !== before.join('\0') && !ctx.history.pending && !ctx.busy) save(order);
             else if (moved) ctx.renderTimeline();
@@ -88,7 +89,8 @@ export function bindTrackOrder(ctx: AppContext) {
         host.addEventListener('pointermove',move); host.addEventListener('pointerup',up); host.addEventListener('pointercancel',cancelled); host.addEventListener('lostpointercapture',cancelled);
         window.addEventListener('blur',cancelled); window.addEventListener('keydown',escape);
         window.addEventListener('mouseup',mouseUp,true);
+        ctx.signal.addEventListener('abort',cancelled,{ once: true });
         frame = requestAnimationFrame(tick);
-    }, true);
-    host.addEventListener('click', event => { if ((event.target as HTMLElement).closest('[data-track-grip]')) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
+    }, { capture: true, signal: ctx.signal });
+    host.addEventListener('click', event => { if ((event.target as HTMLElement).closest('[data-track-grip]')) { event.preventDefault(); event.stopImmediatePropagation(); } }, { capture: true, signal: ctx.signal });
 }

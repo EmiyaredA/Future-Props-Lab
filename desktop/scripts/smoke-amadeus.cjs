@@ -615,7 +615,7 @@ async function main() {
       .getByRole("textbox", { name: "修订计划" })
       .fill("先核对画布，再展示变更并等待批准。");
     await assistant.getByRole("button", { name: "请 AI 再修订" }).click();
-    await assistant.getByText(/修订计划：先核对画布/).waitFor();
+    await assistant.getByText(/修订计划：先核对画布/).first().waitFor();
     assert.equal(
       await assistant.getByRole("button", { name: "执行计划" }).count(),
       1,

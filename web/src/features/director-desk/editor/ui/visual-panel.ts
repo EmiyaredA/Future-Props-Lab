@@ -11,7 +11,7 @@ export function createVisualPanel(ctx:AppContext){let deformOnly=false,parameter
     const data=()=>{const e=ctx.current();return (deformOnly?e?.deform:e?.visual??e?.field??e?.warp??e?.deform) as unknown as Record<string,unknown>|undefined;};
     const edit=(fn:()=>void,rebuild=false)=>{if(!ctx.current()?.locked&&!ctx.busy)ctx.change(fn,rebuild);};
     const commit=(cancel=false)=>{if(!field)return;const input=field;field=null;try{if(cancel)throw Error('cancel');if(!input.value||!input.checkValidity())throw Error('请输入范围内的有效数值');assertProject(ctx.project);ctx.history.commit(ctx.project);ctx.changed(false);}catch(error){if(!cancel)ctx.toast((error as Error).message,true);ctx.project=ctx.history.rollback()??ctx.project;ctx.engine.project=ctx.project;ctx.engine.sample(ctx.time);ctx.renderPanels();}};
-    window.addEventListener('blur',()=>commit());
+    window.addEventListener('blur',()=>commit(), { signal: ctx.signal });
     const host=document.querySelector('#inspector-content')!;
     host.addEventListener('input',event=>{const target=event.target as HTMLInputElement;if(target.id!=='visual-value'||ctx.busy||ctx.current()?.locked||target.value===''||!target.checkValidity())return;
         if(!field){if(ctx.history.pending)return;ctx.history.begin(ctx.project);field=target;ctx.playing=false;}const object=data()!;object[parameter]=writeChannel(object[parameter] as AnimatedNumber,Number(target.value),ctx.time);ctx.engine.project=ctx.project;ctx.engine.sample(ctx.time);

@@ -8,6 +8,7 @@ import './curve-editor.css';
 export function createCurveEditor(ctx: AppContext, refresh = () => ctx.renderInspector()) {
     let owner = '', channel = 'path', index = 1;
     let handleObserver: ResizeObserver | undefined;
+    ctx.signal.addEventListener('abort', () => handleObserver?.disconnect(), { once: true });
     const target = () => { const e = ctx.current(); return e && curveTargets(e).find(t => t.id === channel); };
     function graph(easing: Easing = 'linear') {
         const controls = typeof easing === 'object' ? easing.bezier : easing === 'ease-in' ? [.55, 0, 1, 1] : easing === 'ease-out' ? [0, 0, .45, 1] : easing === 'linear' ? [.33, .33, .67, .67] : [.33, 0, .67, 1];

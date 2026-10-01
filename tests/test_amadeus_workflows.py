@@ -10,11 +10,12 @@ import pytest
 
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.amadeus.schemas import ModelTurnIn
-from app.console.routes.amadeus import validate_model_turn
 from app.console.models.accounts import User
+from app.console.routes.amadeus import validate_model_turn
 from app.main import app
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
+from db.migrations.registry import LATEST_MIGRATION_ID
 from db.migrations.runner import apply_migrations, check_migrations, connect_database
 
 
@@ -74,10 +75,122 @@ async def test_completed_plan_and_agent_runs_accept_one_same_mode_revision() -> 
             assert duplicate.status_code == 409
 
 
+@pytest.mark.asyncio
+async def test_revising_write_parameters_invalidates_old_approval() -> None:
+    await _test_user()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = (
+            await client.post(
+                "/v1/visual-workshop/projects", json={"title": "审批修订", "kind": "video"}
+            )
+        ).json()
+        canvas_url = f"/v1/visual-workshop/projects/{project['id']}/canvas"
+        conversation = (await client.post("/v1/amadeus/conversations")).json()
+        root = f"/v1/amadeus/conversations/{conversation['id']}"
+        original_run = (
+            await client.post(root + "/runs", json={"model_id": "mock", "mode": "agent"})
+        ).json()["run"]
+
+        def parameters(title: str, request_id: str) -> dict:
+            return {
+                "path_params": {"project_id": project["id"]},
+                "body": {
+                    "expected_revision": 0,
+                    "request_id": request_id,
+                    "operations": [
+                        {
+                            "entity": "node",
+                            "action": "insert",
+                            "id": "revised-node",
+                            "value": {
+                                "id": "revised-node",
+                                "kind": "video",
+                                "title": title,
+                                "position": {"x": 0, "y": 0},
+                            },
+                        }
+                    ],
+                },
+            }
+
+        old = (
+            await client.post(
+                root + "/actions",
+                json={
+                    "run_id": original_run["id"],
+                    "tool_name": "fpl_operation:visual.apply_canvas_operations",
+                    "arguments": parameters("旧标题", "old-proposal"),
+                },
+            )
+        ).json()
+        await client.post(root + f"/runs/{original_run['id']}/pause-approval")
+        withdrawn = await client.post(
+            root + f"/actions/{old['id']}/decision",
+            json={"arguments_sha256": old["arguments_sha256"], "approve": False},
+        )
+        assert withdrawn.status_code == 200
+        assert withdrawn.json()["status"] == "rejected"
+        feedback = await client.post(
+            root + "/messages",
+            json={
+                "expected_revision": conversation["revision"],
+                "role": "user",
+                "content": "请重新读取画布，并把标题改成新标题后重新拟案。",
+            },
+        )
+        assert feedback.status_code == 200
+        assert (await client.get(canvas_url)).json()["revision"] == 0
+        assert (
+            await client.post(
+                root + f"/actions/{old['id']}/decision",
+                json={"arguments_sha256": old["arguments_sha256"], "approve": True},
+            )
+        ).status_code == 409
+        assert (await client.post(root + f"/actions/{old['id']}/execute")).status_code == 409
+
+        revised_run = await client.post(
+            root + "/runs",
+            json={
+                "model_id": "mock",
+                "mode": "agent",
+                "source_run_id": original_run["id"],
+            },
+        )
+        assert revised_run.status_code == 200, revised_run.text
+        new = (
+            await client.post(
+                root + "/actions",
+                json={
+                    "run_id": revised_run.json()["run"]["id"],
+                    "tool_name": "fpl_operation:visual.apply_canvas_operations",
+                    "arguments": parameters("新标题", "new-proposal"),
+                },
+            )
+        ).json()
+        assert new["arguments_sha256"] != old["arguments_sha256"]
+        await client.post(root + f"/runs/{revised_run.json()['run']['id']}/pause-approval")
+        restored = (await client.get(root)).json()
+        assert [item["status"] for item in restored["actions"]] == ["rejected", "pending"]
+        assert restored["messages"][-1]["content"].startswith("请重新读取画布")
+        approved = await client.post(
+            root + f"/actions/{new['id']}/decision",
+            json={"arguments_sha256": new["arguments_sha256"], "approve": True},
+        )
+        assert approved.status_code == 200
+        executed = await client.post(root + f"/actions/{new['id']}/execute")
+        assert executed.status_code == 200, executed.text
+        assert executed.json()["status"] == "completed"
+        saved = (await client.get(canvas_url)).json()
+        assert saved["revision"] == 1
+        assert [node["title"] for node in saved["nodes"]] == ["新标题"]
+
+
 def test_amadeus_workflow_migration_on_temporary_database(tmp_path: Path) -> None:
     database = tmp_path / "workflow.db"
-    assert apply_migrations(database)[0] == "r0076_amadeus_workflows"
-    assert check_migrations(database) == "r0076_amadeus_workflows"
+    assert apply_migrations(database)[0] == LATEST_MIGRATION_ID
+    assert check_migrations(database) == LATEST_MIGRATION_ID
     with connect_database(database) as connection:
         run_columns = {row[1] for row in connection.execute("PRAGMA table_info(amadeus_runs)")}
         question_columns = {

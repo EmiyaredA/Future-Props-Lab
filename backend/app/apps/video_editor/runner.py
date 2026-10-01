@@ -9,6 +9,7 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.apps.video_editor.asset_bakes import insert_baked_asset_in_organization
 from app.apps.video_editor.media import probe_media
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
@@ -22,7 +23,9 @@ from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.media_rendering.chroma_key import apply_chroma_key
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
+from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
 from app.orm import bind_workspace, require_workspace_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
@@ -529,10 +532,6 @@ class VideoEditorRunner(PollingTaskRunner):
         from uuid import uuid4
 
         from PIL import Image
-
-        from app.apps.video_editor.asset_bakes import insert_baked_asset_in_organization
-        from app.capabilities.media_rendering.chroma_key import apply_chroma_key
-        from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
 
         async with self.session_factory() as session:
             task = await self._get(session, task_id)

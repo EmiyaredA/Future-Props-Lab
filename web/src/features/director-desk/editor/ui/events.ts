@@ -7,9 +7,12 @@ import type { Action, Joint, Vec3 } from '../model.ts';
 import { clip } from '../model.ts';
 import { readRecoverableDocument } from './resource-recovery-panel.ts';
 import { samplePose } from '../timeline.ts';
-import { $ } from '../ui/common.ts';
+import { $, editorRoot } from '../ui/common.ts';
 export function bindEvents(ctx: AppContext) {
+    const root = editorRoot();
+    const withinEditor = (event: Event) => event.target instanceof Node && root.contains(event.target);
     document.addEventListener('click', event => {
+        if (!withinEditor(event)) return;
         const target = event.target as HTMLElement;
         const action = target.closest<HTMLElement>('[data-act]');
         if (action) {
@@ -93,8 +96,9 @@ export function bindEvents(ctx: AppContext) {
             $<HTMLInputElement>('#export-end').value = String(all ? ctx.project.duration : Math.min(ctx.project.duration, ctx.time + Number(range.dataset.range)));
             ctx.updateExportSummary();
         }
-    });
+    }, { signal: ctx.signal });
     document.addEventListener('change', async (event) => {
+        if (!withinEditor(event)) return;
         const target = event.target as HTMLInputElement;
         if (ctx.busy)
             return;
@@ -205,8 +209,9 @@ export function bindEvents(ctx: AppContext) {
             return;
         }
 
-    });
+    }, { signal: ctx.signal });
     document.addEventListener('input', event => {
+        if (!withinEditor(event)) return;
         const target = event.target as HTMLInputElement;
         if (ctx.busy)
             return;
@@ -221,8 +226,9 @@ export function bindEvents(ctx: AppContext) {
         }
         if (target.id.startsWith('export-'))
             ctx.updateExportSummary();
-    });
+    }, { signal: ctx.signal });
     document.addEventListener('keydown', event => {
+        if (!withinEditor(event)) return;
         if (ctx.busy)
             return;
         const input = event.target as HTMLElement;
@@ -285,13 +291,14 @@ export function bindEvents(ctx: AppContext) {
             event.preventDefault();
             $('#search').focus();
         }
-    });
+    }, { signal: ctx.signal });
     document.addEventListener('dragstart', event => {
+        if (!withinEditor(event)) return;
         const asset = (event.target as HTMLElement).closest<HTMLElement>('[data-asset]');
         if (asset)
             event.dataTransfer?.setData('application/x-director-asset', asset.dataset.asset!);
-    });
-    $('#stage-canvas').addEventListener('dragover', event => { event.preventDefault(); });
+    }, { signal: ctx.signal });
+    $('#stage-canvas').addEventListener('dragover', event => { event.preventDefault(); }, { signal: ctx.signal });
     $('#stage-canvas').addEventListener('drop', event => {
         event.preventDefault();
         if (ctx.busy)
@@ -304,6 +311,6 @@ export function bindEvents(ctx: AppContext) {
         const point = new T.Vector3();
         if (ray.ray.intersectPlane(new T.Plane(new T.Vector3(0, 1, 0), 0), point))
             ctx.addAsset(id, point.toArray() as Vec3);
-    });
+    }, { signal: ctx.signal });
     bindTimelineInput(ctx);
 }

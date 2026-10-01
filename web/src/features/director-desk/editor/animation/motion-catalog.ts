@@ -1,5 +1,6 @@
 import manifest from './library/humanoid-v1-manifest.json' with { type: 'json' };
-import { ACTIONS, type Action, type Clip } from '../model.ts';
+import { ACTIONS } from '../model-constants.ts';
+import type { Action, Clip } from '../model.ts';
 import type { HumanoidRig } from '../resources/rig-definition.ts';
 import { footPlantProfile } from './foot-plant-presets.ts';
 import type { FootPlantOptions } from './foot-plant-plan.ts';

@@ -22,6 +22,15 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/account/cross-workspace-call-logs/stats"),
     ),
     "content.write": (
+        ("POST", "/v1/desktop-pet/projects"),
+        ("PATCH", "/v1/desktop-pet/projects/{project_id}"),
+        ("DELETE", "/v1/desktop-pet/projects/{project_id}"),
+        ("PUT", "/v1/desktop-pet/projects/{project_id}/document"),
+        ("POST", "/v1/desktop-pet/projects/{project_id}/sync-source"),
+        (
+            "PUT",
+            "/v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}",
+        ),
         ("POST", "/v1/creative-workshop/items"),
         ("PATCH", "/v1/creative-workshop/items/{item_id}"),
         ("POST", "/v1/creative-workshop/items/{item_id}/publish"),
@@ -220,6 +229,10 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/open-folder"),
     ),
     "content.read": (
+        ("GET", "/v1/desktop-pet/projects"),
+        ("GET", "/v1/desktop-pet/projects/{project_id}"),
+        ("GET", "/v1/desktop-pet/projects/{project_id}/document"),
+        ("GET", "/v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file"),
         ("GET", "/v1/creative-workshop/items"),
         ("GET", "/v1/creative-workshop/items/{item_id}"),
         ("GET", "/v1/creative-workshop/items/{item_id}/cover"),

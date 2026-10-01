@@ -15,7 +15,7 @@ export function mountSettings(ctx:AppContext) {
         document.querySelector<HTMLElement>('#stage-hint')!.hidden=!p.showNavigationHint;
         ctx.engine.render();
     };
-    editorPreferences.subscribe(apply);apply();
+    const unsubscribe = editorPreferences.subscribe(apply);apply();
     const row=(label:string,description:string,control:string)=>`<div class="setting-row"><div><strong>${label}</strong><p>${description}</p></div><div class="setting-control">${control}</div></div>`;
     const input=(key:PreferenceKey)=>{
         const value=editorPreferences.current[key];
@@ -62,4 +62,5 @@ export function mountSettings(ctx:AppContext) {
             if(action==='updates'){ctx.closeModal();document.querySelector<HTMLButtonElement>('#update-toggle')?.click();const dialog=document.querySelector<HTMLDialogElement>('#update-panel');if(dialog)addPageBack(dialog,'返回设置',()=>{dialog.close();trigger.click();});}
         });
     };
+    return () => { unsubscribe(); trigger.remove(); if (locations) locations.hidden = false; };
 }

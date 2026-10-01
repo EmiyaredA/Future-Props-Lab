@@ -2,12 +2,9 @@ import type { AssetDefinition } from './types.ts';
 import { humanParameterSchema } from './human-options.ts';
 
 /** Relative limb dimensions are defined separately from the entity's height. */
-export interface HumanProportions {
-    thigh: number; shin: number; torso: number; upperArm: number; forearm: number;
-    shoulder: number; pelvis: number; head: number; girth: number;
-    form?: 'elf' | 'orc' | 'robot' | 'skeleton';
-    outfit?: 'casual' | 'dress' | 'robe' | 'armor' | 'uniform' | 'helmet' | 'hat' | 'backpack';
-}
+import type { HumanProportions } from './shape-types.ts';
+export type { HumanProportions } from './shape-types.ts';
+
 const adult: HumanProportions = { thigh: .42, shin: .414, torso: .44, upperArm: .27, forearm: .25, shoulder: .19, pelvis: .10, head: .15, girth: 1 };
 const profiles: Array<{ id: string; name: string; height: number; gender?: 'male' | 'female'; group?: string; shape?: Partial<HumanProportions>; aliases: string[] }> = [
     { id: 'human-adult', name: '标准成年人物', height: 1.75, aliases: ['男', '成年人', 'human', 'adult'] },

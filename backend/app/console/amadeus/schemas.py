@@ -30,6 +30,18 @@ class ConversationListOut(BaseModel):
     items: list[ConversationOut]
 
 
+class ConversationRevisionConflictOut(BaseModel):
+    type: Literal["about:blank"]
+    title: str
+    status: Literal[409]
+    detail: str
+    instance: str
+    code: Literal["revision_conflict"]
+    expected_revision: int
+    current_revision: int
+    current: ConversationOut
+
+
 class ConversationPatchIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     expected_revision: int = Field(ge=0)

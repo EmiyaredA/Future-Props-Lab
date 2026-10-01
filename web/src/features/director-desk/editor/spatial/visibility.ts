@@ -1,5 +1,5 @@
 import { Box3, Matrix4, Mesh, PerspectiveCamera, Quaternion, Raycaster, Vector2, Vector3 } from 'three';
-import type { Engine } from '../engine.ts';
+import type { SpatialSceneView } from './scene-view.ts';
 import { frameBounds } from './geometry.ts';
 import { lensProjection, lensSource } from '../cinematography/lens-projection.ts';
 import { meshesOf, sceneTargets, type SceneTarget } from './scene-targets.ts';
@@ -43,7 +43,7 @@ export function sampleVisibility(camera: PerspectiveCamera, meshes: Mesh[], all:
     return { status: !hitCount ? 'no-samples' : !unblocked ? 'blocked-samples' : unblocked === hitCount ? 'unblocked-samples' : 'partly-blocked-samples',
         method: 'screen-grid-rays', grid, targetSamples: hitCount, unblocked, blockers: [...blockers.values()].sort((a, b) => b.samples - a.samples || a.key.localeCompare(b.key)) };
 }
-export function visibilityChecks(engine: Engine, cameraId: string, keys: string[]): Map<string, VisibilityResult> {
+export function visibilityChecks(engine: SpatialSceneView, cameraId: string, keys: string[]): Map<string, VisibilityResult> {
     if (!keys.length) return new Map();
     const all = sceneTargets(engine, cameraId), camera = engine.getShotCamera(cameraId), result = new Map<string, VisibilityResult>();
     for (const key of new Set(keys)) {

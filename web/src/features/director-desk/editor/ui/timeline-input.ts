@@ -16,12 +16,12 @@ export function bindTimelineInput(ctx: AppContext) {
     let lastClick={key:'',at:0};
     let cleanup:((cancel?:boolean)=>void)|undefined;
     const seekAt=(x:number)=>{ctx.playing=false;const time=Math.round(timelineTimeAt(x)*ctx.project.fps)/ctx.project.fps;if(time!==ctx.time)ctx.seek(time,true);};
-    mode.addEventListener('change',()=>{cleanup?.(true);timeline.classList.toggle('hover-preview',mode.value==='preview');});
+    mode.addEventListener('change',()=>{cleanup?.(true);timeline.classList.toggle('hover-preview',mode.value==='preview');}, { signal: ctx.signal });
     timeline.addEventListener('pointermove',ev=>{
         if(mode.value==='preview' && !cleanup && !ctx.busy && !ctx.draft && !ctx.playing && !ev.buttons && !$('#modal-root').children.length && (ev.target as HTMLElement).closest('.ruler,.track-lane')) {
             seekAt(ev.clientX);
         }
-    });
+    }, { signal: ctx.signal });
     timeline.addEventListener('pointerdown',ev=>{
         if(ev.button!==0 || ctx.busy || ctx.draft || ctx.history.pending || cleanup) return;
         const target=ev.target as HTMLElement;
@@ -103,8 +103,9 @@ export function bindTimelineInput(ctx: AppContext) {
             }catch(e){setSelectedClips(group);ctx.project=ctx.history.rollback()??before;ctx.engine.rebuild(ctx.project);ctx.renderPanels();if(!cancel)ctx.toast((e as Error).message,true);}
         };
         timeline.addEventListener('scroll',scroll);timeline.addEventListener('lostpointercapture',lostCapture);window.addEventListener('mouseup',mouseUp,true);document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);raf=requestAnimationFrame(tick);
-    });
-    window.addEventListener('blur',()=>cleanup?.(true));
-    document.addEventListener('visibilitychange',()=>{if(document.hidden)cleanup?.(true);});
-    document.addEventListener('keydown',ev=>{if(ev.key==='Escape')cleanup?.(true);},true);
+    }, { signal: ctx.signal });
+    window.addEventListener('blur',()=>cleanup?.(true), { signal: ctx.signal });
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)cleanup?.(true);}, { signal: ctx.signal });
+    document.addEventListener('keydown',ev=>{if(ev.key==='Escape')cleanup?.(true);}, { capture: true, signal: ctx.signal });
+    ctx.signal.addEventListener('abort', () => cleanup?.(true), { once: true });
 }

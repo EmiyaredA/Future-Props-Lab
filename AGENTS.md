@@ -22,6 +22,18 @@
   `docs/operations/agent-notes.md` 在 `.agents/notes/` 创建或更新 Agent Note；纯格式化、样式、无歧义重命名和局部机械修复免写。
 - `web/src/docs/`、`web/public/docs/`、文档中心覆盖清单和 `scripts/generate_sdk_docs.py` 是产品文档中心的受保护内容。工程决策整理不得迁移、删除、重写或重新生成这些路径。
 
+## 代码编写原则
+
+- 编写或修改代码时避免循环依赖、跨模块访问内部实现、共享可变状态和隐含的数据传递。
+  按真实业务职责拆成接口明确、可独立替换的组件或功能切片。删除、复制、内联或重写一个组件时，
+  不应需要理解或改写其他组件的内部实现；不要为了拆分而增加无业务意义的层数或文件。
+- 动手实现前明确数据如何流动：输入来自哪里，经过哪些校验与变换，输出给谁，哪些状态需要持久化，
+  并发、失败和恢复时如何保持一致。跨模块通过明确契约传递数据，不共享可变的内部状态或隐含上下文。
+- 实现用户行为时检查明显漏洞、性能退化、错误恢复，以及不同页面和入口对同一操作的权限、状态与
+  反馈是否一致。抽象必须准确表达业务概念，不把不同生命周期的状态或职责强行合并。
+- 将局部实现问题限制在组件边界内，让单个组件可以重写而不牵动全局。组件内部的冗长或小瑕疵不应
+  成为跨模块耦合的理由；已知 Bug 仍需修复，下文的单文件、目录体量和质量门禁仍需遵守。
+
 ## 常用命令
 
 - 安装后端与 Web 依赖：`npm run setup`。
@@ -47,7 +59,7 @@
   routes/schemas）；Studio
   治理与库级文件用例归属 `console/`（含自有 models/routes/schemas）；已垂直切片的产品 App 归属 `apps/`（目前
   `presentation_workshop`、`audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop`、
-  `galgame_workshop`、`director_desk`、`motion_compositor`、`live2d_workshop` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
+  `galgame_workshop`、`director_desk`、`motion_compositor`、`live2d_workshop`、`desktop_pet` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
   `integrations/`、`tool_navigation/`、`demo_runtime/` 各自拥有 models/schemas/routes（demo 无独立 ORM）。
   顶层不再保留 `models/`、`schemas/`、`routes/` 横向包。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
@@ -173,7 +185,7 @@
   `-foundation`、`-components`、`-interactions`、`-part\d*`、`-base`、`-extra`、`-misc` 后缀，
   也不得出现只做转发的空壳 `@import` 样式。不得新增编号式 CSS 分片；构建预算脚本只读产物，
   不得在构建后拆分或改写 CSS。
-- App 之间默认零互相依赖。例外仅限视频剪辑向视觉创作工坊的片段交接、特效制作向视频剪辑工坊的成片交接，登记在
+- App 之间默认零互相依赖。例外仅限视频剪辑向视觉创作工坊的片段交接、特效制作向视频剪辑工坊的成片交接、桌宠工坊经 Live2D 工坊公开只读快照入口取得固定角色快照，登记在
   `tests/test_architecture.py` 的 `ALLOWED_APP_HANDOFFS`，且必须经目标 App 的公共入口。
 - 新增 Web 路由或独立 HTML 入口时，同步更新 `web/e2e/responsive-inventory.ts` 与相应适配用例；
   页面不得依靠根级隐藏横向溢出来通过检查，复杂区域使用明确的局部滚动和可点击操作入口。

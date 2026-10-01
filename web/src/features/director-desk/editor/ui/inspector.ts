@@ -194,7 +194,7 @@ export function createInspector(ctx: AppContext) {
             });
         }
     }
-    return { transformFields, renderInspector, handle(action: string) {
+    return { transformFields, renderInspector, dispose: () => disposeActionPicker(), handle(action: string) {
         if (colorPalette.handle(action)) return true;
         if (action === 'ai-changes-open') { editLocations.open(); return true; }
         if (timelineCurves.handle(action)) return true;
