@@ -1014,13 +1014,14 @@ ID 集合使用 `insert/update/remove/move/duplicate`，`value` 字段采用对�
 桌宠 API 按服务端身份隔离 Workspace，读取需要 `content.read`，变更需要 `content.write`。`POST /v1/desktop-pet/projects` 传 `sourceProjectId`、`sourceRevision` 和名称，从同空间已保存的 Live2D 工程复制角色文档及用到的 PNG 素材。来源被修改或删除后，桌宠仍读取自己的固定快照。
 
 - `GET/POST /v1/desktop-pet/projects`：列表与创建。
+- `POST /v1/desktop-pet/projects/import-whale`：上传本地 Coopanion 鲸鱼娘数据包（`manifest.json`、`model.json`、八套贴图与缩略图），在当前 Workspace 形成固定快照；只接受图片和模型数据，不接受脚本。压缩包最多 32 MiB，解压最多 64 MiB。
 - `GET/PATCH/DELETE /v1/desktop-pet/projects/{project_id}`：元数据读取、重命名和删除；变更提供 `expectedRevision`。
 - `GET/PUT /v1/desktop-pet/projects/{project_id}/document`：读取角色快照、配置和鉴权素材 URL；保存整体配置需要 `expectedRevision`。
 - `PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}`：multipart PNG 上传，附 `expectedRevision`；替换图必须与来源部件素材尺寸相同，单张最多 16 MiB。
 - `POST /v1/desktop-pet/projects/{project_id}/sync-source`：显式更新来源，提交桌宠及来源 revision；动作、表情、部件与换肤尺寸不兼容时保留旧快照。
 - `GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file`：仅读取该桌宠当前快照或皮肤引用的 PNG。
 
-整体配置限制为最多 20 套皮肤、六种事件、最多四个悬停按钮。事件可绑定来源动作与表情 ID、气泡文字及内置提示音。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或工程包导入导出接口。
+整体配置限制为最多 20 套 Live2D 皮肤、六种事件、最多四个悬停按钮。鲸鱼娘项目由 `sourceType=coopanion-whale` 区分，文档返回 `whaleModel`、`whaleAssets` 和鉴权素材 URL；`schemeId` 选择八套原版配色，不支持逐部件上传或更新来源。事件的动作与表情按对应来源校验。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或桌宠包导出接口。
 
 ## 独立模型调用
 

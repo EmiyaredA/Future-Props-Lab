@@ -48,6 +48,7 @@ class PetConfig(ValueModel):
     schema_version: Literal[1] = Field(default=1, alias="schemaVersion")
     skins: list[PetSkin] = Field(default_factory=list, max_length=20)
     active_skin_id: Identifier | None = Field(default=None, alias="activeSkinId")
+    scheme_id: Identifier | None = Field(default=None, alias="schemeId")
     events: dict[PetEventName, PetReaction] = Field(default_factory=dict, max_length=6)
     habits: PetHabits = Field(default_factory=PetHabits)
 
@@ -86,9 +87,11 @@ class PetProjectOut(ValueModel):
     id: str
     title: str
     revision: int
-    source_project_id: str = Field(alias="sourceProjectId")
-    source_revision: int = Field(alias="sourceRevision")
+    source_type: Literal["live2d", "coopanion-whale"] = Field(alias="sourceType")
+    source_project_id: str | None = Field(alias="sourceProjectId")
+    source_revision: int | None = Field(alias="sourceRevision")
     source_title: str = Field(alias="sourceTitle")
+    thumbnail_url: str | None = Field(default=None, alias="thumbnailUrl")
     created_at: str = Field(alias="createdAt")
     updated_at: str = Field(alias="updatedAt")
 
@@ -99,7 +102,10 @@ class PetProjectsOut(ValueModel):
 
 class PetDocumentOut(ValueModel):
     revision: int
-    source_revision: int = Field(alias="sourceRevision")
-    character: CharacterDocument
+    source_type: Literal["live2d", "coopanion-whale"] = Field(alias="sourceType")
+    source_revision: int | None = Field(alias="sourceRevision")
+    character: CharacterDocument | None
+    whale_model: dict | None = Field(alias="whaleModel")
+    whale_assets: dict[str, str] | None = Field(alias="whaleAssets")
     config: PetConfig
     asset_urls: dict[str, str] = Field(alias="assetUrls")

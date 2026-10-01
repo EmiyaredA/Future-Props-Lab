@@ -15,6 +15,7 @@ import type { PetDocument } from "./api";
 
 export type PetRendererHandle = {
   hitTest: (x: number, y: number) => boolean;
+  pointerMove?: (x: number, y: number) => void;
 };
 
 export const PetRenderer = forwardRef<

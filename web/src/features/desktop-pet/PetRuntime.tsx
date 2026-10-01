@@ -6,7 +6,8 @@ import {
   type PointerEvent,
 } from "react";
 import { getDocument, type PetDocument, type PetHabits } from "./api";
-import { PetRenderer, type PetRendererHandle } from "./PetRenderer";
+import { DesktopPetFigure } from "./DesktopPetFigure";
+import type { PetRendererHandle } from "./PetRenderer";
 
 type EventName = "idle" | "click" | "pet" | "grab" | "drop" | "roam";
 const DEFAULT_HABITS: PetHabits = {
@@ -69,7 +70,11 @@ export function PetRuntime({ projectId }: { projectId: string }) {
       .then((value) => {
         if (!alive) return;
         setDocument(value);
-        setSkinId(value.config.activeSkinId ?? null);
+        setSkinId(
+          value.sourceType === "coopanion-whale"
+            ? (value.config.schemeId ?? "deepseek")
+            : (value.config.activeSkinId ?? null),
+        );
         setRoam(value.config.habits?.roam ?? "calm");
       })
       .catch((cause) => {
@@ -128,6 +133,7 @@ export function PetRuntime({ projectId }: { projectId: string }) {
   const hit = (event: PointerEvent<HTMLDivElement>) =>
     renderer.current?.hitTest(event.clientX, event.clientY) ?? false;
   const onMove = (event: PointerEvent<HTMLDivElement>) => {
+    renderer.current?.pointerMove?.(event.clientX, event.clientY);
     if (drag.current) {
       const start = drag.current;
       const dx = event.screenX - start.screenX;
@@ -190,6 +196,15 @@ export function PetRuntime({ projectId }: { projectId: string }) {
   };
   const cycleSkin = () => {
     if (!document) return;
+    if (document.sourceType === "coopanion-whale") {
+      const ids =
+        (document.whaleModel?.schemes as { id: string }[] | undefined)?.map(
+          (item) => item.id,
+        ) ?? [];
+      if (ids.length)
+        setSkinId(ids[(ids.indexOf(skinId ?? "") + 1) % ids.length]);
+      return;
+    }
     const ids = [null, ...(document.config.skins ?? []).map((skin) => skin.id)];
     setSkinId(ids[(ids.indexOf(skinId) + 1) % ids.length]);
   };
@@ -217,7 +232,7 @@ export function PetRuntime({ projectId }: { projectId: string }) {
           className="pet-runtime-character"
           style={{ height: habits.size, width: habits.size * 0.75 }}
         >
-          <PetRenderer
+          <DesktopPetFigure
             ref={renderer}
             document={document}
             skinId={skinId}

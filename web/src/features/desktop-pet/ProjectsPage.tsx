@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Heart,
@@ -15,6 +15,7 @@ import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { ProjectLibraryCard } from "@shared/ui/project-library";
 import {
   createProject,
+  importWhale,
   deleteProject,
   listProjects,
   renameProject,
@@ -49,6 +50,7 @@ export function ProjectsPage({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const whaleInput = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
     const [pets, characters] = await Promise.all([
@@ -119,16 +121,42 @@ export function ProjectsPage({
     <section className="workshop-page workshop-projects-page dp-projects">
       <WorkshopAppChrome
         title="我的桌宠"
-        description="从 Live2D 角色工程制作会动、会回应的桌面伙伴。"
+        description="从 Live2D 角色工程或本地鲸鱼娘资源包制作会动、会回应的桌面伙伴。"
         actions={
           !readOnly && (
-            <button
-              className="workshop-primary"
-              onClick={() => setDialog("create")}
-            >
-              <Plus size={16} />
-              新建桌宠
-            </button>
+            <>
+              <input
+                ref={whaleInput}
+                type="file"
+                accept=".zip,application/zip"
+                hidden
+                aria-label="鲸鱼娘资源包"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file)
+                    void run(async () => {
+                      const project = await importWhale(file);
+                      await refresh();
+                      onOpen(project.id);
+                    });
+                }}
+              />
+              <button
+                className="workshop-secondary"
+                disabled={busy}
+                onClick={() => whaleInput.current?.click()}
+              >
+                导入鲸鱼娘资源包
+              </button>
+              <button
+                className="workshop-primary"
+                onClick={() => setDialog("create")}
+              >
+                <Plus size={16} />
+                新建桌宠
+              </button>
+            </>
           )
         }
       />
@@ -161,13 +189,32 @@ export function ProjectsPage({
                 updated_at: project.updatedAt,
               }}
               cover="live2d"
-              coverTitle="桌宠工程"
-              coverDescription="角色 · 皮肤 · 交互"
+              coverTitle={
+                project.sourceType === "coopanion-whale"
+                  ? "DeepSeek 大肥鱼"
+                  : "桌宠工程"
+              }
+              coverDescription={
+                project.sourceType === "coopanion-whale"
+                  ? "原版动态 · 八套配色"
+                  : "角色 · 皮肤 · 交互"
+              }
+              coverContent={
+                project.thumbnailUrl ? (
+                  <img
+                    className="dp-whale-cover"
+                    src={project.thumbnailUrl}
+                    alt=""
+                  />
+                ) : undefined
+              }
               metadata={
                 <span>
                   {activeId === project.id
                     ? "桌面运行中"
-                    : `来源 r${project.sourceRevision}`}
+                    : project.sourceType === "coopanion-whale"
+                      ? "Coopanion 本地快照"
+                      : `来源 r${project.sourceRevision}`}
                 </span>
               }
               description={`来源：${project.sourceTitle}`}

@@ -1311,6 +1311,10 @@
     "method": "create_project",
     "resource": "desktop_pet"
   },
+  "POST /v1/desktop-pet/projects/import-whale": {
+    "method": "import_whale",
+    "resource": "desktop_pet"
+  },
   "POST /v1/desktop-pet/projects/{project_id}/sync-source": {
     "method": "sync_source",
     "resource": "desktop_pet"

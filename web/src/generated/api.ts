@@ -1554,6 +1554,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/desktop-pet/projects/import-whale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Whale */
+        post: operations["import_whale_v1_desktop_pet_projects_import_whale_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/desktop-pet/projects/{project_id}": {
         parameters: {
             query?: never;
@@ -7404,6 +7421,11 @@ export interface components {
         };
         /** Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post */
         Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_import_whale_v1_desktop_pet_projects_import_whale_post */
+        Body_import_whale_v1_desktop_pet_projects_import_whale_post: {
             /** File */
             file: string;
         };
@@ -14717,6 +14739,8 @@ export interface components {
              * @constant
              */
             schemaVersion: 1;
+            /** Schemeid */
+            schemeId?: string | null;
             /** Skins */
             skins?: components["schemas"]["PetSkin"][];
         };
@@ -14738,12 +14762,25 @@ export interface components {
             assetUrls: {
                 [key: string]: string;
             };
-            character: components["schemas"]["CharacterDocument"];
+            character: components["schemas"]["CharacterDocument"] | null;
             config: components["schemas"]["PetConfig"];
             /** Revision */
             revision: number;
             /** Sourcerevision */
-            sourceRevision: number;
+            sourceRevision: number | null;
+            /**
+             * Sourcetype
+             * @enum {string}
+             */
+            sourceType: "live2d" | "coopanion-whale";
+            /** Whaleassets */
+            whaleAssets: {
+                [key: string]: string;
+            } | null;
+            /** Whalemodel */
+            whaleModel: {
+                [key: string]: unknown;
+            } | null;
         };
         /** PetHabits */
         PetHabits: {
@@ -14792,11 +14829,18 @@ export interface components {
             /** Revision */
             revision: number;
             /** Sourceprojectid */
-            sourceProjectId: string;
+            sourceProjectId: string | null;
             /** Sourcerevision */
-            sourceRevision: number;
+            sourceRevision: number | null;
             /** Sourcetitle */
             sourceTitle: string;
+            /**
+             * Sourcetype
+             * @enum {string}
+             */
+            sourceType: "live2d" | "coopanion-whale";
+            /** Thumbnailurl */
+            thumbnailUrl?: string | null;
             /** Title */
             title: string;
             /** Updatedat */
@@ -22259,6 +22303,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PetCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_whale_v1_desktop_pet_projects_import_whale_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_whale_v1_desktop_pet_projects_import_whale_post"];
             };
         };
         responses: {

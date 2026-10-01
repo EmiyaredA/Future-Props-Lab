@@ -374,6 +374,16 @@
   width: 100%;
   height: 100%;
 }
+.dp-whale-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.dp-whale-renderer svg {
+  display: block;
+  overflow: visible;
+}
 .dp-render-error {
   position: absolute;
   inset: auto 10px 10px;

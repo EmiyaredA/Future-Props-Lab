@@ -1,6 +1,6 @@
 // Isolated Electron + API smoke. Never opens the normal desktop data directory.
 const { execFileSync, spawn } = require("node:child_process");
-const { mkdtempSync, mkdirSync, rmSync } = require("node:fs");
+const { existsSync, mkdtempSync, mkdirSync, rmSync } = require("node:fs");
 const { createServer } = require("node:net");
 const { once } = require("node:events");
 const os = require("node:os");
@@ -9,6 +9,9 @@ const assert = require("node:assert/strict");
 const { chromium, expect } = require("@playwright/test");
 
 const root = path.resolve(__dirname, "../..");
+const whaleArchive = process.argv[2] || null;
+if (whaleArchive)
+  assert.ok(path.isAbsolute(whaleArchive) && existsSync(whaleArchive));
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function until(fn, timeout = 120000) {
   const deadline = Date.now() + timeout;
@@ -64,34 +67,61 @@ async function main() {
     await studio.getByRole("button", { name: "创建管理员并进入" }).click();
     await studio.waitForURL("**/home");
 
-    await studio.goto(new URL("/apps/live2d-workshop", studio.url()).href);
-    await studio.getByRole("button", { name: "新建角色", exact: true }).click();
-    await studio.getByLabel("项目名称").fill("桌宠角色");
-    await studio
-      .getByRole("dialog")
-      .getByRole("button", { name: "创建项目", exact: true })
-      .click();
-    const characterEditor = await until(() =>
-      context
-        .pages()
-        .find((page) => page.url().includes("/live2d-workshop/projects/")),
-    );
-    await characterEditor
-      .locator('input[type="file"]')
-      .first()
-      .setInputFiles(
-        path.join(root, "web/public/brand/live2d-workshop-mark.png"),
+    if (!whaleArchive) {
+      await studio.goto(new URL("/apps/live2d-workshop", studio.url()).href);
+      await studio
+        .getByRole("button", { name: "新建角色", exact: true })
+        .click();
+      await studio.getByLabel("项目名称").fill("桌宠角色");
+      await studio
+        .getByRole("dialog")
+        .getByRole("button", { name: "创建项目", exact: true })
+        .click();
+      const characterEditor = await until(() =>
+        context
+          .pages()
+          .find((page) => page.url().includes("/live2d-workshop/projects/")),
       );
-    await expect(characterEditor.locator(".l2-tree-name")).toHaveCount(1);
-    await characterEditor
-      .getByRole("button", { name: "保存", exact: true })
-      .click();
-    await expect(characterEditor.locator(".l2-title")).toContainText("已保存");
+      await characterEditor
+        .locator('input[type="file"]')
+        .first()
+        .setInputFiles(
+          path.join(root, "web/public/brand/live2d-workshop-mark.png"),
+        );
+      await expect(characterEditor.locator(".l2-tree-name")).toHaveCount(1);
+      await characterEditor
+        .getByRole("button", { name: "保存", exact: true })
+        .click();
+      await expect(characterEditor.locator(".l2-title")).toContainText(
+        "已保存",
+      );
 
-    await studio.goto(new URL("/apps/desktop-pet", studio.url()).href);
-    await studio.getByRole("button", { name: "新建桌宠" }).click();
-    await studio.getByRole("button", { name: /桌宠角色.*版本/ }).click();
-    await studio.getByRole("button", { name: "创建桌宠", exact: true }).click();
+      await studio.goto(new URL("/apps/desktop-pet", studio.url()).href);
+      await studio.getByRole("button", { name: "新建桌宠" }).click();
+      await studio.getByRole("button", { name: /桌宠角色.*版本/ }).click();
+      await studio
+        .getByRole("button", { name: "创建桌宠", exact: true })
+        .click();
+    } else {
+      await studio.goto(new URL("/apps/desktop-pet", studio.url()).href);
+      await studio.getByLabel("鲸鱼娘资源包").setInputFiles(whaleArchive);
+      await studio.locator(".dp-editor").waitFor();
+      await expect(studio.locator(".dp-side-item")).toHaveCount(8);
+      await studio.locator(".dp-whale-renderer canvas").waitFor();
+      for (let index = 0; index < 8; index++) {
+        await studio.locator(".dp-side-item").nth(index).click();
+        await expect(
+          studio.locator(".dp-side-item").nth(index),
+        ).toHaveAttribute("aria-pressed", "true");
+      }
+      await studio.locator(".dp-side-item").nth(1).click();
+      await studio.getByRole("button", { name: "设为桌宠默认配色" }).click();
+      await studio.getByRole("button", { name: "保存", exact: true }).click();
+      await studio.reload();
+      await expect(
+        studio.getByText("当前默认：DeepSeek Harness"),
+      ).toBeVisible();
+    }
     await studio.locator(".dp-editor").waitFor();
     await studio.locator(".dp-pet-renderer canvas").waitFor();
     await studio.getByRole("button", { name: "交互", exact: true }).click();
@@ -106,8 +136,15 @@ async function main() {
     await pet.evaluate(() => window.futurePropsDesktop.setPetInteractive(true));
     await pet.mouse.click(150, 300);
     await expect(pet.locator(".pet-runtime-bubble")).toHaveText("你好");
-    await pet.evaluate(() => window.futurePropsDesktop.setPetInteractive(false));
-    const screenshotDir = path.join(root, ".local/desktop-pet/smoke");
+    await pet.evaluate(() =>
+      window.futurePropsDesktop.setPetInteractive(false),
+    );
+    const screenshotDir = path.join(
+      root,
+      whaleArchive
+        ? ".local/desktop-pet/whale/smoke"
+        : ".local/desktop-pet/smoke",
+    );
     mkdirSync(screenshotDir, { recursive: true });
     await pet.screenshot({ path: path.join(screenshotDir, "pet-window.png") });
     const first = await studio.evaluate(() =>
@@ -185,7 +222,9 @@ async function main() {
       path: path.join(screenshotDir, "editor-narrow-dark.png"),
     });
     console.log(
-      "PASS isolated pet creation, Pixi preview, launch, singleton, hide, restore and identity cleanup",
+      whaleArchive
+        ? "PASS isolated whale import, eight schemes, saved preview, live window and identity cleanup"
+        : "PASS isolated pet creation, Pixi preview, launch, singleton, hide, restore and identity cleanup",
     );
   } catch (error) {
     console.error(output.slice(-7000));

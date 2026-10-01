@@ -19,6 +19,10 @@ class DesktopPet:
         'Create Project. POST /v1/desktop-pet/projects'
         return self._client._call('POST', '/v1/desktop-pet/projects', parameters=[], body=body, media_type='application/json', response_type=models.PetProjectOut)
 
+    def import_whale(self, *, body: models.Body_import_whale_v1_desktop_pet_projects_import_whale_post | dict, files: dict | list | None = None) -> models.PetProjectOut:
+        'Import Whale. POST /v1/desktop-pet/projects/import-whale'
+        return self._client._call('POST', '/v1/desktop-pet/projects/import-whale', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.PetProjectOut)
+
     def delete_project(self, *, project_id: str, expected_revision: int) -> dict[str, bool]:
         'Delete Project. DELETE /v1/desktop-pet/projects/{project_id}'
         return self._client._call('DELETE', '/v1/desktop-pet/projects/{project_id}', parameters=[('project_id', 'path', project_id), ('expectedRevision', 'query', expected_revision)], response_type=dict[str, bool])
@@ -62,6 +66,10 @@ class AsyncDesktopPet:
     async def create_project(self, *, body: models.PetCreate | dict) -> models.PetProjectOut:
         'Create Project. POST /v1/desktop-pet/projects'
         return await self._client._call('POST', '/v1/desktop-pet/projects', parameters=[], body=body, media_type='application/json', response_type=models.PetProjectOut)
+
+    async def import_whale(self, *, body: models.Body_import_whale_v1_desktop_pet_projects_import_whale_post | dict, files: dict | list | None = None) -> models.PetProjectOut:
+        'Import Whale. POST /v1/desktop-pet/projects/import-whale'
+        return await self._client._call('POST', '/v1/desktop-pet/projects/import-whale', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.PetProjectOut)
 
     async def delete_project(self, *, project_id: str, expected_revision: int) -> dict[str, bool]:
         'Delete Project. DELETE /v1/desktop-pet/projects/{project_id}'

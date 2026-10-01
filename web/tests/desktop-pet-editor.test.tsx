@@ -24,6 +24,7 @@ vi.mock("../src/features/desktop-pet/api", () => ({
       title: "测试桌宠",
       revision: state.document?.revision ?? 0,
       sourceProjectId: "source-1",
+      sourceType: "live2d",
       sourceRevision: 1,
       sourceTitle: "测试角色",
       createdAt: "2026-09-30T00:00:00Z",
@@ -50,8 +51,11 @@ vi.mock("../src/features/desktop-pet/api", () => ({
 beforeEach(() => {
   state.document = {
     revision: 0,
+    sourceType: "live2d",
     sourceRevision: 1,
     character: fixture.document as PetDocument["character"],
+    whaleModel: null,
+    whaleAssets: null,
     config: {
       schemaVersion: 1,
       skins: [],

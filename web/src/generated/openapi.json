@@ -2382,6 +2382,20 @@
         "title": "Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post",
         "type": "object"
       },
+      "Body_import_whale_v1_desktop_pet_projects_import_whale_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_whale_v1_desktop_pet_projects_import_whale_post",
+        "type": "object"
+      },
       "Body_imports_v1_thought_workshop_imports_post": {
         "properties": {
           "upload": {
@@ -21645,6 +21659,18 @@
             "title": "Schemaversion",
             "type": "integer"
           },
+          "schemeId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schemeid"
+          },
           "skins": {
             "items": {
               "$ref": "#/components/schemas/PetSkin"
@@ -21696,7 +21722,14 @@
             "type": "object"
           },
           "character": {
-            "$ref": "#/components/schemas/CharacterDocument"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "config": {
             "$ref": "#/components/schemas/PetConfig"
@@ -21706,14 +21739,58 @@
             "type": "integer"
           },
           "sourceRevision": {
-            "title": "Sourcerevision",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcerevision"
+          },
+          "sourceType": {
+            "enum": [
+              "live2d",
+              "coopanion-whale"
+            ],
+            "title": "Sourcetype",
+            "type": "string"
+          },
+          "whaleAssets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whaleassets"
+          },
+          "whaleModel": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whalemodel"
           }
         },
         "required": [
           "revision",
+          "sourceType",
           "sourceRevision",
           "character",
+          "whaleModel",
+          "whaleAssets",
           "config",
           "assetUrls"
         ],
@@ -21811,16 +21888,49 @@
             "type": "integer"
           },
           "sourceProjectId": {
-            "title": "Sourceprojectid",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceprojectid"
           },
           "sourceRevision": {
-            "title": "Sourcerevision",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcerevision"
           },
           "sourceTitle": {
             "title": "Sourcetitle",
             "type": "string"
+          },
+          "sourceType": {
+            "enum": [
+              "live2d",
+              "coopanion-whale"
+            ],
+            "title": "Sourcetype",
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnailurl"
           },
           "title": {
             "title": "Title",
@@ -21835,6 +21945,7 @@
           "id",
           "title",
           "revision",
+          "sourceType",
           "sourceProjectId",
           "sourceRevision",
           "sourceTitle",
@@ -37394,6 +37505,47 @@
           }
         },
         "summary": "Create Project",
+        "tags": [
+          "desktop-pet"
+        ]
+      }
+    },
+    "/v1/desktop-pet/projects/import-whale": {
+      "post": {
+        "operationId": "import_whale_v1_desktop_pet_projects_import_whale_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_whale_v1_desktop_pet_projects_import_whale_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Whale",
         "tags": [
           "desktop-pet"
         ]

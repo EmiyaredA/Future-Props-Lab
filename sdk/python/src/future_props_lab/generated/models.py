@@ -402,6 +402,9 @@ class Body_import_project_v1_live2d_workshop_projects_import_post(WireModel):
 class Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post(WireModel):
     file: str = Field(default=..., alias='file')
 
+class Body_import_whale_v1_desktop_pet_projects_import_whale_post(WireModel):
+    file: str = Field(default=..., alias='file')
+
 class Body_imports_v1_thought_workshop_imports_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
@@ -3353,6 +3356,7 @@ class PetConfig(WireModel):
     events: dict[str, PetReaction] | None = Field(default=None, alias='events')
     habits: PetHabits | None = Field(default=None, alias='habits')
     schema_version: Literal[1] = Field(default=1, alias='schemaVersion')
+    scheme_id: str | None = Field(default=None, alias='schemeId')
     skins: list[PetSkin] | None = Field(default=None, alias='skins', max_length=20)
 
 class PetCreate(WireModel):
@@ -3362,10 +3366,13 @@ class PetCreate(WireModel):
 
 class PetDocumentOut(WireModel):
     asset_urls: dict[str, str] = Field(default=..., alias='assetUrls')
-    character: CharacterDocument = Field(default=..., alias='character')
+    character: CharacterDocument | None = Field(default=..., alias='character')
     config: PetConfig = Field(default=..., alias='config')
     revision: int = Field(default=..., alias='revision')
-    source_revision: int = Field(default=..., alias='sourceRevision')
+    source_revision: int | None = Field(default=..., alias='sourceRevision')
+    source_type: Literal['live2d', 'coopanion-whale'] = Field(default=..., alias='sourceType')
+    whale_assets: dict[str, str] | None = Field(default=..., alias='whaleAssets')
+    whale_model: dict[str, Any] | None = Field(default=..., alias='whaleModel')
 
 class PetHabits(WireModel):
     bubbles: bool = Field(default=True, alias='bubbles')
@@ -3383,9 +3390,11 @@ class PetProjectOut(WireModel):
     created_at: str = Field(default=..., alias='createdAt')
     id: str = Field(default=..., alias='id')
     revision: int = Field(default=..., alias='revision')
-    source_project_id: str = Field(default=..., alias='sourceProjectId')
-    source_revision: int = Field(default=..., alias='sourceRevision')
+    source_project_id: str | None = Field(default=..., alias='sourceProjectId')
+    source_revision: int | None = Field(default=..., alias='sourceRevision')
     source_title: str = Field(default=..., alias='sourceTitle')
+    source_type: Literal['live2d', 'coopanion-whale'] = Field(default=..., alias='sourceType')
+    thumbnail_url: str | None = Field(default=None, alias='thumbnailUrl')
     title: str = Field(default=..., alias='title')
     updated_at: str = Field(default=..., alias='updatedAt')
 
@@ -5109,6 +5118,7 @@ Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_post.mode
 Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_v1_live2d_workshop_projects_import_post.model_rebuild()
 Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post.model_rebuild()
+Body_import_whale_v1_desktop_pet_projects_import_whale_post.model_rebuild()
 Body_imports_v1_thought_workshop_imports_post.model_rebuild()
 Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post.model_rebuild()
 Body_put_avatar_v1_account_profile_avatar_put.model_rebuild()

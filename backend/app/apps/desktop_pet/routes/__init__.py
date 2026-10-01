@@ -48,6 +48,15 @@ async def create_project(session: SessionDep, workspace_id: WorkspaceDep, body: 
     return await DesktopPetProjects(session, workspace_id).create(body)
 
 
+@router.post("/projects/import-whale", response_model=PetProjectOut)
+async def import_whale(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    file: Annotated[UploadFile, File()],
+):
+    return await DesktopPetProjects(session, workspace_id).import_whale(file)
+
+
 @router.get("/projects/{project_id}", response_model=PetProjectOut)
 async def get_project(session: SessionDep, workspace_id: WorkspaceDep, project_id: str):
     return await DesktopPetProjects(session, workspace_id).get(project_id)

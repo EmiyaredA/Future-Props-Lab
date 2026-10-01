@@ -19,6 +19,7 @@ from app.apps.desktop_pet.schemas import (
     PetSave,
     PetSync,
 )
+from app.apps.desktop_pet.whale_package import MAX_ARCHIVE, read_whale_package
 from app.apps.live2d_workshop.public import (
     CharacterSnapshot,
     decode_character_png,
@@ -28,6 +29,7 @@ from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.project_transactions import (
     creating_project_layout,
     deleting_project_layout,
+    importing_project_layout,
 )
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.live2d.document import CharacterDocument
@@ -44,6 +46,26 @@ from app.runtime.time import iso_utc, utc_now
 APP = "desktop-pet"
 MAX_SNAPSHOT = 512 * 1024 * 1024
 MAX_SKIN_PNG = 16 * 1024 * 1024
+WHALE_MOTIONS = frozenset(
+    (
+        "stand",
+        "jump",
+        "hop",
+        "look",
+        "turn",
+        "nod",
+        "shake",
+        "spin",
+        "sit",
+        "sleep",
+        "dizzy",
+        "walk",
+        "run",
+    )
+)
+WHALE_EXPRESSIONS = frozenset(
+    ("neutral", "happy", "wink", "love", "shy", "surprised", "angry", "sad", "sleepy", "thinking")
+)
 
 
 class PetNotFound(Exception):
@@ -78,6 +100,9 @@ class DesktopPetProjects:
     def skin_path(self, project_id: str, asset_id: str) -> Path:
         return self.root(project_id) / "assets" / "skins" / f"{asset_id}.png"
 
+    def whale_path(self, project_id: str, asset_id: str) -> Path:
+        return self.root(project_id) / "assets" / "whale" / f"{asset_id}.png"
+
     async def row(self, project_id: str) -> DesktopPetProject:
         return await load_workspace_project(
             self.session,
@@ -89,13 +114,21 @@ class DesktopPetProjects:
 
     @staticmethod
     def out(row: DesktopPetProject) -> PetProjectOut:
+        scheme = PetConfig.model_validate(row.config).scheme_id or "deepseek"
+        thumbnail_id = (row.whale_assets or {}).get(f"thumbs/{scheme}.png")
         return PetProjectOut(
             id=row.id,
             title=row.title,
             revision=row.revision,
+            sourceType=row.source_type,
             sourceProjectId=row.source_project_id,
             sourceRevision=row.source_revision,
             sourceTitle=row.source_title,
+            thumbnailUrl=(
+                f"/v1/{APP}/projects/{row.id}/assets/{thumbnail_id}/file"
+                if row.source_type == "coopanion-whale" and thumbnail_id
+                else None
+            ),
             createdAt=iso_utc(row.created_at),
             updatedAt=iso_utc(row.updated_at),
         )
@@ -115,8 +148,24 @@ class DesktopPetProjects:
 
     async def document(self, project_id: str) -> PetDocumentOut:
         row = await self.row(project_id)
-        character = CharacterDocument.model_validate(row.character)
         config = PetConfig.model_validate(row.config)
+        if row.source_type == "coopanion-whale":
+            assets = row.whale_assets or {}
+            urls = {
+                asset_id: f"/v1/{APP}/projects/{project_id}/assets/{asset_id}/file"
+                for asset_id in assets.values()
+            }
+            return PetDocumentOut(
+                revision=row.revision,
+                sourceType="coopanion-whale",
+                sourceRevision=None,
+                character=None,
+                whaleModel=row.whale_model,
+                whaleAssets=assets,
+                config=config,
+                assetUrls=urls,
+            )
+        character = CharacterDocument.model_validate(row.character)
         base = _used_assets(character)
         replacements = {
             asset_id for skin in config.skins for asset_id in skin.replacements.values()
@@ -127,8 +176,11 @@ class DesktopPetProjects:
         }
         return PetDocumentOut(
             revision=row.revision,
+            sourceType="live2d",
             sourceRevision=row.source_revision,
             character=character,
+            whaleModel=None,
+            whaleAssets=None,
             config=config,
             assetUrls=urls,
         )
@@ -158,6 +210,7 @@ class DesktopPetProjects:
         row = DesktopPetProject(
             id=new_id(),
             workspace_id=self.workspace_id,
+            source_type="live2d",
             source_project_id=snapshot.project_id,
             source_revision=snapshot.revision,
             source_title=snapshot.title,
@@ -169,6 +222,36 @@ class DesktopPetProjects:
             self.session, self.storage, APP, row.id, workspace_id=self.workspace_id
         ):
             await self._copy_source(snapshot, row.id)
+            self.session.add(row)
+        await self.session.refresh(row)
+        return self.out(row)
+
+    async def import_whale(self, incoming: IncomingFile) -> PetProjectOut:
+        data = await incoming.read(MAX_ARCHIVE + 1)
+        package = await asyncio.to_thread(read_whale_package, data)
+        assets = {name: new_id() for name in package.images}
+        row = DesktopPetProject(
+            id=new_id(),
+            workspace_id=self.workspace_id,
+            source_type="coopanion-whale",
+            source_project_id=None,
+            source_revision=None,
+            source_title="Coopanion · DeepSeek 大肥鱼",
+            title="DeepSeek 大肥鱼",
+            character=None,
+            whale_model=package.model,
+            whale_assets=assets,
+            config=PetConfig(schemeId=package.model["schemes"][0]["id"]).model_dump(
+                mode="json", by_alias=True
+            ),
+        )
+        async with importing_project_layout(
+            self.session, self.storage, APP, row.id, workspace_id=self.workspace_id
+        ):
+            for name, content in package.images.items():
+                path = self.whale_path(row.id, assets[name])
+                path.parent.mkdir(parents=True, exist_ok=True)
+                await asyncio.to_thread(path.write_bytes, content)
             self.session.add(row)
         await self.session.refresh(row)
         return self.out(row)
@@ -225,12 +308,28 @@ class DesktopPetProjects:
     async def save(self, project_id: str, body: PetSave) -> PetDocumentOut:
         row = await self.row(project_id)
         old = PetConfig.model_validate(row.config)
-        character = CharacterDocument.model_validate(row.character)
-        source_assets = {
-            asset_id: self.source_root(project_id, row.source_revision) / f"{asset_id}.png"
-            for asset_id in _used_assets(character)
-        }
-        self.validate_config(project_id, character, body.config, source_assets)
+        if row.source_type == "coopanion-whale":
+            schemes = {item["id"] for item in row.whale_model["schemes"]}
+            if (
+                body.config.scheme_id not in schemes
+                or body.config.skins
+                or body.config.active_skin_id
+            ):
+                raise PetInvalid("鲸鱼娘配色或皮肤配置无效")
+            for event in body.config.events.values():
+                if event.motion_id and event.motion_id not in WHALE_MOTIONS:
+                    raise PetInvalid("交互引用了不存在的鲸鱼娘动作")
+                if event.expression_id and event.expression_id not in WHALE_EXPRESSIONS:
+                    raise PetInvalid("交互引用了不存在的鲸鱼娘表情")
+        else:
+            if body.config.scheme_id is not None:
+                raise PetInvalid("Live2D 桌宠不支持鲸鱼娘配色")
+            character = CharacterDocument.model_validate(row.character)
+            source_assets = {
+                asset_id: self.source_root(project_id, row.source_revision) / f"{asset_id}.png"
+                for asset_id in _used_assets(character)
+            }
+            self.validate_config(project_id, character, body.config, source_assets)
         await patch_revisioned_project(
             self.session,
             DesktopPetProject,
@@ -260,6 +359,8 @@ class DesktopPetProjects:
         incoming: IncomingFile,
     ) -> PetDocumentOut:
         row = await self.row(project_id)
+        if row.source_type != "live2d":
+            raise PetInvalid("鲸鱼娘只支持原版配色")
         character = CharacterDocument.model_validate(row.character)
         if source_asset_id not in _used_assets(character):
             raise PetInvalid("角色部件素材不存在")
@@ -314,6 +415,8 @@ class DesktopPetProjects:
 
     async def sync_source(self, project_id: str, body: PetSync) -> PetDocumentOut:
         row = await self.row(project_id)
+        if row.source_type != "live2d":
+            raise PetInvalid("导入的鲸鱼娘是固定快照")
         if row.revision != body.expected_revision:
             raise RevisionConflictError(
                 body.expected_revision,
@@ -365,6 +468,13 @@ class DesktopPetProjects:
 
     async def asset_path(self, project_id: str, asset_id: str) -> Path:
         row = await self.row(project_id)
+        if row.source_type == "coopanion-whale":
+            if asset_id not in (row.whale_assets or {}).values():
+                raise PetNotFound("桌宠素材不存在")
+            path = self.whale_path(project_id, asset_id)
+            if not path.is_file():
+                raise PetNotFound("桌宠素材不存在")
+            return path
         character = CharacterDocument.model_validate(row.character)
         if asset_id in _used_assets(character):
             path = self.source_root(project_id, row.source_revision) / f"{asset_id}.png"

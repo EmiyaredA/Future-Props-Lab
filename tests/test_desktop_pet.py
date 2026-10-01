@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import io
 import json
+import zipfile
 from pathlib import Path
 
 import httpx
@@ -177,3 +178,208 @@ async def test_source_update_rejects_incompatible_reaction_and_keeps_snapshot():
         )
         assert synced.status_code == 200, synced.text
         assert synced.json()["sourceRevision"] == 2
+
+
+def whale_archive() -> bytes:
+    part_names = (
+        "body",
+        "skirt",
+        "skirt_sit",
+        "tail",
+        "hair_back",
+        "bangs",
+        "brows",
+        "eye_creases",
+    )
+    model = {
+        "units": {"S": 0.19, "X0": 650, "FEET": 1363},
+        "pivots": {
+            key: [128, 128]
+            for key in (
+                "body",
+                "armNear",
+                "armFar",
+                "legBack",
+                "legFront",
+                "tail",
+                "neck",
+                "finNear",
+                "finFar",
+                "ahoge",
+            )
+        },
+        "view": [-12, -8, 268, 272],
+        "parts": [
+            {"id": name, "tex": name, "grid": [2, 2], "box": [0, 0, 100, 100]}
+            for name in part_names
+        ],
+        "feat": {
+            "sprites": {"neutral_mouth": [0, 0, 1, 1]},
+            "eyes": {"eyeL": {}, "eyeR": {}},
+        },
+        "schemes": [{"id": "deepseek", "brand": "DeepSeek"}, {"id": "harness", "brand": "Harness"}],
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "manifest.json", json.dumps({"format": "fpl-coopanion-whale", "version": 1})
+        )
+        archive.writestr("model.json", json.dumps(model))
+        for prefix in ("", "schemes/harness/"):
+            for name in (
+                *(f"tex/{part}.png" for part in part_names),
+                "feat/neutral_mouth.png",
+                "feat/eyeL_lash.png",
+                "feat/eyeL_ball.png",
+                "feat/eyeL_iris.png",
+                "feat/eyeR_lash.png",
+                "feat/eyeR_ball.png",
+                "feat/eyeR_iris.png",
+            ):
+                archive.writestr(prefix + name, png())
+        archive.writestr("thumbs/deepseek.png", png())
+        archive.writestr("thumbs/harness.png", png())
+    return output.getvalue()
+
+
+@pytest.mark.asyncio
+async def test_whale_import_is_frozen_workspace_scoped_and_cas_validated(tmp_path: Path):
+    package = tmp_path / "whale.zip"
+    package.write_bytes(whale_archive())
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        created = await client.post(
+            "/v1/desktop-pet/projects/import-whale",
+            files={"file": ("whale.zip", package.read_bytes(), "application/zip")},
+        )
+        assert created.status_code == 200, created.text
+        project = created.json()
+        assert project["sourceType"] == "coopanion-whale"
+        assert project["thumbnailUrl"]
+        package.unlink()
+        base = f"/v1/desktop-pet/projects/{project['id']}"
+        document = (await client.get(f"{base}/document")).json()
+        assert document["whaleModel"]["schemes"][1]["id"] == "harness"
+        thumb = await client.get(project["thumbnailUrl"])
+        assert thumb.status_code == 200 and thumb.content == png()
+        config = document["config"]
+        config["schemeId"] = "harness"
+        config["events"] = {"click": {"motionId": "hop", "expressionId": "happy", "bubble": "你好"}}
+        saved = await client.put(f"{base}/document", json={"expectedRevision": 0, "config": config})
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["config"]["schemeId"] == "harness"
+        assert (
+            await client.put(f"{base}/document", json={"expectedRevision": 0, "config": config})
+        ).status_code == 409
+        bad = copy.deepcopy(config)
+        bad["schemeId"] = "unknown"
+        assert (
+            await client.put(f"{base}/document", json={"expectedRevision": 1, "config": bad})
+        ).status_code == 422
+        bad = copy.deepcopy(config)
+        bad["events"]["click"]["motionId"] = "unknown"
+        assert (
+            await client.put(f"{base}/document", json={"expectedRevision": 1, "config": bad})
+        ).status_code == 422
+        assert (
+            await client.post(
+                f"{base}/sync-source", json={"expectedRevision": 1, "sourceRevision": 1}
+            )
+        ).status_code == 422
+        async with SessionLocal() as session:
+            with pytest.raises(PetNotFound):
+                await DesktopPetProjects(session, "other-workspace").get(project["id"])
+        original_principal = app.dependency_overrides[require_studio_auth]
+
+        async def other_principal(session: SessionDep) -> StudioPrincipal:
+            bind_workspace(session, "other-workspace")
+            return StudioPrincipal(
+                user_id="other-user",
+                workspace_id="other-workspace",
+                membership_id="other-membership",
+                workspace_access="owner",
+                member_role="owner",
+                is_platform_admin=True,
+                platform_role="super_admin",
+                platform_permissions=frozenset(CAPABILITIES),
+                must_change_password=False,
+                auth_kind="session",
+                scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
+                session_id="other-session",
+            )
+
+        app.dependency_overrides[require_studio_auth] = other_principal
+        try:
+            assert (await client.get(base)).status_code == 404
+            assert (await client.get(f"{base}/document")).status_code == 404
+            assert (await client.get(project["thumbnailUrl"])).status_code == 404
+        finally:
+            app.dependency_overrides[require_studio_auth] = original_principal
+        assert (await client.get(f"{base}/document")).json()["config"]["schemeId"] == "harness"
+
+
+@pytest.mark.asyncio
+async def test_whale_import_rejects_unsafe_and_incomplete_packages():
+    package = whale_archive()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        incomplete = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(package)) as original,
+            zipfile.ZipFile(incomplete, "w") as output,
+        ):
+            for name in original.namelist():
+                if name != "tex/body.png":
+                    output.writestr(name, original.read(name))
+        response = await client.post(
+            "/v1/desktop-pet/projects/import-whale",
+            files={"file": ("missing.zip", incomplete.getvalue(), "application/zip")},
+        )
+        assert response.status_code == 422
+        unsafe = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(package)) as original,
+            zipfile.ZipFile(unsafe, "w") as output,
+        ):
+            for name in original.namelist():
+                output.writestr(name, original.read(name))
+            output.writestr("../escape.png", png())
+        response = await client.post(
+            "/v1/desktop-pet/projects/import-whale",
+            files={"file": ("unsafe.zip", unsafe.getvalue(), "application/zip")},
+        )
+        assert response.status_code == 422
+        wrong_size = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(package)) as original,
+            zipfile.ZipFile(wrong_size, "w") as output,
+        ):
+            for name in original.namelist():
+                output.writestr(
+                    name,
+                    png((32, 16))
+                    if name == "schemes/harness/tex/body.png"
+                    else original.read(name),
+                )
+        response = await client.post(
+            "/v1/desktop-pet/projects/import-whale",
+            files={"file": ("wrong-size.zip", wrong_size.getvalue(), "application/zip")},
+        )
+        assert response.status_code == 422
+        invalid_png = io.BytesIO()
+        with (
+            zipfile.ZipFile(io.BytesIO(package)) as original,
+            zipfile.ZipFile(invalid_png, "w") as output,
+        ):
+            for name in original.namelist():
+                output.writestr(
+                    name,
+                    b"not a PNG" if name == "tex/body.png" else original.read(name),
+                )
+        response = await client.post(
+            "/v1/desktop-pet/projects/import-whale",
+            files={"file": ("invalid-png.zip", invalid_png.getvalue(), "application/zip")},
+        )
+        assert response.status_code == 422

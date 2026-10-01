@@ -23,6 +23,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
     ),
     "content.write": (
         ("POST", "/v1/desktop-pet/projects"),
+        ("POST", "/v1/desktop-pet/projects/import-whale"),
         ("PATCH", "/v1/desktop-pet/projects/{project_id}"),
         ("DELETE", "/v1/desktop-pet/projects/{project_id}"),
         ("PUT", "/v1/desktop-pet/projects/{project_id}/document"),

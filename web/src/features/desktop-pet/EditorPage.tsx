@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
   CirclePlay,
   Plus,
   RefreshCw,
@@ -24,7 +22,8 @@ import {
   type PetProject,
   type PetReaction,
 } from "./api";
-import { PetRenderer } from "./PetRenderer";
+import { DesktopPetFigure } from "./DesktopPetFigure";
+import { PetPicker } from "./PetPicker";
 import "./workshop.css";
 
 type Tab = "look" | "events" | "habits" | "preview";
@@ -58,57 +57,43 @@ const DEFAULT_HABITS: PetHabits = {
   sound: true,
   hoverActions: ["dress", "roam", "hide"],
 };
+const WHALE_MOTIONS = [
+  "stand",
+  "jump",
+  "hop",
+  "look",
+  "turn",
+  "nod",
+  "shake",
+  "spin",
+  "sit",
+  "sleep",
+  "dizzy",
+  "walk",
+  "run",
+];
+const WHALE_EXPRESSIONS = [
+  "neutral",
+  "happy",
+  "wink",
+  "love",
+  "shy",
+  "surprised",
+  "angry",
+  "sad",
+  "sleepy",
+  "thinking",
+];
 
 function normalize(config: PetConfig): PetConfig {
   return {
     schemaVersion: 1,
     skins: config.skins ?? [],
     activeSkinId: config.activeSkinId ?? null,
+    schemeId: config.schemeId ?? null,
     events: config.events ?? {},
     habits: { ...DEFAULT_HABITS, ...config.habits },
   };
-}
-
-function Picker({
-  label,
-  value,
-  options,
-  onChange,
-  disabled,
-}: {
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <label className="dp-field">
-      <span>{label}</span>
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger
-          className="dp-picker"
-          disabled={disabled}
-          aria-label={label}
-        >
-          {options.find((item) => item.value === value)?.label ?? "未设置"}
-          <ChevronDown size={14} />
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content className="dp-menu" sideOffset={4}>
-            {options.map((option) => (
-              <DropdownMenu.Item
-                key={option.value}
-                onSelect={() => onChange(option.value)}
-              >
-                {option.label}
-              </DropdownMenu.Item>
-            ))}
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-    </label>
-  );
 }
 
 export function EditorPage({
@@ -149,7 +134,11 @@ export function EditorPage({
         setProject(projectValue);
         setSnapshot(documentValue);
         setConfig(normalize(documentValue.config));
-        setSkinId(documentValue.config.activeSkinId ?? null);
+        setSkinId(
+          documentValue.sourceType === "coopanion-whale"
+            ? (documentValue.config.schemeId ?? "deepseek")
+            : (documentValue.config.activeSkinId ?? null),
+        );
       })
       .catch((cause) => {
         if (mounted) setError(String(cause));
@@ -174,6 +163,10 @@ export function EditorPage({
     () => (snapshot && config ? { ...snapshot, config } : null),
     [snapshot, config],
   );
+  const whale = snapshot?.sourceType === "coopanion-whale";
+  const schemes =
+    (snapshot?.whaleModel?.schemes as
+      { id: string; brand: string; label: string }[] | undefined) ?? [];
   const skins = config?.skins ?? [];
   const selectedSkin = skins.find((item) => item.id === skinId);
   const reaction = config?.events?.[eventName] ?? EMPTY_REACTION;
@@ -181,7 +174,7 @@ export function EditorPage({
   const assets = useMemo(() => {
     if (!snapshot) return [];
     const names = new Map<string, string>();
-    for (const part of snapshot.character.parts ?? [])
+    for (const part of snapshot.character?.parts ?? [])
       if (!names.has(part.assetId)) names.set(part.assetId, part.name);
     return [...names].map(([id, name]) => ({ id, name }));
   }, [snapshot]);
@@ -252,7 +245,11 @@ export function EditorPage({
       setProject(projectValue);
       setSnapshot(documentValue);
       setConfig(normalize(documentValue.config));
-      setSkinId(documentValue.config.activeSkinId ?? null);
+      setSkinId(
+        documentValue.sourceType === "coopanion-whale"
+          ? (documentValue.config.schemeId ?? "deepseek")
+          : (documentValue.config.activeSkinId ?? null),
+      );
       setDirty(false);
       setConflict(false);
     });
@@ -299,7 +296,7 @@ export function EditorPage({
     });
   const updateSource = () =>
     run(async () => {
-      if (!project || !snapshot) return;
+      if (!project || !snapshot || !project.sourceProjectId) return;
       const source = unwrap(
         await api.GET("/v1/live2d-workshop/projects/{project_id}", {
           params: { path: { project_id: project.sourceProjectId } },
@@ -393,56 +390,82 @@ export function EditorPage({
               <>
                 <div className="dp-panel-heading">
                   <strong>形象与皮肤</strong>
-                  <small>{skins.length} 套</small>
+                  <small>{whale ? schemes.length : skins.length} 套</small>
                 </div>
                 <div className="dp-source-card">
                   <strong>{project?.sourceTitle}</strong>
                   <small>
-                    Live2D 工坊 · 固定版本 r{project?.sourceRevision}
+                    {whale
+                      ? "Coopanion · 本地导入快照"
+                      : `Live2D 工坊 · 固定版本 r${project?.sourceRevision}`}
                   </small>
                 </div>
-                <p className="dp-section-label">皮肤列表</p>
-                <button
-                  className="dp-side-item"
-                  aria-pressed={!skinId}
-                  onClick={() => setSkinId(null)}
-                >
-                  默认形象
-                </button>
-                {skins.map((item) => (
-                  <button
-                    key={item.id}
-                    className="dp-side-item"
-                    aria-pressed={skinId === item.id}
-                    onClick={() => setSkinId(item.id)}
-                  >
-                    {item.name}
-                  </button>
-                ))}
-                {!readOnly && (
-                  <div className="dp-add-skin">
-                    <input
-                      aria-label="新皮肤名称"
-                      maxLength={60}
-                      placeholder="新皮肤名称"
-                      value={newSkinName}
-                      onChange={(event) => setNewSkinName(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") addSkin();
-                      }}
-                    />
+                <p className="dp-section-label">
+                  {whale ? "原版配色" : "皮肤列表"}
+                </p>
+                {whale ? (
+                  schemes.map((item) => (
                     <button
-                      onClick={addSkin}
-                      disabled={!newSkinName.trim()}
-                      aria-label="添加皮肤"
+                      key={item.id}
+                      className="dp-side-item"
+                      aria-pressed={skinId === item.id}
+                      onClick={() => setSkinId(item.id)}
                     >
-                      <Plus size={15} />
+                      {item.brand} · {item.label}
                     </button>
+                  ))
+                ) : (
+                  <>
+                    <button
+                      className="dp-side-item"
+                      aria-pressed={!skinId}
+                      onClick={() => setSkinId(null)}
+                    >
+                      默认形象
+                    </button>
+                    {skins.map((item) => (
+                      <button
+                        key={item.id}
+                        className="dp-side-item"
+                        aria-pressed={skinId === item.id}
+                        onClick={() => setSkinId(item.id)}
+                      >
+                        {item.name}
+                      </button>
+                    ))}
+                    {!readOnly && (
+                      <div className="dp-add-skin">
+                        <input
+                          aria-label="新皮肤名称"
+                          maxLength={60}
+                          placeholder="新皮肤名称"
+                          value={newSkinName}
+                          onChange={(event) =>
+                            setNewSkinName(event.target.value)
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") addSkin();
+                          }}
+                        />
+                        <button
+                          onClick={addSkin}
+                          disabled={!newSkinName.trim()}
+                          aria-label="添加皮肤"
+                        >
+                          <Plus size={15} />
+                        </button>
+                      </div>
+                    )}
+                    <div className="dp-hint">
+                      皮肤替换部件贴图，继续使用来源角色的网格与动作。
+                    </div>
+                  </>
+                )}
+                {whale && (
+                  <div className="dp-hint">
+                    八套配色共用原版分件动画；选中后可设为桌宠默认外观。
                   </div>
                 )}
-                <div className="dp-hint">
-                  皮肤替换部件贴图，继续使用来源角色的网格与动作。
-                </div>
               </>
             )}
             {tab === "events" && (
@@ -487,19 +510,27 @@ export function EditorPage({
                   <strong>试玩与来源</strong>
                 </div>
                 <div className="dp-source-card">
-                  <strong>来源角色 r{project?.sourceRevision}</strong>
+                  <strong>
+                    {whale
+                      ? "Coopanion 本地快照"
+                      : `来源角色 r${project?.sourceRevision}`}
+                  </strong>
                   <small>{project?.sourceTitle}</small>
                 </div>
-                <button
-                  className="dp-side-action"
-                  disabled={busy || readOnly}
-                  onClick={() => void updateSource()}
-                >
-                  <RefreshCw size={15} />
-                  检查并更新来源
-                </button>
+                {!whale && (
+                  <button
+                    className="dp-side-action"
+                    disabled={busy || readOnly}
+                    onClick={() => void updateSource()}
+                  >
+                    <RefreshCw size={15} />
+                    检查并更新来源
+                  </button>
+                )}
                 <div className="dp-hint">
-                  更新来源前会检查动作、表情和换肤贴图的兼容性；不兼容时保留当前快照。
+                  {whale
+                    ? "资源已保存为当前 Workspace 的固定快照，不再依赖原始目录。"
+                    : "更新来源前会检查动作、表情和换肤贴图的兼容性；不兼容时保留当前快照。"}
                 </div>
               </>
             )}
@@ -523,13 +554,17 @@ export function EditorPage({
               <div className="dp-checker-stage">
                 <span className="dp-stage-badge">
                   {tab === "look"
-                    ? (selectedSkin?.name ?? "默认形象")
+                    ? whale
+                      ? (schemes.find((item) => item.id === skinId)?.brand ??
+                        "DeepSeek")
+                      : (selectedSkin?.name ?? "默认形象")
                     : EVENTS.find((item) => item.id === eventName)?.label}
                 </span>
                 <div className="dp-character-frame">
-                  <PetRenderer
+                  <DesktopPetFigure
                     document={draft}
                     skinId={skinId}
+                    view="center"
                     eventName={tab === "events" ? playingEvent : "idle"}
                     reactionKey={reactionKey}
                   />
@@ -563,7 +598,7 @@ export function EditorPage({
                     );
                   }}
                 >
-                  <PetRenderer
+                  <DesktopPetFigure
                     document={draft}
                     skinId={skinId}
                     eventName={playingEvent}
@@ -585,7 +620,9 @@ export function EditorPage({
             )}
             <footer className="dp-stage-footer">
               <span>
-                角色画布 {draft.character.width} × {draft.character.height}
+                {whale
+                  ? "原版鲸鱼娘分件动画"
+                  : `角色画布 ${draft.character?.width} × ${draft.character?.height}`}
               </span>
               <span>
                 {tab === "preview" ? "macOS 桌面运行预览" : "角色底边锚点"}
@@ -595,99 +632,132 @@ export function EditorPage({
           <aside className="dp-editor-right">
             {tab === "look" && (
               <>
-                <div className="dp-panel-heading">
-                  <strong>{selectedSkin?.name ?? "默认形象"}</strong>
-                  <small>装扮属性</small>
-                </div>
-                {selectedSkin ? (
+                {whale ? (
                   <>
-                    <label className="dp-field">
-                      <span>皮肤名称</span>
-                      <input
-                        disabled={readOnly}
-                        maxLength={60}
-                        value={selectedSkin.name}
-                        onChange={(event) =>
-                          edit((value) => ({
-                            ...value,
-                            skins: value.skins?.map((skin) =>
-                              skin.id === selectedSkin.id
-                                ? { ...skin, name: event.target.value }
-                                : skin,
-                            ),
-                          }))
-                        }
-                      />
-                    </label>
-                    <p className="dp-section-label">替换部件贴图</p>
-                    <div className="dp-asset-list">
-                      {assets.map((item) => (
-                        <div key={item.id} className="dp-asset-row">
-                          <span>
-                            {item.name}
-                            <small>
-                              {selectedSkin.replacements?.[item.id]
-                                ? "已替换"
-                                : "使用默认"}
-                            </small>
-                          </span>
-                          <label className="dp-upload">
-                            <Upload size={13} />
-                            上传 PNG
-                            <input
-                              type="file"
-                              accept="image/png"
-                              hidden
-                              disabled={busy || readOnly}
-                              onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                event.target.value = "";
-                                if (file) void upload(item.id, file);
-                              }}
-                            />
-                          </label>
-                        </div>
-                      ))}
+                    <div className="dp-panel-heading">
+                      <strong>
+                        {schemes.find((item) => item.id === skinId)?.brand ??
+                          "DeepSeek"}
+                      </strong>
+                      <small>原版配色</small>
                     </div>
+                    <p className="dp-hint">
+                      保留 Coopanion
+                      的原版贴图、表情与分件动画。配色仅影响当前预览，保存默认值后下次启动生效。
+                    </p>
+                    <button
+                      className="dp-side-action"
+                      disabled={readOnly || !skinId}
+                      onClick={() =>
+                        edit((value) => ({ ...value, schemeId: skinId }))
+                      }
+                    >
+                      <Check size={15} />
+                      设为桌宠默认配色
+                    </button>
+                    <p className="dp-hint">
+                      当前默认：
+                      {schemes.find((item) => item.id === config.schemeId)
+                        ?.brand ?? "DeepSeek"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="dp-panel-heading">
+                      <strong>{selectedSkin?.name ?? "默认形象"}</strong>
+                      <small>装扮属性</small>
+                    </div>
+                    {selectedSkin ? (
+                      <>
+                        <label className="dp-field">
+                          <span>皮肤名称</span>
+                          <input
+                            disabled={readOnly}
+                            maxLength={60}
+                            value={selectedSkin.name}
+                            onChange={(event) =>
+                              edit((value) => ({
+                                ...value,
+                                skins: value.skins?.map((skin) =>
+                                  skin.id === selectedSkin.id
+                                    ? { ...skin, name: event.target.value }
+                                    : skin,
+                                ),
+                              }))
+                            }
+                          />
+                        </label>
+                        <p className="dp-section-label">替换部件贴图</p>
+                        <div className="dp-asset-list">
+                          {assets.map((item) => (
+                            <div key={item.id} className="dp-asset-row">
+                              <span>
+                                {item.name}
+                                <small>
+                                  {selectedSkin.replacements?.[item.id]
+                                    ? "已替换"
+                                    : "使用默认"}
+                                </small>
+                              </span>
+                              <label className="dp-upload">
+                                <Upload size={13} />
+                                上传 PNG
+                                <input
+                                  type="file"
+                                  accept="image/png"
+                                  hidden
+                                  disabled={busy || readOnly}
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    event.target.value = "";
+                                    if (file) void upload(item.id, file);
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          className="dp-side-action"
+                          disabled={readOnly}
+                          onClick={() => {
+                            edit((value) => ({
+                              ...value,
+                              skins: value.skins?.filter(
+                                (item) => item.id !== skinId,
+                              ),
+                              activeSkinId:
+                                value.activeSkinId === skinId
+                                  ? null
+                                  : value.activeSkinId,
+                            }));
+                            setSkinId(null);
+                          }}
+                        >
+                          删除这套皮肤
+                        </button>
+                      </>
+                    ) : (
+                      <div className="dp-hint">
+                        默认形象使用来源角色的原始贴图。新增皮肤后，可逐个替换需要换装的部件。
+                      </div>
+                    )}
+                    <div className="dp-divider" />
                     <button
                       className="dp-side-action"
                       disabled={readOnly}
-                      onClick={() => {
-                        edit((value) => ({
-                          ...value,
-                          skins: value.skins?.filter(
-                            (item) => item.id !== skinId,
-                          ),
-                          activeSkinId:
-                            value.activeSkinId === skinId
-                              ? null
-                              : value.activeSkinId,
-                        }));
-                        setSkinId(null);
-                      }}
+                      onClick={() =>
+                        edit((value) => ({ ...value, activeSkinId: skinId }))
+                      }
                     >
-                      删除这套皮肤
+                      <Check size={15} />
+                      设为桌宠默认皮肤
                     </button>
+                    <p className="dp-hint">
+                      皮肤贴图必须与对应原部件尺寸一致；未替换的部件沿用默认贴图。
+                    </p>
                   </>
-                ) : (
-                  <div className="dp-hint">
-                    默认形象使用来源角色的原始贴图。新增皮肤后，可逐个替换需要换装的部件。
-                  </div>
                 )}
-                <div className="dp-divider" />
-                <button
-                  className="dp-side-action"
-                  disabled={readOnly}
-                  onClick={() =>
-                    edit((value) => ({ ...value, activeSkinId: skinId }))
-                  }
-                >
-                  <Check size={15} />
-                  设为桌宠默认皮肤
-                </button>
-                <p className="dp-hint">
-                  皮肤贴图必须与对应原部件尺寸一致；未替换的部件沿用默认贴图。
-                </p>
               </>
             )}
             {tab === "events" && (
@@ -698,32 +768,39 @@ export function EditorPage({
                   </strong>
                   <small>事件属性</small>
                 </div>
-                <Picker
+                <PetPicker
                   label="动作"
                   value={reaction.motionId ?? ""}
                   options={[
                     { value: "", label: "无动作" },
-                    ...(draft.character.motions ?? []).map((motion) => ({
-                      value: motion.id,
-                      label: motion.name,
-                    })),
+                    ...(whale
+                      ? WHALE_MOTIONS.map((id) => ({ value: id, label: id }))
+                      : (draft.character?.motions ?? []).map((motion) => ({
+                          value: motion.id,
+                          label: motion.name,
+                        }))),
                   ]}
                   onChange={(value) =>
                     editReaction({ motionId: value || null })
                   }
                   disabled={readOnly}
                 />
-                <Picker
+                <PetPicker
                   label="表情"
                   value={reaction.expressionId ?? ""}
                   options={[
                     { value: "", label: "无表情" },
-                    ...(draft.character.expressions ?? []).map(
-                      (expression) => ({
-                        value: expression.id,
-                        label: expression.name,
-                      }),
-                    ),
+                    ...(whale
+                      ? WHALE_EXPRESSIONS.map((id) => ({
+                          value: id,
+                          label: id,
+                        }))
+                      : (draft.character?.expressions ?? []).map(
+                          (expression) => ({
+                            value: expression.id,
+                            label: expression.name,
+                          }),
+                        )),
                   ]}
                   onChange={(value) =>
                     editReaction({ expressionId: value || null })
@@ -742,7 +819,7 @@ export function EditorPage({
                     }
                   />
                 </label>
-                <Picker
+                <PetPicker
                   label="音效"
                   value={reaction.sound}
                   options={[

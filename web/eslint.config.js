@@ -4,16 +4,28 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "src/generated"] },
+  {
+    ignores: [
+      "dist",
+      "src/generated",
+      "src/features/desktop-pet/whale-vendor/**",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     files: ["**/*.{ts,tsx}"],
-    languageOptions: { ecmaVersion: 2022, globals: { window: "readonly", document: "readonly" } },
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: { window: "readonly", document: "readonly" },
+    },
     plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
     },
   },
   {

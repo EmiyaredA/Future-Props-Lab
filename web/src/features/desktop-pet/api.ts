@@ -29,6 +29,14 @@ export const createProject = async (
       body: { sourceProjectId, sourceRevision, title },
     }),
   );
+export async function importWhale(file: File): Promise<PetProject> {
+  const body = new FormData();
+  body.append("file", file);
+  return fetchApiJson("/v1/desktop-pet/projects/import-whale", {
+    method: "POST",
+    body,
+  });
+}
 export const renameProject = async (
   id: string,
   expectedRevision: number,
