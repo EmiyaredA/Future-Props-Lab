@@ -3991,6 +3991,15 @@ class SetAssetOrganizationOperation(WireModel):
     organization: VideoEditorAssetOrganization = Field(default=..., alias='organization')
     type: Literal['setAssetOrganization'] = Field(default=..., alias='type')
 
+class SetAudioTransitionOperation(WireModel):
+    duration_us: int = Field(default=..., alias='durationUs', ge=50000.0, le=10000000.0)
+    easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='ease-in-out', alias='easing')
+    from_clip_id: str = Field(default=..., alias='fromClipId', min_length=1, max_length=64)
+    kind: Literal['audio-crossfade', 'audio-equal-power', 'audio-dip', 'audio-filter-sweep'] = Field(default=..., alias='kind')
+    to_clip_id: str = Field(default=..., alias='toClipId', min_length=1, max_length=64)
+    transition_id: str = Field(default=..., alias='transitionId', min_length=1, max_length=64)
+    type: Literal['setAudioTransition'] = Field(default=..., alias='type')
+
 class SetClipSpeedOperation(WireModel):
     clip_id: str = Field(default=..., alias='clipId')
     playback_rate: float = Field(default=..., alias='playbackRate', ge=0.25, le=4.0)
@@ -4644,7 +4653,7 @@ class VideoEditorTextStyle(WireModel):
 
 class VideoEditorTimelineBatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    operations: list[AddTrackOperation | UpdateSettingsOperation | SetAssetOrganizationOperation | UpdateTrackOperation | RemoveTrackOperation | ReorderTrackOperation | AddClipOperation | UpdateClipOperation | ClipIdOperation | MoveClipOperation | TrimClipOperation | SplitClipOperation | SetClipSpeedOperation | AlignAudioSeamOperation | RestoreClipStatesOperation | LinkClipsOperation | SeparateClipOperation | KeyframeOperation | SetTransitionOperation | AddTransitionOperation | UpdateTransitionOperation | RemoveTransitionOperation] = Field(default=..., alias='operations', min_length=1, max_length=200)
+    operations: list[AddTrackOperation | UpdateSettingsOperation | SetAssetOrganizationOperation | UpdateTrackOperation | RemoveTrackOperation | ReorderTrackOperation | AddClipOperation | UpdateClipOperation | ClipIdOperation | MoveClipOperation | TrimClipOperation | SplitClipOperation | SetClipSpeedOperation | AlignAudioSeamOperation | SetAudioTransitionOperation | RestoreClipStatesOperation | LinkClipsOperation | SeparateClipOperation | KeyframeOperation | SetTransitionOperation | AddTransitionOperation | UpdateTransitionOperation | RemoveTransitionOperation] = Field(default=..., alias='operations', min_length=1, max_length=200)
     request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
 
 class VideoEditorTimelineDocument(WireModel):
@@ -4666,7 +4675,7 @@ class VideoEditorTimelineTransition(WireModel):
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
     from_clip_id: str = Field(default=..., alias='fromClipId', min_length=1, max_length=64)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
-    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'eyelid', 'audio-crossfade'] = Field(default=..., alias='kind')
+    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'eyelid', 'audio-crossfade', 'audio-equal-power', 'audio-dip', 'audio-filter-sweep'] = Field(default=..., alias='kind')
     placement: Literal['between'] = Field(default='between', alias='placement')
     to_clip_id: str = Field(default=..., alias='toClipId', min_length=1, max_length=64)
 
@@ -5699,6 +5708,7 @@ SecurityAuditEventOut.model_rebuild()
 SecurityAuditListOut.model_rebuild()
 SeparateClipOperation.model_rebuild()
 SetAssetOrganizationOperation.model_rebuild()
+SetAudioTransitionOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()
 SetTransitionOperation.model_rebuild()
 SkillCatalogOut.model_rebuild()

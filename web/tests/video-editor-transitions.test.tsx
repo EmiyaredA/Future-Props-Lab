@@ -165,24 +165,93 @@ describe("VideoEditorTransitionPanel", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "音频淡化" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "交叉淡化" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "擦除" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "应用到片段之间" }));
 
     expect(commit).toHaveBeenCalledWith(
       [
         expect.objectContaining({
-          type: "addTransition",
-          transition: expect.objectContaining({
-            kind: "audio-crossfade",
-            durationUs: 750_000,
-            fromClipId: "a",
-            toClipId: "b",
-          }),
+          type: "setAudioTransition",
+          kind: "audio-crossfade",
+          durationUs: 750_000,
+          fromClipId: "a",
+          toClipId: "b",
         }),
       ],
       [expect.objectContaining({ type: "removeTransition" })],
     );
+  });
+
+  it("offers four audio effects and applies a half-second overlap to touching clips", () => {
+    const commit = vi.fn().mockResolvedValue(undefined);
+    const audioTrack: VideoEditorTrack = { ...track, id: "a1", kind: "audio" };
+    const audioClip = (id: string, start: number): VideoEditorClip =>
+      ({
+        ...clip(id, start),
+        trackId: "a1",
+        kind: "audio",
+        durationUs: 2_000_000,
+      }) as VideoEditorClip;
+    render(
+      <VideoEditorTransitionPanel
+        clips={[audioClip("a", 0), audioClip("b", 2_000_000)]}
+        tracks={[audioTrack]}
+        transitions={[]}
+        target={{ fromClipId: "a", toClipId: "b" }}
+        commit={commit}
+        onSelectTransition={vi.fn()}
+      />,
+    );
+
+    for (const name of ["交叉淡化", "等功率交叉淡化", "淡出再淡入", "频率扫掠"])
+      expect(screen.getByRole("button", { name })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "等功率交叉淡化" }));
+    expect(screen.getByRole("spinbutton")).toHaveValue(0.5);
+    fireEvent.click(screen.getByRole("button", { name: "应用到片段之间" }));
+    expect(commit).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          type: "setAudioTransition",
+          kind: "audio-equal-power",
+          durationUs: 500_000,
+        }),
+      ],
+      [
+        expect.objectContaining({ type: "removeTransition" }),
+        expect.objectContaining({ type: "restoreClipStates" }),
+      ],
+    );
+  });
+
+  it("asks to separate audio linked to video before applying a seam", () => {
+    const from = {
+      ...clip("a", 0),
+      kind: "audio" as const,
+      trackId: "a1",
+      durationUs: 2_000_000,
+      linkGroupId: "av",
+    };
+    const to = {
+      ...from,
+      id: "b",
+      timelineStartUs: 2_000_000,
+      linkGroupId: undefined,
+    };
+    render(
+      <VideoEditorTransitionPanel
+        clips={[from, to]}
+        tracks={[{ ...track, id: "a1", kind: "audio" }]}
+        transitions={[]}
+        target={{ fromClipId: "a", toClipId: "b" }}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onSelectTransition={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/请先分离与画面关联的音频片段/)).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "应用到片段之间" }),
+    ).toBeDisabled();
   });
 
   it("deletes an audio overlap transition with a reversible operation", () => {
@@ -223,7 +292,7 @@ describe("VideoEditorTransitionPanel", () => {
         onSelectTransition={vi.fn()}
       />,
     );
-    expect(screen.getByRole("spinbutton")).toBeDisabled();
+    expect(screen.getByRole("spinbutton")).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "删除当前转场" }));
     expect(commit).toHaveBeenCalledWith(
       [{ type: "removeTransition", transitionId: "audio-seam" }],

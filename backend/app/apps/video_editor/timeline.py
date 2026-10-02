@@ -8,6 +8,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.video_editor.audio_seam_edit import align_audio_seam
+from app.apps.video_editor.audio_transition_edit import set_audio_transition
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
@@ -23,6 +24,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorTimelineOut,
 )
 from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
 from app.capabilities.media_rendering.timeline_document import (
     normalize_legacy_edge_transitions,
 )
@@ -72,7 +74,7 @@ def _reconcile_audio_crossfades(document: dict) -> None:
     }
     reconciled: list[dict] = []
     for transition in transitions:
-        if transition.get("kind") != "audio-crossfade":
+        if transition.get("kind") not in AUDIO_SEAM_KINDS:
             reconciled.append(transition)
             continue
         from_entry = clips_by_id.get(transition.get("fromClipId"))
@@ -122,7 +124,7 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
         guarded_ids = set(data.get("clipIds", []))
         if data.get("clipId"):
             guarded_ids.add(data["clipId"])
-        if kind == "alignAudioSeam":
+        if kind in {"alignAudioSeam", "setAudioTransition"}:
             guarded_ids.update((data["fromClipId"], data["toClipId"]))
         transition_payload = data.get("transition")
         if transition_payload:
@@ -341,6 +343,8 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                     clip.update(durationUs=duration, playbackRate=data["playbackRate"])
         elif kind == "alignAudioSeam":
             align_audio_seam(result, data)
+        elif kind == "setAudioTransition":
+            set_audio_transition(result, data)
         elif kind == "restoreClipStates":
             for restored in data["clips"]:
                 track, current = _find_clip(result, restored["id"])
@@ -609,7 +613,7 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
             raise VideoEditorValidationError("接缝转场引用无效", code="invalid_transition_ref")
         from_track, left = from_clip
         to_track, right = to_clip
-        if transition["kind"] == "audio-crossfade":
+        if transition["kind"] in AUDIO_SEAM_KINDS:
             if (
                 from_track["id"] != to_track["id"]
                 or from_track["kind"] != "audio"
@@ -679,7 +683,7 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                 "同一接缝不能重复添加转场", code="duplicate_transition_edge"
             )
         transition_boundaries.add(boundary)
-        if transition["kind"] != "audio-crossfade" and transition["durationUs"] > min(
+        if transition["kind"] not in AUDIO_SEAM_KINDS and transition["durationUs"] > min(
             left["durationUs"], right["durationUs"]
         ):
             raise VideoEditorValidationError(

@@ -14,6 +14,11 @@ from typing import BinaryIO
 
 from PIL import Image
 
+from app.capabilities.media_rendering.audio_transitions import (
+    AUDIO_SEAM_KINDS,
+    eased_progress,
+    sweep_frequency,
+)
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.presets import RENDER_PRESETS
@@ -523,7 +528,7 @@ def _audio_transition_gain_expression(
         item.id: item for track in document.tracks if track.kind == "audio" for item in track.clips
     }
     for transition in document.transitions:
-        if transition.kind != "audio-crossfade" or clip.id not in {
+        if transition.kind not in AUDIO_SEAM_KINDS or clip.id not in {
             transition.from_clip_id,
             transition.to_clip_id,
         }:
@@ -537,11 +542,72 @@ def _audio_transition_gain_expression(
         offset_s = (intersection_start_us - overlap_start_us) / 1_000_000
         ratio = f"max(0,min(1,(t+{offset_s:.6f})/{duration_s:.6f}))"
         eased = _easing_expression(ratio, transition.easing)
-        seam_gain = eased if clip.id == transition.to_clip_id else f"1-({eased})"
+        incoming = clip.id == transition.to_clip_id
+        if transition.kind == "audio-equal-power":
+            seam_gain = (
+                f"sin(1.570796326795*({eased}))" if incoming else f"cos(1.570796326795*({eased}))"
+            )
+        elif transition.kind == "audio-dip":
+            seam_gain = f"max(0,2*({eased})-1)" if incoming else f"max(0,1-2*({eased}))"
+        else:
+            seam_gain = eased if incoming else f"1-({eased})"
         window_start_s = (overlap_start_us - intersection_start_us) / 1_000_000
         window_end_s = window_start_s + duration_s
         gains.append(f"if(between(t,{window_start_s:.6f},{window_end_s:.6f}),{seam_gain},1)")
     return "*".join(f"({gain})" for gain in gains) or "1"
+
+
+def _audio_sweep_filters(
+    document: VideoEditorTimelineDocument,
+    clip: VideoEditorClip,
+    intersection_start_us: int,
+    intersection_end_us: int,
+) -> list[str]:
+    clips = {item.id: item for track in document.tracks for item in track.clips}
+    clip_index = next(index for index, clip_id in enumerate(clips) if clip_id == clip.id)
+    filters: list[str] = []
+    for index, transition in enumerate(document.transitions):
+        if transition.kind != "audio-filter-sweep" or clip.id not in {
+            transition.from_clip_id,
+            transition.to_clip_id,
+        }:
+            continue
+        left = clips.get(transition.from_clip_id)
+        right = clips.get(transition.to_clip_id)
+        if left is None or right is None:
+            continue
+        overlap_start = right.timeline_start_us
+        overlap_end = min(
+            left.timeline_start_us + left.duration_us, right.timeline_start_us + right.duration_us
+        )
+        window_start = max(intersection_start_us, overlap_start)
+        window_end = min(intersection_end_us, overlap_end)
+        if window_end <= window_start:
+            continue
+        incoming = clip.id == transition.to_clip_id
+        filter_name = "highpass" if incoming else "lowpass"
+        instance = f"seam{index}_{clip_index}"
+        start_s = (window_start - intersection_start_us) / 1_000_000
+        end_s = (window_end - intersection_start_us) / 1_000_000
+        commands: list[str] = []
+        for step in range(33):
+            time_us = overlap_start + round(transition.duration_us * step / 32)
+            if time_us < window_start or time_us > window_end:
+                continue
+            at_s = (time_us - intersection_start_us) / 1_000_000
+            progress = eased_progress(step / 32, transition.easing)
+            frequency = sweep_frequency(progress, incoming=incoming)
+            commands.append(f"{at_s:.6f} {filter_name}@{instance} f {frequency:.3f}")
+        initial_progress = eased_progress(
+            (window_start - overlap_start) / transition.duration_us, transition.easing
+        )
+        initial_frequency = sweep_frequency(initial_progress, incoming=incoming)
+        if commands:
+            filters.append(f"asendcmd=c='{';'.join(commands)}'")
+        filters.append(
+            f"{filter_name}@{instance}=f={initial_frequency:.3f}:p=2:enable='between(t,{start_s:.6f},{end_s:.6f})'"
+        )
+    return filters
 
 
 def _mux_audio(
@@ -595,6 +661,7 @@ def _mux_audio(
             "asetpts=PTS-STARTPTS",
             *audio_speed_filters(playback_rate),
             "aresample=48000",
+            *_audio_sweep_filters(document, clip, intersection_start, intersection_end),
             f"volume='({volume})*({transition_gain})':eval=frame",
         ]
         chain.append(f"adelay={delay_ms}:all=1[a{index}]")

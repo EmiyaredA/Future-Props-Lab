@@ -2,17 +2,83 @@ import type {
   VideoEditorClip,
   VideoEditorOperation,
   VideoEditorTimeline,
+  VideoEditorTimelineTransition,
 } from "./types";
+import type { AudioTransitionKind } from "./audioTransitionCurves";
+import { audioTransitionKinds } from "./audioTransitionCurves";
+
+export function audioTransitionOperations(
+  timeline: VideoEditorTimeline,
+  from: VideoEditorClip,
+  to: VideoEditorClip,
+  existing: VideoEditorTimelineTransition | undefined,
+  kind: AudioTransitionKind,
+  durationUs: number,
+  easing: VideoEditorTimelineTransition["easing"],
+): { redo: VideoEditorOperation[]; undo: VideoEditorOperation[]; id: string } {
+  const tracks = timeline.document.tracks ?? [];
+  const movesClips =
+    from.timelineStartUs + from.durationUs - durationUs !== to.timelineStartUs;
+  const track = tracks.find((item) => item.id === to.trackId);
+  const following = (track?.clips ?? []).filter(
+    (clip) => clip.id !== to.id && clip.timelineStartUs > to.timelineStartUs,
+  );
+  const followingIds = new Set(following.map((clip) => clip.id));
+  const linkedGroups = new Set(
+    following.map((clip) => clip.linkGroupId).filter(Boolean),
+  );
+  const originals = movesClips
+    ? tracks
+        .flatMap((item) => item.clips ?? [])
+        .filter(
+          (clip) =>
+            clip.id === to.id ||
+            followingIds.has(clip.id) ||
+            (clip.linkGroupId && linkedGroups.has(clip.linkGroupId)),
+        )
+    : [];
+  const id = existing?.id ?? crypto.randomUUID();
+  return {
+    id,
+    redo: [
+      {
+        type: "setAudioTransition",
+        fromClipId: from.id,
+        toClipId: to.id,
+        transitionId: id,
+        kind,
+        durationUs,
+        easing,
+      },
+    ],
+    undo: [
+      ...(existing
+        ? [
+            {
+              type: "updateTransition" as const,
+              transitionId: id,
+              patch: {
+                kind: existing.kind,
+                durationUs: existing.durationUs,
+                easing: existing.easing,
+              },
+            },
+          ]
+        : [{ type: "removeTransition" as const, transitionId: id }]),
+      ...(movesClips
+        ? [{ type: "restoreClipStates" as const, clips: originals }]
+        : []),
+    ],
+  };
+}
 
 type ClipState = Pick<
   VideoEditorClip,
   "id" | "kind" | "trackId" | "timelineStartUs" | "durationUs"
 >;
 
-function audioCrossfadeIsValid(
-  transition: NonNullable<
-    VideoEditorTimeline["document"]["transitions"]
-  >[number],
+function audioTransitionIsValid(
+  transition: VideoEditorTimelineTransition,
   clips: Map<string, ClipState>,
   trackKinds: Map<string, string>,
 ) {
@@ -44,10 +110,7 @@ function audioCrossfadeIsValid(
   );
 }
 
-/**
- * Keep overlap-transition removal in the same undoable batch as a move/trim.
- * Positive overlap duration changes are normalized by the API boundary.
- */
+/** Keep seam removal in the same undoable batch as a move or trim. */
 export function reconcileAudioTransitionOperations(
   timeline: VideoEditorTimeline | undefined,
   redo: VideoEditorOperation[],
@@ -55,9 +118,12 @@ export function reconcileAudioTransitionOperations(
 ) {
   if (!timeline) return { redo, undo };
   const transitions = timeline.document.transitions ?? [];
-  if (!transitions.some((item) => item.kind === "audio-crossfade")) {
+  if (
+    !transitions.some((item) =>
+      audioTransitionKinds.includes(item.kind as AudioTransitionKind),
+    )
+  )
     return { redo, undo };
-  }
   const trackKinds = new Map(
     (timeline.document.tracks ?? []).map((track) => [track.id, track.kind]),
   );
@@ -80,9 +146,8 @@ export function reconcileAudioTransitionOperations(
         clip.durationUs = operation.durationUs;
       }
     } else if (operation.type === "restoreClipStates") {
-      for (const restored of operation.clips) {
+      for (const restored of operation.clips)
         clips.set(restored.id, { ...restored });
-      }
     } else if (operation.type === "removeTrack") {
       for (const clip of clips.values()) {
         if (clip.trackId === operation.trackId) clips.delete(clip.id);
@@ -96,9 +161,9 @@ export function reconcileAudioTransitionOperations(
   );
   const removed = transitions.filter(
     (transition) =>
-      transition.kind === "audio-crossfade" &&
+      audioTransitionKinds.includes(transition.kind as AudioTransitionKind) &&
       !removedIds.has(transition.id) &&
-      !audioCrossfadeIsValid(transition, clips, trackKinds),
+      !audioTransitionIsValid(transition, clips, trackKinds),
   );
   if (!removed.length) return { redo, undo };
   return {

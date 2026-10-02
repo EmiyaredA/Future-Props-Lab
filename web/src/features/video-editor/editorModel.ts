@@ -6,6 +6,12 @@ import type {
   VideoEditorTimelineTransition,
   VideoEditorTrack,
 } from "./types";
+import {
+  audioTransitionGain,
+  audioTransitionKinds,
+  audioTransitionProgress,
+  audioSweepFrequency,
+} from "./audioTransitionCurves";
 
 export const frameUs = (fps: number) => Math.round(1_000_000 / fps);
 export const snapUs = (value: number, fps: number) =>
@@ -90,8 +96,7 @@ export function clipAudioGainAt(clip: VideoEditorClip, localUs: number) {
     gain *= ease(
       Math.min(
         1,
-        Math.max(0, clip.durationUs - localUs) /
-          clip.transitionOut.durationUs,
+        Math.max(0, clip.durationUs - localUs) / clip.transitionOut.durationUs,
       ),
       clip.transitionOut.easing ?? "linear",
     );
@@ -108,11 +113,13 @@ export function audioSeamGainAt(
 ) {
   let gain = 1;
   for (const transition of transitions) {
-    if (transition.kind !== "audio-crossfade") continue;
     if (
-      transition.fromClipId !== clip.id &&
-      transition.toClipId !== clip.id
+      !audioTransitionKinds.includes(
+        transition.kind as (typeof audioTransitionKinds)[number],
+      )
     )
+      continue;
+    if (transition.fromClipId !== clip.id && transition.toClipId !== clip.id)
       continue;
     const from = clipsById.get(transition.fromClipId);
     const to = clipsById.get(transition.toClipId);
@@ -125,13 +132,46 @@ export function audioSeamGainAt(
     if (endUs <= startUs || playheadUs < startUs || playheadUs > endUs) {
       continue;
     }
-    const progress = ease(
+    const progress = audioTransitionProgress(
       (playheadUs - startUs) / Math.max(1, endUs - startUs),
       transition.easing,
     );
-    gain *= transition.fromClipId === clip.id ? 1 - progress : progress;
+    gain *= audioTransitionGain(
+      transition.kind as (typeof audioTransitionKinds)[number],
+      progress,
+      transition.toClipId === clip.id,
+    );
   }
   return Math.max(0, Math.min(1, gain));
+}
+
+export function audioSeamFilterAt(
+  clip: VideoEditorClip,
+  playheadUs: number,
+  transitions: VideoEditorTimelineTransition[],
+  clipsById: Map<string, VideoEditorClip>,
+) {
+  let lowpass = 20_000;
+  let highpass = 20;
+  for (const transition of transitions) {
+    if (transition.kind !== "audio-filter-sweep") continue;
+    const from = clipsById.get(transition.fromClipId);
+    const to = clipsById.get(transition.toClipId);
+    if (!from || !to || (from.id !== clip.id && to.id !== clip.id)) continue;
+    const startUs = to.timelineStartUs;
+    const endUs = Math.min(
+      from.timelineStartUs + from.durationUs,
+      to.timelineStartUs + to.durationUs,
+    );
+    if (playheadUs < startUs || playheadUs > endUs) continue;
+    const progress = audioTransitionProgress(
+      (playheadUs - startUs) / Math.max(1, endUs - startUs),
+      transition.easing,
+    );
+    if (to.id === clip.id) highpass = audioSweepFrequency(progress, true);
+    else lowpass = audioSweepFrequency(progress, false);
+  }
+  return { lowpass, highpass };
 }
 
 const baseClip = (

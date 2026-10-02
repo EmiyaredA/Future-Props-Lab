@@ -132,6 +132,9 @@ class VideoEditorTimelineTransition(BaseModel):
         "flash",
         "eyelid",
         "audio-crossfade",
+        "audio-equal-power",
+        "audio-dip",
+        "audio-filter-sweep",
     ]
     duration_us: int = Field(alias="durationUs", gt=0, le=10_000_000)
     placement: Literal["between"] = "between"
@@ -258,11 +261,14 @@ class VideoEditorTimelineDocument(BaseModel):
 
     @model_validator(mode="after")
     def normalize_audio_seam_durations(self) -> VideoEditorTimelineDocument:
-        clips_by_id = {
-            clip.id: (track, clip) for track in self.tracks for clip in track.clips
-        }
+        clips_by_id = {clip.id: (track, clip) for track in self.tracks for clip in track.clips}
         for transition in self.transitions:
-            if transition.kind != "audio-crossfade":
+            if transition.kind not in {
+                "audio-crossfade",
+                "audio-equal-power",
+                "audio-dip",
+                "audio-filter-sweep",
+            }:
                 continue
             left_item = clips_by_id.get(transition.from_clip_id)
             right_item = clips_by_id.get(transition.to_clip_id)
@@ -345,6 +351,4 @@ def normalize_legacy_edge_transitions(document: dict) -> dict:
 
 def parse_timeline_document(document: dict) -> VideoEditorTimelineDocument:
     """Normalize legacy edge transitions then validate the timeline document."""
-    return VideoEditorTimelineDocument.model_validate(
-        normalize_legacy_edge_transitions(document)
-    )
+    return VideoEditorTimelineDocument.model_validate(normalize_legacy_edge_transitions(document))

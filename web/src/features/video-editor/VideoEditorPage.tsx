@@ -687,6 +687,8 @@ export function VideoEditorPage({
               />
             ) : rightPanel === "transitions" ? (
               <VideoEditorTransitionPanel
+                timeline={timeline}
+                assets={assets}
                 clips={tracks.flatMap((track) => track.clips ?? [])}
                 tracks={tracks}
                 transitions={timeline.document.transitions ?? []}

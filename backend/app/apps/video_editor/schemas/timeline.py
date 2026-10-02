@@ -95,6 +95,16 @@ class AlignAudioSeamOperation(BaseModel):
     transition_id: str = Field(alias="transitionId", min_length=1, max_length=64)
 
 
+class SetAudioTransitionOperation(BaseModel):
+    type: Literal["setAudioTransition"]
+    from_clip_id: str = Field(alias="fromClipId", min_length=1, max_length=64)
+    to_clip_id: str = Field(alias="toClipId", min_length=1, max_length=64)
+    transition_id: str = Field(alias="transitionId", min_length=1, max_length=64)
+    kind: Literal["audio-crossfade", "audio-equal-power", "audio-dip", "audio-filter-sweep"]
+    duration_us: int = Field(alias="durationUs", ge=50_000, le=10_000_000)
+    easing: Literal["linear", "ease-in", "ease-out", "ease-in-out"] = "ease-in-out"
+
+
 class RestoreClipStatesOperation(BaseModel):
     type: Literal["restoreClipStates"]
     clips: list[VideoEditorClip] = Field(min_length=1)
@@ -196,6 +206,7 @@ VideoEditorTimelineOperation = Annotated[
     | SplitClipOperation
     | SetClipSpeedOperation
     | AlignAudioSeamOperation
+    | SetAudioTransitionOperation
     | RestoreClipStatesOperation
     | LinkClipsOperation
     | SeparateClipOperation

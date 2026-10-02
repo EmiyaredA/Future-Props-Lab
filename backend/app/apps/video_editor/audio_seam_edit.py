@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.apps.video_editor.errors import VideoEditorValidationError
+from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
 
 
 def audio_seam_pair(document: dict, from_id: str, to_id: str) -> tuple[dict, dict, dict]:
@@ -89,7 +90,7 @@ def align_audio_seam(document: dict, data: dict) -> None:
         None,
     )
     if existing is not None:
-        if existing["kind"] != "audio-crossfade":
+        if existing["kind"] not in AUDIO_SEAM_KINDS:
             raise VideoEditorValidationError("接缝已有其他转场", code="invalid_transition_kind")
         existing["durationUs"] = fade
     else:

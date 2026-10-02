@@ -25450,6 +25450,70 @@
         "title": "SetAssetOrganizationOperation",
         "type": "object"
       },
+      "SetAudioTransitionOperation": {
+        "properties": {
+          "durationUs": {
+            "maximum": 10000000.0,
+            "minimum": 50000.0,
+            "title": "Durationus",
+            "type": "integer"
+          },
+          "easing": {
+            "default": "ease-in-out",
+            "enum": [
+              "linear",
+              "ease-in",
+              "ease-out",
+              "ease-in-out"
+            ],
+            "title": "Easing",
+            "type": "string"
+          },
+          "fromClipId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Fromclipid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "audio-crossfade",
+              "audio-equal-power",
+              "audio-dip",
+              "audio-filter-sweep"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "toClipId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Toclipid",
+            "type": "string"
+          },
+          "transitionId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Transitionid",
+            "type": "string"
+          },
+          "type": {
+            "const": "setAudioTransition",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "fromClipId",
+          "toClipId",
+          "transitionId",
+          "kind",
+          "durationUs"
+        ],
+        "title": "SetAudioTransitionOperation",
+        "type": "object"
+      },
       "SetClipSpeedOperation": {
         "properties": {
           "clipId": {
@@ -29456,6 +29520,7 @@
                   "rippleDelete": "#/components/schemas/ClipIdOperation",
                   "separateClip": "#/components/schemas/SeparateClipOperation",
                   "setAssetOrganization": "#/components/schemas/SetAssetOrganizationOperation",
+                  "setAudioTransition": "#/components/schemas/SetAudioTransitionOperation",
                   "setClipSpeed": "#/components/schemas/SetClipSpeedOperation",
                   "setTransition": "#/components/schemas/SetTransitionOperation",
                   "splitClip": "#/components/schemas/SplitClipOperation",
@@ -29511,6 +29576,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/AlignAudioSeamOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/SetAudioTransitionOperation"
                 },
                 {
                   "$ref": "#/components/schemas/RestoreClipStatesOperation"
@@ -29674,7 +29742,10 @@
               "blur",
               "flash",
               "eyelid",
-              "audio-crossfade"
+              "audio-crossfade",
+              "audio-equal-power",
+              "audio-dip",
+              "audio-filter-sweep"
             ],
             "title": "Kind",
             "type": "string"

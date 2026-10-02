@@ -16288,6 +16288,33 @@ export interface components {
              */
             type: "setAssetOrganization";
         };
+        /** SetAudioTransitionOperation */
+        SetAudioTransitionOperation: {
+            /** Durationus */
+            durationUs: number;
+            /**
+             * Easing
+             * @default ease-in-out
+             * @enum {string}
+             */
+            easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+            /** Fromclipid */
+            fromClipId: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "audio-crossfade" | "audio-equal-power" | "audio-dip" | "audio-filter-sweep";
+            /** Toclipid */
+            toClipId: string;
+            /** Transitionid */
+            transitionId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "setAudioTransition";
+        };
         /** SetClipSpeedOperation */
         SetClipSpeedOperation: {
             /** Clipid */
@@ -17885,7 +17912,7 @@ export interface components {
             /** Expectedrevision */
             expectedRevision: number;
             /** Operations */
-            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["AlignAudioSeamOperation"] | components["schemas"]["RestoreClipStatesOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"] | components["schemas"]["AddTransitionOperation"] | components["schemas"]["UpdateTransitionOperation"] | components["schemas"]["RemoveTransitionOperation"])[];
+            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["AlignAudioSeamOperation"] | components["schemas"]["SetAudioTransitionOperation"] | components["schemas"]["RestoreClipStatesOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"] | components["schemas"]["AddTransitionOperation"] | components["schemas"]["UpdateTransitionOperation"] | components["schemas"]["RemoveTransitionOperation"])[];
             /** Requestid */
             requestId: string;
         };
@@ -17941,7 +17968,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "eyelid" | "audio-crossfade";
+            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "eyelid" | "audio-crossfade" | "audio-equal-power" | "audio-dip" | "audio-filter-sweep";
             /**
              * Placement
              * @default between

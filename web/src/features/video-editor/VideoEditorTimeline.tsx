@@ -15,6 +15,7 @@ import { VideoEditorTrackHeads } from "./VideoEditorTrackHeads";
 import { VideoEditorClipWaveform } from "./VideoEditorClipWaveform";
 import { VideoEditorAudioCandidateMarkers } from "./VideoEditorAudioCandidateMarkers";
 import { useAudioWaveformUrls } from "./useAudioWaveformUrls";
+import { audioTransitionLabels } from "./audioTransitionCurves";
 import {
   VideoEditorSeparator,
   type VideoEditorSeparatorProps,
@@ -684,8 +685,8 @@ export function VideoEditorTimeline({
                             zoom,
                           )}
                           aria-label={
-                            transition.kind === "audio-crossfade"
-                              ? "片段之间音频淡化"
+                            transition.kind in audioTransitionLabels
+                              ? `片段之间${audioTransitionLabels[transition.kind as keyof typeof audioTransitionLabels]}`
                               : "片段之间转场"
                           }
                           onPointerDown={(event) => event.stopPropagation()}
@@ -713,8 +714,10 @@ export function VideoEditorTimeline({
                             });
                           }}
                         >
-                          {transition.kind === "audio-crossfade"
-                            ? "音频淡化"
+                          {transition.kind in audioTransitionLabels
+                            ? audioTransitionLabels[
+                                transition.kind as keyof typeof audioTransitionLabels
+                              ]
                             : "转场"}
                           <small>
                             {(transition.durationUs / 1_000_000).toFixed(2)}s
@@ -749,12 +752,12 @@ export function VideoEditorTimeline({
                           }}
                           aria-label={
                             track.kind === "audio"
-                              ? "添加片段之间音频淡化"
+                              ? "添加片段之间音频转场"
                               : "添加片段之间转场"
                           }
                           title={
                             track.kind === "audio"
-                              ? "添加片段之间音频淡化"
+                              ? "添加片段之间音频转场"
                               : "添加片段之间转场"
                           }
                           onPointerDown={(event) => event.stopPropagation()}

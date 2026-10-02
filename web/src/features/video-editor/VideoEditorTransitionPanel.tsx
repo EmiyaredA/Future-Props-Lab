@@ -1,8 +1,14 @@
 import { Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { useEffect, useMemo, useState } from "react";
+import { audioTransitionOperations } from "./audioTransitionOperations";
+import { audioTransitionKinds } from "./audioTransitionCurves";
+import { useAudioTransitionAudition } from "./useAudioTransitionAudition";
 import type {
+  VideoEditorAsset,
   VideoEditorClip,
   VideoEditorOperation,
+  VideoEditorTimeline,
   VideoEditorTimelineTransition,
   VideoEditorTrack,
   VideoEditorTransition,
@@ -90,10 +96,34 @@ const definitions: TransitionDefinition[] = [
   },
   {
     kind: "audio-crossfade",
-    label: "音频淡化",
+    label: "交叉淡化",
     category: "音频",
     direction: "left",
     description: "片段头尾改变增益，重叠区交叉淡化",
+    media: "audio",
+  },
+  {
+    kind: "audio-equal-power",
+    label: "等功率交叉淡化",
+    category: "音频",
+    direction: "left",
+    description: "用互补曲线维持接缝处的听感响度",
+    media: "audio",
+  },
+  {
+    kind: "audio-dip",
+    label: "淡出再淡入",
+    category: "音频",
+    direction: "left",
+    description: "前一段淡到静音，再由后一段进入",
+    media: "audio",
+  },
+  {
+    kind: "audio-filter-sweep",
+    label: "频率扫掠",
+    category: "音频",
+    direction: "left",
+    description: "淡化时收窄前一段，并逐步展开后一段频率",
     media: "audio",
   },
 ];
@@ -116,6 +146,8 @@ const normalizeKind = (kind: TransitionKind): TransitionKind =>
   kind === "wipe-left" || kind === "wipe-right" ? "wipe" : kind;
 
 export function VideoEditorTransitionPanel({
+  timeline,
+  assets = [],
   clips,
   tracks,
   transitions,
@@ -128,6 +160,8 @@ export function VideoEditorTransitionPanel({
   onSelectTransition,
   onFocusClipEdge,
 }: {
+  timeline?: VideoEditorTimeline;
+  assets?: VideoEditorAsset[];
   clips: VideoEditorClip[];
   tracks: VideoEditorTrack[];
   transitions: VideoEditorTimelineTransition[];
@@ -147,6 +181,10 @@ export function VideoEditorTransitionPanel({
   const [category, setCategory] = useState("全部");
   const [kind, setKind] = useState<TransitionKind>("crossfade");
   const [kindTouched, setKindTouched] = useState(false);
+  const [audioDurationUs, setAudioDurationUs] = useState(defaultDurationUs);
+  const [audioEasing, setAudioEasing] = useState<Easing>("ease-in-out");
+  const [audioError, setAudioError] = useState("");
+  const audition = useAudioTransitionAudition();
   const selectedTransition = transitions.find(
     (item) => item.id === selectedTransitionId,
   );
@@ -157,6 +195,12 @@ export function VideoEditorTransitionPanel({
   const currentToClip = clipById(
     clips,
     selectedTransition?.toClipId ?? target?.toClipId,
+  );
+  const fromProxy = useApiBlobUrl(
+    assets.find((asset) => asset.id === currentFromClip?.assetId)?.proxyUrl,
+  );
+  const toProxy = useApiBlobUrl(
+    assets.find((asset) => asset.id === currentToClip?.assetId)?.proxyUrl,
   );
   const trackById = useMemo(
     () => new Map(tracks.map((track) => [track.id, track])),
@@ -170,7 +214,10 @@ export function VideoEditorTransitionPanel({
         : selectedClip.transitionOut)) ??
     undefined;
   const audioContext =
-    selectedTransition?.kind === "audio-crossfade" ||
+    (selectedTransition &&
+      audioTransitionKinds.includes(
+        selectedTransition.kind as (typeof audioTransitionKinds)[number],
+      )) ||
     selectedClip?.kind === "audio" ||
     (currentFromClip?.kind === "audio" && currentToClip?.kind === "audio");
   const overlapUs =
@@ -199,9 +246,15 @@ export function VideoEditorTransitionPanel({
     currentFromClip.kind === "audio" &&
     currentToClip.kind === "audio" &&
     currentFromClip.timelineStartUs < currentToClip.timelineStartUs &&
-    overlapUs > 0,
+    overlapUs >= 0 &&
+    currentFromClip.timelineStartUs + currentFromClip.durationUs >=
+      currentToClip.timelineStartUs,
   );
   const canApplyBetween = audioContext ? audioBetween : visualBetween;
+  const audioNeedsSeparation = Boolean(
+    audioBetween &&
+    (currentFromClip?.linkGroupId || currentToClip?.linkGroupId),
+  );
 
   useEffect(() => {
     setKindTouched(false);
@@ -220,6 +273,29 @@ export function VideoEditorTransitionPanel({
     edgeFocus,
     selectedClip?.id,
     selectedTransition,
+  ]);
+  useEffect(() => {
+    const maximum = Math.min(
+      10_000_000,
+      (currentFromClip?.durationUs ?? 10_000_001) - 1,
+      (currentToClip?.durationUs ?? 10_000_001) - 1,
+    );
+    setAudioDurationUs(
+      Math.min(
+        maximum,
+        (selectedTransition?.durationUs ?? overlapUs) || defaultDurationUs,
+      ),
+    );
+    setAudioEasing(selectedTransition?.easing ?? "ease-in-out");
+  }, [
+    currentFromClip?.id,
+    currentFromClip?.durationUs,
+    currentToClip?.id,
+    currentToClip?.durationUs,
+    selectedTransition?.id,
+    selectedTransition?.durationUs,
+    selectedTransition?.easing,
+    overlapUs,
   ]);
 
   const activeKind = normalizeKind(
@@ -268,8 +344,11 @@ export function VideoEditorTransitionPanel({
   };
 
   const pickKind = (next: TransitionKind) => {
+    audition.stop();
+    setAudioError("");
     setKind(next);
     setKindTouched(true);
+    if (audioContext) return;
     const direction = transitionDirection(next);
     if (selectedTransition) {
       void commit(
@@ -301,7 +380,11 @@ export function VideoEditorTransitionPanel({
             type: "setTransition",
             clipId: selectedClip.id,
             edge: edgeFocus,
-            transition: { ...previous, kind: next, direction },
+            transition: {
+              ...previous,
+              kind: next as VideoEditorTransition["kind"],
+              direction,
+            },
           },
         ],
         [
@@ -317,7 +400,42 @@ export function VideoEditorTransitionPanel({
   };
 
   const applyBetween = () => {
-    if (disabled || !canApplyBetween || !currentFromClip || !currentToClip) {
+    if (
+      disabled ||
+      audioNeedsSeparation ||
+      !canApplyBetween ||
+      !currentFromClip ||
+      !currentToClip
+    ) {
+      return;
+    }
+    if (audioContext) {
+      audition.stop();
+      const { redo, undo, id } = audioTransitionOperations(
+        timeline ??
+          ({
+            document: {
+              tracks: tracks.map((track) => ({
+                ...track,
+                clips: clips.filter((clip) => clip.trackId === track.id),
+              })),
+              transitions,
+            },
+          } as VideoEditorTimeline),
+        currentFromClip,
+        currentToClip,
+        selectedTransition,
+        selectedDefinition.kind as (typeof audioTransitionKinds)[number],
+        audioDurationUs,
+        audioEasing,
+      );
+      void commit(redo, undo)
+        .then(() => onSelectTransition(id))
+        .catch((error: unknown) =>
+          setAudioError(
+            error instanceof Error ? error.message : "音频转场应用失败",
+          ),
+        );
       return;
     }
     if (selectedTransition) {
@@ -370,7 +488,7 @@ export function VideoEditorTransitionPanel({
       kind:
         selectedClip.kind === "audio"
           ? "audio-crossfade"
-          : selectedDefinition.kind,
+          : (selectedDefinition.kind as VideoEditorTransition["kind"]),
       durationUs: previous?.durationUs ?? defaultDurationUs,
       direction: transitionDirection(selectedDefinition.kind),
       easing: previous?.easing ?? "ease-in-out",
@@ -485,7 +603,25 @@ export function VideoEditorTransitionPanel({
           remove: removeClipEdge,
         }
       : undefined;
-  const derivedAudioDuration = selectedTransition?.kind === "audio-crossfade";
+  const audioBetweenControls = audioContext && canApplyBetween;
+  const activeParams = audioBetweenControls
+    ? {
+        durationUs: audioDurationUs,
+        direction: "left" as Direction,
+        easing: audioEasing,
+        update: (patch: { durationUs?: number; easing?: Easing }) => {
+          if (patch.durationUs !== undefined)
+            setAudioDurationUs(patch.durationUs);
+          if (patch.easing !== undefined) setAudioEasing(patch.easing);
+        },
+        remove: selectedTransition ? removeSeam : undefined,
+      }
+    : editingParams;
+  const maxAudioDurationUs = Math.min(
+    10_000_000,
+    (currentFromClip?.durationUs ?? 0) - 1,
+    (currentToClip?.durationUs ?? 0) - 1,
+  );
 
   return (
     <aside className="ve-transition-panel">
@@ -541,11 +677,11 @@ export function VideoEditorTransitionPanel({
             <strong>{selectedDefinition.label}</strong>
             <small>{selectedDefinition.description}</small>
           </div>
-          {editingParams ? (
+          {activeParams?.remove ? (
             <button
               type="button"
               aria-label="删除当前转场"
-              onClick={editingParams.remove}
+              onClick={activeParams.remove}
             >
               <Trash2 aria-hidden />
             </button>
@@ -558,7 +694,12 @@ export function VideoEditorTransitionPanel({
             <button
               type="button"
               className={selectedTransition ? "active" : ""}
-              disabled={disabled || (!selectedTransition && !canApplyBetween)}
+              disabled={
+                disabled ||
+                audioNeedsSeparation ||
+                (!selectedTransition && !canApplyBetween) ||
+                (audioContext && maxAudioDurationUs < 50_000)
+              }
               onClick={applyBetween}
             >
               应用到片段之间
@@ -570,7 +711,11 @@ export function VideoEditorTransitionPanel({
                   ? "active"
                   : ""
               }
-              disabled={disabled || !selectedClip}
+              disabled={
+                disabled ||
+                !selectedClip ||
+                (audioContext && selectedDefinition.kind !== "audio-crossfade")
+              }
               onClick={() => applyClipEdge("in")}
             >
               应用到片段头
@@ -582,13 +727,69 @@ export function VideoEditorTransitionPanel({
                   ? "active"
                   : ""
               }
-              disabled={disabled || !selectedClip}
+              disabled={
+                disabled ||
+                !selectedClip ||
+                (audioContext && selectedDefinition.kind !== "audio-crossfade")
+              }
               onClick={() => applyClipEdge("out")}
             >
               应用到片段尾
             </button>
           </div>
         </div>
+        {audioBetweenControls ? (
+          <div className="ve-transition-audio-audition">
+            <button
+              type="button"
+              disabled={
+                !fromProxy.url ||
+                !toProxy.url ||
+                fromProxy.loading ||
+                toProxy.loading
+              }
+              onClick={() => {
+                if (audition.playing) {
+                  audition.stop();
+                  return;
+                }
+                setAudioError("");
+                void audition
+                  .play(
+                    fromProxy.url!,
+                    toProxy.url!,
+                    currentFromClip!,
+                    currentToClip!,
+                    selectedDefinition.kind as (typeof audioTransitionKinds)[number],
+                    audioDurationUs,
+                    audioEasing,
+                  )
+                  .catch((error: unknown) =>
+                    setAudioError(
+                      error instanceof Error ? error.message : "预听失败",
+                    ),
+                  );
+              }}
+            >
+              {audition.playing
+                ? "停止预听"
+                : fromProxy.loading || toProxy.loading
+                  ? "加载预听…"
+                  : "预听接缝"}
+            </button>
+            {audioError ? <p role="alert">{audioError}</p> : null}
+          </div>
+        ) : null}
+        {audioContext && selectedDefinition.kind !== "audio-crossfade" ? (
+          <p className="ve-transition-help">
+            此效果用于两段音频之间；片段头尾可用交叉淡化。
+          </p>
+        ) : null}
+        {audioNeedsSeparation ? (
+          <p className="ve-transition-help">
+            请先分离与画面关联的音频片段，再应用接缝转场。
+          </p>
+        ) : null}
 
         {selectedClip ? (
           <p className="ve-transition-help">
@@ -612,30 +813,47 @@ export function VideoEditorTransitionPanel({
           <p className="ve-transition-help">
             当前目标：{currentFromClip?.name} → {currentToClip?.name}
           </p>
+        ) : audioContext && currentFromClip && currentToClip ? (
+          <p className="ve-transition-help">请先将两段音频在同一轨上对齐。</p>
         ) : !selectedClip ? (
           <p className="ve-transition-help">先选择片段之间的标记或一个片段</p>
         ) : null}
 
         <label className="ve-transition-field">
           <span>
-            时长 <small>{derivedAudioDuration ? "由重叠区决定" : "秒"}</small>
+            时长{" "}
+            <small>
+              {audioBetweenControls ? "秒 · 应用后由重叠区决定" : "秒"}
+            </small>
           </span>
           <input
-            disabled={!editingParams || disabled || derivedAudioDuration}
+            disabled={!activeParams || disabled}
             type="number"
             min="0.05"
-            max="10"
+            max={
+              audioBetweenControls
+                ? (maxAudioDurationUs / 1_000_000).toFixed(2)
+                : "10"
+            }
             step="0.05"
             value={
-              editingParams
-                ? (editingParams.durationUs / 1_000_000).toFixed(2)
+              activeParams
+                ? (activeParams.durationUs / 1_000_000).toFixed(2)
                 : "0.50"
             }
             onChange={(event) =>
-              editingParams?.update({
-                durationUs: Math.round(
-                  Number(event.target.value || 0.5) * 1_000_000,
-                ),
+              activeParams?.update({
+                durationUs: audioBetweenControls
+                  ? Math.min(
+                      maxAudioDurationUs,
+                      Math.max(
+                        50_000,
+                        Math.round(
+                          Number(event.target.value || 0.5) * 1_000_000,
+                        ),
+                      ),
+                    )
+                  : Math.round(Number(event.target.value || 0.5) * 1_000_000),
               })
             }
           />
@@ -648,8 +866,8 @@ export function VideoEditorTransitionPanel({
                 <button
                   key={item}
                   type="button"
-                  disabled={!editingParams || disabled}
-                  className={editingParams?.direction === item ? "active" : ""}
+                  disabled={!activeParams || disabled}
+                  className={activeParams?.direction === item ? "active" : ""}
                   onClick={() => editingParams?.update({ direction: item })}
                 >
                   {item === "left"
@@ -672,9 +890,9 @@ export function VideoEditorTransitionPanel({
                 <button
                   key={item}
                   type="button"
-                  disabled={!editingParams || disabled}
-                  className={editingParams?.easing === item ? "active" : ""}
-                  onClick={() => editingParams?.update({ easing: item })}
+                  disabled={!activeParams || disabled}
+                  className={activeParams?.easing === item ? "active" : ""}
+                  onClick={() => activeParams?.update({ easing: item })}
                 >
                   {item === "linear"
                     ? "匀速"

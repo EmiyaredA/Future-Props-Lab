@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { reconcileAudioTransitionOperations } from "@features/video-editor/audioTransitionOperations";
+import {
+  audioTransitionOperations,
+  reconcileAudioTransitionOperations,
+} from "@features/video-editor/audioTransitionOperations";
 import type {
   VideoEditorOperation,
   VideoEditorTimeline,
@@ -74,6 +77,52 @@ const timeline = {
 } as VideoEditorTimeline;
 
 describe("reconcileAudioTransitionOperations", () => {
+  it("captures the following linked group for one-batch undo", () => {
+    const state = structuredClone(timeline);
+    const audioTrack = state.document.tracks![0]!;
+    const linked = {
+      ...audioTrack.clips![1]!,
+      id: "later-audio",
+      timelineStartUs: 3_000_000,
+      linkGroupId: "group",
+    };
+    audioTrack.clips!.push(linked);
+    state.document.tracks!.push({
+      ...audioTrack,
+      id: "visual",
+      kind: "visual",
+      order: 1,
+      clips: [
+        { ...linked, id: "later-visual", trackId: "visual", kind: "image" },
+      ],
+    });
+    const transition = state.document.transitions![0]!;
+    const result = audioTransitionOperations(
+      state,
+      audioTrack.clips![0]!,
+      audioTrack.clips![1]!,
+      transition,
+      "audio-dip",
+      500_000,
+      "ease-in-out",
+    );
+    expect(result.redo).toEqual([
+      expect.objectContaining({
+        type: "setAudioTransition",
+        kind: "audio-dip",
+      }),
+    ]);
+    expect(result.undo[1]).toEqual(
+      expect.objectContaining({
+        type: "restoreClipStates",
+        clips: expect.arrayContaining([
+          expect.objectContaining({ id: "to" }),
+          expect.objectContaining({ id: "later-audio" }),
+          expect.objectContaining({ id: "later-visual" }),
+        ]),
+      }),
+    );
+  });
   it("removes a zero-overlap seam in the move batch and restores it on undo", () => {
     const redo: VideoEditorOperation[] = [
       {

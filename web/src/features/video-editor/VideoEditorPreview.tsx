@@ -27,6 +27,7 @@ import { FrameExportDialog } from "@shared/ui/FrameExportDialog";
 import { exactFramePath, exactFrameUrl, uploadVideoEditorAsset } from "./api";
 import {
   audioSeamGainAt,
+  audioSeamFilterAt,
   clipOpacityAt,
   clipAudioGainAt,
   clipPropertyAt,
@@ -304,7 +305,53 @@ function ProxyAudioChain({
   playing: boolean;
 }) {
   const audio = useRef<HTMLAudioElement>(null);
+  const graph = useRef<
+    | {
+        context: AudioContext;
+        gain: GainNode;
+        lowpass: BiquadFilterNode;
+        highpass: BiquadFilterNode;
+      }
+    | undefined
+  >(undefined);
   const wasPlayingRef = useRef(false);
+  const hasSweep = (transitions ?? []).some(
+    (item) =>
+      item.kind === "audio-filter-sweep" &&
+      clips.some(
+        (clip) => item.fromClipId === clip.id || item.toClipId === clip.id,
+      ),
+  );
+  useEffect(() => {
+    if (
+      !hasSweep ||
+      graph.current ||
+      !audio.current ||
+      typeof AudioContext === "undefined"
+    )
+      return;
+    const context = new AudioContext();
+    const lowpass = context.createBiquadFilter();
+    const highpass = context.createBiquadFilter();
+    const gain = context.createGain();
+    lowpass.type = "lowpass";
+    highpass.type = "highpass";
+    lowpass.frequency.value = 20_000;
+    highpass.frequency.value = 20;
+    context
+      .createMediaElementSource(audio.current)
+      .connect(lowpass)
+      .connect(highpass)
+      .connect(gain)
+      .connect(context.destination);
+    graph.current = { context, gain, lowpass, highpass };
+  }, [hasSweep]);
+  useEffect(
+    () => () => {
+      void graph.current?.context.close();
+    },
+    [],
+  );
   const clip = clips.find(
     (item) =>
       item.timelineStartUs <= playheadUs &&
@@ -329,18 +376,32 @@ function ProxyAudioChain({
       toleranceSeconds: PREVIEW_AUDIO_SYNC_TOLERANCE_S,
     });
     const localUs = playheadUs - clip.timelineStartUs;
-    node.volume = Math.max(
+    const volume = Math.max(
       0,
       Math.min(1, clipPropertyAt(clip, "volume", localUs, clip.volume)) *
         clipAudioGainAt(clip, localUs) *
         audioSeamGainAt(clip, playheadUs, transitions ?? [], clipsById),
     );
-  }, [clip, clipsById, playheadUs, playing, transitions]);
+    if (graph.current) {
+      const frequencies = audioSeamFilterAt(
+        clip,
+        playheadUs,
+        transitions ?? [],
+        clipsById,
+      );
+      node.volume = 1;
+      graph.current.gain.gain.value = volume;
+      graph.current.lowpass.frequency.value = frequencies.lowpass;
+      graph.current.highpass.frequency.value = frequencies.highpass;
+    } else node.volume = volume;
+  }, [clip, clipsById, hasSweep, playheadUs, playing, transitions]);
   useEffect(() => {
     const node = audio.current;
     if (!node) return;
-    if (playing && active) void node.play().catch(() => undefined);
-    else node.pause();
+    if (playing && active) {
+      void graph.current?.context.resume();
+      void node.play().catch(() => undefined);
+    } else node.pause();
   }, [active, playing]);
   return <audio ref={audio} src={source} preload="auto" />;
 }

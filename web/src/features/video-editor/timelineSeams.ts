@@ -1,4 +1,5 @@
 import type { VideoEditorClip, VideoEditorTimelineTransition } from "./types";
+import { audioTransitionKinds } from "./audioTransitionCurves";
 
 export function seamTransitions(
   transitions: VideoEditorTimelineTransition[] | undefined,
@@ -28,7 +29,11 @@ export function seamTransitionStyle(
   const from = clipById.get(transition.fromClipId);
   const to = clipById.get(transition.toClipId);
   const durationUs =
-    transition.kind === "audio-crossfade" && from && to
+    audioTransitionKinds.includes(
+      transition.kind as (typeof audioTransitionKinds)[number],
+    ) &&
+    from &&
+    to
       ? Math.max(
           1,
           Math.min(
@@ -37,10 +42,11 @@ export function seamTransitionStyle(
           ) - to.timelineStartUs,
         )
       : Math.max(1, transition.durationUs);
-  const startUs =
-    transition.kind === "audio-crossfade"
-      ? (to?.timelineStartUs ?? 0)
-      : Math.max(0, (to?.timelineStartUs ?? 0) - Math.floor(durationUs / 2));
+  const startUs = audioTransitionKinds.includes(
+    transition.kind as (typeof audioTransitionKinds)[number],
+  )
+    ? (to?.timelineStartUs ?? 0)
+    : Math.max(0, (to?.timelineStartUs ?? 0) - Math.floor(durationUs / 2));
   const widthPx = Math.max(6, (durationUs / 1_000_000) * zoom);
   return {
     left: `${(startUs / 1_000_000) * zoom}px`,
@@ -83,7 +89,7 @@ export function emptySeamsForTrack(
         from.kind !== "audio" ||
         to.kind !== "audio" ||
         from.timelineStartUs >= to.timelineStartUs ||
-        overlapUs <= 0
+        overlapUs < 0
       )
         continue;
     } else {
