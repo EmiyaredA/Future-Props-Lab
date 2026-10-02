@@ -27,6 +27,16 @@ function applyReaction(
   events: PetDocument["config"]["events"],
 ) {
   if (name === "idle") return;
+  if (name === "chatThinking") {
+    pet.act("look");
+    pet.setExpr("thinking", 2);
+    return;
+  }
+  if (name === "chatSpeaking") {
+    pet.act("nod");
+    pet.setExpr("happy", 2);
+    return;
+  }
   const reaction = events?.[name as keyof typeof events];
   const defaults: Record<string, string> = {
     click: "hop",

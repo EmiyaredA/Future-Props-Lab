@@ -46,8 +46,10 @@ export function useCanvasKeyboardShortcuts({
     const handleKeys = (event: KeyboardEvent) => {
       const editing =
         event.target instanceof Element &&
-        event.target.matches(
-          "input, textarea, select, [contenteditable='true']",
+        Boolean(
+          event.target.closest(
+            "input, textarea, select, [contenteditable]:not([contenteditable='false'])",
+          ),
         );
       if (event.key === "Escape") {
         clearContextMenu();

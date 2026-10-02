@@ -1607,6 +1607,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/desktop-pet/projects/{project_id}/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Chat */
+        get: operations["get_chat_v1_desktop_pet_projects__project_id__chat_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Chat */
+        patch: operations["update_chat_v1_desktop_pet_projects__project_id__chat_patch"];
+        trace?: never;
+    };
+    "/v1/desktop-pet/projects/{project_id}/chat/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chat Messages */
+        get: operations["chat_messages_v1_desktop_pet_projects__project_id__chat_messages_get"];
+        put?: never;
+        post?: never;
+        /** Clear Chat */
+        delete: operations["clear_chat_v1_desktop_pet_projects__project_id__chat_messages_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop-pet/projects/{project_id}/chat/messages/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Chat Message */
+        post: operations["send_chat_message_v1_desktop_pet_projects__project_id__chat_messages_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/desktop-pet/projects/{project_id}/document": {
         parameters: {
             query?: never;
@@ -14724,6 +14777,72 @@ export interface components {
             revision: number;
             value: components["schemas"]["PermissionPolicy"];
         };
+        /** PetChatClearIn */
+        PetChatClearIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+        };
+        /** PetChatMessageOut */
+        PetChatMessageOut: {
+            /** Content */
+            content: string;
+            /** Createdat */
+            createdAt: string;
+            /** Id */
+            id: string;
+            /** Position */
+            position: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "completed" | "pending" | "interrupted";
+        };
+        /** PetChatMessagesOut */
+        PetChatMessagesOut: {
+            /** Items */
+            items: components["schemas"]["PetChatMessageOut"][];
+            /** Nextbefore */
+            nextBefore: number | null;
+        };
+        /** PetChatOut */
+        PetChatOut: {
+            /** Active */
+            active: boolean;
+            /** Messages */
+            messages: components["schemas"]["PetChatMessageOut"][];
+            /** Modelid */
+            modelId: string | null;
+            /** Nextbefore */
+            nextBefore: number | null;
+            /** Proactivelinesenabled */
+            proactiveLinesEnabled: boolean;
+            /** Revision */
+            revision: number;
+        };
+        /** PetChatSendIn */
+        PetChatSendIn: {
+            /** Content */
+            content: string;
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Requestid */
+            requestId: string;
+        };
+        /** PetChatSettingsIn */
+        PetChatSettingsIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Modelid */
+            modelId: string | null;
+            /** Proactivelinesenabled */
+            proactiveLinesEnabled: boolean;
+        };
         /** PetConfig */
         PetConfig: {
             /** Activeskinid */
@@ -14733,12 +14852,13 @@ export interface components {
                 [key: string]: components["schemas"]["PetReaction"];
             };
             habits?: components["schemas"]["PetHabits"];
+            persona?: components["schemas"]["PetPersona"];
             /**
              * Schemaversion
-             * @default 1
+             * @default 2
              * @constant
              */
-            schemaVersion: 1;
+            schemaVersion: 2;
             /** Schemeid */
             schemeId?: string | null;
             /** Skins */
@@ -14795,7 +14915,7 @@ export interface components {
              */
             draggable: boolean;
             /** Hoveractions */
-            hoverActions?: ("dress" | "roam" | "hide" | "settings")[];
+            hoverActions?: ("dress" | "roam" | "hide" | "settings" | "chat")[];
             /**
              * Roam
              * @default calm
@@ -14819,6 +14939,29 @@ export interface components {
             expectedRevision: number;
             /** Title */
             title: string;
+        };
+        /** PetPersona */
+        PetPersona: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Greeting
+             * @default
+             */
+            greeting: string;
+            /**
+             * Personality
+             * @default
+             */
+            personality: string;
+            /**
+             * Speakingstyle
+             * @default
+             */
+            speakingStyle: string;
         };
         /** PetProjectOut */
         PetProjectOut: {
@@ -14853,13 +14996,10 @@ export interface components {
         };
         /** PetReaction */
         PetReaction: {
-            /**
-             * Bubble
-             * @default
-             */
-            bubble: string;
             /** Expressionid */
             expressionId?: string | null;
+            /** Lines */
+            lines?: string[];
             /** Motionid */
             motionId?: string | null;
             /**
@@ -22479,6 +22619,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_chat_v1_desktop_pet_projects__project_id__chat_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_chat_v1_desktop_pet_projects__project_id__chat_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PetChatSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_messages_v1_desktop_pet_projects__project_id__chat_messages_get: {
+        parameters: {
+            query?: {
+                before?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetChatMessagesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_chat_v1_desktop_pet_projects__project_id__chat_messages_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PetChatClearIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_chat_message_v1_desktop_pet_projects__project_id__chat_messages_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PetChatSendIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "text/event-stream": {
+                        /** Detail */
+                        detail?: string | null;
+                        message?: components["schemas"]["PetChatMessageOut"] | null;
+                        /** Revision */
+                        revision?: number | null;
+                        /**
+                         * Text
+                         * @default
+                         */
+                        text: string;
+                        /**
+                         * Type
+                         * @enum {string}
+                         */
+                        type: "start" | "delta" | "done" | "error";
+                        $defs: {
+                            /** PetChatMessageOut */
+                            PetChatMessageOut: {
+                                /** Content */
+                                content: string;
+                                /** Createdat */
+                                createdAt: string;
+                                /** Id */
+                                id: string;
+                                /** Position */
+                                position: number;
+                                /**
+                                 * Role
+                                 * @enum {string}
+                                 */
+                                role: "user" | "assistant";
+                                /**
+                                 * Status
+                                 * @enum {string}
+                                 */
+                                status: "completed" | "pending" | "interrupted";
+                            };
+                        };
+                    };
                 };
             };
             /** @description Validation Error */

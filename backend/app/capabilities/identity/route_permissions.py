@@ -402,6 +402,11 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/visual-workshop/projects/{project_id}/snapshot"),
     ),
     "models.use": (
+        ("GET", "/v1/desktop-pet/projects/{project_id}/chat"),
+        ("PATCH", "/v1/desktop-pet/projects/{project_id}/chat"),
+        ("GET", "/v1/desktop-pet/projects/{project_id}/chat/messages"),
+        ("DELETE", "/v1/desktop-pet/projects/{project_id}/chat/messages"),
+        ("POST", "/v1/desktop-pet/projects/{project_id}/chat/messages/stream"),
         ("POST", "/v1/amadeus/model-turn"),
         ("POST", "/v1/amadeus/model-turn/stream"),
         (

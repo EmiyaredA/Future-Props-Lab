@@ -12,7 +12,10 @@ from app.apps.audio_annotation.models import (
     AudioAnnotationProject,
     AudioAnnotationWaveform,
 )
-from app.apps.desktop_pet.models import DesktopPetProject
+from app.apps.desktop_pet.models import (
+    DesktopPetChat,
+    DesktopPetProject,
+)
 from app.apps.director_desk.models import DirectorDeskProject, DirectorDeskUserMotion
 from app.apps.galgame_workshop.models import (
     GalgameAnnotationImportTask,
@@ -221,6 +224,7 @@ _ = (
 )
 
 TENANT_MODELS = (
+    DesktopPetChat,
     DesktopPetProject,
     Live2DProject,
     Live2DAsset,

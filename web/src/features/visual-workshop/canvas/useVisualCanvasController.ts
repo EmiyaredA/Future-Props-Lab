@@ -15,7 +15,6 @@ import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import {
   DEFAULT_VIEWPORT,
   clampZoom,
-  cloneNode,
   nextNodeId,
   nodeLabel,
   readViewport,
@@ -40,6 +39,8 @@ import { useCanvasPointerInteractions } from "@features/visual-workshop/canvas/u
 import { useCanvasUpload } from "@features/visual-workshop/canvas/useCanvasUpload";
 import { useCanvasAssetDrop } from "@features/visual-workshop/canvas/useCanvasAssetDrop";
 import { useCanvasKeyboardShortcuts } from "@features/visual-workshop/canvas/useCanvasKeyboardShortcuts";
+
+import { useCanvasClipboard } from "./useCanvasClipboard";
 
 import { derivedImageNode } from "./derivedImageNode";
 
@@ -72,7 +73,9 @@ export function useVisualCanvasController({
   const client = useQueryClient();
   const surface = useRef<HTMLDivElement>(null);
   const uploadInput = useRef<HTMLInputElement>(null);
-  const clipboard = useRef<VisualCanvasNode | undefined>(undefined);
+  const lastPointerClient = useRef<{ x: number; y: number } | undefined>(
+    undefined,
+  );
   const lastPointer = useRef({ x: 0, y: 0 });
   const uploadPosition = useRef({ x: 0, y: 0 });
   const gestureViewport = useRef<Viewport | undefined>(undefined);
@@ -381,8 +384,8 @@ export function useVisualCanvasController({
     setSelectedId,
     selectionBox,
     alignmentGuides,
-    onSurfacePointerDown,
-    onSurfacePointerMove,
+    onSurfacePointerDown: handleSurfacePointerDown,
+    onSurfacePointerMove: handleSurfacePointerMove,
     stopSurfaceInteraction,
     startNodeDrag,
     moveNode,
@@ -568,27 +571,50 @@ export function useVisualCanvasController({
       setSelectedId,
     ],
   );
-  const copySelected = useCallback(() => {
-    const selected = nodesRef.current.find((node) => node.id === selectedId);
-    if (selected) clipboard.current = structuredClone(selected);
-  }, [nodesRef, selectedId]);
-  const pasteNode = useCallback(
-    (position?: { x: number; y: number }) => {
-      if (!clipboard.current) return;
-      const source = clipboard.current;
-      const next = cloneNode(
-        source,
-        position ?? {
-          x: source.position.x + 32,
-          y: source.position.y + 32,
-        },
+  const {
+    canPaste,
+    clipboardNotice,
+    copyNodes,
+    copySelected,
+    pasteNodes,
+    resetPasteOffset,
+  } = useCanvasClipboard({
+    projectId,
+    nodesRef,
+    edgesRef,
+    conflictRef,
+    selectedNodeIds,
+    getPastePosition: () => {
+      const pointer = lastPointerClient.current;
+      if (pointer) return screenToWorld(pointer.x, pointer.y);
+      const bounds = surface.current?.getBoundingClientRect();
+      return screenToWorld(
+        (bounds?.left ?? 0) + (bounds?.width ?? 0) / 2,
+        (bounds?.top ?? 0) + (bounds?.height ?? 0) / 2,
       );
-      replaceNodes((current) => [...current, next], true);
-      setSelectedId(next.id);
-      setContextMenu(undefined);
     },
-    [replaceNodes, setSelectedId],
-  );
+    commitSnapshot: commitCanvasSnapshot,
+    selectPasted: (ids) => {
+      setSelectedNodeIds(ids);
+      setSelectedEdgeId(undefined);
+      setInspectedNodeId(undefined);
+    },
+    closeContextMenu: () => setContextMenu(undefined),
+  });
+  const rememberPointer = (clientX: number, clientY: number) => {
+    const previous = lastPointerClient.current;
+    if (previous?.x !== clientX || previous?.y !== clientY) resetPasteOffset();
+    lastPointerClient.current = { x: clientX, y: clientY };
+  };
+  const onSurfacePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    rememberPointer(event.clientX, event.clientY);
+    handleSurfacePointerDown(event);
+    if (event.defaultPrevented) surface.current?.focus({ preventScroll: true });
+  };
+  const onSurfacePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    rememberPointer(event.clientX, event.clientY);
+    handleSurfacePointerMove(event);
+  };
   const fitView = useCallback(
     (expandedMediaId?: string) => {
       const bounds = surface.current?.getBoundingClientRect();
@@ -641,7 +667,7 @@ export function useVisualCanvasController({
     selectAllNodes: () =>
       setSelectedNodeIds(nodesRef.current.map((node) => node.id)),
     copySelected,
-    pasteAtPointer: () => pasteNode(lastPointer.current),
+    pasteAtPointer: () => pasteNodes(),
     removeNodes,
     removeEdge,
     setToolMode,
@@ -659,7 +685,7 @@ export function useVisualCanvasController({
     const bounds = event.currentTarget.getBoundingClientRect();
     const world = screenToWorld(event.clientX, event.clientY);
     const width = 176;
-    const height = 246;
+    const height = 350;
     setContextMenu({
       left: Math.max(
         8,
@@ -673,6 +699,7 @@ export function useVisualCanvasController({
       worldY: world.y,
     });
     lastPointer.current = world;
+    rememberPointer(event.clientX, event.clientY);
   };
   const selectedNode = nodes.find((node) => node.id === selectedId);
 
@@ -691,7 +718,9 @@ export function useVisualCanvasController({
     conflictRef,
     saveFailureRef,
     autoSave,
-    clipboard,
+    canPaste,
+    clipboardNotice,
+    copyNodes,
     uploadPosition,
     viewport,
     setViewport,
@@ -766,7 +795,7 @@ export function useVisualCanvasController({
     addCapturedFrameNode: addDerivedImageNode,
     removeNode,
     copySelected,
-    pasteNode,
+    pasteNodes,
     fitView,
     onSurfacePointerDown,
     onSurfacePointerMove,

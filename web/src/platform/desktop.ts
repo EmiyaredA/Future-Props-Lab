@@ -27,6 +27,16 @@ export type DesktopBridge = {
   ) => Promise<{ x: number; y: number; width: number; height: number }>;
   hidePet?: () => Promise<void>;
   showStudioFromPet?: () => Promise<void>;
+  openPetChat?: () => Promise<void>;
+  openPetChatFromStudio?: (projectId: string) => Promise<void>;
+  closePetChat?: () => Promise<void>;
+  sendPetChatState?: (value: {
+    phase: "thinking" | "speaking" | "done" | "error";
+    text: string;
+  }) => Promise<void>;
+  onPetChatState?: (
+    callback: (value: { phase: string; text?: string }) => void,
+  ) => () => void;
   openAmadeus?: () => Promise<void>;
   hideAmadeus?: () => Promise<void>;
   setAmadeusStageOpen?: (enabled: boolean) => Promise<boolean>;

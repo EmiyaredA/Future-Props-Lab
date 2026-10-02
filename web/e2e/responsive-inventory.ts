@@ -10,6 +10,7 @@ export const desktopSurfaces = {
   "desktop-setup": "desktop/scripts/smoke.cjs",
   "web/amadeus.html": "desktop/scripts/smoke-amadeus.cjs",
   "web/pet.html": "desktop/scripts/smoke-pet.cjs",
+  "web/pet-chat.html": "desktop/scripts/smoke-pet.cjs",
 } as const;
 
 // Every application route must name its responsive scenario owner.

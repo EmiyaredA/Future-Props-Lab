@@ -39,6 +39,26 @@ class DesktopPet:
         'Asset File. GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file'
         return self._client._call('GET', '/v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], response_type=Any)
 
+    def get_chat(self, *, project_id: str) -> models.PetChatOut:
+        'Get Chat. GET /v1/desktop-pet/projects/{project_id}/chat'
+        return self._client._call('GET', '/v1/desktop-pet/projects/{project_id}/chat', parameters=[('project_id', 'path', project_id)], response_type=models.PetChatOut)
+
+    def update_chat(self, *, project_id: str, body: models.PetChatSettingsIn | dict) -> models.PetChatOut:
+        'Update Chat. PATCH /v1/desktop-pet/projects/{project_id}/chat'
+        return self._client._call('PATCH', '/v1/desktop-pet/projects/{project_id}/chat', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PetChatOut)
+
+    def clear_chat(self, *, project_id: str, body: models.PetChatClearIn | dict) -> models.PetChatOut:
+        'Clear Chat. DELETE /v1/desktop-pet/projects/{project_id}/chat/messages'
+        return self._client._call('DELETE', '/v1/desktop-pet/projects/{project_id}/chat/messages', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PetChatOut)
+
+    def chat_messages(self, *, project_id: str, before: int | None | Unset = UNSET, limit: int | Unset = UNSET) -> models.PetChatMessagesOut:
+        'Chat Messages. GET /v1/desktop-pet/projects/{project_id}/chat/messages'
+        return self._client._call('GET', '/v1/desktop-pet/projects/{project_id}/chat/messages', parameters=[('project_id', 'path', project_id), ('before', 'query', before), ('limit', 'query', limit)], response_type=models.PetChatMessagesOut)
+
+    def send_chat_message(self, *, project_id: str, body: models.PetChatSendIn | dict) -> EventStream:
+        'Send Chat Message. POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream'
+        return self._client._call('POST', '/v1/desktop-pet/projects/{project_id}/chat/messages/stream', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=Any)
+
     def get_document(self, *, project_id: str) -> models.PetDocumentOut:
         'Get Document. GET /v1/desktop-pet/projects/{project_id}/document'
         return self._client._call('GET', '/v1/desktop-pet/projects/{project_id}/document', parameters=[('project_id', 'path', project_id)], response_type=models.PetDocumentOut)
@@ -86,6 +106,26 @@ class AsyncDesktopPet:
     async def asset_file(self, *, project_id: str, asset_id: str) -> Any:
         'Asset File. GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file'
         return await self._client._call('GET', '/v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id)], response_type=Any)
+
+    async def get_chat(self, *, project_id: str) -> models.PetChatOut:
+        'Get Chat. GET /v1/desktop-pet/projects/{project_id}/chat'
+        return await self._client._call('GET', '/v1/desktop-pet/projects/{project_id}/chat', parameters=[('project_id', 'path', project_id)], response_type=models.PetChatOut)
+
+    async def update_chat(self, *, project_id: str, body: models.PetChatSettingsIn | dict) -> models.PetChatOut:
+        'Update Chat. PATCH /v1/desktop-pet/projects/{project_id}/chat'
+        return await self._client._call('PATCH', '/v1/desktop-pet/projects/{project_id}/chat', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PetChatOut)
+
+    async def clear_chat(self, *, project_id: str, body: models.PetChatClearIn | dict) -> models.PetChatOut:
+        'Clear Chat. DELETE /v1/desktop-pet/projects/{project_id}/chat/messages'
+        return await self._client._call('DELETE', '/v1/desktop-pet/projects/{project_id}/chat/messages', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PetChatOut)
+
+    async def chat_messages(self, *, project_id: str, before: int | None | Unset = UNSET, limit: int | Unset = UNSET) -> models.PetChatMessagesOut:
+        'Chat Messages. GET /v1/desktop-pet/projects/{project_id}/chat/messages'
+        return await self._client._call('GET', '/v1/desktop-pet/projects/{project_id}/chat/messages', parameters=[('project_id', 'path', project_id), ('before', 'query', before), ('limit', 'query', limit)], response_type=models.PetChatMessagesOut)
+
+    async def send_chat_message(self, *, project_id: str, body: models.PetChatSendIn | dict) -> AsyncEventStream:
+        'Send Chat Message. POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream'
+        return await self._client._call('POST', '/v1/desktop-pet/projects/{project_id}/chat/messages/stream', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=Any)
 
     async def get_document(self, *, project_id: str) -> models.PetDocumentOut:
         'Get Document. GET /v1/desktop-pet/projects/{project_id}/document'

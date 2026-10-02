@@ -126,19 +126,26 @@ async function main() {
     await studio.locator(".dp-pet-renderer canvas").waitFor();
     await studio.getByRole("button", { name: "交互", exact: true }).click();
     await studio.getByRole("button", { name: "点击身体" }).click();
-    await studio.getByLabel("气泡文案").fill("你好");
+    await studio.getByRole("button", { name: "台词", exact: true }).click();
+    await studio.getByRole("button", { name: /添加台词/ }).click();
+    await studio
+      .getByRole("textbox", { name: "第 1 句台词", exact: true })
+      .fill("你好");
     await studio.getByRole("button", { name: "保存", exact: true }).click();
     await studio.getByRole("button", { name: "放到桌面" }).first().click();
     const pet = await until(() =>
       context.pages().find((page) => page.url().includes("/pet.html?id=")),
     );
     await pet.locator(".pet-runtime canvas").waitFor();
-    await pet.evaluate(() => window.futurePropsDesktop.setPetInteractive(true));
+    await pet.mouse.move(150, 300, { steps: 8 });
+    await expect(pet.getByTitle("隐藏")).toBeVisible();
+    await expect(pet.getByTitle("聊天")).toBeVisible();
     await pet.mouse.click(150, 300);
     await expect(pet.locator(".pet-runtime-bubble")).toHaveText("你好");
-    await pet.evaluate(() =>
-      window.futurePropsDesktop.setPetInteractive(false),
-    );
+    await pet.mouse.move(5, 5, { steps: 8 });
+    await expect(pet.getByTitle("隐藏")).toHaveCount(0);
+    await pet.mouse.move(150, 300, { steps: 8 });
+    await expect(pet.getByTitle("隐藏")).toBeVisible();
     const screenshotDir = path.join(
       root,
       whaleArchive
@@ -147,10 +154,125 @@ async function main() {
     );
     mkdirSync(screenshotDir, { recursive: true });
     await pet.screenshot({ path: path.join(screenshotDir, "pet-window.png") });
+    const chatButton = await pet.getByTitle("聊天").boundingBox();
+    assert.ok(chatButton);
+    await pet.mouse.move(
+      chatButton.x + chatButton.width / 2,
+      chatButton.y + chatButton.height / 2,
+      { steps: 16 },
+    );
+    await pet.mouse.click(
+      chatButton.x + chatButton.width / 2,
+      chatButton.y + chatButton.height / 2,
+    );
+    const chatPage = await until(() =>
+      context.pages().find((page) => page.url().includes("/pet-chat.html?id=")),
+    );
+    await expect(
+      chatPage.getByText("当前 Workspace 没有可用的文字模型"),
+    ).toBeVisible();
+    await chatPage.screenshot({
+      path: path.join(screenshotDir, "chat-window.png"),
+    });
+    if (!chatPage.isClosed())
+      await chatPage.keyboard.press("Escape").catch((error) => {
+        if (!chatPage.isClosed()) throw error;
+      });
+    await until(
+      () =>
+        !context
+          .pages()
+          .some((page) => page.url().includes("/pet-chat.html?id=")),
+    );
     const first = await studio.evaluate(() =>
       window.futurePropsDesktop.petStatus(),
     );
     assert.ok(first.projectId && first.visible);
+    await studio.evaluate(async () => {
+      const csrf = document.cookie
+        .split("; ")
+        .find((entry) => entry.startsWith("fpl_csrf="))
+        ?.slice("fpl_csrf=".length);
+      const call = async (path, method = "GET", body) => {
+        const response = await fetch(path, {
+          method,
+          credentials: "include",
+          headers: {
+            ...(csrf ? { "X-CSRF-Token": decodeURIComponent(csrf) } : {}),
+            ...(body ? { "Content-Type": "application/json" } : {}),
+          },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        if (!response.ok)
+          throw new Error(
+            `${path}: ${response.status} ${await response.text()}`,
+          );
+        return response.json();
+      };
+      const services = await call("/v1/platform/demo-services");
+      const mock = services.find((item) => item.id === "mock_model");
+      await call("/v1/platform/demo-services/mock_model", "PUT", {
+        expected_revision: mock.revision,
+        value: { enabled: true, response_text: "小鱼收到你的消息啦。" },
+      });
+      const catalog = await call("/v1/model-providers");
+      await call("/v1/account/demo-services/mock_model/install", "POST", {
+        expected_catalog_revision: catalog.revision,
+      });
+    });
+    await pet.evaluate(() => window.futurePropsDesktop.openPetChat());
+    const activeChat = await until(() =>
+      context.pages().find((page) => page.url().includes("/pet-chat.html?id=")),
+    );
+    await activeChat.locator(".dp-chat-models button").first().click();
+    await activeChat
+      .getByRole("textbox", { name: "输入消息" })
+      .fill("你好，小鱼");
+    await activeChat.keyboard.press("Enter");
+    await expect(activeChat.getByText("小鱼收到你的消息啦。")).toBeVisible();
+    await activeChat.screenshot({
+      path: path.join(screenshotDir, "chat-reply.png"),
+    });
+    await activeChat.keyboard.press("Escape").catch((error) => {
+      if (!activeChat.isClosed()) throw error;
+    });
+    await until(
+      () =>
+        !context
+          .pages()
+          .some((page) => page.url().includes("/pet-chat.html?id=")),
+    );
+    await pet.evaluate(() => window.futurePropsDesktop.openPetChat());
+    const reopenedChat = await until(() =>
+      context.pages().find((page) => page.url().includes("/pet-chat.html?id=")),
+    );
+    await expect(reopenedChat.getByText("小鱼收到你的消息啦。")).toBeVisible();
+    await reopenedChat.keyboard.press("Escape").catch((error) => {
+      if (!reopenedChat.isClosed()) throw error;
+    });
+    await until(
+      () =>
+        !context
+          .pages()
+          .some((page) => page.url().includes("/pet-chat.html?id=")),
+    );
+    const hideButton = await pet.getByTitle("隐藏").boundingBox();
+    assert.ok(hideButton);
+    await pet.mouse.move(
+      hideButton.x + hideButton.width / 2,
+      hideButton.y + hideButton.height / 2,
+      { steps: 16 },
+    );
+    await expect(pet.getByTitle("隐藏")).toBeVisible();
+    await pet.mouse.click(
+      hideButton.x + hideButton.width / 2,
+      hideButton.y + hideButton.height / 2,
+    );
+    await until(
+      async () =>
+        !(await studio.evaluate(() => window.futurePropsDesktop.petStatus()))
+          .visible,
+    );
     await studio.evaluate(
       (id) => window.futurePropsDesktop.openPet(id),
       first.projectId,
@@ -223,8 +345,8 @@ async function main() {
     });
     console.log(
       whaleArchive
-        ? "PASS isolated whale import, eight schemes, saved preview, live window and identity cleanup"
-        : "PASS isolated pet creation, Pixi preview, launch, singleton, hide, restore and identity cleanup",
+        ? "PASS isolated whale import, eight schemes, lines, chat stream, history and identity cleanup"
+        : "PASS isolated pet creation, lines, chat stream, history, launch, hide, restore and identity cleanup",
     );
   } catch (error) {
     console.error(output.slice(-7000));

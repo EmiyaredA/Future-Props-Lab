@@ -5,18 +5,26 @@ import {
   useState,
   type PointerEvent,
 } from "react";
-import { getDocument, type PetDocument, type PetHabits } from "./api";
+import { getChat, getDocument, type PetDocument, type PetHabits } from "./api";
 import { DesktopPetFigure } from "./DesktopPetFigure";
 import type { PetRendererHandle } from "./PetRenderer";
 
-type EventName = "idle" | "click" | "pet" | "grab" | "drop" | "roam";
+type EventName =
+  | "idle"
+  | "click"
+  | "pet"
+  | "grab"
+  | "drop"
+  | "roam"
+  | "chatThinking"
+  | "chatSpeaking";
 const DEFAULT_HABITS: PetHabits = {
   roam: "calm",
   size: 220,
   draggable: true,
   bubbles: true,
   sound: true,
-  hoverActions: ["dress", "roam", "hide"],
+  hoverActions: ["dress", "roam", "hide", "chat"],
 };
 
 function playTone(kind: "none" | "tap" | "chime") {
@@ -50,6 +58,10 @@ export function PetRuntime({ projectId }: { projectId: string }) {
   const [reactionKey, setReactionKey] = useState(0);
   const [bubble, setBubble] = useState("");
   const [hovered, setHovered] = useState(false);
+  const [proactive, setProactive] = useState(true);
+  const chatOpen = useRef(false);
+  const lastLine = useRef<Record<string, number>>({});
+  const interactive = useRef(false);
   const renderer = useRef<PetRendererHandle>(null);
   const characterHost = useRef<HTMLDivElement>(null);
   const drag = useRef<{
@@ -63,6 +75,54 @@ export function PetRuntime({ projectId }: { projectId: string }) {
   const currentBounds = useRef({ x: window.screenX, y: window.screenY });
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const proactiveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void getChat(projectId)
+      .then((value) => {
+        if (alive) setProactive(value.proactiveLinesEnabled);
+      })
+      .catch(() => undefined);
+    const off = window.futurePropsDesktop?.onPetChatState?.((value) => {
+      if (value.phase === "open") chatOpen.current = true;
+      if (value.phase === "closed") {
+        chatOpen.current = false;
+        setEventName("idle");
+        setBubble("");
+        void getChat(projectId)
+          .then((next) => {
+            if (alive) setProactive(next.proactiveLinesEnabled);
+          })
+          .catch(() => undefined);
+      }
+      if (value.phase === "thinking") {
+        if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
+        setEventName("chatThinking");
+        setReactionKey((key) => key + 1);
+        if (document?.config.habits?.bubbles !== false) setBubble("正在思考…");
+      }
+      if (value.phase === "speaking" || value.phase === "done") {
+        setEventName("chatSpeaking");
+        setReactionKey((key) => key + 1);
+        if (document?.config.habits?.bubbles !== false)
+          setBubble(value.text ?? "");
+        if (value.phase === "done") {
+          if (idleTimer.current) clearTimeout(idleTimer.current);
+          idleTimer.current = setTimeout(() => setEventName("idle"), 1800);
+          bubbleTimer.current = setTimeout(() => setBubble(""), 3200);
+        }
+      }
+      if (value.phase === "error") {
+        setEventName("idle");
+        setBubble("");
+      }
+    });
+    return () => {
+      alive = false;
+      off?.();
+    };
+  }, [projectId, document]);
 
   useEffect(() => {
     let alive = true;
@@ -91,8 +151,12 @@ export function PetRuntime({ projectId }: { projectId: string }) {
       setEventName(name);
       setReactionKey((value) => value + 1);
       const reaction = document.config.events?.[name];
-      if (reaction?.bubble && habits.bubbles) {
-        setBubble(reaction.bubble);
+      const lines = reaction?.lines ?? [];
+      if (lines.length && habits.bubbles && !chatOpen.current) {
+        const previous = lastLine.current[name] ?? -1;
+        const next = (previous + 1) % lines.length;
+        lastLine.current[name] = next;
+        setBubble(lines[next]);
         if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
         bubbleTimer.current = setTimeout(() => setBubble(""), 3200);
       }
@@ -103,10 +167,30 @@ export function PetRuntime({ projectId }: { projectId: string }) {
     },
     [document, habits.bubbles, habits.sound],
   );
+  useEffect(() => {
+    if (!document || !proactive || !document.config.events?.idle?.lines?.length)
+      return;
+    let cancelled = false;
+    const schedule = () => {
+      proactiveTimer.current = setTimeout(
+        () => {
+          if (!cancelled && !drag.current && !chatOpen.current) trigger("idle");
+          if (!cancelled) schedule();
+        },
+        (3 + Math.random() * 3) * 60_000,
+      );
+    };
+    schedule();
+    return () => {
+      cancelled = true;
+      if (proactiveTimer.current) clearTimeout(proactiveTimer.current);
+    };
+  }, [document, proactive, trigger]);
   useEffect(
     () => () => {
       if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
       if (idleTimer.current) clearTimeout(idleTimer.current);
+      if (proactiveTimer.current) clearTimeout(proactiveTimer.current);
     },
     [],
   );
@@ -132,6 +216,12 @@ export function PetRuntime({ projectId }: { projectId: string }) {
 
   const hit = (event: PointerEvent<HTMLDivElement>) =>
     renderer.current?.hitTest(event.clientX, event.clientY) ?? false;
+  const setInteractive = (value: boolean) => {
+    if (interactive.current === value) return;
+    interactive.current = value;
+    setHovered(value);
+    void window.futurePropsDesktop?.setPetInteractive?.(value);
+  };
   const onMove = (event: PointerEvent<HTMLDivElement>) => {
     renderer.current?.pointerMove?.(event.clientX, event.clientY);
     if (drag.current) {
@@ -152,16 +242,22 @@ export function PetRuntime({ projectId }: { projectId: string }) {
       }
       return;
     }
-    const nearActions =
-      hovered &&
-      event.clientY > window.innerHeight - 48 &&
-      Math.abs(event.clientX - window.innerWidth / 2) < 90;
-    const interactive =
+    // Keep the small transparent path from the figure's feet to its buttons
+    // interactive while the tray is open. Otherwise Electron starts passing
+    // clicks through before the pointer can reach a button.
+    const character = characterHost.current?.getBoundingClientRect();
+    const actionPath =
+      interactive.current &&
+      character &&
+      Math.abs(event.clientX - (character.left + character.right) / 2) <=
+        Math.max(character.width / 2 + 12, 92) &&
+      event.clientY >= character.top &&
+      event.clientY <= window.innerHeight;
+    setInteractive(
       hit(event) ||
-      nearActions ||
-      Boolean((event.target as HTMLElement).closest("button"));
-    setHovered(interactive);
-    void window.futurePropsDesktop?.setPetInteractive?.(interactive);
+        Boolean(actionPath) ||
+        Boolean((event.target as HTMLElement).closest("button")),
+    );
   };
   const onDown = (event: PointerEvent<HTMLDivElement>) => {
     if (
@@ -218,6 +314,7 @@ export function PetRuntime({ projectId }: { projectId: string }) {
     if (id === "hide") void window.futurePropsDesktop?.hidePet?.();
     if (id === "settings")
       void window.futurePropsDesktop?.showStudioFromPet?.();
+    if (id === "chat") void window.futurePropsDesktop?.openPetChat?.();
   };
   return (
     <div
@@ -225,11 +322,14 @@ export function PetRuntime({ projectId }: { projectId: string }) {
       onPointerMove={onMove}
       onPointerDown={onDown}
       onPointerUp={onUp}
+      onPointerLeave={() => {
+        if (!drag.current) setInteractive(false);
+      }}
     >
       {document && (
         <div
           ref={characterHost}
-          className="pet-runtime-character"
+          className={`pet-runtime-character${eventName === "chatThinking" ? " pet-chat-thinking" : eventName === "chatSpeaking" ? " pet-chat-speaking" : ""}`}
           style={{ height: habits.size, width: habits.size * 0.75 }}
         >
           <DesktopPetFigure
@@ -249,18 +349,25 @@ export function PetRuntime({ projectId }: { projectId: string }) {
               key={id}
               type="button"
               title={
-                { dress: "换装", roam: "走动", hide: "隐藏", settings: "设置" }[
-                  id
-                ]
+                {
+                  dress: "换装",
+                  roam: "走动",
+                  hide: "隐藏",
+                  settings: "设置",
+                  chat: "聊天",
+                }[id]
               }
               onClick={() => action(id)}
             >
               {
                 (
-                  { dress: "✿", roam: "↝", hide: "−", settings: "⚙" } as Record<
-                    string,
-                    string
-                  >
+                  {
+                    dress: "✿",
+                    roam: "↝",
+                    hide: "−",
+                    settings: "⚙",
+                    chat: "✉",
+                  } as Record<string, string>
                 )[id]
               }
             </button>

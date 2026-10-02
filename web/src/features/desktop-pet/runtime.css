@@ -19,6 +19,28 @@ body,
   bottom: 38px;
   transform: translateX(-50%);
 }
+.pet-chat-thinking .dp-pet-renderer {
+  animation: pet-think 2s ease-in-out infinite;
+}
+.pet-chat-speaking .dp-pet-renderer {
+  animation: pet-speak 0.55s ease-in-out infinite;
+}
+@keyframes pet-think {
+  50% {
+    transform: rotate(-2deg) translateY(-2px);
+  }
+}
+@keyframes pet-speak {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pet-chat-thinking .dp-pet-renderer,
+  .pet-chat-speaking .dp-pet-renderer {
+    animation: none;
+  }
+}
 .pet-runtime .dp-pet-renderer,
 .pet-runtime .dp-pet-canvas {
   width: 100%;

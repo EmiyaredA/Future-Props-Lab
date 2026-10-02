@@ -21617,6 +21617,215 @@
         "title": "PermissionPolicyOut",
         "type": "object"
       },
+      "PetChatClearIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ],
+        "title": "PetChatClearIn",
+        "type": "object"
+      },
+      "PetChatMessageOut": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "completed",
+              "pending",
+              "interrupted"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "role",
+          "content",
+          "status",
+          "createdAt"
+        ],
+        "title": "PetChatMessageOut",
+        "type": "object"
+      },
+      "PetChatMessagesOut": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PetChatMessageOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextBefore": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextbefore"
+          }
+        },
+        "required": [
+          "items",
+          "nextBefore"
+        ],
+        "title": "PetChatMessagesOut",
+        "type": "object"
+      },
+      "PetChatOut": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/PetChatMessageOut"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "modelId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelid"
+          },
+          "nextBefore": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextbefore"
+          },
+          "proactiveLinesEnabled": {
+            "title": "Proactivelinesenabled",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "modelId",
+          "proactiveLinesEnabled",
+          "active",
+          "messages",
+          "nextBefore"
+        ],
+        "title": "PetChatOut",
+        "type": "object"
+      },
+      "PetChatSendIn": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId",
+          "content"
+        ],
+        "title": "PetChatSendIn",
+        "type": "object"
+      },
+      "PetChatSettingsIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "modelId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelid"
+          },
+          "proactiveLinesEnabled": {
+            "title": "Proactivelinesenabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "modelId",
+          "proactiveLinesEnabled"
+        ],
+        "title": "PetChatSettingsIn",
+        "type": "object"
+      },
       "PetConfig": {
         "additionalProperties": false,
         "properties": {
@@ -21653,9 +21862,12 @@
           "habits": {
             "$ref": "#/components/schemas/PetHabits"
           },
+          "persona": {
+            "$ref": "#/components/schemas/PetPersona"
+          },
           "schemaVersion": {
-            "const": 1,
-            "default": 1,
+            "const": 2,
+            "default": 2,
             "title": "Schemaversion",
             "type": "integer"
           },
@@ -21816,7 +22028,8 @@
                 "dress",
                 "roam",
                 "hide",
-                "settings"
+                "settings",
+                "chat"
               ],
               "type": "string"
             },
@@ -21870,6 +22083,37 @@
           "title"
         ],
         "title": "PetPatch",
+        "type": "object"
+      },
+      "PetPersona": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Description",
+            "type": "string"
+          },
+          "greeting": {
+            "default": "",
+            "maxLength": 140,
+            "title": "Greeting",
+            "type": "string"
+          },
+          "personality": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Personality",
+            "type": "string"
+          },
+          "speakingStyle": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Speakingstyle",
+            "type": "string"
+          }
+        },
+        "title": "PetPersona",
         "type": "object"
       },
       "PetProjectOut": {
@@ -21975,12 +22219,6 @@
       "PetReaction": {
         "additionalProperties": false,
         "properties": {
-          "bubble": {
-            "default": "",
-            "maxLength": 140,
-            "title": "Bubble",
-            "type": "string"
-          },
           "expressionId": {
             "anyOf": [
               {
@@ -21992,6 +22230,14 @@
               }
             ],
             "title": "Expressionid"
+          },
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Lines",
+            "type": "array"
           },
           "motionId": {
             "anyOf": [
@@ -32632,7 +32878,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation)$",
+              "pattern": "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation|desktop_pet_chat)$",
               "title": "Call Source",
               "type": "string"
             }
@@ -37741,6 +37987,378 @@
           }
         },
         "summary": "Asset File",
+        "tags": [
+          "desktop-pet"
+        ]
+      }
+    },
+    "/v1/desktop-pet/projects/{project_id}/chat": {
+      "get": {
+        "operationId": "get_chat_v1_desktop_pet_projects__project_id__chat_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Chat",
+        "tags": [
+          "desktop-pet"
+        ]
+      },
+      "patch": {
+        "operationId": "update_chat_v1_desktop_pet_projects__project_id__chat_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PetChatSettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Chat",
+        "tags": [
+          "desktop-pet"
+        ]
+      }
+    },
+    "/v1/desktop-pet/projects/{project_id}/chat/messages": {
+      "delete": {
+        "operationId": "clear_chat_v1_desktop_pet_projects__project_id__chat_messages_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PetChatClearIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clear Chat",
+        "tags": [
+          "desktop-pet"
+        ]
+      },
+      "get": {
+        "operationId": "chat_messages_v1_desktop_pet_projects__project_id__chat_messages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetChatMessagesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Chat Messages",
+        "tags": [
+          "desktop-pet"
+        ]
+      }
+    },
+    "/v1/desktop-pet/projects/{project_id}/chat/messages/stream": {
+      "post": {
+        "operationId": "send_chat_message_v1_desktop_pet_projects__project_id__chat_messages_stream_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PetChatSendIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$defs": {
+                    "PetChatMessageOut": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "content": {
+                          "title": "Content",
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "title": "Createdat",
+                          "type": "string"
+                        },
+                        "id": {
+                          "title": "Id",
+                          "type": "string"
+                        },
+                        "position": {
+                          "title": "Position",
+                          "type": "integer"
+                        },
+                        "role": {
+                          "enum": [
+                            "user",
+                            "assistant"
+                          ],
+                          "title": "Role",
+                          "type": "string"
+                        },
+                        "status": {
+                          "enum": [
+                            "completed",
+                            "pending",
+                            "interrupted"
+                          ],
+                          "title": "Status",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "position",
+                        "role",
+                        "content",
+                        "status",
+                        "createdAt"
+                      ],
+                      "title": "PetChatMessageOut",
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "properties": {
+                    "detail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "title": "Detail"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/PetChatMessageOut"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "revision": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "title": "Revision"
+                    },
+                    "text": {
+                      "default": "",
+                      "title": "Text",
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "start",
+                        "delta",
+                        "done",
+                        "error"
+                      ],
+                      "title": "Type",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "title": "PetChatStreamEvent",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Chat Message",
         "tags": [
           "desktop-pet"
         ]
@@ -45120,7 +45738,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation)$",
+              "pattern": "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation|desktop_pet_chat)$",
               "title": "Call Source",
               "type": "string"
             }

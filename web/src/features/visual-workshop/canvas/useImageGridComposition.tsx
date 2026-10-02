@@ -5,11 +5,9 @@ import {
   useState,
   type Dispatch,
   type MutableRefObject,
-  type ReactNode,
   type SetStateAction,
 } from "react";
 import { useQuery, type QueryClient } from "@tanstack/react-query";
-import { Grid2X2 } from "lucide-react";
 import {
   createImageComposition,
   getGenerationBatch,
@@ -90,20 +88,9 @@ export function useImageGridComposition({
       });
     }
   }, [activeBatch.data, client, projectId]);
-  const selectionToolbar: ReactNode =
+  const canComposeSelection =
     selectedImageNodes.length === selectedNodeIds.length &&
-    (selectedImageNodes.length === 4 || selectedImageNodes.length === 9) ? (
-      <div
-        className="canvas-selection-actions"
-        role="toolbar"
-        aria-label="已选图片操作"
-      >
-        <span>已选 {selectedImageNodes.length} 张图片</span>
-        <button type="button" onClick={() => openComposition(selectedNodeIds)}>
-          <Grid2X2 aria-hidden /> 合成宫格
-        </button>
-      </div>
-    ) : null;
+    (selectedImageNodes.length === 4 || selectedImageNodes.length === 9);
   const compositionOverlay = (
     <>
       {activeBatch.data &&
@@ -173,7 +160,7 @@ export function useImageGridComposition({
   return {
     selectedImageNodes,
     openComposition,
-    selectionToolbar,
+    canComposeSelection,
     compositionOverlay,
   };
 }

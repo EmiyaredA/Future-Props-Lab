@@ -80,6 +80,7 @@ from db.migrations.versions import (
     r0076_amadeus_workflows,
     r0077_desktop_pet,
     r0078_desktop_pet_whale,
+    r0079_desktop_pet_chat,
 )
 
 
@@ -356,5 +357,7 @@ MIGRATIONS += (Migration(r0076_amadeus_workflows.MIGRATION_ID, r0076_amadeus_wor
 MIGRATIONS += (Migration(r0077_desktop_pet.MIGRATION_ID, r0077_desktop_pet.SQL),)
 
 MIGRATIONS += (Migration(r0078_desktop_pet_whale.MIGRATION_ID, r0078_desktop_pet_whale.SQL),)
+
+MIGRATIONS += (Migration(r0079_desktop_pet_chat.MIGRATION_ID, r0079_desktop_pet_chat.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => ({
         docs: resolve(__dirname, "docs.html"),
         amadeus: resolve(__dirname, "amadeus.html"),
         pet: resolve(__dirname, "pet.html"),
+        petChat: resolve(__dirname, "pet-chat.html"),
       },
       output: {
         manualChunks(id) {

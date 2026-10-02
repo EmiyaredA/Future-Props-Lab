@@ -23,6 +23,23 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke("desktop:pet-move", x, y),
     hidePet: () => ipcRenderer.invoke("desktop:pet-hide"),
     showStudioFromPet: () => ipcRenderer.invoke("desktop:pet-show-studio"),
+    openPetChat: () => ipcRenderer.invoke("desktop:pet-chat-open"),
+    openPetChatFromStudio: (projectId: string) =>
+      ipcRenderer.invoke("desktop:pet-chat-open-studio", projectId),
+    closePetChat: () => ipcRenderer.invoke("desktop:pet-chat-close"),
+    sendPetChatState: (value: { phase: string; text: string }) =>
+      ipcRenderer.invoke("desktop:pet-chat-state", value),
+    onPetChatState: (
+      callback: (value: { phase: string; text?: string }) => void,
+    ) => {
+      const listener = (
+        _event: unknown,
+        value: { phase: string; text?: string },
+      ) => callback(value);
+      ipcRenderer.on("desktop:pet-chat-state", listener);
+      return () =>
+        ipcRenderer.removeListener("desktop:pet-chat-state", listener);
+    },
     openAmadeus: () => ipcRenderer.invoke("desktop:amadeus-open"),
     hideAmadeus: () => ipcRenderer.invoke("desktop:amadeus-hide"),
     setAmadeusStageOpen: (enabled: boolean) =>

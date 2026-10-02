@@ -1,4 +1,5 @@
 import { api, fetchApiJson, unwrap } from "@platform/api/client";
+import { postSse } from "@platform/api/sse";
 import type { components } from "@generated/api";
 
 type S = components["schemas"];
@@ -8,6 +9,14 @@ export type PetConfig = S["PetConfig"];
 export type PetReaction = S["PetReaction"];
 export type PetSkin = S["PetSkin"];
 export type PetHabits = S["PetHabits"];
+export type PetChat = S["PetChatOut"];
+export type PetChatMessage = S["PetChatMessageOut"];
+export type PetChatStreamEvent = {
+  type: "start" | "delta" | "done" | "error";
+  revision: number | null;
+  text: string;
+  detail: string;
+};
 
 const path = (project_id: string) => ({ path: { project_id } });
 
@@ -60,6 +69,56 @@ export const getDocument = async (id: string) =>
       params: path(id),
     }),
   );
+
+export const getChat = async (id: string) =>
+  unwrap(
+    await api.GET("/v1/desktop-pet/projects/{project_id}/chat", {
+      params: path(id),
+    }),
+  );
+
+export const updateChat = async (
+  id: string,
+  expectedRevision: number,
+  modelId: string | null,
+  proactiveLinesEnabled: boolean,
+) =>
+  unwrap(
+    await api.PATCH("/v1/desktop-pet/projects/{project_id}/chat", {
+      params: path(id),
+      body: { expectedRevision, modelId, proactiveLinesEnabled },
+    }),
+  );
+
+export const olderChatMessages = async (id: string, before: number) =>
+  unwrap(
+    await api.GET("/v1/desktop-pet/projects/{project_id}/chat/messages", {
+      params: { ...path(id), query: { before, limit: 50 } },
+    }),
+  );
+
+export const clearChat = async (id: string, expectedRevision: number) =>
+  unwrap(
+    await api.DELETE("/v1/desktop-pet/projects/{project_id}/chat/messages", {
+      params: path(id),
+      body: { expectedRevision },
+    }),
+  );
+
+export const sendChat = async (
+  id: string,
+  expectedRevision: number,
+  content: string,
+  signal: AbortSignal,
+  onEvent: (event: PetChatStreamEvent) => void,
+) =>
+  postSse<PetChatStreamEvent>({
+    path: `/v1/desktop-pet/projects/${encodeURIComponent(id)}/chat/messages/stream`,
+    body: { expectedRevision, requestId: crypto.randomUUID(), content },
+    signal,
+    onEvent,
+    defaultErrorMessage: "桌宠聊天失败",
+  });
 export const saveDocument = async (
   id: string,
   expectedRevision: number,

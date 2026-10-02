@@ -57,7 +57,7 @@ beforeEach(() => {
     whaleModel: null,
     whaleAssets: null,
     config: {
-      schemaVersion: 1,
+      schemaVersion: 2,
       skins: [],
       activeSkinId: null,
       events: {},
@@ -75,7 +75,7 @@ beforeEach(() => {
   state.save.mockClear();
 });
 
-test("keyboard-created skin and click reaction survive a save and reopen", async () => {
+test("keyboard-created skin, lines, and persona survive a save and reopen", async () => {
   const user = userEvent.setup();
   const first = render(<EditorPage projectId="pet-1" onBack={() => {}} />);
   await screen.findByText("形象与皮肤");
@@ -90,16 +90,27 @@ test("keyboard-created skin and click reaction survive a save and reopen", async
   eventsTab.focus();
   await user.keyboard("{Enter}");
   expect(eventsTab).toHaveAttribute("aria-pressed", "true");
-  await user.type(screen.getByRole("textbox", { name: "气泡文案" }), "你好呀");
+  await user.click(screen.getByRole("button", { name: /^台词$/ }));
+  await user.click(screen.getByRole("button", { name: /添加台词/ }));
+  await user.type(
+    screen.getByRole("textbox", { name: "第 1 句台词" }),
+    "你好呀",
+  );
+  await user.click(screen.getByRole("button", { name: /^聊天$/ }));
+  await user.type(screen.getByRole("textbox", { name: "性格" }), "好奇而温柔");
   await user.click(screen.getByRole("button", { name: /^保存$/ }));
   await waitFor(() => expect(state.save).toHaveBeenCalledTimes(2));
   first.unmount();
 
   render(<EditorPage projectId="pet-1" onBack={() => {}} />);
   await screen.findByRole("button", { name: "秋日外套" });
-  await user.click(screen.getByRole("button", { name: /^交互$/ }));
-  expect(screen.getByRole("textbox", { name: "气泡文案" })).toHaveValue(
+  await user.click(screen.getByRole("button", { name: /^台词$/ }));
+  expect(screen.getByRole("textbox", { name: "第 1 句台词" })).toHaveValue(
     "你好呀",
+  );
+  await user.click(screen.getByRole("button", { name: /^聊天$/ }));
+  expect(screen.getByRole("textbox", { name: "性格" })).toHaveValue(
+    "好奇而温柔",
   );
   expect(screen.getByTestId("pet-preview")).toBeInTheDocument();
 });

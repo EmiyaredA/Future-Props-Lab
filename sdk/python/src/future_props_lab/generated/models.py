@@ -3351,11 +3351,45 @@ class PermissionPolicyOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     value: PermissionPolicy = Field(default=..., alias='value')
 
+class PetChatClearIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+
+class PetChatMessageOut(WireModel):
+    content: str = Field(default=..., alias='content')
+    created_at: str = Field(default=..., alias='createdAt')
+    id: str = Field(default=..., alias='id')
+    position: int = Field(default=..., alias='position')
+    role: Literal['user', 'assistant'] = Field(default=..., alias='role')
+    status: Literal['completed', 'pending', 'interrupted'] = Field(default=..., alias='status')
+
+class PetChatMessagesOut(WireModel):
+    items: list[PetChatMessageOut] = Field(default=..., alias='items')
+    next_before: int | None = Field(default=..., alias='nextBefore')
+
+class PetChatOut(WireModel):
+    active: bool = Field(default=..., alias='active')
+    messages: list[PetChatMessageOut] = Field(default=..., alias='messages')
+    model_id: str | None = Field(default=..., alias='modelId')
+    next_before: int | None = Field(default=..., alias='nextBefore')
+    proactive_lines_enabled: bool = Field(default=..., alias='proactiveLinesEnabled')
+    revision: int = Field(default=..., alias='revision')
+
+class PetChatSendIn(WireModel):
+    content: str = Field(default=..., alias='content', min_length=1, max_length=2000)
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    request_id: str = Field(default=..., alias='requestId', min_length=1, max_length=64)
+
+class PetChatSettingsIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    model_id: str | None = Field(default=..., alias='modelId')
+    proactive_lines_enabled: bool = Field(default=..., alias='proactiveLinesEnabled')
+
 class PetConfig(WireModel):
     active_skin_id: str | None = Field(default=None, alias='activeSkinId')
     events: dict[str, PetReaction] | None = Field(default=None, alias='events')
     habits: PetHabits | None = Field(default=None, alias='habits')
-    schema_version: Literal[1] = Field(default=1, alias='schemaVersion')
+    persona: PetPersona | None = Field(default=None, alias='persona')
+    schema_version: Literal[2] = Field(default=2, alias='schemaVersion')
     scheme_id: str | None = Field(default=None, alias='schemeId')
     skins: list[PetSkin] | None = Field(default=None, alias='skins', max_length=20)
 
@@ -3377,7 +3411,7 @@ class PetDocumentOut(WireModel):
 class PetHabits(WireModel):
     bubbles: bool = Field(default=True, alias='bubbles')
     draggable: bool = Field(default=True, alias='draggable')
-    hover_actions: list[Literal['dress', 'roam', 'hide', 'settings']] | None = Field(default=None, alias='hoverActions', max_length=4)
+    hover_actions: list[Literal['dress', 'roam', 'hide', 'settings', 'chat']] | None = Field(default=None, alias='hoverActions', max_length=4)
     roam: Literal['free', 'calm', 'off'] = Field(default='calm', alias='roam')
     size: int = Field(default=220, alias='size', ge=160.0, le=300.0)
     sound: bool = Field(default=True, alias='sound')
@@ -3385,6 +3419,12 @@ class PetHabits(WireModel):
 class PetPatch(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class PetPersona(WireModel):
+    description: str = Field(default='', alias='description', max_length=500)
+    greeting: str = Field(default='', alias='greeting', max_length=140)
+    personality: str = Field(default='', alias='personality', max_length=500)
+    speaking_style: str = Field(default='', alias='speakingStyle', max_length=500)
 
 class PetProjectOut(WireModel):
     created_at: str = Field(default=..., alias='createdAt')
@@ -3402,8 +3442,8 @@ class PetProjectsOut(WireModel):
     items: list[PetProjectOut] = Field(default=..., alias='items')
 
 class PetReaction(WireModel):
-    bubble: str = Field(default='', alias='bubble', max_length=140)
     expression_id: str | None = Field(default=None, alias='expressionId')
+    lines: list[str] | None = Field(default=None, alias='lines', max_length=8)
     motion_id: str | None = Field(default=None, alias='motionId')
     sound: Literal['none', 'tap', 'chime'] = Field(default='none', alias='sound')
 
@@ -5533,11 +5573,18 @@ ParameterKeyform.model_rebuild()
 PermissionPolicy.model_rebuild()
 PermissionPolicyIn.model_rebuild()
 PermissionPolicyOut.model_rebuild()
+PetChatClearIn.model_rebuild()
+PetChatMessageOut.model_rebuild()
+PetChatMessagesOut.model_rebuild()
+PetChatOut.model_rebuild()
+PetChatSendIn.model_rebuild()
+PetChatSettingsIn.model_rebuild()
 PetConfig.model_rebuild()
 PetCreate.model_rebuild()
 PetDocumentOut.model_rebuild()
 PetHabits.model_rebuild()
 PetPatch.model_rebuild()
+PetPersona.model_rebuild()
 PetProjectOut.model_rebuild()
 PetProjectsOut.model_rebuild()
 PetReaction.model_rebuild()

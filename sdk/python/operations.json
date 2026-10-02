@@ -31,6 +31,10 @@
     "method": "delete_project",
     "resource": "desktop_pet"
   },
+  "DELETE /v1/desktop-pet/projects/{project_id}/chat/messages": {
+    "method": "clear_chat",
+    "resource": "desktop_pet"
+  },
   "DELETE /v1/director-desk/motions/{motion_key}": {
     "method": "delete_motion",
     "resource": "director"
@@ -337,6 +341,14 @@
   },
   "GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file": {
     "method": "asset_file",
+    "resource": "desktop_pet"
+  },
+  "GET /v1/desktop-pet/projects/{project_id}/chat": {
+    "method": "get_chat",
+    "resource": "desktop_pet"
+  },
+  "GET /v1/desktop-pet/projects/{project_id}/chat/messages": {
+    "method": "chat_messages",
     "resource": "desktop_pet"
   },
   "GET /v1/desktop-pet/projects/{project_id}/document": {
@@ -983,6 +995,10 @@
     "method": "patch_project",
     "resource": "desktop_pet"
   },
+  "PATCH /v1/desktop-pet/projects/{project_id}/chat": {
+    "method": "update_chat",
+    "resource": "desktop_pet"
+  },
   "PATCH /v1/director-desk/projects/{project_id}": {
     "method": "patch_project",
     "resource": "director"
@@ -1313,6 +1329,10 @@
   },
   "POST /v1/desktop-pet/projects/import-whale": {
     "method": "import_whale",
+    "resource": "desktop_pet"
+  },
+  "POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream": {
+    "method": "send_chat_message",
     "resource": "desktop_pet"
   },
   "POST /v1/desktop-pet/projects/{project_id}/sync-source": {

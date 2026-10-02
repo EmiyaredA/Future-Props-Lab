@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowLeft,
@@ -23,10 +23,10 @@ import {
   type PetReaction,
 } from "./api";
 import { DesktopPetFigure } from "./DesktopPetFigure";
-import { PetPicker } from "./PetPicker";
+import { DialogueInspector } from "./DialogueInspector";
 import "./workshop.css";
 
-type Tab = "look" | "events" | "habits" | "preview";
+type Tab = "look" | "events" | "lines" | "chat" | "habits" | "preview";
 type EventName = "idle" | "click" | "pet" | "grab" | "drop" | "roam";
 const EVENTS: { id: EventName; label: string; detail: string }[] = [
   { id: "idle", label: "待机", detail: "循环" },
@@ -36,17 +36,20 @@ const EVENTS: { id: EventName; label: string; detail: string }[] = [
   { id: "drop", label: "放下", detail: "结束拖动" },
   { id: "roam", label: "自主走动", detail: "空闲" },
 ];
-const ACTIONS: { id: "dress" | "roam" | "hide" | "settings"; label: string }[] =
-  [
-    { id: "dress", label: "装扮" },
-    { id: "roam", label: "走动" },
-    { id: "hide", label: "隐藏" },
-    { id: "settings", label: "设置" },
-  ];
+const ACTIONS: {
+  id: "dress" | "roam" | "hide" | "settings" | "chat";
+  label: string;
+}[] = [
+  { id: "dress", label: "装扮" },
+  { id: "roam", label: "走动" },
+  { id: "hide", label: "隐藏" },
+  { id: "settings", label: "设置" },
+  { id: "chat", label: "聊天" },
+];
 const EMPTY_REACTION: PetReaction = {
   motionId: null,
   expressionId: null,
-  bubble: "",
+  lines: [],
   sound: "none",
 };
 const DEFAULT_HABITS: PetHabits = {
@@ -55,44 +58,23 @@ const DEFAULT_HABITS: PetHabits = {
   draggable: true,
   bubbles: true,
   sound: true,
-  hoverActions: ["dress", "roam", "hide"],
+  hoverActions: ["dress", "roam", "hide", "chat"],
 };
-const WHALE_MOTIONS = [
-  "stand",
-  "jump",
-  "hop",
-  "look",
-  "turn",
-  "nod",
-  "shake",
-  "spin",
-  "sit",
-  "sleep",
-  "dizzy",
-  "walk",
-  "run",
-];
-const WHALE_EXPRESSIONS = [
-  "neutral",
-  "happy",
-  "wink",
-  "love",
-  "shy",
-  "surprised",
-  "angry",
-  "sad",
-  "sleepy",
-  "thinking",
-];
 
 function normalize(config: PetConfig): PetConfig {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     skins: config.skins ?? [],
     activeSkinId: config.activeSkinId ?? null,
     schemeId: config.schemeId ?? null,
     events: config.events ?? {},
     habits: { ...DEFAULT_HABITS, ...config.habits },
+    persona: config.persona ?? {
+      description: "",
+      personality: "",
+      speakingStyle: "",
+      greeting: "",
+    },
   };
 }
 
@@ -118,6 +100,7 @@ export function EditorPage({
   const [reactionKey, setReactionKey] = useState(0);
   const [playingEvent, setPlayingEvent] = useState<EventName>("idle");
   const [previewBubble, setPreviewBubble] = useState("");
+  const previewLineIndex = useRef<Partial<Record<EventName, number>>>({});
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
@@ -205,7 +188,14 @@ export function EditorPage({
   const playPreview = (name: EventName) => {
     setPlayingEvent(name);
     setReactionKey((value) => value + 1);
-    setPreviewBubble(config?.events?.[name]?.bubble ?? "");
+    const lines = config?.events?.[name]?.lines ?? [];
+    if (!lines.length) {
+      setPreviewBubble("");
+      return;
+    }
+    const next = ((previewLineIndex.current[name] ?? -1) + 1) % lines.length;
+    previewLineIndex.current[name] = next;
+    setPreviewBubble(lines[next]);
   };
   useEffect(() => {
     if (!previewBubble) return;
@@ -264,6 +254,18 @@ export function EditorPage({
       await save();
       await window.futurePropsDesktop.openPet(projectId);
       setActive(true);
+    });
+  const launchChat = () =>
+    run(async () => {
+      if (
+        !window.futurePropsDesktop?.openPet ||
+        !window.futurePropsDesktop.openPetChatFromStudio
+      )
+        throw new Error("聊天小窗仅在 macOS 桌面版中运行");
+      await save();
+      await window.futurePropsDesktop.openPet(projectId);
+      setActive(true);
+      await window.futurePropsDesktop.openPetChatFromStudio(projectId);
     });
   const addSkin = () => {
     const name = newSkinName.trim();
@@ -340,6 +342,8 @@ export function EditorPage({
             [
               ["look", "形象"],
               ["events", "交互"],
+              ["lines", "台词"],
+              ["chat", "聊天"],
               ["habits", "习惯"],
               ["preview", "试玩"],
             ] as const
@@ -468,10 +472,10 @@ export function EditorPage({
                 )}
               </>
             )}
-            {tab === "events" && (
+            {(tab === "events" || tab === "lines") && (
               <>
                 <div className="dp-panel-heading">
-                  <strong>触发事件</strong>
+                  <strong>{tab === "lines" ? "事件台词" : "触发事件"}</strong>
                   <small>6 种</small>
                 </div>
                 {EVENTS.map((item) => (
@@ -490,6 +494,16 @@ export function EditorPage({
                 </div>
               </>
             )}
+            {tab === "chat" && (
+              <>
+                <div className="dp-panel-heading">
+                  <strong>角色聊天</strong>
+                </div>
+                <p className="dp-hint">
+                  填写人设后，模型会按这些设定回复。聊天模型和私人记录由使用者在桌面小窗中单独选择与保存。
+                </p>
+              </>
+            )}
             {tab === "habits" && (
               <>
                 <div className="dp-panel-heading">
@@ -500,7 +514,7 @@ export function EditorPage({
                 </p>
                 <p className="dp-section-label">悬停按钮</p>
                 <div className="dp-hint">
-                  装扮、走动、隐藏、设置最多选择四个；运行时改动只影响当前会话。
+                  最多选择四个；聊天按钮会打开桌宠旁的小窗。运行时改动只影响当前会话。
                 </div>
               </>
             )}
@@ -537,7 +551,7 @@ export function EditorPage({
           </aside>
           <main className="dp-editor-center">
             <div className="dp-stage-tools">
-              {tab === "events" ? (
+              {tab === "events" || tab === "lines" ? (
                 <button onClick={() => playPreview(eventName)}>
                   ▶ 播放事件
                 </button>
@@ -545,12 +559,12 @@ export function EditorPage({
                 <span>{tab === "look" ? "透明取景" : "模拟桌面"}</span>
               )}
               <span>
-                {tab === "events"
+                {tab === "events" || tab === "lines"
                   ? EVENTS.find((item) => item.id === eventName)?.label
                   : `${habits.size} px`}
               </span>
             </div>
-            {tab === "look" || tab === "events" ? (
+            {tab === "look" || tab === "events" || tab === "lines" ? (
               <div className="dp-checker-stage">
                 <span className="dp-stage-badge">
                   {tab === "look"
@@ -565,11 +579,15 @@ export function EditorPage({
                     document={draft}
                     skinId={skinId}
                     view="center"
-                    eventName={tab === "events" ? playingEvent : "idle"}
+                    eventName={
+                      tab === "events" || tab === "lines"
+                        ? playingEvent
+                        : "idle"
+                    }
                     reactionKey={reactionKey}
                   />
                 </div>
-                {tab === "events" && previewBubble && (
+                {(tab === "events" || tab === "lines") && previewBubble && (
                   <div className="dp-desktop-bubble">{previewBubble}</div>
                 )}
               </div>
@@ -760,83 +778,17 @@ export function EditorPage({
                 )}
               </>
             )}
-            {tab === "events" && (
-              <>
-                <div className="dp-panel-heading">
-                  <strong>
-                    {EVENTS.find((item) => item.id === eventName)?.label}
-                  </strong>
-                  <small>事件属性</small>
-                </div>
-                <PetPicker
-                  label="动作"
-                  value={reaction.motionId ?? ""}
-                  options={[
-                    { value: "", label: "无动作" },
-                    ...(whale
-                      ? WHALE_MOTIONS.map((id) => ({ value: id, label: id }))
-                      : (draft.character?.motions ?? []).map((motion) => ({
-                          value: motion.id,
-                          label: motion.name,
-                        }))),
-                  ]}
-                  onChange={(value) =>
-                    editReaction({ motionId: value || null })
-                  }
-                  disabled={readOnly}
-                />
-                <PetPicker
-                  label="表情"
-                  value={reaction.expressionId ?? ""}
-                  options={[
-                    { value: "", label: "无表情" },
-                    ...(whale
-                      ? WHALE_EXPRESSIONS.map((id) => ({
-                          value: id,
-                          label: id,
-                        }))
-                      : (draft.character?.expressions ?? []).map(
-                          (expression) => ({
-                            value: expression.id,
-                            label: expression.name,
-                          }),
-                        )),
-                  ]}
-                  onChange={(value) =>
-                    editReaction({ expressionId: value || null })
-                  }
-                  disabled={readOnly}
-                />
-                <label className="dp-field">
-                  <span>气泡文案</span>
-                  <textarea
-                    disabled={readOnly}
-                    maxLength={140}
-                    value={reaction.bubble}
-                    placeholder="可选；留空则不显示"
-                    onChange={(event) =>
-                      editReaction({ bubble: event.target.value })
-                    }
-                  />
-                </label>
-                <PetPicker
-                  label="音效"
-                  value={reaction.sound}
-                  options={[
-                    { value: "none", label: "无音效" },
-                    { value: "tap", label: "轻点" },
-                    { value: "chime", label: "提示音" },
-                  ]}
-                  onChange={(value) =>
-                    editReaction({ sound: value as PetReaction["sound"] })
-                  }
-                  disabled={readOnly}
-                />
-                <div className="dp-hint">
-                  动作与表情并行播放，事件结束自动回到待机。音效是内置提示音，不执行脚本。
-                </div>
-              </>
-            )}
+            <DialogueInspector
+              tab={tab}
+              eventLabel={EVENTS.find((item) => item.id === eventName)?.label}
+              reaction={reaction}
+              whale={whale}
+              draft={draft}
+              config={config}
+              readOnly={readOnly}
+              editReaction={editReaction}
+              edit={edit}
+            />
             {tab === "habits" && (
               <>
                 <div className="dp-panel-heading">
@@ -908,7 +860,10 @@ export function EditorPage({
                             ? habits.hoverActions.filter(
                                 (id) => id !== action.id,
                               )
-                            : [...(habits.hoverActions ?? []), action.id],
+                            : [...(habits.hoverActions ?? []), action.id].slice(
+                                0,
+                                4,
+                              ),
                         })
                       }
                     >
@@ -943,6 +898,13 @@ export function EditorPage({
                 >
                   <CirclePlay size={15} />
                   {active ? "显示桌宠" : "放到桌面"}
+                </button>
+                <button
+                  className="dp-wide"
+                  disabled={busy}
+                  onClick={() => void launchChat()}
+                >
+                  启动桌宠并试聊
                 </button>
                 {active && (
                   <button

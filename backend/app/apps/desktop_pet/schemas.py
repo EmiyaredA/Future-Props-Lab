@@ -11,14 +11,27 @@ from app.capabilities.media_rendering.live2d.document import (
 )
 
 PetEventName = Literal["idle", "click", "pet", "grab", "drop", "roam"]
-HoverAction = Literal["dress", "roam", "hide", "settings"]
+HoverAction = Literal["dress", "roam", "hide", "settings", "chat"]
 
 
 class PetReaction(ValueModel):
     motion_id: Identifier | None = Field(default=None, alias="motionId")
     expression_id: Identifier | None = Field(default=None, alias="expressionId")
-    bubble: str = Field(default="", max_length=140)
+    lines: list[str] = Field(default_factory=list, max_length=8)
     sound: Literal["none", "tap", "chime"] = "none"
+
+    @model_validator(mode="after")
+    def valid_lines(self) -> PetReaction:
+        if any(not line.strip() or len(line) > 140 for line in self.lines):
+            raise ValueError("每句台词需要 1–140 个字符")
+        return self
+
+
+class PetPersona(ValueModel):
+    description: str = Field(default="", max_length=500)
+    personality: str = Field(default="", max_length=500)
+    speaking_style: str = Field(default="", alias="speakingStyle", max_length=500)
+    greeting: str = Field(default="", max_length=140)
 
 
 class PetSkin(ValueModel):
@@ -34,7 +47,9 @@ class PetHabits(ValueModel):
     bubbles: bool = True
     sound: bool = True
     hover_actions: list[HoverAction] = Field(
-        default_factory=lambda: ["dress", "roam", "hide"], alias="hoverActions", max_length=4
+        default_factory=lambda: ["dress", "roam", "hide", "chat"],
+        alias="hoverActions",
+        max_length=4,
     )
 
     @model_validator(mode="after")
@@ -45,12 +60,39 @@ class PetHabits(ValueModel):
 
 
 class PetConfig(ValueModel):
-    schema_version: Literal[1] = Field(default=1, alias="schemaVersion")
+    schema_version: Literal[2] = Field(default=2, alias="schemaVersion")
     skins: list[PetSkin] = Field(default_factory=list, max_length=20)
     active_skin_id: Identifier | None = Field(default=None, alias="activeSkinId")
     scheme_id: Identifier | None = Field(default=None, alias="schemeId")
     events: dict[PetEventName, PetReaction] = Field(default_factory=dict, max_length=6)
     habits: PetHabits = Field(default_factory=PetHabits)
+    persona: PetPersona = Field(default_factory=PetPersona)
+
+    @model_validator(mode="before")
+    @classmethod
+    def upgrade_legacy(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        if value.get("schemaVersion", 1) not in (1, 2):
+            return value
+        upgraded = dict(value)
+        upgraded["schemaVersion"] = 2
+        events = {}
+        for name, reaction in (value.get("events") or {}).items():
+            item = dict(reaction)
+            bubble = item.pop("bubble", "")
+            item.setdefault("lines", [bubble] if bubble else [])
+            events[name] = item
+        upgraded["events"] = events
+        habits = dict(value.get("habits") or {})
+        if value.get("schemaVersion", 1) != 2 and habits.get("hoverActions") == [
+            "dress",
+            "roam",
+            "hide",
+        ]:
+            habits["hoverActions"] = ["dress", "roam", "hide", "chat"]
+        upgraded["habits"] = habits
+        return upgraded
 
     @model_validator(mode="after")
     def valid_skin_selection(self) -> PetConfig:

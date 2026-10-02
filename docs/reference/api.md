@@ -1021,7 +1021,13 @@ ID 集合使用 `insert/update/remove/move/duplicate`，`value` 字段采用对�
 - `POST /v1/desktop-pet/projects/{project_id}/sync-source`：显式更新来源，提交桌宠及来源 revision；动作、表情、部件与换肤尺寸不兼容时保留旧快照。
 - `GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file`：仅读取该桌宠当前快照或皮肤引用的 PNG。
 
-整体配置限制为最多 20 套 Live2D 皮肤、六种事件、最多四个悬停按钮。鲸鱼娘项目由 `sourceType=coopanion-whale` 区分，文档返回 `whaleModel`、`whaleAssets` 和鉴权素材 URL；`schemeId` 选择八套原版配色，不支持逐部件上传或更新来源。事件的动作与表情按对应来源校验。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或桌宠包导出接口。
+整体配置限制为最多 20 套 Live2D 皮肤、六种事件、每事件最多 8 句、每句最多 140 字，以及最多四个悬停按钮。旧版事件 `bubble` 在读取时升级为 `lines` 的第一句；新版保存使用 `schemaVersion=2`。`persona` 包含角色简介、性格、说话方式和开场白。鲸鱼娘项目由 `sourceType=coopanion-whale` 区分，文档返回 `whaleModel`、`whaleAssets` 和鉴权素材 URL；`schemeId` 选择八套原版配色，不支持逐部件上传或更新来源。事件的动作与表情按对应来源校验。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或桌宠包导出接口。
+
+桌宠聊天需要 `models.use`。配置中的人设参与每次模型提示词；模型选择、主动台词开关和记录按账号、Workspace、桌宠另存，不进入角色配置。
+
+- `GET/PATCH /v1/desktop-pet/projects/{project_id}/chat`：读取会话最近 50 条消息，或以 `expectedRevision` 保存文字模型 ID 与主动台词开关；首次读取返回 revision 0，首次设置以 0 创建会话。
+- `GET/DELETE /v1/desktop-pet/projects/{project_id}/chat/messages`：按 `before` 位置和 `limit` 倒序分页读取，或带 `expectedRevision` 清空该会话记录。清空保留请求 ID 防重放记录。
+- `POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream`：提交 `expectedRevision`、唯一 `requestId` 和最多 2000 字的 `content`，返回 `start/delta/done/error` SSE。相同请求 ID 不再次调用模型；同一会话一次只生成一轮。模型不可用返回明确错误，失败或取消的回复标记为中断；完整历史仍可分页读取。
 
 ## 独立模型调用
 

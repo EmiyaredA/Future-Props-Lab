@@ -1,3 +1,4 @@
+import { CanvasSelectionActions } from "./CanvasSelectionActions";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import {
   useCallback,
@@ -60,7 +61,10 @@ export function VisualWorkshopCanvasView({
     conflictRef,
     saveFailureRef,
     autoSave,
-    clipboard,
+    canPaste,
+    clipboardNotice,
+    copyNodes,
+    copySelected,
     uploadPosition,
     toolMode,
     setToolMode,
@@ -124,7 +128,7 @@ export function VisualWorkshopCanvasView({
     canConnect,
     startConnection,
     finishConnection,
-    pasteNode,
+    pasteNodes,
     fitView,
     onSurfacePointerDown,
     onSurfacePointerMove,
@@ -153,7 +157,7 @@ export function VisualWorkshopCanvasView({
     input.addEventListener("cancel", closeMenuAfterPicker);
     return () => input.removeEventListener("cancel", closeMenuAfterPicker);
   }, [closeMenuAfterPicker, uploadInput]);
-  const { openComposition, selectionToolbar, compositionOverlay } =
+  const { openComposition, canComposeSelection, compositionOverlay } =
     useImageGridComposition({
       projectId,
       nodes,
@@ -237,6 +241,9 @@ export function VisualWorkshopCanvasView({
     <div className={`visual-canvas${assistantOpen ? " has-assistant" : ""}`}>
       <div
         ref={surface}
+        role="region"
+        aria-label="节点画布"
+        tabIndex={-1}
         className={`visual-canvas-surface tool-${toolMode}${pan.current ? " is-dragging" : ""}${selectionBox ? " is-selecting" : ""}`}
         style={{
           backgroundPosition: `${viewport.x}px ${viewport.y}px`,
@@ -324,7 +331,15 @@ export function VisualWorkshopCanvasView({
           }}
         />
         <CanvasSelectionOverlay selectionBox={selectionBox} />
-        {selectionToolbar}
+        <CanvasSelectionActions
+          count={selectedNodeIds.length}
+          onCopy={copySelected}
+          onCompose={
+            canComposeSelection
+              ? () => openComposition(selectedNodeIds)
+              : undefined
+          }
+        />
         <div
           className="visual-canvas-world"
           style={
@@ -369,7 +384,11 @@ export function VisualWorkshopCanvasView({
                 data-amadeus-name={node.title || nodeLabel(node.kind)}
                 data-amadeus-value={nodeLabel(node.kind)}
                 key={node.id}
-                onPointerDown={(event) => startNodeDrag(event, node)}
+                onPointerDown={(event) => {
+                  startNodeDrag(event, node);
+                  if (event.defaultPrevented)
+                    surface.current?.focus({ preventScroll: true });
+                }}
                 onPointerMove={moveNode}
                 onPointerUp={stopNodeDrag}
                 onPointerCancel={stopNodeDrag}
@@ -426,7 +445,7 @@ export function VisualWorkshopCanvasView({
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => {
                           event.stopPropagation();
-                          clipboard.current = structuredClone(node);
+                          copyNodes([node.id]);
                         }}
                       >
                         <Copy aria-hidden />
@@ -472,7 +491,7 @@ export function VisualWorkshopCanvasView({
                           : undefined
                       }
                       onCopy={() => {
-                        clipboard.current = structuredClone(node);
+                        copyNodes([node.id]);
                       }}
                       onCompose={
                         node.kind === "image"
@@ -635,8 +654,10 @@ export function VisualWorkshopCanvasView({
           position={contextMenu}
           onCreate={createNode}
           onFit={fitView}
-          onPaste={pasteNode}
-          canPaste={!!clipboard.current}
+          onPaste={pasteNodes}
+          canPaste={canPaste}
+          onCopy={copySelected}
+          canCopy={selectedNodeIds.length > 0}
           skipFocusRestoreRef={skipMenuFocusRestore}
           onClose={() => {
             skipMenuFocusRestore.current = false;
@@ -737,6 +758,16 @@ export function VisualWorkshopCanvasView({
       ) : null}
       {saveMessage ? (
         <div className="canvas-save-error">{saveMessage}</div>
+      ) : null}
+      {clipboardNotice ? (
+        <div
+          className={`canvas-upload-notice is-${clipboardNotice.tone}`}
+          style={uploadNotice ? { bottom: 80 } : undefined}
+          role={clipboardNotice.tone === "error" ? "alert" : "status"}
+          aria-label="画布复制粘贴状态"
+        >
+          {clipboardNotice.message}
+        </div>
       ) : null}
       {uploadNotice ? (
         <div

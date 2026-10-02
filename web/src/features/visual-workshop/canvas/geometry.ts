@@ -63,15 +63,3 @@ export function nextNodeId(kind: NodeKind) {
 export function nodeLabel(kind: NodeKind) {
   return { text: "文本", image: "图片", video: "视频", audio: "音频" }[kind];
 }
-
-export function cloneNode(
-  node: VisualCanvasNode,
-  position: { x: number; y: number },
-): VisualCanvasNode {
-  return {
-    ...node,
-    id: nextNodeId(node.kind),
-    title: `${node.title} 副本`,
-    position,
-  } as VisualCanvasNode;
-}

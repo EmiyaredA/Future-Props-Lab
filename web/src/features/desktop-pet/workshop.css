@@ -180,13 +180,37 @@
   display: flex;
   gap: 4px;
   margin: auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
   padding: 4px;
   border: 1px solid var(--dp-border);
   border-radius: 11px;
 }
 .dp-editor nav button {
+  flex: none;
   border: 0;
   background: transparent;
+}
+.dp-line-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.dp-line-row input {
+  min-width: 0;
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--dp-border);
+  border-radius: 7px;
+  color: var(--dp-text);
+  background: var(--dp-panel);
+}
+.dp-line-row button {
+  border: 1px solid var(--dp-border);
+  border-radius: 7px;
+  color: var(--dp-text);
+  background: var(--dp-panel);
 }
 .dp-editor nav button[aria-pressed="true"] {
   color: #f9a386;

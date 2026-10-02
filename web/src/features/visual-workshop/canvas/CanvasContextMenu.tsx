@@ -1,6 +1,7 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import {
   Clipboard,
+  Copy,
   Focus,
   Image,
   Music,
@@ -17,6 +18,8 @@ export function CanvasContextMenu({
   onFit,
   onPaste,
   canPaste,
+  onCopy,
+  canCopy,
   onClose,
   skipFocusRestoreRef,
 }: {
@@ -29,6 +32,8 @@ export function CanvasContextMenu({
   onFit: () => void;
   onPaste: (point: Point) => unknown;
   canPaste: boolean;
+  onCopy: () => void;
+  canCopy: boolean;
   onClose: () => void;
   skipFocusRestoreRef?: MutableRefObject<boolean>;
 }) {
@@ -91,7 +96,7 @@ export function CanvasContextMenu({
           12,
           Math.min(
             position.top,
-            (window.visualViewport?.height ?? innerHeight) - 310,
+            (window.visualViewport?.height ?? innerHeight) - 350,
           ),
         ),
         maxHeight: "calc(var(--visible-height, 100dvh) - 24px)",
@@ -130,6 +135,9 @@ export function CanvasContextMenu({
         <Focus aria-hidden /> 适应屏幕
       </button>
       <i aria-hidden />
+      <button role="menuitem" disabled={!canCopy} onClick={onCopy}>
+        <Copy aria-hidden /> 复制选中节点
+      </button>
       <button
         role="menuitem"
         disabled={!canPaste}

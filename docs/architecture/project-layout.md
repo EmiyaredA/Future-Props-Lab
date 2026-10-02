@@ -443,6 +443,12 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 裁剪保存失败保留已上传素材并重试同一节点；冲突返回现有画布版本选择界面。裁剪不创建生成任务或修改原素材。
 样式归属 `styles/image-crop.css`，浏览器验收由 `canvas-image-crop.spec.ts` 覆盖。
 
+视觉画布的 `canvasClipboard.ts` 拥有选区深拷贝、外部连线引用清理、节点与连线身份重映射及粘贴边界检查；
+`useCanvasClipboard.ts` 管理当前项目内的临时剪贴板、连续粘贴偏移与反馈，所有复制入口共享同一逻辑。
+`CanvasSelectionActions.tsx` 展示多选复制及符合条件的宫格合成操作，合成状态仍由 `useImageGridComposition.tsx` 拥有。
+副本保留素材和生成草稿，解除原任务及批次关联；整组粘贴通过画布快照提交一次 CAS 并形成一次撤销记录。
+剪贴板不持久化，离开画布后失效；浏览器旅程由 `canvas-clipboard.spec.ts` 覆盖。
+
 ## Python SDK 与自动化
 
 - `sdk/python/`：可独立构建安装的 `future-props-lab-sdk`；`src/future_props_lab/generated/` 只保存生成模型和具名资源方法，其他模块拥有 HTTPX 通信、流、鉴权、实时语音和本地文档构建器。
@@ -468,5 +474,5 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 `web/src/shared/live2d/` 提供工坊与 Amadeus 头像共用的纯姿态计算、类型和 PixiJS 网格装配。内置 Amadeus 的原画由 `scripts/build_amadeus_model.py` 打包成 `web/public/brand/amadeus/amadeus.fpllive2d`，用户可通过现有工坊导入 API 主动创建可编辑副本；助手窗口直接读取随应用提供的工程包，不依赖用户 Workspace 项目。
 
-`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、鲸鱼娘本地导入包校验、皮肤 PNG 与配置 CAS；Live2D 来源只通过 `apps/live2d_workshop/public.py` 的 Workspace 只读入口取得。素材位于当前 Workspace 的 `applications/desktop-pet/projects/<id>/assets/{source,skins,whale}/`，迁移 `r0077_desktop_pet` 登记根项目，`r0078_desktop_pet_whale` 扩展来源类型。`scripts/pack_whale_demo.py` 将显式指定的本地 Coopanion 目录打包为数据 ZIP，不把角色贴图提交或随应用打包。`web/src/features/desktop-pet/` 拥有项目页、编辑器、PixiJS 预览、鲸鱼娘原版动态适配和独立 `web/pet.html` 运行页；`whale-vendor/` 只保存 MIT 动画代码与许可，运行贴图从 Workspace API 读取。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/main.ts` 约束单只透明窗口、点击穿透和多屏可用区；主应用负责手动启动及关闭。
+`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、鲸鱼娘本地导入包校验、皮肤 PNG、台词与配置 CAS；`chat.py` 拥有按账号和 Workspace 隔离的聊天会话、请求防重放与消息记录，迁移 `r0079_desktop_pet_chat` 登记三张聊天表。文字模型调用通过 `backend/app/llm/text_client.py` 的公共入口完成，保留调用日志，不使用模型测试会话。Live2D 来源只通过 `apps/live2d_workshop/public.py` 的 Workspace 只读入口取得。素材位于当前 Workspace 的 `applications/desktop-pet/projects/<id>/assets/{source,skins,whale}/`，迁移 `r0077_desktop_pet` 登记根项目，`r0078_desktop_pet_whale` 扩展来源类型。`scripts/pack_whale_demo.py` 将显式指定的本地 Coopanion 目录打包为数据 ZIP，不把角色贴图提交或随应用打包。`web/src/features/desktop-pet/` 拥有项目页、台词与人设编辑器、PixiJS 预览、鲸鱼娘原版动态适配、独立 `web/pet.html` 运行页与 `web/pet-chat.html` 聊天小窗；`whale-vendor/` 只保存 MIT 动画代码与许可，运行贴图从 Workspace API 读取。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/pet-window.ts` 约束单只透明窗口、聊天小窗跟随、点击穿透和多屏可用区；主应用负责手动启动及关闭。
 分层绑定审阅草案由 `scripts/build_amadeus_rig_draft.py` 和 `scripts/write_live2d_review_psd.mjs` 生成到 `.local/output/live2d-rig-review/`，`scripts/check_amadeus_rig_draft.py` 校验包与像素；草案在用户验收前不替换内置运行工程。
