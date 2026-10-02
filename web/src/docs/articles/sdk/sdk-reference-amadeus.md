@@ -1,6 +1,6 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 2, "title": "amadeus方法参考", "lead": "client.amadeus 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 2, "title": "Amadeus 桌面助手方法参考", "lead": "client.amadeus 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
-# amadeus方法参考
+# Amadeus 桌面助手方法参考
 
 通过 `client.amadeus` 访问这些业务操作。同步与异步方法名称和参数一致；异步调用增加 `await`。
 所有方法均来自当前 OpenAPI 与稳定映射表。下表验证的是接口契约覆盖，完整业务流程另见工坊教程。
@@ -48,7 +48,7 @@
 
 `client.amadeus.delete_conversation(...)`
 
-**接口**：`DELETE /v1/amadeus/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/amadeus/conversations/{conversation_id}`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -68,7 +68,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.list_conversations(...)`
 
-**接口**：`GET /v1/amadeus/conversations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/conversations`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -86,7 +86,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.get_conversation(...)`
 
-**接口**：`GET /v1/amadeus/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/conversations/{conversation_id}`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -105,7 +105,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.files_list(...)`
 
-**接口**：`GET /v1/amadeus/conversations/{conversation_id}/files`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/conversations/{conversation_id}/files`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -124,7 +124,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.file_download(...)`
 
-**接口**：`GET /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -145,7 +145,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.list_runs(...)`
 
-**接口**：`GET /v1/amadeus/conversations/{conversation_id}/runs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/conversations/{conversation_id}/runs`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -164,7 +164,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.get_run(...)`
 
-**接口**：`GET /v1/amadeus/conversations/{conversation_id}/runs/{run_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/conversations/{conversation_id}/runs/{run_id}`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -184,7 +184,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.skill_file_read(...)`
 
-**接口**：`GET /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path}`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -206,7 +206,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.list_registered_operations(...)`
 
-**接口**：`GET /v1/amadeus/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/operations`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -225,7 +225,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.active_run(...)`
 
-**接口**：`GET /v1/amadeus/runs/active`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/runs/active`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -243,7 +243,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.script_capability(...)`
 
-**接口**：`GET /v1/amadeus/script-capability`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/amadeus/script-capability`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -261,7 +261,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.patch_conversation(...)`
 
-**接口**：`PATCH /v1/amadeus/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/amadeus/conversations/{conversation_id}`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -284,7 +284,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.create_conversation(...)`
 
-**接口**：`POST /v1/amadeus/conversations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -302,7 +302,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.propose_action(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -325,7 +325,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.stop_action(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/cancel`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -345,7 +345,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.decide_action(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/decision`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/decision`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -368,7 +368,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.run_action(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -388,7 +388,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.run_action_stream(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute/stream`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute/stream`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -408,7 +408,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.files_open_folder(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/files/open-folder`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/files/open-folder`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -427,7 +427,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.import_file(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/imports`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -450,7 +450,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.append_message(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/messages`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/messages`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -474,7 +474,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.answer_question(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -497,7 +497,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.create_run(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -523,7 +523,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.cancel_run(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -543,7 +543,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.append_run_event(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -567,7 +567,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.finish_run(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -590,7 +590,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.heartbeat_run(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -610,7 +610,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.pause_run_for_approval(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -630,7 +630,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.create_question(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -655,7 +655,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.skill_load(...)`
 
-**接口**：`POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -675,7 +675,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.model_turn(...)`
 
-**接口**：`POST /v1/amadeus/model-turn`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/model-turn`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -700,7 +700,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.model_turn_stream(...)`
 
-**接口**：`POST /v1/amadeus/model-turn/stream`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/model-turn/stream`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -725,7 +725,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.read_registered_operation(...)`
 
-**接口**：`POST /v1/amadeus/operations/read`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/amadeus/operations/read`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -744,7 +744,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.amadeus.file_write(...)`
 
-**接口**：`PUT /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

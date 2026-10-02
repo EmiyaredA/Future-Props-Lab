@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 12, "title": "平台治理方法参考", "lead": "client.governance 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 13, "title": "平台治理方法参考", "lead": "client.governance 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 平台治理方法参考
 
@@ -281,7 +281,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.governance.registration(...)`
 
-**接口**：`POST /v1/auth/register`。**鉴权**：Session；敏感操作需要二次验证。
+**接口**：`POST /v1/auth/register`。**鉴权**：有效注册邀请码；无需已有 Session。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

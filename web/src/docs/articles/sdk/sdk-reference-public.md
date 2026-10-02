@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 20, "title": "公开展台方法参考", "lead": "client.public 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 21, "title": "公开展台方法参考", "lead": "client.public 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 公开展台方法参考
 
@@ -17,7 +17,7 @@
 
 `client.public.projection(...)`
 
-**接口**：`GET /v1/public-workspace`。**鉴权**：Session；敏感操作需要二次验证。
+**接口**：`GET /v1/public-workspace`。**鉴权**：Session 或具有 studio:read 的 Workspace API Key；仅公开只读投影。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -35,7 +35,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.public.asset_content(...)`
 
-**接口**：`GET /v1/public-workspace/assets/{asset_id}/content`。**鉴权**：Session；敏感操作需要二次验证。
+**接口**：`GET /v1/public-workspace/assets/{asset_id}/content`。**鉴权**：Session 或具有 studio:read 的 Workspace API Key；仅公开只读投影。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -54,7 +54,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.public.story(...)`
 
-**接口**：`GET /v1/public-workspace/galgame-projects/{project_id}/story`。**鉴权**：Session；敏感操作需要二次验证。
+**接口**：`GET /v1/public-workspace/galgame-projects/{project_id}/story`。**鉴权**：Session 或具有 studio:read 的 Workspace API Key；仅公开只读投影。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

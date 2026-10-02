@@ -25,7 +25,7 @@
 
 `client.desktop.capabilities(...)`
 
-**接口**：`GET /v1/desktop/agent/capabilities`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`GET /v1/desktop/agent/capabilities`。**鉴权**：仅桌面模式；已授权 Workspace API Key 或 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -43,7 +43,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.pending_pairings(...)`
 
-**接口**：`GET /v1/desktop/agent/pairings`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`GET /v1/desktop/agent/pairings`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -79,7 +79,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.inbox(...)`
 
-**接口**：`GET /v1/desktop/ui/inbox`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`GET /v1/desktop/ui/inbox`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -97,7 +97,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.open_status(...)`
 
-**接口**：`GET /v1/desktop/ui/requests/{request_id}`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`GET /v1/desktop/ui/requests/{request_id}`。**鉴权**：仅桌面模式；已授权 Workspace API Key 或 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -116,7 +116,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.begin_pairing(...)`
 
-**接口**：`POST /v1/desktop/agent/pairings`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`POST /v1/desktop/agent/pairings`。**鉴权**：仅桌面模式；私有本地 Agent 通道；领取授权还需配对 claim token。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -137,7 +137,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.claim_pairing(...)`
 
-**接口**：`POST /v1/desktop/agent/pairings/{pair_id}/claim`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`POST /v1/desktop/agent/pairings/{pair_id}/claim`。**鉴权**：仅桌面模式；私有本地 Agent 通道；领取授权还需配对 claim token。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -158,7 +158,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.decide_pairing(...)`
 
-**接口**：`POST /v1/desktop/agent/pairings/{pair_id}/decision`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`POST /v1/desktop/agent/pairings/{pair_id}/decision`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -203,7 +203,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.open_in_app(...)`
 
-**接口**：`POST /v1/desktop/ui/open`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`POST /v1/desktop/ui/open`。**鉴权**：仅桌面模式；已授权 Workspace API Key 或 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -225,7 +225,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.acknowledge(...)`
 
-**接口**：`POST /v1/desktop/ui/requests/{request_id}/ack`。**鉴权**：仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化。
+**接口**：`POST /v1/desktop/ui/requests/{request_id}/ack`。**鉴权**：仅桌面模式；浏览器 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import process from "node:process";
+import console from "node:console";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(
@@ -12,6 +14,8 @@ const entries = {
   account: "Studio 侧栏 / 当前 Workspace 或账号卡片",
   files: "Studio / 文件管理",
   integrations: "Studio / 集成中心",
+  creative: "Studio / 创意工坊",
+  desktop: "桌面顶栏 / Amadeus 与账号设置 / 本地 Agent",
   models: "Studio / 基模型 / 模型服务",
   testing: "Studio / 基模型 / 模型测试",
   logs: "Studio / 基模型 / 模型调用日志",
@@ -19,8 +23,14 @@ const entries = {
   visual: "应用 / 视觉创作工坊",
   galgame: "应用 / Galgame 工坊",
   video: "应用 / 视频剪辑工坊",
+  thought: "应用 / 思绪工坊",
+  presentation: "应用 / 演示工坊",
+  live2d: "应用 / Live2D 工坊",
+  pet: "应用 / 桌宠工坊",
+  director: "应用 / 导演台",
+  motion: "应用 / 特效制作工坊",
   tools: "Studio / 工具导航",
-  annotation: "工具导航 / 录音分段标注",
+  annotation: "应用 / 录音标注工坊",
   frames: "工具导航 / 视频帧导出",
   external: "工具导航 / 外部网站",
   help: "文档中心 / 通用帮助",
@@ -30,6 +40,8 @@ const tests = {
   account: "web/src/features/accounts/AccountWorkspacePanel.tsx",
   files: "web/src/features/files/AssetBrowser.tsx",
   integrations: "web/e2e/integration-center.spec.ts",
+  creative: "web/e2e/creative-workshop.spec.ts",
+  desktop: "tests/test_amadeus_workflows.py",
   models: "web/e2e/base-model-ui.spec.ts",
   testing: "web/e2e/base-model-ui.spec.ts",
   logs: "web/src/features/models/logs/ModelCallLogDetail.tsx",
@@ -37,6 +49,12 @@ const tests = {
   visual: "web/tests/visual-workshop-canvas-nodes.test.tsx",
   galgame: "web/tests/galgame-workshop-editor.test.tsx",
   video: "web/e2e/video-editor.spec.ts",
+  thought: "web/tests/thought-workshop.test.tsx",
+  presentation: "web/e2e/presentation-workshop.spec.ts",
+  live2d: "web/e2e/live2d-workshop.spec.ts",
+  pet: "tests/test_desktop_pet.py",
+  director: "tests/test_director_desk_projects.py",
+  motion: "web/e2e/motion-compositor.spec.ts",
   tools: "web/e2e/tool-navigation.spec.ts",
   annotation: "web/tests/audio-annotation-model.test.ts",
   frames: "web/src/features/tools/VideoFrameExporterPage.tsx",
@@ -44,7 +62,8 @@ const tests = {
   help: "web/e2e/docs.spec.ts",
 };
 const articles = [];
-for (const group of Object.keys(entries)) {
+for (const group of fs.readdirSync(articleRoot).sort()) {
+  if (!fs.statSync(path.join(articleRoot, group)).isDirectory()) continue;
   const pages = fs
     .readdirSync(path.join(articleRoot, group))
     .filter((n) => n.endsWith(".md"))
@@ -52,6 +71,11 @@ for (const group of Object.keys(entries)) {
       const source = `web/src/docs/articles/${group}/${name}`;
       const raw = fs.readFileSync(path.join(root, source), "utf8");
       const meta = JSON.parse(/^<!-- docs: (.*) -->/.exec(raw)[1]);
+      if ((meta.category || "use") !== "use") return null;
+      if (meta.group !== group || !entries[meta.group] || !tests[meta.group])
+        throw Error(`使用文章缺少入口或核验依据：${source}`);
+      if (!fs.existsSync(path.join(root, tests[meta.group])))
+        throw Error(`核验依据不存在：${tests[meta.group]}`);
       return {
         ...meta,
         id: name.slice(0, -3),
@@ -63,9 +87,17 @@ for (const group of Object.keys(entries)) {
         ].map((m) => m[1]),
       };
     })
+    .filter(Boolean)
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
   articles.push(...pages);
 }
+articles.sort(
+  (a, b) =>
+    Object.keys(entries).indexOf(a.group) -
+      Object.keys(entries).indexOf(b.group) ||
+    a.order - b.order ||
+    a.id.localeCompare(b.id),
+);
 const rows = articles
   .map(
     (p) =>

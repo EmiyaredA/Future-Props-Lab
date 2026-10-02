@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { APPLICATION_DEFINITIONS } from "../src/app/applicationRegistry";
 import {
   GUIDE_PAGES,
   GROUPS,
@@ -18,6 +19,29 @@ import {
 } from "../src/features/audio-annotation/model";
 
 describe("documentation source of truth", () => {
+  it("covers every registered application in navigation and the coverage inventory", () => {
+    const coverage = readFileSync(
+      resolve("../docs/architecture/documentation-coverage.md"),
+      "utf8",
+    );
+    const overview = PAGE_BY_ID.get("apps-overview")!;
+    for (const application of APPLICATION_DEFINITIONS) {
+      const group = GROUPS.find((item) => item.title === application.name);
+      expect(group, application.id).toBeDefined();
+      expect(group?.parent, application.id).toBe("apps-overview");
+      const pages = GUIDE_PAGES.filter(
+        (page) => page.group === group?.id && page.category === "use",
+      );
+      expect(pages.length, application.id).toBeGreaterThan(0);
+      expect(overview.markdown, application.id).toContain(application.name);
+    }
+    for (const page of GUIDE_PAGES.filter((item) => item.category === "use")) {
+      expect(coverage, page.id).toContain("`" + page.id + "`");
+      expect(coverage, page.id).toContain(
+        page.source.replace(/^\.\//, "web/src/docs/"),
+      );
+    }
+  });
   it("records a source and matching checksum for each published screenshot", () => {
     expect(new Set(screenshotSources.map((s) => s.file)).size).toBe(
       screenshotSources.length,

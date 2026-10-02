@@ -1,6 +1,6 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 18, "title": "motion_compositor方法参考", "lead": "client.motion_compositor 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 19, "title": "特效制作工坊方法参考", "lead": "client.motion_compositor 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
-# motion_compositor方法参考
+# 特效制作工坊方法参考
 
 通过 `client.motion_compositor` 访问这些业务操作。同步与异步方法名称和参数一致；异步调用增加 `await`。
 所有方法均来自当前 OpenAPI 与稳定映射表。下表验证的是接口契约覆盖，完整业务流程另见工坊教程。

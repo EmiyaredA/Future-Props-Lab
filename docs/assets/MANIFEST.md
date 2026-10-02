@@ -21,7 +21,7 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 | `docs/assets/kurisu-lab-music/` | 18 | 视觉探索、动作帧和生成参考 | 项目角色/场景、B 站参考视频帧、Unsplash 参考照片及生成结果；详见同目录 README | 混合第三方参考；发布前需逐项复核来源条款 | `2c544c9f922e11a8e2512e01e91544c6914f0a7fdc06370bfe98d9169a1ad992` | 否 |
 | `docs/assets/runaway-pilot-rev33/` | 12 | 历史预演验收截图 | 本项目播放器对演示数据的截图 | 未单独授权；仅作项目内回归证据 | `2df129d81a52a5e0eca0a680e3497002362c03fc3ac274ba60a135d25e5790f0` | 否 |
 | `docs/*.png` | 9 | 功能界面和交付文档截图 | 本项目 Web UI 截图 | 未单独授权；仅作项目文档 | `4fda1e4b613ee9e2016b914858ee987b829cf885361140832ffa2d913028ec02` | 否 |
-| `web/public/docs/` | 31 | 文档中心真实操作截图，逐图场景见同目录 sources.json | 隔离数据库、正式 API 与本机确定性响应；自写文本与合成媒体 | 本项目 UI 截图，沿用仅限内部开发交接声明 | `cc39de40d9774179a1cab185fed463025df284400d45322da116c35adac49cf8` | Web 文档中心 |
+| `web/public/docs/` | 42 | 文档中心真实操作截图，逐图场景见同目录 sources.json | 隔离数据库、正式 API、真实 Chrome/Electron；合成媒体与自写 Skill，模型响应为确定性示例 | 本项目 UI 截图，沿用仅限内部开发交接声明 | `2d0bd24e325b0a7ff5b3cfdc467e6089455b888a854fe85c2a16091b5293a683` | Web 文档中心 |
 
 | `docs/assets/video-editor-text-*.png` | 4 | 视频剪辑文字功能的四张交互设计图 | ImageGen，参考用户提供的现有界面截图；参见 [设计说明](video-editor-text.md) | 含原项目素材缩略图，仅限内部设计参考 | `25f488a9f3be63629f37b4d3e9c9c74820a7f351a3a689ef207205cc2f8b90d9` | 否 |
 

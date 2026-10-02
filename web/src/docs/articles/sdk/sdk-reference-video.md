@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 27, "title": "视频剪辑方法参考", "lead": "client.video 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 28, "title": "视频剪辑方法参考", "lead": "client.video 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 视频剪辑方法参考
 
@@ -35,6 +35,7 @@
 | [import_assets](#import-assets) | `POST /v1/video-editor/projects/{project_id}/assets/import` |
 | [create_asset_bake](#create-asset-bake) | `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes` |
 | [retry_proxy](#retry-proxy) | `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry` |
+| [audio_seam_candidates](#audio-seam-candidates) | `POST /v1/video-editor/projects/{project_id}/audio-seams/candidates` |
 | [reveal_project_folder](#reveal-project-folder) | `POST /v1/video-editor/projects/{project_id}/open-folder` |
 | [create_render](#create-render) | `POST /v1/video-editor/projects/{project_id}/renders` |
 | [render_preflight](#render-preflight) | `POST /v1/video-editor/projects/{project_id}/renders/preflight` |
@@ -572,6 +573,29 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VideoEditorAssetOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## audio_seam_candidates {#audio-seam-candidates}
+
+`client.video.audio_seam_candidates(...)`
+
+**接口**：`POST /v1/video-editor/projects/{project_id}/audio-seams/candidates`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | AudioSeamCandidatesIn | 是 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+| `body.fromClipId` | 请求体 | string | 是 |
+| `body.toClipId` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AudioSeamCandidatesOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

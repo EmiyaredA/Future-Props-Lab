@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 26, "title": "工具导航方法参考", "lead": "client.tools 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 27, "title": "工具导航方法参考", "lead": "client.tools 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 工具导航方法参考
 
@@ -20,7 +20,7 @@
 
 `client.tools.get_codex_source(...)`
 
-**接口**：`GET /v1/tool-navigation/codex-source`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/tool-navigation/codex-source`。**鉴权**：仅桌面模式；平台管理员 Session；不接受 Management API Key 或 Agent 通道。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -77,7 +77,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.tools.post_codex_source_restore(...)`
 
-**接口**：`POST /v1/tool-navigation/codex-source/restore`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/tool-navigation/codex-source/restore`。**鉴权**：仅桌面模式；平台管理员 Session；不接受 Management API Key 或 Agent 通道。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -116,7 +116,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.tools.put_codex_source(...)`
 
-**接口**：`PUT /v1/tool-navigation/codex-source`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/tool-navigation/codex-source`。**鉴权**：仅桌面模式；平台管理员 Session；不接受 Management API Key 或 Agent 通道。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

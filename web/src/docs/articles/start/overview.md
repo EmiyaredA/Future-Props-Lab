@@ -26,6 +26,9 @@
 - [工作空间与账号](/docs.html?page=workspaces)：切换空间、邀请成员、管理个人资料和会话。
 - [文件管理](/docs.html?page=files-overview)：上传、预览和整理共享文件。
 - [集成中心](/docs.html?page=integrations-overview)：管理工具 API、MCP 与 Skill。
+- [创意工坊](/docs.html?page=creative-overview)：发现公开能力，安装到自己的空间或发布可复用方案。
+- [应用与项目](/docs.html?page=apps-overview)：选择文稿、笔记、视觉创作、剪辑、特效、角色或三维预演工坊。
+- [桌面与 Amadeus](/docs.html?page=desktop-use)：多窗口工作、本地 Agent 接入、上下文与审批执行。
 - [录音标注工坊](/docs.html?page=annotation-overview)：切分音频、校对文本和导出字幕。
 - [视频帧导出](/docs.html?page=frames-overview)：在浏览器中定位画面并保存图片。
 
@@ -33,7 +36,7 @@
 
 - 平台采用单机部署，同一实例内通过账号和逻辑工作空间隔离。项目保存在部署机器，不等于保存在当前浏览器。
 - 项目不会自动成为云端多人协作空间。实时语音的转写与音频只保留在当前页面内存中。
-- 画布和故事采用 revision 检测并发冲突；发生冲突时先检查服务器快照，不会静默覆盖。
+- 可编辑工程采用 revision 检测并发冲突；不同工坊的保存方式有所区别，发生冲突时先保留本地草稿并检查服务器快照，不会静默覆盖。
 - 图片和视频生成是异步任务；完成结果会进入对应项目素材库。
 - 删除仍被项目引用的素材前，需要先解除引用。
 
@@ -46,3 +49,4 @@
 3. **验证模型**：[模式选择](/docs.html?page=test-overview) → [文本对话](/docs.html?page=test-chat) → [调用日志](/docs.html?page=logs-overview)。
 4. **完成创作**：[选择应用](/docs.html?page=apps-overview)，进入对应工坊的快速开始。
 5. **整理交付**：[素材复用](/docs.html?page=files-references) → [项目快照](/docs.html?page=project-snapshots)。
+6. **复用能力与自动化**：[创意安装](/docs.html?page=creative-overview) → [Amadeus 工作模式](/docs.html?page=amadeus-workflows)或[本地 Agent 接入](/docs.html?page=desktop-agent)。

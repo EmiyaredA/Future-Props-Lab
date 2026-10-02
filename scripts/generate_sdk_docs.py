@@ -9,6 +9,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LABELS = {
     "desktop": "桌面初始化与本地 Agent 接入",
+    "amadeus": "Amadeus 桌面助手",
+    "desktop_pet": "桌宠工坊",
+    "live2d_workshop": "Live2D 工坊",
+    "motion_compositor": "特效制作工坊",
     "accounts": "登录与个人账号",
     "workspaces": "工作区与邀请",
     "admin": "账号管理",
@@ -49,14 +53,32 @@ def type_label(schema):
     return schema.get("type", "object")
 
 
-def auth_for(path):
-    if path.startswith("/v1/desktop/"):
+def auth_for(path, method="GET"):
+    if path.startswith("/v1/amadeus/"):
+        return "仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key"
+    if path.startswith("/v1/tool-navigation/codex-source"):
+        return "仅桌面模式；平台管理员 Session；不接受 Management API Key 或 Agent 通道"
+    if path == "/v1/desktop/setup":
         return "仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化"
+    if path.startswith("/v1/desktop/"):
+        if (path == "/v1/desktop/agent/pairings" and method == "POST") or path.endswith("/claim"):
+            return "仅桌面模式；私有本地 Agent 通道；领取授权还需配对 claim token"
+        if (
+            path == "/v1/desktop/agent/pairings"
+            or path.endswith(("/decision", "/ack"))
+            or path == "/v1/desktop/ui/inbox"
+        ):
+            return "仅桌面模式；浏览器 Session；桌面私有传输校验"
+        return "仅桌面模式；已授权 Workspace API Key 或 Session；桌面私有传输校验"
     if path in {"/health", "/ready"}:
         return "无需登录"
     if path == "/v1/auth/login":
         return "账号密码"
-    if path.startswith(("/v1/auth", "/v1/account", "/v1/platform", "/v1/public-workspace")):
+    if path == "/v1/auth/register":
+        return "有效注册邀请码；无需已有 Session"
+    if path.startswith("/v1/public-workspace"):
+        return "Session 或具有 studio:read 的 Workspace API Key；仅公开只读投影"
+    if path.startswith(("/v1/auth", "/v1/account", "/v1/platform")):
         return "Session；敏感操作需要二次验证"
     return "Workspace API Key 或 Session"
 
@@ -239,7 +261,7 @@ def build():
                 "",
                 f"`client.{resource}.{entry['method']}(...)`",
                 "",
-                f"**接口**：`{key}`。**鉴权**：{auth_for(path)}。",
+                f"**接口**：`{key}`。**鉴权**：{auth_for(path, method)}。",
                 f"**权限**：`{permissions.get(key, '账号治理或公开接口的专用鉴权')}`。",
                 "",
                 "写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；"

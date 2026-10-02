@@ -1,4 +1,4 @@
-<!-- docs: {"group":"presentation","order":1,"title":"演示工坊：编辑与放映","lead":"创建幻灯片，排版文字、图片和图形，导出可继续编辑的 PPTX。","evidence":["web/src/features/presentation-workshop","backend/app/presentation_workshop"]} -->
+<!-- docs: {"group":"presentation","order":1,"title":"演示工坊：编辑与放映","lead":"创建幻灯片，排版文字、图片和图形，导出可继续编辑的 PPTX。","evidence":["web/src/features/presentation-workshop","backend/app/apps/presentation_workshop"]} -->
 
 # 演示工坊：编辑与放映
 
@@ -42,11 +42,11 @@ Shift 点击或在空白处框选多个元素后，可以对齐、等距分布�
 
 点击「放映」从第一页开始，旁边的菜单可选择「从当前页放映」。方向键翻页、Escape 退出；放映不会显示备注与编辑控件。
 「导出 PPTX」先保存最新修改，再下载可编辑文稿。文本、图形和图片保持独立，备注随页面导出。
-不同系统缺少所选字体时可能替换字体，换行与字形可能不同；首版不嵌入字体。
+不同系统缺少所选字体时可能替换字体，换行与字形可能不同；导出文件不嵌入字体。
 
 每份文稿最多 100 页，每页最多 200 个元素，导出涉及的去重图片总量最多 100 MiB。
 如提示导出繁忙可稍后重试；图片缺失时需恢复或替换图片。删除文稿不会删除公共文件库中的图片。
-首版不支持 PPTX 导入、AI、图表、表格、动画和多人实时协作。
+当前不支持 PPTX 导入、AI、图表、表格、动画和多人实时协作。
 
 导出时单张图片最多 2500 万像素，转换为 PNG 后的去重图片总量也限制在 100 MiB 内；超限返回明确错误。
 

@@ -42,18 +42,60 @@
     "sha256": "7d5277d841db929489a3bc56d005415aff1f36f3bb2a1f05c7304c363c3af9b7"
   },
   {
+    "file": "amadeus-approval.jpg",
+    "scene": "真实 Electron 的 Plan 到 Agent 写入审批",
+    "source": "真实 Electron 隔离测试目录；正式 /v1 API；模型流为确定性合成响应",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "theme": "light",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "cd14bf99013a4e690e81e49a4e9a537aad8810499dd1c9ceb425f21ccff7bb0f"
+  },
+  {
+    "file": "amadeus-window.jpg",
+    "scene": "真实 Electron 的助手上下文与数字人窗口",
+    "source": "真实 Electron 隔离测试目录；正式 /v1 API；模型流为确定性合成响应",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1800,
+      "height": 1456
+    },
+    "theme": "light",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "7f8377f5e4c74fb98a1e3a4e5de35b5e89db85c0b9c5da1a22cb7470cfbc4c71"
+  },
+  {
     "file": "annotation-editor.jpg",
-    "scene": "已加载波形与双人标注",
-    "source": "隔离数据库；正式 API；自建演示数据",
-    "capturedAt": "2026-09-08",
+    "scene": "合成录音的逐人情绪与多语言片段校对",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
     "viewport": {
       "width": 1600,
       "height": 1000
     },
     "theme": "dark",
-    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
-    "sha256": "e71f2a14f9da083e8dd1663a05e04f54571945cdc504242bb69e3b6185336c4d"
+    "sha256": "7375bfe6dff30f84685c45f65752c4da2c4d2b6bb5b1f38f65bfccdcb99b7df9"
+  },
+  {
+    "file": "annotation-emotions.jpg",
+    "scene": "项目情绪词库、自定义名称与颜色",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "aa6a8eab60aa4ea10288bc6940087bc0c8cd14a9f19401971c36da058d40dfa7"
   },
   {
     "file": "annotation-export.jpg",
@@ -68,6 +110,34 @@
     "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
     "sha256": "b6345cbfa48fe8bbe2e4dc6b2cc6f5fd02750544e08c15c1d213c1912befd5af"
+  },
+  {
+    "file": "creative-install.jpg",
+    "scene": "公开工具的安装依赖与禁用导入确认",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "7c559ebe85a45ed3e51dd7cfe86875a066bf3497be9eeb1bc3549a1805bb6dc7"
+  },
+  {
+    "file": "director-editor.jpg",
+    "scene": "默认预演场景的并排布景与机位监看",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "becc355d2d3028910a4b4e454f84387ab82e684a562911c5d59b1542364ad376"
   },
   {
     "file": "files-library.jpg",
@@ -197,17 +267,45 @@
   },
   {
     "file": "integration-skill-form.jpg",
-    "scene": "上传 Skill填写界面",
-    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
-    "capturedAt": "2026-09-08",
+    "scene": "Skill ZIP 导入、标签与启用配置",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 570,
+      "height": 496
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "6c10e451440e1f6ebc5838aa9106726a60f9fc5da3e8dafc14cea9521215be5d"
+  },
+  {
+    "file": "integration-skill-preview.jpg",
+    "scene": "自写 Skill 的版本与原文预览",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 790,
+      "height": 494
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "cf4815cfe569797ab18bb49caee1907af21e9c2b7fcd8854947fe8e0ea4c00d2"
+  },
+  {
+    "file": "live2d-editor.jpg",
+    "scene": "合成分层角色的人形骨架与参数绑定",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
     "viewport": {
       "width": 1600,
       "height": 1000
     },
     "theme": "dark",
-    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
-    "sha256": "400d5296a6b80dc49b462ff47697c5509126a0f8de1ce5f784c53e4497c477ca"
+    "sha256": "8e1f4ae147425c8f58ccf6722966d76d974a42c804cbf26bb61096d538ec69a1"
   },
   {
     "file": "logs-detail.jpg",
@@ -250,6 +348,48 @@
     "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
     "sha256": "7332d390810ffdd3737c6e32b43f5d322c34ce94912a470ed82cc80b21bfe760"
+  },
+  {
+    "file": "motion-editor.jpg",
+    "scene": "合成图形的路径遮罩与位置关键帧",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "4843811af817d24a521ba1214826063612cbb79f63acc270e14deb7d47d485d9"
+  },
+  {
+    "file": "pet-editor.jpg",
+    "scene": "固定角色快照与桌宠形象设置",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "c3d332d847aaeb3e92d0999ca46353bf6fb0c6bc7fddb120e4f5bee2e22e3a59"
+  },
+  {
+    "file": "pet-events.jpg",
+    "scene": "桌宠事件台词编辑与预览",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "64a9be5159aa5768a60d89dc83fe5f27508f123c7e4f14ae3596bbaf40122c91"
   },
   {
     "file": "provider-form.jpg",
@@ -337,17 +477,17 @@
   },
   {
     "file": "tools-navigation.jpg",
-    "scene": "工具分类",
-    "source": "隔离数据库；正式 /v1 API；自建合成音视频；真实 Chromium 界面",
-    "capturedAt": "2026-09-08",
+    "scene": "工具导航当前入口，录音标注已移至应用",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
     "viewport": {
       "width": 1600,
       "height": 1000
     },
     "theme": "dark",
-    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
-    "sha256": "3e3adbc4161c8e978a319022acb4ded5b51fbb827efafb814edd0943e032d4ce"
+    "sha256": "b64889779c3f3d7b6a3bfa80615bfb9983fbc5d14fb003b4a137a142250c41ab"
   },
   {
     "file": "video-editor-projects.jpg",
@@ -390,6 +530,20 @@
     "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
     "sha256": "8dd24a42078ac389739eac9f6701980c3f5ec07575a5b67d6296e4555d8ede3c"
+  },
+  {
+    "file": "video-transitions.jpg",
+    "scene": "纯色片段的画面转场库与片段头应用",
+    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
+    "capturedAt": "2026-10-02",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "11dac706384d90a9682ee3be5afda28707758f5424278db0a5361325e4920205"
   },
   {
     "file": "visual-canvas.jpg",
