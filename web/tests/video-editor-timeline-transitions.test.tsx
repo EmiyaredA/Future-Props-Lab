@@ -217,7 +217,7 @@ describe("video editor timeline transitions and batch splitting", () => {
       <VideoEditorTimeline timeline={audioTimeline} {...props} />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "添加片段之间音频淡化" }),
+      screen.getByRole("button", { name: "添加片段之间音频转场" }),
     );
     expect(selectTransition).toHaveBeenCalledWith(undefined, {
       fromClipId: "audio-left",
@@ -248,7 +248,7 @@ describe("video editor timeline transitions and batch splitting", () => {
       />,
     );
     expect(
-      screen.getByRole("button", { name: "片段之间音频淡化" }),
-    ).toHaveTextContent("音频淡化");
+      screen.getByRole("button", { name: "片段之间交叉淡化" }),
+    ).toHaveTextContent("交叉淡化");
   });
 });

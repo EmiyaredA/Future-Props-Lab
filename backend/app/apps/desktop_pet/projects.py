@@ -14,8 +14,10 @@ from app.apps.desktop_pet.schemas import (
     PetCreate,
     PetDocumentOut,
     PetPatch,
+    PetPersona,
     PetProjectOut,
     PetProjectsOut,
+    PetReaction,
     PetSave,
     PetSync,
 )
@@ -230,20 +232,32 @@ class DesktopPetProjects:
         data = await incoming.read(MAX_ARCHIVE + 1)
         package = await asyncio.to_thread(read_whale_package, data)
         assets = {name: new_id() for name in package.images}
+        human = package.model.get("rigProfile") == "human-chibi"
+        name = (package.model.get("character") or {}).get("name", "DeepSeek 大肥鱼").strip()
+        persona = PetPersona.model_validate(
+            (package.model.get("character") or {}).get("persona", {})
+        )
+        config = PetConfig(schemeId=package.model["schemes"][0]["id"], persona=persona)
+        if human:
+            config.events = {
+                "click": PetReaction(motionId="hop", expressionId="surprised"),
+                "pet": PetReaction(motionId="nod", expressionId="shy"),
+                "grab": PetReaction(motionId="look", expressionId="angry"),
+                "drop": PetReaction(motionId="stand", expressionId="happy"),
+                "roam": PetReaction(motionId="walk"),
+            }
         row = DesktopPetProject(
             id=new_id(),
             workspace_id=self.workspace_id,
             source_type="coopanion-whale",
             source_project_id=None,
             source_revision=None,
-            source_title="Coopanion · DeepSeek 大肥鱼",
-            title="DeepSeek 大肥鱼",
+            source_title=name if human else f"Coopanion · {name}",
+            title=name,
             character=None,
             whale_model=package.model,
             whale_assets=assets,
-            config=PetConfig(schemeId=package.model["schemes"][0]["id"]).model_dump(
-                mode="json", by_alias=True
-            ),
+            config=config.model_dump(mode="json", by_alias=True),
         )
         async with importing_project_layout(
             self.session, self.storage, APP, row.id, workspace_id=self.workspace_id

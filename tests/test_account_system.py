@@ -8,10 +8,6 @@ from sqlalchemy import func, select
 from app.capabilities.identity.passwords import normalize_username
 from app.capabilities.identity.security import hash_secret
 from app.console.governance.provisioning import create_account
-from app.main import app
-from app.llm.models import (
-    ModelProvider,
-)
 from app.console.models import (
     AuthSession,
     ManagementApiKey,
@@ -20,6 +16,10 @@ from app.console.models import (
     Workspace,
     WorkspaceMembership,
 )
+from app.llm.models import (
+    ModelProvider,
+)
+from app.main import app
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now
 

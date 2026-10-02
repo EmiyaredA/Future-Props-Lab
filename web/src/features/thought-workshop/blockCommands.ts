@@ -20,6 +20,7 @@ export type InsertCommandKey =
   | "attachment"
   | "inlineMath"
   | "math"
+  | "canvas"
   | "mermaid"
   | "table";
 
@@ -144,6 +145,13 @@ export const INSERT_COMMANDS: InsertCommand[] = [
     glyph: "∑",
   },
   {
+    key: "canvas",
+    label: "画板",
+    description: "绘制可编辑的技术信息图",
+    keywords: "canvas board diagram 信息图",
+    glyph: "▧",
+  },
+  {
     key: "mermaid",
     label: "Mermaid 图表",
     description: "使用文本描述图表",
@@ -200,6 +208,7 @@ function contentFor(key: InsertCommandKey) {
       ],
     };
   if (key === "rule") return { type: "horizontalRule" };
+  if (key === "canvas") return { type: "canvas" };
   if (key === "mermaid") return { type: "mermaid" };
   if (key === "table")
     return {
@@ -220,7 +229,15 @@ export function runInsertCommand(
   key: InsertCommandKey,
   callbacks: InsertCallbacks,
   position?: number,
+  replaceRange?: { from: number; to: number },
 ) {
+  // Slash replacement and block creation must reach React as one document update.
+  // A NodeView can flush pending renders while the insertion is being dispatched.
+  if (
+    replaceRange &&
+    ["image", "attachment", "inlineMath", "math"].includes(key)
+  )
+    editor.chain().focus().deleteRange(replaceRange).run();
   if (key === "image") return callbacks.image(position);
   if (key === "attachment") return callbacks.attachment(position);
   if (key === "inlineMath") return callbacks.math(true, position);
@@ -237,7 +254,9 @@ export function runInsertCommand(
   editor
     .chain()
     .focus()
-    .insertContentAt(insertAt, content, { updateSelection: true })
+    .insertContentAt(replaceRange ?? insertAt, content, {
+      updateSelection: true,
+    })
     .run();
 }
 

@@ -3,6 +3,27 @@
 这是 Future Props Lab 目录职责的唯一完整索引。新增、删除目录或改变目录职责时更新本文件；
 各模块文档只补充局部使用方法，不另行定义一套架构。
 
+## 思绪工坊官方知识库
+
+`web/src/features/thought-workshop/official/` 拥有内置只读库清单、分组目录、正文搜索、大纲与阅读页。
+`content/` 下的中文 Markdown 是知识库版主要使用指南，按总库、十个应用与技术原理库分目录维护；
+正文经 Vite 懒加载随 Web 和桌面包发布，不依赖原有文档中心或网络文档服务。
+官方阅读使用独立 `official-knowledge-bases` 路径和 `content.read` 权限，所有角色共用阅读组件；
+不创建 ORM 记录，不接入用户编辑、备份或回收站接口。查询键归思绪工坊 `queryKeys.ts`。
+`web/tests/official-knowledge.test.tsx` 检查内容、链接、路由与阅读行为，
+`web/e2e/official-knowledge.spec.ts` 覆盖账号入口、搜索、导航保护及响应式阅读。
+
+`official/technicalCatalog.ts` 登记十二篇平台原理和十篇应用原理；`content/technical/figures/`
+保存版本化 CanvasScene，`figures.ts` 通过受控懒加载清单解析图形和搜索标签。
+`OfficialFigure.tsx` 与 `CopyOfficialFigure.tsx` 负责只读图展示和显式创建个人副本。
+`diagrams/` 拥有 CanvasScene 模型、模板、纯操作、React Flow 全屏编辑器、Tiptap 节点、
+Mermaid 共用阅读器及 SVG/PNG 导出。运行期选择和视口不进入正文；场景变更进入现有保存队列与历史。
+`backend/app/apps/thought_workshop/schemas/canvas.py` 校验画板结构与关系；
+`canvas_export.py` 按同一布局规则输出转义后的静态 SVG，图片由现有导出流程嵌入。
+素材追踪、搜索、Markdown 和备份复用思绪工坊现有正式 API，不增加迁移或 HTTP 路由。
+`web/tests/thought-canvas.test.tsx`、`technical-content.test.ts`、`web/e2e/technical-knowledge.spec.ts`
+及 `tests/test_thought_canvas.py` 检查编辑、内容、只读、可移植性与租户边界。
+
 ```text
 Future-Props-Lab/
 ├── .agents/skills/    # 仓库级 Codex Agent Skills；watch 为固定上游版本的视频分析 Skill
@@ -162,7 +183,7 @@ Future-Props-Lab/
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
   映射归属 `capabilities/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
   删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
-- 应用目录同样由 Web 静态注册表维护，  应用最近访问记录只保存在浏览器本地。视觉创作工坊、
+- 应用目录同样由 Web 静态注册表维护， 应用最近访问记录只保存在浏览器本地。视觉创作工坊、
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
   后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
@@ -424,6 +445,9 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 分别维护常量与复制、对象创建、项目校验；`assets/catalog/shape-types.ts` 保存资产形状契约，
 `cinematography/camera-effects-types.ts` 保存镜头效果类型，`scenes/scene-document-types.ts` 保存戏段快照类型，
 `spatial/scene-view.ts` 定义空间报告所需的只读场景接口。编辑器实例用 AbortSignal 管理监听器生命周期。
+`editor/editor/scene-sampling.ts` 拥有单帧实体动画、接触、视觉、光照与镜头采样，`engine.ts` 保留资源生命周期与交互装配。
+编辑器基础控件样式保存在 `style.css`；`ui/editor-workspace.css`、`ui/editor-timeline.css` 与
+`ui/workspace-responsive.css` 分别拥有面板与视口、时间线、响应式与调整布局，入口按原级联顺序加载。
 编辑器内存仍使用内嵌字节；保存前换成文件引用，打开时再还原。
 外部 Agent 经 `fpl` 调用项目、文件和动作库；场景工具只在该工程的编辑器已打开时执行，不另建 MCP。
 
@@ -467,6 +491,7 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `backend/app/capabilities/asset_store/video_frames.py`：工作区文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`；HTTP 适配在 `capabilities/asset_store/routes/video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
+- `sdk/python/src/future_props_lab/canvas_example.py`：独立的笔记信息图 SDK 示例，通过正式 API 创建与导出可编辑画板；不参与既有六工坊文档生成，契约回归由 `tests/test_thought_canvas.py` 覆盖。
 - `skills/future-props-lab-automation/`：官方自动化 Agent Skill 包（根 `SKILL.md` 名 `future-props-lab-automation`）。叶子 skill 目录名必须等于 frontmatter `name`，可单独或组合安装；每个叶子内联「前置」与最小 `fpl` 示例。校验：`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。只指导通过 `fpl`/SDK 操作产品，不修改本仓库源码；见该处 `README.md`。
 - `.agents/skills/watch/`：仓库级第三方视频分析 Agent Skill，包含上游脚本、许可证与固定提交来源记录；仅供 Codex 在本仓库发现，不参与 Future Props Lab 产品构建。应用内 Skills 通过正式 ZIP 导入 API 单独管理。
 - `backend/app/capabilities/asset_store/image_crop.py` 与 `capabilities/asset_store/schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存；HTTP 适配在 `capabilities/asset_store/routes/image_crop.py`。

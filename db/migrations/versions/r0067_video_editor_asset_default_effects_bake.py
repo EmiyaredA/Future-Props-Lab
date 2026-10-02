@@ -1,3 +1,5 @@
+# ruff: noqa: E501
+# Registered migration SQL is immutable; retain its original text.
 """Video editor asset default effects and asset_bake task kind."""
 
 MIGRATION_ID = "r0067_video_editor_asset_default_effects_bake"

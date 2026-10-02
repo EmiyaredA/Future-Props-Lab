@@ -142,10 +142,14 @@ const Live2DEditorPage = lazy(() =>
   })),
 );
 const DesktopPetProjectsPage = lazy(() =>
-  import("@features/desktop-pet/ProjectsPage").then((m) => ({ default: m.ProjectsPage })),
+  import("@features/desktop-pet/ProjectsPage").then((m) => ({
+    default: m.ProjectsPage,
+  })),
 );
 const DesktopPetEditorPage = lazy(() =>
-  import("@features/desktop-pet/EditorPage").then((m) => ({ default: m.EditorPage })),
+  import("@features/desktop-pet/EditorPage").then((m) => ({
+    default: m.EditorPage,
+  })),
 );
 
 const MotionCompositorProjectsPage = lazy(() =>
@@ -160,6 +164,11 @@ const MotionCompositorEditorPage = lazy(() =>
 );
 
 const ThoughtWorkshopPage = lazy(THOUGHT_WORKSHOP_MODULE.pages.notes);
+const OfficialKnowledgePage = lazy(() =>
+  import("@features/thought-workshop/official/OfficialKnowledgePage").then(
+    (m) => ({ default: m.OfficialKnowledgePage }),
+  ),
+);
 
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
@@ -474,6 +483,37 @@ export default function App() {
       </WorkshopShell>
     );
 
+  if (page === "thought-workshop-official") {
+    if (!workspaceAllows(me.workspace, "content.read"))
+      return (
+        <PageBoundary>
+          <main className="readonly-page">
+            <h1>需要内容阅读权限</h1>
+            <button className="btn" onClick={() => navigate("apps")}>
+              返回应用中心
+            </button>
+          </main>
+        </PageBoundary>
+      );
+    return (
+      <PageBoundary>
+        <OfficialKnowledgePage
+          key={me.workspace.id}
+          canCopy={workspaceAllows(me.workspace, "content.write")}
+          onOpenNote={(library, note) =>
+            navigate("thought-workshop-editor", library, note)
+          }
+          libraryId={route.projectId}
+          documentId={route.documentId}
+          onOpen={(library, document) =>
+            navigate("thought-workshop-official", library, document)
+          }
+          onBack={() => navigate("thought-workshop-notes")}
+        />
+      </PageBoundary>
+    );
+  }
+
   if (
     (!workspaceAllows(me.workspace, "content.write") &&
       hasReadOnlyRoute(page)) ||
@@ -523,6 +563,9 @@ export default function App() {
           page={page}
           projectId={route.projectId}
           noteId={route.documentId}
+          onOpenOfficial={(library) =>
+            navigate("thought-workshop-official", library)
+          }
           onNavigate={(project, document, replace) => {
             const next = project
               ? "thought-workshop-editor"
@@ -586,6 +629,7 @@ export default function App() {
           key={route.projectId}
           projectId={route.projectId}
           onBack={() => navigate("video-editor-projects")}
+          registerNavigationGuard={registerNavigationGuard}
         />
       </PageBoundary>
     );

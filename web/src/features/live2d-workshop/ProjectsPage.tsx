@@ -125,7 +125,11 @@ export function ProjectsPage({
   const filtered = projects.filter((p) =>
     p.title.toLowerCase().includes(query.trim().toLowerCase()),
   );
-  const showBuiltin = !query.trim() || "红莉栖 Amadeus 内置案例".toLowerCase().includes(query.trim().toLowerCase());
+  const showBuiltin =
+    !query.trim() ||
+    "红莉栖 Amadeus 内置案例"
+      .toLowerCase()
+      .includes(query.trim().toLowerCase());
   const selectAppearance = (projectId: string | null) =>
     run(async () => {
       if (!appearanceScope) return;
@@ -231,37 +235,76 @@ export function ProjectsPage({
         </div>
       ) : filtered.length || showBuiltin ? (
         <div className="workshop-project-grid" aria-live="polite">
-          {showBuiltin && <ProjectLibraryCard
-            project={{ id: BUNDLED_AMADEUS_PROJECT_ID, title: "红莉栖 · Amadeus" }}
-            cover="live2d"
-            coverTitle="内置角色工程"
-            coverDescription="查看分层模型与骨骼绑定"
-            metadata={<span>只读案例</span>}
-            onOpen={() => onOpen(BUNDLED_AMADEUS_PROJECT_ID)}>
-            <div className="workshop-project-primary-actions">
-              <button onClick={() => onOpen(BUNDLED_AMADEUS_PROJECT_ID)}><Maximize2 size={15} />打开</button>
-              {chosenAppearance && <button disabled={busy} onClick={() => void selectAppearance(null)}>设为 Amadeus 形象</button>}
-            </div>
-            <div className="workshop-project-secondary-actions">
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger aria-label="红莉栖内置案例项目菜单"><MoreHorizontal size={18} /></DropdownMenu.Trigger>
-                <DropdownMenu.Portal><DropdownMenu.Content className="l2-menu">
-                  {!readOnly && <DropdownMenu.Item onSelect={() => void run(async () => {
-                    const response = await fetch(AMADEUS_PACKAGE_URL);
-                    if (!response.ok) throw new Error("内置工程包无法读取");
-                    const file = new File([await response.blob()], "Amadeus.fpllive2d", { type: "application/zip" });
-                    onOpen((await importProject(file)).id);
-                  })}><Pencil size={14} />创建可编辑副本</DropdownMenu.Item>}
-                  <DropdownMenu.Item onSelect={() => {
-                    const anchor = document.createElement("a");
-                    anchor.href = AMADEUS_PACKAGE_URL;
-                    anchor.download = "Amadeus.fpllive2d";
-                    anchor.click();
-                  }}><Download size={14} />下载工程</DropdownMenu.Item>
-                </DropdownMenu.Content></DropdownMenu.Portal>
-              </DropdownMenu.Root>
-            </div>
-          </ProjectLibraryCard>}
+          {showBuiltin && (
+            <ProjectLibraryCard
+              project={{
+                id: BUNDLED_AMADEUS_PROJECT_ID,
+                title: "红莉栖 · Amadeus",
+              }}
+              cover="live2d"
+              coverTitle="内置角色工程"
+              coverDescription="查看分层模型与骨骼绑定"
+              metadata={<span>只读案例</span>}
+              onOpen={() => onOpen(BUNDLED_AMADEUS_PROJECT_ID)}
+            >
+              <div className="workshop-project-primary-actions">
+                <button onClick={() => onOpen(BUNDLED_AMADEUS_PROJECT_ID)}>
+                  <Maximize2 size={15} />
+                  打开
+                </button>
+                {chosenAppearance && (
+                  <button
+                    disabled={busy}
+                    onClick={() => void selectAppearance(null)}
+                  >
+                    设为 Amadeus 形象
+                  </button>
+                )}
+              </div>
+              <div className="workshop-project-secondary-actions">
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger aria-label="红莉栖内置案例项目菜单">
+                    <MoreHorizontal size={18} />
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content className="l2-menu">
+                      {!readOnly && (
+                        <DropdownMenu.Item
+                          onSelect={() =>
+                            void run(async () => {
+                              const response = await fetch(AMADEUS_PACKAGE_URL);
+                              if (!response.ok)
+                                throw new Error("内置工程包无法读取");
+                              const file = new File(
+                                [await response.blob()],
+                                "Amadeus.fpllive2d",
+                                { type: "application/zip" },
+                              );
+                              onOpen((await importProject(file)).id);
+                            })
+                          }
+                        >
+                          <Pencil size={14} />
+                          创建可编辑副本
+                        </DropdownMenu.Item>
+                      )}
+                      <DropdownMenu.Item
+                        onSelect={() => {
+                          const anchor = document.createElement("a");
+                          anchor.href = AMADEUS_PACKAGE_URL;
+                          anchor.download = "Amadeus.fpllive2d";
+                          anchor.click();
+                        }}
+                      >
+                        <Download size={14} />
+                        下载工程
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
+              </div>
+            </ProjectLibraryCard>
+          )}
           {filtered.map((p) => (
             <ProjectLibraryCard
               key={p.id}

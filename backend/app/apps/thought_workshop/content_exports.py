@@ -8,6 +8,7 @@ from pathlib import Path
 import mistune
 from sqlalchemy import select
 
+from app.apps.thought_workshop.canvas_export import CanvasHtmlRenderer, canvas_sources
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.markdown_conversion import markdown, parse_markdown
 from app.apps.thought_workshop.notes import Notes, note_out
@@ -62,15 +63,22 @@ async def export_note(session, workspace_id, note_id, expected_revision, format)
         "# " + title + "\n\n" + markdown(document, {id: item[1] for id, item in files.items()})
     )
     if format == "html":
-        # HTML is derived only from our validated document's escaped Markdown.
+        # Canvas nodes are inert SVG. Mermaid retains the established escaped-source
+        # server export; the Web exporter supplies its rendered offline SVG version.
         render = mistune.create_markdown(
-            escape=True, plugins=["table", "strikethrough", "task_lists"]
+            renderer=CanvasHtmlRenderer(
+                canvas_sources(document, {id: item[1] for id, item in files.items()})
+            ),
+            plugins=["table", "strikethrough", "task_lists"],
         )
         content = (
             '<!doctype html><html lang="zh"><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width"><title>'
             + html.escape(title)
-            + "</title><body>"
+            + "</title><style>body{max-width:1000px;margin:24px auto;padding:0 16px;"
+            + "font-family:system-ui,sans-serif}.fpl-canvas{margin:24px 0;overflow:auto}"
+            + ".fpl-canvas svg{width:100%;min-width:320px;background:#fff}"
+            + "pre{overflow:auto}img{max-width:100%}</style><body>"
             + render(content)
             + "</body></html>"
         )

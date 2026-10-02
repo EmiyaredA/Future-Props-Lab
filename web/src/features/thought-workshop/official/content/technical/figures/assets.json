@@ -1,0 +1,79 @@
+{
+  "sceneVersion": 1,
+  "title": "完整备份将文档与素材一起搬运",
+  "elements": [
+    {
+      "id": "doc",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "文档 JSON\n保存素材 ID",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "binary",
+      "kind": "icon",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "托管素材\n实际二进制文件",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "archive",
+      "kind": "rounded",
+      "x": 380,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "完整备份包\n清单 + 正文 + 文件",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "import",
+      "kind": "icon",
+      "x": 740,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "导入后的新副本\n新 ID + 引用重映射",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    }
+  ],
+  "edges": [
+    {
+      "id": "doc_archive",
+      "source": "doc",
+      "target": "archive",
+      "label": "结构快照",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "binary_archive",
+      "source": "binary",
+      "target": "archive",
+      "label": "引用文件",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "archive_import",
+      "source": "archive",
+      "target": "import",
+      "label": "校验与导入",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

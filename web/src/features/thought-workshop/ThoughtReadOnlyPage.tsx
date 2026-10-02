@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { OfficialLibraryCards } from "./official/OfficialLibraryCards";
 import { ReadOnlyCollection, ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
 import { getNote } from "./api";
 import { getDirectory, listKnowledge } from "./knowledgeApi";
@@ -8,11 +10,14 @@ export function ThoughtReadOnlyPage({
   projectId,
   documentId,
   onOpen,
+  onOpenOfficial,
 }: {
   projectId?: string;
   documentId?: string;
   onOpen: (projectId?: string, documentId?: string) => void;
+  onOpenOfficial: (libraryId: string) => void;
 }) {
+  const [query, setQuery] = useState("");
   const projects = useQuery({
     queryKey: thoughtKeys.projects(),
     queryFn: ({ signal }) => listKnowledge("", false, signal),
@@ -28,12 +33,17 @@ export function ThoughtReadOnlyPage({
     queryFn: ({ signal }) => getNote(documentId!, signal),
     enabled: !!documentId,
   });
+  const filteredProjects = projects.data?.filter((item) =>
+    item.title
+      .toLocaleLowerCase("zh-CN")
+      .includes(query.trim().toLocaleLowerCase("zh-CN")),
+  );
   return (
     <ReadOnlyPage
       title={
-        note.data?.title || directory.data?.knowledge_base.title || "思绪工坊"
+        note.data?.title || directory.data?.knowledge_base.title || "所有知识库"
       }
-      error={projects.error || directory.error || note.error}
+      error={projectId ? directory.error || note.error : undefined}
       loading={
         documentId
           ? note.isPending
@@ -63,10 +73,41 @@ export function ThoughtReadOnlyPage({
           onOpen={(id) => onOpen(projectId, id)}
         />
       ) : (
-        <ReadOnlyCollection
-          items={projects.data || []}
-          onOpen={(id) => onOpen(id)}
-        />
+        <>
+          <input
+            className="readonly-search"
+            aria-label="搜索知识库"
+            placeholder="搜索知识库…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          <OfficialLibraryCards query={query} onOpen={onOpenOfficial} />
+          <h2>我的知识库</h2>
+          {projects.error && (
+            <p role="alert">
+              个人知识库暂时无法读取。
+              <button className="btn" onClick={() => void projects.refetch()}>
+                重试
+              </button>
+            </p>
+          )}
+          <div className="readonly-collection">
+            {filteredProjects?.map((item) => (
+              <button
+                className="readonly-card"
+                key={item.id}
+                onClick={() => onOpen(item.id)}
+              >
+                <strong>{item.title}</strong>
+                <span>{item.description}</span>
+                <small>查看内容 →</small>
+              </button>
+            ))}
+          </div>
+          {projects.isSuccess && !filteredProjects?.length && (
+            <p>没有匹配的个人知识库。</p>
+          )}
+        </>
       )}
     </ReadOnlyPage>
   );

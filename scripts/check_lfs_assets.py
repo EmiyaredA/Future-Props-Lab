@@ -30,17 +30,17 @@ WEB_ASSETS = (
 )
 EXPECTED_SHA256 = {
     Path("web/public/brand/amadeus/amadeus.fpllive2d"): (
-        "2929e29c302d7e53168bf907874bf176458128619cd358f7a3aa1ddcade8b6f9"
+        "9cd9d77c781fbe6d96e878cd48a5ac0709deeeb2b7e5ac876bc3d44d0ca97aac"
     ),
     Path("web/public/brand/amadeus/amadeus-poster.png"): (
-        "12ba7a984093f545c83c435ebbe0b97c6a05c72c88bd53e61462f4e5f58d2fea"
+        "80cd7211b946667667dc527536b25a8dee536896e887dcae1d280c20e524f441"
     ),
     Path("web/public/brand/amadeus/amadeus-stage-poster.png"): (
-        "0bfdd4c2bbc9ddadd5ddddf8bd5afeb4c4b5768b748e758be45aaccf6287a943"
+        "59baef48c4953e79f32fcbc9c86e9306fecb65ae554e50349048c41c3ab17465"
     ),
     Path(
         "web/public/brand/live2d-workshop-mark.png"
-    ): "ad615ad25e188543e37dc276592082c87c953f85c8b8bd8039fca44095f17e70",
+    ): "e8b8839472bdfc9923aba39987568392d0619ad834e41b7c96cd039352d6eecd",
     Path(
         "web/public/brand/audio-annotation-mark.png"
     ): "a3539f2db85bdc42fdfab5dea9215b3ef1ce4e1c560bc9834d5c30feae015349",
@@ -89,6 +89,7 @@ def require_git_lfs() -> None:
 
 def require_materialized(paths: tuple[Path, ...], include: str) -> None:
     invalid: list[str] = []
+    mismatched: list[str] = []
     for relative_path in paths:
         path = REPO_ROOT / relative_path
         try:
@@ -105,7 +106,15 @@ def require_materialized(paths: tuple[Path, ...], include: str) -> None:
             while chunk := source.read(1024 * 1024):
                 digest.update(chunk)
         if digest.hexdigest() != EXPECTED_SHA256[relative_path]:
-            invalid.append(f"{relative_path}（校验值不匹配）")
+            mismatched.append(str(relative_path))
+    if mismatched:
+        formatted = "\n  - ".join(mismatched)
+        raise SystemExit(
+            "Runtime asset SHA256 does not match the asset manifest:\n"
+            f"  - {formatted}\n"
+            "Compare the working files with committed LFS OIDs and update the "
+            "asset manifest only for verified asset changes."
+        )
     if invalid:
         formatted = "\n  - ".join(invalid)
         raise SystemExit(
@@ -166,6 +175,7 @@ def check_asset_manifest() -> None:
         raise SystemExit(f"{ASSET_MANIFEST} 未找到可校验的文档素材行")
 
     invalid: list[str] = []
+    mismatched: list[str] = []
     for scope, expected_count, expected_digest in rows:
         assets = manifest_assets(scope)
         try:
@@ -181,6 +191,14 @@ def check_asset_manifest() -> None:
                 f"{scope}（清单 {expected_count}/{expected_digest}，"
                 f"实际 {len(assets)}/{aggregate}）"
             )
+    if mismatched:
+        formatted = "\n  - ".join(mismatched)
+        raise SystemExit(
+            "Runtime asset SHA256 does not match the asset manifest:\n"
+            f"  - {formatted}\n"
+            "Compare the working files with committed LFS OIDs and update the "
+            "asset manifest only for verified asset changes."
+        )
     if invalid:
         formatted = "\n  - ".join(invalid)
         raise SystemExit(f"Documentation asset manifest is stale:\n  - {formatted}")

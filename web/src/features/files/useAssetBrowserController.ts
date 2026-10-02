@@ -36,7 +36,7 @@ import {
   type LibraryStagingItem,
   stageLocalFiles,
   stageProjectFiles,
-} from "@features/files/LibraryUploadDialogs";
+} from "@features/files/libraryStaging";
 import {
   type AssetViewMode,
   type FileEditor,
@@ -213,9 +213,7 @@ export function useAssetBrowserController({
     },
   });
   const upload = useMutation({
-    mutationFn: async (
-      files: Array<{ file: File; displayName?: string }>,
-    ) => {
+    mutationFn: async (files: Array<{ file: File; displayName?: string }>) => {
       let succeeded = 0;
       let failed = 0;
       for (const [index, item] of files.entries()) {
@@ -517,7 +515,10 @@ export function useAssetBrowserController({
           item.displayName.trim(),
         );
       }
-      const bySource = new Map<string, Extract<LibraryStagingItem, { kind: "project" }>[]>();
+      const bySource = new Map<
+        string,
+        Extract<LibraryStagingItem, { kind: "project" }>[]
+      >();
       for (const item of projects) {
         const group = bySource.get(item.sourceProjectId) ?? [];
         group.push(item);

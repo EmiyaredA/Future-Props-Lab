@@ -1,10 +1,5 @@
 import { ArrowLeft, BookOpen, Home, Search, Trash2, X } from "lucide-react";
-import {
-  useState,
-  type CSSProperties,
-  type ReactNode,
-  type Ref,
-} from "react";
+import { useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import {
   WorkshopSidebar,
   WorkshopNavigation,

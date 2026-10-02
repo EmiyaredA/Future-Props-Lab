@@ -108,8 +108,8 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         # Replaying an existing receipt remains possible when no new quota slot is available.
         from types import SimpleNamespace
 
-        from app.orm import bind_workspace
         from app.llm.routes.model_capacity import model_capacity
+        from app.orm import bind_workspace
         from app.runtime.db import SessionLocal
 
         async def no_capacity(*_args, **_kwargs):
@@ -383,3 +383,44 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
         assert path.is_file() and not orphan.exists()
         assert (await client.delete("/v1/model-inference/assets/" + asset_id)).status_code == 204
         assert not path.exists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["openai", "anthropic"])
+async def test_text_stream_provider_error_retains_partial_and_records_failure(monkeypatch, kind):
+    import json
+
+    from app.llm.providers.streaming import stream_text_completion
+
+    delta = (
+        {"choices": [{"delta": {"content": "partial"}}]}
+        if kind == "openai"
+        else {"type": "content_block_delta", "delta": {"type": "text_delta", "text": "partial"}}
+    )
+    failure = {"type": "error", "error": {"message": "deterministic-secret"}}
+    data = "".join("data: " + json.dumps(frame) + "\n\n" for frame in [delta, failure])
+
+    def stream(**kwargs):
+        kwargs.pop("transport", None)
+        return stream_text_completion(
+            **kwargs, transport=httpx.MockTransport(lambda _: httpx.Response(200, text=data))
+        )
+
+    monkeypatch.setattr("app.llm.inference.text.stream_text_completion", stream)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        identity = await model(client, kind, "fixture-error", "chat")
+        response = await client.post(
+            "/v1/model-inference/text/stream",
+            json={"model_id": identity, "messages": [{"role": "user", "text": "Hi"}]},
+        )
+        frames = [
+            json.loads(line[5:]) for line in response.text.splitlines() if line.startswith("data:")
+        ]
+        assert [frame["type"] for frame in frames] == ["start", "delta", "error"]
+        assert frames[1]["text"] == "partial"
+        log = (await client.get("/v1/llm-call-logs/" + frames[-1]["log_id"])).json()
+        assert log["status"] == "error"
+        assert log["response_payload"]["text"] == "partial"
+        assert "deterministic-secret" not in str(log) + response.text

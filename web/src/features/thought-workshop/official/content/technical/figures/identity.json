@@ -1,0 +1,78 @@
+{
+  "sceneVersion": 1,
+  "title": "凭证、权限与资源归属三道检查",
+  "elements": [
+    {
+      "id": "credential",
+      "kind": "icon",
+      "x": 40,
+      "y": 185,
+      "width": 220,
+      "height": 110,
+      "text": "Session / API Key\n证明请求身份",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "principal",
+      "kind": "icon",
+      "x": 370,
+      "y": 185,
+      "width": 220,
+      "height": 110,
+      "text": "StudioPrincipal\n空间 A + 有效权限",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "own",
+      "kind": "rounded",
+      "x": 720,
+      "y": 55,
+      "width": 220,
+      "height": 110,
+      "text": "空间 A 的项目\n通过归属校验",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "other",
+      "kind": "rounded",
+      "x": 720,
+      "y": 315,
+      "width": 220,
+      "height": 110,
+      "text": "空间 B 的项目\n按不存在处理",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    }
+  ],
+  "edges": [
+    {
+      "id": "credential_principal",
+      "source": "credential",
+      "target": "principal",
+      "label": "认证",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "principal_own",
+      "source": "principal",
+      "target": "own",
+      "label": "允许范围内",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "principal_other",
+      "source": "principal",
+      "target": "other",
+      "label": "拒绝泄露",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

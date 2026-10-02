@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { VideoEditorAsset, VideoEditorAssetOrganization } from "./types";
 import {
+  type CompleteAssetOrganization,
   moveAssetInOrganization,
   shiftAssetInOrganization,
 } from "./assetOrganization";
@@ -54,7 +55,7 @@ export function VideoEditorAssetRow({
 }: {
   asset: VideoEditorAsset;
   folderId: string | null;
-  arranged: VideoEditorAssetOrganization;
+  arranged: CompleteAssetOrganization;
   batchActive: boolean;
   selected: boolean;
   previewing?: boolean;

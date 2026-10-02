@@ -7,6 +7,7 @@ export async function renderDiagram(source: string, id: string) {
     theme: "neutral",
     maxTextSize: 50000,
     suppressErrorRendering: true,
+    flowchart: { htmlLabels: false },
   });
   const { svg } = await mermaid.render(id, source);
   // Mermaid strict mode sanitizes its SVG. It must never bind click handlers.

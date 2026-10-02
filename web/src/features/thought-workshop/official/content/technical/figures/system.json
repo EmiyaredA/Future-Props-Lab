@@ -1,0 +1,80 @@
+{
+  "sceneVersion": 1,
+  "title": "应用调用与两类持久数据",
+  "elements": [
+    {
+      "id": "ui",
+      "kind": "icon",
+      "x": 40,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "Web / Electron\n界面与编辑状态",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "api",
+      "kind": "icon",
+      "x": 380,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "FastAPI /v1\n校验与业务用例",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "db",
+      "kind": "icon",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "SQLite\n项目、版本与任务",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "files",
+      "kind": "icon",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "托管文件目录\n图片、音频与输出",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "ui_api",
+      "source": "ui",
+      "target": "api",
+      "label": "业务请求",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "api_db",
+      "source": "api",
+      "target": "db",
+      "label": "短事务",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "api_files",
+      "source": "api",
+      "target": "files",
+      "label": "素材读写",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { parseCanvasScene, mapCanvasAssets } from "./diagrams/model";
 import { encodedFilePath } from "./archiveFiles";
 import type { JSONContent } from "@tiptap/core";
 import { MarkdownManager } from "@tiptap/markdown";
@@ -8,7 +9,7 @@ const manager = () =>
   new MarkdownManager({
     extensions: [
       ...editorExtensions().filter(
-        (e) => !["image", "mermaid", "attachment"].includes(e.name),
+        (e) => !["image", "mermaid", "attachment", "canvas"].includes(e.name),
       ),
       Image,
     ],
@@ -19,6 +20,16 @@ export function parseMarkdown(
 ): JSONContent {
   const doc = manager().parse(text);
   const visit = (node: JSONContent): JSONContent => {
+    if (node.type === "codeBlock" && node.attrs?.language === "fpl-canvas") {
+      return {
+        type: "canvas",
+        attrs: {
+          scene: parseCanvasScene(
+            JSON.parse((node.content || []).map((n) => n.text || "").join("")),
+          ),
+        },
+      };
+    }
     if (node.type === "codeBlock" && node.attrs?.language === "mermaid") {
       return {
         type: "mermaid",
@@ -37,6 +48,9 @@ export function parseMarkdown(
           m.type !== "link" ||
           (allowRelativeFiles &&
             !/^(?:[a-z][a-z0-9+.-]*:|\/|\\)/i.test(String(m.attrs?.href))) ||
+          /^\/apps\/thought-workshop\/official-knowledge-bases\/[a-z0-9-]+(?:\/documents\/[a-z0-9-]+)?$/.test(
+            String(m.attrs?.href),
+          ) ||
           /^(https?:|mailto:)/i.test(String(m.attrs?.href)),
       );
     return copy;
@@ -62,6 +76,10 @@ export function markdownWarnings(doc: JSONContent): string[] {
     )
       warnings.add("合并单元格将展开为普通表格，建议另存完整备份。");
     if (node.type === "details") warnings.add("折叠段落将展开为正文。");
+    if (node.type === "canvas")
+      warnings.add(
+        "画板保留为 fpl-canvas 源码块；通用 Markdown 阅读器不直接绘图，可另导出 HTML 或图片。",
+      );
     if (node.type === "image") {
       warnings.add("图片保留在附件中，尺寸、裁剪与对齐将省略。");
       if (node.attrs?.caption)
@@ -79,6 +97,18 @@ export function toMarkdown(
   const tokens: Record<string, string> = {};
   let index = 0;
   const walk = (node: JSONContent): JSONContent => {
+    if (node.type === "canvas") {
+      const token = `THOUGHTEXPORT${index++}TOKEN`;
+      const scene = mapCanvasAssets(
+        parseCanvasScene(node.attrs?.scene),
+        (id) => imagePaths[id] || id,
+      );
+      tokens[token] =
+        "\n```fpl-canvas\n" +
+        JSON.stringify(scene).replaceAll("`", "\\u0060") +
+        "\n```\n";
+      return { type: "paragraph", content: [{ type: "text", text: token }] };
+    }
     if (node.type === "attachment") {
       const token = `THOUGHTEXPORT${index++}TOKEN`;
       const name = String(node.attrs?.filename || "附件").replace(

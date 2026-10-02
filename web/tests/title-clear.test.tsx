@@ -160,7 +160,15 @@ function presentation() {
 
 it("视频剪辑标题可以删光后重写，空着失焦则恢复原名", async () => {
   const user = userEvent.setup();
-  render(<VideoEditorPage projectId="clip" onBack={vi.fn()} />);
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <VideoEditorPage projectId="clip" onBack={vi.fn()} />
+    </QueryClientProvider>,
+  );
   const title = screen.getByRole("textbox", { name: "项目名称" });
   await user.clear(title);
   expect(title).toHaveValue("");
@@ -207,7 +215,6 @@ it("笔记标题可以删光后重写，空着失焦则恢复原名", async () =
       note={note}
       onSaved={vi.fn()}
       onOpen={vi.fn()}
-      onModels={vi.fn()}
       registerNavigationGuard={vi.fn()}
     />,
   );

@@ -14,7 +14,9 @@ describe("director desk native controls", () => {
     document.body.innerHTML = `<div class="director-desk-root"><select id="aspect" aria-label="项目画幅"><option value="16:9">16:9</option><option value="9:16">9:16</option></select></div>`;
     const release = mountNativeControls();
     const select = document.querySelector<HTMLSelectElement>("#aspect")!;
-    const trigger = document.querySelector<HTMLButtonElement>(".director-select-trigger")!;
+    const trigger = document.querySelector<HTMLButtonElement>(
+      ".director-select-trigger",
+    )!;
     expect(select.classList.contains("director-native-control")).toBe(true);
     expect(trigger.textContent).toContain("16:9");
     let changed = 0;
@@ -22,7 +24,9 @@ describe("director desk native controls", () => {
       changed += 1;
     });
     trigger.click();
-    document.querySelectorAll<HTMLButtonElement>(".director-select-option")[1].click();
+    document
+      .querySelectorAll<HTMLButtonElement>(".director-select-option")[1]
+      .click();
     expect(select.value).toBe("9:16");
     expect(changed).toBe(1);
     expect(trigger.textContent).toContain("9:16");
@@ -39,8 +43,12 @@ describe("director desk native controls", () => {
     const events: string[] = [];
     input.addEventListener("input", () => events.push("input"));
     input.addEventListener("change", () => events.push("change"));
-    document.querySelector<HTMLButtonElement>(".director-color-trigger")!.click();
-    document.querySelector<HTMLButtonElement>('[data-swatch="#202020"]')!.click();
+    document
+      .querySelector<HTMLButtonElement>(".director-color-trigger")!
+      .click();
+    document
+      .querySelector<HTMLButtonElement>('[data-swatch="#202020"]')!
+      .click();
     expect(input.value).toBe("#202020");
     expect(events).toEqual(["input", "change"]);
     release();
@@ -50,10 +58,17 @@ describe("director desk native controls", () => {
     document.body.innerHTML = `<div class="director-desk-root"><select id="field-targets" multiple><option value="a">甲</option><option value="b" selected>乙</option></select></div>`;
     const release = mountNativeControls();
     const select = document.querySelector<HTMLSelectElement>("#field-targets")!;
-    const boxes = [...document.querySelectorAll<HTMLInputElement>(".director-multi-option input")];
+    const boxes = [
+      ...document.querySelectorAll<HTMLInputElement>(
+        ".director-multi-option input",
+      ),
+    ];
     expect(boxes.map((box) => box.checked)).toEqual([false, true]);
     boxes[0].click();
-    expect([...select.selectedOptions].map((option) => option.value)).toEqual(["a", "b"]);
+    expect([...select.selectedOptions].map((option) => option.value)).toEqual([
+      "a",
+      "b",
+    ]);
     release();
   });
 });

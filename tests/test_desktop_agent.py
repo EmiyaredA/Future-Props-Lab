@@ -87,6 +87,15 @@ def approve(backend, data, *, write=True, profile="default"):
 
 def test_pairing_cli_permissions_revocation_and_streaming(connected):
     backend, data = connected
+    from tests.test_integrations import _skill_zip
+
+    created = backend.client.post(
+        "/v1/integrations/skills",
+        files={"file": ("skill.zip", _skill_zip(), "application/zip")},
+        data={"enabled": "true"},
+    )
+    assert created.status_code == 201, created.text
+    skill_id = created.json()["id"]
     result = approve(backend, data, write=False)
     assert "api_key" not in result
     assert credential_path(data_dir=data).stat().st_mode & 0o777 == 0o600
@@ -94,6 +103,12 @@ def test_pairing_cli_permissions_revocation_and_streaming(connected):
     assert TOKEN not in descriptor and "fpm_" not in descriptor
     with desktop_client(data_dir=data) as sdk:
         assert sdk.visual.list_projects().items == []
+        markdown = sdk.integrations.skill_version_markdown(skill_id=skill_id, version="v1")
+        assert markdown.version == "v1"
+        assert (
+            markdown.content
+            == "---\nname: demo-skill\ndescription: A local test skill\n---\n# Test\n"
+        )
         from future_props_lab import ApiError
 
         with pytest.raises(ApiError) as denied:

@@ -30,8 +30,12 @@ test("publishes a tool draft and installs a fixed copy", async ({ page }) => {
   await expect(page.getByText("安装完成")).toBeVisible();
 });
 
-test("square and creation entry fit narrow and dark viewports", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("future_props_theme", "dark"));
+test("square and creation entry fit narrow and dark viewports", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("future_props_theme", "dark"),
+  );
   for (const width of [390, 768]) {
     await page.setViewportSize({ width, height: 820 });
     await page.goto("/creative-workshop");
@@ -39,9 +43,9 @@ test("square and creation entry fit narrow and dark viewports", async ({ page })
     await expect(page.getByRole("textbox", { name: "搜索创作" })).toBeVisible();
     await page.getByRole("button", { name: "＋ 发布创作" }).click();
     await expect(page.locator(".creative-kind-card")).toHaveCount(4);
-    const overflow = await page.locator(".creative-page").evaluate((element) =>
-      element.scrollWidth > element.clientWidth + 2,
-    );
+    const overflow = await page
+      .locator(".creative-page")
+      .evaluate((element) => element.scrollWidth > element.clientWidth + 2);
     expect(overflow).toBe(false);
   }
 });

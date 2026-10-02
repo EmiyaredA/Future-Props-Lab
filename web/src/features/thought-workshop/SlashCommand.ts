@@ -40,8 +40,7 @@ export function createSlashCommand(callbacks: InsertCallbacks) {
             );
           },
           command: ({ editor, range, props }) => {
-            editor.chain().focus().deleteRange(range).run();
-            runInsertCommand(editor, props.key, callbacks, range.from);
+            runInsertCommand(editor, props.key, callbacks, range.from, range);
           },
           render: () => {
             let component: ReactRenderer<

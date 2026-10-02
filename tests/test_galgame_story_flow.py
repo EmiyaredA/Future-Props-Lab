@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.apps.galgame_workshop.story.story import build_route_report
 from app.apps.galgame_workshop.schemas import GalgameStoryProject
+from app.apps.galgame_workshop.story.story import build_route_report
 from test_galgame_workshop import playable_story
 
 

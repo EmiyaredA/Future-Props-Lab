@@ -168,6 +168,17 @@ export function NoteEditorPane({
   return (
     <div className="thought-edit-workspace">
       <section className="thought-document">
+        {editing.localError && <p role="alert" className="thought-error">{editing.localError}</p>}
+        {!!editing.recovery.length && <div className="thought-conflict" role="alert">
+          <strong>发现未保存的本机草稿，请选择恢复方式。</strong>
+          {editing.recovery.map(row => <div key={row.key}>
+            <p>{row.body.title} · {new Date(row.updatedAt).toLocaleString()}</p>
+            <button className="btn" onClick={() => void editing.restoreLocal(row)}>恢复草稿</button>
+            <button className="btn" onClick={() => setServerPreview(!serverPreview)}>查看服务端</button>
+            <button className="btn" onClick={() => void editing.duplicateLocal(row).then(next => onOpen(next.id)).catch(error => setNotice(String(error)))}>另存副本</button>
+            <button className="btn" onClick={() => void editing.discardLocal(row)}>丢弃草稿</button>
+          </div>)}
+        </div>}
         {(editing.error || notice) && (
           <p className="thought-error" role="alert">
             {editing.error || notice}

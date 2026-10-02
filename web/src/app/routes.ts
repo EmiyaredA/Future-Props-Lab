@@ -31,6 +31,7 @@ export type WorkshopPage =
   | "thought-workshop-notes"
   | "thought-workshop-editor"
   | "thought-workshop-legacy"
+  | "thought-workshop-official"
   | "visual-workshop-projects"
   | "visual-workshop-canvas"
   | "visual-workshop-assets"
@@ -209,6 +210,7 @@ export function pathFor(
     "thought-workshop-notes": "/apps/thought-workshop",
     "thought-workshop-editor": "/apps/thought-workshop",
     "thought-workshop-legacy": "/apps/thought-workshop",
+    "thought-workshop-official": "/apps/thought-workshop",
     "management-accounts": "/management/accounts",
     "management-workspaces": "/management/workspaces",
     "management-audit": "/management/audit",

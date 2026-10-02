@@ -38,6 +38,19 @@ class WhalePackage:
 
 
 def _expected_paths(model: dict) -> set[str]:
+    profile = model.get("rigProfile", "whale")
+    if profile not in ("whale", "human-chibi"):
+        raise ValueError("桌宠骨架类型不支持")
+    human = profile == "human-chibi"
+    character = model.get("character")
+    if character is not None and (
+        not isinstance(character, dict)
+        or not isinstance(character.get("name"), str)
+        or not 1 <= len(character["name"].strip()) <= 120
+    ):
+        raise ValueError("桌宠角色名称无效")
+    if human and character is None:
+        raise ValueError("人物桌宠缺少角色资料")
     parts = model.get("parts")
     feat = model.get("feat")
     schemes = model.get("schemes")
@@ -62,16 +75,20 @@ def _expected_paths(model: dict) -> set[str]:
             or len(pivots[key]) != 2
             or not all(_finite(value) for value in pivots[key])
             for key in (
-                "body",
-                "armNear",
-                "armFar",
-                "legBack",
-                "legFront",
-                "tail",
-                "neck",
-                "finNear",
-                "finFar",
-                "ahoge",
+                ("body", "neck", "armNear", "armFar", "legBack", "legFront")
+                if human
+                else (
+                    "body",
+                    "armNear",
+                    "armFar",
+                    "legBack",
+                    "legFront",
+                    "tail",
+                    "neck",
+                    "finNear",
+                    "finFar",
+                    "ahoge",
+                )
             )
         )
         or not isinstance(view, list)
@@ -81,11 +98,14 @@ def _expected_paths(model: dict) -> set[str]:
         or view[3] <= view[1]
     ):
         raise ValueError("鲸鱼娘骨架定义无效")
+    if human and (view[2] - view[0] > 512 or view[3] - view[1] > 512):
+        raise ValueError("人物桌宠画布过大")
     sprites = feat.get("sprites")
     eyes = feat.get("eyes")
-    if not isinstance(sprites, dict) or not isinstance(eyes, dict):
+    if not isinstance(sprites, dict) or (not human and not isinstance(eyes, dict)):
         raise ValueError("鲸鱼娘五官定义无效")
     textures: set[str] = set()
+    part_ids: set[str] = set()
     for part in parts:
         if not isinstance(part, dict) or not NAME.fullmatch(str(part.get("tex", ""))):
             raise ValueError("鲸鱼娘部件贴图无效")
@@ -100,14 +120,73 @@ def _expected_paths(model: dict) -> set[str]:
         ):
             raise ValueError("鲸鱼娘网格定义无效")
         textures.add(part["tex"])
-    if not {"skirt", "skirt_sit", "tail", "hair_back", "bangs", "brows", "eye_creases"}.issubset(
-        {part["id"] for part in parts if isinstance(part.get("id"), str)}
-    ):
+        if human:
+            part_id = part.get("id")
+            if (
+                not isinstance(part_id, str)
+                or not NAME.fullmatch(part_id)
+                or part_id in part_ids
+                or part.get("parent")
+                not in {
+                    "body",
+                    "neck",
+                    "head",
+                    "hair",
+                    "bangs",
+                    "coat",
+                    "armNear",
+                    "armFar",
+                    "legBack",
+                    "legFront",
+                }
+                or not _finite(part.get("z"))
+                or box[2] <= 0
+                or box[3] <= 0
+            ):
+                raise ValueError("人物桌宠分件定义无效")
+            part_ids.add(part_id)
+    required = (
+        {
+            "hair_back",
+            "face",
+            "hair_front",
+            "torso",
+            "coat",
+            "arm_near",
+            "arm_far",
+            "leg_back",
+            "leg_front",
+            "sit_lower",
+        }
+        if human
+        else {"skirt", "skirt_sit", "tail", "hair_back", "bangs", "brows", "eye_creases"}
+    )
+    if not required.issubset({part["id"] for part in parts if isinstance(part.get("id"), str)}):
         raise ValueError("鲸鱼娘缺少分件")
     feature_names = set(sprites)
     if not feature_names or any(not NAME.fullmatch(name) for name in feature_names):
         raise ValueError("鲸鱼娘五官贴图无效")
-    for eye_id in ("eyeL", "eyeR"):
+    if human:
+        if not {
+            "eyes",
+            "closed_eyes",
+            "angry_eyes",
+            "surprised_eyes",
+            "brows",
+            "neutral_mouth",
+            "happy_mouth",
+        }.issubset(feature_names):
+            raise ValueError("人物桌宠缺少表情贴图")
+        if any(
+            not isinstance(box, list)
+            or len(box) != 4
+            or not all(_finite(n) for n in box)
+            or box[2] <= box[0]
+            or box[3] <= box[1]
+            for box in sprites.values()
+        ):
+            raise ValueError("人物桌宠表情位置无效")
+    for eye_id in () if human else ("eyeL", "eyeR"):
         eye = eyes.get(eye_id)
         if not isinstance(eye, dict):
             raise ValueError("鲸鱼娘眼睛定义无效")

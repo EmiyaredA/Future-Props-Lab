@@ -1,6 +1,6 @@
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import { DEFAULT_EDITOR_LAYOUT } from "./editorLayout";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
 import {
@@ -24,17 +24,16 @@ import {
 } from "./batchClipPatch";
 import { canPlaceClip, linkedClipIds } from "./timelineSnap";
 import { videoEditorQueryKeys } from "./queryKeys";
-import { reconcileAudioTransitionOperations } from "./audioTransitionOperations";
+import {
+  TimelineSaveQueue,
+  refreshUndo,
+  type TimelineEditBuilder,
+} from "./timelineSaveQueue";
 import {
   loadVideoEditorWorkspacePreferences,
   storeVideoEditorWorkspacePreferences,
   type VideoEditorWorkspacePreferences,
 } from "./workspacePreferences";
-
-type HistoryEntry = {
-  redo: VideoEditorOperation[];
-  undo: VideoEditorOperation[];
-};
 
 export function useVideoEditor(projectId: string) {
   const canWrite = useWorkspacePermission("content.write");
@@ -90,8 +89,7 @@ export function useVideoEditor(projectId: string) {
     initialWorkspacePreferences.speedRippleEnabled ?? true,
   );
   const [notice, setNotice] = useState("");
-  const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
-  const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
+  const [, redrawQueue] = useState(0);
   const [clipboard, setClipboard] = useState<ClipClipboardSnapshot>();
   const clock = useRef({ startedAt: 0, startedUs: 0 });
   const fitPolicyMigrationRevision = useRef<number | undefined>(undefined);
@@ -101,31 +99,33 @@ export function useVideoEditor(projectId: string) {
     selectedClipIds: [...initialWorkspacePreferences.selectedClipIds],
   });
 
-  const mutation = useMutation({
-    mutationFn: ({ operations }: { operations: VideoEditorOperation[] }) => {
-      if (!timeline.data) throw new Error("时间轴尚未就绪");
-      return applyVideoEditorOperations(
-        projectId,
-        timeline.data.revision,
-        operations,
-      );
-    },
-    onSuccess: (next) => {
-      client.setQueryData(["video-editor-timeline", projectId], next);
-      setNotice("已自动保存");
-    },
-    onError: (error) => {
-      if (
-        error instanceof ApiError &&
-        error.problem.code === "revision_conflict"
-      ) {
-        setNotice(
-          "服务器版本已更新，已载入最新时间轴；本次操作未覆盖他人修改。",
-        );
-        void timeline.refetch();
-      } else setNotice(error instanceof Error ? error.message : "保存失败");
-    },
-  });
+  const saveQueue = useMemo(
+    () =>
+      new TimelineSaveQueue({
+        read: () =>
+          client.getQueryData(videoEditorQueryKeys.timeline(projectId)),
+        write: (revision, operations) =>
+          applyVideoEditorOperations(projectId, revision, operations),
+        saved: (next) => {
+          client.setQueryData(videoEditorQueryKeys.timeline(projectId), next);
+          setNotice("已自动保存");
+        },
+        failed: (error) => {
+          setNotice(
+            error instanceof ApiError &&
+              error.problem.code === "revision_conflict"
+              ? "服务器版本已更新；未保存操作已暂停，请确认放弃后重新编辑。"
+              : "保存失败；未保存操作已暂停，请核对服务器状态后重新编辑。",
+          );
+          void client.refetchQueries({
+            queryKey: videoEditorQueryKeys.timeline(projectId),
+          });
+        },
+        changed: () => redrawQueue((value) => value + 1),
+      }),
+    [client, projectId],
+  );
+  useEffect(() => saveQueue.attach(), [saveQueue]);
   const renameMutation = useMutation({
     mutationFn: (title: string) => {
       if (!project.data) throw new Error("项目尚未就绪");
@@ -140,19 +140,24 @@ export function useVideoEditor(projectId: string) {
   });
 
   const commit = useCallback(
-    async (redo: VideoEditorOperation[], undo: VideoEditorOperation[] = []) => {
-      const reconciled = reconcileAudioTransitionOperations(
-        timeline.data,
-        redo,
-        undo,
+    (
+      redo: VideoEditorOperation[] | TimelineEditBuilder,
+      undo: VideoEditorOperation[] = [],
+    ) => {
+      const preparedUndo = structuredClone(undo);
+      const preparedRedo =
+        typeof redo === "function" ? redo : structuredClone(redo);
+      return saveQueue.enqueue(
+        "edit",
+        typeof preparedRedo === "function"
+          ? preparedRedo
+          : (current) => ({
+              redo: preparedRedo,
+              undo: refreshUndo(current, preparedUndo),
+            }),
       );
-      await mutation.mutateAsync({ operations: reconciled.redo });
-      if (reconciled.undo.length) {
-        setUndoStack((items) => [...items.slice(-99), reconciled]);
-        setRedoStack([]);
-      }
     },
-    [mutation, timeline.data],
+    [saveQueue],
   );
   useEffect(() => {
     if (!canWrite) return;
@@ -161,40 +166,29 @@ export function useVideoEditor(projectId: string) {
       return;
     if (fitPolicyMigrationRevision.current === current.revision) return;
     fitPolicyMigrationRevision.current = current.revision;
-    const clips = (current.document.tracks ?? [])
-      .flatMap((track) => track.clips ?? [])
-      .filter((clip) => clip.kind === "video" && clip.fitMode !== "cover")
-      .slice(0, 199);
-    const operations: VideoEditorOperation[] = clips.map((clip) => ({
-      type: "updateClip",
-      clipId: clip.id,
-      patch: { fitMode: "cover" },
-    }));
-    if (clips.length < 199) {
-      operations.push({
-        type: "updateSettings",
-        patch: { videoFitPolicyVersion: 1 },
-      });
-    }
-    void commit(operations).catch(() => {
-      fitPolicyMigrationRevision.current = undefined;
-    });
+    void commit((latest) => {
+      if (latest.document.settings?.videoFitPolicyVersion === 1)
+        return { redo: [], undo: [] };
+      const clips = (latest.document.tracks ?? [])
+        .flatMap((track) => track.clips ?? [])
+        .filter((clip) => clip.kind === "video" && clip.fitMode !== "cover")
+        .slice(0, 199);
+      const operations: VideoEditorOperation[] = clips.map((clip) => ({
+        type: "updateClip",
+        clipId: clip.id,
+        patch: { fitMode: "cover" },
+      }));
+      if (clips.length < 199) {
+        operations.push({
+          type: "updateSettings",
+          patch: { videoFitPolicyVersion: 1 },
+        });
+      }
+      return { redo: operations, undo: [] };
+    }).catch(() => {});
   }, [canWrite, commit, timeline.data]);
-  const undo = useCallback(async () => {
-    const entry = undoStack.at(-1);
-    if (!entry) return;
-    await mutation.mutateAsync({ operations: entry.undo });
-    setUndoStack((items) => items.slice(0, -1));
-    setRedoStack((items) => [...items, entry]);
-  }, [mutation, undoStack]);
-  const redo = useCallback(async () => {
-    const entry = redoStack.at(-1);
-    if (!entry) return;
-    await mutation.mutateAsync({ operations: entry.redo });
-    setRedoStack((items) => items.slice(0, -1));
-    setUndoStack((items) => [...items, entry]);
-  }, [mutation, redoStack]);
-
+  const undo = useCallback(() => saveQueue.enqueue("undo"), [saveQueue]);
+  const redo = useCallback(() => saveQueue.enqueue("redo"), [saveQueue]);
   const durationUs = timelineDuration(timeline.data);
   const setPlayheadUs = useCallback(
     (update: number | ((value: number) => number)) => {
@@ -258,48 +252,50 @@ export function useVideoEditor(projectId: string) {
 
   const moveSelectedClips = useCallback(
     (deltaUs: number) => {
-      if (!timeline.data || !selectedClipIds.length) return;
-      const clips = (timeline.data.document.tracks ?? []).flatMap(
-        (track) => track.clips ?? [],
-      );
-      const movingIds = linkedClipIds(clips, selectedClipIds);
-      const moving = clips.filter((clip) => movingIds.has(clip.id));
-      const nextStarts = new Map(
-        moving.map((clip) => [
-          clip.id,
-          Math.max(0, clip.timelineStartUs + deltaUs),
-        ]),
-      );
-      if (
-        moving.some(
-          (clip) =>
-            !canPlaceClip(
-              clip,
-              nextStarts.get(clip.id)!,
-              clip.trackId,
-              timeline.data!.document.tracks ?? [],
-              movingIds,
-            ),
-        )
-      ) {
-        setNotice("该位置与其他片段重叠，无法移动");
-        return;
-      }
-      const redo: VideoEditorOperation[] = moving.map((clip) => ({
-        type: "moveClip",
-        clipId: clip.id,
-        trackId: clip.trackId,
-        timelineStartUs: nextStarts.get(clip.id)!,
-      }));
-      const undo: VideoEditorOperation[] = moving.map((clip) => ({
-        type: "moveClip",
-        clipId: clip.id,
-        trackId: clip.trackId,
-        timelineStartUs: clip.timelineStartUs,
-      }));
-      void commit(redo, undo);
+      if (!selectedClipIds.length) return;
+      void commit((current) => {
+        const clips = (current.document.tracks ?? []).flatMap(
+          (track) => track.clips ?? [],
+        );
+        const movingIds = linkedClipIds(clips, selectedClipIds);
+        const moving = clips.filter((clip) => movingIds.has(clip.id));
+        const nextStarts = new Map(
+          moving.map((clip) => [
+            clip.id,
+            Math.max(0, clip.timelineStartUs + deltaUs),
+          ]),
+        );
+        if (
+          moving.some(
+            (clip) =>
+              !canPlaceClip(
+                clip,
+                nextStarts.get(clip.id)!,
+                clip.trackId,
+                current.document.tracks ?? [],
+                movingIds,
+              ),
+          )
+        ) {
+          setNotice("该位置与其他片段重叠，无法移动");
+          return { redo: [], undo: [] };
+        }
+        const redo: VideoEditorOperation[] = moving.map((clip) => ({
+          type: "moveClip",
+          clipId: clip.id,
+          trackId: clip.trackId,
+          timelineStartUs: nextStarts.get(clip.id)!,
+        }));
+        const undo: VideoEditorOperation[] = moving.map((clip) => ({
+          type: "moveClip",
+          clipId: clip.id,
+          trackId: clip.trackId,
+          timelineStartUs: clip.timelineStartUs,
+        }));
+        return { redo, undo };
+      });
     },
-    [commit, selectedClipIds, timeline.data],
+    [commit, selectedClipIds],
   );
 
   const selected = (timeline.data?.document.tracks ?? [])
@@ -360,36 +356,45 @@ export function useVideoEditor(projectId: string) {
       setNotice(`一次最多粘贴 ${BATCH_OPS_LIMIT} 个片段`);
       return false;
     }
-    const fps = timeline.data.document.settings?.fps ?? 30;
-    const result = pasteClipsOperations({
-      snapshot: clipboard,
-      tracks: timeline.data.document.tracks ?? [],
-      playheadUs: playheadRef.current,
-      fps,
-    });
-    if ("error" in result) {
-      setNotice(result.error);
-      return false;
-    }
-    void commit(result.redo, result.undo).then(() => {
-      const [first, ...rest] = result.newClipIds;
-      if (!first) return;
-      selectClip(first);
-      for (const id of rest) selectClip(id, true);
-    });
+    const cursor = playheadRef.current;
+    let newClipIds: string[] = [];
+    void commit((current) => {
+      const result = pasteClipsOperations({
+        snapshot: clipboard,
+        tracks: current.document.tracks ?? [],
+        playheadUs: cursor,
+        fps: current.document.settings?.fps ?? 30,
+      });
+      if ("error" in result) {
+        setNotice(result.error);
+        return { redo: [], undo: [] };
+      }
+      newClipIds = result.newClipIds;
+      return result;
+    })
+      .then(() => {
+        const [first, ...rest] = newClipIds;
+        if (!first) return;
+        selectClip(first);
+        for (const id of rest) selectClip(id, true);
+      })
+      .catch(() => {});
     return true;
   }, [clipboard, commit, selectClip, timeline.data]);
 
   const patchSelectedClips = useCallback(
     async (patch: BatchClipPatch) => {
-      const clips = (timeline.data?.document.tracks ?? [])
-        .flatMap((track) => track.clips ?? [])
-        .filter((clip) => selectedClipIds.includes(clip.id));
-      const result = buildBatchClipOperations(clips, patch);
-      if (result.redo.length) await commit(result.redo, result.undo);
-      return result;
+      let result: ReturnType<typeof buildBatchClipOperations> | undefined;
+      await commit((current) => {
+        const clips = (current.document.tracks ?? [])
+          .flatMap((track) => track.clips ?? [])
+          .filter((clip) => selectedClipIds.includes(clip.id));
+        result = buildBatchClipOperations(clips, patch);
+        return result;
+      });
+      return result!;
     },
-    [commit, selectedClipIds, timeline.data],
+    [commit, selectedClipIds],
   );
 
   useEffect(() => {
@@ -557,9 +562,17 @@ export function useVideoEditor(projectId: string) {
     commit,
     undo,
     redo,
-    canUndo: Boolean(undoStack.length),
-    canRedo: Boolean(redoStack.length),
-    saving: mutation.isPending,
+    canUndo: saveQueue.canUndo,
+    canRedo: saveQueue.canRedo,
+    saving: saveQueue.unsaved,
+    saveBusy: saveQueue.busy,
+    failedSaves: saveQueue.failedCount,
+    failedOperations: saveQueue.failedOperations,
+    discardFailedSaves: () => {
+      const discarded = saveQueue.discard();
+      if (discarded) setNotice("已放弃未保存操作，请按服务器快照重新编辑");
+      return discarded;
+    },
     renameProject: renameMutation.mutateAsync,
     renaming: renameMutation.isPending,
   };

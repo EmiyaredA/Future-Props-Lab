@@ -1,0 +1,97 @@
+{
+  "sceneVersion": 1,
+  "title": "两个草稿竞争同一个版本",
+  "elements": [
+    {
+      "id": "a",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "窗口 A 草稿\n基于 revision 8",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "b",
+      "kind": "icon",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "窗口 B 草稿\n也基于 revision 8",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "cas",
+      "kind": "diamond",
+      "x": 380,
+      "y": 180,
+      "width": 230,
+      "height": 130,
+      "text": "数据库 CAS\n空间 + ID + 版本",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "ok",
+      "kind": "rounded",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "A 先提交成功\n新 revision 9",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "conflict",
+      "kind": "rounded",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "B 随后提交冲突\n保留草稿并比较",
+      "fill": "#fff1dd",
+      "stroke": "#365f62"
+    }
+  ],
+  "edges": [
+    {
+      "id": "a_cas",
+      "source": "a",
+      "target": "cas",
+      "label": "先到达",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "b_cas",
+      "source": "b",
+      "target": "cas",
+      "label": "后到达",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "cas_ok",
+      "source": "cas",
+      "target": "ok",
+      "label": "版本匹配",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "cas_conflict",
+      "source": "cas",
+      "target": "conflict",
+      "label": "版本过期",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

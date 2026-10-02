@@ -15,10 +15,7 @@ export const defaultChromaKey: ChromaKey = {
 };
 
 export type NamedChromaPresetId =
-  | "green-basic"
-  | "blue-basic"
-  | "green-high-tolerance"
-  | "green-portrait";
+  "green-basic" | "blue-basic" | "green-high-tolerance" | "green-portrait";
 
 export const NAMED_CHROMA_PRESETS: ReadonlyArray<{
   id: NamedChromaPresetId;

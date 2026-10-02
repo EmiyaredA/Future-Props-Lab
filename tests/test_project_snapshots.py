@@ -12,12 +12,6 @@ import pytest
 from sqlalchemy import delete
 
 import app.capabilities.asset_store.project_folders as folder_module
-from app.capabilities.asset_store.layout_migration import reconcile_snapshot_imports
-from app.capabilities.asset_store.project_folders import open_project_folder
-from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.identity.principal import StudioPrincipal
-from app.deps import SessionDep, require_studio_auth
-from app.main import app
 from app.apps.galgame_workshop.models import (
     GalgameWorkshopProject,
 )
@@ -27,6 +21,12 @@ from app.apps.video_editor.models import (
 from app.apps.visual_workshop.models import (
     VisualWorkshopProject,
 )
+from app.capabilities.asset_store.layout_migration import reconcile_snapshot_imports
+from app.capabilities.asset_store.project_folders import open_project_folder
+from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.identity.principal import StudioPrincipal
+from app.deps import SessionDep, require_studio_auth
+from app.main import app
 from app.orm import bind_workspace
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal

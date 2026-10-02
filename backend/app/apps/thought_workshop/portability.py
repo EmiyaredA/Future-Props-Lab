@@ -28,6 +28,7 @@ from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.legacy_import import convert_legacy_backup
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 from app.apps.thought_workshop.notes import Notes, ThoughtError, note_out
+from app.apps.thought_workshop.schemas.canvas import remap_canvas
 from app.apps.thought_workshop.schemas.document import file_ids
 from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut, ThoughtNoteIn
 from app.capabilities.asset_store.incoming import IncomingFile
@@ -55,6 +56,8 @@ def archive_times(record: dict) -> None:
 
 
 def remap_images(node: dict, mapping: dict[str, str]) -> None:
+    if node.get("type") == "canvas":
+        node["attrs"]["scene"] = remap_canvas(node["attrs"]["scene"], mapping)
     if node.get("type") in {"image", "attachment"}:
         node["attrs"]["assetId"] = mapping[node["attrs"]["assetId"]]
     for child in node.get("content", []):

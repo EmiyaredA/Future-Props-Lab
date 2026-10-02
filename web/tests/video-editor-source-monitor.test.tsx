@@ -24,6 +24,7 @@ const asset: VideoEditorAsset = {
   id: "asset-video",
   displayName: "SHOWTIME.mp4",
   originalFilename: "showtime.mp4",
+  revision: 0,
   mediaKind: "video",
   mimeType: "video/mp4",
   byteSize: 1024,

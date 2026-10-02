@@ -37,9 +37,7 @@ class DirectorDeskFiles:
 
     def project_dir(self, project_id: str) -> Path:
         return (
-            self.storage.project_root(
-                "director-desk", project_id, workspace_id=self.workspace_id
-            )
+            self.storage.project_root("director-desk", project_id, workspace_id=self.workspace_id)
             / "files"
         )
 

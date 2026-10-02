@@ -32,9 +32,9 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 
 | 文件 | 用途 | 来源与版本 | 许可证 | SHA-256 | 生产构建 |
 | --- | --- | --- | --- | --- | --- |
-| `web/public/brand/amadeus/amadeus.fpllive2d` | Amadeus 内置只读案例与动态头像的 FPL 原生工程 | 用户选定的角色原画，经确定性分层、骨骼和网格打包；[制作说明](amadeus-native-avatar.md) | 仅限内部开发交接，角色无独立再分发授权 | `2929e29c302d7e53168bf907874bf176458128619cd358f7a3aa1ddcade8b6f9` | Web 需要 |
-| `web/public/brand/amadeus/amadeus-poster.png` | 头像相机位定帧回退 | 从同一 `.fpllive2d` 工程确定性渲染；[制作说明](amadeus-native-avatar.md) | 同上 | `12ba7a984093f545c83c435ebbe0b97c6a05c72c88bd53e61462f4e5f58d2fea` | Web 需要 |
-| `web/public/brand/amadeus/amadeus-stage-poster.png` | 半身舞台相机位定帧回退 | 从同一 `.fpllive2d` 工程确定性渲染；[制作说明](amadeus-native-avatar.md) | 同上 | `0bfdd4c2bbc9ddadd5ddddf8bd5afeb4c4b5768b748e758be45aaccf6287a943` | Web 需要 |
+| `web/public/brand/amadeus/amadeus.fpllive2d` | Amadeus 内置只读案例与动态头像的 FPL 原生工程 | 用户选定的角色原画，经确定性分层、骨骼和网格打包；[制作说明](amadeus-native-avatar.md) | 仅限内部开发交接，角色无独立再分发授权 | `9cd9d77c781fbe6d96e878cd48a5ac0709deeeb2b7e5ac876bc3d44d0ca97aac` | Web 需要 |
+| `web/public/brand/amadeus/amadeus-poster.png` | 头像相机位定帧回退 | 从同一 `.fpllive2d` 工程确定性渲染；[制作说明](amadeus-native-avatar.md) | 同上 | `80cd7211b946667667dc527536b25a8dee536896e887dcae1d280c20e524f441` | Web 需要 |
+| `web/public/brand/amadeus/amadeus-stage-poster.png` | 半身舞台相机位定帧回退 | 从同一 `.fpllive2d` 工程确定性渲染；[制作说明](amadeus-native-avatar.md) | 同上 | `59baef48c4953e79f32fcbc9c86e9306fecb65ae554e50349048c41c3ab17465` | Web 需要 |
 | `backend/app/capabilities/media_rendering/assets/NotoSansSC-Regular.ttf` | 确定性中文对白及剪辑文字渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b` | 后端需要 |
 | `backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf` | 确定性中文标题渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `ca094f6b0001fb048ca39ddd797a0cdb0179e1e55c6561e111c49c3e6a61d7b7` | 后端需要 |
 | `web/public/brand/thought-workshop-mark.png` | 思绪工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，菲莉丝角色与既有工坊徽章为参考；[来源与提示词](thought-workshop-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `4706bb94b1d94898ea52f63dfa5167cbda9ad34fe55a25857a4ed9b1e49a12c9` | Web 需要 |

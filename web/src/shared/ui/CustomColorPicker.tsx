@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "@shared/ui/custom-color-picker.css";
 import { useSelectPopover } from "./useSelectPopover";
 
@@ -49,11 +49,14 @@ export function CustomColorPicker({
   const menu = useRef<HTMLDivElement>(null);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = openProp ?? uncontrolledOpen;
-  const setOpen = (next: boolean | ((current: boolean) => boolean)) => {
-    const resolved = typeof next === "function" ? next(open) : next;
-    onOpenChange?.(resolved);
-    if (openProp === undefined) setUncontrolledOpen(resolved);
-  };
+  const setOpen = useCallback(
+    (next: boolean | ((current: boolean) => boolean)) => {
+      const resolved = typeof next === "function" ? next(open) : next;
+      onOpenChange?.(resolved);
+      if (openProp === undefined) setUncontrolledOpen(resolved);
+    },
+    [open, onOpenChange, openProp],
+  );
   useSelectPopover(
     open,
     trigger,
@@ -82,7 +85,7 @@ export function CustomColorPicker({
     };
     document.addEventListener("mousedown", closeOutside);
     return () => document.removeEventListener("mousedown", closeOutside);
-  }, [open]);
+  }, [open, setOpen]);
 
   return (
     <div

@@ -1,5 +1,11 @@
 import { formatTime, frameUs } from "./editorModel";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { Maximize2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import type { VideoEditorAsset } from "./types";
 
@@ -60,8 +66,10 @@ export function VideoEditorSourceMonitor({
 
   playheadRef.current = playheadUs;
 
-  const mediaElement = () =>
-    isImage ? null : isAudio ? audioRef.current : videoRef.current;
+  const mediaElement = useCallback(
+    () => (isImage ? null : isAudio ? audioRef.current : videoRef.current),
+    [isImage, isAudio],
+  );
 
   const seekMedia = (nextUs: number) => {
     const clamped = Math.max(0, Math.min(durationUs, nextUs));
@@ -150,7 +158,7 @@ export function VideoEditorSourceMonitor({
       media.removeEventListener("timeupdate", onTimeUpdate);
       media.removeEventListener("ended", onEnded);
     };
-  }, [asset.id, durationUs, isAudio, isImage]);
+  }, [asset.id, durationUs, isAudio, isImage, mediaElement]);
 
   useEffect(() => {
     if (!playing || isImage) return;
@@ -174,7 +182,7 @@ export function VideoEditorSourceMonitor({
     };
     frame = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(frame);
-  }, [durationUs, isAudio, isImage, playing]);
+  }, [durationUs, isAudio, isImage, playing, mediaElement]);
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {

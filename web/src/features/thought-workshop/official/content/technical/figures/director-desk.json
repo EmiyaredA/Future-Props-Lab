@@ -1,0 +1,87 @@
+{
+  "sceneVersion": 1,
+  "title": "场景求值与镜头求值汇合成预演",
+  "elements": [
+    {
+      "id": "time",
+      "kind": "rounded",
+      "x": 40,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "时间轴时刻\n统一采样时间",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "actors",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "对象与角色\n动作、路径与接触",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "camera",
+      "kind": "icon",
+      "x": 380,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "摄影机\n位置、目标与投影",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "frame",
+      "kind": "icon",
+      "x": 740,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "场景渲染\n可见性、光照与构图",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "time_actors",
+      "source": "time",
+      "target": "actors",
+      "label": "动作采样",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "time_camera",
+      "source": "time",
+      "target": "camera",
+      "label": "镜头采样",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "actors_frame",
+      "source": "actors",
+      "target": "frame",
+      "label": "世界状态",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "camera_frame",
+      "source": "camera",
+      "target": "frame",
+      "label": "观察方式",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

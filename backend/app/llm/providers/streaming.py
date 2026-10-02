@@ -32,19 +32,40 @@ def _integer(value: Any) -> int | None:
     return int(value) if isinstance(value, int) else None
 
 
+class ProviderStreamError(Exception):
+    """A provider-neutral failure safe to expose in logs and SSE details."""
+
+
 async def _data_lines(response: httpx.Response) -> AsyncIterator[dict[str, Any]]:
-    async for line in response.aiter_lines():
-        if not line.startswith("data:"):
-            continue
-        raw = line[5:].strip()
-        if not raw or raw == "[DONE]":
-            continue
+    data: list[str] = []
+    event = ""
+
+    def parse() -> dict[str, Any]:
+        raw = "\n".join(data)
+        if raw.strip() == "[DONE]":
+            return {"type": "_stream_done"}
         try:
             payload = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(payload, dict):
-            yield payload
+        except json.JSONDecodeError as exc:
+            raise ProviderStreamError("模型返回了无效的流式响应") from exc
+        if not isinstance(payload, dict):
+            raise ProviderStreamError("模型返回了无效的流式响应")
+        if event == "error":
+            raise ProviderStreamError("模型流式调用失败")
+        return payload
+
+    async for line in response.aiter_lines():
+        if not line:
+            if data:
+                yield parse()
+            data = []
+            event = ""
+        elif line.startswith("data:"):
+            data.append(line[5:].removeprefix(" "))
+        elif line.startswith("event:"):
+            event = line[6:].strip()
+    if data:
+        yield parse()
 
 
 async def stream_text_completion(
@@ -102,7 +123,13 @@ async def stream_text_completion(
                 },
             ) as response:
                 response.raise_for_status()
+                completed = False
                 async for payload in _data_lines(response):
+                    if "error" in payload or payload.get("type") == "error":
+                        raise ProviderStreamError("模型流式调用失败")
+                    if payload.get("type") == "_stream_done":
+                        completed = True
+                        break
                     choices = payload.get("choices") or []
                     text = ""
                     finish_reason: str | None = None
@@ -113,6 +140,7 @@ async def stream_text_completion(
                         raw_finish_reason = choices[0].get("finish_reason")
                         if raw_finish_reason:
                             finish_reason = str(raw_finish_reason)
+                            completed = True
                     usage = payload.get("usage") or {}
                     yield TextDelta(
                         text=text,
@@ -121,6 +149,8 @@ async def stream_text_completion(
                         total_tokens=_integer(usage.get("total_tokens")),
                         finish_reason=finish_reason,
                     )
+                if not completed:
+                    raise ProviderStreamError("模型流式响应在完成前中断")
             return
 
         root = base_url or "https://api.anthropic.com/v1"
@@ -167,7 +197,12 @@ async def stream_text_completion(
             json=body,
         ) as response:
             response.raise_for_status()
+            completed = False
             async for payload in _data_lines(response):
+                if "error" in payload or payload.get("type") == "error":
+                    raise ProviderStreamError("模型流式调用失败")
+                if payload.get("type") == "message_stop":
+                    completed = True
                 event_type = payload.get("type")
                 text = ""
                 if event_type == "content_block_delta":
@@ -198,3 +233,8 @@ async def stream_text_completion(
                     total_tokens=total,
                     finish_reason=finish_reason,
                 )
+                if completed:
+                    break
+
+            if not completed:
+                raise ProviderStreamError("模型流式响应在完成前中断")

@@ -10,18 +10,18 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete, select
 
+from app.apps.visual_workshop.assistant import VisualAssistantConversations
+from app.apps.visual_workshop.assistant import stream as assistant_stream
+from app.apps.visual_workshop.schemas.workshop import VisualAssistantSendIn
 from app.capabilities.agents.harness import approval_broker
 from app.capabilities.agents.harness.approval import ApprovalResolution
+from app.capabilities.asset_store.models import VisualAsset
+from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from app.main import app
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
-from app.apps.visual_workshop.schemas.workshop import VisualAssistantSendIn
-from app.apps.visual_workshop.assistant import VisualAssistantConversations
-from app.apps.visual_workshop.assistant import stream as assistant_stream
 
 
 @pytest.mark.asyncio

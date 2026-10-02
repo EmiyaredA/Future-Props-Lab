@@ -7,11 +7,11 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.main import app
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
 )
+from app.main import app
 from app.runtime.db import SessionLocal
 
 PNG = b"\x89PNG\r\n\x1a\nfolder-archive"

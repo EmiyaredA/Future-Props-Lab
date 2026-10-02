@@ -13,12 +13,12 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { KnowledgeSidebar } from "./KnowledgeSidebar";
+import { OfficialLibraryCards } from "./official/OfficialLibraryCards";
 import { ProjectLibraryCard } from "@shared/ui/project-library/ProjectLibraryCard";
 import {
   deleteNote,
   downloadBackup,
   getNote,
-  listNotes,
   restoreNote,
   uploadImage,
   type KnowledgeBase,
@@ -39,6 +39,7 @@ import { KnowledgeCover } from "./KnowledgeCover";
 import { KnowledgeDocumentResults } from "./KnowledgeDocumentResults";
 import { DeleteDocumentDialog } from "./DeleteDocumentDialog";
 import { KnowledgeTopbar } from "./KnowledgeTopbar";
+import { useNoteResults } from "./useNoteResults";
 import { thoughtKeys } from "./queryKeys";
 import { download } from "./download";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
@@ -67,6 +68,7 @@ export function ThoughtWorkshopPage({
   onNavigate,
   onBack,
   registerNavigationGuard,
+  onOpenOfficial,
 }: {
   page: string;
   projectId?: string;
@@ -74,6 +76,7 @@ export function ThoughtWorkshopPage({
   onNavigate: (project?: string, document?: string, replace?: boolean) => void;
   onBack: () => void;
   registerNavigationGuard: NavigationGuard;
+  onOpenOfficial: (libraryId: string) => void;
 }) {
   const client = useQueryClient();
   const [query, setQuery] = useState("");
@@ -140,21 +143,7 @@ export function ThoughtWorkshopPage({
   )?.content?.some(
     (block) => block.type !== "paragraph" || block.content?.length,
   );
-  const filtered = useQuery({
-    retry: false,
-    queryKey: thoughtKeys.notes({ knowledge_base_id: projectId, query, view }),
-    queryFn: ({ signal }) =>
-      listNotes(
-        {
-          knowledge_base_id: projectId!,
-          query,
-          view: view as "all" | "recent" | "favorites" | "trash",
-          limit: 100,
-        },
-        signal,
-      ),
-    enabled: !!projectId && browsing,
-  });
+  const filtered = useNoteResults(projectId, query, view, browsing);
   useEffect(() => {
     setQuery("");
     setView("all");
@@ -412,7 +401,7 @@ export function ThoughtWorkshopPage({
             !projectId && page !== "thought-workshop-legacy"
               ? trash
                 ? "知识库回收站"
-                : "我的知识库"
+                : "所有知识库"
               : undefined
           }
           libraryDescription={
@@ -472,6 +461,10 @@ export function ThoughtWorkshopPage({
                 />
               </label>
             </div>
+            {!trash && (
+              <OfficialLibraryCards query={query} onOpen={onOpenOfficial} />
+            )}
+            <h2>{trash ? "已删除的知识库" : "我的知识库"}</h2>
             <div className="knowledge-cards">
               {projects.data?.map((p) => (
                 <ProjectLibraryCard
@@ -522,8 +515,11 @@ export function ThoughtWorkshopPage({
             view={view}
             query={query}
             loading={filtered.isLoading}
-            items={filtered.data?.items ?? []}
-            total={filtered.data?.total}
+            items={filtered.items}
+            total={filtered.total}
+            hasMore={filtered.hasNextPage}
+            loadingMore={filtered.isFetchingNextPage}
+            onLoadMore={() => void filtered.fetchNextPage()}
             onOpen={open}
             onRestore={(n) => void run(() => restoreNote(n))}
             onDeleteForever={(n) =>

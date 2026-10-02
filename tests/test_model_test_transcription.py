@@ -12,6 +12,8 @@ from app.capabilities.transcription.parameters import (
     parameter_capabilities,
     resolve_parameters,
 )
+from app.console.models import Workspace
+from app.llm.models import ModelTestTranscriptionTask
 from app.llm.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
@@ -22,12 +24,10 @@ from app.llm.providers.transcription import (
     TranscriptSegment,
     TranscriptWord,
 )
+from app.llm.schemas.model_test import ModelTestTranscriptionParametersIn
 from app.main import app
-from app.llm.models import ModelTestTranscriptionTask
-from app.console.models import Workspace
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
-from app.llm.schemas.model_test import ModelTestTranscriptionParametersIn
 
 
 @pytest.mark.parametrize(

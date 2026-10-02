@@ -1,0 +1,99 @@
+{
+  "sceneVersion": 1,
+  "title": "发布验证的四类证据",
+  "elements": [
+    {
+      "id": "contracts",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "契约一致\nOpenAPI / Web / SDK",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "behavior",
+      "kind": "icon",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "行为正确\nAPI、组件与浏览器",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "structure",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "结构约束\n依赖、权限与目录",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "bundle",
+      "kind": "icon",
+      "x": 380,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "构建与离线资源\n文章、字体与渲染器",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "release",
+      "kind": "rounded",
+      "x": 740,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "可交付版本\n保留验收证据",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    }
+  ],
+  "edges": [
+    {
+      "id": "contracts_structure",
+      "source": "contracts",
+      "target": "structure",
+      "label": "检查生成引用",
+      "arrow": false,
+      "style": "step"
+    },
+    {
+      "id": "behavior_bundle",
+      "source": "behavior",
+      "target": "bundle",
+      "label": "运行打包产物",
+      "arrow": false,
+      "style": "step"
+    },
+    {
+      "id": "structure_release",
+      "source": "structure",
+      "target": "release",
+      "label": "结构通过",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "bundle_release",
+      "source": "bundle",
+      "target": "release",
+      "label": "资源可运行",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

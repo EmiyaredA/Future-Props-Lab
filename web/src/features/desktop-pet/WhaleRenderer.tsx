@@ -12,6 +12,7 @@ import {
 } from "./whale-vendor/whale/figure.js";
 import type { PetDocument } from "./api";
 import type { PetRendererHandle } from "./PetRenderer";
+import { createHumanFigure, type HumanModel } from "./humanFigure";
 
 type Props = {
   document: PetDocument;
@@ -104,17 +105,27 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
       const fx = effects.current;
       setError("");
       void (async () => {
-        const whale = await createWhaleFigure(undefined, {
+        const options = {
           model: document.whaleModel as Record<string, unknown>,
           scheme,
-          asset: (path) => {
+          asset: (path: string) => {
             const id = assetMap[path];
             const url = id && assetUrls[id];
-            if (!url) throw new Error(`鲸鱼娘贴图缺失：${path}`);
+            if (!url) throw new Error(`桌宠贴图缺失：${path}`);
             return url;
           },
-        });
-        if (stopped) return;
+        };
+        const whale =
+          options.model.rigProfile === "human-chibi"
+            ? await createHumanFigure({
+                ...options,
+                model: options.model as unknown as HumanModel,
+              })
+            : await createWhaleFigure(undefined, options);
+        if (stopped) {
+          whale.dispose?.();
+          return;
+        }
         figure.current = whale;
         const silent = new Proxy({}, { get: () => () => undefined });
         const pet = createPet(
@@ -163,13 +174,14 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
         frame = requestAnimationFrame(tick);
       })().catch((cause) => {
         if (!stopped)
-          setError(cause instanceof Error ? cause.message : "鲸鱼娘无法加载");
+          setError(cause instanceof Error ? cause.message : "桌宠无法加载");
       });
       return () => {
         stopped = true;
         cancelAnimationFrame(frame);
         observer?.disconnect();
         controller.current = null;
+        figure.current?.dispose?.();
         figure.current = null;
         for (const canvas of group.querySelectorAll("canvas")) {
           canvas

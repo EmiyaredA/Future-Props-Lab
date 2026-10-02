@@ -49,8 +49,7 @@ export function useSelectPopover(
         });
         element.style.top = `${Math.max(
           visibleTop + 12,
-          visibleTop +
-            (visibleBottom - visibleTop - element.offsetHeight) / 2,
+          visibleTop + (visibleBottom - visibleTop - element.offsetHeight) / 2,
         )}px`;
         return;
       }

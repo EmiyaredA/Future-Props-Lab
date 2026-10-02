@@ -1,3 +1,4 @@
+import { VideoEditorSaveGuard } from "./VideoEditorSaveGuard";
 import { textClipOperations, type TextPreset } from "./textModel";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { useVideoEditorLayout } from "./useVideoEditorLayout";
@@ -59,9 +60,13 @@ import "./video-editor-responsive.css";
 export function VideoEditorPage({
   projectId,
   onBack,
+  registerNavigationGuard,
 }: {
   projectId: string;
   onBack: () => void;
+  registerNavigationGuard?: (
+    guard: ((proceed: () => void) => boolean) | null,
+  ) => void;
 }) {
   const editor = useVideoEditor(projectId);
   const [mobilePanel, setMobilePanel] = useState("preview");
@@ -197,8 +202,6 @@ export function VideoEditorPage({
   const audioTo = activeAudioClips.find(
     (clip) => clip.id === audioSeamTarget?.toId,
   );
-  const nextTrackOrder =
-    Math.max(-1, ...tracks.map((track) => track.order)) + 1;
   const assets = editor.assets.data?.items ?? [];
   const previewingAsset = assets.find(
     (asset) => asset.id === previewingAssetId,
@@ -262,15 +265,20 @@ export function VideoEditorPage({
     if (!result?.cues.length) return;
     setSubtitleImportPending(true);
     try {
-      const operations = subtitleImportOperations(
-        result.cues,
-        tracks,
-        editor.playheadUs,
-        mode,
-      );
-      await editor.commit(operations.redo, operations.undo);
+      const playheadUs = editor.playheadUs;
+      let clipId: string | undefined;
+      await editor.commit((current) => {
+        const operations = subtitleImportOperations(
+          result.cues,
+          current.document.tracks ?? [],
+          playheadUs,
+          mode,
+        );
+        clipId = operations.track.clips?.[0]?.id;
+        return operations;
+      });
       setSubtitleImport(undefined);
-      selectClip(operations.track.clips?.[0]?.id);
+      selectClip(clipId);
       setMobilePanel("inspector");
     } catch (error) {
       setSubtitleImport((current) =>
@@ -302,109 +310,146 @@ export function VideoEditorPage({
     startUs = editor.playheadUs,
     trackId?: string,
   ) => {
-    const operations = operationsForAsset(
-      asset,
-      tracks,
-      trackId ? startUs : snapUs(startUs, fps),
-      trackId,
-    );
-    if (operations.length) void editor.commit(operations);
+    void editor.commit((current) => {
+      const currentFps = current.document.settings?.fps ?? 30;
+      const operations = operationsForAsset(
+        asset,
+        current.document.tracks ?? [],
+        trackId ? startUs : snapUs(startUs, currentFps),
+        trackId,
+      );
+      return {
+        redo: operations,
+        undo: operations
+          .filter((operation) => operation.type === "addClip")
+          .map((operation) => ({
+            type: "removeClip" as const,
+            clipId: operation.clip.id,
+          })),
+      };
+    });
   };
   const addAssetBatch = async (selectedAssets: VideoEditorAsset[]) => {
     if (selectedAssets.length > 100)
       throw new Error("每次最多添加 100 个素材到时间线");
-    const nextFrame = (value: number) =>
-      Math.ceil(value / frameUs(fps)) * frameUs(fps);
-    let cursor = nextFrame(
-      Math.max(
-        editor.playheadUs,
-        ...tracks.flatMap((track) =>
-          (track.clips ?? []).map(
-            (clip) => clip.timelineStartUs + clip.durationUs,
+    const playheadUs = editor.playheadUs;
+    await editor.commit((current) => {
+      const tracks = current.document.tracks ?? [];
+      const fps = current.document.settings?.fps ?? 30;
+      const nextFrame = (value: number) =>
+        Math.ceil(value / frameUs(fps)) * frameUs(fps);
+      let cursor = nextFrame(
+        Math.max(
+          playheadUs,
+          ...tracks.flatMap((track) =>
+            (track.clips ?? []).map(
+              (clip) => clip.timelineStartUs + clip.durationUs,
+            ),
           ),
         ),
-      ),
-    );
-    const operations = selectedAssets.flatMap((asset) => {
-      const next = operationsForAsset(asset, tracks, cursor);
-      if (!next.length)
-        throw new Error(`“${asset.displayName}”无法添加到当前轨道`);
-      const clip = next.find((operation) => operation.type === "addClip")?.clip;
-      cursor = nextFrame(cursor + (clip?.durationUs ?? 0));
-      return next;
-    });
-    if (
-      !operations.length ||
-      operations.length > 200 ||
-      operations.length < selectedAssets.length ||
-      operations.some(
-        (operation) =>
-          operation.type === "addClip" &&
-          tracks.find((track) => track.id === operation.clip.trackId)?.locked,
-      )
-    )
-      throw new Error(
-        "所选素材无法添加到当前轨道，请检查素材类型和轨道锁定状态",
       );
-    await editor.commit(operations);
+      const operations = selectedAssets.flatMap((asset) => {
+        const next = operationsForAsset(asset, tracks, cursor);
+        if (!next.length)
+          throw new Error(`“${asset.displayName}”无法添加到当前轨道`);
+        const clip = next.find(
+          (operation) => operation.type === "addClip",
+        )?.clip;
+        cursor = nextFrame(cursor + (clip?.durationUs ?? 0));
+        return next;
+      });
+      if (
+        !operations.length ||
+        operations.length > 200 ||
+        operations.length < selectedAssets.length ||
+        operations.some(
+          (operation) =>
+            operation.type === "addClip" &&
+            tracks.find((track) => track.id === operation.clip.trackId)?.locked,
+        )
+      )
+        throw new Error(
+          "所选素材无法添加到当前轨道，请检查素材类型和轨道锁定状态",
+        );
+      return {
+        redo: operations,
+        undo: operations
+          .filter((operation) => operation.type === "addClip")
+          .map((operation) => ({
+            type: "removeClip" as const,
+            clipId: operation.clip.id,
+          })),
+      };
+    });
   };
   const addGenerated = (
     kind: "text" | "color",
     preset: TextPreset = "subtitle",
   ) => {
     if (kind === "text") {
-      const { clip, redo, undo } = textClipOperations(
-        tracks,
-        editor.playheadUs,
-        fps,
-        preset,
-      );
+      const playheadUs = editor.playheadUs;
+      let clipId: string | undefined;
       editor.setPlaying(false);
       setPreviewingAssetId(undefined);
       void editor
-        .commit(redo, undo)
+        .commit((current) => {
+          const result = textClipOperations(
+            current.document.tracks ?? [],
+            playheadUs,
+            current.document.settings?.fps ?? 30,
+            preset,
+          );
+          clipId = result.clip.id;
+          return result;
+        })
         .then(() => {
-          editor.selectClip(clip.id);
+          editor.selectClip(clipId);
           setMobilePanel("inspector");
         })
-        .catch(() => undefined);
+        .catch(() => {});
       return;
     }
-    const track = tracks.find((item) => item.kind === "visual");
-    if (!track) return;
-    const clip: VideoEditorClip = {
-      id: crypto.randomUUID(),
-      trackId: track.id,
-      kind,
-      name: "黑幕",
-      timelineStartUs: snapUs(editor.playheadUs, fps),
-      durationUs: snapUs(3_000_000, fps),
-      sourceInUs: 0,
-      playbackRate: 1,
-      sourceLoop: false,
+    const playheadUs = editor.playheadUs;
+    void editor.commit((current) => {
+      const fps = current.document.settings?.fps ?? 30;
+      const track = (current.document.tracks ?? []).find(
+        (item) => item.kind === "visual",
+      );
+      if (!track) return { redo: [], undo: [] };
+      const clip: VideoEditorClip = {
+        id: crypto.randomUUID(),
+        trackId: track.id,
+        kind,
+        name: "黑幕",
+        timelineStartUs: snapUs(playheadUs, fps),
+        durationUs: snapUs(3_000_000, fps),
+        sourceInUs: 0,
+        playbackRate: 1,
+        sourceLoop: false,
 
-      color: "#000000",
-      fontSize: 72,
-      textColor: "#ffffff",
-      fitMode: "cover",
-      flipX: false,
-      volume: 1,
-      transform: {
-        x: 960,
-        y: 540,
-        scaleX: 1,
-        scaleY: 1,
-        rotation: 0,
-        opacity: 1,
-        anchor: "center",
-        brightness: 1,
-      },
-      keyframes: [],
-    };
-    void editor.commit(
-      [{ type: "addClip", clip }],
-      [{ type: "removeClip", clipId: clip.id }],
-    );
+        color: "#000000",
+        fontSize: 72,
+        textColor: "#ffffff",
+        fitMode: "cover",
+        flipX: false,
+        volume: 1,
+        transform: {
+          x: 960,
+          y: 540,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0,
+          opacity: 1,
+          anchor: "center",
+          brightness: 1,
+        },
+        keyframes: [],
+      };
+      return {
+        redo: [{ type: "addClip", clip }],
+        undo: [{ type: "removeClip", clipId: clip.id }],
+      };
+    });
   };
   return (
     <div className="ve-editor-shell" data-mobile-panel={mobilePanel}>
@@ -451,7 +496,19 @@ export function VideoEditorPage({
           </div>
           <div className="ve-save-state">
             <Save aria-hidden />{" "}
-            {editor.saving ? "保存中…" : editor.notice || "已自动保存"}
+            {editor.failedSaves
+              ? editor.notice
+              : editor.saving
+                ? "保存中…"
+                : editor.notice || "已自动保存"}
+            <VideoEditorSaveGuard
+              unsaved={editor.saving}
+              busy={editor.saveBusy}
+              failedCount={editor.failedSaves}
+              operations={editor.failedOperations}
+              discard={editor.discardFailedSaves}
+              register={registerNavigationGuard}
+            />
           </div>
           <div className="ve-top-actions">
             {window.futurePropsDesktop?.openAmadeus && (
@@ -521,13 +578,13 @@ export function VideoEditorPage({
               <Maximize aria-hidden /> 全部 1 倍
             </button>
             <button
-              disabled={!editor.canUndo}
+              disabled={!editor.canUndo || editor.saving}
               onClick={() => void editor.undo()}
             >
               <Undo2 aria-hidden /> 撤销
             </button>
             <button
-              disabled={!editor.canRedo}
+              disabled={!editor.canRedo || editor.saving}
               onClick={() => void editor.redo()}
             >
               <Redo2 aria-hidden /> 重做
@@ -759,36 +816,60 @@ export function VideoEditorPage({
             </button>
             <button
               onClick={() =>
-                void editor.commit([
-                  {
-                    type: "addTrack",
-                    track: newTrack("visual", nextTrackOrder),
-                  },
-                ])
+                void editor.commit((current) => {
+                  const order =
+                    Math.max(
+                      -1,
+                      ...(current.document.tracks ?? []).map(
+                        (track) => track.order,
+                      ),
+                    ) + 1;
+                  const track = newTrack("visual", order);
+                  return {
+                    redo: [{ type: "addTrack", track }],
+                    undo: [{ type: "removeTrack", trackId: track.id }],
+                  };
+                })
               }
             >
               <Plus aria-hidden /> 视觉轨
             </button>
             <button
               onClick={() =>
-                void editor.commit([
-                  {
-                    type: "addTrack",
-                    track: newTrack("mixed", nextTrackOrder),
-                  },
-                ])
+                void editor.commit((current) => {
+                  const order =
+                    Math.max(
+                      -1,
+                      ...(current.document.tracks ?? []).map(
+                        (track) => track.order,
+                      ),
+                    ) + 1;
+                  const track = newTrack("mixed", order);
+                  return {
+                    redo: [{ type: "addTrack", track }],
+                    undo: [{ type: "removeTrack", trackId: track.id }],
+                  };
+                })
               }
             >
               <Plus aria-hidden /> 混合轨
             </button>
             <button
               onClick={() =>
-                void editor.commit([
-                  {
-                    type: "addTrack",
-                    track: newTrack("audio", nextTrackOrder),
-                  },
-                ])
+                void editor.commit((current) => {
+                  const order =
+                    Math.max(
+                      -1,
+                      ...(current.document.tracks ?? []).map(
+                        (track) => track.order,
+                      ),
+                    ) + 1;
+                  const track = newTrack("audio", order);
+                  return {
+                    redo: [{ type: "addTrack", track }],
+                    undo: [{ type: "removeTrack", trackId: track.id }],
+                  };
+                })
               }
             >
               <Plus aria-hidden /> 音频轨

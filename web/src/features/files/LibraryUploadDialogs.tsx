@@ -1,7 +1,17 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import type {
+  LibrarySourceProject,
+  LibrarySourcePickerMode,
+  LibraryStagingItem,
+} from "./libraryStaging";
+import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, LoaderCircle, Search, X } from "lucide-react";
-import { getFiles, type ManagedFile } from "@features/files/api";
+import { Check, Folder, LoaderCircle, Search, X } from "lucide-react";
+import {
+  getFiles,
+  getFolders,
+  type ManagedFile,
+  type ManagedFolder,
+} from "@features/files/api";
 import {
   AssetPreview,
   FileKindIcon,
@@ -12,30 +22,6 @@ import { fileQueryKeys } from "@features/files/queryKeys";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { formatFileSize } from "@shared/lib/fileSize";
-
-export type LibrarySourceProject = {
-  id: string;
-  title: string;
-};
-
-export type LibraryStagingLocal = {
-  key: string;
-  kind: "local";
-  file: File;
-  displayName: string;
-};
-
-export type LibraryStagingProject = {
-  key: string;
-  kind: "project";
-  asset: ManagedFile;
-  sourceProjectId: string;
-  displayName: string;
-};
-
-export type LibraryStagingItem = LibraryStagingLocal | LibraryStagingProject;
-
-export type LibrarySourcePickerMode = "project" | "cross";
 
 function localMediaKind(file: File) {
   if (file.type.startsWith("video/")) return "video" as const;
@@ -64,33 +50,6 @@ function LocalFilePreview({ file }: { file: File }) {
   );
 }
 
-function localBaseName(filename: string) {
-  const index = filename.lastIndexOf(".");
-  return index > 0 ? filename.slice(0, index) : filename;
-}
-
-export function stageLocalFiles(files: File[]): LibraryStagingLocal[] {
-  return files.map((file, index) => ({
-    key: `local-${file.name}-${file.size}-${file.lastModified}-${index}`,
-    kind: "local" as const,
-    file,
-    displayName: localBaseName(file.name),
-  }));
-}
-
-export function stageProjectFiles(
-  files: ManagedFile[],
-  sourceProjectId: string,
-): LibraryStagingProject[] {
-  return files.map((asset) => ({
-    key: `project-${sourceProjectId}-${asset.id}`,
-    kind: "project" as const,
-    asset,
-    sourceProjectId,
-    displayName: fileDisplayName(asset),
-  }));
-}
-
 export function LibrarySourcePickerDialog({
   mode,
   currentProjectId,
@@ -111,7 +70,8 @@ export function LibrarySourcePickerDialog({
   const [sourceProjectId, setSourceProjectId] = useState(
     mode === "project" ? currentProjectId : "",
   );
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<ManagedFile[]>([]);
+  const [folderId, setFolderId] = useState<string>();
   const dialog = useDrawerFocus<HTMLDivElement>(onClose, true, false);
   const noSourceProjects =
     mode === "cross" && !sourceProjectsLoading && sourceProjects.length === 0;
@@ -121,13 +81,17 @@ export function LibrarySourcePickerDialog({
     if (sourceProjects.some((project) => project.id === sourceProjectId))
       return;
     setSourceProjectId(sourceProjects[0]?.id ?? "");
-    setSelected([]);
+    setSelectedFiles([]);
+    setFolderId(undefined);
+    setQuery("");
   }, [mode, sourceProjectId, sourceProjects]);
 
-  const browseProjectId = mode === "project" ? currentProjectId : sourceProjectId;
+  const browseProjectId =
+    mode === "project" ? currentProjectId : sourceProjectId;
   const filesQuery = useQuery({
     queryKey: fileQueryKeys.list({
       projectId: browseProjectId,
+      folderId,
       query,
       sort: "updated",
       includeReferences: false,
@@ -135,6 +99,7 @@ export function LibrarySourcePickerDialog({
     queryFn: () =>
       getFiles({
         projectId: browseProjectId,
+        folderId,
         query,
         sort: "updated",
         includeReferences: false,
@@ -142,10 +107,32 @@ export function LibrarySourcePickerDialog({
     enabled: Boolean(browseProjectId) && !noSourceProjects,
   });
   const files = filesQuery.data?.items ?? [];
-  const selectedFiles = useMemo(
-    () => files.filter((file) => selected.includes(file.id)),
-    [files, selected],
+  const foldersQuery = useQuery({
+    queryKey: fileQueryKeys.folders(browseProjectId),
+    queryFn: () => getFolders(browseProjectId),
+    enabled: Boolean(browseProjectId) && !noSourceProjects,
+  });
+  const folders = foldersQuery.data?.items ?? [];
+  const children = folders.filter(
+    (folder) => (folder.parent_id ?? undefined) === folderId,
   );
+  const ancestors: ManagedFolder[] = [];
+  let parent = folders.find((folder) => folder.id === folderId);
+  const visited = new Set<string>();
+  while (parent && !visited.has(parent.id)) {
+    visited.add(parent.id);
+    ancestors.unshift(parent);
+    parent = folders.find((folder) => folder.id === parent?.parent_id);
+  }
+  const openFolder = (id?: string) => {
+    setFolderId(id);
+    setQuery("");
+  };
+  useEffect(() => {
+    setSelectedFiles([]);
+    setFolderId(undefined);
+    setQuery("");
+  }, [browseProjectId]);
   const title = mode === "project" ? "从本项目选取" : "从跨项目选取";
   const sourceOptions = sourceProjects.map((project) => ({
     value: project.id,
@@ -187,7 +174,9 @@ export function LibrarySourcePickerDialog({
                 disabled={sourceProjectsLoading || noSourceProjects}
                 onChange={(value) => {
                   setSourceProjectId(value);
-                  setSelected([]);
+                  setSelectedFiles([]);
+                  setFolderId(undefined);
+                  setQuery("");
                 }}
                 options={
                   noSourceProjects
@@ -196,6 +185,58 @@ export function LibrarySourcePickerDialog({
                 }
               />
             </label>
+          ) : null}
+          <nav
+            aria-label="文件夹路径"
+            className="library-source-picker-folders"
+          >
+            <button
+              type="button"
+              aria-current={!folderId ? "location" : undefined}
+              onClick={() => openFolder()}
+            >
+              项目根目录
+            </button>
+            {ancestors.map((folder) => (
+              <button
+                key={folder.id}
+                type="button"
+                aria-current={folderId === folder.id ? "location" : undefined}
+                onClick={() => openFolder(folder.id)}
+              >
+                {folder.name}
+              </button>
+            ))}
+            {folderId ? (
+              <button
+                type="button"
+                onClick={() =>
+                  openFolder(ancestors.at(-1)?.parent_id ?? undefined)
+                }
+              >
+                返回上级
+              </button>
+            ) : null}
+          </nav>
+          <div className="library-source-picker-folders">
+            {children.map((folder) => (
+              <button
+                key={folder.id}
+                type="button"
+                onClick={() => openFolder(folder.id)}
+              >
+                <Folder aria-hidden />
+                {folder.name}
+              </button>
+            ))}
+          </div>
+          {foldersQuery.isError ? (
+            <div role="alert">
+              文件夹暂时无法读取。
+              <button type="button" onClick={() => void foldersQuery.refetch()}>
+                重试文件夹
+              </button>
+            </div>
           ) : null}
           <label className="library-source-picker-search">
             <Search aria-hidden />
@@ -210,20 +251,60 @@ export function LibrarySourcePickerDialog({
             <div className="file-empty">
               <strong>暂无其他可选取的项目</strong>
             </div>
-          ) : filesQuery.isLoading ? (
+          ) : filesQuery.isLoading || foldersQuery.isLoading ? (
             <div className="file-empty">正在读取文件…</div>
           ) : filesQuery.isError ? (
-            <div className="file-empty">文件暂时无法读取，请稍后重试。</div>
+            <div className="file-empty">
+              文件暂时无法读取。
+              <button type="button" onClick={() => void filesQuery.refetch()}>
+                重试文件
+              </button>
+            </div>
           ) : files.length === 0 ? (
             <div className="file-empty">
               <strong>
-                {query.trim() ? "没有找到匹配的文件" : "这个项目还没有文件"}
+                {query.trim() ? "没有找到匹配的文件" : "当前文件夹没有文件"}
               </strong>
             </div>
           ) : (
-            <div className="library-source-picker-list" role="listbox" aria-multiselectable>
+            <div
+              className="library-source-picker-list"
+              role="listbox"
+              aria-multiselectable
+              aria-label="可选文件"
+              onKeyDown={(event) => {
+                if (
+                  !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
+                )
+                  return;
+                const options = Array.from(
+                  event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                    'button[role="option"]',
+                  ),
+                );
+                const index = options.indexOf(
+                  document.activeElement as HTMLButtonElement,
+                );
+                const next =
+                  event.key === "Home"
+                    ? 0
+                    : event.key === "End"
+                      ? options.length - 1
+                      : Math.max(
+                          0,
+                          Math.min(
+                            options.length - 1,
+                            index + (event.key === "ArrowDown" ? 1 : -1),
+                          ),
+                        );
+                options[next]?.focus();
+                event.preventDefault();
+              }}
+            >
               {files.map((file) => {
-                const active = selected.includes(file.id);
+                const active = selectedFiles.some(
+                  (item) => item.id === file.id,
+                );
                 const name = fileDisplayName(file);
                 return (
                   <button
@@ -233,10 +314,10 @@ export function LibrarySourcePickerDialog({
                     aria-selected={active}
                     className={active ? "active" : undefined}
                     onClick={() =>
-                      setSelected((current) =>
-                        current.includes(file.id)
-                          ? current.filter((id) => id !== file.id)
-                          : [...current, file.id],
+                      setSelectedFiles((current) =>
+                        current.some((item) => item.id === file.id)
+                          ? current.filter((item) => item.id !== file.id)
+                          : [...current, file],
                       )
                     }
                   >
@@ -256,6 +337,21 @@ export function LibrarySourcePickerDialog({
               })}
             </div>
           )}
+        </div>
+        <div className="library-source-picker-folders" aria-label="已选文件">
+          {selectedFiles.map((file) => (
+            <button
+              key={file.id}
+              type="button"
+              onClick={() =>
+                setSelectedFiles((items) =>
+                  items.filter((item) => item.id !== file.id),
+                )
+              }
+            >
+              移除 {fileDisplayName(file)}
+            </button>
+          ))}
         </div>
         <div className="file-dialog-actions">
           <button type="button" onClick={onClose}>

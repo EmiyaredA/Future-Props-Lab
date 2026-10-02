@@ -9,8 +9,8 @@ from app.apps.galgame_workshop.models import (
     GalgameStoryDocument,
     GalgameWorkshopProject,
 )
-from app.main import app
 from app.capabilities.asset_store.models import VisualAsset
+from app.main import app
 from app.runtime.db import SessionLocal
 
 

@@ -183,7 +183,12 @@ test("uses styled filters and keeps successful upload feedback concise", async (
   const image = new File(["image"], "poster.png", { type: "image/png" });
   await user.upload(screen.getByLabelText("选择要上传的文件"), image);
   await waitFor(() =>
-    expect(uploadManagedFile).toHaveBeenCalledWith(image, undefined, undefined),
+    expect(uploadManagedFile).toHaveBeenCalledWith(
+      image,
+      undefined,
+      undefined,
+      undefined,
+    ),
   );
   expect(await screen.findByText("已成功上传 1 个文件")).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "上传状态" })).toBeNull();
@@ -204,6 +209,7 @@ test("uploads JSON documents from file management", async () => {
   await waitFor(() =>
     expect(uploadManagedFile).toHaveBeenCalledWith(
       transcript,
+      undefined,
       undefined,
       undefined,
     ),

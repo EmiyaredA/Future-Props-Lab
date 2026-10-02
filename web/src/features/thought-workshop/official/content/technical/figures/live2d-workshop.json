@@ -1,0 +1,78 @@
+{
+  "sceneVersion": 1,
+  "title": "动作驱动参数，参数驱动角色形态",
+  "elements": [
+    {
+      "id": "motion",
+      "kind": "rounded",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "动作时间与曲线\n给出参数值",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "bindings",
+      "kind": "rounded",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "关键形与绑定\n参数到网格和变换",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "evaluate",
+      "kind": "icon",
+      "x": 380,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "角色求值\n插值和参数组合",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "layers",
+      "kind": "icon",
+      "x": 740,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "图层合成\n可见性、顺序、贴图",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "motion_evaluate",
+      "source": "motion",
+      "target": "evaluate",
+      "label": "动态输入",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "bindings_evaluate",
+      "source": "bindings",
+      "target": "evaluate",
+      "label": "绑定规则",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "evaluate_layers",
+      "source": "evaluate",
+      "target": "layers",
+      "label": "当前姿态",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 export interface WhaleFigure {
+  dispose?(): void;
   setScheme(id: string, options?: { fade?: number }): Promise<void> | void;
 }
 export function createWhaleFigure(

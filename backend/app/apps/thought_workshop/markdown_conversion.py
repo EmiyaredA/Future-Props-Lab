@@ -1,10 +1,12 @@
 """Controlled Markdown conversion; no HTML execution or remote asset fetching."""
 
+import json
 import re
 
 import mistune
 
 from app.apps.thought_workshop.errors import ThoughtError
+from app.apps.thought_workshop.schemas.canvas import canvas_assets, remap_canvas, validate_canvas
 from app.apps.thought_workshop.schemas.document import safe_link, validate_document
 
 
@@ -79,6 +81,19 @@ def parse_markdown(text, assets):
             ]
         if kind == "block_code":
             language = attrs.get("info", "").split(" ")[0]
+            if language == "fpl-canvas":
+                try:
+                    scene = validate_canvas(json.loads(token["raw"]))
+                    mapping = {
+                        path: assets[path].id
+                        for path in canvas_assets(scene)
+                        if path in assets and assets[path].media_kind == "image"
+                    }
+                    if set(mapping) != canvas_assets(scene):
+                        raise ValueError("画板引用的图片缺失")
+                    return [{"type": "canvas", "attrs": {"scene": remap_canvas(scene, mapping)}}]
+                except (ValueError, KeyError, TypeError) as exc:
+                    raise ThoughtError("画板数据或图片引用无效") from exc
             if language == "mermaid":
                 return [{"type": "mermaid", "attrs": {"source": token["raw"].rstrip()}}]
             return [
@@ -209,6 +224,10 @@ def markdown(document, paths):
             return "  \n"
         if kind == "horizontalRule":
             return "\n---\n\n"
+        if kind == "canvas":
+            scene = remap_canvas(attrs["scene"], paths)
+            source = json.dumps(scene, ensure_ascii=False).replace("`", "\\u0060")
+            return "```fpl-canvas\n" + source + "\n```\n\n"
         if kind in {"codeBlock", "mermaid"}:
             source = (
                 attrs.get("source", "")

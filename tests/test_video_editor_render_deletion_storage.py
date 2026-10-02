@@ -5,18 +5,18 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.capabilities.asset_store.storage import AssetStorage
-from app.main import app
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
     VideoEditorProject,
     VideoEditorTask,
     VideoEditorTimeline,
 )
+from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.storage import AssetStorage
 from app.console.models import (
     Workspace,
 )
-from app.capabilities.asset_store.models import VisualAsset
+from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 

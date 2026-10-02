@@ -41,6 +41,7 @@ const asset: VideoEditorAsset = {
   id: "asset",
   displayName: "结尾",
   originalFilename: "image.png",
+  revision: 0,
   mediaKind: "image",
   mimeType: "image/png",
   byteSize: 100,
@@ -129,7 +130,12 @@ describe("clip edge trimming", () => {
       clip: video,
       tracks,
       assets: [
-        { ...asset, mediaKind: "video", probe: { durationUs: 14_000_000 } },
+        {
+          ...asset,
+          revision: 0,
+          mediaKind: "video",
+          probe: { durationUs: 14_000_000 },
+        },
       ],
     };
     const right = clipTrimPreview(opts);

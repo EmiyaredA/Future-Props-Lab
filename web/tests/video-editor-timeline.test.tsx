@@ -1066,5 +1066,4 @@ describe("video editor timeline", () => {
     expect(selectClip).not.toHaveBeenCalled();
     expect(screen.getByRole("menu")).toBeInTheDocument();
   });
-
 });

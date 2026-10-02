@@ -48,6 +48,7 @@ const video: VideoEditorAsset = {
   id: "asset-video",
   displayName: "采访",
   originalFilename: "interview.mp4",
+  revision: 0,
   mediaKind: "video",
   mimeType: "video/mp4",
   byteSize: 100,

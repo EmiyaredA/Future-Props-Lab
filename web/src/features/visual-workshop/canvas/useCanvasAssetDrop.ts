@@ -21,10 +21,7 @@ export function useCanvasAssetDrop({
   setUploadNotice,
 }: {
   projectId: string;
-  screenToWorld: (
-    clientX: number,
-    clientY: number,
-  ) => { x: number; y: number };
+  screenToWorld: (clientX: number, clientY: number) => { x: number; y: number };
   createMediaNodeFromAsset: (
     asset: {
       id: string;

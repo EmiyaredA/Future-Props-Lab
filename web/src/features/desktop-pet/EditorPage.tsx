@@ -147,6 +147,8 @@ export function EditorPage({
     [snapshot, config],
   );
   const whale = snapshot?.sourceType === "coopanion-whale";
+  const human = snapshot?.whaleModel?.rigProfile === "human-chibi";
+  const figureName = project?.title || "桌宠角色";
   const schemes =
     (snapshot?.whaleModel?.schemes as
       { id: string; brand: string; label: string }[] | undefined) ?? [];
@@ -400,7 +402,7 @@ export function EditorPage({
                   <strong>{project?.sourceTitle}</strong>
                   <small>
                     {whale
-                      ? "Coopanion · 本地导入快照"
+                      ? "分层角色 · 本地导入快照"
                       : `Live2D 工坊 · 固定版本 r${project?.sourceRevision}`}
                   </small>
                 </div>
@@ -526,7 +528,7 @@ export function EditorPage({
                 <div className="dp-source-card">
                   <strong>
                     {whale
-                      ? "Coopanion 本地快照"
+                      ? "分层角色本地快照"
                       : `来源角色 r${project?.sourceRevision}`}
                   </strong>
                   <small>{project?.sourceTitle}</small>
@@ -570,7 +572,7 @@ export function EditorPage({
                   {tab === "look"
                     ? whale
                       ? (schemes.find((item) => item.id === skinId)?.brand ??
-                        "DeepSeek")
+                        figureName)
                       : (selectedSkin?.name ?? "默认形象")
                     : EVENTS.find((item) => item.id === eventName)?.label}
                 </span>
@@ -639,7 +641,9 @@ export function EditorPage({
             <footer className="dp-stage-footer">
               <span>
                 {whale
-                  ? "原版鲸鱼娘分件动画"
+                  ? human
+                    ? "人物分件动画"
+                    : "原版鲸鱼娘分件动画"
                   : `角色画布 ${draft.character?.width} × ${draft.character?.height}`}
               </span>
               <span>
@@ -655,13 +659,12 @@ export function EditorPage({
                     <div className="dp-panel-heading">
                       <strong>
                         {schemes.find((item) => item.id === skinId)?.brand ??
-                          "DeepSeek"}
+                          figureName}
                       </strong>
-                      <small>原版配色</small>
+                      <small>{schemes.length} 套配色</small>
                     </div>
                     <p className="dp-hint">
-                      保留 Coopanion
-                      的原版贴图、表情与分件动画。配色仅影响当前预览，保存默认值后下次启动生效。
+                      使用资源包中的贴图、表情与分件动画。配色仅影响当前预览，保存默认值后下次启动生效。
                     </p>
                     <button
                       className="dp-side-action"
@@ -676,7 +679,7 @@ export function EditorPage({
                     <p className="dp-hint">
                       当前默认：
                       {schemes.find((item) => item.id === config.schemeId)
-                        ?.brand ?? "DeepSeek"}
+                        ?.brand ?? figureName}
                     </p>
                   </>
                 ) : (

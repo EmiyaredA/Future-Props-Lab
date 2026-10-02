@@ -12,3 +12,9 @@ The upstream model catalog JSON was absent in the local checkout. FPL does not
 use Pi's built-in model catalog; empty JSON entries permit type compilation.
 `radius.ts` has a type-only cast so the empty catalog compiles. FPL uses its own
 model catalog and provider credentials exclusively.
+
+FPL consumes the browser-independent agent entrypoints. The omitted Node execution
+environment was referenced by `src/node.ts` but was not present in this fixed
+snapshot. FPL removes that unusable entrypoint and its package exports instead
+of supplying an unreviewed execution implementation. Desktop shell execution
+remains owned by FPL's sandbox runner.

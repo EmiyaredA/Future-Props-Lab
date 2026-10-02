@@ -19,12 +19,6 @@ from app.capabilities.asset_store.layout_migration import (
     LayoutMigrationBusyError,
     StorageLayoutMigration,
 )
-from app.console.file_library import (
-    LibraryFolderArchive,
-    LibraryFolderArchiveError,
-)
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.runtime.config import get_settings
 from app.capabilities.asset_store.schemas.files import (
     LibraryAssetImportIn,
     LibraryFolderImportOut,
@@ -41,6 +35,12 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetPatchIn,
 )
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
+from app.console.file_library import (
+    LibraryFolderArchive,
+    LibraryFolderArchiveError,
+)
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.runtime.config import get_settings
 
 router = APIRouter(tags=["file-management"])
 

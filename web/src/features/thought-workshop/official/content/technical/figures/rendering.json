@@ -1,0 +1,88 @@
+{
+  "sceneVersion": 1,
+  "title": "视频帧与音频共同组成输出",
+  "elements": [
+    {
+      "id": "plan",
+      "kind": "icon",
+      "x": 40,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "时间线 / 渲染计划\n已校验片段与素材",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "video",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "画面求值\n片段、图层、转场",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "audio",
+      "kind": "icon",
+      "x": 380,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "音频采样与混合\n源时间、速度、增益",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "output",
+      "kind": "icon",
+      "x": 740,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "编码与封装\n可播放成片",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "plan_video",
+      "source": "plan",
+      "target": "video",
+      "label": "画面时间",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "plan_audio",
+      "source": "plan",
+      "target": "audio",
+      "label": "音频时间",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "video_output",
+      "source": "video",
+      "target": "output",
+      "label": "视频帧",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "audio_output",
+      "source": "audio",
+      "target": "output",
+      "label": "音频流",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

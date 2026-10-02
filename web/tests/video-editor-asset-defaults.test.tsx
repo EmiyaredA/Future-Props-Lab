@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { operationsForAsset } from "@features/video-editor/editorModel";
-import type { VideoEditorAsset, VideoEditorTrack } from "@features/video-editor/types";
+import type {
+  VideoEditorAsset,
+  VideoEditorTrack,
+} from "@features/video-editor/types";
 
 const visualTrack = {
   id: "visual-1",
@@ -39,7 +42,7 @@ describe("asset default effects on timeline add", () => {
   it("injects chromaKey from asset defaultEffects into new clips", () => {
     const ops = operationsForAsset(asset, [visualTrack], 0);
     const clip = ops.find((operation) => operation.type === "addClip")?.clip;
-    expect(clip?.chromaKey).toEqual(asset.defaultEffects.chromaKey);
+    expect(clip?.chromaKey).toEqual(asset.defaultEffects?.chromaKey);
   });
 
   it("omits chromaKey when asset has no default effects", () => {

@@ -1,6 +1,5 @@
-import { renderDiagram } from "./diagram";
+import { MermaidDiagram } from "./diagrams/MermaidDiagram";
 import { ManagedImageView } from "./ManagedImageView";
-import { useEffect, useId, useState } from "react";
 import { Node, mergeAttributes } from "@tiptap/core";
 import {
   NodeViewWrapper,
@@ -112,58 +111,16 @@ export const ManagedImage = Node.create({
 });
 
 function MermaidView({ node, updateAttributes, editor }: NodeViewProps) {
-  const id = useId().replace(/[^a-zA-Z0-9]/g, "");
-  const [svg, setSvg] = useState("");
-  const [error, setError] = useState("");
-  const [editing, setEditing] = useState(false);
-  useEffect(() => {
-    let active = true;
-    const timer = setTimeout(() => {
-      void renderDiagram(
-        String(node.attrs.source),
-        `thought-${id}-${Date.now()}`,
-      )
-        .then((value) => {
-          if (active) {
-            setSvg(value);
-            setError("");
-          }
-        })
-        .catch(() => {
-          if (active) {
-            setSvg("");
-            setError("图表语法有误，请编辑源码");
-          }
-        });
-    }, 350);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [node.attrs.source, id]);
   return (
-    <NodeViewWrapper className="thought-diagram" contentEditable={false}>
-      {editor.isEditable && (
-        <button type="button" onClick={() => setEditing(!editing)}>
-          {editing ? "收起源码" : "编辑图表"}
-        </button>
-      )}
-      {editing && editor.isEditable && (
-        <textarea
-          aria-label="Mermaid 源码"
-          value={node.attrs.source}
-          onChange={(e) => updateAttributes({ source: e.target.value })}
-          rows={6}
-        />
-      )}
-      {error ? (
-        <p role="status">{error}</p>
-      ) : (
-        <div
-          className="thought-mermaid-preview"
-          dangerouslySetInnerHTML={{ __html: svg }}
-        />
-      )}
+    <NodeViewWrapper contentEditable={false}>
+      <MermaidDiagram
+        source={String(node.attrs.source)}
+        onChange={
+          editor.isEditable
+            ? (source) => updateAttributes({ source })
+            : undefined
+        }
+      />
     </NodeViewWrapper>
   );
 }

@@ -203,4 +203,3 @@ async def test_user_motion_library_replaces_embedded_bytes():
         assert (await client.get(f"/v1/director-desk/library/files/{key}")).content == b"motion"
         assert (await client.delete(f"/v1/director-desk/motions/{motion_id}")).status_code == 200
         assert (await client.get(f"/v1/director-desk/library/files/{key}")).status_code == 404
-

@@ -8,6 +8,14 @@ import pytest
 from PIL import Image, ImageChops
 from pydantic import ValidationError
 
+from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
+from app.apps.video_editor.frames import VideoEditorFrames
+from app.apps.video_editor.schemas import (
+    VideoEditorClip,
+    VideoEditorTimelineBatchIn,
+    VideoEditorTimelineDocument,
+)
+from app.apps.video_editor.timeline import apply_operations
 from app.capabilities.media_rendering.contracts import RenderPlan
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
@@ -19,14 +27,6 @@ from app.capabilities.media_rendering.text_layer import (
 )
 from app.main import app
 from app.runtime.db import SessionLocal
-from app.apps.video_editor.schemas import (
-    VideoEditorClip,
-    VideoEditorTimelineBatchIn,
-    VideoEditorTimelineDocument,
-)
-from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
-from app.apps.video_editor.frames import VideoEditorFrames
-from app.apps.video_editor.timeline import apply_operations
 
 
 def text_clip(**patch) -> dict:

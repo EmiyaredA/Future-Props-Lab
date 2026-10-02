@@ -3,14 +3,14 @@ from __future__ import annotations
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.capabilities.asset_store.models import (
+    VisualAsset,
+    VisualProjectAssetReference,
+)
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.governance.service import AccountError
 from app.console.models import (
     Workspace,
-)
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualProjectAssetReference,
 )
 from app.orm import PUBLIC_WORKSPACE_GALGAME_MODELS, PUBLIC_WORKSPACE_PROJECT_MODELS
 from app.runtime.config import get_settings

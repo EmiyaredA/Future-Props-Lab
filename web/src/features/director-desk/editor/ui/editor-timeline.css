@@ -1,0 +1,324 @@
+@scope (.director-desk-root) {
+  .timeline {
+    background: #191919;
+    border-top: 1px solid #444444;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .transport {
+    height: 45px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border-bottom: 1px solid #3f3f3f;
+    padding: 0 15px;
+  }
+  .timeline-title {
+    font-size: 11px;
+    color: #cccccc;
+    width: 163px;
+    flex-shrink: 0;
+    display: flex;
+    gap: 9px;
+    align-items: center;
+  }
+  .timeline-title span {
+    font-size: 9px;
+    color: #828282;
+  }
+  .transport .icon-button {
+    width: 26px;
+    height: 26px;
+    min-height: 26px;
+    padding: 5px;
+    border: 0;
+    background: none;
+  }
+  .transport .icon {
+    width: 13px;
+    height: 13px;
+  }
+  .play-button {
+    background: #e4e4e4;
+    color: #222222;
+    width: 27px;
+    height: 27px;
+    min-height: 27px;
+    padding: 5px;
+  }
+  .play-button:hover {
+    color: #f4f4f4;
+  }
+  .timecode {
+    font:
+      11px Consolas,
+      monospace;
+    letter-spacing: 0.7px;
+    color: #c4c4c4;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  .duration-input {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #9f9f9f;
+  }
+  .duration-input input {
+    width: 53px;
+    height: 27px;
+    font: 11px Consolas;
+    padding: 5px;
+    background: #2a2a2a;
+  }
+  .timeline-content {
+    overflow: auto;
+    min-height: 0;
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: #5e5e5e transparent;
+  }
+  .timeline-row {
+    display: grid;
+    grid-template-columns: 192px 1fr;
+    height: 31px;
+  }
+  .timeline-row.selected {
+    background: #2d2d2d;
+  }
+  .track-label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    border: 0;
+    border-right: 1px solid #515151;
+    border-bottom: 1px solid #353535;
+    border-radius: 0;
+    background: transparent;
+    min-height: 0;
+    padding: 6px 15px;
+    font-size: 10px;
+    color: #cacaca;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .track-label small {
+    margin-left: auto;
+    color: #7c7c7c;
+    font-size: 9px;
+  }
+  .track-label .icon {
+    width: 13px;
+    height: 13px;
+  }
+  .track-label i {
+    height: 5px;
+    width: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .track-lane {
+    position: relative;
+    border-bottom: 1px solid #383838;
+    overflow: hidden;
+    background-image: linear-gradient(to right, #414141 1px, transparent 1px);
+    background-size: 10% 100%;
+  }
+  .ruler-row {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    height: 25px;
+    background: #202020;
+  }
+  .ruler-row .track-label {
+    font-size: 9px;
+    color: #878787;
+  }
+  .ruler {
+    position: relative;
+    cursor: crosshair;
+    border-bottom: 1px solid #4b4b4b;
+    font: 9px Consolas;
+    color: #969696;
+    overflow: hidden;
+    margin-right: 0;
+  }
+  .ruler > span {
+    position: absolute;
+    top: 7px;
+    transform: translateX(3px);
+  }
+  .ruler > span:last-of-type {
+    transform: translateX(-120%);
+  }
+  .timeline-clip {
+    position: absolute;
+    top: 4px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+    border: 1px solid
+      color-mix(in srgb, var(--track-color, #a7a7a7) 45%, #353535);
+    background: color-mix(in srgb, var(--track-color, #a7a7a7) 15%, #232323);
+    border-radius: 3px;
+    color: #dddddd;
+    font-size: 9px;
+    padding: 0;
+    cursor: default;
+    min-width: 0;
+    overflow: hidden;
+    container-type: inline-size;
+  }
+  .timeline-clip span {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding-left: 6px;
+    padding-right: 12px;
+    pointer-events: none;
+  }
+  .timeline-clip:hover {
+    filter: brightness(1.25);
+    border-color: #d2d2d2;
+  }
+  .timeline-clip.cut {
+    background: #3c3c3c;
+    border-color: #7d7d7d;
+    color: #ececec;
+  }
+  .timeline-clip.cut > button {
+    position: absolute;
+    right: 12px;
+    height: 13px;
+    width: 13px;
+    min-height: 13px;
+    padding: 0;
+    font-size: 9px;
+    border: 0;
+    background: none;
+    opacity: 0.6;
+  }
+  .timeline-clip.cut span {
+    padding-right: 28px;
+  }
+  @container (max-width:40px) {
+    .timeline-clip > button {
+      display: none;
+    }
+  }
+  .timeline-clip.path {
+    border-style: dashed;
+    background: #343434;
+    color: #c2c2c2;
+  }
+  .timeline-clip.idle {
+    background: #2a2a2a;
+    color: #7b7b7b;
+    border-color: #494949;
+    cursor: default;
+  }
+  .resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    max-width: 33%;
+    cursor: ew-resize;
+    background: #cdcdcd38;
+    border-left: 1px solid #bcbcbc80;
+  }
+  .resize-handle:hover {
+    background: #eeeeee70;
+  }
+  .timeline-content .playhead-line {
+    left: calc(var(--timeline-pps, 60px) * var(--timeline-playhead, 0));
+  }
+  .resize-handle::after {
+    content: "";
+    position: absolute;
+    top: 25%;
+    bottom: 25%;
+    left: 50%;
+    border-left: 1px solid #eee;
+    pointer-events: none;
+  }
+  .playhead-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #e7e7e7;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .ruler .playhead-line:before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 0;
+    height: 10px;
+    width: 9px;
+    background: #eaeaea;
+    clip-path: polygon(0 0, 100% 0, 100% 65%, 50% 100%, 0 65%);
+  }
+  .path-row {
+    height: 24px;
+  }
+  .path-row .timeline-clip {
+    height: 16px;
+    top: 3px;
+    font-size: 8px;
+  }
+  .sub-track {
+    font-size: 9px;
+    color: #929292;
+    padding-left: 29px;
+  }
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-top: 1px solid #464646;
+    background: #1b1b1b;
+    font-size: 9px;
+    color: #888888;
+  }
+
+  #toasts {
+    position: fixed;
+    bottom: 280px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: grid;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: #303030ee;
+    border: 1px solid #858585;
+    border-radius: 7px;
+    color: #ebebeb;
+    box-shadow: 0 8px 35px #0008;
+    padding: 12px 18px;
+    font-size: 12px;
+    max-width: 600px;
+    line-height: 1.7;
+    backdrop-filter: blur(8px);
+  }
+  .toast.error {
+    background: #3e292cee;
+    border-color: #a56e75;
+  }
+}

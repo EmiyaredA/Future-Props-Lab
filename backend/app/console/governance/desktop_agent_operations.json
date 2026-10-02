@@ -253,6 +253,10 @@
       "method": "skill_version_content",
       "resource": "integrations"
     },
+    "GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md": {
+      "method": "skill_version_markdown",
+      "resource": "integrations"
+    },
     "GET /v1/integrations/tool-apis": {
       "method": "tool_apis",
       "resource": "integrations"

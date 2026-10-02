@@ -1,11 +1,29 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Maximize2, Pencil, Plus, RefreshCcw, Search, Trash2, Upload, X } from "lucide-react";
+import {
+  Download,
+  Maximize2,
+  Pencil,
+  Plus,
+  RefreshCcw,
+  Search,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { ApiError } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { ProjectEditorDialog, ProjectLibraryCard } from "@shared/ui/project-library";
+import {
+  ProjectEditorDialog,
+  ProjectLibraryCard,
+} from "@shared/ui/project-library";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
-import { createDirectorProject, deleteDirectorProject, listDirectorProjects, patchDirectorProject } from "./api";
+import {
+  createDirectorProject,
+  deleteDirectorProject,
+  listDirectorProjects,
+  patchDirectorProject,
+} from "./api";
 import { exportDirectorFile, importDirectorFile } from "./directorPackage";
 import { directorDeskKeys } from "./queryKeys";
 import "./director-desk-projects.css";
@@ -34,8 +52,13 @@ export function DirectorDeskProjectsPage({
   const fileRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
-  const [rename, setRename] = useState<{ project: DirectorListItem; title: string } | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<DirectorListItem | null>(null);
+  const [rename, setRename] = useState<{
+    project: DirectorListItem;
+    title: string;
+  } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<DirectorListItem | null>(
+    null,
+  );
   const projects = useQuery({
     queryKey: directorDeskKeys.projects(query),
     queryFn: ({ signal }) => listDirectorProjects(query, signal),
@@ -65,7 +88,8 @@ export function DirectorDeskProjectsPage({
     },
   });
   const remove = useMutation({
-    mutationFn: (project: DirectorListItem) => deleteDirectorProject(project.id, project.revision),
+    mutationFn: (project: DirectorListItem) =>
+      deleteDirectorProject(project.id, project.revision),
     onSuccess: () => {
       setPendingDelete(null);
       void client.invalidateQueries({ queryKey: directorDeskKeys.all });
@@ -85,7 +109,8 @@ export function DirectorDeskProjectsPage({
     onError: (error) => setNotice(message(error)),
   });
   const exporting = useMutation({
-    mutationFn: (project: DirectorListItem) => exportDirectorFile(project.id, project.title),
+    mutationFn: (project: DirectorListItem) =>
+      exportDirectorFile(project.id, project.title),
     onError: (error) => setNotice(message(error)),
   });
   const items = projects.data?.items ?? [];
@@ -145,7 +170,11 @@ export function DirectorDeskProjectsPage({
       {notice ? (
         <div className="workshop-notice" role="status">
           {notice}
-          <button type="button" aria-label="关闭提示" onClick={() => setNotice("")}>
+          <button
+            type="button"
+            aria-label="关闭提示"
+            onClick={() => setNotice("")}
+          >
             <X aria-hidden />
           </button>
         </div>
@@ -167,7 +196,11 @@ export function DirectorDeskProjectsPage({
           {items.map((project) => (
             <ProjectLibraryCard
               key={project.id}
-              project={{ id: project.id, title: project.title, updated_at: project.updated_at }}
+              project={{
+                id: project.id,
+                title: project.title,
+                updated_at: project.updated_at,
+              }}
               metadata={<span className="workshop-status draft">预演</span>}
               cover="director"
               coverTitle="三维预演"
@@ -216,14 +249,20 @@ export function DirectorDeskProjectsPage({
         <div className="workshop-state">
           <strong>{query ? "没有匹配的预演工程" : "还没有预演工程"}</strong>
           <span>
-            {query ? "换个关键词试试，或清空搜索查看全部工程。" : "新建工程后即可进入三维预演。"}
+            {query
+              ? "换个关键词试试，或清空搜索查看全部工程。"
+              : "新建工程后即可进入三维预演。"}
           </span>
           {query ? (
             <button type="button" onClick={() => setQuery("")}>
               清空搜索
             </button>
           ) : readOnly ? null : (
-            <button type="button" className="workshop-primary" onClick={() => create.mutate()}>
+            <button
+              type="button"
+              className="workshop-primary"
+              onClick={() => create.mutate()}
+            >
               <Plus aria-hidden /> 新建预演
             </button>
           )}
@@ -231,7 +270,11 @@ export function DirectorDeskProjectsPage({
       )}
       {rename ? (
         <ProjectEditorDialog
-          editor={{ mode: "rename", project: rename.project, title: rename.title }}
+          editor={{
+            mode: "rename",
+            project: rename.project,
+            title: rename.title,
+          }}
           noun="预演工程"
           pending={updateTitle.isPending}
           deleteDescription=""
@@ -248,7 +291,9 @@ export function DirectorDeskProjectsPage({
       <ConfirmDialog
         open={pendingDelete !== null}
         title="删除预演工程"
-        description={pendingDelete ? `删除「${pendingDelete.title}」后不能恢复。` : ""}
+        description={
+          pendingDelete ? `删除「${pendingDelete.title}」后不能恢复。` : ""
+        }
         confirmLabel="删除"
         pending={remove.isPending}
         onCancel={() => setPendingDelete(null)}

@@ -51,6 +51,7 @@ const asset: VideoEditorAsset = {
   id: "asset",
   displayName: "新素材",
   originalFilename: "clip.mp4",
+  revision: 0,
   mediaKind: "video",
   mimeType: "video/mp4",
   byteSize: 12,

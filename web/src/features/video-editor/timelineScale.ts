@@ -44,8 +44,14 @@ export function timelineZoomMinimum(
   );
 }
 
-export function clampTimelineZoom(zoom: number, minZoom = COMFORT_MIN_TIMELINE_ZOOM) {
-  const floor = Math.max(MIN_TIMELINE_ZOOM, Math.min(MAX_TIMELINE_ZOOM, minZoom));
+export function clampTimelineZoom(
+  zoom: number,
+  minZoom = COMFORT_MIN_TIMELINE_ZOOM,
+) {
+  const floor = Math.max(
+    MIN_TIMELINE_ZOOM,
+    Math.min(MAX_TIMELINE_ZOOM, minZoom),
+  );
   if (!Number.isFinite(zoom)) return floor;
   return Math.max(floor, Math.min(MAX_TIMELINE_ZOOM, Math.round(zoom)));
 }

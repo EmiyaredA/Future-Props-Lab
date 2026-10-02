@@ -1,0 +1,78 @@
+{
+  "sceneVersion": 1,
+  "title": "同一故事的交互与线性输出",
+  "elements": [
+    {
+      "id": "story",
+      "kind": "icon",
+      "x": 40,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "Story 文档\n角色、片段和分支",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "validate",
+      "kind": "diamond",
+      "x": 380,
+      "y": 180,
+      "width": 230,
+      "height": 130,
+      "text": "分层校验\n引用、时间轴与流程",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "play",
+      "kind": "rounded",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "交互试玩\n根据玩家选择求值",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "route",
+      "kind": "icon",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "路线视频\n明确分支后线性渲染",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "story_validate",
+      "source": "story",
+      "target": "validate",
+      "label": "结构输入",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "validate_play",
+      "source": "validate",
+      "target": "play",
+      "label": "有效故事",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "validate_route",
+      "source": "validate",
+      "target": "route",
+      "label": "有效指定路线",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

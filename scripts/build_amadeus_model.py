@@ -160,12 +160,48 @@ def build() -> None:
     layers: list[tuple[str, str, Image.Image, str, bool]] = [
         ("torso", "躯干与白大褂", cut(blank, torso_mask), "chest", True),
         ("shirt", "衬衫前片", cut(blank, intersection(torso_mask, shirt)), "chest", True),
-        ("left-lapel", "左大褂翻领", cut(blank, intersection(torso_mask, left_lapel)), "chest", True),
-        ("right-lapel", "右大褂翻领", cut(blank, intersection(torso_mask, right_lapel)), "chest", True),
-        ("left-upper-sleeve", "左上袖", cut(blank, intersection(left_arm, upper)), "left-upper-arm", True),
-        ("left-lower-sleeve", "左前臂袖", cut(blank, intersection(left_arm, lower)), "left-forearm", True),
-        ("right-upper-sleeve", "右上袖", cut(blank, intersection(right_arm, upper)), "right-upper-arm", True),
-        ("right-lower-sleeve", "右前臂袖", cut(blank, intersection(right_arm, lower)), "right-forearm", True),
+        (
+            "left-lapel",
+            "左大褂翻领",
+            cut(blank, intersection(torso_mask, left_lapel)),
+            "chest",
+            True,
+        ),
+        (
+            "right-lapel",
+            "右大褂翻领",
+            cut(blank, intersection(torso_mask, right_lapel)),
+            "chest",
+            True,
+        ),
+        (
+            "left-upper-sleeve",
+            "左上袖",
+            cut(blank, intersection(left_arm, upper)),
+            "left-upper-arm",
+            True,
+        ),
+        (
+            "left-lower-sleeve",
+            "左前臂袖",
+            cut(blank, intersection(left_arm, lower)),
+            "left-forearm",
+            True,
+        ),
+        (
+            "right-upper-sleeve",
+            "右上袖",
+            cut(blank, intersection(right_arm, upper)),
+            "right-upper-arm",
+            True,
+        ),
+        (
+            "right-lower-sleeve",
+            "右前臂袖",
+            cut(blank, intersection(right_arm, lower)),
+            "right-forearm",
+            True,
+        ),
         ("head", "头发底层与面部底层", cut(blank, head), "head", True),
         ("face", "脸部", cut(blank, face), "head", True),
         ("collar", "衬衫衣领", cut(blank, collar), "neck", True),
@@ -174,12 +210,42 @@ def build() -> None:
         ("tie-blade", "领带下摆", cut(blank, intersection(tie, tie_blade)), "tie-tip", True),
         ("left-lock", "左侧发束", cut(blank, intersection(head, left_lock)), "left-hair", True),
         ("fringe", "刘海底层", cut(blank, fringe), "fringe", True),
-        ("left-fringe", "左侧刘海", cut(blank, intersection(fringe, left_fringe)), "left-hair", True),
-        ("middle-fringe", "中央刘海", cut(blank, intersection(fringe, middle_fringe)), "fringe", True),
-        ("right-fringe", "右侧刘海", cut(blank, intersection(fringe, right_fringe)), "right-hair", True),
+        (
+            "left-fringe",
+            "左侧刘海",
+            cut(blank, intersection(fringe, left_fringe)),
+            "left-hair",
+            True,
+        ),
+        (
+            "middle-fringe",
+            "中央刘海",
+            cut(blank, intersection(fringe, middle_fringe)),
+            "fringe",
+            True,
+        ),
+        (
+            "right-fringe",
+            "右侧刘海",
+            cut(blank, intersection(fringe, right_fringe)),
+            "right-hair",
+            True,
+        ),
         ("front-curl", "右侧长发底层", cut(blank, curl), "right-hair", True),
-        ("upper-curl", "右侧长发上段", cut(blank, intersection(curl, upper_curl)), "right-hair", True),
-        ("lower-curl", "右侧长发末梢", cut(blank, intersection(curl, lower_curl)), "right-hair-tip", True),
+        (
+            "upper-curl",
+            "右侧长发上段",
+            cut(blank, intersection(curl, upper_curl)),
+            "right-hair",
+            True,
+        ),
+        (
+            "lower-curl",
+            "右侧长发末梢",
+            cut(blank, intersection(curl, lower_curl)),
+            "right-hair-tip",
+            True,
+        ),
         ("left-eye", "左眼", cut(painted, rectangle((370, 345, 515, 435))), "head", True),
         ("right-eye", "右眼", cut(painted, rectangle((530, 345, 690, 435))), "head", True),
         ("left-brow", "左眉", cut(painted, rectangle((372, 323, 521, 374))), "head", True),
@@ -279,10 +345,12 @@ def build() -> None:
                 upper_id = bone_id.replace("forearm", "upper-arm")
                 lower_id = bone_id.replace("upper-arm", "forearm")
                 amount = max(0.05, min(0.95, (1160 - gy) / 550))
-                weights.append([
-                    {"boneId": f"bone-{upper_id}", "weight": amount},
-                    {"boneId": f"bone-{lower_id}", "weight": 1 - amount},
-                ])
+                weights.append(
+                    [
+                        {"boneId": f"bone-{upper_id}", "weight": amount},
+                        {"boneId": f"bone-{lower_id}", "weight": 1 - amount},
+                    ]
+                )
             else:
                 weights.append([{"boneId": f"bone-{bone_id}", "weight": 1}])
         parts.append(

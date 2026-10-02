@@ -1,0 +1,98 @@
+{
+  "sceneVersion": 1,
+  "title": "分段标注的三类信息汇入片段",
+  "elements": [
+    {
+      "id": "audio",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "录音与波形\n定位真实时间边界",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "text",
+      "kind": "rounded",
+      "x": 40,
+      "y": 230,
+      "width": 220,
+      "height": 110,
+      "text": "人工校对 / 模型初稿\n转写文字",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "speaker",
+      "kind": "icon",
+      "x": 40,
+      "y": 410,
+      "width": 220,
+      "height": 110,
+      "text": "说话人与情绪\n身份与标签",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "segment",
+      "kind": "rounded",
+      "x": 380,
+      "y": 230,
+      "width": 220,
+      "height": 110,
+      "text": "标注片段\n区间 + 文本 + 标签",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "export",
+      "kind": "icon",
+      "x": 740,
+      "y": 230,
+      "width": 220,
+      "height": 110,
+      "text": "目标格式导出\n按片段交付",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "audio_segment",
+      "source": "audio",
+      "target": "segment",
+      "label": "起止时间",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "text_segment",
+      "source": "text",
+      "target": "segment",
+      "label": "校对文字",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "speaker_segment",
+      "source": "speaker",
+      "target": "segment",
+      "label": "明确关联",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "segment_export",
+      "source": "segment",
+      "target": "export",
+      "label": "结构化输出",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

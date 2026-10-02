@@ -1,0 +1,134 @@
+{
+  "sceneVersion": 1,
+  "title": "前后端各自的依赖方向",
+  "elements": [
+    {
+      "id": "web",
+      "kind": "frame",
+      "x": 10,
+      "y": 10,
+      "width": 1010,
+      "height": 210,
+      "text": "Web 依赖层",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "app",
+      "kind": "rounded",
+      "x": 40,
+      "y": 75,
+      "width": 220,
+      "height": 110,
+      "text": "app\n路由与应用壳",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "parentId": "web"
+    },
+    {
+      "id": "feature",
+      "kind": "rounded",
+      "x": 390,
+      "y": 75,
+      "width": 220,
+      "height": 110,
+      "text": "features\n业务页面与用例",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "parentId": "web"
+    },
+    {
+      "id": "shared",
+      "kind": "rounded",
+      "x": 740,
+      "y": 75,
+      "width": 220,
+      "height": 110,
+      "text": "shared / platform\n通用 UI / 请求基础",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "parentId": "web"
+    },
+    {
+      "id": "backend",
+      "kind": "frame",
+      "x": 10,
+      "y": 270,
+      "width": 1010,
+      "height": 210,
+      "text": "后端依赖层",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "routes",
+      "kind": "rounded",
+      "x": 40,
+      "y": 335,
+      "width": 220,
+      "height": 110,
+      "text": "业务 routes\n协议与错误映射",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "parentId": "backend"
+    },
+    {
+      "id": "usecase",
+      "kind": "rounded",
+      "x": 390,
+      "y": 335,
+      "width": 220,
+      "height": 110,
+      "text": "所属功能\n规则、事务与存取",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "parentId": "backend"
+    },
+    {
+      "id": "capability",
+      "kind": "rounded",
+      "x": 740,
+      "y": 335,
+      "width": 220,
+      "height": 110,
+      "text": "capabilities / runtime\n公共能力与原语",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "parentId": "backend"
+    }
+  ],
+  "edges": [
+    {
+      "id": "app_feature",
+      "source": "app",
+      "target": "feature",
+      "label": "装配",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "feature_shared",
+      "source": "feature",
+      "target": "shared",
+      "label": "消费接口",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "routes_usecase",
+      "source": "routes",
+      "target": "usecase",
+      "label": "调用",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "usecase_capability",
+      "source": "usecase",
+      "target": "capability",
+      "label": "复用",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

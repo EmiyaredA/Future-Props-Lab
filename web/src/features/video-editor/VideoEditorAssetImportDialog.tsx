@@ -2,16 +2,13 @@ import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { Image, Music2, Type, Video } from "lucide-react";
 import type { components } from "@generated/api";
 
-type AvailableAsset =
-  components["schemas"]["VideoEditorAvailableAssetOut"];
+type AvailableAsset = components["schemas"]["VideoEditorAvailableAssetOut"];
 
 function ImportSourcePreview({ asset }: { asset: AvailableAsset }) {
   const previewable =
     asset.mediaKind === "image" || asset.mediaKind === "video";
   const { url } = useApiBlobUrl(
-    previewable
-      ? `/v1/files/${encodeURIComponent(asset.id)}/content`
-      : null,
+    previewable ? `/v1/files/${encodeURIComponent(asset.id)}/content` : null,
   );
   const Icon =
     asset.mediaKind === "video"
@@ -76,9 +73,7 @@ export function VideoEditorAssetImportDialog({
               className={chosen.includes(asset.id) ? "selected" : ""}
               onClick={() => onToggle(asset.id)}
             >
-              <span aria-hidden>
-                {chosen.includes(asset.id) ? "✓" : ""}
-              </span>
+              <span aria-hidden>{chosen.includes(asset.id) ? "✓" : ""}</span>
               <ImportSourcePreview asset={asset} />
               <div>
                 <strong>{asset.displayName}</strong>

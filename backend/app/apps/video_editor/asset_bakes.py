@@ -7,7 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.media import VideoEditorMedia
-from app.apps.video_editor.models import VideoEditorAssetMetadata, VideoEditorTask, VideoEditorTimeline
+from app.apps.video_editor.models import (
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
 from app.apps.video_editor.projects import VideoEditorProjects
 from app.apps.video_editor.rendering import task_out
 from app.apps.video_editor.schemas import (
@@ -40,7 +43,9 @@ class VideoEditorAssetBakes:
         ).scalar_one_or_none()
         if existing is not None:
             if existing.kind != "asset_bake":
-                raise VideoEditorValidationError("requestId 已被其他任务占用", code="request_conflict")
+                raise VideoEditorValidationError(
+                    "requestId 已被其他任务占用", code="request_conflict"
+                )
             return task_out(existing)
 
         asset, metadata = await self.media.asset(project_id, asset_id)

@@ -514,6 +514,7 @@ async def test_anthropic_streaming_normalizes_deltas_and_usage() -> None:
                 '"text":"Hi"}}\n\n'
                 'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},'
                 '"usage":{"output_tokens":2}}\n\n'
+                'data: {"type":"message_stop"}\n\n'
             ),
             headers={"content-type": "text/event-stream"},
         )
@@ -549,13 +550,14 @@ async def test_streaming_maps_image_inputs_without_losing_order(kind: str) -> No
         if kind == "openai":
             assert '"type":"image_url"' in body
             assert '"url":"data:image/png;base64,base64-image-one"' in body
-            response = 'data: {"choices":[{"delta":{"content":"ok"}}]}\n\n'
+            response = 'data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n'
         else:
             assert '"type":"image"' in body
             assert '"media_type":"image/png"' in body
             assert '"data":"base64-image-one"' in body
             response = (
                 'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}\n\n'
+                'data: {"type":"message_stop"}\n\n'
             )
         return httpx.Response(200, text=response, headers={"content-type": "text/event-stream"})
 

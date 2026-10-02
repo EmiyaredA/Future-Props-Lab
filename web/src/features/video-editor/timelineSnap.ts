@@ -27,7 +27,6 @@ export function linkedClipIds(
 export function snapClipPosition({
   candidateUs,
   durationUs,
-  targetTrackId: _targetTrackId,
   tracks,
   movingClipIds,
   fps,

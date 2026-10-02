@@ -13,7 +13,7 @@ class ThoughtHistorySnapshot(BaseModel):
     revision: int = Field(ge=0)
     title: str = Field(min_length=1, max_length=240)
     document: dict
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2, 3] = 2
     tags: list[str] = Field(max_length=30)
     author_id: str | None = None
     author_name: str = Field(max_length=120)

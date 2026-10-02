@@ -1,3 +1,4 @@
+import { CanvasNode } from "./diagrams/CanvasNode";
 import { AttachmentNode } from "./AttachmentNode";
 import type { AnyExtension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -61,6 +62,7 @@ export function editorExtensions(
     ManagedImage,
     AttachmentNode,
     MermaidNode,
+    CanvasNode,
     Placeholder.configure({ placeholder: "从一个想法开始…" }),
   ];
   if (!readOnly) extensions.push(NodeRange.configure({ key: "Mod" }));

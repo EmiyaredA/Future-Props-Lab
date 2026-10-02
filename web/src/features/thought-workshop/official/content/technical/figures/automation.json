@@ -1,0 +1,80 @@
+{
+  "sceneVersion": 1,
+  "title": "两种客户端共用正式业务边界",
+  "elements": [
+    {
+      "id": "http",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "HTTP SDK\n受授权 API Key",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "desktop",
+      "kind": "icon",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "桌面 Agent\n配对与操作登记",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "access",
+      "kind": "icon",
+      "x": 380,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "授权与请求适配\n身份、权限与参数",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "business",
+      "kind": "icon",
+      "x": 740,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "所属功能用例\n内容校验 + 版本 CAS",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    }
+  ],
+  "edges": [
+    {
+      "id": "http_access",
+      "source": "http",
+      "target": "access",
+      "label": "正式 API",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "desktop_access",
+      "source": "desktop",
+      "target": "access",
+      "label": "受限桌面通道",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "access_business",
+      "source": "access",
+      "target": "business",
+      "label": "显式空间",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

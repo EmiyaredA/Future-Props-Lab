@@ -87,10 +87,11 @@ export function paintChromaCanvas(
   );
   const threshold = (key.similarity ?? 42) * 1.275;
   const softness = Math.max(1, (key.softness ?? 18) * 0.51);
-  const { matte: matteValues, nearby, horizontal } = buffersFor(
-    canvas,
-    canvas.width * canvas.height,
-  );
+  const {
+    matte: matteValues,
+    nearby,
+    horizontal,
+  } = buffersFor(canvas, canvas.width * canvas.height);
   for (let index = 0; index < pixels.length; index += 4) {
     const distance =
       Math.floor(Math.abs(pixels[index]! - target[0]!) / 3) +
@@ -177,8 +178,6 @@ export function paintChromaCanvas(
     perf.paints += 1;
     perf.lastPaintMs = elapsed;
     perf.avgPaintMs =
-      perf.avgPaintMs === 0
-        ? elapsed
-        : perf.avgPaintMs * 0.9 + elapsed * 0.1;
+      perf.avgPaintMs === 0 ? elapsed : perf.avgPaintMs * 0.9 + elapsed * 0.1;
   }
 }

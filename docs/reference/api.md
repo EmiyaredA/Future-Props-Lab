@@ -1015,14 +1015,16 @@ ID 集合使用 `insert/update/remove/move/duplicate`，`value` 字段采用对�
 桌宠 API 按服务端身份隔离 Workspace，读取需要 `content.read`，变更需要 `content.write`。`POST /v1/desktop-pet/projects` 传 `sourceProjectId`、`sourceRevision` 和名称，从同空间已保存的 Live2D 工程复制角色文档及用到的 PNG 素材。来源被修改或删除后，桌宠仍读取自己的固定快照。
 
 - `GET/POST /v1/desktop-pet/projects`：列表与创建。
-- `POST /v1/desktop-pet/projects/import-whale`：上传本地 Coopanion 鲸鱼娘数据包（`manifest.json`、`model.json`、八套贴图与缩略图），在当前 Workspace 形成固定快照；只接受图片和模型数据，不接受脚本。压缩包最多 32 MiB，解压最多 64 MiB。
+- `POST /v1/desktop-pet/projects/import-whale`：上传本地分层角色数据包（`manifest.json`、`model.json`、1–8 套贴图与缩略图），兼容 Coopanion 鲸鱼娘与人物骨架；在当前 Workspace 形成固定快照，只接受图片和模型数据，不接受脚本。压缩包最多 32 MiB，解压最多 64 MiB。
 - `GET/PATCH/DELETE /v1/desktop-pet/projects/{project_id}`：元数据读取、重命名和删除；变更提供 `expectedRevision`。
 - `GET/PUT /v1/desktop-pet/projects/{project_id}/document`：读取角色快照、配置和鉴权素材 URL；保存整体配置需要 `expectedRevision`。
 - `PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}`：multipart PNG 上传，附 `expectedRevision`；替换图必须与来源部件素材尺寸相同，单张最多 16 MiB。
 - `POST /v1/desktop-pet/projects/{project_id}/sync-source`：显式更新来源，提交桌宠及来源 revision；动作、表情、部件与换肤尺寸不兼容时保留旧快照。
 - `GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file`：仅读取该桌宠当前快照或皮肤引用的 PNG。
 
-整体配置限制为最多 20 套 Live2D 皮肤、六种事件、每事件最多 8 句、每句最多 140 字，以及最多四个悬停按钮。旧版事件 `bubble` 在读取时升级为 `lines` 的第一句；新版保存使用 `schemaVersion=2`。`persona` 包含角色简介、性格、说话方式和开场白。鲸鱼娘项目由 `sourceType=coopanion-whale` 区分，文档返回 `whaleModel`、`whaleAssets` 和鉴权素材 URL；`schemeId` 选择八套原版配色，不支持逐部件上传或更新来源。事件的动作与表情按对应来源校验。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或桌宠包导出接口。
+整体配置限制为最多 20 套 Live2D 皮肤、六种事件、每事件最多 8 句、每句 1–140 字，以及最多四个悬停按钮。旧版事件 `bubble` 在读取时升级为 `lines` 的第一句；新版保存使用 `schemaVersion=2`。`persona` 包含角色简介、性格、说话方式和开场白。分层角色项目沿用 `sourceType=coopanion-whale`，文档返回 `whaleModel`、`whaleAssets` 和鉴权素材 URL；`schemeId` 选择包内配色，不支持逐部件上传或更新来源。事件的动作与表情按对应来源校验。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或桌宠包导出接口。
+
+资源包清单仍为 `{"format":"fpl-coopanion-whale","version":1}`。`model.json` 缺省 `rigProfile` 为 `whale`，旧包保持兼容。人物包使用 `rigProfile=human-chibi`，必须提供 `character.name`（1–120 字，可选 `character.persona`，结构同配置人设），导入时作为项目名称与默认人设。人物聊天首次读取默认关闭主动台词，用户保存过的偏好优先。人物骨架与分件、五官和坐姿约束详见[分层桌宠资源包](desktop-pet-sprites.md)；这些字段保存在既有 JSON 快照中，不改变 HTTP 响应形状或数据库 schema。
 
 桌宠聊天需要 `models.use`。配置中的人设参与每次模型提示词；模型选择、主动台词开关和记录按账号、Workspace、桌宠另存，不进入角色配置。
 

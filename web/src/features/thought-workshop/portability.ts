@@ -1,4 +1,10 @@
 import {
+  canvasAssetIds,
+  mapCanvasAssets,
+  parseCanvasScene,
+} from "./diagrams/model";
+import { canvasSvgText } from "./diagrams/export";
+import {
   attachments,
   attachmentMimes,
   isBackup,
@@ -24,6 +30,9 @@ function images(doc: JSONContent): string[] {
   return [
     ...new Set([
       ...(doc.type === "image" ? [String(doc.attrs?.assetId)] : []),
+      ...(doc.type === "canvas"
+        ? canvasAssetIds(parseCanvasScene(doc.attrs?.scene))
+        : []),
       ...(doc.content || []).flatMap(images),
     ]),
   ];
@@ -136,8 +145,29 @@ export async function importFile(file: File, project?: KnowledgeBase) {
   const notes = paths.map((path) => {
     const doc = parseMarkdown(strFromU8(files[path]), true);
     const transform = (node: JSONContent): JSONContent[] => {
+      if (node.type === "canvas") {
+        const scene = mapCanvasAssets(
+          parseCanvasScene(node.attrs?.scene),
+          (source) => {
+            const replacement = transform({
+              type: "image",
+              attrs: { src: source, alt: "画板图片" },
+            })[0];
+            if (replacement.type !== "image")
+              throw new Error("画板引用的图片缺失");
+            return String(replacement.attrs?.assetId);
+          },
+        );
+        return [{ type: "canvas", attrs: { scene } }];
+      }
       const link = node.marks?.find((m) => m.type === "link");
-      if (link && !/^(https?:|mailto:)/i.test(String(link.attrs?.href))) {
+      if (
+        link &&
+        !/^\/apps\/thought-workshop\/official-knowledge-bases\/[a-z0-9-]+(?:\/documents\/[a-z0-9-]+)?$/.test(
+          String(link.attrs?.href),
+        ) &&
+        !/^(https?:|mailto:)/i.test(String(link.attrs?.href))
+      ) {
         const source = String(link.attrs?.href || "");
         const attachmentPath = relativePath(path, source);
         const mime =
@@ -398,6 +428,14 @@ export async function exportHtml(note: Note, editor: Editor) {
     link.download = name;
     link.textContent = `${name} · 下载附件`;
     card.replaceChildren(link);
+  }
+  for (const canvas of parsed.querySelectorAll<HTMLElement>(
+    "pre[data-fpl-canvas]",
+  )) {
+    const scene = parseCanvasScene(JSON.parse(canvas.textContent || ""));
+    const figure = parsed.createElement("figure");
+    figure.innerHTML = await canvasSvgText(scene);
+    canvas.replaceWith(figure);
   }
   const { default: katex } = await import("katex");
   for (const math of parsed.querySelectorAll<HTMLElement>(

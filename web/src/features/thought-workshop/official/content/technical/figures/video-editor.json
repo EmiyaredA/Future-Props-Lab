@@ -1,0 +1,79 @@
+{
+  "sceneVersion": 1,
+  "title": "三个时间坐标与一段变速片段",
+  "elements": [
+    {
+      "id": "timeline",
+      "kind": "rounded",
+      "x": 40,
+      "y": 60,
+      "width": 220,
+      "height": 110,
+      "text": "时间线时间 T = 12s\n片段从 10s 开始",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "local",
+      "kind": "rounded",
+      "x": 380,
+      "y": 60,
+      "width": 220,
+      "height": 110,
+      "text": "片段局部时间\n12 − 10 = 2s",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "source",
+      "kind": "rounded",
+      "x": 740,
+      "y": 60,
+      "width": 220,
+      "height": 110,
+      "text": "素材源时间\n3 + 2 × 2 = 7s",
+      "fill": "#fff1dd",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "legend",
+      "kind": "text",
+      "x": 40,
+      "y": 285,
+      "width": 920,
+      "height": 60,
+      "text": "示例前提：源内点为 3s，恒定 2 倍速；未考虑变速曲线与转场重叠。",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "plan",
+      "kind": "rounded",
+      "x": 220,
+      "y": 400,
+      "width": 600,
+      "height": 90,
+      "text": "工程保存区间与速度\n渲染按映射后源时间采样",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    }
+  ],
+  "edges": [
+    {
+      "id": "timeline_local",
+      "source": "timeline",
+      "target": "local",
+      "label": "减去片段起点",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "local_source",
+      "source": "local",
+      "target": "source",
+      "label": "映射速度与内点",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

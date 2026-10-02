@@ -52,6 +52,7 @@ test("every route and independent HTML entry has a responsive scenario", () => {
     "amadeus.html",
     "docs.html",
     "index.html",
+    "pet-chat.html",
     "pet.html",
   ]);
   expect(publicSurfaces).toEqual([

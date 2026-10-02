@@ -11,7 +11,8 @@ export function encodeBase64(bytes: Uint8Array): string {
 export function decodeBase64(data: string): Uint8Array {
   const value = atob(data);
   const bytes = new Uint8Array(value.length);
-  for (let index = 0; index < value.length; index += 1) bytes[index] = value.charCodeAt(index);
+  for (let index = 0; index < value.length; index += 1)
+    bytes[index] = value.charCodeAt(index);
   return bytes;
 }
 
@@ -25,17 +26,34 @@ function payload(data: string): Uint8Array {
 function shouldExternalize(node: Record<string, unknown>): boolean {
   return (
     typeof node.data === "string" &&
-    (node.data.startsWith("data:") || typeof node.path === "string" || node.data.length > 16384)
+    (node.data.startsWith("data:") ||
+      typeof node.path === "string" ||
+      node.data.length > 16384)
   );
 }
 
 function sniff(bytes: Uint8Array): string {
-  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47)
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  )
     return "image/png";
   if (bytes[0] === 0xff && bytes[1] === 0xd8) return "image/jpeg";
-  if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46)
+  if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46
+  )
     return "image/webp";
-  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3)
+  if (
+    bytes[0] === 0x1a &&
+    bytes[1] === 0x45 &&
+    bytes[2] === 0xdf &&
+    bytes[3] === 0xa3
+  )
     return "video/webm";
   return "application/octet-stream";
 }
@@ -80,7 +98,12 @@ export async function hydrateTree(
 ): Promise<unknown> {
   const copy = structuredClone(value);
   await walk(copy, async (node) => {
-    if (typeof node.file !== "string" || !FILE_KEY.test(node.file) || "data" in node) return;
+    if (
+      typeof node.file !== "string" ||
+      !FILE_KEY.test(node.file) ||
+      "data" in node
+    )
+      return;
     const key = node.file;
     node.data = restore(node, await download(key));
     delete node.file;

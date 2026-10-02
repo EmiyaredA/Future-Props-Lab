@@ -10,10 +10,6 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete, func, select
 
-from app.llm.playground.service import ModelTestService
-from app.llm.playground.stream import generation_events
-from app.llm.providers import TextDelta
-from app.main import app
 from app.llm.models import (
     LlmCallLog,
     ModelEntry,
@@ -22,9 +18,13 @@ from app.llm.models import (
     ModelTestConversation,
     ModelTestMessage,
 )
+from app.llm.playground.service import ModelTestService
+from app.llm.playground.stream import generation_events
+from app.llm.providers import TextDelta
+from app.llm.schemas.model_test import ModelTestConversationCreateIn
+from app.main import app
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
-from app.llm.schemas.model_test import ModelTestConversationCreateIn
 
 
 def _events(body: str) -> list[dict]:

@@ -2,6 +2,7 @@
 // 账号公共入口、工作区全屏弹窗与管理抽屉由 account-ui.spec.ts 验证。
 // 独立成员/角色/审计管理与收到邀请弹窗由 workspace-management.spec.ts 验证。
 // 模型目录、协议类型连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。
+// 官方技术原理图、放大阅读和个人全屏画板由 technical-knowledge.spec.ts 覆盖 390/768/1600 宽度与明暗主题。
 import type { AppPage } from "../src/app/routes";
 
 // Electron-only HTML and first-run form: actual window sizing is tested by this owner.
@@ -43,6 +44,7 @@ export const responsiveOwners = {
   "thought-workshop-notes": "thought",
   "thought-workshop-editor": "thought",
   "thought-workshop-legacy": "thought",
+  "thought-workshop-official": "thought",
   "visual-workshop-projects": "shell",
   "visual-workshop-canvas": "editors",
   "visual-workshop-assets": "editors",
@@ -98,6 +100,8 @@ export const staticPaths = [
   "/model-service",
   "/model-call-logs",
   "/apps/thought-workshop",
+  "/apps/thought-workshop/official-knowledge-bases/general",
+  "/apps/thought-workshop/official-knowledge-bases/technical/documents/system",
   "/apps/visual-workshop",
   "/apps/visual-workshop/tasks",
   "/apps/galgame-workshop",

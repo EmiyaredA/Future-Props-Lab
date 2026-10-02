@@ -1,0 +1,98 @@
+{
+  "sceneVersion": 1,
+  "title": "结构升级和运行数据的两条入口",
+  "elements": [
+    {
+      "id": "registry",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "迁移注册表\n固定顺序与校验和",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "runner",
+      "kind": "rounded",
+      "x": 380,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "迁移执行器\n检查历史后执行",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "api",
+      "kind": "icon",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "正式业务 API\n运行期数据操作",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "usecase",
+      "kind": "rounded",
+      "x": 380,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "所属功能用例\n校验、CAS、短事务",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "db",
+      "kind": "icon",
+      "x": 740,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "同一个 SQLite\n结构和业务数据",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    }
+  ],
+  "edges": [
+    {
+      "id": "registry_runner",
+      "source": "registry",
+      "target": "runner",
+      "label": "升级输入",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "runner_db",
+      "source": "runner",
+      "target": "db",
+      "label": "结构演进",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "api_usecase",
+      "source": "api",
+      "target": "usecase",
+      "label": "用户操作",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "usecase_db",
+      "source": "usecase",
+      "target": "db",
+      "label": "受控读写",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

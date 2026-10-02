@@ -254,8 +254,13 @@ class VideoEditorMedia:
         self, project_id: str, asset_id: str, body: VideoEditorAssetPatchIn
     ) -> VideoEditorAssetOut:
         asset, metadata = await self.asset(project_id, asset_id)
-        if asset.media_kind not in {"video", "image"} and body.default_effects.chroma_key is not None:
-            raise VideoEditorValidationError("只有视频和图片素材可以设置抠像默认效果", code="invalid_kind")
+        if (
+            asset.media_kind not in {"video", "image"}
+            and body.default_effects.chroma_key is not None
+        ):
+            raise VideoEditorValidationError(
+                "只有视频和图片素材可以设置抠像默认效果", code="invalid_kind"
+            )
         effects_payload = body.default_effects.model_dump(mode="json", by_alias=True)
         now = utc_now()
         result = await self.session.execute(

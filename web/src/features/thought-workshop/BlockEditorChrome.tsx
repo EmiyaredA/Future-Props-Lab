@@ -68,6 +68,7 @@ const BLOCK_LABELS: Record<string, string> = {
   details: "折叠",
   mathBlock: "公式",
   mermaid: "图表",
+  canvas: "画板",
 };
 
 function blockLabel(block: ActiveBlock) {

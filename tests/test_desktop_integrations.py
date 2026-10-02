@@ -39,6 +39,14 @@ def test_skill_workflow_and_navigation(connected):
         )
         assert skill.tags == ["飞书", "文档"] and skill.enabled
         assert sdk.integrations.skill(skill_id=skill.id).name == "desktop-skill"
+        markdown = sdk.integrations.skill_version_markdown(skill_id=skill.id, version="v1")
+        assert "测试文档" in markdown.content
+        agent_tests.approve(backend, data, write=False, profile="skill-reader")
+        with desktop_client(data_dir=data, profile="skill-reader") as reader:
+            assert (
+                reader.integrations.skill_version_markdown(skill_id=skill.id, version="v1").content
+                == markdown.content
+            )
         with sdk.integrations.skill_version_content(skill_id=skill.id, version="v1") as result:
             downloaded = b"".join(result.iter_bytes())
         with zipfile.ZipFile(io.BytesIO(downloaded)) as package:

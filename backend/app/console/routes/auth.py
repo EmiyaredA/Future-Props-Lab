@@ -155,6 +155,7 @@ async def _login_out(session, user, workspace, auth_session):
         session_expires_at=auth_session.absolute_expires_at,
     )
 
+
 def _audit_out(row, actor_username, target_username):
     return SecurityAuditEventOut(
         id=row.id,

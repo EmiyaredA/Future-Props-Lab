@@ -6,6 +6,8 @@ import json
 import re
 from urllib.parse import urlsplit
 
+from .canvas import canvas_assets, canvas_text, validate_canvas
+
 NODES = {
     "doc",
     "paragraph",
@@ -32,6 +34,9 @@ NODES = {
     "inlineMath",
     "blockMath",
     "mermaid",
+    "canvas",
+    "callout",
+    "documentReference",
 }
 MARKS = {"bold", "italic", "strike", "underline", "code", "textStyle", "highlight", "link"}
 ATTRS = {
@@ -60,11 +65,14 @@ ATTRS = {
     "inlineMath": {"latex"},
     "blockMath": {"latex"},
     "mermaid": {"source"},
+    "canvas": {"scene"},
+    "callout": {"variant"},
+    "documentReference": {"kind", "noteId", "libraryId", "documentId", "label", "customLabel"},
     "textStyle": {"color", "fontSize", "backgroundColor", "fontFamily"},
     "highlight": {"color"},
     "link": {"href", "target", "rel", "class", "title"},
 }
-INLINE = {"text", "hardBreak", "inlineMath"}
+INLINE = {"text", "hardBreak", "inlineMath", "documentReference"}
 BLOCKS = (
     NODES
     - INLINE
@@ -82,6 +90,7 @@ BLOCKS = (
 CHILDREN = {
     "doc": BLOCKS,
     "blockquote": BLOCKS,
+    "callout": BLOCKS,
     "tableCell": BLOCKS,
     "tableHeader": BLOCKS,
     "detailsContent": BLOCKS,
@@ -105,6 +114,11 @@ def empty_document() -> dict:
 
 
 def safe_link(value: str) -> bool:
+    if re.fullmatch(
+        r"/apps/thought-workshop/official-knowledge-bases/[a-z0-9-]+(?:/documents/[a-z0-9-]+)?",
+        value,
+    ):
+        return True
     return not any(ord(c) < 32 for c in value) and urlsplit(value).scheme.lower() in {
         "http",
         "https",
@@ -184,6 +198,20 @@ def validate_document(document: dict) -> dict:
                     raise ValueError("富文本属性无效")
             if key == "byteSize" and (type(value) is not int or value < 0):
                 raise ValueError("文件大小无效")
+        if kind == "callout" and values.get("variant") not in ("info", "note", "success", "warning", "danger"):
+            raise ValueError("提示块类型无效")
+        if kind == "documentReference":
+            if values.get("kind") not in ("note", "official") or not isinstance(values.get("label"), str) or not 1 <= len(values["label"]) <= 240:
+                raise ValueError("文档引用无效")
+            if values.get("customLabel") is not None and (not isinstance(values["customLabel"], str) or len(values["customLabel"]) > 240):
+                raise ValueError("引用显示文字无效")
+            if values["kind"] == "note":
+                if not isinstance(values.get("noteId"), str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,36}", values["noteId"]) or values.get("libraryId") or values.get("documentId"):
+                    raise ValueError("文档引用标识无效")
+            elif values.get("noteId") or any(not isinstance(values.get(k), str) or not re.fullmatch(r"[a-z0-9-]{1,100}", values[k]) for k in ("libraryId", "documentId")):
+                raise ValueError("官方引用标识无效")
+        if kind == "canvas":
+            validate_canvas(values.get("scene"))
         if kind in {"image", "attachment"} and not values.get("assetId"):
             raise ValueError("图片必须引用已上传的文件")
         if kind == "image":
@@ -224,6 +252,7 @@ def validate_document(document: dict) -> dict:
             in {
                 "doc",
                 "blockquote",
+                "callout",
                 "table",
                 "tableRow",
                 "tableCell",
@@ -280,6 +309,8 @@ def document_text(node: dict) -> str:
     value = node.get("text", "")
     if node.get("type") in {"inlineMath", "blockMath"}:
         value = node.get("attrs", {}).get("latex", "")
+    if node.get("type") == "canvas":
+        value = canvas_text(node["attrs"]["scene"])
     if node.get("type") == "mermaid":
         value = node.get("attrs", {}).get("source", "")
     if node.get("type") == "image":
@@ -300,6 +331,8 @@ def document_text(node: dict) -> str:
 
 def image_ids(node: dict) -> set[str]:
     result = {node["attrs"]["assetId"]} if node.get("type") == "image" else set()
+    if node.get("type") == "canvas":
+        result.update(canvas_assets(node["attrs"]["scene"]))
     for child in node.get("content", []):
         result.update(image_ids(child))
     return result

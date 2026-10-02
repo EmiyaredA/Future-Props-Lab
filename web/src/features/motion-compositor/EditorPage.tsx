@@ -301,11 +301,18 @@ export function EditorPage({
   };
   const selected = doc?.layers.find((layer) => layer.id === selectedId) ?? null;
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent("future-props:amadeus-context", { detail: {
-      application: "特效制作工坊", projectId, unsaved: dirty || saving,
-      selection: selected ? { id: selected.id, name: selected.name,
-        value: selected.kind } : undefined,
-    } }));
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "特效制作工坊",
+          projectId,
+          unsaved: dirty || saving,
+          selection: selected
+            ? { id: selected.id, name: selected.name, value: selected.kind }
+            : undefined,
+        },
+      }),
+    );
   }, [projectId, dirty, saving, selected]);
   const add = (kind: MotionLayer["kind"], asset?: MotionAsset) => {
     const current = docRef.current;

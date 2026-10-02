@@ -1,3 +1,8 @@
+import {
+  canvasAssetIds,
+  mapCanvasAssets,
+  parseCanvasScene,
+} from "./diagrams/model";
 import type { Editor, JSONContent } from "@tiptap/react";
 import {
   DOMParser as ProseMirrorDOMParser,
@@ -60,6 +65,10 @@ function uniqueImageIds(content: JSONContent[], result = new Set<string>()) {
   for (const node of content) {
     if (node.type === "image" && typeof node.attrs?.assetId === "string")
       result.add(node.attrs.assetId);
+    if (node.type === "canvas")
+      canvasAssetIds(parseCanvasScene(node.attrs?.scene)).forEach((id) =>
+        result.add(id),
+      );
     if (node.content) uniqueImageIds(node.content, result);
   }
   return [...result];
@@ -267,6 +276,15 @@ async function serializeSelection(
 
 function htmlWithInlineAssets(html: string, payload: ThoughtClipboardPayload) {
   const parsed = new DOMParser().parseFromString(html, "text/html");
+  parsed.querySelectorAll("pre[data-fpl-canvas]").forEach((canvas) => {
+    const scene = parseCanvasScene(JSON.parse(canvas.textContent || ""));
+    const assets = Object.fromEntries(
+      canvasAssetIds(scene).map((id) => [id, payload.assets[id]]),
+    );
+    canvas.setAttribute("data-fpl-source-scope", payload.sourceScopeId || "");
+    if (Object.keys(assets).length)
+      canvas.setAttribute("data-fpl-canvas-assets", JSON.stringify(assets));
+  });
   parsed.querySelectorAll("img[data-asset-id]").forEach((image) => {
     const assetId = image.getAttribute("data-asset-id");
     const asset = assetId ? payload.assets[assetId] : undefined;
@@ -296,9 +314,7 @@ function payloadBlob(payload: ThoughtClipboardPayload) {
   return new Blob([clipboardJson(payload)], { type: THOUGHT_CLIPBOARD_MIME });
 }
 
-async function writeClipboardItem(
-  data: Record<string, Blob | Promise<Blob>>,
-) {
+async function writeClipboardItem(data: Record<string, Blob | Promise<Blob>>) {
   await navigator.clipboard.write([new ClipboardItem(data)]);
 }
 
@@ -383,6 +399,40 @@ function removeManagedImage(image: Element) {
   (figure ?? image).remove();
 }
 
+function readCanvasHTML(canvas: Element, targetScopeId?: string) {
+  let scene;
+  try {
+    scene = parseCanvasScene(JSON.parse(canvas.textContent || ""));
+  } catch {
+    throw new ThoughtClipboardFormatError("剪贴板画板数据无效或版本不支持。");
+  }
+  const sourceScope = canvas.getAttribute("data-fpl-source-scope");
+  const needsMigration =
+    canvasAssetIds(scene).length > 0 &&
+    (!sourceScope || sourceScope !== targetScopeId);
+  let assets: Record<string, ClipboardAsset> = {};
+  if (needsMigration) {
+    try {
+      const value: unknown = JSON.parse(
+        canvas.getAttribute("data-fpl-canvas-assets") || "null",
+      );
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        throw new Error();
+      assets = value as Record<string, ClipboardAsset>;
+      validateImageAssets([{ type: "canvas", attrs: { scene } }], assets);
+    } catch {
+      throw new Error(
+        "剪贴板画板中的图片缺少可迁移数据，请重新复制或使用导出导入。",
+      );
+    }
+  }
+  return { scene, assets, sourceScope, needsMigration };
+}
+
+function htmlAssetKey(sourceScope: string | null | undefined, assetId: string) {
+  return JSON.stringify([sourceScope ?? null, assetId]);
+}
+
 export function sanitizeThoughtPastedHTML(
   html: string,
   targetScopeId?: string,
@@ -392,6 +442,20 @@ export function sanitizeThoughtPastedHTML(
   parsed
     .querySelectorAll("script,iframe,object,embed,style")
     .forEach((node) => node.remove());
+  parsed.querySelectorAll("pre[data-fpl-canvas]").forEach((canvas) => {
+    try {
+      const { scene, needsMigration } = readCanvasHTML(canvas, targetScopeId);
+      if (needsMigration && !options.preserveMigratableImages) {
+        canvas.remove();
+        return;
+      }
+      // Keep only validated scene JSON, never markup nested in the pre block.
+      canvas.textContent = JSON.stringify(scene);
+      if (!needsMigration) canvas.removeAttribute("data-fpl-canvas-assets");
+    } catch {
+      canvas.remove();
+    }
+  });
   parsed.querySelectorAll("img").forEach((image) => {
     const assetId = image.getAttribute("data-asset-id");
     const sourceScope = imageSourceScope(image);
@@ -411,11 +475,7 @@ export function sanitizeThoughtPastedHTML(
       removeManagedImage(image);
       return;
     }
-    if (
-      sourceScope &&
-      sourceScope !== (targetScopeId ?? "") &&
-      !migratable
-    ) {
+    if (sourceScope && sourceScope !== (targetScopeId ?? "") && !migratable) {
       removeManagedImage(image);
       return;
     }
@@ -446,7 +506,12 @@ export function sanitizeThoughtPastedHTML(
       const allowed =
         (node.tagName === "IMG" && allowedImageAttrs.has(name)) ||
         (node.matches("figure[data-thought-image]") &&
-          allowedFigureAttrs.has(name));
+          allowedFigureAttrs.has(name)) ||
+        (node.matches("pre[data-fpl-canvas]") &&
+          (name === "data-fpl-canvas" ||
+            name === "data-fpl-source-scope" ||
+            (options.preserveMigratableImages &&
+              name === "data-fpl-canvas-assets")));
       if (name.startsWith("on") || (name.startsWith("data-") && !allowed))
         node.removeAttribute(attribute.name);
     }),
@@ -469,6 +534,17 @@ export function htmlNeedsManagedMigration(
   targetScopeId?: string,
 ) {
   const parsed = new DOMParser().parseFromString(html, "text/html");
+  if (
+    [...parsed.querySelectorAll("pre[data-fpl-canvas]")].some((canvas) => {
+      try {
+        return readCanvasHTML(canvas, targetScopeId).needsMigration;
+      } catch {
+        // Route malformed or incomplete scenes through the explicit error path.
+        return true;
+      }
+    })
+  )
+    return true;
   return [...parsed.querySelectorAll("img")].some((image) => {
     const assetId = image.getAttribute("data-asset-id");
     if (assetId) return scopeDiffers(image, targetScopeId);
@@ -527,7 +603,14 @@ function rewriteAssetIds(
             ...node.attrs,
             assetId: replacements[node.attrs.assetId] ?? node.attrs.assetId,
           }
-        : node.attrs,
+        : node.type === "canvas"
+          ? {
+              scene: mapCanvasAssets(
+                parseCanvasScene(node.attrs?.scene),
+                (id) => replacements[id] ?? id,
+              ),
+            }
+          : node.attrs,
     content: node.content
       ? rewriteAssetIds(node.content, replacements)
       : node.content,
@@ -591,7 +674,8 @@ export async function insertThoughtClipboardPayload(
     );
   }
   const replacements: Record<string, string> = {};
-  const shouldMigrate = payload.sourceScopeId !== (targetScopeId ?? null);
+  const shouldMigrate =
+    !payload.sourceScopeId || payload.sourceScopeId !== (targetScopeId ?? null);
   if (shouldMigrate) {
     for (const assetId of uniqueImageIds(content)) {
       const asset = payload.assets[assetId];
@@ -631,6 +715,11 @@ export async function pasteThoughtHTML(
   html: string,
   targetScopeId?: string,
 ) {
+  const source = new DOMParser().parseFromString(html, "text/html");
+  // Validate every scene and its required bytes before uploads or insertion.
+  source.querySelectorAll("pre[data-fpl-canvas]").forEach((canvas) => {
+    readCanvasHTML(canvas, targetScopeId);
+  });
   if (hasUnrecoverableManagedImage(html, targetScopeId))
     throw new Error("剪贴板中的图片缺少可迁移数据，请重新复制或使用导出导入。");
   const safeHtml = sanitizeThoughtPastedHTML(html, targetScopeId, {
@@ -653,7 +742,9 @@ export async function pasteThoughtHTML(
         (!assetId && inThoughtFigure(image)));
     if (!needsUpload) continue;
     const dedupeKey =
-      assetId || image.getAttribute("src") || `anonymous-${anonymousIndex++}`;
+      (assetId && htmlAssetKey(sourceScope, assetId)) ||
+      image.getAttribute("src") ||
+      `anonymous-${anonymousIndex++}`;
     const existing = replacements.get(dedupeKey);
     if (existing) {
       image.setAttribute("data-asset-id", existing);
@@ -678,6 +769,32 @@ export async function pasteThoughtHTML(
   parsed.querySelectorAll("figure[data-thought-image]").forEach((figure) => {
     figure.removeAttribute("data-fpl-source-scope");
   });
+  for (const canvas of parsed.querySelectorAll("pre[data-fpl-canvas]")) {
+    const { scene, assets, sourceScope, needsMigration } = readCanvasHTML(
+      canvas,
+      targetScopeId,
+    );
+    if (needsMigration) {
+      for (const id of canvasAssetIds(scene)) {
+        const key = htmlAssetKey(sourceScope, id);
+        if (replacements.has(key)) continue;
+        const asset = assets[id];
+        const file = uploadableImageFile(
+          base64ToBytes(asset.data),
+          asset.filename || "画板图片",
+          asset.mimeType,
+        );
+        replacements.set(key, (await uploadImage(file)).asset_id);
+      }
+      canvas.textContent = JSON.stringify(
+        mapCanvasAssets(scene, (id) =>
+          replacements.get(htmlAssetKey(sourceScope, id))!,
+        ),
+      );
+    }
+    canvas.removeAttribute("data-fpl-canvas-assets");
+    canvas.removeAttribute("data-fpl-source-scope");
+  }
   const slice = ProseMirrorDOMParser.fromSchema(editor.schema).parseSlice(
     parsed.body,
   );

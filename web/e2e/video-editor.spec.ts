@@ -155,7 +155,7 @@ test("keeps vertical clip dragging stable across tracks and saves the drop", asy
 
 test("builds a deterministic image, black-card, and title edit", async ({
   page,
-}) => {
+}, info) => {
   await page.goto("/apps/video-editor");
   await page
     .locator(".workshop-app-chrome")
@@ -163,13 +163,15 @@ test("builds a deterministic image, black-card, and title edit", async ({
     .click();
   await expect(page.getByText("视频剪辑工坊 · revision")).toBeVisible();
 
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByLabel("上传素材（可多选）").setInputFiles({
     name: "pixel.png",
     mimeType: "image/png",
     buffer: pixel,
   });
   const asset = page.locator(".ve-asset", { hasText: "pixel" });
-  await expect(asset.getByText("image")).toBeVisible({ timeout: 15_000 });
+  await expect(asset.getByText("图片", { exact: true })).toBeVisible({
+    timeout: 15_000,
+  });
   await asset.dblclick();
   await expect(page.locator(".ve-clip.image")).toHaveCount(1);
 
@@ -184,11 +186,12 @@ test("builds a deterministic image, black-card, and title edit", async ({
   await page.getByRole("button", { name: "纯色黑幕" }).click();
   await expect(page.locator(".ve-clip.color")).toHaveCount(1);
   await page.locator(".ve-ruler").click({ position: { x: 400, y: 10 } });
-  await page.getByRole("button", { name: "文字卡" }).click();
+  await page.getByRole("combobox", { name: "添加文字" }).click();
+  await page.getByRole("option", { name: /居中标题/ }).click();
   await expect(page.locator(".ve-clip.text")).toHaveCount(1);
 
   await page.screenshot({
-    path: "public/docs/video-editor-timeline.jpg",
+    path: info.outputPath("video-editor-timeline.jpg"),
     type: "jpeg",
     quality: 85,
   });
@@ -203,7 +206,7 @@ test("builds a deterministic image, black-card, and title edit", async ({
   await page.goto("/apps/video-editor");
   await expect(page.locator(".workshop-project-card")).toHaveCount(1);
   await page.screenshot({
-    path: "public/docs/video-editor-projects.jpg",
+    path: info.outputPath("video-editor-projects.jpg"),
     type: "jpeg",
     quality: 85,
   });

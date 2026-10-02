@@ -399,21 +399,11 @@
 
 .galgame-character-workspace.is-expression-detail
   .galgame-portrait-editor.is-expressions
-  .galgame-expression-avatar-toggle {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.galgame-character-workspace.is-expression-detail
-  .galgame-portrait-editor.is-expressions
-  .galgame-expression-grid {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.galgame-character-workspace.is-expression-detail
-  .galgame-portrait-editor.is-expressions
-  .galgame-expression-import-actions {
+  :is(
+    .galgame-expression-avatar-toggle,
+    .galgame-expression-grid,
+    .galgame-expression-import-actions
+  ) {
   grid-column: 1;
   grid-row: 1;
 }

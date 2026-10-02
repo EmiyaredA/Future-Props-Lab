@@ -320,9 +320,7 @@ class TimelineFrameRenderer:
 
                             if between.kind == "eyelid":
                                 opening = (
-                                    1 - progress * 2
-                                    if time_us < seam_us
-                                    else (progress - 0.5) * 2
+                                    1 - progress * 2 if time_us < seam_us else (progress - 0.5) * 2
                                 )
                                 self._eyelid_progress = max(0.0, min(1.0, opening))
                                 active = left if time_us < seam_us else right
@@ -425,10 +423,7 @@ class TimelineFrameRenderer:
                 round(width * index / steps),
                 round(
                     height
-                    * (
-                        edge_y / height
-                        + 2 * (curve_y / height - edge_y / height) * t * (1 - t)
-                    )
+                    * (edge_y / height + 2 * (curve_y / height - edge_y / height) * t * (1 - t))
                 ),
             )
             for index in range(steps + 1)
@@ -437,9 +432,7 @@ class TimelineFrameRenderer:
         bottom_curve = [(x, height - y) for x, y in top_curve]
         draw = ImageDraw.Draw(canvas)
         draw.polygon([(0, 0), (width, 0), *reversed(top_curve)], fill=(0, 0, 0, 255))
-        draw.polygon(
-            [(0, height), (width, height), *bottom_curve], fill=(0, 0, 0, 255)
-        )
+        draw.polygon([(0, height), (width, height), *bottom_curve], fill=(0, 0, 0, 255))
 
     def _queue_frame_overlay(self, color: tuple[int, int, int], alpha: int) -> None:
         if alpha <= 0:

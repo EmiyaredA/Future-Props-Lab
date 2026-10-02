@@ -18,7 +18,6 @@ from app.apps.video_editor.projects import project_out
 from app.apps.video_editor.schemas import (
     VideoEditorProjectCreateIn,
     VideoEditorProjectSnapshotImportOut,
-    VideoEditorTimelineDocument,
     parse_timeline_document,
 )
 from app.capabilities.asset_store import (
@@ -147,9 +146,7 @@ class VideoEditorProjectSnapshots:
                     select(VideoEditorTask.output_asset_id).where(
                         VideoEditorTask.project_id == project_id,
                         VideoEditorTask.output_asset_id.is_not(None),
-                        VideoEditorTask.kind.in_(
-                            ("render", "segment_export", "asset_bake")
-                        ),
+                        VideoEditorTask.kind.in_(("render", "segment_export", "asset_bake")),
                     )
                 )
             ).scalars()

@@ -32,9 +32,7 @@ export type BatchClipPatch = {
   chroma?: BatchChromaPatch;
 };
 
-export type MixedValue<T> =
-  | { mixed: true }
-  | { mixed: false; value: T };
+export type MixedValue<T> = { mixed: true } | { mixed: false; value: T };
 
 export type BatchSkip = { name: string; reason: string };
 
@@ -107,8 +105,7 @@ function skipReason(clip: VideoEditorClip, patch: BatchClipPatch): string {
   const wantsAudio = Boolean(patch.audio);
   const wantsFit = Boolean(patch.visual?.fitMode);
   const wantsTransform = Boolean(
-    patch.visual?.transform &&
-      Object.keys(patch.visual.transform).length > 0,
+    patch.visual?.transform && Object.keys(patch.visual.transform).length > 0,
   );
   const wantsChroma = hasChromaDirty(patch.chroma);
   const unsupported: string[] = [];
@@ -221,8 +218,7 @@ export function buildBatchClipOperations(
     Boolean(patch.audio) ||
     Boolean(patch.visual?.fitMode) ||
     Boolean(
-      patch.visual?.transform &&
-        Object.keys(patch.visual.transform).length > 0,
+      patch.visual?.transform && Object.keys(patch.visual.transform).length > 0,
     ) ||
     hasChromaDirty(patch.chroma);
   if (!hasIntent) {

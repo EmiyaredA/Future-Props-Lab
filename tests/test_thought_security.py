@@ -10,9 +10,9 @@ from tests.test_account_system import create_test_account, login_and_change_pass
 from tests.thought_helpers import delete_note
 
 from app.apps.thought_workshop.assistant import PreparedWriting, writing_events
+from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import TextDelta
 from app.main import app
-from app.llm.models import LlmCallLog
 from app.runtime.db import SessionLocal
 
 ROOT = "/v1/thought-workshop"

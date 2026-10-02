@@ -561,7 +561,9 @@
   background: #181d2a;
   font-size: 11px;
 }
-.ve-asset-chroma-dialog-card .ve-batch-mode-options button[aria-pressed="true"] {
+.ve-asset-chroma-dialog-card
+  .ve-batch-mode-options
+  button[aria-pressed="true"] {
   border-color: #6258bc;
   color: #dedaff;
   background: #24263c;

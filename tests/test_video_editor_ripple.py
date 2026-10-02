@@ -9,13 +9,13 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from app.main import app
-from app.apps.video_editor.models import VideoEditorTask
-from app.runtime.db import SessionLocal
-from app.apps.video_editor.schemas import VideoEditorClip, VideoEditorTimelineBatchIn
 from app.apps.video_editor.errors import VideoEditorValidationError
+from app.apps.video_editor.models import VideoEditorTask
 from app.apps.video_editor.runner import VideoEditorRunner
+from app.apps.video_editor.schemas import VideoEditorClip, VideoEditorTimelineBatchIn
 from app.apps.video_editor.timeline import apply_operations
+from app.main import app
+from app.runtime.db import SessionLocal
 
 
 def clip(clip_id, track="v", start=0, duration=4_000_003, group=None):
@@ -45,7 +45,12 @@ def document(count=2):
             "value": 0.5,
         }
     ]
-    picture["transitionOut"] = {"kind": "crossfade", "durationUs": 1_000_001}
+    picture["transitionOut"] = {
+        "kind": "crossfade",
+        "durationUs": 1_000_001,
+        "direction": "left",
+        "easing": "linear",
+    }
     video = [picture]
     audio = [clip("selected-audio", "a", group="selected-av")]
     for index in range(count):

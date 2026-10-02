@@ -2,6 +2,7 @@ import { VideoEditorTextInspector } from "./VideoEditorTextInspector";
 import { Diamond, Link, Link2Off, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
+import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import { ClipSpeedControl } from "./ClipSpeedControl";
 import { VideoEditorChromaInspector } from "./VideoEditorChromaInspector";
 import "./video-editor-inspector.css";
@@ -48,7 +49,7 @@ export function VideoEditorInspector({
   setSpeedRippleEnabled?: (value: boolean) => void;
   playheadUs: number;
   commit: (
-    redo: VideoEditorOperation[],
+    redo: VideoEditorOperation[] | TimelineEditBuilder,
     undo?: VideoEditorOperation[],
   ) => Promise<void>;
   onOpenClipEdgeTransition?: (clipId: string, edge: "in" | "out") => void;
@@ -379,15 +380,36 @@ export function VideoEditorInspector({
                       onBlur={(event) => {
                         const value = numberValue(event);
                         if (value !== transform[property])
-                          void update(
-                            {
-                              transform: {
-                                ...transform,
-                                [property]: numberValue(event),
-                              },
-                            },
-                            { transform },
-                          );
+                          void commit((current) => {
+                            const latest = (current.document.tracks ?? [])
+                              .flatMap((track) => track.clips ?? [])
+                              .find((item) => item.id === clip.id);
+                            if (!latest) throw new Error("找不到指定片段");
+                            const previous = latest.transform ?? transform;
+                            return {
+                              redo: [
+                                {
+                                  type: "updateClip",
+                                  clipId: clip.id,
+                                  patch: {
+                                    transform: {
+                                      ...previous,
+                                      [property]: value,
+                                    },
+                                  },
+                                },
+                              ],
+                              undo: [
+                                {
+                                  type: "updateClip",
+                                  clipId: clip.id,
+                                  patch: {
+                                    transform: latest.transform ?? null,
+                                  },
+                                },
+                              ],
+                            };
+                          });
                       }}
                     />
                     <button

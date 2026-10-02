@@ -10,15 +10,15 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.main import app
-from app.apps.video_editor.models import VideoEditorTask
-from app.capabilities.asset_store.models import VisualAsset
-from app.runtime.config import get_settings
-from app.runtime.db import SessionLocal
 from app.apps.video_editor import segment_files
+from app.apps.video_editor.models import VideoEditorTask
 from app.apps.video_editor.runner import VideoEditorRunner
 from app.apps.video_editor.segment_files import download_segments, segment_filename
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.models import VisualAsset
+from app.main import app
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal
 
 
 @pytest.fixture

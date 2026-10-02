@@ -122,10 +122,7 @@ function renderCanvas() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <VisualWorkshopCanvasPage
-        projectId="project-1"
-        onBack={vi.fn()}
-      />
+      <VisualWorkshopCanvasPage projectId="project-1" onBack={vi.fn()} />
     </QueryClientProvider>,
   );
 }

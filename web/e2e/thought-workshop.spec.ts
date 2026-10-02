@@ -7,9 +7,7 @@ import {
 import { expect, test } from "@playwright/test";
 import fs from "node:fs/promises";
 
-test("rich notes persist and archives import", async ({
-  page,
-}, testInfo) => {
+test("rich notes persist and archives import", async ({ page }, testInfo) => {
   test.setTimeout(90000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

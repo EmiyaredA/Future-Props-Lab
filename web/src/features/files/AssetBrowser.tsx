@@ -86,10 +86,7 @@ export function AssetBrowser({
   viewMode?: AssetViewMode;
   onViewModeChange?: (view: AssetViewMode) => void;
   onImported?: () => void;
-  onAssetDragStart?: (
-    event: DragEvent<HTMLElement>,
-    file: ManagedFile,
-  ) => void;
+  onAssetDragStart?: (event: DragEvent<HTMLElement>, file: ManagedFile) => void;
 }) {
   const {
     client,

@@ -26,7 +26,7 @@ export function VideoEditorChromaInspector({
   useEffect(() => {
     setDraft(resolveChromaKey(clip));
     lastSubmitted.current = "";
-  }, [clip.id, clip.chromaKey]);
+  }, [clip]);
   const save = (next: ChromaKey) => {
     setDraft(next);
     const signature = JSON.stringify(next);

@@ -31,9 +31,9 @@ def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
     from app.capabilities.identity.principal import StudioPrincipal
     from app.console.governance.platform_policy import CAPABILITIES
     from app.deps import SessionDep, require_studio_auth
+    from app.llm.routes.model_capacity import model_capacity
     from app.main import app
     from app.orm import bind_workspace
-    from app.llm.routes.model_capacity import model_capacity
 
     async def principal(session: SessionDep) -> StudioPrincipal:
         bind_workspace(session, "default")

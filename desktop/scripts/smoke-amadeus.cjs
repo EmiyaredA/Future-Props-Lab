@@ -315,8 +315,10 @@ async function main() {
       });
       await assistant.waitForFunction(
         () =>
-          document.querySelector(".amadeus-side-rail").classList.contains("is-open") ===
-          (innerWidth >= 700),
+          document
+            .querySelector(".amadeus-side-rail")
+            .classList.contains("is-open") ===
+          innerWidth >= 700,
       );
       const layout = await assistant.evaluate(() => {
         const rail = document
@@ -332,7 +334,9 @@ async function main() {
           viewportWidth: innerWidth,
           viewportHeight: innerHeight,
           documentWidth: document.documentElement.scrollWidth,
-          railDisplay: getComputedStyle(document.querySelector(".amadeus-side-rail")).display,
+          railDisplay: getComputedStyle(
+            document.querySelector(".amadeus-side-rail"),
+          ).display,
           railRight: rail.right,
           chatLeft: chat.left,
           chatWidth: chat.width,
@@ -363,7 +367,9 @@ async function main() {
       assert.equal(layout.panelBackground, "rgb(34, 39, 35)");
       if (width === 400) {
         await assistant.getByRole("button", { name: "历史对话" }).click();
-        await assistant.getByRole("complementary", { name: "对话侧栏" }).waitFor();
+        await assistant
+          .getByRole("complementary", { name: "对话侧栏" })
+          .waitFor();
         assert.equal(
           await assistant.locator(".amadeus-side-rail.is-open").count(),
           1,
@@ -615,7 +621,10 @@ async function main() {
       .getByRole("textbox", { name: "修订计划" })
       .fill("先核对画布，再展示变更并等待批准。");
     await assistant.getByRole("button", { name: "请 AI 再修订" }).click();
-    await assistant.getByText(/修订计划：先核对画布/).first().waitFor();
+    await assistant
+      .getByText(/修订计划：先核对画布/)
+      .first()
+      .waitFor();
     assert.equal(
       await assistant.getByRole("button", { name: "执行计划" }).count(),
       1,
@@ -645,15 +654,29 @@ async function main() {
     if (process.env.FPL_AMADEUS_WORKFLOW_SCREENSHOT) {
       await assistant.setViewportSize({ width: 1440, height: 850 });
       await assistant.waitForFunction(() =>
-        document.querySelector(".amadeus-side-rail").classList.contains("is-open"),
+        document
+          .querySelector(".amadeus-side-rail")
+          .classList.contains("is-open"),
       );
-      await assistant.getByRole("button", { name: "查看执行详情", exact: true }).click();
-      await assistant.screenshot({ path: process.env.FPL_AMADEUS_WORKFLOW_SCREENSHOT });
-      await assistant.getByRole("button", { name: "收起执行详情", exact: true }).last().click();
+      await assistant
+        .getByRole("button", { name: "查看执行详情", exact: true })
+        .click();
+      await assistant.screenshot({
+        path: process.env.FPL_AMADEUS_WORKFLOW_SCREENSHOT,
+      });
+      await assistant
+        .getByRole("button", { name: "收起执行详情", exact: true })
+        .last()
+        .click();
     }
-    await assistant.getByRole("button", { name: "查看执行详情", exact: true }).click();
+    await assistant
+      .getByRole("button", { name: "查看执行详情", exact: true })
+      .click();
     await assistant.getByRole("complementary", { name: "执行详情" }).waitFor();
-    await assistant.getByRole("button", { name: "收起执行详情" }).last().click();
+    await assistant
+      .getByRole("button", { name: "收起执行详情" })
+      .last()
+      .click();
     assert.equal(
       await assistant.getByText("并行调查", { exact: true }).count(),
       0,

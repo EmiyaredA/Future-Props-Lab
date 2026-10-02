@@ -15,7 +15,6 @@ from app.apps.video_editor.schemas import (
     VideoEditorSegmentExportCreateIn,
     VideoEditorTaskListOut,
     VideoEditorTaskOut,
-    VideoEditorTimelineDocument,
     parse_timeline_document,
 )
 from app.apps.visual_workshop.models import (

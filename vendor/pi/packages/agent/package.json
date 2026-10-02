@@ -10,10 +10,6 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
-		"./node": {
-			"types": "./dist/node.d.ts",
-			"import": "./dist/node.js"
-		},
 		"./harness/context": {
 			"types": "./dist/harness/context.d.ts",
 			"import": "./dist/harness/context.js"
@@ -21,10 +17,6 @@
 		"./experimental/pico3": {
 			"types": "./dist/harness/pico3/index.d.ts",
 			"import": "./dist/harness/pico3/index.js"
-		},
-		"./harness/env/nodejs": {
-			"types": "./dist/harness/env/nodejs.d.ts",
-			"import": "./dist/harness/env/nodejs.js"
 		},
 		"./harness/runtime/reducer": {
 			"types": "./dist/harness/runtime/reducer.d.ts",

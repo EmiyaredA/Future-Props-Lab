@@ -1,0 +1,100 @@
+{
+  "sceneVersion": 1,
+  "title": "桌面进程、页面与数据的职责",
+  "elements": [
+    {
+      "id": "electron",
+      "kind": "icon",
+      "x": 40,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "Electron 主进程\n启动、窗口与私有凭据",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "page",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "Web 页面\n编辑器与内置指南",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "backend",
+      "kind": "icon",
+      "x": 380,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "本机后端\n鉴权与业务 API",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "static",
+      "kind": "icon",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "打包静态资源\n脚本、文章和图形",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "data",
+      "kind": "icon",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "用户数据目录\nruntime 与配置",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    }
+  ],
+  "edges": [
+    {
+      "id": "electron_page",
+      "source": "electron",
+      "target": "page",
+      "label": "创建窗口",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "electron_backend",
+      "source": "electron",
+      "target": "backend",
+      "label": "托管启动",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "page_static",
+      "source": "page",
+      "target": "static",
+      "label": "离线加载",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "backend_data",
+      "source": "backend",
+      "target": "data",
+      "label": "受控读写",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

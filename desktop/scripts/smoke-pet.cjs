@@ -1,17 +1,28 @@
 // Isolated Electron + API smoke. Never opens the normal desktop data directory.
 const { execFileSync, spawn } = require("node:child_process");
-const { existsSync, mkdtempSync, mkdirSync, rmSync } = require("node:fs");
+const {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  readFileSync,
+} = require("node:fs");
+const { unzipSync, strFromU8 } = require("fflate");
 const { createServer } = require("node:net");
 const { once } = require("node:events");
 const os = require("node:os");
 const path = require("node:path");
 const assert = require("node:assert/strict");
 const { chromium, expect } = require("@playwright/test");
+const { inspectHumanPet } = require("./inspect-human-pet.cjs");
 
 const root = path.resolve(__dirname, "../..");
 const whaleArchive = process.argv[2] || null;
 if (whaleArchive)
   assert.ok(path.isAbsolute(whaleArchive) && existsSync(whaleArchive));
+const importedModel = whaleArchive
+  ? JSON.parse(strFromU8(unzipSync(readFileSync(whaleArchive))["model.json"]))
+  : null;
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function until(fn, timeout = 120000) {
   const deadline = Date.now() + timeout;
@@ -104,22 +115,25 @@ async function main() {
         .click();
     } else {
       await studio.goto(new URL("/apps/desktop-pet", studio.url()).href);
-      await studio.getByLabel("鲸鱼娘资源包").setInputFiles(whaleArchive);
+      await studio.getByLabel("桌宠角色资源包").setInputFiles(whaleArchive);
       await studio.locator(".dp-editor").waitFor();
-      await expect(studio.locator(".dp-side-item")).toHaveCount(8);
+      await expect(studio.locator(".dp-side-item")).toHaveCount(
+        importedModel.schemes.length,
+      );
       await studio.locator(".dp-whale-renderer canvas").waitFor();
-      for (let index = 0; index < 8; index++) {
+      for (let index = 0; index < importedModel.schemes.length; index++) {
         await studio.locator(".dp-side-item").nth(index).click();
         await expect(
           studio.locator(".dp-side-item").nth(index),
         ).toHaveAttribute("aria-pressed", "true");
       }
-      await studio.locator(".dp-side-item").nth(1).click();
+      const selected = Math.min(1, importedModel.schemes.length - 1);
+      await studio.locator(".dp-side-item").nth(selected).click();
       await studio.getByRole("button", { name: "设为桌宠默认配色" }).click();
       await studio.getByRole("button", { name: "保存", exact: true }).click();
       await studio.reload();
       await expect(
-        studio.getByText("当前默认：DeepSeek Harness"),
+        studio.getByText(`当前默认：${importedModel.schemes[selected].brand}`),
       ).toBeVisible();
     }
     await studio.locator(".dp-editor").waitFor();
@@ -149,7 +163,9 @@ async function main() {
     const screenshotDir = path.join(
       root,
       whaleArchive
-        ? ".local/desktop-pet/whale/smoke"
+        ? importedModel.rigProfile === "human-chibi"
+          ? ".local/desktop-pet/kurisu/smoke"
+          : ".local/desktop-pet/whale/smoke"
         : ".local/desktop-pet/smoke",
     );
     mkdirSync(screenshotDir, { recursive: true });
@@ -306,6 +322,9 @@ async function main() {
           .projectId,
     );
 
+    if (importedModel?.rigProfile === "human-chibi")
+      await inspectHumanPet(studio, first.projectId, screenshotDir);
+
     await studio.screenshot({
       path: path.join(screenshotDir, "editor-interaction-light.png"),
     });
@@ -345,7 +364,7 @@ async function main() {
     });
     console.log(
       whaleArchive
-        ? "PASS isolated whale import, eight schemes, lines, chat stream, history and identity cleanup"
+        ? `PASS isolated ${importedModel.rigProfile || "whale"} import, ${importedModel.schemes.length} schemes, lines, chat stream, history and identity cleanup`
         : "PASS isolated pet creation, lines, chat stream, history, launch, hide, restore and identity cleanup",
     );
   } catch (error) {

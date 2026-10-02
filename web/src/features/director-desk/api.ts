@@ -4,14 +4,22 @@ import { externalizeTree, hydrateTree } from "./documentFiles";
 async function uploadBytes(path: string, bytes: Uint8Array) {
   const body = new FormData();
   body.append("upload", new Blob([bytes]), "asset");
-  const saved = await fetchApiJson<{ key: string }>(path, { method: "POST", body });
+  const saved = await fetchApiJson<{ key: string }>(path, {
+    method: "POST",
+    body,
+  });
   return saved.key;
 }
 
-export const uploadDirectorProjectFile = (projectId: string, bytes: Uint8Array) =>
-  uploadBytes(`/v1/director-desk/projects/${projectId}/files`, bytes);
+export const uploadDirectorProjectFile = (
+  projectId: string,
+  bytes: Uint8Array,
+) => uploadBytes(`/v1/director-desk/projects/${projectId}/files`, bytes);
 
-export const downloadDirectorProjectFile = async (projectId: string, key: string) =>
+export const downloadDirectorProjectFile = async (
+  projectId: string,
+  key: string,
+) =>
   new Uint8Array(
     await (
       await fetchApiBlob(`/v1/director-desk/projects/${projectId}/files/${key}`)
@@ -23,11 +31,15 @@ export const uploadDirectorLibraryFile = (bytes: Uint8Array) =>
 
 export const downloadDirectorLibraryFile = async (key: string) =>
   new Uint8Array(
-    await (await fetchApiBlob(`/v1/director-desk/library/files/${key}`)).arrayBuffer(),
+    await (
+      await fetchApiBlob(`/v1/director-desk/library/files/${key}`)
+    ).arrayBuffer(),
   );
 
 export const externalizeDocument = (projectId: string, document: unknown) =>
-  externalizeTree(document, (bytes) => uploadDirectorProjectFile(projectId, bytes));
+  externalizeTree(document, (bytes) =>
+    uploadDirectorProjectFile(projectId, bytes),
+  );
 
 export const hydrateDocument = (projectId: string, document: unknown) =>
   hydrateTree(document, (key) => downloadDirectorProjectFile(projectId, key));
@@ -102,13 +114,23 @@ export const getDirectorMotion = (id: string) =>
     `/v1/director-desk/motions/${encodeURIComponent(id)}`,
   );
 
-export const saveDirectorMotion = (id: string, body: { motion: unknown; resource: unknown }) =>
+export const saveDirectorMotion = (
+  id: string,
+  body: { motion: unknown; resource: unknown },
+) =>
   fetchApiJson<{ motion: unknown; resource: unknown }>(
     `/v1/director-desk/motions/${encodeURIComponent(id)}`,
-    { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) },
+    {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    },
   );
 
 export const deleteDirectorMotion = (id: string) =>
-  fetchApiJson<{ deleted: boolean }>(`/v1/director-desk/motions/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+  fetchApiJson<{ deleted: boolean }>(
+    `/v1/director-desk/motions/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+    },
+  );

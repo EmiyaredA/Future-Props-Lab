@@ -1,5 +1,9 @@
 export const thoughtKeys = {
   all: ["thought-workshop"] as const,
+  officialDocument: (library: string, document: string) =>
+    [...thoughtKeys.all, "official", library, "document", document] as const,
+  officialSearch: (library: string, query: string) =>
+    [...thoughtKeys.all, "official", library, "search", query] as const,
   linkPreview: (workspaceId: string, url: string) =>
     [...thoughtKeys.all, "link-preview", workspaceId, url] as const,
   notes: (query: object) => [...thoughtKeys.all, "notes", query] as const,

@@ -1,0 +1,78 @@
+{
+  "sceneVersion": 1,
+  "title": "关键帧、遮罩与图层顺序共同决定画面",
+  "elements": [
+    {
+      "id": "keys",
+      "kind": "rounded",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "关键帧与插值\n位置 / 透明度 / 属性",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "mask",
+      "kind": "rounded",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "素材与路径遮罩\n可见区域",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "evaluate",
+      "kind": "icon",
+      "x": 380,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "当前时刻求值\n图层状态",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "composite",
+      "kind": "icon",
+      "x": 740,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "按图层顺序合成\n颜色与 Alpha",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "keys_evaluate",
+      "source": "keys",
+      "target": "evaluate",
+      "label": "采样属性",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "mask_evaluate",
+      "source": "mask",
+      "target": "evaluate",
+      "label": "裁切与内容",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "evaluate_composite",
+      "source": "evaluate",
+      "target": "composite",
+      "label": "图层状态",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

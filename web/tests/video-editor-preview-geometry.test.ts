@@ -40,6 +40,7 @@ const asset = {
   id: "asset-1",
   displayName: "视频",
   originalFilename: "video.mp4",
+  revision: 0,
   mediaKind: "video",
   mimeType: "video/mp4",
   byteSize: 100,

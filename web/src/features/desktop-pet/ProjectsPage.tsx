@@ -121,7 +121,7 @@ export function ProjectsPage({
     <section className="workshop-page workshop-projects-page dp-projects">
       <WorkshopAppChrome
         title="我的桌宠"
-        description="从 Live2D 角色工程或本地鲸鱼娘资源包制作会动、会回应的桌面伙伴。"
+        description="从 Live2D 角色工程或本地分层角色资源包制作会动、会回应的桌面伙伴。"
         actions={
           !readOnly && (
             <>
@@ -130,7 +130,7 @@ export function ProjectsPage({
                 type="file"
                 accept=".zip,application/zip"
                 hidden
-                aria-label="鲸鱼娘资源包"
+                aria-label="桌宠角色资源包"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   event.target.value = "";
@@ -147,7 +147,7 @@ export function ProjectsPage({
                 disabled={busy}
                 onClick={() => whaleInput.current?.click()}
               >
-                导入鲸鱼娘资源包
+                导入角色资源包
               </button>
               <button
                 className="workshop-primary"
@@ -191,12 +191,12 @@ export function ProjectsPage({
               cover="live2d"
               coverTitle={
                 project.sourceType === "coopanion-whale"
-                  ? "DeepSeek 大肥鱼"
+                  ? project.title
                   : "桌宠工程"
               }
               coverDescription={
                 project.sourceType === "coopanion-whale"
-                  ? "原版动态 · 八套配色"
+                  ? "分层动态 · 表情 · 交互"
                   : "角色 · 皮肤 · 交互"
               }
               coverContent={
@@ -213,7 +213,7 @@ export function ProjectsPage({
                   {activeId === project.id
                     ? "桌面运行中"
                     : project.sourceType === "coopanion-whale"
-                      ? "Coopanion 本地快照"
+                      ? "分层角色本地快照"
                       : `来源 r${project.sourceRevision}`}
                 </span>
               }

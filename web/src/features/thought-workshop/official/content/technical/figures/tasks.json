@@ -1,0 +1,79 @@
+{
+  "sceneVersion": 1,
+  "title": "统一驱动器与业务钩子",
+  "elements": [
+    {
+      "id": "hook",
+      "kind": "rounded",
+      "x": 40,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "应用业务钩子\n存取、素材与日志",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "driver",
+      "kind": "icon",
+      "x": 380,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "GenerationTaskDriver\n统一编排状态",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "provider",
+      "kind": "icon",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "供应商任务\n提交 / 轮询",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "cloud"
+    },
+    {
+      "id": "local",
+      "kind": "icon",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "本地结算\n下载结果、保存引用",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "hook_driver",
+      "source": "hook",
+      "target": "driver",
+      "label": "提供接口",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "driver_provider",
+      "source": "driver",
+      "target": "provider",
+      "label": "执行网络步骤",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "driver_local",
+      "source": "driver",
+      "target": "local",
+      "label": "完成后结算",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

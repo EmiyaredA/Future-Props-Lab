@@ -1,0 +1,109 @@
+{
+  "sceneVersion": 1,
+  "title": "两类知识库与可编辑笔记的边界",
+  "elements": [
+    {
+      "id": "static",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "官方库\n随包 Markdown / 图形",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "reader",
+      "kind": "rounded",
+      "x": 380,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "官方阅读\n搜索、目录与图表",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "personal",
+      "kind": "icon",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "个人知识库\n目录与文档记录",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "note",
+      "kind": "rounded",
+      "x": 380,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "富文本笔记\n段落 / Mermaid / 画板",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "save",
+      "kind": "icon",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "保存与历史\nCAS、正文、素材引用",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "copy",
+      "kind": "rounded",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "个人图形副本\n源码或场景 + 来源链接",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    }
+  ],
+  "edges": [
+    {
+      "id": "static_reader",
+      "source": "static",
+      "target": "reader",
+      "label": "静态加载",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "reader_copy",
+      "source": "reader",
+      "target": "copy",
+      "label": "授权复制",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "personal_note",
+      "source": "personal",
+      "target": "note",
+      "label": "文档归属",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "note_save",
+      "source": "note",
+      "target": "save",
+      "label": "正式 API",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

@@ -44,11 +44,17 @@
   text-align: center;
 }
 
-.dd-projects .workshop-project-cover.director .workshop-project-cover-label strong {
+.dd-projects
+  .workshop-project-cover.director
+  .workshop-project-cover-label
+  strong {
   color: var(--text-strong);
 }
 
-.dd-projects .workshop-project-cover.director .workshop-project-cover-label small {
+.dd-projects
+  .workshop-project-cover.director
+  .workshop-project-cover-label
+  small {
   color: var(--muted);
 }
 

@@ -12,10 +12,10 @@ from app.capabilities.transcription.support import (
     resolve_transcription_language,
     resolve_transcription_target_language,
 )
+from app.console.models import Workspace
+from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
 from app.main import app
-from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
-from app.console.models import Workspace
 from app.orm import bind_workspace
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal

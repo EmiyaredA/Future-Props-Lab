@@ -69,18 +69,12 @@ export function CanvasAssetsDrawer({
       ) ?? [],
     [mediaSourceProjects.data, projectId],
   );
-  const projectDragStart = useMemo(
-    () => assetDragStartHandler("none"),
-    [],
-  );
+  const projectDragStart = useMemo(() => assetDragStartHandler("none"), []);
   const crossDragStart = useMemo(
     () => assetDragStartHandler("cross-project", crossSourceProjectId),
     [crossSourceProjectId],
   );
-  const libraryDragStart = useMemo(
-    () => assetDragStartHandler("library"),
-    [],
-  );
+  const libraryDragStart = useMemo(() => assetDragStartHandler("library"), []);
 
   return (
     <aside className="canvas-assets-drawer" aria-label="项目素材库">

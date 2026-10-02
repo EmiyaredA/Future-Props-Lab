@@ -45,6 +45,9 @@ from app.apps.presentation_workshop.models import (
     PresentationAssetReference,
     PresentationProject,
 )
+from app.apps.thought_workshop.knowledge_tools.models import (
+    ThoughtDocumentReference, ThoughtTemplate, ThoughtTemplateAsset, ThoughtCheckpoint, ThoughtSavedFilter, ThoughtReadingState,
+)
 from app.apps.thought_workshop.models import (
     ThoughtHistoryAsset,
     ThoughtKnowledgeBase,

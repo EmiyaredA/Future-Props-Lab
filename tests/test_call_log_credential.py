@@ -6,8 +6,8 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.main import app
 from app.llm.models import LlmCallLog
+from app.main import app
 from app.runtime.db import SessionLocal
 
 

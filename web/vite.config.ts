@@ -45,6 +45,19 @@ export default defineConfig(({ mode }) => ({
       },
       output: {
         manualChunks(id) {
+          if (id.includes("/node_modules/three/build/three.core.js"))
+            return "three-core";
+          if (id.includes("/node_modules/three/build/three.module.js"))
+            return "three-renderer";
+          if (id.includes("/node_modules/three/examples/jsm/")) {
+            return `three-${id.split("/examples/jsm/")[1].split("/")[0]}`;
+          }
+          if (
+            id.includes("/features/director-desk/editor/resources/") ||
+            id.includes("/features/director-desk/editor/automation/")
+          )
+            return "director-automation";
+
           if (id.includes("/docs/articles/sdk/sdk-reference-")) {
             return id
               .split("/")

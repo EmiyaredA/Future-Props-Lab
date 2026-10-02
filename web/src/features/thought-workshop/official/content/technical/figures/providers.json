@@ -1,0 +1,110 @@
+{
+  "sceneVersion": 1,
+  "title": "请求适配与响应归一化",
+  "elements": [
+    {
+      "id": "request",
+      "kind": "rounded",
+      "x": 40,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "统一业务请求\n模型 + 能力 + 输入",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "encode",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "供应商请求适配\n鉴权与参数转换",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "provider",
+      "kind": "icon",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "外部模型服务\n供应商协议",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "cloud"
+    },
+    {
+      "id": "raw",
+      "kind": "icon",
+      "x": 40,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "供应商原始流\n字段和结束原因",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "cloud"
+    },
+    {
+      "id": "normalize",
+      "kind": "icon",
+      "x": 380,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "响应适配\n增量、用量与错误",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "events",
+      "kind": "rounded",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "公共事件与日志\n界面消费统一含义",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    }
+  ],
+  "edges": [
+    {
+      "id": "request_encode",
+      "source": "request",
+      "target": "encode",
+      "label": "提交",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "encode_provider",
+      "source": "encode",
+      "target": "provider",
+      "label": "请求",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "raw_normalize",
+      "source": "raw",
+      "target": "normalize",
+      "label": "解析",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "normalize_events",
+      "source": "normalize",
+      "target": "events",
+      "label": "归一化",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

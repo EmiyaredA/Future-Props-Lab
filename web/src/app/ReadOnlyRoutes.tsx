@@ -93,9 +93,10 @@ export function ReadOnlyRoutes({
       <Thought
         projectId={projectId}
         documentId={documentId}
+        onOpenOfficial={(id) => navigate("thought-workshop-official", id)}
         onOpen={(id, doc) =>
           navigate(
-            doc ? "thought-workshop-editor" : "thought-workshop-notes",
+            id ? "thought-workshop-editor" : "thought-workshop-notes",
             id,
             doc,
           )

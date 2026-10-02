@@ -1,0 +1,79 @@
+{
+  "sceneVersion": 1,
+  "title": "创作图与生成结果的生命周期",
+  "elements": [
+    {
+      "id": "graph",
+      "kind": "rounded",
+      "x": 40,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "创作节点与连接\n文本、引用与意图",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "input",
+      "kind": "icon",
+      "x": 380,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "输入组装\n模型能力与引用校验",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "task",
+      "kind": "icon",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "后台生成任务\n提交、轮询与恢复",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "cloud"
+    },
+    {
+      "id": "result",
+      "kind": "icon",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "托管结果素材\n结果节点中的引用",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "graph_input",
+      "source": "graph",
+      "target": "input",
+      "label": "选择上游输入",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "input_task",
+      "source": "input",
+      "target": "task",
+      "label": "创建任务",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "input_result",
+      "source": "input",
+      "target": "result",
+      "label": "消费已有结果",
+      "arrow": false,
+      "style": "step"
+    }
+  ]
+}

@@ -30,7 +30,9 @@ async def test_video_editor_asset_default_effects_cas_and_bake_image() -> None:
     payload = image.getvalue()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        project = (await client.post("/v1/video-editor/projects", json={"title": "默认效果"})).json()
+        project = (
+            await client.post("/v1/video-editor/projects", json={"title": "默认效果"})
+        ).json()
         upload = await client.post(
             f"/v1/video-editor/projects/{project['id']}/assets",
             files={"upload": ("plate.png", payload, "image/png")},
@@ -92,9 +94,7 @@ async def test_video_editor_asset_default_effects_cas_and_bake_image() -> None:
         assert output["mediaKind"] == "image"
         assert output["defaultEffects"] == {"chromaKey": None}
         assert source["defaultEffects"]["chromaKey"]["enabled"] is True
-        timeline = (
-            await client.get(f"/v1/video-editor/projects/{project['id']}/timeline")
-        ).json()
+        timeline = (await client.get(f"/v1/video-editor/projects/{project['id']}/timeline")).json()
         root_ids = timeline["document"]["assetOrganization"]["rootAssetIds"]
         assert source["id"] in root_ids
         assert output["id"] in root_ids

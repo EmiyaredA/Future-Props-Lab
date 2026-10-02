@@ -1,0 +1,98 @@
+{
+  "sceneVersion": 1,
+  "title": "文稿树的三种消费方式",
+  "elements": [
+    {
+      "id": "doc",
+      "kind": "icon",
+      "x": 40,
+      "y": 180,
+      "width": 220,
+      "height": 110,
+      "text": "原生文稿树\n页面、元素与素材",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "edit",
+      "kind": "rounded",
+      "x": 380,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "编辑器\n选择、排版与拖动",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "play",
+      "kind": "rounded",
+      "x": 380,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "放映视图\n按页面呈现",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "save",
+      "kind": "icon",
+      "x": 740,
+      "y": 50,
+      "width": 220,
+      "height": 110,
+      "text": "项目用例\n校验并保存版本",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "pptx",
+      "kind": "icon",
+      "x": 740,
+      "y": 310,
+      "width": 220,
+      "height": 110,
+      "text": "PPTX 导出\n转换为目标元素",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "doc_edit",
+      "source": "doc",
+      "target": "edit",
+      "label": "编辑结构",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "doc_play",
+      "source": "doc",
+      "target": "play",
+      "label": "阅读结构",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "edit_save",
+      "source": "edit",
+      "target": "save",
+      "label": "提交修改",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "play_pptx",
+      "source": "play",
+      "target": "pptx",
+      "label": "同源不同转换",
+      "arrow": false,
+      "style": "step"
+    }
+  ]
+}

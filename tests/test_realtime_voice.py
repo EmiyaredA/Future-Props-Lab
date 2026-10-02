@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from starlette.websockets import WebSocketDisconnect
 
+from app.llm.models import LlmCallLog, ModelTestTool, ModelTestToolCall
 from app.llm.playground.test_tools import (
     TestToolSelectionError as ToolSelectionError,
 )
@@ -30,7 +31,6 @@ from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.session import TurnMetrics, _client_configuration, _write_log
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
 from app.main import app
-from app.llm.models import LlmCallLog, ModelTestTool, ModelTestToolCall
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
 

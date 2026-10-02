@@ -83,9 +83,12 @@ export function attachDirectorAgentSession(
 
 function withRequestId(call: PendingCall): Record<string, unknown> {
   const definition = TOOL_DEFINITIONS.find((tool) => tool.name === call.name);
-  const properties = (definition?.inputSchema as { properties?: Record<string, unknown> } | undefined)
-    ?.properties;
-  if (!properties || !Object.hasOwn(properties, "requestId")) return call.arguments;
+  const properties = (
+    definition?.inputSchema as
+      { properties?: Record<string, unknown> } | undefined
+  )?.properties;
+  if (!properties || !Object.hasOwn(properties, "requestId"))
+    return call.arguments;
   return { ...call.arguments, requestId: call.request_id };
 }
 

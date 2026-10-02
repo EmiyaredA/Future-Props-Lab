@@ -134,6 +134,7 @@ class DesktopPetChats:
     async def get(self, project_id: str) -> PetChatOut:
         row = await self._chat(project_id)
         await self._recover(row)
+        project = await self.projects.row(project_id)
         page = (
             await self._page(row.id, None, 50)
             if row
@@ -142,7 +143,11 @@ class DesktopPetChats:
         return PetChatOut(
             revision=row.revision if row else 0,
             modelId=row.model_id if row else None,
-            proactiveLinesEnabled=row.proactive_lines_enabled if row else True,
+            proactiveLinesEnabled=(
+                row.proactive_lines_enabled
+                if row
+                else (project.whale_model or {}).get("rigProfile") != "human-chibi"
+            ),
             active=bool(row and row.active_request_id),
             messages=page.items,
             nextBefore=page.next_before,

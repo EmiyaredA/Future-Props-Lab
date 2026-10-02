@@ -21,9 +21,13 @@ class VisualAssetContext:
 
     async def _project(self, project_id: str) -> None:
         projects = Base.metadata.tables.get("visual_workshop_projects")
-        if projects is None or await self.session.scalar(
-            select(projects.c.id).where(projects.c.id == project_id).limit(1)
-        ) is None:
+        if (
+            projects is None
+            or await self.session.scalar(
+                select(projects.c.id).where(projects.c.id == project_id).limit(1)
+            )
+            is None
+        ):
             raise AssetError("项目不存在", code="not_found", status=404)
 
     async def _folder(self, folder_id: str) -> VisualAssetFolder:

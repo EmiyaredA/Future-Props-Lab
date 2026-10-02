@@ -69,19 +69,13 @@ export function VideoEditorBatchInspector({
   const [message, setMessage] = useState("");
   const selectionKey = clips.map((clip) => clip.id).join("\0");
 
-  const volumeClips = useMemo(
-    () => clips.filter(clipSupportsVolume),
-    [clips],
-  );
+  const volumeClips = useMemo(() => clips.filter(clipSupportsVolume), [clips]);
   const fitClips = useMemo(() => clips.filter(clipSupportsFitMode), [clips]);
   const transformClips = useMemo(
     () => clips.filter(clipSupportsTransform),
     [clips],
   );
-  const chromaClips = useMemo(
-    () => clips.filter(clipSupportsChroma),
-    [clips],
-  );
+  const chromaClips = useMemo(() => clips.filter(clipSupportsChroma), [clips]);
 
   const volumeMixed = mixedValues(volumeClips.map((clip) => clip.volume));
   const mutedMixed = mixedValues(
@@ -256,8 +250,7 @@ export function VideoEditorBatchInspector({
   const hasAudioSection = volumeClips.length > 0;
   const hasVisualSection = fitClips.length > 0 || transformClips.length > 0;
   const hasChromaSection = chromaClips.length > 0;
-  const hasAnySection =
-    hasAudioSection || hasVisualSection || hasChromaSection;
+  const hasAnySection = hasAudioSection || hasVisualSection || hasChromaSection;
 
   return (
     <aside className="ve-inspector ve-batch-inspector">

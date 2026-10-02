@@ -1,12 +1,14 @@
 import { BookOpen } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
+import { officialPath } from "./official/catalog";
 
 const moduleDefinition = {
   definition: {
     id: "thought-workshop",
     name: "思绪工坊",
     category: "productivity",
-    description: "记录灵感，整理思绪。支持丰富排版、公式图表；AI 写作经 Agent/SDK 接入。",
+    description:
+      "记录灵感，整理思绪。支持丰富排版、公式图表；AI 写作经 Agent/SDK 接入。",
     capabilities: ["笔记", "富文本"],
     path: "/apps/thought-workshop",
     icon: BookOpen,
@@ -28,6 +30,15 @@ const moduleDefinition = {
     ],
   },
   matchPath(pathname: string) {
+    const official = pathname.match(
+      /^\/apps\/thought-workshop\/official-knowledge-bases\/([^/]+)(?:\/documents\/([^/]+))?\/?$/,
+    );
+    if (official)
+      return {
+        page: "thought-workshop-official",
+        projectId: decodeURIComponent(official[1]),
+        documentId: official[2] ? decodeURIComponent(official[2]) : undefined,
+      };
     const legacy = pathname.match(
       /^\/apps\/thought-workshop\/notes\/([^/]+)\/?$/,
     );
@@ -50,6 +61,8 @@ const moduleDefinition = {
     return undefined;
   },
   pathFor(page: string, projectId?: string, documentId?: string) {
+    if (page === "thought-workshop-official" && projectId)
+      return officialPath(projectId, documentId);
     if (page === "thought-workshop-editor" && projectId)
       return `/apps/thought-workshop/knowledge-bases/${encodeURIComponent(projectId)}${documentId ? `/documents/${encodeURIComponent(documentId)}` : ""}`;
     if (page === "thought-workshop-legacy" && documentId)

@@ -7,6 +7,14 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
+from app.apps.video_editor.models import (
+    VideoEditorAssetMetadata,
+    VideoEditorProject,
+)
+from app.apps.visual_workshop.models import (
+    VisualWorkshopProject,
+)
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.llm.generation_runtime.media import generated_type
@@ -16,14 +24,6 @@ from app.llm.providers.senseaudio_audio import (
     get_music_task,
 )
 from app.main import app
-from app.apps.video_editor.models import (
-    VideoEditorAssetMetadata,
-    VideoEditorProject,
-)
-from app.apps.visual_workshop.models import (
-    VisualWorkshopProject,
-)
-from app.capabilities.asset_store.models import VisualAsset
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
 

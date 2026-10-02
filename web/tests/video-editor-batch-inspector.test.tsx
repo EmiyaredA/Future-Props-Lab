@@ -92,7 +92,10 @@ describe("batchClipPatch", () => {
   it("applies relative volume per clip without clobbering transform", () => {
     const result = buildBatchClipOperations(
       [
-        video("v1", { volume: 0.5, transform: { ...base.transform, scaleX: 2 } }),
+        video("v1", {
+          volume: 0.5,
+          transform: { ...base.transform, scaleX: 2 },
+        }),
         video("v2", { volume: 1.2 }),
       ],
       { audio: { mode: "delta", delta: 0.3 } },
@@ -101,6 +104,8 @@ describe("batchClipPatch", () => {
       { type: "updateClip", clipId: "v1", patch: { volume: 0.8 } },
       { type: "updateClip", clipId: "v2", patch: { volume: 1.5 } },
     ]);
+    if (result.redo[0].type !== "updateClip")
+      throw new Error("expected updateClip");
     expect(result.redo[0].patch).not.toHaveProperty("transform");
   });
 
@@ -117,6 +122,11 @@ describe("batchClipPatch", () => {
       { visual: { transform: { scaleX: 1.2, scaleY: 1.2 } } },
     );
     expect(result.redo).toHaveLength(2);
+    if (
+      result.redo[0].type !== "updateClip" ||
+      result.redo[1].type !== "updateClip"
+    )
+      throw new Error("expected updateClip");
     expect(result.redo[0].patch.transform).toMatchObject({
       x: 100,
       scaleX: 1.2,
@@ -132,10 +142,9 @@ describe("batchClipPatch", () => {
   });
 
   it("skips audio clips when only visual fitMode is requested", () => {
-    const result = buildBatchClipOperations(
-      [video("v1"), audio("a1")],
-      { visual: { fitMode: "contain" } },
-    );
+    const result = buildBatchClipOperations([video("v1"), audio("a1")], {
+      visual: { fitMode: "contain" },
+    });
     expect(result.applied).toBe(1);
     expect(result.skipped[0]).toEqual({
       name: "a1",
@@ -173,6 +182,11 @@ describe("batchClipPatch", () => {
       name: "a1",
       reason: "不支持抠像",
     });
+    if (
+      result.redo[0].type !== "updateClip" ||
+      result.redo[1].type !== "updateClip"
+    )
+      throw new Error("expected updateClip");
     expect(result.redo[0].patch.chromaKey).toMatchObject({
       enabled: true,
       color: "#00ff00",
@@ -187,6 +201,8 @@ describe("batchClipPatch", () => {
       softness: 30,
       despill: 60,
     });
+    if (result.undo[0].type !== "updateClip")
+      throw new Error("expected updateClip");
     expect(result.undo[0].patch).toEqual({
       chromaKey: {
         enabled: true,

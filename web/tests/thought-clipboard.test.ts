@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { editorExtensions } from "@features/thought-workshop/editorExtensions";
 import {
   clearSessionThoughtClipboard,
+  htmlNeedsManagedMigration,
   insertThoughtClipboardPayload,
   pasteThoughtClipboard,
   pasteThoughtHTML,
@@ -503,5 +504,242 @@ describe("思绪工坊应用内剪贴板", () => {
     expect(result).not.toContain("external.png");
     expect(result).not.toContain("onclick");
     expect(result).not.toContain("data-unknown");
+  });
+});
+
+function canvasScene(assetIds: string[] = []) {
+  return {
+    sceneVersion: 1,
+    title: "架构画板",
+    elements: [
+      {
+        id: "box",
+        kind: "rounded",
+        text: "业务入口",
+        x: 40,
+        y: 40,
+        width: 180,
+        height: 90,
+        fill: "#eef5f3",
+        stroke: "#365f62",
+      },
+      ...assetIds.map((assetId, index) => ({
+        id: `picture-${index}`,
+        kind: "image",
+        assetId,
+        text: "示意图片",
+        x: 300,
+        y: index * 120,
+        width: 180,
+        height: 90,
+        fill: "#eef5f3",
+        stroke: "#365f62",
+      })),
+    ],
+    edges: assetIds.length
+      ? [
+          {
+            id: "link",
+            source: "box",
+            target: "picture-0",
+            label: "输出",
+            arrow: true,
+            style: "step",
+          },
+        ]
+      : [],
+  };
+}
+
+function canvasHTML(scene = canvasScene(), scope?: string, assets?: object) {
+  const pre = document.createElement("pre");
+  pre.setAttribute("data-fpl-canvas", "true");
+  pre.textContent = JSON.stringify(scene);
+  if (scope !== undefined) pre.setAttribute("data-fpl-source-scope", scope);
+  if (assets)
+    pre.setAttribute("data-fpl-canvas-assets", JSON.stringify(assets));
+  return pre.outerHTML;
+}
+
+function blankEditor() {
+  return new Editor({
+    extensions: editorExtensions(),
+    content: "<p>原有内容</p>",
+  });
+}
+
+function canvasFrom(editor: Editor) {
+  return editor.getJSON().content?.find((node) => node.type === "canvas")?.attrs
+    ?.scene;
+}
+
+const canvasAsset = {
+  mimeType: "image/png",
+  data: "YQ==",
+  filename: "示意图.png",
+};
+
+describe("画板的结构化与 HTML 剪贴板", () => {
+  it("preserves validated scene JSON through sanitization without retaining active markup", async () => {
+    const scene = canvasScene();
+    scene.elements[0].text =
+      '<img src="https://example.com/tracker" onerror="alert(1)">';
+    const input = canvasHTML(scene).replace(
+      "<pre ",
+      '<pre onclick="alert(1)" data-other="secret" ',
+    );
+    const safe = sanitizeThoughtPastedHTML(input, "kb-target");
+    const dom = new DOMParser().parseFromString(safe, "text/html");
+    expect(dom.querySelectorAll("img,script")).toHaveLength(0);
+    expect(dom.querySelector("pre")?.hasAttribute("onclick")).toBe(false);
+    expect(dom.querySelector("pre")?.hasAttribute("data-other")).toBe(false);
+    expect(dom.querySelector("pre")?.hasAttribute("data-fpl-canvas")).toBe(
+      true,
+    );
+    const target = blankEditor();
+    await pasteThoughtHTML(target, safe, "kb-target");
+    expect(canvasFrom(target)).toEqual(scene);
+    expect(uploadImage).not.toHaveBeenCalled();
+    target.destroy();
+  });
+
+  it("round-trips HTML fallback with a shared picture in the canvas and ordinary body", async () => {
+    fetchApiBlob.mockResolvedValue(imageBlob());
+    uploadImage.mockResolvedValue({ asset_id: "asset-target" });
+    const write = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("custom MIME unavailable"))
+      .mockResolvedValue(undefined);
+    vi.stubGlobal("ClipboardItem", ClipboardItemMock);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { write },
+    });
+    const scene = canvasScene(["asset-a"]);
+    const source = new Editor({
+      extensions: editorExtensions(),
+      content: {
+        type: "doc",
+        content: [
+          { type: "canvas", attrs: { scene } },
+          { type: "image", attrs: { assetId: "asset-a", alt: "示意图片" } },
+        ],
+      },
+    });
+    selectAll(source);
+    await writeThoughtClipboard(source, "kb-source");
+    expect(fetchApiBlob).toHaveBeenCalledTimes(1);
+    const fallback = write.mock.calls[1][0][0] as ClipboardItemMock;
+    const html = await blobText(fallback.data["text/html"]);
+    expect(html).toContain("data-fpl-canvas-assets");
+    expect(htmlNeedsManagedMigration(html, "kb-target")).toBe(true);
+    const target = blankEditor();
+    await pasteThoughtHTML(target, html, "kb-target");
+    expect(uploadImage).toHaveBeenCalledTimes(1);
+    expect(canvasFrom(target)).toEqual({
+      ...scene,
+      elements: scene.elements.map((element) =>
+        "assetId" in element
+          ? { ...element, assetId: "asset-target" }
+          : element,
+      ),
+    });
+    expect(
+      target.getJSON().content?.find((node) => node.type === "image")?.attrs
+        ?.assetId,
+    ).toBe("asset-target");
+    expect(JSON.stringify(target.getJSON())).not.toContain("asset-a");
+    expect(JSON.stringify(target.getJSON())).not.toContain(
+      "data-fpl-canvas-assets",
+    );
+    source.destroy();
+    target.destroy();
+  });
+
+  it("reuses a known same-scope canvas but migrates when source scope is stripped", async () => {
+    uploadImage.mockResolvedValue({ asset_id: "migrated" });
+    const scene = canvasScene(["asset-a"]);
+    const same = blankEditor();
+    expect(
+      htmlNeedsManagedMigration(canvasHTML(scene, "kb-target"), "kb-target"),
+    ).toBe(false);
+    expect(
+      htmlNeedsManagedMigration(
+        canvasHTML(scene, undefined, { "asset-a": canvasAsset }),
+        "kb-target",
+      ),
+    ).toBe(true);
+    await pasteThoughtHTML(same, canvasHTML(scene, "kb-target"), "kb-target");
+    expect(canvasFrom(same)).toEqual(scene);
+    expect(uploadImage).not.toHaveBeenCalled();
+    const unknown = blankEditor();
+    await pasteThoughtHTML(
+      unknown,
+      canvasHTML(scene, undefined, { "asset-a": canvasAsset }),
+      "kb-target",
+    );
+    expect(uploadImage).toHaveBeenCalledTimes(1);
+    expect(canvasFrom(unknown).elements[1].assetId).toBe("migrated");
+    same.destroy();
+    unknown.destroy();
+  });
+
+  it("rejects unportable or invalid scenes before changing content or uploading other pictures", async () => {
+    const target = blankEditor();
+    const before = target.getJSON();
+    const missing = canvasHTML(canvasScene(["asset-a"]), "other-scope");
+    expect(htmlNeedsManagedMigration(missing, "kb-target")).toBe(true);
+    expect(sanitizeThoughtPastedHTML(missing, "kb-target")).not.toContain(
+      "data-fpl-canvas",
+    );
+    await expect(
+      pasteThoughtHTML(target, missing, "kb-target"),
+    ).rejects.toThrow("缺少可迁移数据");
+    const malformed = canvasHTML({ ...canvasScene(), sceneVersion: 99 });
+    await expect(
+      pasteThoughtHTML(target, malformed, "kb-target"),
+    ).rejects.toThrow("画板数据无效");
+    expect(target.getJSON()).toEqual(before);
+    expect(uploadImage).not.toHaveBeenCalled();
+    target.destroy();
+  });
+
+  it("keeps the existing document if a later canvas asset upload fails", async () => {
+    uploadImage
+      .mockResolvedValueOnce({ asset_id: "first-uploaded" })
+      .mockRejectedValueOnce(new Error("第二张上传失败"));
+    const target = blankEditor();
+    const before = target.getJSON();
+    await expect(
+      pasteThoughtHTML(
+        target,
+        canvasHTML(canvasScene(["asset-a", "asset-b"]), "kb-source", {
+          "asset-a": canvasAsset,
+          "asset-b": canvasAsset,
+        }),
+        "kb-target",
+      ),
+    ).rejects.toThrow("第二张上传失败");
+    expect(target.getJSON()).toEqual(before);
+    target.destroy();
+  });
+
+  it("migrates structured canvas references when their source scope is unknown", async () => {
+    uploadImage.mockResolvedValue({ asset_id: "structured-target" });
+    const target = blankEditor();
+    await insertThoughtClipboardPayload(target, {
+      version: 1,
+      sourceScopeId: null,
+      fragment: {
+        type: "doc",
+        content: [
+          { type: "canvas", attrs: { scene: canvasScene(["asset-a"]) } },
+        ],
+      },
+      assets: { "asset-a": canvasAsset },
+    });
+    expect(uploadImage).toHaveBeenCalledTimes(1);
+    expect(canvasFrom(target).elements[1].assetId).toBe("structured-target");
+    target.destroy();
   });
 });

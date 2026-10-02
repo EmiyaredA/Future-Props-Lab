@@ -121,6 +121,7 @@ const assets: VideoEditorAsset[] = [
     id: "asset-1",
     displayName: "视频",
     originalFilename: "video.mp4",
+    revision: 0,
     mediaKind: "video",
     mimeType: "video/mp4",
     byteSize: 100,
@@ -488,9 +489,8 @@ describe("video editor preview playback", () => {
     const paint = vi
       .spyOn(chromaCanvas, "paintChromaCanvas")
       .mockImplementation(() => {});
-    const callbacks: Array<
-      (now: number, meta: { mediaTime: number }) => void
-    > = [];
+    const callbacks: Array<(now: number, meta: { mediaTime: number }) => void> =
+      [];
     const requestVideoFrameCallback = vi.fn(
       (callback: (now: number, meta: { mediaTime: number }) => void) => {
         callbacks.push(callback);
@@ -498,14 +498,22 @@ describe("video editor preview playback", () => {
       },
     );
     const cancelVideoFrameCallback = vi.fn();
-    Object.defineProperty(HTMLVideoElement.prototype, "requestVideoFrameCallback", {
-      configurable: true,
-      value: requestVideoFrameCallback,
-    });
-    Object.defineProperty(HTMLVideoElement.prototype, "cancelVideoFrameCallback", {
-      configurable: true,
-      value: cancelVideoFrameCallback,
-    });
+    Object.defineProperty(
+      HTMLVideoElement.prototype,
+      "requestVideoFrameCallback",
+      {
+        configurable: true,
+        value: requestVideoFrameCallback,
+      },
+    );
+    Object.defineProperty(
+      HTMLVideoElement.prototype,
+      "cancelVideoFrameCallback",
+      {
+        configurable: true,
+        value: cancelVideoFrameCallback,
+      },
+    );
     const keyedTimeline = structuredClone(timeline);
     keyedTimeline.document.tracks![0]!.clips![0]!.chromaKey = {
       enabled: true,

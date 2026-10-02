@@ -22,6 +22,7 @@ const size = (node: JSONContent): number =>
             "hardBreak",
             "horizontalRule",
             "mermaid",
+            "canvas",
           ].includes(node.type ?? "")
         ? 1
         : 2;

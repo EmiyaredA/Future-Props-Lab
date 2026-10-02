@@ -11,7 +11,7 @@ class ThoughtNoteIn(BaseModel):
     title: str = Field(default="未命名笔记", min_length=1, max_length=240)
     knowledge_base_id: str
     parent_id: str | None = None
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2, 3] = 2
     document: dict = Field(default_factory=empty_document)
     tags: list[str] = Field(default_factory=list, max_length=30)
     pinned: bool = False
@@ -72,7 +72,7 @@ class ThoughtNoteSummary(BaseModel):
 
 
 class ThoughtNoteOut(ThoughtNoteSummary):
-    schema_version: Literal[2]
+    schema_version: Literal[2, 3]
     document: dict
 
 

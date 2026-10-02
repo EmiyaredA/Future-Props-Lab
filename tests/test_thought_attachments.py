@@ -62,6 +62,7 @@ def document(asset):
         ("表格.xlsx", "application/octet-stream", office("xlsx")),
         ("演示.pptx", "application/octet-stream", office("pptx")),
         ("说明.txt", "text/plain", "仅文件名进入搜索".encode()),
+        ("wrong.txt", "application/pdf", b"hello"),
         ("说明.md", "text/markdown", b"# Markdown"),
         ("表格.csv", "text/csv", b"a,b\n1,2"),
         ("数据.json", "application/json", b'{"private":"not indexed"}'),
@@ -75,6 +76,8 @@ async def test_supported_upload_metadata_download_and_normalization(name, mime, 
         response = await client.post(ROOT + "/attachments", files={"upload": (name, content, mime)})
         assert response.status_code == 200, response.text
         asset = response.json()
+        if name == "wrong.txt":
+            assert asset["mime_type"] == "text/plain"
         assert asset["filename"] == name and asset["byte_size"] == len(content)
         saved = await create_note(client, json={"schema_version": 2, "document": document(asset)})
         assert saved.status_code == 200, saved.text
@@ -108,7 +111,6 @@ async def test_supported_upload_metadata_download_and_normalization(name, mime, 
         ("fake.doc", "application/msword", b"not office"),
         ("wrong.docx", "application/octet-stream", office("xlsx")),
         ("fake.zip", "application/zip", b"PK\x03\x04not-a-zip"),
-        ("wrong.txt", "application/pdf", b"hello"),
         ("data.json", "application/json", b"{invalid}"),
         ("text.csv", "text/csv", b"a,b\n" + b"a" * 1024 + b"\x00"),
     ],
