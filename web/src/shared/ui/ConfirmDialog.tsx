@@ -11,6 +11,7 @@ export function ConfirmDialog({
   cancelLabel = "取消",
   tone = "danger",
   pending = false,
+  confirmDisabled = false,
   onCancel,
   onConfirm,
 }: {
@@ -21,6 +22,7 @@ export function ConfirmDialog({
   cancelLabel?: string;
   tone?: "danger" | "primary";
   pending?: boolean;
+  confirmDisabled?: boolean;
   onCancel: () => void;
   onConfirm: () => void | Promise<void>;
 }) {
@@ -70,9 +72,12 @@ export function ConfirmDialog({
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    const frame = requestAnimationFrame(() =>
-      confirmButton.current?.focus({ preventScroll: true }),
-    );
+    const frame = requestAnimationFrame(() => {
+      const target = confirmButton.current?.disabled
+        ? dialogRef.current?.querySelector<HTMLElement>("button:not(:disabled)")
+        : confirmButton.current;
+      target?.focus({ preventScroll: true });
+    });
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       cancelAnimationFrame(frame);
@@ -136,7 +141,7 @@ export function ConfirmDialog({
             ref={confirmButton}
             type="button"
             className={`btn ${tone}`}
-            disabled={pending}
+            disabled={pending || confirmDisabled}
             onClick={() => void onConfirm()}
           >
             {pending ? "处理中…" : confirmLabel}

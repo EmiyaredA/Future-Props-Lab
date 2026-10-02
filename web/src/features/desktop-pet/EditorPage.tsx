@@ -399,7 +399,7 @@ export function EditorPage({
                   <small>{whale ? schemes.length : skins.length} 套</small>
                 </div>
                 <div className="dp-source-card">
-                  <strong>{project?.sourceTitle}</strong>
+                  <strong>{whale ? figureName : project?.sourceTitle}</strong>
                   <small>
                     {whale
                       ? "分层角色 · 本地导入快照"
@@ -469,7 +469,8 @@ export function EditorPage({
                 )}
                 {whale && (
                   <div className="dp-hint">
-                    八套配色共用原版分件动画；选中后可设为桌宠默认外观。
+                    {schemes.length}{" "}
+                    套配色共用角色分件动画；选中后可设为桌宠默认外观。
                   </div>
                 )}
               </>
@@ -531,7 +532,7 @@ export function EditorPage({
                       ? "分层角色本地快照"
                       : `来源角色 r${project?.sourceRevision}`}
                   </strong>
-                  <small>{project?.sourceTitle}</small>
+                  <small>{whale ? figureName : project?.sourceTitle}</small>
                 </div>
                 {!whale && (
                   <button

@@ -2807,6 +2807,27 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}",
+    "sdk": "client.thought.delete_checkpoint",
+    "document": "/docs.html?page=sdk-reference-thought#delete-checkpoint",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/thought-workshop/preferences/filters/{filter_id}",
+    "sdk": "client.thought.delete_filter",
+    "document": "/docs.html?page=sdk-reference-thought#delete-filter",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/thought-workshop/templates/{template_id}",
+    "sdk": "client.thought.delete_template",
+    "document": "/docs.html?page=sdk-reference-thought#delete-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/thought-workshop/backup",
     "sdk": "client.thought.backup",
     "document": "/docs.html?page=sdk-reference-thought#backup",
@@ -2831,6 +2852,13 @@
     "http": "GET /v1/thought-workshop/knowledge-bases/{project_id}/directory",
     "sdk": "client.thought.directory",
     "document": "/docs.html?page=sdk-reference-thought#directory",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot",
+    "sdk": "client.thought.library_export_snapshot",
+    "document": "/docs.html?page=sdk-reference-thought#library-export-snapshot",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -2863,6 +2891,27 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/backlinks",
+    "sdk": "client.thought.note_backlinks",
+    "document": "/docs.html?page=sdk-reference-thought#note-backlinks",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/checkpoints",
+    "sdk": "client.thought.checkpoints",
+    "document": "/docs.html?page=sdk-reference-thought#checkpoints",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/copy-snapshot",
+    "sdk": "client.thought.copy_snapshot",
+    "document": "/docs.html?page=sdk-reference-thought#copy-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/thought-workshop/notes/{note_id}/export",
     "sdk": "client.thought.export_note_content",
     "document": "/docs.html?page=sdk-reference-thought#export-note-content",
@@ -2880,6 +2929,41 @@
     "http": "GET /v1/thought-workshop/notes/{note_id}/history/{history_id}",
     "sdk": "client.thought.note_history_detail",
     "document": "/docs.html?page=sdk-reference-thought#note-history-detail",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/preferences/filters",
+    "sdk": "client.thought.saved_filters",
+    "document": "/docs.html?page=sdk-reference-thought#saved-filters",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/preferences/reading",
+    "sdk": "client.thought.reading_position",
+    "document": "/docs.html?page=sdk-reference-thought#reading-position",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/preferences/recent",
+    "sdk": "client.thought.recently_visited",
+    "document": "/docs.html?page=sdk-reference-thought#recently-visited",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/search",
+    "sdk": "client.thought.global_search",
+    "document": "/docs.html?page=sdk-reference-thought#global-search",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/templates",
+    "sdk": "client.thought.templates",
+    "document": "/docs.html?page=sdk-reference-thought#templates",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -2954,6 +3038,20 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/checkpoints",
+    "sdk": "client.thought.create_checkpoint",
+    "document": "/docs.html?page=sdk-reference-thought#create-checkpoint",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/duplicate",
+    "sdk": "client.thought.duplicate_document",
+    "document": "/docs.html?page=sdk-reference-thought#duplicate-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore",
     "sdk": "client.thought.restore_note_history",
     "document": "/docs.html?page=sdk-reference-thought#restore-note-history",
@@ -2975,6 +3073,41 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/thought-workshop/preferences/filters",
+    "sdk": "client.thought.save_filter",
+    "document": "/docs.html?page=sdk-reference-thought#save-filter",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/preferences/reading",
+    "sdk": "client.thought.record_reading",
+    "document": "/docs.html?page=sdk-reference-thought#record-reading",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/references/resolve",
+    "sdk": "client.thought.resolve_references",
+    "document": "/docs.html?page=sdk-reference-thought#resolve-references",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/templates",
+    "sdk": "client.thought.create_template",
+    "document": "/docs.html?page=sdk-reference-thought#create-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/templates/{template_id}/apply",
+    "sdk": "client.thought.apply_template",
+    "document": "/docs.html?page=sdk-reference-thought#apply-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PUT /v1/thought-workshop/knowledge-bases/{project_id}",
     "sdk": "client.thought.update_knowledge_base",
     "document": "/docs.html?page=sdk-reference-thought#update-knowledge-base",
@@ -2985,6 +3118,27 @@
     "http": "PUT /v1/thought-workshop/notes/{note_id}",
     "sdk": "client.thought.put_note",
     "document": "/docs.html?page=sdk-reference-thought#put-note",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}",
+    "sdk": "client.thought.rename_checkpoint",
+    "document": "/docs.html?page=sdk-reference-thought#rename-checkpoint",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/thought-workshop/preferences/filters/{filter_id}",
+    "sdk": "client.thought.put_filter",
+    "document": "/docs.html?page=sdk-reference-thought#put-filter",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/thought-workshop/templates/{template_id}",
+    "sdk": "client.thought.put_template",
+    "document": "/docs.html?page=sdk-reference-thought#put-template",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

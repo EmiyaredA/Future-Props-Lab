@@ -22,6 +22,14 @@ async def protect_document_references(session: AsyncSession, asset_ids: list[str
     ):
         raise AssetError("文件正在被文档历史使用", code="asset_in_use", status=409)
 
+    template_assets = Base.metadata.tables.get("thought_template_assets")
+    if template_assets is not None and await session.scalar(
+        select(template_assets.c.template_id)
+        .where(template_assets.c.asset_id.in_(asset_ids))
+        .limit(1)
+    ):
+        raise AssetError("文件正在被文档模板使用", code="asset_in_use", status=409)
+
     note_assets = Base.metadata.tables.get("thought_note_assets")
     if note_assets is not None and await session.scalar(
         select(note_assets.c.note_id).where(note_assets.c.asset_id.in_(asset_ids)).limit(1)

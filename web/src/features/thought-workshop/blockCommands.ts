@@ -13,6 +13,7 @@ export type InsertCommandKey =
   | "ordered"
   | "task"
   | "quote"
+  | "callout"
   | "code"
   | "details"
   | "rule"
@@ -39,6 +40,13 @@ export type InsertCommand = {
 };
 
 export const INSERT_COMMANDS: InsertCommand[] = [
+  {
+    key: "callout",
+    label: "提示块",
+    description: "信息、备注与警告",
+    keywords: "callout info warning note",
+    glyph: "!",
+  },
   {
     key: "paragraph",
     label: "正文",
@@ -194,6 +202,12 @@ function contentFor(key: InsertCommandKey) {
     };
   if (key === "quote")
     return { type: "blockquote", content: [{ type: "paragraph" }] };
+  if (key === "callout")
+    return {
+      type: "callout",
+      attrs: { variant: "info" },
+      content: [{ type: "paragraph" }],
+    };
   if (key === "code") return { type: "codeBlock" };
   if (key === "details")
     return {

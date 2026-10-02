@@ -5,6 +5,10 @@ import {
   type Editor,
   type JSONContent,
 } from "@tiptap/react";
+import { useReadingPosition } from "./knowledge-tools/ReadingPosition";
+import { ReferencePicker } from "./knowledge-tools/ReferencePicker";
+import { referenceTrigger } from "./knowledge-tools/ContentNodes";
+import { FindDecorations, FindPanel } from "./knowledge-tools/Find";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { TextSelection } from "@tiptap/pm/state";
 import { editorExtensions } from "./editorExtensions";
@@ -45,9 +49,13 @@ export function RichEditor({
   onCompositionChange,
   onBackspaceAtStart,
   assetScopeId,
+  readingId,
+  readingRevision,
 }: {
   onBackspaceAtStart?: () => boolean;
   assetScopeId?: string;
+  readingId?: string;
+  readingRevision?: number;
   historyMarks?: HistoryMark[];
   historyAuthor?: string;
   onCompositionChange?: (active: boolean) => void;
@@ -58,10 +66,22 @@ export function RichEditor({
   onChange: (document: JSONContent) => void;
   onReady: (editor: Editor) => void;
 }) {
+  const reading = useReadingPosition(
+    readingId,
+    outlineTitle ?? "文档",
+    readingRevision ?? null,
+  );
   const file = useRef<HTMLInputElement>(null);
   const attachmentFile = useRef<HTMLInputElement>(null);
   const uploadPosition = useRef<number | undefined>(undefined);
   const canvas = useRef<HTMLDivElement>(null);
+  const [find, setFind] = useState<"find" | "replace" | null>(() =>
+    new URLSearchParams(location.search).has("find") ? "find" : null,
+  );
+  const [referenceRange, setReferenceRange] = useState<{
+    from: number;
+    to: number;
+  } | null>(null);
   const [error, setError] = useState("");
   const [dialog, setDialog] = useState<{
     kind: "link" | "math";
@@ -106,6 +126,8 @@ export function RichEditor({
         insertCallbacks.current,
       ),
       HistoryDecorations,
+      FindDecorations,
+      ...(!readOnly ? [referenceTrigger(setReferenceRange)] : []),
     ],
     content: document,
     shouldRerenderOnTransaction: true,
@@ -115,6 +137,7 @@ export function RichEditor({
         "aria-label": "笔记正文",
         role: "textbox",
         "aria-multiline": "true",
+        "aria-readonly": String(readOnly),
       },
       handleKeyDown: (view, event) => {
         if (
@@ -126,6 +149,14 @@ export function RichEditor({
           event.ctrlKey ||
           event.metaKey ||
           event.shiftKey
+        )
+          return false;
+        const domSelection = view.dom.ownerDocument.getSelection();
+        if (
+          domSelection &&
+          !domSelection.isCollapsed &&
+          view.dom.contains(domSelection.anchorNode) &&
+          view.dom.contains(domSelection.focusNode)
         )
           return false;
         const selection = view.state.selection;
@@ -299,7 +330,9 @@ export function RichEditor({
       );
   }, [editor, document, readOnly, historyMarks, historyAuthor]);
   useEffect(() => {
-    editor?.setEditable(!readOnly, false);
+    if (!editor || editor.isDestroyed) return;
+    editor.setEditable(!readOnly, false);
+    editor.view.dom.setAttribute("aria-readonly", String(readOnly));
   }, [editor, readOnly]);
   const uploads = useFileUploads(editor);
   uploadRef.current = readOnly ? () => {} : uploads.enqueue;
@@ -307,7 +340,71 @@ export function RichEditor({
   const link = () =>
     setDialog({ kind: "link", value: editor.getAttributes("link").href || "" });
   return (
-    <div className="thought-rich-editor">
+    <div
+      ref={(node) => {
+        reading.current = node;
+      }}
+      className="thought-rich-editor"
+      onKeyDown={(event) => {
+        if (
+          (event.metaKey || event.ctrlKey) &&
+          ["f", "h"].includes(event.key.toLowerCase()) &&
+          !event.nativeEvent.isComposing
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          setFind(
+            event.key.toLowerCase() === "h" && !readOnly ? "replace" : "find",
+          );
+        }
+      }}
+    >
+      <div className="thought-tools">
+        <button className="btn small" onClick={() => setFind("find")}>
+          文内查找
+        </button>
+        {!readOnly && (
+          <>
+            <button className="btn small" onClick={() => setFind("replace")}>
+              查找替换
+            </button>
+            <button
+              className="btn small"
+              onClick={() =>
+                setReferenceRange({
+                  from: editor.state.selection.from,
+                  to: editor.state.selection.to,
+                })
+              }
+            >
+              引用文档
+            </button>
+          </>
+        )}
+      </div>
+      {find && (
+        <FindPanel
+          editor={editor}
+          replace={find === "replace"}
+          close={() => setFind(null)}
+        />
+      )}
+      {referenceRange && (
+        <ReferencePicker
+          close={() => setReferenceRange(null)}
+          choose={(attrs) => {
+            editor
+              .chain()
+              .focus()
+              .insertContentAt(referenceRange, {
+                type: "documentReference",
+                attrs,
+              })
+              .run();
+            setReferenceRange(null);
+          }}
+        />
+      )}
       <input
         hidden
         ref={file}

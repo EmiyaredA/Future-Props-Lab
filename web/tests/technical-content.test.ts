@@ -59,11 +59,23 @@ describe("technical principles reference library", () => {
         markdown.match(/^图例：/gm)?.length,
         chapter.id,
       ).toBeGreaterThanOrEqual(figures.length + uml.length);
-      expect(markdown, chapter.id).toMatch(/## 图一：.+\n/);
-      expect(markdown, chapter.id).toMatch(/## 图二：.+\n/);
-      expect(markdown, chapter.id).toContain("**贯穿实例：**");
-      expect(markdown, chapter.id).toContain("## 实现与设计取舍");
-      expect(markdown, chapter.id).toContain("## 异常、验证与当前边界");
+      // Diagrams need a question/title before them and an explanation after
+      // them; avoid forcing all articles into the same boilerplate headings.
+      for (const diagram of [...figures, ...uml]) {
+        const position = tree.children.indexOf(diagram);
+        expect(
+          tree.children
+            .slice(0, position)
+            .some((node) => node.type === "heading" && node.depth === 2),
+          chapter.id,
+        ).toBe(true);
+        const explanation = tree.children
+          .slice(position + 1)
+          .find((node) => node.type === "paragraph");
+        expect(explanation, chapter.id).toBeDefined();
+      }
+      expect(markdown, chapter.id).toMatch(/\[!(NOTE|TIP|WARNING)\]/);
+      expect(markdown.length, chapter.id).toBeGreaterThan(1500);
       for (const figure of figures) {
         const id = figure.value.trim();
         expect(referencedFigures.has(id), `duplicate figure ${id}`).toBe(false);

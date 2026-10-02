@@ -218,7 +218,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
   const backup = await fs.readFile((await (await backupDownload).path())!);
   expect(
     JSON.parse(strFromU8(unzipSync(backup)["manifest.json"])).version,
-  ).toBe(5);
+  ).toBe(6);
   const imported = page.waitForResponse(
     (r) =>
       r.url().includes("/thought-workshop/imports") &&

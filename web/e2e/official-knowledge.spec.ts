@@ -68,7 +68,7 @@ test("official and personal libraries share search but keep separate identities 
       libraryRequests.push(request.method() + " " + request.url());
   });
   await page
-    .locator(".official-home")
+    .locator(".official-article-cards")
     .getByRole("button", { name: "功能概览与快速开始" })
     .click();
   await expect(
@@ -90,14 +90,14 @@ test("official and personal libraries share search but keep separate identities 
   );
   await page
     .getByRole("navigation", { name: "文档章节" })
-    .getByRole("link", { name: "导出 PPTX" })
+    .getByRole("link", { name: "导出与验收 PPTX" })
     .click();
   await expect(
-    page.getByRole("heading", { name: "导出 PPTX", exact: true }),
+    page.getByRole("heading", { name: "导出与验收 PPTX", exact: true }),
   ).toBeInViewport();
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "导出 PPTX", exact: true }),
+    page.getByRole("heading", { name: "导出与验收 PPTX", exact: true }),
   ).toBeInViewport();
   await page.goBack(); // heading hash
   await page.goBack(); // previous article
@@ -142,13 +142,15 @@ test("read-only members use the same bundled reader and responsive navigation", 
     .fill("Future Props Lab 官方文档");
   await official.getByRole("button", { name: "进入知识库" }).click();
   await page
-    .locator(".official-home")
+    .locator(".official-article-cards")
     .getByRole("button", { name: "应用总览与选用" })
     .click();
   await page.getByRole("link", { name: "Live2D 工坊", exact: true }).click();
-  await expect(page).toHaveURL(`${officialRoot}/live2d-workshop`);
+  await expect(page).toHaveURL(
+    `${officialRoot}/live2d-workshop/documents/overview`,
+  );
   await page
-    .locator(".official-home")
+    .getByRole("navigation", { name: "官方文档目录" })
     .getByRole("button", { name: "导入导出与交付" })
     .click();
   const article = page.getByRole("article", { name: "官方文档正文" });

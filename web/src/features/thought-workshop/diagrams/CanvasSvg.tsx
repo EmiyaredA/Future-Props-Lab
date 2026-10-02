@@ -9,7 +9,7 @@ import {
   type CanvasScene,
 } from "./model";
 
-export const iconPaths = {
+const iconPaths = {
   server: "M3 3h18v7H3z M3 14h18v7H3z M6 6h2 M6 17h2",
   database:
     "M3 5c0-4 18-4 18 0s-18 4-18 0v14c0 4 18 4 18 0V5 M3 12c0 4 18 4 18 0",
@@ -20,7 +20,8 @@ export const iconPaths = {
   lock: "M5 10h14v12H5z M8 10V6a4 4 0 0 1 8 0v4",
   mail: "M2 4h20v16H2z M2 4l10 8 10-8",
   clock: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20 M12 6v6l4 2",
-  globe: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20 M2 12h20 M12 2c-6 6-6 14 0 20 6-6 6-14 0-20",
+  globe:
+    "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20 M2 12h20 M12 2c-6 6-6 14 0 20 6-6 6-14 0-20",
   code: "M8 5l-6 7 6 7 M16 5l6 7-6 7 M14 3l-4 18",
   cpu: "M6 6h12v12H6z M9 1v5 M15 1v5 M9 18v5 M15 18v5 M1 9h5 M1 15h5 M18 9h5 M18 15h5",
 };
@@ -58,9 +59,13 @@ export function CanvasShape({
 }) {
   const { width: w, height: h } = e;
   const common = { fill: e.fill, stroke: e.stroke, strokeWidth: 2 };
-  const size=e.fontSize ?? 15, lineHeight=size*4/3;
-  const lines=canvasLines(e).slice(0,Math.max(1,Math.floor((h-(e.kind==="icon"?42:12))/lineHeight)));
-  const align=e.textAlign ?? (e.kind === "frame" ? "left" : "center");
+  const size = e.fontSize ?? 15,
+    lineHeight = (size * 4) / 3;
+  const lines = canvasLines(e).slice(
+    0,
+    Math.max(1, Math.floor((h - (e.kind === "icon" ? 42 : 12)) / lineHeight)),
+  );
+  const align = e.textAlign ?? (e.kind === "frame" ? "left" : "center");
   const rgb = [1, 3, 5].map((start) =>
     parseInt(e.fill.slice(start, start + 2), 16),
   );
@@ -124,18 +129,25 @@ export function CanvasShape({
           fontFamily="system-ui, sans-serif"
           fontSize={size}
           fill={textColor}
-          textAnchor={align === "left" ? "start" : align === "right" ? "end" : "middle"}
+          textAnchor={
+            align === "left" ? "start" : align === "right" ? "end" : "middle"
+          }
         >
           {lines.map((line, i) => (
             <tspan
               key={i}
-              x={align === "left" ? 12 : align === "right" ? w-12 : w/2}
+              x={align === "left" ? 12 : align === "right" ? w - 12 : w / 2}
               y={
                 e.kind === "frame"
-                  ? size+9 + i * lineHeight
+                  ? size + 9 + i * lineHeight
                   : (e.kind === "icon"
                       ? 55
-                      : Math.max(22, h / 2 - (lines.length - 1) * lineHeight/2 + size/3)) +
+                      : Math.max(
+                          22,
+                          h / 2 -
+                            ((lines.length - 1) * lineHeight) / 2 +
+                            size / 3,
+                        )) +
                     i * lineHeight
               }
             >
@@ -193,12 +205,23 @@ export function CanvasSvg({
         const a = scene.elements.find((n) => n.id === e.source),
           b = scene.elements.find((n) => n.id === e.target);
         if (!a || !b) return null;
-        const source=anchorPoint(a,e.sourceAnchor ?? "right"), target=anchorPoint(b,e.targetAnchor ?? "left");
-        const x1=source.x,y1=source.y,x2=target.x,y2=target.y;
+        const source = anchorPoint(a, e.sourceAnchor ?? "right"),
+          target = anchorPoint(b, e.targetAnchor ?? "left");
+        const x1 = source.x,
+          y1 = source.y,
+          x2 = target.x,
+          y2 = target.y;
         return (
           <g key={e.id}>
             <path
-              d={edgePath(x1, y1, x2, y2, e.style === "step", e.sourceAnchor === "top" || e.sourceAnchor === "bottom")}
+              d={edgePath(
+                x1,
+                y1,
+                x2,
+                y2,
+                e.style === "step",
+                e.sourceAnchor === "top" || e.sourceAnchor === "bottom",
+              )}
               fill="none"
               stroke="#365f62"
               strokeWidth="2"

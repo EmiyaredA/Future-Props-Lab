@@ -55,6 +55,10 @@ class Thought:
         'Create Document. POST /v1/thought-workshop/knowledge-bases/{project_id}/documents'
         return self._client._call('POST', '/v1/thought-workshop/knowledge-bases/{project_id}/documents', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
 
+    def library_export_snapshot(self, *, project_id: str) -> models.LibraryExportSnapshot:
+        'Library Export Snapshot. GET /v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot'
+        return self._client._call('GET', '/v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot', parameters=[('project_id', 'path', project_id)], response_type=models.LibraryExportSnapshot)
+
     def move_entry(self, *, project_id: str, body: models.ThoughtMoveIn | dict) -> models.ThoughtDirectoryOut:
         'Move Entry. POST /v1/thought-workshop/knowledge-bases/{project_id}/move'
         return self._client._call('POST', '/v1/thought-workshop/knowledge-bases/{project_id}/move', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ThoughtDirectoryOut)
@@ -99,6 +103,34 @@ class Thought:
         'Assistant. POST /v1/thought-workshop/notes/{note_id}/assistant'
         return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/assistant', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=Any)
 
+    def note_backlinks(self, *, note_id: str, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> list[models.ThoughtNoteSummary]:
+        'Note Backlinks. GET /v1/thought-workshop/notes/{note_id}/backlinks'
+        return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/backlinks', parameters=[('note_id', 'path', note_id), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=list[models.ThoughtNoteSummary])
+
+    def checkpoints(self, *, note_id: str) -> list[models.CheckpointOut]:
+        'Checkpoints. GET /v1/thought-workshop/notes/{note_id}/checkpoints'
+        return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/checkpoints', parameters=[('note_id', 'path', note_id)], response_type=list[models.CheckpointOut])
+
+    def create_checkpoint(self, *, note_id: str, body: models.CheckpointIn | dict) -> models.CheckpointOut:
+        'Create Checkpoint. POST /v1/thought-workshop/notes/{note_id}/checkpoints'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/checkpoints', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.CheckpointOut)
+
+    def delete_checkpoint(self, *, note_id: str, checkpoint_id: str, expected_revision: int) -> Any:
+        'Delete Checkpoint. DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}'
+        return self._client._call('DELETE', '/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}', parameters=[('note_id', 'path', note_id), ('checkpoint_id', 'path', checkpoint_id), ('expected_revision', 'query', expected_revision)], response_type=Any)
+
+    def rename_checkpoint(self, *, note_id: str, checkpoint_id: str, body: models.CheckpointPut | dict) -> models.CheckpointOut:
+        'Rename Checkpoint. PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}'
+        return self._client._call('PUT', '/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}', parameters=[('note_id', 'path', note_id), ('checkpoint_id', 'path', checkpoint_id)], body=body, media_type='application/json', response_type=models.CheckpointOut)
+
+    def copy_snapshot(self, *, note_id: str, subtree: bool | Unset = UNSET) -> models.DuplicateSnapshot:
+        'Copy Snapshot. GET /v1/thought-workshop/notes/{note_id}/copy-snapshot'
+        return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/copy-snapshot', parameters=[('note_id', 'path', note_id), ('subtree', 'query', subtree)], response_type=models.DuplicateSnapshot)
+
+    def duplicate_document(self, *, note_id: str, body: models.DuplicateIn | dict) -> models.DuplicateOut:
+        'Duplicate Document. POST /v1/thought-workshop/notes/{note_id}/duplicate'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/duplicate', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.DuplicateOut)
+
     def export_note_content(self, *, note_id: str, expected_revision: int, format: Literal['md', 'html'] | Unset = UNSET) -> Download:
         'Export Note Content. GET /v1/thought-workshop/notes/{note_id}/export'
         return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/export', parameters=[('note_id', 'path', note_id), ('expected_revision', 'query', expected_revision), ('format', 'query', format)], response_type=Any)
@@ -122,6 +154,62 @@ class Thought:
     def restore_note(self, *, note_id: str, body: models.ThoughtNoteTransitionIn | dict) -> models.ThoughtNoteOut:
         'Restore Note. POST /v1/thought-workshop/notes/{note_id}/restore'
         return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/restore', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
+
+    def saved_filters(self) -> list[models.SavedFilterOut]:
+        'Saved Filters. GET /v1/thought-workshop/preferences/filters'
+        return self._client._call('GET', '/v1/thought-workshop/preferences/filters', parameters=[], response_type=list[models.SavedFilterOut])
+
+    def save_filter(self, *, body: models.SavedFilterIn | dict) -> models.SavedFilterOut:
+        'Save Filter. POST /v1/thought-workshop/preferences/filters'
+        return self._client._call('POST', '/v1/thought-workshop/preferences/filters', parameters=[], body=body, media_type='application/json', response_type=models.SavedFilterOut)
+
+    def delete_filter(self, *, filter_id: str, expected_revision: int) -> Any:
+        'Delete Filter. DELETE /v1/thought-workshop/preferences/filters/{filter_id}'
+        return self._client._call('DELETE', '/v1/thought-workshop/preferences/filters/{filter_id}', parameters=[('filter_id', 'path', filter_id), ('expected_revision', 'query', expected_revision)], response_type=Any)
+
+    def put_filter(self, *, filter_id: str, body: models.SavedFilterPut | dict) -> models.SavedFilterOut:
+        'Put Filter. PUT /v1/thought-workshop/preferences/filters/{filter_id}'
+        return self._client._call('PUT', '/v1/thought-workshop/preferences/filters/{filter_id}', parameters=[('filter_id', 'path', filter_id)], body=body, media_type='application/json', response_type=models.SavedFilterOut)
+
+    def reading_position(self, *, resource_id: str) -> models.ReadingOut | None:
+        'Reading Position. GET /v1/thought-workshop/preferences/reading'
+        return self._client._call('GET', '/v1/thought-workshop/preferences/reading', parameters=[('resource_id', 'query', resource_id)], response_type=models.ReadingOut | None)
+
+    def record_reading(self, *, body: models.ReadingIn | dict) -> models.ReadingOut:
+        'Record Reading. POST /v1/thought-workshop/preferences/reading'
+        return self._client._call('POST', '/v1/thought-workshop/preferences/reading', parameters=[], body=body, media_type='application/json', response_type=models.ReadingOut)
+
+    def recently_visited(self) -> list[models.ReadingOut]:
+        'Recently Visited. GET /v1/thought-workshop/preferences/recent'
+        return self._client._call('GET', '/v1/thought-workshop/preferences/recent', parameters=[], response_type=list[models.ReadingOut])
+
+    def resolve_references(self, *, body: models.ResolveReferences | dict) -> list[models.ReferenceTarget]:
+        'Resolve References. POST /v1/thought-workshop/references/resolve'
+        return self._client._call('POST', '/v1/thought-workshop/references/resolve', parameters=[], body=body, media_type='application/json', response_type=list[models.ReferenceTarget])
+
+    def global_search(self, *, query: str | Unset = UNSET, knowledge_base_id: str | None | Unset = UNSET, tag: str | Unset = UNSET, favorite: bool | Unset = UNSET, title_only: bool | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.SearchResult:
+        'Global Search. GET /v1/thought-workshop/search'
+        return self._client._call('GET', '/v1/thought-workshop/search', parameters=[('query', 'query', query), ('knowledge_base_id', 'query', knowledge_base_id), ('tag', 'query', tag), ('favorite', 'query', favorite), ('title_only', 'query', title_only), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=models.SearchResult)
+
+    def templates(self) -> list[models.TemplateOut]:
+        'Templates. GET /v1/thought-workshop/templates'
+        return self._client._call('GET', '/v1/thought-workshop/templates', parameters=[], response_type=list[models.TemplateOut])
+
+    def create_template(self, *, body: models.TemplateIn | dict) -> models.TemplateOut:
+        'Create Template. POST /v1/thought-workshop/templates'
+        return self._client._call('POST', '/v1/thought-workshop/templates', parameters=[], body=body, media_type='application/json', response_type=models.TemplateOut)
+
+    def delete_template(self, *, template_id: str, expected_revision: int) -> Any:
+        'Delete Template. DELETE /v1/thought-workshop/templates/{template_id}'
+        return self._client._call('DELETE', '/v1/thought-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id), ('expected_revision', 'query', expected_revision)], response_type=Any)
+
+    def put_template(self, *, template_id: str, body: models.TemplatePut | dict) -> models.TemplateOut:
+        'Put Template. PUT /v1/thought-workshop/templates/{template_id}'
+        return self._client._call('PUT', '/v1/thought-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.TemplateOut)
+
+    def apply_template(self, *, template_id: str, body: models.TemplateApply | dict) -> models.ThoughtNoteOut:
+        'Apply Template. POST /v1/thought-workshop/templates/{template_id}/apply'
+        return self._client._call('POST', '/v1/thought-workshop/templates/{template_id}/apply', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
 
 class AsyncThought:
     def __init__(self, client):
@@ -171,6 +259,10 @@ class AsyncThought:
         'Create Document. POST /v1/thought-workshop/knowledge-bases/{project_id}/documents'
         return await self._client._call('POST', '/v1/thought-workshop/knowledge-bases/{project_id}/documents', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
 
+    async def library_export_snapshot(self, *, project_id: str) -> models.LibraryExportSnapshot:
+        'Library Export Snapshot. GET /v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot'
+        return await self._client._call('GET', '/v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot', parameters=[('project_id', 'path', project_id)], response_type=models.LibraryExportSnapshot)
+
     async def move_entry(self, *, project_id: str, body: models.ThoughtMoveIn | dict) -> models.ThoughtDirectoryOut:
         'Move Entry. POST /v1/thought-workshop/knowledge-bases/{project_id}/move'
         return await self._client._call('POST', '/v1/thought-workshop/knowledge-bases/{project_id}/move', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ThoughtDirectoryOut)
@@ -215,6 +307,34 @@ class AsyncThought:
         'Assistant. POST /v1/thought-workshop/notes/{note_id}/assistant'
         return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/assistant', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=Any)
 
+    async def note_backlinks(self, *, note_id: str, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> list[models.ThoughtNoteSummary]:
+        'Note Backlinks. GET /v1/thought-workshop/notes/{note_id}/backlinks'
+        return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/backlinks', parameters=[('note_id', 'path', note_id), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=list[models.ThoughtNoteSummary])
+
+    async def checkpoints(self, *, note_id: str) -> list[models.CheckpointOut]:
+        'Checkpoints. GET /v1/thought-workshop/notes/{note_id}/checkpoints'
+        return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/checkpoints', parameters=[('note_id', 'path', note_id)], response_type=list[models.CheckpointOut])
+
+    async def create_checkpoint(self, *, note_id: str, body: models.CheckpointIn | dict) -> models.CheckpointOut:
+        'Create Checkpoint. POST /v1/thought-workshop/notes/{note_id}/checkpoints'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/checkpoints', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.CheckpointOut)
+
+    async def delete_checkpoint(self, *, note_id: str, checkpoint_id: str, expected_revision: int) -> Any:
+        'Delete Checkpoint. DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}'
+        return await self._client._call('DELETE', '/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}', parameters=[('note_id', 'path', note_id), ('checkpoint_id', 'path', checkpoint_id), ('expected_revision', 'query', expected_revision)], response_type=Any)
+
+    async def rename_checkpoint(self, *, note_id: str, checkpoint_id: str, body: models.CheckpointPut | dict) -> models.CheckpointOut:
+        'Rename Checkpoint. PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}'
+        return await self._client._call('PUT', '/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}', parameters=[('note_id', 'path', note_id), ('checkpoint_id', 'path', checkpoint_id)], body=body, media_type='application/json', response_type=models.CheckpointOut)
+
+    async def copy_snapshot(self, *, note_id: str, subtree: bool | Unset = UNSET) -> models.DuplicateSnapshot:
+        'Copy Snapshot. GET /v1/thought-workshop/notes/{note_id}/copy-snapshot'
+        return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/copy-snapshot', parameters=[('note_id', 'path', note_id), ('subtree', 'query', subtree)], response_type=models.DuplicateSnapshot)
+
+    async def duplicate_document(self, *, note_id: str, body: models.DuplicateIn | dict) -> models.DuplicateOut:
+        'Duplicate Document. POST /v1/thought-workshop/notes/{note_id}/duplicate'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/duplicate', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.DuplicateOut)
+
     async def export_note_content(self, *, note_id: str, expected_revision: int, format: Literal['md', 'html'] | Unset = UNSET) -> AsyncDownload:
         'Export Note Content. GET /v1/thought-workshop/notes/{note_id}/export'
         return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/export', parameters=[('note_id', 'path', note_id), ('expected_revision', 'query', expected_revision), ('format', 'query', format)], response_type=Any)
@@ -238,3 +358,59 @@ class AsyncThought:
     async def restore_note(self, *, note_id: str, body: models.ThoughtNoteTransitionIn | dict) -> models.ThoughtNoteOut:
         'Restore Note. POST /v1/thought-workshop/notes/{note_id}/restore'
         return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/restore', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
+
+    async def saved_filters(self) -> list[models.SavedFilterOut]:
+        'Saved Filters. GET /v1/thought-workshop/preferences/filters'
+        return await self._client._call('GET', '/v1/thought-workshop/preferences/filters', parameters=[], response_type=list[models.SavedFilterOut])
+
+    async def save_filter(self, *, body: models.SavedFilterIn | dict) -> models.SavedFilterOut:
+        'Save Filter. POST /v1/thought-workshop/preferences/filters'
+        return await self._client._call('POST', '/v1/thought-workshop/preferences/filters', parameters=[], body=body, media_type='application/json', response_type=models.SavedFilterOut)
+
+    async def delete_filter(self, *, filter_id: str, expected_revision: int) -> Any:
+        'Delete Filter. DELETE /v1/thought-workshop/preferences/filters/{filter_id}'
+        return await self._client._call('DELETE', '/v1/thought-workshop/preferences/filters/{filter_id}', parameters=[('filter_id', 'path', filter_id), ('expected_revision', 'query', expected_revision)], response_type=Any)
+
+    async def put_filter(self, *, filter_id: str, body: models.SavedFilterPut | dict) -> models.SavedFilterOut:
+        'Put Filter. PUT /v1/thought-workshop/preferences/filters/{filter_id}'
+        return await self._client._call('PUT', '/v1/thought-workshop/preferences/filters/{filter_id}', parameters=[('filter_id', 'path', filter_id)], body=body, media_type='application/json', response_type=models.SavedFilterOut)
+
+    async def reading_position(self, *, resource_id: str) -> models.ReadingOut | None:
+        'Reading Position. GET /v1/thought-workshop/preferences/reading'
+        return await self._client._call('GET', '/v1/thought-workshop/preferences/reading', parameters=[('resource_id', 'query', resource_id)], response_type=models.ReadingOut | None)
+
+    async def record_reading(self, *, body: models.ReadingIn | dict) -> models.ReadingOut:
+        'Record Reading. POST /v1/thought-workshop/preferences/reading'
+        return await self._client._call('POST', '/v1/thought-workshop/preferences/reading', parameters=[], body=body, media_type='application/json', response_type=models.ReadingOut)
+
+    async def recently_visited(self) -> list[models.ReadingOut]:
+        'Recently Visited. GET /v1/thought-workshop/preferences/recent'
+        return await self._client._call('GET', '/v1/thought-workshop/preferences/recent', parameters=[], response_type=list[models.ReadingOut])
+
+    async def resolve_references(self, *, body: models.ResolveReferences | dict) -> list[models.ReferenceTarget]:
+        'Resolve References. POST /v1/thought-workshop/references/resolve'
+        return await self._client._call('POST', '/v1/thought-workshop/references/resolve', parameters=[], body=body, media_type='application/json', response_type=list[models.ReferenceTarget])
+
+    async def global_search(self, *, query: str | Unset = UNSET, knowledge_base_id: str | None | Unset = UNSET, tag: str | Unset = UNSET, favorite: bool | Unset = UNSET, title_only: bool | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.SearchResult:
+        'Global Search. GET /v1/thought-workshop/search'
+        return await self._client._call('GET', '/v1/thought-workshop/search', parameters=[('query', 'query', query), ('knowledge_base_id', 'query', knowledge_base_id), ('tag', 'query', tag), ('favorite', 'query', favorite), ('title_only', 'query', title_only), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=models.SearchResult)
+
+    async def templates(self) -> list[models.TemplateOut]:
+        'Templates. GET /v1/thought-workshop/templates'
+        return await self._client._call('GET', '/v1/thought-workshop/templates', parameters=[], response_type=list[models.TemplateOut])
+
+    async def create_template(self, *, body: models.TemplateIn | dict) -> models.TemplateOut:
+        'Create Template. POST /v1/thought-workshop/templates'
+        return await self._client._call('POST', '/v1/thought-workshop/templates', parameters=[], body=body, media_type='application/json', response_type=models.TemplateOut)
+
+    async def delete_template(self, *, template_id: str, expected_revision: int) -> Any:
+        'Delete Template. DELETE /v1/thought-workshop/templates/{template_id}'
+        return await self._client._call('DELETE', '/v1/thought-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id), ('expected_revision', 'query', expected_revision)], response_type=Any)
+
+    async def put_template(self, *, template_id: str, body: models.TemplatePut | dict) -> models.TemplateOut:
+        'Put Template. PUT /v1/thought-workshop/templates/{template_id}'
+        return await self._client._call('PUT', '/v1/thought-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.TemplateOut)
+
+    async def apply_template(self, *, template_id: str, body: models.TemplateApply | dict) -> models.ThoughtNoteOut:
+        'Apply Template. POST /v1/thought-workshop/templates/{template_id}/apply'
+        return await self._client._call('POST', '/v1/thought-workshop/templates/{template_id}/apply', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)

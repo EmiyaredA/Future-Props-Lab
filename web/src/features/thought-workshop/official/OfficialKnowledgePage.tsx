@@ -2,7 +2,7 @@ import { officialSearchText } from "./figures";
 import { CopyOfficialFigure } from "./CopyOfficialFigure";
 import type { OfficialFigureData } from "./OfficialFigure";
 import { officialPath } from "./catalog";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -18,10 +18,13 @@ import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { thoughtKeys } from "../queryKeys";
 import { findOfficialLibrary } from "./catalog";
 import { loadOfficialDocument } from "./content";
+import { OfficialLibraryHome } from "./ReadingNavigation";
 import { OfficialArticle } from "./OfficialArticle";
+import { useReadingPosition } from "../knowledge-tools/ReadingPosition";
 import "../thought-workshop.css";
 import "../knowledge.css";
 import "./official.css";
+import "./reading.css";
 
 export function OfficialKnowledgePage({
   libraryId,
@@ -43,7 +46,6 @@ export function OfficialKnowledgePage({
   const [copy, setCopy] = useState<OfficialFigureData | null>(null);
   const [query, setQuery] = useState("");
   const [drawer, setDrawer] = useState(false);
-  const main = useRef<HTMLElement>(null);
   const sidebar = useDrawerFocus(() => setDrawer(false), drawer);
   const article = useQuery({
     queryKey: thoughtKeys.officialDocument(libraryId || "", documentId || ""),
@@ -52,6 +54,25 @@ export function OfficialKnowledgePage({
     staleTime: Infinity,
     retry: false,
   });
+  const main = useReadingPosition(
+    current && library ? `official/${library.id}/${current.id}` : undefined,
+    current?.title ?? "",
+    null,
+    article.isSuccess,
+  );
+  useEffect(() => {
+    const query = new URLSearchParams(location.search)
+      .get("find")
+      ?.trim()
+      .toLocaleLowerCase();
+    if (!query || !article.isSuccess) return;
+    const target = Array.from(
+      main.current?.querySelectorAll<HTMLElement>(
+        "article p,article li,article h2,article h3,article pre",
+      ) ?? [],
+    ).find((node) => node.textContent?.toLocaleLowerCase().includes(query));
+    target?.scrollIntoView({ block: "center" });
+  }, [article.isSuccess, documentId, main]);
   const trimmed = query.trim().toLocaleLowerCase("zh-CN");
   const search = useQuery({
     queryKey: thoughtKeys.officialSearch(libraryId || "", trimmed),
@@ -63,7 +84,7 @@ export function OfficialKnowledgePage({
         ),
       );
       return documents.filter((item, index) =>
-        `${item.title}\n${text[index]}`
+        `${item.title}\n${item.summary}\n${text[index]}`
           .toLocaleLowerCase("zh-CN")
           .includes(trimmed),
       );
@@ -77,7 +98,7 @@ export function OfficialKnowledgePage({
     setDrawer(false);
     setCopy(null);
     if (main.current) main.current.scrollTop = 0;
-  }, [libraryId, documentId]);
+  }, [libraryId, documentId, main]);
   const open = (id: string, doc?: string) => {
     setQuery("");
     setDrawer(false);
@@ -242,7 +263,7 @@ export function OfficialKnowledgePage({
                     <BookOpen size={18} aria-hidden />
                     <span>
                       {item.title}
-                      <small>{item.group}</small>
+                      <small>{item.summary}</small>
                     </span>
                   </button>
                 ))}
@@ -259,6 +280,8 @@ export function OfficialKnowledgePage({
             {article.data && (
               <OfficialArticle
                 key={`${library.id}/${current.id}`}
+                libraryId={library.id}
+                documentId={current.id}
                 markdown={article.data}
                 onCopy={canCopy && onOpenNote ? setCopy : undefined}
                 onOpen={open}
@@ -266,32 +289,7 @@ export function OfficialKnowledgePage({
             )}
           </>
         ) : (
-          <section className="official-home">
-            <span className="official-badge">官方使用指南</span>
-            <h1>{library.title}</h1>
-            <p>{library.description}</p>
-            <p>
-              共 {library.documents.length}{" "}
-              篇文档。内容随应用版本更新，可阅读与搜索。
-            </p>
-            {groups.map((group) => (
-              <section key={group}>
-                <h2>{group}</h2>
-                {library.documents
-                  .filter((item) => item.group === group)
-                  .map((item) => (
-                    <button
-                      className="official-result"
-                      key={item.id}
-                      onClick={() => open(library.id, item.id)}
-                    >
-                      <BookOpen size={18} aria-hidden />
-                      <span>{item.title}</span>
-                    </button>
-                  ))}
-              </section>
-            ))}
-          </section>
+          <OfficialLibraryHome library={library} onOpen={open} />
         )}
       </main>
     </div>

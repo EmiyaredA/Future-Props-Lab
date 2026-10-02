@@ -1,0 +1,115 @@
+.thought-callout {
+  margin: 18px 0;
+  padding: 12px 16px;
+  border-left: 4px solid #528da8;
+  border-radius: 8px;
+  background: color-mix(in srgb, #528da8 12%, transparent);
+}
+.thought-callout.is-note {
+  border-color: #9176b7;
+  background: color-mix(in srgb, #9176b7 12%, transparent);
+}
+.thought-callout.is-success {
+  border-color: #4b9870;
+  background: color-mix(in srgb, #4b9870 12%, transparent);
+}
+.thought-callout.is-warning {
+  border-color: #c49433;
+  background: color-mix(in srgb, #c49433 12%, transparent);
+}
+.thought-callout.is-danger {
+  border-color: #b95656;
+  background: color-mix(in srgb, #b95656 12%, transparent);
+}
+.thought-reference {
+  position: relative;
+  color: var(--accent, #b95437);
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  padding: 1px 4px;
+}
+.thought-reference-preview {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  top: 100%;
+  display: grid;
+  gap: 6px;
+  width: min(320px, 70vw);
+  padding: 12px;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px #0002;
+  white-space: normal;
+  pointer-events: none;
+}
+.thought-reference a {
+  color: inherit;
+  cursor: pointer;
+}
+.thought-reference a[aria-disabled="true"] {
+  opacity: 0.65;
+  cursor: default;
+}
+.thought-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 10px 0;
+}
+.thought-find {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.thought-find input,
+.thought-tools input {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--surface);
+  color: inherit;
+}
+.thought-search-match {
+  background: #ffe39c;
+  color: #332a13;
+}
+.thought-tools-list {
+  display: grid;
+  gap: 8px;
+  max-height: 50vh;
+  overflow: auto;
+  margin-top: 12px;
+}
+.thought-tools-list > button {
+  text-align: left;
+  white-space: normal;
+}
+.thought-subpages {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding: 16px;
+}
+.thought-subpages ul {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+}
+.thought-search-panel {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 12px 0;
+}
+.thought-search-panel p {
+  overflow-wrap: anywhere;
+}

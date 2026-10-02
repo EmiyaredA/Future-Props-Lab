@@ -361,6 +361,8 @@ MIGRATIONS += (Migration(r0078_desktop_pet_whale.MIGRATION_ID, r0078_desktop_pet
 
 MIGRATIONS += (Migration(r0079_desktop_pet_chat.MIGRATION_ID, r0079_desktop_pet_chat.SQL),)
 
-MIGRATIONS += (Migration(r0080_thought_knowledge_tools.MIGRATION_ID, r0080_thought_knowledge_tools.SQL),)
+MIGRATIONS += (
+    Migration(r0080_thought_knowledge_tools.MIGRATION_ID, r0080_thought_knowledge_tools.SQL),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

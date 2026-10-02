@@ -6,6 +6,7 @@ aligned with the Web CanvasSvg projection; no foreignObject, HTML or user SVG.
 
 import json
 import math
+import re
 from html import escape
 from uuid import uuid4
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -123,18 +124,26 @@ def shape(root, item, images):
             "font-family": "system-ui, sans-serif",
             "font-size": size,
             "fill": text_color(item),
-            "text-anchor": {"left":"start", "center":"middle", "right":"end"}[align],
+            "text-anchor": {"left": "start", "center": "middle", "right": "end"}[align],
         },
     )
     for index, line in enumerate(lines):
         y = (
-            size+9
+            size + 9
             if kind == "frame"
             else 55
             if kind == "icon"
             else max(22, h / 2 - (len(lines) - 1) * line_height / 2 + size / 3)
         )
-        add(text, "tspan", {"x": 12 if align == "left" else w-12 if align == "right" else w/2, "y": y + index * line_height}, line)
+        add(
+            text,
+            "tspan",
+            {
+                "x": 12 if align == "left" else w - 12 if align == "right" else w / 2,
+                "y": y + index * line_height,
+            },
+            line,
+        )
 
 
 def canvas_svg(scene, images):
@@ -179,13 +188,32 @@ def canvas_svg(scene, images):
     by_id = {item["id"]: item for item in elements}
     for edge in scene["edges"]:
         a, b = by_id[edge["source"]], by_id[edge["target"]]
+
         def point(item, side):
-            return (item["x"] + (0 if side == "left" else item["width"] if side == "right" else item["width"]/2), item["y"] + (0 if side == "top" else item["height"] if side == "bottom" else item["height"]/2))
+            return (
+                item["x"]
+                + (
+                    0 if side == "left" else item["width"] if side == "right" else item["width"] / 2
+                ),
+                item["y"]
+                + (
+                    0
+                    if side == "top"
+                    else item["height"]
+                    if side == "bottom"
+                    else item["height"] / 2
+                ),
+            )
+
         x1, y1 = point(a, edge.get("sourceAnchor", "right"))
         x2, y2 = point(b, edge.get("targetAnchor", "left"))
         path = f"M{x1},{y1} L{x2},{y2}"
         if edge["style"] == "step":
-            path = f"M{x1},{y1} V{(y1+y2)/2} H{x2} V{y2}" if edge.get("sourceAnchor") in {"top", "bottom"} else f"M{x1},{y1} H{(x1+x2)/2} V{y2} H{x2}"
+            path = (
+                f"M{x1},{y1} V{(y1 + y2) / 2} H{x2} V{y2}"
+                if edge.get("sourceAnchor") in {"top", "bottom"}
+                else f"M{x1},{y1} H{(x1 + x2) / 2} V{y2} H{x2}"
+            )
         add(
             root,
             "path",
@@ -223,6 +251,18 @@ class CanvasHtmlRenderer(mistune.HTMLRenderer):
     def __init__(self, scenes):
         super().__init__(escape=True)
         self.scenes = scenes
+
+    def block_quote(self, text):
+        match = re.match(r"<p>\[!(INFO|NOTE|SUCCESS|WARNING|DANGER)\]</p>\s*(.*)", text, re.S)
+        if match:
+            return f'<aside data-callout="{match[1].lower()}">{match[2]}</aside>\n'
+        return super().block_quote(text)
+
+    def link(self, text, url, title=None):
+        if url.startswith(("fpl-note:", "fpl-official:")):
+            # Single-document server exports do not include reference targets.
+            return f'<span class="document-reference">{text}（未包含在本次导出）</span>'
+        return super().link(text, url, title)
 
     def block_code(self, code, info=None):
         # Only substitute exact generated source blocks from actual canvas nodes.

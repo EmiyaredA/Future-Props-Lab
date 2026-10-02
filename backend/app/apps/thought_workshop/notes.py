@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.history import CONTENT_FIELDS, History
 from app.apps.thought_workshop.knowledge import KnowledgeBases
+from app.apps.thought_workshop.knowledge_tools.references import index_references, validate_targets
 from app.apps.thought_workshop.models import (
     ThoughtKnowledgeBase,
     ThoughtNote,
@@ -155,7 +156,7 @@ class Notes:
                 raise ThoughtError("父文档不存在", 404, "not_found")
         ids = file_ids(body.document)
         images = image_ids(body.document)
-        body.schema_version = 2
+        body.schema_version = 3
         if ids:
             rows = (
                 await self.session.scalars(
@@ -201,6 +202,8 @@ class Notes:
         importing: bool = False,
         note_id: str | None = None,
     ) -> ThoughtNote:
+        if not importing:
+            await validate_targets(self.session, self.workspace_id, body.document)
         ids = await self.validate_refs(body, importing=importing)
         row = ThoughtNote(
             workspace_id=self.workspace_id,
@@ -212,6 +215,7 @@ class Notes:
         self.session.add(row)
         await self.session.flush()
         await self.references(row.id, ids)
+        await index_references(self.session, row.id, row.document)
         if not importing:
             await History(self.session).append(row, self.author_id, "create")
         if commit:
@@ -232,6 +236,7 @@ class Notes:
             or current.parent_id != body.parent_id
         ):
             raise ThoughtError("请使用目录移动操作修改文档归属")
+        await validate_targets(self.session, self.workspace_id, body.document, current.document)
         ids = await self.validate_refs(body)
         content_changed = any(getattr(current, key) != getattr(body, key) for key in CONTENT_FIELDS)
         values = body.model_dump(exclude={"expected_revision", "knowledge_base_id", "parent_id"})
@@ -253,6 +258,7 @@ class Notes:
         if result.rowcount != 1:
             await self.conflict(note_id, body.expected_revision)
         await self.references(note_id, ids)
+        await index_references(self.session, note_id, body.document)
         if content_changed or restoring:
             await History(self.session).append(
                 await self.get(note_id), self.author_id, "restore" if restoring else "edit"

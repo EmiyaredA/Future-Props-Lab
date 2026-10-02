@@ -151,6 +151,18 @@
     "method": "delete_note",
     "resource": "thought"
   },
+  "DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}": {
+    "method": "delete_checkpoint",
+    "resource": "thought"
+  },
+  "DELETE /v1/thought-workshop/preferences/filters/{filter_id}": {
+    "method": "delete_filter",
+    "resource": "thought"
+  },
+  "DELETE /v1/thought-workshop/templates/{template_id}": {
+    "method": "delete_template",
+    "resource": "thought"
+  },
   "DELETE /v1/video-editor/projects/{project_id}": {
     "method": "delete_project",
     "resource": "video"
@@ -819,6 +831,10 @@
     "method": "directory",
     "resource": "thought"
   },
+  "GET /v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot": {
+    "method": "library_export_snapshot",
+    "resource": "thought"
+  },
   "GET /v1/thought-workshop/link-preview": {
     "method": "link_preview",
     "resource": "thought"
@@ -835,6 +851,18 @@
     "method": "get_note",
     "resource": "thought"
   },
+  "GET /v1/thought-workshop/notes/{note_id}/backlinks": {
+    "method": "note_backlinks",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}/checkpoints": {
+    "method": "checkpoints",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}/copy-snapshot": {
+    "method": "copy_snapshot",
+    "resource": "thought"
+  },
   "GET /v1/thought-workshop/notes/{note_id}/export": {
     "method": "export_note_content",
     "resource": "thought"
@@ -845,6 +873,26 @@
   },
   "GET /v1/thought-workshop/notes/{note_id}/history/{history_id}": {
     "method": "note_history_detail",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/preferences/filters": {
+    "method": "saved_filters",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/preferences/reading": {
+    "method": "reading_position",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/preferences/recent": {
+    "method": "recently_visited",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/search": {
+    "method": "global_search",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/templates": {
+    "method": "templates",
     "resource": "thought"
   },
   "GET /v1/tool-navigation/codex-source": {
@@ -1799,6 +1847,14 @@
     "method": "assistant",
     "resource": "thought"
   },
+  "POST /v1/thought-workshop/notes/{note_id}/checkpoints": {
+    "method": "create_checkpoint",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/duplicate": {
+    "method": "duplicate_document",
+    "resource": "thought"
+  },
   "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore": {
     "method": "restore_note_history",
     "resource": "thought"
@@ -1809,6 +1865,26 @@
   },
   "POST /v1/thought-workshop/notes/{note_id}/restore": {
     "method": "restore_note",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/preferences/filters": {
+    "method": "save_filter",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/preferences/reading": {
+    "method": "record_reading",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/references/resolve": {
+    "method": "resolve_references",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/templates": {
+    "method": "create_template",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/templates/{template_id}/apply": {
+    "method": "apply_template",
     "resource": "thought"
   },
   "POST /v1/tool-navigation/codex-source/restore": {
@@ -1997,6 +2073,18 @@
   },
   "PUT /v1/thought-workshop/notes/{note_id}": {
     "method": "put_note",
+    "resource": "thought"
+  },
+  "PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}": {
+    "method": "rename_checkpoint",
+    "resource": "thought"
+  },
+  "PUT /v1/thought-workshop/preferences/filters/{filter_id}": {
+    "method": "put_filter",
+    "resource": "thought"
+  },
+  "PUT /v1/thought-workshop/templates/{template_id}": {
+    "method": "put_template",
     "resource": "thought"
   },
   "PUT /v1/tool-navigation/codex-source": {

@@ -13,6 +13,7 @@ from app.apps.thought_workshop.link_preview import preview_link
 from app.apps.thought_workshop.notes import Notes, ThoughtError, note_out
 from app.apps.thought_workshop.operations import apply_operations as thought_operations
 from app.apps.thought_workshop.portability import export_backup, import_backup
+from app.apps.thought_workshop.routes.knowledge_tools import router as knowledge_tools_router
 from app.apps.thought_workshop.schemas.history import ThoughtHistoryDetail, ThoughtHistoryList
 from app.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBaseIn,
@@ -342,3 +343,6 @@ async def move_entry(
     project_id: str, body: ThoughtMoveIn, session: SessionDep, workspace_id: WorkspaceDep
 ):
     return await call(Directory(session, workspace_id).move(project_id, body))
+
+
+router.include_router(knowledge_tools_router)

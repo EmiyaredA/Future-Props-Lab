@@ -5,7 +5,20 @@ import re
 from copy import deepcopy
 
 KINDS = {"rectangle", "rounded", "ellipse", "diamond", "text", "icon", "image", "frame"}
-ICONS = {"server", "database", "user", "file", "cloud", "cpu", "network", "lock", "mail", "clock", "globe", "code"}
+ICONS = {
+    "server",
+    "database",
+    "user",
+    "file",
+    "cloud",
+    "cpu",
+    "network",
+    "lock",
+    "mail",
+    "clock",
+    "globe",
+    "code",
+}
 
 
 def validate_canvas(scene):
@@ -36,7 +49,10 @@ def validate_canvas(scene):
         if (
             not isinstance(item, dict)
             or not required <= item.keys()
-            or set(item) - required - {"icon", "assetId", "parentId"} - ({"fontSize", "textAlign"} if scene["sceneVersion"] == 2 else set())
+            or set(item)
+            - required
+            - {"icon", "assetId", "parentId"}
+            - ({"fontSize", "textAlign"} if scene["sceneVersion"] == 2 else set())
             or not identifier(item["id"])
             or item["id"] in elements
             or not isinstance(item["kind"], str)
@@ -44,7 +60,9 @@ def validate_canvas(scene):
             or not text(item["text"])
         ):
             fail()
-        if "fontSize" in item and (type(item["fontSize"]) is not int or not 10 <= item["fontSize"] <= 72):
+        if "fontSize" in item and (
+            type(item["fontSize"]) is not int or not 10 <= item["fontSize"] <= 72
+        ):
             fail()
         if "textAlign" in item and item["textAlign"] not in ("left", "center", "right"):
             fail()
@@ -86,8 +104,13 @@ def validate_canvas(scene):
         if (
             not isinstance(edge, dict)
             or not {"id", "source", "target", "label", "arrow", "style"} <= edge.keys()
-            or set(edge) - {"id", "source", "target", "label", "arrow", "style"} - ({"sourceAnchor", "targetAnchor"} if scene["sceneVersion"] == 2 else set())
-            or any(edge.get(k, default) not in ("left", "right", "top", "bottom") for k, default in (("sourceAnchor", "right"), ("targetAnchor", "left")))
+            or set(edge)
+            - {"id", "source", "target", "label", "arrow", "style"}
+            - ({"sourceAnchor", "targetAnchor"} if scene["sceneVersion"] == 2 else set())
+            or any(
+                edge.get(k, default) not in ("left", "right", "top", "bottom")
+                for k, default in (("sourceAnchor", "right"), ("targetAnchor", "left"))
+            )
             or not identifier(edge["id"])
             or edge["id"] in edges
             or edge["id"] in elements

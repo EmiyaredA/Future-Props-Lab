@@ -276,6 +276,14 @@ async function serializeSelection(
 
 function htmlWithInlineAssets(html: string, payload: ThoughtClipboardPayload) {
   const parsed = new DOMParser().parseFromString(html, "text/html");
+  parsed
+    .querySelectorAll("span[data-document-reference]")
+    .forEach((reference) => {
+      reference.setAttribute(
+        "data-fpl-source-scope",
+        payload.sourceScopeId || "",
+      );
+    });
   parsed.querySelectorAll("pre[data-fpl-canvas]").forEach((canvas) => {
     const scene = parseCanvasScene(JSON.parse(canvas.textContent || ""));
     const assets = Object.fromEntries(
@@ -481,6 +489,17 @@ export function sanitizeThoughtPastedHTML(
     }
     if (!migratable) image.removeAttribute("src");
   });
+  parsed
+    .querySelectorAll('span[data-document-reference][data-ref-kind="note"]')
+    .forEach((reference) => {
+      if (
+        !targetScopeId ||
+        reference.getAttribute("data-fpl-source-scope") !== targetScopeId
+      )
+        reference.replaceWith(
+          document.createTextNode(reference.textContent || "文档引用"),
+        );
+    });
   parsed.querySelectorAll("*").forEach((node) =>
     Array.from(node.attributes).forEach((attribute) => {
       const name = attribute.name.toLowerCase();
@@ -504,6 +523,18 @@ export function sanitizeThoughtPastedHTML(
         "data-crop-height",
       ]);
       const allowed =
+        (node.matches("aside[data-callout],div[data-callout]") &&
+          name === "data-callout") ||
+        (node.matches("span[data-document-reference]") &&
+          (name === "data-document-reference" ||
+            [
+              "kind",
+              "noteid",
+              "libraryid",
+              "documentid",
+              "label",
+              "customlabel",
+            ].some((key) => name === `data-ref-${key}`))) ||
         (node.tagName === "IMG" && allowedImageAttrs.has(name)) ||
         (node.matches("figure[data-thought-image]") &&
           allowedFigureAttrs.has(name)) ||
@@ -688,6 +719,19 @@ export async function insertThoughtClipboardPayload(
     }
   }
   const rewritten = rewriteAssetIds(content, replacements);
+  if (shouldMigrate) {
+    const strip = (node: JSONContent): JSONContent =>
+      node.type === "documentReference" && node.attrs?.kind === "note"
+        ? {
+            type: "text",
+            text: String(node.attrs.customLabel || node.attrs.label || "文档"),
+          }
+        : {
+            ...node,
+            ...(node.content ? { content: node.content.map(strip) } : {}),
+          };
+    rewritten.splice(0, rewritten.length, ...rewritten.map(strip));
+  }
   const { from, to } = editor.state.selection;
   editor.commands.insertContentAt({ from, to }, rewritten, {
     updateSelection: true,

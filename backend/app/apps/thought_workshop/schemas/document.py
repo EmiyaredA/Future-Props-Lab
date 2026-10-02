@@ -198,17 +198,38 @@ def validate_document(document: dict) -> dict:
                     raise ValueError("富文本属性无效")
             if key == "byteSize" and (type(value) is not int or value < 0):
                 raise ValueError("文件大小无效")
-        if kind == "callout" and values.get("variant") not in ("info", "note", "success", "warning", "danger"):
+        if kind == "callout" and values.get("variant") not in (
+            "info",
+            "note",
+            "success",
+            "warning",
+            "danger",
+        ):
             raise ValueError("提示块类型无效")
         if kind == "documentReference":
-            if values.get("kind") not in ("note", "official") or not isinstance(values.get("label"), str) or not 1 <= len(values["label"]) <= 240:
+            if (
+                values.get("kind") not in ("note", "official")
+                or not isinstance(values.get("label"), str)
+                or not 1 <= len(values["label"]) <= 240
+            ):
                 raise ValueError("文档引用无效")
-            if values.get("customLabel") is not None and (not isinstance(values["customLabel"], str) or len(values["customLabel"]) > 240):
+            if values.get("customLabel") is not None and (
+                not isinstance(values["customLabel"], str) or len(values["customLabel"]) > 240
+            ):
                 raise ValueError("引用显示文字无效")
             if values["kind"] == "note":
-                if not isinstance(values.get("noteId"), str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,36}", values["noteId"]) or values.get("libraryId") or values.get("documentId"):
+                if (
+                    not isinstance(values.get("noteId"), str)
+                    or not re.fullmatch(r"[a-zA-Z0-9_-]{1,36}", values["noteId"])
+                    or values.get("libraryId")
+                    or values.get("documentId")
+                ):
                     raise ValueError("文档引用标识无效")
-            elif values.get("noteId") or any(not isinstance(values.get(k), str) or not re.fullmatch(r"[a-z0-9-]{1,100}", values[k]) for k in ("libraryId", "documentId")):
+            elif values.get("noteId") or any(
+                not isinstance(values.get(k), str)
+                or not re.fullmatch(r"[a-z0-9-]{1,100}", values[k])
+                for k in ("libraryId", "documentId")
+            ):
                 raise ValueError("官方引用标识无效")
         if kind == "canvas":
             validate_canvas(values.get("scene"))
@@ -307,6 +328,8 @@ def document_text(node: dict) -> str:
     if node.get("type") == "attachment":
         return node.get("attrs", {}).get("filename", "")
     value = node.get("text", "")
+    if node.get("type") == "documentReference":
+        value = node["attrs"].get("customLabel") or node["attrs"]["label"]
     if node.get("type") in {"inlineMath", "blockMath"}:
         value = node.get("attrs", {}).get("latex", "")
     if node.get("type") == "canvas":

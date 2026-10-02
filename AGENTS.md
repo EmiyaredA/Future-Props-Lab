@@ -23,6 +23,7 @@
 - `web/src/docs/`、`web/public/docs/`、文档中心覆盖清单和 `scripts/generate_sdk_docs.py` 是产品文档中心的受保护内容。工程决策整理不得迁移、删除、重写或重新生成这些路径。
 - 思绪工坊的 `web/src/features/thought-workshop/official/content/` 是知识库版主要使用指南；修改用户行为时同步维护对应正文。官方库由静态清单与 Markdown 随版本发布，不写入 Workspace 数据库，不开放编辑接口；现有文档中心继续按原保护规则维护。
 - 技术原理正文与旁置图形同步反映当前实现。画板持久化使用 `CanvasScene.sceneVersion` 契约，不保存 React Flow 运行状态；前后端校验和静态 SVG 布局规则保持一致，图片只引用经 Workspace 校验的托管素材。
+- 官方文章遵守 `docs/operations/official-knowledge-writing.md`：操作步骤带可验证结果，技术图解释实例与边界，每篇维护简介和相关阅读。阅读组件只解析受控 Markdown 提示框，关闭原始 HTML；菜单和弹窗不得重建图形、重置视口。
 
 ## 代码编写原则
 

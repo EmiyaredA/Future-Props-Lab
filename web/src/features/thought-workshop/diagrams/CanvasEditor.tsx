@@ -6,6 +6,7 @@ import {
   Controls,
   Handle,
   Position,
+  ConnectionMode,
   NodeResizer,
   applyNodeChanges,
   type Node,
@@ -55,7 +56,13 @@ function ShapeNode({ data, selected }: NodeProps<FlowNode>) {
       <svg viewBox={`0 0 ${data.element.width} ${data.element.height}`}>
         <CanvasShape element={data.element} />
       </svg>
-      {[Position.Left,Position.Right,Position.Top,Position.Bottom].map(side => <span key={side}><Handle id={side} type="target" position={side} /><Handle id={side} type="source" position={side} /></span>)}
+      {[Position.Left, Position.Right, Position.Top, Position.Bottom].map(
+        (side) => (
+          <span key={side}>
+            <Handle id={side} type="source" position={side} />
+          </span>
+        ),
+      )}
     </div>
   );
 }
@@ -173,12 +180,18 @@ export function CanvasEditor({
       edges: [
         ...scene.edges.filter((e) => e.id !== old),
         {
-          ...(scene.edges.find(e => e.id === old) ?? {label:"",arrow:true,style:"step" as const}),
+          ...(scene.edges.find((e) => e.id === old) ?? {
+            label: "",
+            arrow: true,
+            style: "step" as const,
+          }),
           id: old || crypto.randomUUID(),
           source: connection.source,
           target: connection.target,
-          sourceAnchor: (connection.sourceHandle || "right") as CanvasEdge["sourceAnchor"],
-          targetAnchor: (connection.targetHandle || "left") as CanvasEdge["targetAnchor"],
+          sourceAnchor: (connection.sourceHandle ||
+            "right") as CanvasEdge["sourceAnchor"],
+          targetAnchor: (connection.targetHandle ||
+            "left") as CanvasEdge["targetAnchor"],
         },
       ],
     });
@@ -191,7 +204,7 @@ export function CanvasEditor({
     type: "canvas",
     sourceHandle: e.sourceAnchor ?? "right",
     targetHandle: e.targetAnchor ?? "left",
-    data: {style:e.style},
+    data: { style: e.style },
     selected: selectedEdges.includes(e.id),
     markerEnd: e.arrow
       ? { type: "arrowclosed" as const, color: "#365f62" }
@@ -207,7 +220,11 @@ export function CanvasEditor({
       60 + (scene.elements.length % 6) * 30,
       60 + (scene.elements.length % 6) * 30,
     );
-    commit({ ...scene, sceneVersion:2, elements: [...scene.elements, element] });
+    commit({
+      ...scene,
+      sceneVersion: 2,
+      elements: [...scene.elements, element],
+    });
   };
   const upload = async (file: File) => {
     if (uploading.current) return;
@@ -307,10 +324,26 @@ export function CanvasEditor({
                 })),
               ]}
               onChange={(v) => {
-                if (v !== "") commit(insertCanvasTemplate(scene,canvasTemplate(Number(v))));
+                if (v !== "")
+                  commit(
+                    insertCanvasTemplate(scene, canvasTemplate(Number(v))),
+                  );
               }}
             />
-            <CustomSelect ariaLabel="替换画板模板" value="" options={[{value:"",label:"替换整板…"},...BOARD_TEMPLATES.map((t,i)=>({value:String(i),label:t}))]} onChange={v=>{if(v!=="")setPendingTemplate(Number(v));}} />
+            <CustomSelect
+              ariaLabel="替换画板模板"
+              value=""
+              options={[
+                { value: "", label: "替换整板…" },
+                ...BOARD_TEMPLATES.map((t, i) => ({
+                  value: String(i),
+                  label: t,
+                })),
+              ]}
+              onChange={(v) => {
+                if (v !== "") setPendingTemplate(Number(v));
+              }}
+            />
             {pendingTemplate !== null && (
               <>
                 <span>替换当前画板内容？可撤销。</span>
@@ -350,6 +383,7 @@ export function CanvasEditor({
           <div className="canvas-workspace">
             <div className="canvas-stage">
               <ReactFlow
+                connectionMode={ConnectionMode.Loose}
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
@@ -447,9 +481,43 @@ export function CanvasEditor({
                       onChange={(e) => update({ text: e.target.value })}
                     />
                   </label>
-                  <CustomSelect ariaLabel="图形字号" value={String(selected.fontSize ?? 15)} options={[10,12,15,18,24,32,48,72].map(size=>({value:String(size),label:`${size} px`}))} onChange={value=>update({fontSize:Number(value)})} />
-                  <CustomSelect ariaLabel="文字对齐" value={selected.textAlign ?? "center"} options={[{value:"left",label:"左对齐"},{value:"center",label:"居中"},{value:"right",label:"右对齐"}]} onChange={value=>update({textAlign:value as CanvasElement["textAlign"]})} />
-                  {selected.kind !== "image" && canvasTextHeight(selected)>selected.height && <p role="status">文字超出图形高度<button className="btn" onClick={()=>update({height:Math.ceil(canvasTextHeight(selected))})}>适配高度</button></p>}
+                  <CustomSelect
+                    ariaLabel="图形字号"
+                    value={String(selected.fontSize ?? 15)}
+                    options={[10, 12, 15, 18, 24, 32, 48, 72].map((size) => ({
+                      value: String(size),
+                      label: `${size} px`,
+                    }))}
+                    onChange={(value) => update({ fontSize: Number(value) })}
+                  />
+                  <CustomSelect
+                    ariaLabel="文字对齐"
+                    value={selected.textAlign ?? "center"}
+                    options={[
+                      { value: "left", label: "左对齐" },
+                      { value: "center", label: "居中" },
+                      { value: "right", label: "右对齐" },
+                    ]}
+                    onChange={(value) =>
+                      update({ textAlign: value as CanvasElement["textAlign"] })
+                    }
+                  />
+                  {selected.kind !== "image" &&
+                    canvasTextHeight(selected) > selected.height && (
+                      <p role="status">
+                        文字超出图形高度
+                        <button
+                          className="btn"
+                          onClick={() =>
+                            update({
+                              height: Math.ceil(canvasTextHeight(selected)),
+                            })
+                          }
+                        >
+                          适配高度
+                        </button>
+                      </p>
+                    )}
                   <CustomColorPicker
                     ariaLabel="填充颜色"
                     value={selected.fill}
@@ -472,7 +540,13 @@ export function CanvasEditor({
                           "用户",
                           "文件",
                           "云",
-                          "处理器", "网络", "锁", "邮件", "时钟", "全球", "代码",
+                          "处理器",
+                          "网络",
+                          "锁",
+                          "邮件",
+                          "时钟",
+                          "全球",
+                          "代码",
                         ][i],
                       }))}
                       onChange={(v) =>
@@ -555,18 +629,38 @@ export function CanvasEditor({
                     >
                       置底
                     </button>
-                    {(["left", "right", "top", "bottom", "centerX", "centerY", "horizontal", "vertical"] as const).map(
-                      (m, i) => (
-                        <button
-                          type="button"
-                          className="btn small"
-                          key={m}
-                          onClick={() => commit(alignElements(scene, ids, m))}
-                        >
-                          {["左对齐", "右对齐", "顶对齐", "底对齐", "水平居中", "垂直居中", "水平分布", "垂直分布"][i]}
-                        </button>
-                      ),
-                    )}
+                    {(
+                      [
+                        "left",
+                        "right",
+                        "top",
+                        "bottom",
+                        "centerX",
+                        "centerY",
+                        "horizontal",
+                        "vertical",
+                      ] as const
+                    ).map((m, i) => (
+                      <button
+                        type="button"
+                        className="btn small"
+                        key={m}
+                        onClick={() => commit(alignElements(scene, ids, m))}
+                      >
+                        {
+                          [
+                            "左对齐",
+                            "右对齐",
+                            "顶对齐",
+                            "底对齐",
+                            "水平居中",
+                            "垂直居中",
+                            "水平分布",
+                            "垂直分布",
+                          ][i]
+                        }
+                      </button>
+                    ))}
                   </div>
                 </>
               )}

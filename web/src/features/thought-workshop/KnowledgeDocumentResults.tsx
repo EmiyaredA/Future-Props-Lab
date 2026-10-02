@@ -44,7 +44,9 @@ export function KnowledgeDocumentResults({
           {query && <p>搜索「{query}」</p>}
         </div>
         {typeof total === "number" && !loading && (
-          <span className="knowledge-results-count">已加载 {items.length} / {total} 篇</span>
+          <span className="knowledge-results-count">
+            已加载 {items.length} / {total} 篇
+          </span>
         )}
       </header>
       {loading && <p role="status">正在加载文档…</p>}
@@ -112,7 +114,16 @@ export function KnowledgeDocumentResults({
           ))}
         </ul>
       )}
-      {hasMore && <button type="button" className="btn" disabled={loadingMore} onClick={onLoadMore}>{loadingMore ? "正在加载…" : "加载更多"}</button>}
+      {hasMore && (
+        <button
+          type="button"
+          className="btn"
+          disabled={loadingMore}
+          onClick={onLoadMore}
+        >
+          {loadingMore ? "正在加载…" : "加载更多"}
+        </button>
+      )}
     </section>
   );
 }

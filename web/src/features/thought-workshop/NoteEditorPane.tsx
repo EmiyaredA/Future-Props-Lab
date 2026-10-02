@@ -8,6 +8,7 @@ import type { Note } from "./api";
 import { exportHtml, exportMarkdown } from "./portability";
 import { markdownWarnings, toMarkdown } from "./markdown";
 import type { NoteEditorChrome } from "./noteEditorChrome";
+import { useWorkspaceId } from "@platform/auth/WorkspacePermissions";
 
 const NoteHistory = lazy(() =>
   import("./NoteHistory").then((m) => ({ default: m.NoteHistory })),
@@ -33,9 +34,10 @@ export function NoteEditorPane({
   onChromeChange?: (chrome: NoteEditorChrome | null) => void;
 }) {
   const editing = useNoteDraft(note, onSaved);
+  const workspace = useWorkspaceId();
+  const recoveryPending = !editing.localReady || !!editing.recovery.length;
   const [editor, setEditor] = useState<Editor | null>(null);
   const titleInput = useRef<HTMLInputElement>(null);
-  const [titleDraft, setTitleDraft] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [serverPreview, setServerPreview] = useState(false);
   const [exportWarnings, setExportWarnings] = useState<string[] | null>(null);
@@ -168,17 +170,52 @@ export function NoteEditorPane({
   return (
     <div className="thought-edit-workspace">
       <section className="thought-document">
-        {editing.localError && <p role="alert" className="thought-error">{editing.localError}</p>}
-        {!!editing.recovery.length && <div className="thought-conflict" role="alert">
-          <strong>发现未保存的本机草稿，请选择恢复方式。</strong>
-          {editing.recovery.map(row => <div key={row.key}>
-            <p>{row.body.title} · {new Date(row.updatedAt).toLocaleString()}</p>
-            <button className="btn" onClick={() => void editing.restoreLocal(row)}>恢复草稿</button>
-            <button className="btn" onClick={() => setServerPreview(!serverPreview)}>查看服务端</button>
-            <button className="btn" onClick={() => void editing.duplicateLocal(row).then(next => onOpen(next.id)).catch(error => setNotice(String(error)))}>另存副本</button>
-            <button className="btn" onClick={() => void editing.discardLocal(row)}>丢弃草稿</button>
-          </div>)}
-        </div>}
+        {editing.localError && (
+          <p role="alert" className="thought-error">
+            {editing.localError}
+          </p>
+        )}
+        {!!editing.recovery.length && (
+          <div className="thought-conflict" role="alert">
+            <strong>发现未保存的本机草稿，请选择恢复方式。</strong>
+            {editing.recovery.map((row) => (
+              <div key={row.key}>
+                <p>
+                  {row.body.title} · {new Date(row.updatedAt).toLocaleString()}
+                </p>
+                <button
+                  className="btn"
+                  onClick={() => void editing.restoreLocal(row)}
+                >
+                  恢复草稿
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => setServerPreview(!serverPreview)}
+                >
+                  查看服务端
+                </button>
+                <button
+                  className="btn"
+                  onClick={() =>
+                    void editing
+                      .duplicateLocal(row)
+                      .then((next) => onOpen(next.id))
+                      .catch((error) => setNotice(String(error)))
+                  }
+                >
+                  另存副本
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => void editing.discardLocal(row)}
+                >
+                  丢弃草稿
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         {(editing.error || notice) && (
           <p className="thought-error" role="alert">
             {editing.error || notice}
@@ -228,79 +265,95 @@ export function NoteEditorPane({
                 另存本地副本
               </button>
             </div>
-            {serverPreview && editing.conflict && (
-              <div>
-                <h3>{editing.conflict.title}</h3>
-                <pre>{toMarkdown(editing.conflict.document, {})}</pre>
-              </div>
-            )}
           </div>
         )}
-        <Suspense fallback={<p>编辑器加载中…</p>}>
-          <RichEditor
-            outlineTitle={editing.draft.title}
-            assetScopeId={note.knowledge_base_id}
-            onBackspaceAtStart={() => {
-              const title = titleInput.current;
-              if (!title) return false;
-              title.focus();
-              title.setSelectionRange(title.value.length, title.value.length);
-              return true;
-            }}
-            onCompositionChange={editing.setComposition}
-            document={editing.draft.document as JSONContent}
-            onChange={(document) => editing.change({ document })}
-            onReady={setEditor}
-            beforeContent={
-              <div className="thought-note-heading">
-                <div className="thought-note-meta">
-                  <button
-                    className="thought-pin"
-                    aria-label="置顶"
-                    title="置顶"
-                    aria-pressed={!!editing.draft.pinned}
-                    onClick={() =>
-                      editing.change({ pinned: !editing.draft.pinned })
-                    }
-                  >
-                    <Pin size={19} aria-hidden="true" />
-                  </button>
-                  <button
-                    aria-label="收藏"
-                    title="收藏"
-                    aria-pressed={!!editing.draft.favorite}
-                    onClick={() =>
-                      editing.change({ favorite: !editing.draft.favorite })
-                    }
-                  >
-                    <Star size={19} aria-hidden="true" />
-                  </button>
+        {serverPreview && (
+          <div className="thought-conflict">
+            <h3>{(editing.conflict ?? note).title}</h3>
+            <pre>{toMarkdown((editing.conflict ?? note).document, {})}</pre>
+          </div>
+        )}
+        {recoveryPending ? (
+          <p role="status">
+            {!editing.localReady
+              ? "正在检查本机草稿…"
+              : "请选择本机草稿的恢复方式…"}
+          </p>
+        ) : (
+          <Suspense fallback={<p>编辑器加载中…</p>}>
+            <RichEditor
+              outlineTitle={editing.draft.title}
+              assetScopeId={workspace ?? undefined}
+              onBackspaceAtStart={() => {
+                const title = titleInput.current;
+                if (!title) return false;
+                title.focus();
+                title.setSelectionRange(title.value.length, title.value.length);
+                return true;
+              }}
+              onCompositionChange={editing.setComposition}
+              readingId={note.id}
+              readingRevision={note.revision}
+              document={editing.draft.document as JSONContent}
+              onChange={(document) => editing.change({ document })}
+              onReady={setEditor}
+              beforeContent={
+                <div className="thought-note-heading">
+                  <div className="thought-note-meta">
+                    <button
+                      className="thought-pin"
+                      aria-label="置顶"
+                      disabled={recoveryPending}
+                      title="置顶"
+                      aria-pressed={!!editing.draft.pinned}
+                      onClick={() =>
+                        editing.change({ pinned: !editing.draft.pinned })
+                      }
+                    >
+                      <Pin size={19} aria-hidden="true" />
+                    </button>
+                    <button
+                      aria-label="收藏"
+                      disabled={recoveryPending}
+                      title="收藏"
+                      aria-pressed={!!editing.draft.favorite}
+                      onClick={() =>
+                        editing.change({ favorite: !editing.draft.favorite })
+                      }
+                    >
+                      <Star size={19} aria-hidden="true" />
+                    </button>
+                  </div>
+                  <input
+                    ref={titleInput}
+                    className="thought-title-input"
+                    aria-label="笔记标题"
+                    disabled={recoveryPending}
+                    maxLength={240}
+                    value={editing.titleInput ?? editing.draft.title}
+                    placeholder="未命名笔记"
+                    onFocus={() => editing.setTitleInput(editing.draft.title)}
+                    onCompositionStart={() => editing.setComposition(true)}
+                    onCompositionEnd={() => editing.setComposition(false)}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      editing.setTitleInput(next);
+                      if (next.trim()) editing.change({ title: next });
+                    }}
+                    onBlur={() => editing.setTitleInput(null)}
+                  />
+                  <NoteTags
+                    tags={editing.draft.tags || []}
+                    disabled={recoveryPending}
+                    onDraft={(tags) => editing.change({ tags })}
+                    onComposition={editing.setComposition}
+                    onChange={(tags) => editing.change({ tags })}
+                  />
                 </div>
-                <input
-                  ref={titleInput}
-                  className="thought-title-input"
-                  aria-label="笔记标题"
-                  maxLength={240}
-                  value={titleDraft ?? editing.draft.title}
-                  placeholder="未命名笔记"
-                  onFocus={() => setTitleDraft(editing.draft.title)}
-                  onCompositionStart={() => editing.setComposition(true)}
-                  onCompositionEnd={() => editing.setComposition(false)}
-                  onChange={(event) => {
-                    const next = event.target.value;
-                    setTitleDraft(next);
-                    if (next.trim()) editing.change({ title: next });
-                  }}
-                  onBlur={() => setTitleDraft(null)}
-                />
-                <NoteTags
-                  tags={editing.draft.tags || []}
-                  onChange={(tags) => editing.change({ tags })}
-                />
-              </div>
-            }
-          />
-        </Suspense>
+              }
+            />
+          </Suspense>
+        )}
         <footer className="thought-document-footer">专注于眼前的想法</footer>
       </section>
       <ConfirmDialog

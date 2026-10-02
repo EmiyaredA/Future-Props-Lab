@@ -122,21 +122,6 @@ export async function createHumanFigure(options: {
     legBack: { kind: "rot", parent: "body", pivot: model.pivots.legBack },
     legFront: { kind: "rot", parent: "body", pivot: model.pivots.legFront },
   };
-  const rig = createRig(canvas, {
-    view: model.view,
-    deformers,
-    parts: [
-      ...model.parts,
-      {
-        id: "face_fx",
-        tex: "face_fx",
-        box: [x0, y0, width, height],
-        grid: [6, 6],
-        parent: "head",
-        z: 8,
-      },
-    ],
-  });
   const loaded = new Map<string, Promise<Record<string, HTMLImageElement>>>();
   const loadScheme = (id: string) => {
     if (!loaded.has(id)) {
@@ -163,6 +148,22 @@ export async function createHumanFigure(options: {
     model.schemes.find((item) => item.id === options.scheme)?.id ??
     model.schemes[0].id;
   let images = await loadScheme(scheme);
+  const rig = createRig(canvas, {
+    view: model.view,
+    deformers,
+    parts: [
+      ...model.parts,
+      {
+        id: "face_fx",
+        tex: "face_fx",
+        box: [x0, y0, width, height],
+        grid: [6, 6],
+        parent: "head",
+        z: 8,
+      },
+    ],
+  });
+  let disposed = false;
   for (const part of model.parts) rig.upload(part.tex, images[part.tex]);
   let selection = 0;
   const hairSpring = spring(55, 9, 10);
@@ -292,7 +293,7 @@ export async function createHumanFigure(options: {
       if (!model.schemes.some((item) => item.id === id)) return;
       const generation = ++selection;
       const next = await loadScheme(id);
-      if (generation !== selection) return;
+      if (disposed || generation !== selection) return;
       scheme = id;
       images = next;
       for (const part of model.parts) rig.upload(part.tex, images[part.tex]);
@@ -304,6 +305,8 @@ export async function createHumanFigure(options: {
       };
     },
     dispose() {
+      disposed = true;
+      selection++;
       rig.gl.getExtension("WEBGL_lose_context")?.loseContext();
     },
     anchors: {

@@ -136,14 +136,19 @@ async def clean_up_created_notes():
         for note in await collection():
             if note["id"] in before:
                 continue
+            # Deleting a parent promotes children and advances their revisions.
+            # Re-read each child instead of using the earlier list snapshot.
+            current = await client.get(ROOT + f"/notes/{note['id']}")
+            assert current.status_code == 200, current.text
+            note = current.json()
             if not note["deleted_at"]:
-                note = (
-                    await delete_note(
-                        client,
-                        ROOT + f"/notes/{note['id']}",
-                        params={"expected_revision": note["revision"]},
-                    )
-                ).json()
+                deleted = await delete_note(
+                    client,
+                    ROOT + f"/notes/{note['id']}",
+                    params={"expected_revision": note["revision"]},
+                )
+                assert deleted.status_code == 200, deleted.text
+                note = deleted.json()
             await delete_note(
                 client,
                 ROOT + f"/notes/{note['id']}",

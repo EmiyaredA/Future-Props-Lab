@@ -39,6 +39,20 @@ describe("bundled official knowledge", () => {
       );
       for (const doc of library.documents) {
         sourcePaths.push(doc.source);
+        expect(doc.summary.length, doc.source).toBeGreaterThan(18);
+        expect(doc.related.length, doc.source).toBeGreaterThanOrEqual(2);
+        const references = doc.related.map(
+          (ref) => `${ref.libraryId}/${ref.documentId}`,
+        );
+        expect(new Set(references).size, doc.source).toBe(references.length);
+        expect(references, doc.source).not.toContain(`${library.id}/${doc.id}`);
+        for (const ref of doc.related)
+          expect(
+            findOfficialLibrary(ref.libraryId)?.documents.some(
+              (item) => item.id === ref.documentId,
+            ),
+            `${doc.source}: ${ref.libraryId}/${ref.documentId}`,
+          ).toBe(true);
         const markdown = await content.loadOfficialDocument(doc);
         expect(markdown.length, doc.source).toBeGreaterThan(350);
         expect(
@@ -117,6 +131,7 @@ describe("bundled official knowledge", () => {
         onOpen={onOpen}
       />,
     );
+    fireEvent.click(screen.getByText("文档大纲"));
     const links = within(
       screen.getByRole("navigation", { name: "文档章节" }),
     ).getAllByRole("link");
@@ -177,7 +192,7 @@ describe("official reader", () => {
     fireEvent.click(result);
     expect(
       await screen.findByRole("article", { name: "官方文档正文" }),
-    ).toHaveTextContent("素材交接包不生成");
+    ).toHaveTextContent("moc3");
     expect(screen.getByRole("textbox", { name: "搜索官方文档" })).toHaveValue(
       "",
     );
@@ -228,6 +243,6 @@ describe("official reader", () => {
     fireEvent.click(screen.getByRole("button", { name: "重试" }));
     expect(
       await screen.findByRole("article", { name: "官方文档正文" }),
-    ).toHaveTextContent("建立第一份角色");
+    ).toHaveTextContent("Live2D");
   });
 });

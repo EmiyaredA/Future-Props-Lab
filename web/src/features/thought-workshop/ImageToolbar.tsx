@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -42,6 +49,10 @@ export function ImageToolbar({
   const [widthDraft, setWidthDraft] = useState<string | null>(null);
   useImagePopover(!suspended, frame, toolbar, "toolbar");
   useImagePopover(expanded && !suspended, settingsButton, settings, "settings");
+  useLayoutEffect(() => {
+    if (expanded && !suspended)
+      widthInput.current?.focus({ preventScroll: true });
+  }, [expanded, suspended]);
 
   const commitWidth = () => {
     if (widthDraft === null) return;
@@ -144,9 +155,6 @@ export function ImageToolbar({
             if (expanded) closeSettings();
             else {
               setExpanded(true);
-              requestAnimationFrame(() =>
-                widthInput.current?.focus({ preventScroll: true }),
-              );
             }
           }}
         >

@@ -217,7 +217,11 @@ export function ProjectsPage({
                       : `来源 r${project.sourceRevision}`}
                 </span>
               }
-              description={`来源：${project.sourceTitle}`}
+              description={`来源：${
+                project.sourceType === "coopanion-whale"
+                  ? `本地角色资源包 · ${project.title}`
+                  : project.sourceTitle
+              }`}
               onOpen={() => onOpen(project.id)}
             >
               <div className="workshop-project-primary-actions">

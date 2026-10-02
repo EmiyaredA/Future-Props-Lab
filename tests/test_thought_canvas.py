@@ -32,6 +32,21 @@ from future_props_lab.canvas_example import thought_canvas_example  # noqa: E402
 ROOT = "/v1/thought-workshop"
 
 
+def test_version_two_geometry_and_text_matches_web_projection():
+    value = scene()
+    value["sceneVersion"] = 2
+    value["elements"][0].update(x=10000, y=-4000, fontSize=20, textAlign="left")
+    value["elements"][1].update(x=10240, y=-3800, width=80, height=120)
+    value["edges"][0].update(sourceAnchor="bottom", targetAnchor="top")
+    svg = fromstring(canvas_svg(value, {}))
+    assert svg.attrib["viewBox"] == "9976 -4024 368 368"
+    ns = {"s": "http://www.w3.org/2000/svg"}
+    edge = next(item for item in svg.findall("s:path", ns) if "marker-end" in item.attrib)
+    # Numerically identical to the shared Web fixture, including its midpoint.
+    assert edge.attrib["d"] == "M10080.0,-3920 V-3860.0 H10280.0 V-3800"
+    assert svg.find(".//s:text[@font-size='20']", ns) is not None
+
+
 def scene(asset_id=None):
     result = {
         "sceneVersion": 1,

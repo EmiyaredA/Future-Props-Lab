@@ -11,7 +11,9 @@ from app.runtime.time import utc_now
 class ThoughtDocumentReference(Base):
     __tablename__ = "thought_document_references"
     __table_args__ = (Index("ix_thought_reference_target", "target_id"),)
-    note_id: Mapped[str] = mapped_column(ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True)
+    note_id: Mapped[str] = mapped_column(
+        ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
+    )
     target_id: Mapped[str] = mapped_column(String(36), primary_key=True)
 
 
@@ -33,15 +35,21 @@ class ThoughtTemplate(Base):
 class ThoughtTemplateAsset(Base):
     __tablename__ = "thought_template_assets"
     __table_args__ = (Index("ix_thought_template_assets_asset", "asset_id"),)
-    template_id: Mapped[str] = mapped_column(ForeignKey("thought_templates.id", ondelete="CASCADE"), primary_key=True)
-    asset_id: Mapped[str] = mapped_column(ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True)
+    template_id: Mapped[str] = mapped_column(
+        ForeignKey("thought_templates.id", ondelete="CASCADE"), primary_key=True
+    )
+    asset_id: Mapped[str] = mapped_column(
+        ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+    )
 
 
 class ThoughtCheckpoint(Base):
     __tablename__ = "thought_checkpoints"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     note_id: Mapped[str] = mapped_column(ForeignKey("thought_notes.id", ondelete="CASCADE"))
-    history_id: Mapped[str] = mapped_column(ForeignKey("thought_note_history.id", ondelete="CASCADE"))
+    history_id: Mapped[str] = mapped_column(
+        ForeignKey("thought_note_history.id", ondelete="CASCADE")
+    )
     name: Mapped[str] = mapped_column(String(120))
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
@@ -60,7 +68,10 @@ class ThoughtSavedFilter(Base):
 
 class ThoughtReadingState(Base):
     __tablename__ = "thought_reading_states"
-    __table_args__ = (UniqueConstraint("workspace_id", "user_id", "resource_id"), Index("ix_thought_reading_owner", "workspace_id", "user_id", "visited_at"))
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "user_id", "resource_id"),
+        Index("ix_thought_reading_owner", "workspace_id", "user_id", "visited_at"),
+    )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))

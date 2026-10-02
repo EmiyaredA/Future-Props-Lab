@@ -46,7 +46,12 @@ from app.apps.presentation_workshop.models import (
     PresentationProject,
 )
 from app.apps.thought_workshop.knowledge_tools.models import (
-    ThoughtDocumentReference, ThoughtTemplate, ThoughtTemplateAsset, ThoughtCheckpoint, ThoughtSavedFilter, ThoughtReadingState,
+    ThoughtCheckpoint,
+    ThoughtDocumentReference,
+    ThoughtReadingState,
+    ThoughtSavedFilter,
+    ThoughtTemplate,
+    ThoughtTemplateAsset,
 )
 from app.apps.thought_workshop.models import (
     ThoughtHistoryAsset,
@@ -253,6 +258,9 @@ TENANT_MODELS = (
     LlmCallLog,
     ToolNavigationItem,
     ThoughtNote,
+    ThoughtTemplate,
+    ThoughtSavedFilter,
+    ThoughtReadingState,
     ThoughtKnowledgeBase,
     VisualWorkshopProject,
     VisualGenerationTask,
@@ -347,6 +355,9 @@ def bind_workspace(session: Any, workspace_id: str) -> None:
 
 
 __all__ = [
+    "ThoughtDocumentReference",
+    "ThoughtTemplateAsset",
+    "ThoughtCheckpoint",
     "Base",
     "CATALOG_MODELS",
     "CERTIFIABLE_PROJECT_ROOTS",

@@ -1,4 +1,5 @@
 import type { OfficialKnowledgeBase } from "./catalog";
+import { officialReading } from "./reading";
 const chapters = [
   ["system", "系统全景：一份操作如何穿过应用", "平台基础"],
   ["modules", "模块边界与路由：为什么按功能拆分", "平台基础"],
@@ -34,5 +35,6 @@ export const TECHNICAL_LIBRARY: OfficialKnowledgeBase = {
     group,
     order,
     source: `./content/technical/${id}.md`,
+    ...officialReading("technical", id),
   })),
 };

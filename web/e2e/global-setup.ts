@@ -16,6 +16,8 @@ export default async function globalSetup() {
       `E2E login failed: ${response.status()} ${await response.text()}`,
     );
   }
-  await context.storageState({ path: "e2e/.auth-state.json" });
+  await context.storageState({
+    path: process.env.FPL_E2E_AUTH_STATE || "e2e/.auth-state.json",
+  });
   await context.dispose();
 }

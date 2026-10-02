@@ -10,6 +10,13 @@ from app.apps.thought_workshop.schemas.workshop import ThoughtNoteSummary, Thoug
 class StrictInput(BaseModel):
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 
+    @field_validator("name", check_fields=False)
+    @classmethod
+    def nonblank_name(cls, value):
+        if not value.strip():
+            raise ValueError("名称不能为空")
+        return value.strip()
+
 
 class SearchCriteria(StrictInput):
     query: str = Field(default="", max_length=500)

@@ -9,6 +9,10 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Search } from "lucide-react";
+import {
+  useAccountId,
+  useWorkspaceId,
+} from "@platform/auth/WorkspacePermissions";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -39,6 +43,10 @@ import { KnowledgeCover } from "./KnowledgeCover";
 import { KnowledgeDocumentResults } from "./KnowledgeDocumentResults";
 import { DeleteDocumentDialog } from "./DeleteDocumentDialog";
 import { KnowledgeTopbar } from "./KnowledgeTopbar";
+import { DiscoveryPanel } from "./knowledge-tools/DiscoveryPanel";
+import { TemplateDialog } from "./knowledge-tools/TemplateDialog";
+import { CopyDialog } from "./knowledge-tools/CopyDialog";
+import { DocumentRelations } from "./knowledge-tools/DocumentRelations";
 import { useNoteResults } from "./useNoteResults";
 import { thoughtKeys } from "./queryKeys";
 import { download } from "./download";
@@ -79,6 +87,11 @@ export function ThoughtWorkshopPage({
   onOpenOfficial: (libraryId: string) => void;
 }) {
   const client = useQueryClient();
+  const accountId = useAccountId(),
+    workspaceId = useWorkspaceId();
+  const [discovery, setDiscovery] = useState(false),
+    [templatesOpen, setTemplatesOpen] = useState(false);
+  const [copySource, setCopySource] = useState<NoteSummary | null>(null);
   const [query, setQuery] = useState("");
   const [trash, setTrash] = useState(false);
   const [view, setView] = useState("all");
@@ -180,6 +193,12 @@ export function ThoughtWorkshopPage({
     operationQueue.current = next;
     return next;
   };
+  const navigateResource = (href: string) =>
+    guarded(() => {
+      setDiscovery(false);
+      window.history.pushState({}, "", href);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
   const guarded = (proceed: () => void) => {
     if (!editorGuard.current?.(proceed)) proceed();
   };
@@ -203,6 +222,7 @@ export function ThoughtWorkshopPage({
       onNavigate(projectId, id === project?.home_note_id ? undefined : id);
     });
   const save = (saved: Note) => {
+    void client.invalidateQueries({ queryKey: thoughtKeys.referenceLists() });
     client.setQueryData(thoughtKeys.note(saved.id), saved);
     void client.invalidateQueries({ queryKey: thoughtKeys.history(saved.id) });
     void client.invalidateQueries({ queryKey: thoughtKeys.projectLists() });
@@ -393,6 +413,78 @@ export function ThoughtWorkshopPage({
         )}
       </KnowledgeSidebar>
       <main className="knowledge-main">
+        <div className="thought-tools">
+          <button
+            className="btn"
+            onClick={() => guarded(() => setDiscovery(!discovery))}
+          >
+            全局搜索与最近访问
+          </button>
+          {project && (
+            <button className="btn" onClick={() => setTemplatesOpen(true)}>
+              文档模板
+            </button>
+          )}
+          {note.data && !note.data.is_home && (
+            <button
+              className="btn"
+              onClick={() =>
+                void (
+                  noteChrome ? noteChrome.save() : Promise.resolve(note.data!)
+                )
+                  .then((next) => setCopySource(next))
+                  .catch(() => {})
+              }
+            >
+              复制文档 / 子树
+            </button>
+          )}
+          {project && (
+            <button
+              className="btn"
+              onClick={() =>
+                void run(async () => {
+                  if (noteChrome) await noteChrome.save();
+                  const { exportLibraryHtml } =
+                    await import("./knowledge-tools/libraryExport");
+                  await exportLibraryHtml(project.id);
+                })
+              }
+            >
+              导出整库 HTML
+            </button>
+          )}
+        </div>
+        {discovery && (
+          <DiscoveryPanel
+            projects={projects.data ?? []}
+            navigate={navigateResource}
+            close={() => setDiscovery(false)}
+          />
+        )}
+        {templatesOpen && project && (
+          <TemplateDialog
+            project={project}
+            note={note.data}
+            save={noteChrome?.save}
+            close={() => setTemplatesOpen(false)}
+            created={(id) => {
+              void refresh();
+              open(id);
+            }}
+          />
+        )}
+        {copySource && (
+          <CopyDialog
+            source={copySource}
+            projects={projects.data ?? []}
+            close={() => setCopySource(null)}
+            created={(project, id) => {
+              void refresh();
+              onNavigate(project, id);
+            }}
+          />
+        )}
         <KnowledgeTopbar
           noteMode={noteMode}
           busy={busy}
@@ -569,6 +661,8 @@ export function ThoughtWorkshopPage({
                   ) : note.data.is_home && !editHome ? (
                     <div className="knowledge-home-reading">
                       <RichEditor
+                        readingId={note.data.id}
+                        readingRevision={note.data.revision}
                         outlineTitle={project?.title || note.data.title}
                         key={note.data.id}
                         document={note.data.document}
@@ -584,7 +678,7 @@ export function ThoughtWorkshopPage({
                     </div>
                   ) : (
                     <NoteEditorPane
-                      key={note.data.id}
+                      key={`${accountId}:${workspaceId}:${note.data.id}`}
                       note={note.data}
                       onSaved={save}
                       onOpen={open}
@@ -594,6 +688,14 @@ export function ThoughtWorkshopPage({
                   )}
                 </Suspense>
               )}
+            {note.data && !note.data.deleted_at && (
+              <DocumentRelations
+                id={note.data.id}
+                isHome={note.data.is_home}
+                documents={directory.data?.documents ?? []}
+                open={open}
+              />
+            )}
           </>
         )}
         <input

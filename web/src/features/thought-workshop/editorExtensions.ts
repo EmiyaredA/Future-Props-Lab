@@ -1,3 +1,7 @@
+import {
+  CalloutNode,
+  DocumentReferenceNode,
+} from "./knowledge-tools/ContentNodes";
 import { CanvasNode } from "./diagrams/CanvasNode";
 import { AttachmentNode } from "./AttachmentNode";
 import type { AnyExtension } from "@tiptap/core";
@@ -63,6 +67,8 @@ export function editorExtensions(
     AttachmentNode,
     MermaidNode,
     CanvasNode,
+    CalloutNode,
+    DocumentReferenceNode,
     Placeholder.configure({ placeholder: "从一个想法开始…" }),
   ];
   if (!readOnly) extensions.push(NodeRange.configure({ key: "Mod" }));

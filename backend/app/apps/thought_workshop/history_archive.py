@@ -46,6 +46,7 @@ def validate_history(payload: dict) -> None:
 
 async def import_history(notes, payload, inserted, note_mapping, asset_mapping, remap):
     history = History(notes.session)
+    history_mapping = {}
     for record in sorted(payload.get("history", []), key=lambda item: item["revision"]):
         if record["note_id"] not in inserted:
             continue
@@ -65,6 +66,7 @@ async def import_history(notes, payload, inserted, note_mapping, asset_mapping, 
             if value.created_at.tzinfo
             else value.created_at,
         )
+        history_mapping[value.id] = row.id
         notes.session.add(row)
         await notes.session.flush()
         await history.references(row)
@@ -72,3 +74,5 @@ async def import_history(notes, payload, inserted, note_mapping, asset_mapping, 
     for old_id in inserted:
         note = await notes.session.get(ThoughtNote, note_mapping[old_id])
         await history.append(note, notes.author_id, "import")
+
+    return history_mapping

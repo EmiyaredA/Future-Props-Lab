@@ -1,5 +1,6 @@
 import { TECHNICAL_LIBRARY } from "./technicalCatalog";
-export type OfficialDocumentSummary = {
+import { officialReading, type OfficialReadingMetadata } from "./reading";
+export type OfficialDocumentSummary = OfficialReadingMetadata & {
   readonly id: string;
   readonly title: string;
   readonly group: string;
@@ -100,6 +101,7 @@ export const OFFICIAL_KNOWLEDGE_BASES: readonly OfficialKnowledgeBase[] = [
       group,
       order,
       source: `./content/general/${id}.md`,
+      ...officialReading("general", id),
     })),
   },
   TECHNICAL_LIBRARY,
@@ -114,6 +116,7 @@ export const OFFICIAL_KNOWLEDGE_BASES: readonly OfficialKnowledgeBase[] = [
       group,
       order,
       source: `./content/${id}/${chapter}.md`,
+      ...officialReading(id, chapter),
     })),
   })),
 ];
@@ -123,6 +126,13 @@ export function officialPath(libraryId: string, documentId?: string) {
 }
 export function findOfficialLibrary(id?: string) {
   return OFFICIAL_KNOWLEDGE_BASES.find((library) => library.id === id);
+}
+/** Match the grouped directory rather than jumping across groups in file order. */
+export function officialReadingOrder(library: OfficialKnowledgeBase) {
+  const groups = [...new Set(library.documents.map((item) => item.group))];
+  return groups.flatMap((group) =>
+    library.documents.filter((item) => item.group === group),
+  );
 }
 export function filterOfficialLibraries(query: string) {
   const term = query.trim().toLocaleLowerCase("zh-CN");

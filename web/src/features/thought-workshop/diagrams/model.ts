@@ -106,7 +106,7 @@ export function parseCanvasScene(value: unknown): CanvasScene {
   if (
     !object(value) ||
     !keys(value, ["sceneVersion", "title", "elements", "edges"]) ||
-    ![1, 2].includes(Number(value.sceneVersion)) ||
+    (value.sceneVersion !== 1 && value.sceneVersion !== 2) ||
     !text(value.title) ||
     !Array.isArray(value.elements) ||
     !Array.isArray(value.edges) ||
@@ -137,8 +137,14 @@ export function parseCanvasScene(value: unknown): CanvasScene {
       !/^[a-zA-Z0-9_-]{1,100}$/.test(e.id) ||
       ids.has(e.id) ||
       !SHAPES.includes(e.kind as CanvasElement["kind"]) ||
-      (e.fontSize !== undefined && (typeof e.fontSize !== "number" || !Number.isInteger(e.fontSize) || e.fontSize < 10 || e.fontSize > 72)) ||
-      (e.textAlign !== undefined && !["left", "center", "right"].includes(String(e.textAlign))) ||
+      (e.fontSize !== undefined &&
+        (typeof e.fontSize !== "number" ||
+          !Number.isInteger(e.fontSize) ||
+          e.fontSize < 10 ||
+          e.fontSize > 72)) ||
+      (e.textAlign !== undefined &&
+        (typeof e.textAlign !== "string" ||
+          !["left", "center", "right"].includes(e.textAlign))) ||
       !text(e.text) ||
       ![e.x, e.y, e.width, e.height].every(numeric) ||
       Number(e.width) < 20 ||
@@ -178,10 +184,23 @@ export function parseCanvasScene(value: unknown): CanvasScene {
   for (const e of value.edges) {
     if (
       !object(e) ||
-      !keys(e, ["id", "source", "target", "label", "arrow", "style", ...(value.sceneVersion === 2 ? ["sourceAnchor", "targetAnchor"] : [])]) ||
+      !keys(e, [
+        "id",
+        "source",
+        "target",
+        "label",
+        "arrow",
+        "style",
+        ...(value.sceneVersion === 2 ? ["sourceAnchor", "targetAnchor"] : []),
+      ]) ||
       typeof e.id !== "string" ||
       !/^[a-zA-Z0-9_-]{1,100}$/.test(e.id) ||
-      [e.sourceAnchor, e.targetAnchor].some(a => a !== undefined && !["left", "right", "top", "bottom"].includes(String(a))) ||
+      [e.sourceAnchor, e.targetAnchor].some(
+        (a) =>
+          a !== undefined &&
+          (typeof a !== "string" ||
+            !["left", "right", "top", "bottom"].includes(a)),
+      ) ||
       edges.has(e.id) ||
       ids.has(e.id) ||
       typeof e.source !== "string" ||
@@ -200,27 +219,48 @@ export function parseCanvasScene(value: unknown): CanvasScene {
   return scene;
 }
 export function sceneBounds(scene: CanvasScene) {
-  if (!scene.elements.length) return {x:-24,y:-24,width:448,height:228};
-  const x = Math.min(...scene.elements.map(e => e.x)) - 24;
-  const y = Math.min(...scene.elements.map(e => e.y)) - 24;
-  return {x, y, width: Math.max(...scene.elements.map(e => e.x + e.width)) - x + 24, height: Math.max(...scene.elements.map(e => e.y + e.height)) - y + 24};
+  if (!scene.elements.length)
+    return { x: -24, y: -24, width: 448, height: 228 };
+  const x = Math.min(...scene.elements.map((e) => e.x)) - 24;
+  const y = Math.min(...scene.elements.map((e) => e.y)) - 24;
+  return {
+    x,
+    y,
+    width: Math.max(...scene.elements.map((e) => e.x + e.width)) - x + 24,
+    height: Math.max(...scene.elements.map((e) => e.y + e.height)) - y + 24,
+  };
 }
 export function anchorPoint(e: CanvasElement, side: CanvasAnchor) {
-  return { x: e.x + (side === "left" ? 0 : side === "right" ? e.width : e.width / 2), y: e.y + (side === "top" ? 0 : side === "bottom" ? e.height : e.height / 2) };
+  return {
+    x: e.x + (side === "left" ? 0 : side === "right" ? e.width : e.width / 2),
+    y: e.y + (side === "top" ? 0 : side === "bottom" ? e.height : e.height / 2),
+  };
 }
 export function canvasLines(e: CanvasElement) {
   const size = e.fontSize ?? 15;
-  return e.text.split("\n").flatMap(line => {
-    const rows: string[] = []; let row = "", used = 0;
+  return e.text.split("\n").flatMap((line) => {
+    const rows: string[] = [];
+    let row = "",
+      used = 0;
     for (const char of line) {
-      const advance = (char.codePointAt(0)! <= 127 ? 8 : 15) * size / 15;
-      if (row && used + advance > Math.max(size, e.width - 24)) { rows.push(row); row = ""; used = 0; }
-      row += char; used += advance;
+      const advance = ((char.codePointAt(0)! <= 127 ? 8 : 15) * size) / 15;
+      if (row && used + advance > Math.max(size, e.width - 24)) {
+        rows.push(row);
+        row = "";
+        used = 0;
+      }
+      row += char;
+      used += advance;
     }
     return [...rows, row];
   });
 }
-export function canvasTextHeight(e: CanvasElement) { return canvasLines(e).length * (e.fontSize ?? 15) * 4 / 3 + (e.kind === "icon" ? 42 : 12); }
+export function canvasTextHeight(e: CanvasElement) {
+  return (
+    (canvasLines(e).length * (e.fontSize ?? 15) * 4) / 3 +
+    (e.kind === "icon" ? 42 : 12)
+  );
+}
 export function edgePath(
   x1: number,
   y1: number,
@@ -230,6 +270,8 @@ export function edgePath(
   vertical = false,
 ) {
   return step
-    ? vertical ? `M${x1},${y1} V${(y1 + y2) / 2} H${x2} V${y2}` : `M${x1},${y1} H${(x1 + x2) / 2} V${y2} H${x2}`
+    ? vertical
+      ? `M${x1},${y1} V${(y1 + y2) / 2} H${x2} V${y2}`
+      : `M${x1},${y1} H${(x1 + x2) / 2} V${y2} H${x2}`
     : `M${x1},${y1} L${x2},${y2}`;
 }

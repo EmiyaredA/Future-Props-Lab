@@ -38,6 +38,51 @@ export function parseMarkdown(
         },
       };
     }
+    if (node.type === "blockquote" && node.content?.[0]?.type === "paragraph") {
+      const first = node.content[0].content?.[0];
+      const match = first?.text?.match(
+        /^\[!(INFO|NOTE|SUCCESS|WARNING|DANGER)\](?:\n|$)/i,
+      );
+      if (match) {
+        const content = structuredClone(node.content);
+        content[0].content![0].text = first!.text!.slice(match[0].length);
+        if (!content[0].content![0].text) content[0].content!.shift();
+        if (content[0].content?.[0]?.type === "hardBreak")
+          content[0].content.shift();
+        if (!content[0].content?.length) content.shift();
+        return {
+          type: "callout",
+          attrs: { variant: match[1].toLowerCase() },
+          content: (content.length ? content : [{ type: "paragraph" }]).map(
+            visit,
+          ),
+        };
+      }
+    }
+    const ref = node.marks?.find(
+      (mark) =>
+        mark.type === "link" &&
+        /^fpl-(?:note|official):/.test(String(mark.attrs?.href)),
+    );
+    if (ref) {
+      const href = String(ref.attrs?.href),
+        url = new URL(href),
+        label = node.text || "文档";
+      return {
+        type: "documentReference",
+        attrs: {
+          kind: url.protocol === "fpl-note:" ? "note" : "official",
+          ...(url.protocol === "fpl-note:"
+            ? { noteId: url.pathname }
+            : {
+                libraryId: url.pathname.split("/")[0],
+                documentId: url.pathname.split("/")[1],
+              }),
+          label,
+          ...(url.searchParams.has("custom") ? { customLabel: label } : {}),
+        },
+      };
+    }
     const copy = {
       ...node,
       ...(node.content ? { content: node.content.map(visit) } : {}),
@@ -97,6 +142,37 @@ export function toMarkdown(
   const tokens: Record<string, string> = {};
   let index = 0;
   const walk = (node: JSONContent): JSONContent => {
+    if (node.type === "callout") {
+      const token = `THOUGHTEXPORT${index++}TOKEN`;
+      tokens[token] =
+        `[!${String(node.attrs?.variant || "info").toUpperCase()}]`;
+      return {
+        type: "blockquote",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: token,
+              },
+            ],
+          },
+          ...(node.content || []).map(walk),
+        ],
+      };
+    }
+    if (node.type === "documentReference") {
+      const token = `THOUGHTEXPORT${index++}TOKEN`,
+        attrs = node.attrs!;
+      const href =
+        attrs.kind === "note"
+          ? `fpl-note:${attrs.noteId}`
+          : `fpl-official:${attrs.libraryId}/${attrs.documentId}`;
+      tokens[token] =
+        `[${String(attrs.customLabel || attrs.label).replace(/[\\[\]]/g, "\\$&")}](${href}${attrs.customLabel ? "?custom=1" : ""})`;
+      return { type: "text", text: token };
+    }
     if (node.type === "canvas") {
       const token = `THOUGHTEXPORT${index++}TOKEN`;
       const scene = mapCanvasAssets(

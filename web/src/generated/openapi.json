@@ -4246,6 +4246,95 @@
         "title": "CharacterTrack",
         "type": "object"
       },
+      "CheckpointIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_note_revision": {
+            "minimum": 0.0,
+            "title": "Expected Note Revision",
+            "type": "integer"
+          },
+          "history_id": {
+            "title": "History Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "history_id",
+          "expected_note_revision"
+        ],
+        "title": "CheckpointIn",
+        "type": "object"
+      },
+      "CheckpointOut": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "history_id": {
+            "title": "History Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note_id": {
+            "title": "Note Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "note_id",
+          "history_id",
+          "name",
+          "revision",
+          "created_at"
+        ],
+        "title": "CheckpointOut",
+        "type": "object"
+      },
+      "CheckpointPut": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "name"
+        ],
+        "title": "CheckpointPut",
+        "type": "object"
+      },
       "ClipIdOperation": {
         "properties": {
           "clipId": {
@@ -6324,6 +6413,104 @@
           "document"
         ],
         "title": "DocumentOut",
+        "type": "object"
+      },
+      "DuplicateIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_knowledge_revision": {
+            "minimum": 0.0,
+            "title": "Expected Knowledge Revision",
+            "type": "integer"
+          },
+          "expected_revisions": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "maxProperties": 10000,
+            "title": "Expected Revisions",
+            "type": "object"
+          },
+          "knowledge_base_id": {
+            "title": "Knowledge Base Id",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "source_knowledge_revision": {
+            "minimum": 0.0,
+            "title": "Source Knowledge Revision",
+            "type": "integer"
+          },
+          "subtree": {
+            "default": false,
+            "title": "Subtree",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "knowledge_base_id",
+          "source_knowledge_revision",
+          "expected_knowledge_revision",
+          "expected_revisions"
+        ],
+        "title": "DuplicateIn",
+        "type": "object"
+      },
+      "DuplicateOut": {
+        "properties": {
+          "knowledge_base_id": {
+            "title": "Knowledge Base Id",
+            "type": "string"
+          },
+          "note_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Note Ids",
+            "type": "array"
+          },
+          "root_id": {
+            "title": "Root Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "root_id",
+          "note_ids",
+          "knowledge_base_id"
+        ],
+        "title": "DuplicateOut",
+        "type": "object"
+      },
+      "DuplicateSnapshot": {
+        "properties": {
+          "knowledge_revision": {
+            "title": "Knowledge Revision",
+            "type": "integer"
+          },
+          "revisions": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Revisions",
+            "type": "object"
+          }
+        },
+        "required": [
+          "knowledge_revision",
+          "revisions"
+        ],
+        "title": "DuplicateSnapshot",
         "type": "object"
       },
       "ExportCreateIn": {
@@ -16915,6 +17102,37 @@
         "title": "LibraryAssetImportIn",
         "type": "object"
       },
+      "LibraryExportSnapshot": {
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "documents": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "knowledge_base": {
+            "additionalProperties": true,
+            "title": "Knowledge Base",
+            "type": "object"
+          }
+        },
+        "required": [
+          "knowledge_base",
+          "documents",
+          "asset_ids"
+        ],
+        "title": "LibraryExportSnapshot",
+        "type": "object"
+      },
       "LibraryFolderImportOut": {
         "properties": {
           "created_files": {
@@ -23877,6 +24095,96 @@
         "title": "QuotaLimit",
         "type": "object"
       },
+      "ReadingIn": {
+        "additionalProperties": false,
+        "properties": {
+          "position": {
+            "$ref": "#/components/schemas/ReadingPosition"
+          },
+          "resource_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_id",
+          "title"
+        ],
+        "title": "ReadingIn",
+        "type": "object"
+      },
+      "ReadingOut": {
+        "additionalProperties": false,
+        "properties": {
+          "position": {
+            "$ref": "#/components/schemas/ReadingPosition"
+          },
+          "resource_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "visited_at": {
+            "format": "date-time",
+            "title": "Visited At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_id",
+          "title",
+          "visited_at"
+        ],
+        "title": "ReadingOut",
+        "type": "object"
+      },
+      "ReadingPosition": {
+        "additionalProperties": false,
+        "properties": {
+          "note_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note Revision"
+          },
+          "paragraph": {
+            "default": "",
+            "maxLength": 240,
+            "title": "Paragraph",
+            "type": "string"
+          },
+          "ratio": {
+            "default": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Ratio",
+            "type": "number"
+          }
+        },
+        "title": "ReadingPosition",
+        "type": "object"
+      },
       "RealtimeNumberParameterOut": {
         "properties": {
           "default": {
@@ -24265,6 +24573,56 @@
         "title": "Reference",
         "type": "object"
       },
+      "ReferenceTarget": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "excerpt": {
+            "default": "",
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "knowledge_base_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledge Base Id"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "title": {
+            "default": "",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "available"
+        ],
+        "title": "ReferenceTarget",
+        "type": "object"
+      },
       "RegistrationIn": {
         "properties": {
           "display_name": {
@@ -24631,6 +24989,24 @@
           "temporary_password"
         ],
         "title": "ResetPasswordOut",
+        "type": "object"
+      },
+      "ResolveReferences": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "ResolveReferences",
         "type": "object"
       },
       "RestoreClipStatesOperation": {
@@ -25229,6 +25605,82 @@
         "title": "RuntimeQuotasOut",
         "type": "object"
       },
+      "SavedFilterIn": {
+        "additionalProperties": false,
+        "properties": {
+          "criteria": {
+            "$ref": "#/components/schemas/SearchCriteria"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "criteria"
+        ],
+        "title": "SavedFilterIn",
+        "type": "object"
+      },
+      "SavedFilterOut": {
+        "additionalProperties": false,
+        "properties": {
+          "criteria": {
+            "$ref": "#/components/schemas/SearchCriteria"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "criteria",
+          "id",
+          "revision"
+        ],
+        "title": "SavedFilterOut",
+        "type": "object"
+      },
+      "SavedFilterPut": {
+        "additionalProperties": false,
+        "properties": {
+          "criteria": {
+            "$ref": "#/components/schemas/SearchCriteria"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "name",
+          "criteria"
+        ],
+        "title": "SavedFilterPut",
+        "type": "object"
+      },
       "SavedSegmentTranscriptionIn": {
         "additionalProperties": false,
         "properties": {
@@ -25269,6 +25721,183 @@
           "model_id"
         ],
         "title": "SavedSegmentTranscriptionIn",
+        "type": "object"
+      },
+      "SearchCriteria": {
+        "additionalProperties": false,
+        "properties": {
+          "favorite": {
+            "default": false,
+            "title": "Favorite",
+            "type": "boolean"
+          },
+          "knowledge_base_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledge Base Id"
+          },
+          "query": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Query",
+            "type": "string"
+          },
+          "tag": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Tag",
+            "type": "string"
+          },
+          "title_only": {
+            "default": false,
+            "title": "Title Only",
+            "type": "boolean"
+          }
+        },
+        "title": "SearchCriteria",
+        "type": "object"
+      },
+      "SearchHit": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "favorite": {
+            "title": "Favorite",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_home": {
+            "title": "Is Home",
+            "type": "boolean"
+          },
+          "knowledge_base_id": {
+            "title": "Knowledge Base Id",
+            "type": "string"
+          },
+          "knowledge_base_title": {
+            "title": "Knowledge Base Title",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "path": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Path",
+            "type": "array"
+          },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "snippet": {
+            "title": "Snippet",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "knowledge_base_id",
+          "parent_id",
+          "position",
+          "is_home",
+          "tags",
+          "pinned",
+          "favorite",
+          "deleted_at",
+          "revision",
+          "created_at",
+          "updated_at",
+          "excerpt",
+          "knowledge_base_title",
+          "path",
+          "snippet"
+        ],
+        "title": "SearchHit",
+        "type": "object"
+      },
+      "SearchResult": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "SearchResult",
         "type": "object"
       },
       "SecretOut": {
@@ -26026,6 +26655,95 @@
         "title": "SvgPreviewOut",
         "type": "object"
       },
+      "TemplateApply": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_knowledge_revision": {
+            "minimum": 0.0,
+            "title": "Expected Knowledge Revision",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "knowledge_base_id": {
+            "title": "Knowledge Base Id",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "title": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "knowledge_base_id",
+          "title",
+          "expected_knowledge_revision"
+        ],
+        "title": "TemplateApply",
+        "type": "object"
+      },
+      "TemplateIn": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Description",
+            "type": "string"
+          },
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "schema_version": {
+            "default": 3,
+            "enum": [
+              2,
+              3
+            ],
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "document"
+        ],
+        "title": "TemplateIn",
+        "type": "object"
+      },
       "TemplateModel": {
         "properties": {
           "capabilities": {
@@ -26097,6 +26815,73 @@
           "slug"
         ],
         "title": "TemplateModel",
+        "type": "object"
+      },
+      "TemplateOut": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Description",
+            "type": "string"
+          },
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "default": 3,
+            "enum": [
+              2,
+              3
+            ],
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Tags",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "document",
+          "id",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TemplateOut",
         "type": "object"
       },
       "TemplatePreviewIn": {
@@ -26276,6 +27061,57 @@
           "kind"
         ],
         "title": "TemplateProvider",
+        "type": "object"
+      },
+      "TemplatePut": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Description",
+            "type": "string"
+          },
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "schema_version": {
+            "default": 3,
+            "enum": [
+              2,
+              3
+            ],
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "name",
+          "document"
+        ],
+        "title": "TemplatePut",
         "type": "object"
       },
       "TemplateSupplier": {
@@ -26710,8 +27546,11 @@
             "type": "integer"
           },
           "schema_version": {
-            "const": 2,
             "default": 2,
+            "enum": [
+              2,
+              3
+            ],
             "title": "Schema Version",
             "type": "integer"
           },
@@ -27043,8 +27882,11 @@
             "type": "boolean"
           },
           "schema_version": {
-            "const": 2,
             "default": 2,
+            "enum": [
+              2,
+              3
+            ],
             "title": "Schema Version",
             "type": "integer"
           },
@@ -27168,7 +28010,10 @@
             "type": "integer"
           },
           "schema_version": {
-            "const": 2,
+            "enum": [
+              2,
+              3
+            ],
             "title": "Schema Version",
             "type": "integer"
           },
@@ -27249,8 +28094,11 @@
             "type": "boolean"
           },
           "schema_version": {
-            "const": 2,
             "default": 2,
+            "enum": [
+              2,
+              3
+            ],
             "title": "Schema Version",
             "type": "integer"
           },
@@ -52459,6 +53307,48 @@
         ]
       }
     },
+    "/v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot": {
+      "get": {
+        "operationId": "library_export_snapshot_v1_thought_workshop_knowledge_bases__project_id__export_snapshot_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryExportSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Library Export Snapshot",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
     "/v1/thought-workshop/knowledge-bases/{project_id}/move": {
       "post": {
         "operationId": "move_entry_v1_thought_workshop_knowledge_bases__project_id__move_post",
@@ -53091,6 +53981,388 @@
         ]
       }
     },
+    "/v1/thought-workshop/notes/{note_id}/backlinks": {
+      "get": {
+        "operationId": "note_backlinks_v1_thought_workshop_notes__note_id__backlinks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ThoughtNoteSummary"
+                  },
+                  "title": "Response Note Backlinks V1 Thought Workshop Notes  Note Id  Backlinks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Note Backlinks",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/checkpoints": {
+      "get": {
+        "operationId": "checkpoints_v1_thought_workshop_notes__note_id__checkpoints_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CheckpointOut"
+                  },
+                  "title": "Response Checkpoints V1 Thought Workshop Notes  Note Id  Checkpoints Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Checkpoints",
+        "tags": [
+          "thought-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_checkpoint_v1_thought_workshop_notes__note_id__checkpoints_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckpointIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckpointOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Checkpoint",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}": {
+      "delete": {
+        "operationId": "delete_checkpoint_v1_thought_workshop_notes__note_id__checkpoints__checkpoint_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "checkpoint_id",
+            "required": true,
+            "schema": {
+              "title": "Checkpoint Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Checkpoint",
+        "tags": [
+          "thought-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "rename_checkpoint_v1_thought_workshop_notes__note_id__checkpoints__checkpoint_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "checkpoint_id",
+            "required": true,
+            "schema": {
+              "title": "Checkpoint Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckpointPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckpointOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rename Checkpoint",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/copy-snapshot": {
+      "get": {
+        "operationId": "copy_snapshot_v1_thought_workshop_notes__note_id__copy_snapshot_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "subtree",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Subtree",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Copy Snapshot",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/duplicate": {
+      "post": {
+        "operationId": "duplicate_document_v1_thought_workshop_notes__note_id__duplicate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Duplicate Document",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
     "/v1/thought-workshop/notes/{note_id}/export": {
       "get": {
         "operationId": "export_note_content_v1_thought_workshop_notes__note_id__export_get",
@@ -53440,6 +54712,651 @@
           }
         },
         "summary": "Restore Note",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/preferences/filters": {
+      "get": {
+        "operationId": "saved_filters_v1_thought_workshop_preferences_filters_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedFilterOut"
+                  },
+                  "title": "Response Saved Filters V1 Thought Workshop Preferences Filters Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Saved Filters",
+        "tags": [
+          "thought-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "save_filter_v1_thought_workshop_preferences_filters_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedFilterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedFilterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Filter",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/preferences/filters/{filter_id}": {
+      "delete": {
+        "operationId": "delete_filter_v1_thought_workshop_preferences_filters__filter_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "filter_id",
+            "required": true,
+            "schema": {
+              "title": "Filter Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Filter",
+        "tags": [
+          "thought-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_filter_v1_thought_workshop_preferences_filters__filter_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "filter_id",
+            "required": true,
+            "schema": {
+              "title": "Filter Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedFilterPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedFilterOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Filter",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/preferences/reading": {
+      "get": {
+        "operationId": "reading_position_v1_thought_workshop_preferences_reading_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Resource Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ReadingOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Reading Position V1 Thought Workshop Preferences Reading Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reading Position",
+        "tags": [
+          "thought-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "record_reading_v1_thought_workshop_preferences_reading_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Reading",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/preferences/recent": {
+      "get": {
+        "operationId": "recently_visited_v1_thought_workshop_preferences_recent_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReadingOut"
+                  },
+                  "title": "Response Recently Visited V1 Thought Workshop Preferences Recent Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Recently Visited",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/references/resolve": {
+      "post": {
+        "operationId": "resolve_references_v1_thought_workshop_references_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReferenceTarget"
+                  },
+                  "title": "Response Resolve References V1 Thought Workshop References Resolve Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve References",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/search": {
+      "get": {
+        "operationId": "global_search_v1_thought_workshop_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 500,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "knowledge_base_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Knowledge Base Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 40,
+              "title": "Tag",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "favorite",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Favorite",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "title_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Title Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Global Search",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/templates": {
+      "get": {
+        "operationId": "templates_v1_thought_workshop_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TemplateOut"
+                  },
+                  "title": "Response Templates V1 Thought Workshop Templates Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Templates",
+        "tags": [
+          "thought-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_template_v1_thought_workshop_templates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Template",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/templates/{template_id}": {
+      "delete": {
+        "operationId": "delete_template_v1_thought_workshop_templates__template_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Template",
+        "tags": [
+          "thought-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_template_v1_thought_workshop_templates__template_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplatePut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Template",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/templates/{template_id}/apply": {
+      "post": {
+        "operationId": "apply_template_v1_thought_workshop_templates__template_id__apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateApply"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThoughtNoteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Template",
         "tags": [
           "thought-workshop"
         ]

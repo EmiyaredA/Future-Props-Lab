@@ -2,13 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 import { newDocument, saveNote, setThoughtTheme } from "./thought-helpers";
 
 async function expectSingleNavigation(page: Page) {
-  await expect(page.getByRole("complementary")).toHaveCount(1);
   await expect(
     page.getByRole("complementary", { name: "知识库导航", exact: true }),
   ).toHaveCount(1);
   await expect(
     page
-      .getByRole("complementary")
+      .getByRole("complementary", { name: "知识库导航", exact: true })
       .getByText("Thought Workshop", { exact: true }),
   ).toHaveCount(1);
   await expect(
@@ -54,7 +53,7 @@ test("document action menu follows the directory row and stays within the viewpo
   await page.evaluate(() => {
     document.documentElement.dataset.theme = "dark";
   });
-  await page.getByRole("button", { name: "目录", exact: true }).click();
+  await page.getByRole("button", { name: "笔记目录", exact: true }).click();
   await trigger.click();
   await expect(menu).toBeVisible();
   const mobileMenuBox = await menu.boundingBox();
@@ -148,7 +147,7 @@ test("project topbar uses a compact accessible action menu", async ({
   }
 });
 
-test("knowledge cards, editable home, nested folders, moves, old links and responsive views", async ({
+test("knowledge cards, editable home, parent documents, moves, old links and responsive views", async ({
   page,
 }, info) => {
   test.setTimeout(150000);
@@ -214,7 +213,7 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
     await prose
       .locator("p")
       .filter({ hasText: new RegExp(`^${heading}$`) })
-      .click();
+      .dblclick();
     await page.getByRole("combobox", { name: "段落样式", exact: true }).click();
     await page.getByRole("option", { name: "标题 2", exact: true }).click();
   }
@@ -231,17 +230,49 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
   await expect(prose).toContainText("让知识有序生长");
   await page.reload();
   await expect(prose).toContainText("让知识有序生长");
-  await page.getByRole("combobox", { name: "目录操作", exact: true }).click();
-  await page.getByRole("option", { name: "新建文件夹", exact: true }).click();
-  await page.getByRole("dialog").getByRole("textbox").fill("产品研究");
-  await page.getByRole("button", { name: "确认", exact: true }).click();
-  await page
-    .getByRole("combobox", { name: "产品研究操作", exact: true })
-    .click();
-  await page.getByRole("option", { name: "新建子文件夹", exact: true }).click();
-  await page.getByRole("dialog").getByRole("textbox").fill("体验观察");
-  await page.getByRole("button", { name: "确认", exact: true }).click();
-  await page.getByRole("button", { name: "新建文档", exact: true }).click();
+  await newDocument(page);
+  await page.getByLabel("笔记标题", { exact: true }).fill("产品研究");
+  await prose.fill("产品研究目录页");
+  await saveNote(page);
+  const parentId = page.url().split("/").pop()!;
+  await expect
+    .poll(
+      async () =>
+        (
+          await (
+            await page.request.get(`/v1/thought-workshop/notes/${parentId}`)
+          ).json()
+        ).title,
+    )
+    .toBe("产品研究");
+  await page.getByRole("button", { name: "产品研究操作", exact: true }).click();
+  await page.getByRole("menuitem", { name: "新建子文档", exact: true }).click();
+  await expect(page).not.toHaveURL(`${projectUrl}/documents/${parentId}`);
+  await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(
+    "未命名文档",
+  );
+  await page.getByLabel("笔记标题", { exact: true }).fill("体验观察");
+  await prose.fill("体验观察子文档");
+  await saveNote(page);
+  const childId = page.url().split("/").pop()!;
+  await expect
+    .poll(async () => {
+      const note = await (
+        await page.request.get(`/v1/thought-workshop/notes/${childId}`)
+      ).json();
+      return { title: note.title, parent_id: note.parent_id };
+    })
+    .toEqual({ title: "体验观察", parent_id: parentId });
+  await page.goto(`${projectUrl}/documents/${parentId}`);
+  const relations = page.getByRole("complementary", { name: "关联文档" });
+  await expect(
+    relations.getByRole("heading", { name: "子文档", exact: true }),
+  ).toBeVisible();
+  await expect(
+    relations.getByRole("button", { name: "体验观察", exact: true }),
+  ).toBeVisible();
+  await expect(prose).not.toContainText("体验观察");
+  await newDocument(page);
   await page
     .getByLabel("笔记标题", { exact: true })
     .fill("一份有层次的设计笔记");
@@ -312,7 +343,7 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
   await documentMenu
     .getByRole("menuitem", { name: "移动到…", exact: true })
     .click();
-  await page.getByRole("combobox", { name: "目标文件夹", exact: true }).click();
+  await page.getByRole("combobox", { name: "目标父文档", exact: true }).click();
   await page.getByRole("option", { name: "体验观察", exact: true }).click();
   await page.getByRole("button", { name: "移动", exact: true }).click();
   await expect
@@ -322,7 +353,7 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
           await (
             await page.request.get(`/v1/thought-workshop/notes/${documentId}`)
           ).json()
-        ).folder_id,
+        ).parent_id,
     )
     .not.toBeNull();
   await page
@@ -396,9 +427,9 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
         page.getByRole("dialog", { name: "知识库导航" }),
       ).toBeVisible();
       await page
-        .getByRole("combobox", { name: "产品研究操作", exact: true })
+        .getByRole("button", { name: "产品研究操作", exact: true })
         .click();
-      const menu = page.getByRole("listbox", {
+      const menu = page.getByRole("menu", {
         name: "产品研究操作",
         exact: true,
       });
@@ -406,7 +437,7 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
       const menuBox = await menu.boundingBox();
       expect(menuBox!.x).toBeGreaterThanOrEqual(0);
       expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(844);
-      const deleteOption = menu.getByRole("option", {
+      const deleteOption = menu.getByRole("menuitem", {
         name: "删除",
         exact: true,
       });
@@ -476,7 +507,7 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
     .fill("产品与设计");
   await expect(page.locator(".workshop-project-card")).toHaveCount(1);
   await expect(page.locator(".workshop-project-card")).toContainText(
-    "1 篇文档",
+    "3 篇文档",
   );
   await expect(page.locator(".workshop-status")).toHaveCount(0);
   await page.screenshot({
@@ -511,7 +542,7 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
   expect(projectId).toBeTruthy();
 });
 
-test("other workshop shells retain their original sidebar", async ({
+test("other workshop shells retain their own navigation and theme controls", async ({
   page,
 }, info) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -528,9 +559,7 @@ test("other workshop shells retain their original sidebar", async ({
     await expect(
       sidebar.getByRole("button", { name: "返回应用中心", exact: true }),
     ).toBeVisible();
-    await expect(sidebar.getByRole("group", { name: "外观模式" })).toHaveCount(
-      1,
-    );
+    await expect(page.getByRole("group", { name: "外观模式" })).toHaveCount(1);
     await page.screenshot({
       animations: "disabled",
       path: info.outputPath(`${app}-sidebar.png`),

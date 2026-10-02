@@ -12,10 +12,12 @@ export async function newDocument(page: Page) {
       page.getByRole("button", { name: "编辑首页", exact: true }),
     ).toBeVisible();
   }
+  const previousUrl = page.url();
   await page
     .getByRole("button", { name: "新建文档", exact: true })
     .last()
     .click();
+  await expect(page).not.toHaveURL(previousUrl);
   await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
 }
 export async function setThoughtTheme(page: Page, theme: string) {

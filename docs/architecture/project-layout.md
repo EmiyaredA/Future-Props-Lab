@@ -9,9 +9,16 @@
 `content/` 下的中文 Markdown 是知识库版主要使用指南，按总库、十个应用与技术原理库分目录维护；
 正文经 Vite 懒加载随 Web 和桌面包发布，不依赖原有文档中心或网络文档服务。
 官方阅读使用独立 `official-knowledge-bases` 路径和 `content.read` 权限，所有角色共用阅读组件；
-不创建 ORM 记录，不接入用户编辑、备份或回收站接口。查询键归思绪工坊 `queryKeys.ts`。
+官方正文不创建 ORM 记录，不接入用户编辑、备份或回收站接口；个人阅读位置独立归账号偏好接口，按账号和 Workspace 隔离。查询键归思绪工坊 `queryKeys.ts`。
+`reading.ts` 汇合平台、创作应用和技术文章的简介与相关阅读，附加到稳定目录条目；
+`ReadingBlocks.tsx` 负责受控 Markdown 提示框、代码高亮后的复制和标题链接，
+`ReadingOutline.tsx` 跟踪正文滚动位置，`ReadingNavigation.tsx` 拥有首页、前后篇与相关阅读。
+`official.css` 负责知识库壳与阅读布局，`reading.css` 负责文章块和阅读导航样式。
+写作与渲染约定统一维护在 `docs/operations/official-knowledge-writing.md`。
 `web/tests/official-knowledge.test.tsx` 检查内容、链接、路由与阅读行为，
 `web/e2e/official-knowledge.spec.ts` 覆盖账号入口、搜索、导航保护及响应式阅读。
+`web/tests/official-reading.test.tsx` 检查受控提示框、复制、大纲、导航与表格状态，
+`web/e2e/docs-reading.spec.ts` 验证三栏阅读、键盘焦点、零正文写请求及全部 84 篇静态文章离线加载；`thought-completion.spec.ts` 检查个人阅读同步及 URL 章节定位优先。
 
 `official/technicalCatalog.ts` 登记十二篇平台原理和十篇应用原理；`content/technical/figures/`
 保存版本化 CanvasScene，`figures.ts` 通过受控懒加载清单解析图形和搜索标签。
@@ -358,9 +365,13 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 `LinkPreviewCard`、`useLinkPreview` 与 `useLinkPreviewPosition` 在编辑和只读正文共用悬浮交互，
 样式归 `link-preview.css`。预览不进入正文或数据库，缓存键由 `queryKeys.ts` 按 Workspace 和 URL 管理。
 
-文档历史由 `apps/thought_workshop/history.py` 拥有快照与分页，`history_archive.py` 拥有 v5 备份历史校验和重映射；`notes.py` 在正文 CAS 事务中记录与还原内容。迁移 `0049_thought_history` 为现有文档建立作者未知的历史起点，历史附件独立引用并参与公共文件删除保护。历史全部保留，文档永久删除时级联释放。
+文档历史由 `apps/thought_workshop/history.py` 拥有快照与分页，`history_archive.py` 拥有备份历史校验和重映射；`notes.py` 在正文 CAS 事务中记录与还原内容。迁移 `0049_thought_history` 为现有文档建立作者未知的历史起点，历史附件独立引用并参与公共文件删除保护。历史全部保留，文档永久删除时级联释放。
 
 Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责有界块对齐与文字差异，`HistoryDecorations` 仅在预览中叠加标记，`history.css` 拥有列表和修改痕迹样式。历史模式不修改编辑草稿，唯一历史缓存键仍由 `queryKeys.ts` 维护。
+
+`apps/thought_workshop/knowledge_tools/` 拥有引用索引和解析、SQLite 检索、独立模板与原子子树复制、历史命名标记、账号偏好及一致导出快照；`archive.py` 拥有 version 6 模板与标记的校验和重映射。`routes/knowledge_tools.py` 只做协议适配。新增表由 `0080_thought_knowledge_tools` 登记，不改变旧迁移。
+
+Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发现、模板与复制对话框、关联文档、阅读位置和整库 HTML 打包；`drafts/storage.ts` 以账号、Workspace、文档、标签页隔离 IndexedDB 草稿。`useNoteResults.ts` 统一编辑和只读入口的 40 条分页。个人状态经 Principal 访问，官方正文仍来自静态清单；阅读偏好不修改官方内容。画板 version 2 的确定性锚点、文字和连线路径归 `diagrams/model.ts`，React Flow 只承载交互。
 
 `backend/app/apps/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索、文件内容解析或独立权限系统。
 
@@ -502,5 +513,5 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 `web/src/shared/live2d/` 提供工坊与 Amadeus 头像共用的纯姿态计算、类型和 PixiJS 网格装配。内置 Amadeus 的原画由 `scripts/build_amadeus_model.py` 打包成 `web/public/brand/amadeus/amadeus.fpllive2d`，用户可通过现有工坊导入 API 主动创建可编辑副本；助手窗口直接读取随应用提供的工程包，不依赖用户 Workspace 项目。
 
-`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、鲸鱼娘本地导入包校验、皮肤 PNG、台词与配置 CAS；`chat.py` 拥有按账号和 Workspace 隔离的聊天会话、请求防重放与消息记录，迁移 `r0079_desktop_pet_chat` 登记三张聊天表。文字模型调用通过 `backend/app/llm/text_client.py` 的公共入口完成，保留调用日志，不使用模型测试会话。Live2D 来源只通过 `apps/live2d_workshop/public.py` 的 Workspace 只读入口取得。素材位于当前 Workspace 的 `applications/desktop-pet/projects/<id>/assets/{source,skins,whale}/`，迁移 `r0077_desktop_pet` 登记根项目，`r0078_desktop_pet_whale` 扩展来源类型。`scripts/pack_whale_demo.py` 将显式指定的本地 Coopanion 目录打包为数据 ZIP，不把角色贴图提交或随应用打包。`web/src/features/desktop-pet/` 拥有项目页、台词与人设编辑器、PixiJS 预览、鲸鱼娘原版动态适配、独立 `web/pet.html` 运行页与 `web/pet-chat.html` 聊天小窗；`whale-vendor/` 只保存 MIT 动画代码与许可，运行贴图从 Workspace API 读取。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/pet-window.ts` 约束单只透明窗口、聊天小窗跟随、点击穿透和多屏可用区；主应用负责手动启动及关闭。
+`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、分层角色本地导入包校验、皮肤 PNG、台词与配置 CAS；`whale_package.py` 按缺省鲸鱼娘或可选 `human-chibi` 骨架验证必要部件与角色资料，沿用原数据 ZIP 与素材路径。`chat.py` 拥有按账号和 Workspace 隔离的聊天会话、请求防重放与消息记录，迁移 `r0079_desktop_pet_chat` 登记三张聊天表。文字模型调用通过 `backend/app/llm/text_client.py` 的公共入口完成，保留调用日志，不使用模型测试会话。Live2D 来源只通过 `apps/live2d_workshop/public.py` 的 Workspace 只读入口取得。素材位于当前 Workspace 的 `applications/desktop-pet/projects/<id>/assets/{source,skins,whale}/`，迁移 `r0077_desktop_pet` 登记根项目，`r0078_desktop_pet_whale` 扩展来源类型。`scripts/pack_whale_demo.py` 将显式指定的本地角色目录打包为数据 ZIP，不把角色贴图提交或随应用打包。`web/src/features/desktop-pet/` 拥有项目页、台词与人设编辑器、PixiJS 预览、鲸鱼娘原版动态适配、`humanFigure.ts` 人物骨架与表情适配、独立 `web/pet.html` 运行页与 `web/pet-chat.html` 聊天小窗；`whale-vendor/` 只保存 MIT 动画代码与许可，运行贴图从 Workspace API 读取。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/pet-window.ts` 约束单只透明窗口、聊天小窗跟随、点击穿透和多屏可用区；主应用负责手动启动及关闭。`desktop/scripts/inspect-human-pet.cjs` 在隔离烟测中渲染人物动作与表情的明暗背景验收图；本地角色原画、图层和资源包只保存在被忽略的 `.local/desktop-pet/<character>/`。
 分层绑定审阅草案由 `scripts/build_amadeus_rig_draft.py` 和 `scripts/write_live2d_review_psd.mjs` 生成到 `.local/output/live2d-rig-review/`，`scripts/check_amadeus_rig_draft.py` 校验包与像素；草案在用户验收前不替换内置运行工程。

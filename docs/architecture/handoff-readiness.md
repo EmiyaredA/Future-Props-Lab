@@ -1,6 +1,8 @@
 # 开发交付说明
 
-最新登记迁移为 `r0079_desktop_pet_chat`（按账号、Workspace 和桌宠隔离文字聊天设置、请求防重放与消息记录）；`r0078_desktop_pet_whale` 支持本地导入鲸鱼娘固定快照；`r0077_desktop_pet` 建立 Workspace 桌宠项目与固定角色快照；`r0076_amadeus_workflows` 记录 Amadeus 模式、继续来源与持久提问；`r0075_creative_workshop` 记录创意工坊草稿、公开版本与安装记录；`r0074_live2d_editable_runtime` 和 `r0073_live2d_cubism_attachment` 扩展 Live2D 工坊。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。
+思绪工坊补齐能力追加 `0080_thought_knowledge_tools`：引用索引、共享模板及素材保护、不可变历史的命名标记、账号与 Workspace 隔离的筛选和阅读位置。正文 schema version 3 和画板 sceneVersion 2 保持旧版读取；完整备份升级至 version 6。
+
+最新登记迁移为 `r0080_thought_knowledge_tools`（思绪工坊引用、模板、命名快照和个人阅读状态）；此前的 `r0079_desktop_pet_chat` 按账号、Workspace 和桌宠隔离文字聊天设置、请求防重放与消息记录；`r0078_desktop_pet_whale` 支持本地导入鲸鱼娘固定快照；`r0077_desktop_pet` 建立 Workspace 桌宠项目与固定角色快照；`r0076_amadeus_workflows` 记录 Amadeus 模式、继续来源与持久提问；`r0075_creative_workshop` 记录创意工坊草稿、公开版本与安装记录；`r0074_live2d_editable_runtime` 和 `r0073_live2d_cubism_attachment` 扩展 Live2D 工坊。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。
 
 账号治理迁移为 `r0050_workspace_governance`，追加在思绪工坊历史迁移之后。扩展固定成员角色并保存邀请目标角色，保留旧数据；升级影响见[账号与工作区治理](../reference/account-governance.md)。
 
@@ -54,7 +56,7 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 
 ## 迁移与兼容状态
 
-- 当前 migration registry 最新版本为 `r0076_amadeus_workflows`；交接前通过
+- 当前 migration registry 最新版本为 `r0080_thought_knowledge_tools`；交接前通过
   `npm run db:migrate:check` 只读确认目标数据库处于同一连续前缀。
 - migration 只允许在 `db/migrations/versions/` 追加并登记，不得改写已登记版本、checksum 或
   `schema_migrations`。
@@ -82,6 +84,10 @@ npm run contracts:check
 npm run build
 npm run test:e2e
 ```
+
+并行运行隔离浏览器验收时，为每次运行设置独立的 `FPL_E2E_DATABASE_PATH`、
+`FPL_E2E_AUTH_STATE`、`FPL_E2E_OUTPUT` 和 API/Web 端口，避免共享登录快照覆盖。
+代理保留的测试数据库、登录快照和截图统一放在已忽略的 `.local/` 任务目录中。
 
 缺少真实供应商凭证时，不执行会产生费用或依赖外网状态的真实模型调用；应明确记录未验证的供应商、
 模型和原因，不能用真实调用替代确定性测试。

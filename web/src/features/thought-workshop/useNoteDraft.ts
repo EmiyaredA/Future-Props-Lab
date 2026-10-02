@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAccountId, useWorkspaceId } from "@platform/auth/WorkspacePermissions";
-import { draftKey, draftTabId, listLocalDrafts, putLocalDraft, removeLocalDraft, type LocalDraft } from "./drafts/storage";
+import {
+  useAccountId,
+  useWorkspaceId,
+} from "@platform/auth/WorkspacePermissions";
+import {
+  draftKey,
+  draftTabId,
+  listLocalDrafts,
+  putLocalDraft,
+  removeLocalDraft,
+  type LocalDraft,
+} from "./drafts/storage";
 import { ApiError } from "@platform/api/client";
 import { publishResourceRevision } from "@platform/sync/resourceBroadcast";
 import {
@@ -13,17 +23,21 @@ import {
 
 export type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
-  const userId = useAccountId(), workspaceId = useWorkspaceId();
+  const userId = useAccountId(),
+    workspaceId = useWorkspaceId();
   const [tabId] = useState(draftTabId);
   const identity = userId && workspaceId ? { userId, workspaceId } : null;
   const key = identity ? draftKey(identity, initial.id, tabId) : null;
   const [recovery, setRecovery] = useState<LocalDraft[]>([]);
   const recoveryRef = useRef<LocalDraft[]>([]);
   const [localError, setLocalError] = useState("");
+  const [localReady, setLocalReady] = useState(!identity);
   const ready = useRef<Promise<void>>(Promise.resolve());
   const localTime = useRef(0);
   const writes = useRef<Promise<unknown>>(Promise.resolve());
   const [draft, setDraft] = useState<NoteInput>(() => noteInput(initial));
+  const [titleInput, setTitleInputState] = useState<string | null>(null);
+  const titleInputRef = useRef<string | null>(null);
   const [state, setState] = useState<SaveState>("saved");
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState<Note | null>(null);
@@ -33,6 +47,7 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
   const [savedAt, setSavedAt] = useState(initial.updated_at);
   const draftRef = useRef(draft);
   const saved = useRef(initial);
+  const opened = useRef(initial);
   const generation = useRef(0);
   const savedGeneration = useRef(0);
   const blocked = useRef(false);
@@ -47,26 +62,61 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
     };
   }, []);
 
-  const localFailure = (error: unknown) => { if (alive.current) setLocalError(error instanceof Error ? error.message : "本机草稿存储失败"); };
+  const localFailure = (error: unknown) => {
+    if (alive.current)
+      setLocalError(
+        error instanceof Error ? error.message : "本机草稿存储失败",
+      );
+  };
   const persist = useRef<() => void>(() => {});
   persist.current = () => {
     if (!identity || !key) return;
     localTime.current = Math.max(Date.now(), localTime.current + 1);
-    const record: LocalDraft = { ...identity, key, noteId: initial.id, tabId, revision: saved.current.revision, updatedAt: localTime.current, body: structuredClone(draftRef.current) };
-    writes.current = writes.current.catch(() => {}).then(() => putLocalDraft(record)).catch(localFailure);
+    const record: LocalDraft = {
+      ...identity,
+      key,
+      noteId: initial.id,
+      tabId,
+      revision: saved.current.revision,
+      updatedAt: localTime.current,
+      body: structuredClone(draftRef.current),
+      ...(titleInputRef.current !== null &&
+      titleInputRef.current !== draftRef.current.title
+        ? { titleInput: titleInputRef.current }
+        : {}),
+    };
+    writes.current = writes.current
+      .catch(() => {})
+      .then(() => putLocalDraft(record))
+      .catch(localFailure);
   };
   useEffect(() => {
     if (!userId || !workspaceId) return;
     let active = true;
-    ready.current = listLocalDrafts({userId, workspaceId}, initial.id).then(async records => {
-      const pending: LocalDraft[] = [];
-      for (const row of records) {
-        if (JSON.stringify(row.body) === JSON.stringify(noteInput(initial))) await removeLocalDraft(row.key, row.updatedAt);
-        else pending.push(row);
-      }
-      if (active) { recoveryRef.current = pending; setRecovery(pending); }
-    }).catch(localFailure);
-    return () => { active = false; };
+    ready.current = listLocalDrafts({ userId, workspaceId }, initial.id)
+      .then(async (records) => {
+        const pending: LocalDraft[] = [];
+        for (const row of records) {
+          if (
+            row.titleInput === undefined &&
+            JSON.stringify(row.body) ===
+              JSON.stringify(noteInput(opened.current))
+          )
+            await removeLocalDraft(row.key, row.updatedAt);
+          else pending.push(row);
+        }
+        if (active) {
+          recoveryRef.current = pending;
+          setRecovery(pending);
+        }
+      })
+      .catch(localFailure)
+      .finally(() => {
+        if (active) setLocalReady(true);
+      });
+    return () => {
+      active = false;
+    };
   }, [userId, workspaceId, initial.id]);
 
   const change = useCallback((patch: Partial<NoteInput>) => {
@@ -86,7 +136,7 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
   }, []);
 
   const flush = useCallback(async (): Promise<Note> => {
-    await ready.current;
+    if (key) await ready.current;
     if (recoveryRef.current.length) throw new Error("请先恢复或丢弃本机草稿");
     if (composition.current) await composition.current;
     if (!alive.current) throw new Error("文档已关闭");
@@ -109,7 +159,10 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
       saved.current = next;
       savedGeneration.current = sent;
       if (key) {
-        writes.current = writes.current.catch(() => {}).then(() => removeLocalDraft(key, acknowledgedAt)).catch(localFailure);
+        writes.current = writes.current
+          .catch(() => {})
+          .then(() => removeLocalDraft(key, acknowledgedAt))
+          .catch(localFailure);
         if (generation.current !== sent) persist.current();
       }
       publishResourceRevision({
@@ -159,7 +212,11 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
     return () => window.removeEventListener("beforeunload", unload);
   }, []);
   const adopt = (server: Note) => {
-    if (key) writes.current = writes.current.catch(() => {}).then(() => removeLocalDraft(key)).catch(localFailure);
+    if (key)
+      writes.current = writes.current
+        .catch(() => {})
+        .then(() => removeLocalDraft(key))
+        .catch(localFailure);
     saved.current = server;
     draftRef.current = noteInput(server);
     savedGeneration.current = ++generation.current;
@@ -167,6 +224,8 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
     setConflict(null);
     setError("");
     setDraft(draftRef.current);
+    titleInputRef.current = null;
+    setTitleInputState(null);
     setState("saved");
     setSavedAt(server.updated_at);
   };
@@ -190,13 +249,19 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
   const discardLocal = async (row: LocalDraft) => {
     try {
       await removeLocalDraft(row.key, row.updatedAt);
-      recoveryRef.current = recoveryRef.current.filter(item => item.key !== row.key);
+      recoveryRef.current = recoveryRef.current.filter(
+        (item) => item.key !== row.key,
+      );
       setRecovery(recoveryRef.current);
-    } catch (error) { localFailure(error); }
+    } catch (error) {
+      localFailure(error);
+    }
   };
   const restoreLocal = async (row: LocalDraft) => {
     const different = row.revision !== saved.current.revision;
     change(row.body);
+    titleInputRef.current = row.titleInput ?? null;
+    setTitleInputState(titleInputRef.current);
     if (different) {
       blocked.current = true;
       setConflict(saved.current);
@@ -207,13 +272,26 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
     persist.current();
   };
   return {
-    recovery, localError, discardLocal, restoreLocal,
+    recovery,
+    localReady,
+    localError,
+    discardLocal,
+    restoreLocal,
     duplicateLocal: async (row: LocalDraft) => {
-      const next = await createNote({...row.body, title: row.body.title.slice(0, 230) + "（恢复副本）"});
+      const next = await createNote({
+        ...row.body,
+        title: row.body.title.slice(0, 230) + "（恢复副本）",
+      });
       await discardLocal(row);
       return next;
     },
     draft,
+    titleInput,
+    setTitleInput: (value: string | null) => {
+      titleInputRef.current = value;
+      setTitleInputState(value);
+      persist.current();
+    },
     change,
     flush,
     state,

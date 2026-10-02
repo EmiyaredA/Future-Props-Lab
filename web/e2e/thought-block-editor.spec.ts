@@ -60,6 +60,22 @@ test("Backspace preserves body deletion, selection and list behavior", async ({
 
   await focusBodyStart(prose);
   await prose.press("Shift+ArrowRight");
+  await expect
+    .poll(() => prose.evaluate(() => window.getSelection()?.toString()))
+    .toBe("a");
+  await expect
+    .poll(() =>
+      prose.evaluate((root) => {
+        const editor = (
+          root as HTMLElement & { editor: import("@tiptap/core").Editor }
+        ).editor;
+        return editor.state.doc.textBetween(
+          editor.state.selection.from,
+          editor.state.selection.to,
+        );
+      }),
+    )
+    .toBe("a");
   await prose.press("Backspace");
   await expect(prose).toHaveText("b");
   await expect(prose).toBeFocused();

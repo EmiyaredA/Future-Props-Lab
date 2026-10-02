@@ -17,7 +17,7 @@ export default defineConfig({
   expect: { timeout: 5_000 },
   use: {
     baseURL: `http://127.0.0.1:${webPort}`,
-    storageState: "e2e/.auth-state.json",
+    storageState: process.env.FPL_E2E_AUTH_STATE || "e2e/.auth-state.json",
     trace: "retain-on-failure",
   },
   projects: [

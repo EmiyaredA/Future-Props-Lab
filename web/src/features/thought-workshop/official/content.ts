@@ -1,3 +1,4 @@
+import type { Root } from "mdast";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
@@ -31,4 +32,32 @@ export function officialHeadings(markdown: string): OfficialHeading[] {
       },
     ];
   });
+}
+
+/** Recognize a small Markdown vocabulary; source HTML remains disabled. */
+export function remarkOfficialCallouts() {
+  return (tree: Root) => {
+    const walk = (node: Root | Root["children"][number]) => {
+      if (node.type === "blockquote") {
+        const paragraph = node.children[0];
+        const first =
+          paragraph?.type === "paragraph" ? paragraph.children[0] : undefined;
+        const marker =
+          first?.type === "text" &&
+          /^\[!(NOTE|TIP|WARNING)\](?:\s*\n|$)/.exec(first.value);
+        if (marker && first?.type === "text") {
+          first.value = first.value.slice(marker[0].length);
+          node.data = {
+            ...node.data,
+            hProperties: { "data-official-callout": marker[1].toLowerCase() },
+          };
+        }
+      }
+      if ("children" in node)
+        for (const child of node.children) {
+          if ("children" in child) walk(child as Root["children"][number]);
+        }
+    };
+    walk(tree);
+  };
 }

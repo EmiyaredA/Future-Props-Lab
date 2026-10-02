@@ -77,31 +77,97 @@ export function duplicateElements(
     ],
   };
 }
-export function alignElements(scene: CanvasScene, ids: Set<string>, mode: "left" | "right" | "top" | "bottom" | "centerX" | "centerY" | "horizontal" | "vertical"): CanvasScene {
-  const selected = scene.elements.filter(e => ids.has(e.id) && e.kind !== "frame");
+export function alignElements(
+  scene: CanvasScene,
+  ids: Set<string>,
+  mode:
+    | "left"
+    | "right"
+    | "top"
+    | "bottom"
+    | "centerX"
+    | "centerY"
+    | "horizontal"
+    | "vertical",
+): CanvasScene {
+  const selected = scene.elements.filter(
+    (e) => ids.has(e.id) && e.kind !== "frame",
+  );
   if (selected.length < 2) return scene;
-  const left = Math.min(...selected.map(e=>e.x)), right = Math.max(...selected.map(e=>e.x+e.width));
-  const top = Math.min(...selected.map(e=>e.y)), bottom = Math.max(...selected.map(e=>e.y+e.height));
+  const left = Math.min(...selected.map((e) => e.x)),
+    right = Math.max(...selected.map((e) => e.x + e.width));
+  const top = Math.min(...selected.map((e) => e.y)),
+    bottom = Math.max(...selected.map((e) => e.y + e.height));
   const horizontal = mode === "horizontal";
-  const sorted = [...selected].sort((a,b)=>horizontal ? a.x-b.x : a.y-b.y);
-  const span = horizontal ? sorted.at(-1)!.x+sorted.at(-1)!.width-sorted[0].x : sorted.at(-1)!.y+sorted.at(-1)!.height-sorted[0].y;
-  const gap = (span - sorted.reduce((sum,e)=>sum+(horizontal?e.width:e.height),0))/(sorted.length-1);
-  return {...scene, elements:scene.elements.map(e=>{
-    if (!selected.includes(e)) return e;
-    if (mode === "left") return {...e,x:left};
-    if (mode === "right") return {...e,x:right-e.width};
-    if (mode === "top") return {...e,y:top};
-    if (mode === "bottom") return {...e,y:bottom-e.height};
-    if (mode === "centerX") return {...e,x:(left+right-e.width)/2};
-    if (mode === "centerY") return {...e,y:(top+bottom-e.height)/2};
-    const index=sorted.indexOf(e), offset=sorted.slice(0,index).reduce((sum,n)=>sum+(horizontal?n.width:n.height)+gap,0);
-    return {...e,...(horizontal?{x:sorted[0].x+offset}:{y:sorted[0].y+offset})};
-  })};
+  const sorted = [...selected].sort((a, b) =>
+    horizontal ? a.x - b.x : a.y - b.y,
+  );
+  const span = horizontal
+    ? sorted.at(-1)!.x + sorted.at(-1)!.width - sorted[0].x
+    : sorted.at(-1)!.y + sorted.at(-1)!.height - sorted[0].y;
+  const gap =
+    (span -
+      sorted.reduce((sum, e) => sum + (horizontal ? e.width : e.height), 0)) /
+    (sorted.length - 1);
+  return {
+    ...scene,
+    elements: scene.elements.map((e) => {
+      if (!selected.includes(e)) return e;
+      if (mode === "left") return { ...e, x: left };
+      if (mode === "right") return { ...e, x: right - e.width };
+      if (mode === "top") return { ...e, y: top };
+      if (mode === "bottom") return { ...e, y: bottom - e.height };
+      if (mode === "centerX") return { ...e, x: (left + right - e.width) / 2 };
+      if (mode === "centerY") return { ...e, y: (top + bottom - e.height) / 2 };
+      const index = sorted.indexOf(e),
+        offset = sorted
+          .slice(0, index)
+          .reduce((sum, n) => sum + (horizontal ? n.width : n.height) + gap, 0);
+      return {
+        ...e,
+        ...(horizontal
+          ? { x: sorted[0].x + offset }
+          : { y: sorted[0].y + offset }),
+      };
+    }),
+  };
 }
-export function insertCanvasTemplate(scene: CanvasScene, template: CanvasScene): CanvasScene {
-  const mapping = new Map(template.elements.map(e=>[e.id,crypto.randomUUID()]));
-  const offset = scene.elements.length ? Math.max(...scene.elements.map(e=>e.x+e.width))+60 : 0;
-  const copied = {...template, elements:template.elements.map(e=>({...e,id:mapping.get(e.id)!,x:e.x+offset,...(e.parentId?{parentId:mapping.get(e.parentId)!}:{})})),edges:template.edges.map(e=>({...e,id:crypto.randomUUID(),source:mapping.get(e.source)!,target:mapping.get(e.target)!}))};
-  const grouped=groupElements(copied,new Set(copied.elements.filter(e=>!e.parentId && e.kind!=="frame").map(e=>e.id)));
-  return {...scene,elements:[...scene.elements,...grouped.elements],edges:[...scene.edges,...grouped.edges]};
+export function insertCanvasTemplate(
+  scene: CanvasScene,
+  template: CanvasScene,
+): CanvasScene {
+  const mapping = new Map(
+    template.elements.map((e) => [e.id, crypto.randomUUID()]),
+  );
+  const offset = scene.elements.length
+    ? Math.max(...scene.elements.map((e) => e.x + e.width)) + 60
+    : 0;
+  const copied = {
+    ...template,
+    elements: template.elements.map((e) => ({
+      ...e,
+      id: mapping.get(e.id)!,
+      x: e.x + offset,
+      ...(e.parentId ? { parentId: mapping.get(e.parentId)! } : {}),
+    })),
+    edges: template.edges.map((e) => ({
+      ...e,
+      id: crypto.randomUUID(),
+      source: mapping.get(e.source)!,
+      target: mapping.get(e.target)!,
+    })),
+  };
+  const grouped = groupElements(
+    copied,
+    new Set(
+      copied.elements
+        .filter((e) => !e.parentId && e.kind !== "frame")
+        .map((e) => e.id),
+    ),
+  );
+  return {
+    ...scene,
+    elements: [...scene.elements, ...grouped.elements],
+    edges: [...scene.edges, ...grouped.edges],
+  };
 }

@@ -1,0 +1,264 @@
+"""Independent template snapshots and atomic document-tree copies."""
+
+from copy import deepcopy
+from pathlib import Path
+
+from sqlalchemy import delete, select, update
+
+from app.apps.thought_workshop.content_exports import resolve_assets
+from app.apps.thought_workshop.directory import Directory
+from app.apps.thought_workshop.errors import ThoughtError
+from app.apps.thought_workshop.history import History
+from app.apps.thought_workshop.knowledge import KnowledgeBases
+from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+from app.apps.thought_workshop.notes import Notes, note_out
+from app.apps.thought_workshop.schemas.document import attachment_nodes, file_ids, image_ids
+from app.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
+from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
+from app.runtime.ids import new_id
+from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import utc_now
+
+from .models import ThoughtTemplate, ThoughtTemplateAsset
+from .references import remap_references, validate_targets
+from .schemas import DuplicateOut, DuplicateSnapshot, TemplateOut
+
+
+class ReusableContent:
+    def __init__(self, session, workspace_id, author_id=None):
+        self.session, self.workspace_id, self.author_id = session, workspace_id, author_id
+
+    async def template(self, id):
+        row = await self.session.scalar(
+            select(ThoughtTemplate)
+            .where(ThoughtTemplate.id == id, ThoughtTemplate.workspace_id == self.workspace_id)
+            .execution_options(populate_existing=True)
+        )
+        if row is None:
+            raise ThoughtError("模板不存在", 404, "not_found")
+        return row
+
+    async def templates(self):
+        return [
+            TemplateOut.model_validate(row)
+            for row in await self.session.scalars(
+                select(ThoughtTemplate)
+                .where(ThoughtTemplate.workspace_id == self.workspace_id)
+                .order_by(ThoughtTemplate.updated_at.desc(), ThoughtTemplate.id)
+            )
+        ]
+
+    async def validate_template(self, body, existing=None):
+        await validate_targets(self.session, self.workspace_id, body.document, existing)
+        ids = file_ids(body.document)
+        assets = await resolve_assets(self.session, self.workspace_id, ids)
+        if any(assets[id].media_kind != "image" for id in image_ids(body.document)):
+            raise ThoughtError("画板与图片必须引用图片素材")
+        for node in attachment_nodes(body.document):
+            row = assets[node["attrs"]["assetId"]]
+            if Path(row.original_filename).suffix.lower() not in ATTACHMENT_EXTENSIONS:
+                raise ThoughtError("不支持此附件类型")
+            node["attrs"] = {
+                "assetId": row.id,
+                "filename": row.original_filename,
+                "mimeType": row.mime_type,
+                "byteSize": row.byte_size,
+            }
+        body.schema_version = 3
+        return ids
+
+    async def template_refs(self, id, ids):
+        await self.session.execute(
+            delete(ThoughtTemplateAsset).where(ThoughtTemplateAsset.template_id == id)
+        )
+        self.session.add_all(ThoughtTemplateAsset(template_id=id, asset_id=asset) for asset in ids)
+
+    async def create_template(self, body):
+        ids = await self.validate_template(body)
+        row = ThoughtTemplate(workspace_id=self.workspace_id, **body.model_dump())
+        self.session.add(row)
+        await self.session.flush()
+        await self.template_refs(row.id, ids)
+        await self.session.commit()
+        return TemplateOut.model_validate(row)
+
+    async def template_conflict(self, id, expected):
+        await self.session.rollback()
+        current = TemplateOut.model_validate(await self.template(id))
+        raise RevisionConflictError(expected, current.revision, current.model_dump(mode="json"))
+
+    async def update_template(self, id, body):
+        row = await self.template(id)
+        ids = await self.validate_template(body, row.document)
+        result = await self.session.execute(
+            update(ThoughtTemplate)
+            .where(
+                ThoughtTemplate.id == id,
+                ThoughtTemplate.workspace_id == self.workspace_id,
+                ThoughtTemplate.revision == body.expected_revision,
+            )
+            .values(
+                **body.model_dump(exclude={"expected_revision"}),
+                revision=body.expected_revision + 1,
+                updated_at=utc_now(),
+            )
+        )
+        if result.rowcount != 1:
+            await self.template_conflict(id, body.expected_revision)
+        await self.template_refs(id, ids)
+        await self.session.commit()
+        return TemplateOut.model_validate(await self.template(id))
+
+    async def delete_template(self, id, expected):
+        await self.template(id)
+        result = await self.session.execute(
+            delete(ThoughtTemplate).where(
+                ThoughtTemplate.id == id,
+                ThoughtTemplate.workspace_id == self.workspace_id,
+                ThoughtTemplate.revision == expected,
+            )
+        )
+        if result.rowcount != 1:
+            await self.template_conflict(id, expected)
+        await self.session.commit()
+
+    async def apply_template(self, id, body):
+        template = await self.template(id)
+        guarded = await self.session.execute(
+            update(ThoughtTemplate)
+            .where(
+                ThoughtTemplate.id == id,
+                ThoughtTemplate.workspace_id == self.workspace_id,
+                ThoughtTemplate.revision == body.expected_revision,
+            )
+            .values(revision=ThoughtTemplate.revision)
+        )
+        if guarded.rowcount != 1:
+            await self.template_conflict(id, body.expected_revision)
+        directory = Directory(self.session, self.workspace_id, self.author_id)
+        await directory.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
+        await directory.parent(body.knowledge_base_id, body.parent_id)
+        row = await Notes(self.session, self.workspace_id, self.author_id).create(
+            ThoughtNoteIn(
+                knowledge_base_id=body.knowledge_base_id,
+                parent_id=body.parent_id,
+                title=body.title,
+                document=deepcopy(template.document),
+                tags=template.tags,
+                schema_version=3,
+            ),
+            commit=False,
+            importing=True,
+        )
+        row.position = (
+            max(
+                (
+                    n.position
+                    for n in await directory.siblings(body.knowledge_base_id, body.parent_id)
+                ),
+                default=-1,
+            )
+            + 1
+        )
+        await History(self.session).append(row, self.author_id, "create")
+        await self.session.commit()
+        return note_out(row)
+
+    async def copy_source(self, id, subtree):
+        notes = Notes(self.session, self.workspace_id, self.author_id)
+        root = await notes.get(id)
+        if root.deleted_at or root.is_home:
+            raise ThoughtError("首页或回收站文档不能复制")
+        all_rows = list(
+            await self.session.scalars(
+                select(ThoughtNote)
+                .where(
+                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.knowledge_base_id == root.knowledge_base_id,
+                    ThoughtNote.deleted_at.is_(None),
+                    ThoughtNote.is_home.is_(False),
+                )
+                .order_by(ThoughtNote.position, ThoughtNote.id)
+            )
+        )
+        found, rows = {id}, [root]
+        if subtree:
+            for parent in rows:
+                children = [n for n in all_rows if n.parent_id == parent.id and n.id not in found]
+                found.update(n.id for n in children)
+                rows.extend(children)
+        project = await KnowledgeBases(self.session, self.workspace_id).get(root.knowledge_base_id)
+        return project, rows
+
+    async def copy_snapshot(self, id, subtree):
+        project, rows = await self.copy_source(id, subtree)
+        return DuplicateSnapshot(
+            knowledge_revision=project.revision, revisions={row.id: row.revision for row in rows}
+        )
+
+    async def duplicate(self, id, body):
+        project, source = await self.copy_source(id, body.subtree)
+        current = {row.id: row.revision for row in source}
+        if current != body.expected_revisions or project.revision != body.source_knowledge_revision:
+            raise RevisionConflictError(
+                body.source_knowledge_revision,
+                project.revision,
+                DuplicateSnapshot(
+                    knowledge_revision=project.revision, revisions=current
+                ).model_dump(),
+            )
+        guard = await self.session.execute(
+            update(ThoughtKnowledgeBase)
+            .where(
+                ThoughtKnowledgeBase.id == project.id,
+                ThoughtKnowledgeBase.workspace_id == self.workspace_id,
+                ThoughtKnowledgeBase.revision == body.source_knowledge_revision,
+            )
+            .values(revision=ThoughtKnowledgeBase.revision)
+        )
+        if guard.rowcount != 1:
+            await self.session.rollback()
+            latest = await self.copy_snapshot(id, body.subtree)
+            raise RevisionConflictError(
+                body.source_knowledge_revision, latest.knowledge_revision, latest.model_dump()
+            )
+        for row in source:
+            guarded = await self.session.execute(
+                update(ThoughtNote)
+                .where(
+                    ThoughtNote.id == row.id,
+                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.revision == current[row.id],
+                )
+                .values(revision=ThoughtNote.revision)
+            )
+            if guarded.rowcount != 1:
+                await Notes(self.session, self.workspace_id).conflict(row.id, current[row.id])
+        directory = Directory(self.session, self.workspace_id, self.author_id)
+        await directory.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
+        await directory.parent(body.knowledge_base_id, body.parent_id)
+        mapping = {row.id: new_id() for row in source}
+        siblings = await directory.siblings(body.knowledge_base_id, body.parent_id)
+        position = max((n.position for n in siblings), default=-1) + 1
+        created = []
+        for row in source:
+            new = await Notes(self.session, self.workspace_id, self.author_id).create(
+                ThoughtNoteIn(
+                    knowledge_base_id=body.knowledge_base_id,
+                    parent_id=body.parent_id if row.id == id else mapping[row.parent_id],
+                    title=row.title[:230] + "（副本）" if row.id == id else row.title,
+                    document=remap_references(row.document, mapping),
+                    tags=list(row.tags),
+                    schema_version=3,
+                ),
+                commit=False,
+                importing=True,
+                note_id=mapping[row.id],
+            )
+            new.position = position if row.id == id else row.position
+            await History(self.session).append(new, self.author_id, "create")
+            created.append(new.id)
+        await self.session.commit()
+        return DuplicateOut(
+            root_id=mapping[id], note_ids=created, knowledge_base_id=body.knowledge_base_id
+        )

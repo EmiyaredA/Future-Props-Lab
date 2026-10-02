@@ -1,6 +1,15 @@
 import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronLeft, ChevronRight, History, X } from "lucide-react";
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import { TextInputDialog } from "@shared/ui/TextInputDialog";
+import {
+  listCheckpoints,
+  createCheckpoint,
+  renameCheckpoint,
+  deleteCheckpoint,
+  type Checkpoint,
+} from "./knowledge-tools/api";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { ApiError } from "@platform/api/client";
@@ -29,6 +38,15 @@ export function NoteHistory({
   restored: (note: Note) => void;
   conflict: (note: Note) => void;
 }) {
+  const [baseline, setBaseline] = useState<string>("");
+  const [checkpointInput, setCheckpointInput] = useState<
+    Checkpoint | "create" | null
+  >(null);
+  const checkpoints = useQuery({
+    queryKey: thoughtKeys.checkpoints(note.id),
+    queryFn: () => listCheckpoints(note.id),
+    retry: false,
+  });
   const [selected, setSelected] = useState<string>();
   const [showChanges, setShowChanges] = useState(true);
   const [drawer, setDrawer] = useState(false);
@@ -52,8 +70,13 @@ export function NoteHistory({
     queryFn: ({ signal }) => getHistory(note.id, recordId!, signal),
     enabled: !!recordId,
   });
+  const compare = useQuery({
+    queryKey: thoughtKeys.historyDetail(note.id, baseline),
+    queryFn: ({ signal }) => getHistory(note.id, baseline, signal),
+    enabled: !!baseline,
+  });
   const current = detail.data?.current,
-    previous = detail.data?.previous;
+    previous = baseline ? compare.data?.current : detail.data?.previous;
   const diff = useMemo(
     () => (current ? historyDiff(current.document, previous?.document) : null),
     [current, previous],
@@ -136,6 +159,92 @@ export function NoteHistory({
             还原此记录
           </button>
         </header>
+        <div className="thought-tools">
+          <CustomSelect
+            ariaLabel="历史比较基准"
+            value={baseline}
+            options={[
+              { value: "", label: "前一个版本" },
+              ...records.map((record) => ({
+                value: record.id,
+                label: `版本 ${record.revision} · ${historyTime(record.created_at, true)}`,
+              })),
+            ]}
+            onChange={setBaseline}
+          />
+          {history.hasNextPage && (
+            <button
+              className="btn"
+              onClick={() => void history.fetchNextPage()}
+            >
+              加载更多版本
+            </button>
+          )}
+          <button
+            className="btn"
+            disabled={!current}
+            onClick={() => setCheckpointInput("create")}
+          >
+            命名此快照
+          </button>
+          {checkpoints.data?.map((checkpoint) => (
+            <span key={checkpoint.id}>
+              <button
+                className="btn"
+                onClick={() => setSelected(checkpoint.history_id)}
+              >
+                {checkpoint.name}
+              </button>
+              <button
+                className="btn small"
+                aria-label={`重命名快照${checkpoint.name}`}
+                onClick={() => setCheckpointInput(checkpoint)}
+              >
+                改名
+              </button>
+              <button
+                className="btn small"
+                aria-label={`删除快照标记${checkpoint.name}`}
+                onClick={() =>
+                  void deleteCheckpoint(checkpoint)
+                    .then(() => checkpoints.refetch())
+                    .catch((error) => setError(String(error)))
+                }
+              >
+                删除标记
+              </button>
+            </span>
+          ))}
+          {compare.error && <p role="alert">{compare.error.message}</p>}
+        </div>
+        <TextInputDialog
+          open={!!checkpointInput}
+          title={checkpointInput === "create" ? "命名历史快照" : "重命名快照"}
+          label="快照名称"
+          initialValue={
+            checkpointInput && checkpointInput !== "create"
+              ? checkpointInput.name
+              : ""
+          }
+          onCancel={() => setCheckpointInput(null)}
+          onConfirm={(name) => {
+            const input = checkpointInput;
+            setCheckpointInput(null);
+            void (
+              input === "create" && current
+                ? createCheckpoint(note.id, {
+                    name,
+                    history_id: current.id,
+                    expected_note_revision: note.revision,
+                  })
+                : input && input !== "create"
+                  ? renameCheckpoint(input, name)
+                  : Promise.resolve()
+            )
+              .then(() => checkpoints.refetch())
+              .catch((error) => setError(String(error)));
+          }}
+        />
         <div className="thought-history-options">
           <span>
             {previous
@@ -158,6 +267,14 @@ export function NoteHistory({
         {error && (
           <p className="thought-error" role="alert">
             {error}
+          </p>
+        )}
+        {checkpoints.error && (
+          <p className="thought-error" role="alert">
+            {checkpoints.error.message}
+            <button className="btn" onClick={() => void checkpoints.refetch()}>
+              重试快照标记
+            </button>
           </p>
         )}
         {detail.isError && (

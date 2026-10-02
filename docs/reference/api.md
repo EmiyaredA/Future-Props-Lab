@@ -71,7 +71,7 @@ Principal 相符，防止切换工作区时授权到错误空间。`POST /agent/
 
 内容保存和历史写入在同一事务完成，重复内容、收藏和目录变更不会产生正文快照。创建、首页和导入同样记录历史。历史作者由认证 Principal 获取；迁移前的历史不可重建，基线作者显示未知。
 
-完整备份版本为 v5，新增 `history` 和历史引用的附件；导入兼容 v1–v4。导入的历史账号 ID 清空，仅保留作者名称和原时间，导入动作追加当前操作者记录。历史无自动过期，回收站仍保留；永久删除文档时级联释放历史引用。
+完整备份版本为 v6，保留 `history`、模板、命名快照和全部引用附件；导入兼容 v1–v5。导入的历史账号 ID 清空，仅保留作者名称和原时间，导入动作追加当前操作者记录。历史无自动过期，回收站仍保留；永久删除文档时级联释放历史引用。
 
 交互式 OpenAPI 位于后端 `/docs`。所有业务接口注册在 `/v1`。浏览器使用 Cookie Session；写请求
 同时校验 `fpl_csrf`/`X-CSRF-Token` 与精确 Origin。自动化可使用绑定单一 Workspace、以 `fpm_`
@@ -864,7 +864,7 @@ Workspace 仅从认证主体派生。跨空间 ID 返回 404。
 | `POST /knowledge-bases/{id}/documents` | expected_revision、title、parent_id 创建空文档                                                                                          |
 | `POST /knowledge-bases/{id}/move`      | expected_revision、item_id、parent_id、before_id；库内移动与排序                                                                        |
 | `GET /notes`                           | 必填 knowledge_base_id；query、parent_id（unfiled 为根目录）、tag、view、sort、offset、limit；普通文档摘要不含正文和首页                |
-| `POST /notes`                          | knowledge_base_id、parent_id、expected_knowledge_revision 与 v2 正文，原子创建文档                                                      |
+| `POST /notes`                          | knowledge_base_id、parent_id、expected_knowledge_revision 与 v3 正文（兼容 v2），原子创建文档                                           |
 | `GET/PUT /notes/{id}`                  | 读取／带 expected_revision 保存完整文档和元数据                                                                                         |
 | `DELETE /notes/{id}`                   | 带 expected_revision 与 expected_knowledge_revision 移入回收站；cascade_children=true 连同子树；permanent=true 永久删除回收站笔记       |
 | `POST /notes/{id}/restore`             | 带 expected_revision 与 expected_knowledge_revision 恢复                                                                                |
@@ -872,10 +872,10 @@ Workspace 仅从认证主体派生。跨空间 ID 返回 404。
 | `POST /attachments`                    | multipart upload 上传公共附件，返回 asset_id、filename、mime_type、byte_size                                                            |
 | `GET /models`                          | 当前空间可用的写作模型                                                                                                                  |
 | `POST /notes/{id}/assistant`           | model_id、expected_revision、action、instruction、selection；返回 SSE                                                                   |
-| `GET /backup`                          | v4 完整 ZIP；可用 knowledge_base_id 选择单库（包括回收站）                                                                              |
+| `GET /backup`                          | v6 完整 ZIP；可用 knowledge_base_id 选择单库（包括回收站）                                                                              |
 | `POST /imports`                        | multipart upload 创建副本，返回 knowledge_base_ids 和普通 note_ids；Markdown 包可指定 knowledge_base_id 与 expected_revision 导入当前库 |
 
-正文 `schema_version=2`（历史版本仅在备份导入转换层处理）、`document` 为允许列表校验的 Tiptap JSON；图片仅保存 assetId，
+正文 `schema_version=3`（读取兼容 version 2）、`document` 为允许列表校验的 Tiptap JSON；图片仅保存 assetId，
 不保存临时 URL。标签最多 30 个、每个 40 字，标题最多 240 字，正文最多 2 MiB。
 缺少 expected_revision 返回 422；CAS 冲突返回 409 与 current 完整快照，客户端不得静默覆盖。
 
@@ -883,7 +883,7 @@ Workspace 仅从认证主体派生。跨空间 ID 返回 404。
 SSE 为 `data: {"type":"delta","text":"…"}`、`complete` 或 `error`（含 message），不暴露供应商
 原始事件。断开取消生成，调用日志记录脱敏元数据，来源为 thought_workshop_assistant。
 
-备份格式 thought-workshop-backup、version=4（导入转换层兼容 v1/v2/v3），ZIP 中 manifest.json 包含 knowledge_bases、notes 和
+备份格式 thought-workshop-backup、version=6（导入转换层兼容 v1–v5），ZIP 中 manifest.json 包含 knowledge_bases、notes、history、templates、checkpoints 和
 assets（folders 恒为空）；每个 asset 声明 id、path、filename、content_type。导入重映射 ID、校验全部文档与文件，
 成功才提交；失败回滚并清理暂存文件。复用项目快照的大小和文件数限制，manifest 上限 32 MiB。
 Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验写入；HTML 和 Markdown 导出读取
@@ -896,6 +896,26 @@ Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验�
 知识库名称最多 120 字，简介最多 2000 字；封面必须引用当前 Workspace 的公共图片。home_note_id 指向独立的空白首页文档，不能单独移动、删除或恢复。知识库回收站状态隐藏全部内容，恢复不会清除文档原有 deleted_at。
 
 知识库与目录修改使用库级 revision；文档保存使用文档 revision。移动文档推进文档修订号，正文 PUT 拒绝变更 knowledge_base_id/parent_id，目录移动只能通过 move。跨库父文档引用及循环嵌套被拒绝。无 notebook_id、文件夹实体或旧笔记本接口，也没有隐式创建默认知识库的生产路径。
+
+### 引用、复用和个人阅读状态
+
+| 接口 | 行为 |
+| --- | --- |
+| `POST /references/resolve` | `ids` 最多 100 个；仅返回当前 Workspace 可访问目标的标题、库、摘要与修订号；失效目标只返回不可用状态 |
+| `GET /notes/{id}/backlinks` | 反向链接摘要，offset/limit 分页，不暴露跨空间来源 |
+| `GET /search` | query、title_only、knowledge_base_id、tag、favorite、offset/limit；标题、标签、正文命中依次排序，再按更新时间和 ID；返回片段、库名与父级路径 |
+| `GET/POST /templates`、`PUT/DELETE /templates/{id}` | Workspace 共享的独立正文和标签快照；修改与删除提供 expected_revision，素材参与引用保护 |
+| `POST /templates/{id}/apply` | expected_revision 校验模板，expected_knowledge_revision 校验目标库；创建新文档及初始历史 |
+| `GET /notes/{id}/copy-snapshot` | subtree 选择单文档或子树；返回源库 revision 和全部来源文档 revision |
+| `POST /notes/{id}/duplicate` | 同 Workspace 内原子复制；校验源库、每篇源文档和目标库版本，重映射副本内部引用，保留外部与素材引用，不复制收藏、置顶或原历史 |
+| `GET/POST /notes/{id}/checkpoints`、`PUT/DELETE /notes/{id}/checkpoints/{checkpoint_id}` | 命名标记绑定不可变历史；创建校验 expected_note_revision，改名与删除校验标记 expected_revision，不删除历史 |
+| `GET/POST /preferences/filters`、`PUT/DELETE /preferences/filters/{id}` | 当前账号、当前 Workspace 的保存筛选；修改和删除使用 CAS |
+| `GET /preferences/recent`、`GET/POST /preferences/reading` | 最近访问最多 50 篇、独立阅读位置；位置存段落文本和比例，写入不修改文档 revision；官方文章用 official/{library}/{document} 标识 |
+| `GET /knowledge-bases/{id}/export-snapshot` | SQLite 一致读快照中的库、文档、目录和受校验素材清单；Web 生成含离线图形、公式、附件及相对导航的 HTML ZIP |
+
+检索、引用和导出要求 `content.read`；模板、复制、命名快照要求 `content.write`。个人偏好只允许当前账号维护，具备 `content.read` 的成员可使用。正文 `documentReference` 保存稳定文档 ID 或官方静态标识，可选 customLabel；`callout` variant 为 info/note/success/warning/danger。画板 sceneVersion 2 新增字号、对齐和四侧锚点，兼容 version 1。
+
+version 6 导入重映射文档、历史、模板和素材；包外文档引用转为带警告的普通文字。个人筛选、最近访问、阅读位置和 IndexedDB 本机草稿不进入知识库备份。模板属于整个 Workspace，列表完整备份包含模板，单库备份不复制 Workspace 模板。
 
 0046 迁移保留原文档 ID、正文、标签、收藏、回收站、修订号和附件引用；旧笔记本转成顶层文件夹后移除。首页是独立文档。v3 导入重新分配所有 ID，验证目录与唯一首页、文件归属，文件暂存完成后才进入写事务，失败清理文件与记录。旧 URL 兼容仅在 Web 跳转层。
 

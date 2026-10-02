@@ -11,17 +11,29 @@
 | --- | --- |
 | [trash_knowledge_base](#trash-knowledge-base) | `DELETE /v1/thought-workshop/knowledge-bases/{project_id}` |
 | [delete_note](#delete-note) | `DELETE /v1/thought-workshop/notes/{note_id}` |
+| [delete_checkpoint](#delete-checkpoint) | `DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}` |
+| [delete_filter](#delete-filter) | `DELETE /v1/thought-workshop/preferences/filters/{filter_id}` |
+| [delete_template](#delete-template) | `DELETE /v1/thought-workshop/templates/{template_id}` |
 | [backup](#backup) | `GET /v1/thought-workshop/backup` |
 | [knowledge_bases](#knowledge-bases) | `GET /v1/thought-workshop/knowledge-bases` |
 | [knowledge_base](#knowledge-base) | `GET /v1/thought-workshop/knowledge-bases/{project_id}` |
 | [directory](#directory) | `GET /v1/thought-workshop/knowledge-bases/{project_id}/directory` |
+| [library_export_snapshot](#library-export-snapshot) | `GET /v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot` |
 | [link_preview](#link-preview) | `GET /v1/thought-workshop/link-preview` |
 | [writing_models](#writing-models) | `GET /v1/thought-workshop/models` |
 | [list_notes](#list-notes) | `GET /v1/thought-workshop/notes` |
 | [get_note](#get-note) | `GET /v1/thought-workshop/notes/{note_id}` |
+| [note_backlinks](#note-backlinks) | `GET /v1/thought-workshop/notes/{note_id}/backlinks` |
+| [checkpoints](#checkpoints) | `GET /v1/thought-workshop/notes/{note_id}/checkpoints` |
+| [copy_snapshot](#copy-snapshot) | `GET /v1/thought-workshop/notes/{note_id}/copy-snapshot` |
 | [export_note_content](#export-note-content) | `GET /v1/thought-workshop/notes/{note_id}/export` |
 | [note_history](#note-history) | `GET /v1/thought-workshop/notes/{note_id}/history` |
 | [note_history_detail](#note-history-detail) | `GET /v1/thought-workshop/notes/{note_id}/history/{history_id}` |
+| [saved_filters](#saved-filters) | `GET /v1/thought-workshop/preferences/filters` |
+| [reading_position](#reading-position) | `GET /v1/thought-workshop/preferences/reading` |
+| [recently_visited](#recently-visited) | `GET /v1/thought-workshop/preferences/recent` |
+| [global_search](#global-search) | `GET /v1/thought-workshop/search` |
+| [templates](#templates) | `GET /v1/thought-workshop/templates` |
 | [attachments](#attachments) | `POST /v1/thought-workshop/attachments` |
 | [upload_image](#upload-image) | `POST /v1/thought-workshop/images` |
 | [imports](#imports) | `POST /v1/thought-workshop/imports` |
@@ -32,11 +44,21 @@
 | [convert_markdown](#convert-markdown) | `POST /v1/thought-workshop/markdown/convert` |
 | [create_note](#create-note) | `POST /v1/thought-workshop/notes` |
 | [assistant](#assistant) | `POST /v1/thought-workshop/notes/{note_id}/assistant` |
+| [create_checkpoint](#create-checkpoint) | `POST /v1/thought-workshop/notes/{note_id}/checkpoints` |
+| [duplicate_document](#duplicate-document) | `POST /v1/thought-workshop/notes/{note_id}/duplicate` |
 | [restore_note_history](#restore-note-history) | `POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore` |
 | [apply_note_operations](#apply-note-operations) | `POST /v1/thought-workshop/notes/{note_id}/operations` |
 | [restore_note](#restore-note) | `POST /v1/thought-workshop/notes/{note_id}/restore` |
+| [save_filter](#save-filter) | `POST /v1/thought-workshop/preferences/filters` |
+| [record_reading](#record-reading) | `POST /v1/thought-workshop/preferences/reading` |
+| [resolve_references](#resolve-references) | `POST /v1/thought-workshop/references/resolve` |
+| [create_template](#create-template) | `POST /v1/thought-workshop/templates` |
+| [apply_template](#apply-template) | `POST /v1/thought-workshop/templates/{template_id}/apply` |
 | [update_knowledge_base](#update-knowledge-base) | `PUT /v1/thought-workshop/knowledge-bases/{project_id}` |
 | [put_note](#put-note) | `PUT /v1/thought-workshop/notes/{note_id}` |
+| [rename_checkpoint](#rename-checkpoint) | `PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}` |
+| [put_filter](#put-filter) | `PUT /v1/thought-workshop/preferences/filters/{filter_id}` |
+| [put_template](#put-template) | `PUT /v1/thought-workshop/templates/{template_id}` |
 
 ## trash_knowledge_base {#trash-knowledge-base}
 
@@ -78,6 +100,67 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ThoughtNoteOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## delete_checkpoint {#delete-checkpoint}
+
+`client.thought.delete_checkpoint(...)`
+
+**接口**：`DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `checkpoint_id` | path | string | 是 |
+| `expected_revision` | query | integer | 是 |
+
+**响应**：
+- `204` · 无内容或由接口声明的文件响应。
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## delete_filter {#delete-filter}
+
+`client.thought.delete_filter(...)`
+
+**接口**：`DELETE /v1/thought-workshop/preferences/filters/{filter_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `filter_id` | path | string | 是 |
+| `expected_revision` | query | integer | 是 |
+
+**响应**：
+- `204` · 无内容或由接口声明的文件响应。
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## delete_template {#delete-template}
+
+`client.thought.delete_template(...)`
+
+**接口**：`DELETE /v1/thought-workshop/templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `template_id` | path | string | 是 |
+| `expected_revision` | query | integer | 是 |
+
+**响应**：
+- `204` · 无内容或由接口声明的文件响应。
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -155,6 +238,25 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ThoughtDirectoryOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## library_export_snapshot {#library-export-snapshot}
+
+`client.thought.library_export_snapshot(...)`
+
+**接口**：`GET /v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `LibraryExportSnapshot`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -240,6 +342,66 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## note_backlinks {#note-backlinks}
+
+`client.thought.note_backlinks(...)`
+
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/backlinks`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `offset` | query | integer | 否 |
+| `limit` | query | integer | 否 |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## checkpoints {#checkpoints}
+
+`client.thought.checkpoints(...)`
+
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/checkpoints`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## copy_snapshot {#copy-snapshot}
+
+`client.thought.copy_snapshot(...)`
+
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/copy-snapshot`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `subtree` | query | boolean | 否 |
+
+**响应**：
+- `200` · `application/json` · `DuplicateSnapshot`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## export_note_content {#export-note-content}
 
 `client.thought.export_note_content(...)`
@@ -299,6 +461,104 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ThoughtHistoryDetail`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## saved_filters {#saved-filters}
+
+`client.thought.saved_filters(...)`
+
+**接口**：`GET /v1/thought-workshop/preferences/filters`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## reading_position {#reading-position}
+
+`client.thought.reading_position(...)`
+
+**接口**：`GET /v1/thought-workshop/preferences/reading`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `resource_id` | query | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ReadingOut / null`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## recently_visited {#recently-visited}
+
+`client.thought.recently_visited(...)`
+
+**接口**：`GET /v1/thought-workshop/preferences/recent`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## global_search {#global-search}
+
+`client.thought.global_search(...)`
+
+**接口**：`GET /v1/thought-workshop/search`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `query` | query | string | 否 |
+| `knowledge_base_id` | query | string / null | 否 |
+| `tag` | query | string | 否 |
+| `favorite` | query | boolean | 否 |
+| `title_only` | query | boolean | 否 |
+| `offset` | query | integer | 否 |
+| `limit` | query | integer | 否 |
+
+**响应**：
+- `200` · `application/json` · `SearchResult`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## templates {#templates}
+
+`client.thought.templates(...)`
+
+**接口**：`GET /v1/thought-workshop/templates`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `array`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -500,7 +760,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.knowledge_base_id` | 请求体 | string | 是 |
 | `body.parent_id` | 请求体 | string / null | 否 |
 | `body.pinned` | 请求体 | boolean | 否 |
-| `body.schema_version` | 请求体 | integer | 否 |
+| `body.schema_version` | 请求体 | 2 / 3 | 否 |
 | `body.tags` | 请求体 | array | 否 |
 | `body.title` | 请求体 | string | 否 |
 
@@ -532,6 +792,55 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 **响应**：
 - `200` · `application/json` · `object`
 - `200` · `text/event-stream` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_checkpoint {#create-checkpoint}
+
+`client.thought.create_checkpoint(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/checkpoints`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `body` | application/json | CheckpointIn | 是 |
+| `body.expected_note_revision` | 请求体 | integer | 是 |
+| `body.history_id` | 请求体 | string | 是 |
+| `body.name` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `CheckpointOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## duplicate_document {#duplicate-document}
+
+`client.thought.duplicate_document(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/duplicate`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `body` | application/json | DuplicateIn | 是 |
+| `body.expected_knowledge_revision` | 请求体 | integer | 是 |
+| `body.expected_revisions` | 请求体 | object | 是 |
+| `body.knowledge_base_id` | 请求体 | string | 是 |
+| `body.parent_id` | 请求体 | string / null | 否 |
+| `body.source_knowledge_revision` | 请求体 | integer | 是 |
+| `body.subtree` | 请求体 | boolean | 否 |
+
+**响应**：
+- `200` · `application/json` · `DuplicateOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -602,6 +911,118 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## save_filter {#save-filter}
+
+`client.thought.save_filter(...)`
+
+**接口**：`POST /v1/thought-workshop/preferences/filters`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | SavedFilterIn | 是 |
+| `body.criteria` | 请求体 | SearchCriteria | 是 |
+| `body.name` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `SavedFilterOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## record_reading {#record-reading}
+
+`client.thought.record_reading(...)`
+
+**接口**：`POST /v1/thought-workshop/preferences/reading`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | ReadingIn | 是 |
+| `body.position` | 请求体 | ReadingPosition | 否 |
+| `body.resource_id` | 请求体 | string | 是 |
+| `body.title` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ReadingOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## resolve_references {#resolve-references}
+
+`client.thought.resolve_references(...)`
+
+**接口**：`POST /v1/thought-workshop/references/resolve`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | ResolveReferences | 是 |
+| `body.ids` | 请求体 | array | 是 |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_template {#create-template}
+
+`client.thought.create_template(...)`
+
+**接口**：`POST /v1/thought-workshop/templates`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | TemplateIn | 是 |
+| `body.description` | 请求体 | string | 否 |
+| `body.document` | 请求体 | object | 是 |
+| `body.name` | 请求体 | string | 是 |
+| `body.schema_version` | 请求体 | 2 / 3 | 否 |
+| `body.tags` | 请求体 | array | 否 |
+
+**响应**：
+- `200` · `application/json` · `TemplateOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## apply_template {#apply-template}
+
+`client.thought.apply_template(...)`
+
+**接口**：`POST /v1/thought-workshop/templates/{template_id}/apply`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `template_id` | path | string | 是 |
+| `body` | application/json | TemplateApply | 是 |
+| `body.expected_knowledge_revision` | 请求体 | integer | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.knowledge_base_id` | 请求体 | string | 是 |
+| `body.parent_id` | 请求体 | string / null | 否 |
+| `body.title` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ThoughtNoteOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## update_knowledge_base {#update-knowledge-base}
 
 `client.thought.update_knowledge_base(...)`
@@ -646,11 +1067,83 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.knowledge_base_id` | 请求体 | string | 是 |
 | `body.parent_id` | 请求体 | string / null | 否 |
 | `body.pinned` | 请求体 | boolean | 否 |
-| `body.schema_version` | 请求体 | integer | 否 |
+| `body.schema_version` | 请求体 | 2 / 3 | 否 |
 | `body.tags` | 请求体 | array | 否 |
 | `body.title` | 请求体 | string | 否 |
 
 **响应**：
 - `200` · `application/json` · `ThoughtNoteOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## rename_checkpoint {#rename-checkpoint}
+
+`client.thought.rename_checkpoint(...)`
+
+**接口**：`PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `checkpoint_id` | path | string | 是 |
+| `body` | application/json | CheckpointPut | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.name` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `CheckpointOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## put_filter {#put-filter}
+
+`client.thought.put_filter(...)`
+
+**接口**：`PUT /v1/thought-workshop/preferences/filters/{filter_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `filter_id` | path | string | 是 |
+| `body` | application/json | SavedFilterPut | 是 |
+| `body.criteria` | 请求体 | SearchCriteria | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.name` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `SavedFilterOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## put_template {#put-template}
+
+`client.thought.put_template(...)`
+
+**接口**：`PUT /v1/thought-workshop/templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `template_id` | path | string | 是 |
+| `body` | application/json | TemplatePut | 是 |
+| `body.description` | 请求体 | string | 否 |
+| `body.document` | 请求体 | object | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.name` | 请求体 | string | 是 |
+| `body.schema_version` | 请求体 | 2 / 3 | 否 |
+| `body.tags` | 请求体 | array | 否 |
+
+**响应**：
+- `200` · `application/json` · `TemplateOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。

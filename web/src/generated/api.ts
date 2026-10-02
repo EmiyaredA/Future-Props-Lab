@@ -5408,6 +5408,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Library Export Snapshot */
+        get: operations["library_export_snapshot_v1_thought_workshop_knowledge_bases__project_id__export_snapshot_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/thought-workshop/knowledge-bases/{project_id}/move": {
         parameters: {
             query?: never;
@@ -5547,6 +5564,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/thought-workshop/notes/{note_id}/backlinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Note Backlinks */
+        get: operations["note_backlinks_v1_thought_workshop_notes__note_id__backlinks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/checkpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Checkpoints */
+        get: operations["checkpoints_v1_thought_workshop_notes__note_id__checkpoints_get"];
+        put?: never;
+        /** Create Checkpoint */
+        post: operations["create_checkpoint_v1_thought_workshop_notes__note_id__checkpoints_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename Checkpoint */
+        put: operations["rename_checkpoint_v1_thought_workshop_notes__note_id__checkpoints__checkpoint_id__put"];
+        post?: never;
+        /** Delete Checkpoint */
+        delete: operations["delete_checkpoint_v1_thought_workshop_notes__note_id__checkpoints__checkpoint_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/copy-snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Copy Snapshot */
+        get: operations["copy_snapshot_v1_thought_workshop_notes__note_id__copy_snapshot_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duplicate Document */
+        post: operations["duplicate_document_v1_thought_workshop_notes__note_id__duplicate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/thought-workshop/notes/{note_id}/export": {
         parameters: {
             query?: never;
@@ -5643,6 +5747,164 @@ export interface paths {
         put?: never;
         /** Restore Note */
         post: operations["restore_note_v1_thought_workshop_notes__note_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/preferences/filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Saved Filters */
+        get: operations["saved_filters_v1_thought_workshop_preferences_filters_get"];
+        put?: never;
+        /** Save Filter */
+        post: operations["save_filter_v1_thought_workshop_preferences_filters_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/preferences/filters/{filter_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Filter */
+        put: operations["put_filter_v1_thought_workshop_preferences_filters__filter_id__put"];
+        post?: never;
+        /** Delete Filter */
+        delete: operations["delete_filter_v1_thought_workshop_preferences_filters__filter_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/preferences/reading": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reading Position */
+        get: operations["reading_position_v1_thought_workshop_preferences_reading_get"];
+        put?: never;
+        /** Record Reading */
+        post: operations["record_reading_v1_thought_workshop_preferences_reading_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/preferences/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recently Visited */
+        get: operations["recently_visited_v1_thought_workshop_preferences_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/references/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve References */
+        post: operations["resolve_references_v1_thought_workshop_references_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Global Search */
+        get: operations["global_search_v1_thought_workshop_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Templates */
+        get: operations["templates_v1_thought_workshop_templates_get"];
+        put?: never;
+        /** Create Template */
+        post: operations["create_template_v1_thought_workshop_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Template */
+        put: operations["put_template_v1_thought_workshop_templates__template_id__put"];
+        post?: never;
+        /** Delete Template */
+        delete: operations["delete_template_v1_thought_workshop_templates__template_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/templates/{template_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Template */
+        post: operations["apply_template_v1_thought_workshop_templates__template_id__apply_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8143,6 +8405,40 @@ export interface components {
             /** Parameterid */
             parameterId: string;
         };
+        /** CheckpointIn */
+        CheckpointIn: {
+            /** Expected Note Revision */
+            expected_note_revision: number;
+            /** History Id */
+            history_id: string;
+            /** Name */
+            name: string;
+        };
+        /** CheckpointOut */
+        CheckpointOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** History Id */
+            history_id: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Note Id */
+            note_id: string;
+            /** Revision */
+            revision: number;
+        };
+        /** CheckpointPut */
+        CheckpointPut: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Name */
+            name: string;
+        };
         /** ClipIdOperation */
         ClipIdOperation: {
             /** Clipid */
@@ -8955,6 +9251,44 @@ export interface components {
             document: components["schemas"]["MotionComposition"];
             /** Revision */
             revision: number;
+        };
+        /** DuplicateIn */
+        DuplicateIn: {
+            /** Expected Knowledge Revision */
+            expected_knowledge_revision: number;
+            /** Expected Revisions */
+            expected_revisions: {
+                [key: string]: number;
+            };
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Source Knowledge Revision */
+            source_knowledge_revision: number;
+            /**
+             * Subtree
+             * @default false
+             */
+            subtree: boolean;
+        };
+        /** DuplicateOut */
+        DuplicateOut: {
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /** Note Ids */
+            note_ids: string[];
+            /** Root Id */
+            root_id: string;
+        };
+        /** DuplicateSnapshot */
+        DuplicateSnapshot: {
+            /** Knowledge Revision */
+            knowledge_revision: number;
+            /** Revisions */
+            revisions: {
+                [key: string]: number;
+            };
         };
         /** ExportCreateIn */
         ExportCreateIn: {
@@ -12973,6 +13307,19 @@ export interface components {
             /** Source Project Id */
             source_project_id: string;
         };
+        /** LibraryExportSnapshot */
+        LibraryExportSnapshot: {
+            /** Asset Ids */
+            asset_ids: string[];
+            /** Documents */
+            documents: {
+                [key: string]: unknown;
+            }[];
+            /** Knowledge Base */
+            knowledge_base: {
+                [key: string]: unknown;
+            };
+        };
         /** LibraryFolderImportOut */
         LibraryFolderImportOut: {
             /** Created Files */
@@ -15651,6 +15998,42 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** ReadingIn */
+        ReadingIn: {
+            position?: components["schemas"]["ReadingPosition"];
+            /** Resource Id */
+            resource_id: string;
+            /** Title */
+            title: string;
+        };
+        /** ReadingOut */
+        ReadingOut: {
+            position?: components["schemas"]["ReadingPosition"];
+            /** Resource Id */
+            resource_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Visited At
+             * Format: date-time
+             */
+            visited_at: string;
+        };
+        /** ReadingPosition */
+        ReadingPosition: {
+            /** Note Revision */
+            note_revision?: number | null;
+            /**
+             * Paragraph
+             * @default
+             */
+            paragraph: string;
+            /**
+             * Ratio
+             * @default 0
+             */
+            ratio: number;
+        };
         /** RealtimeNumberParameterOut */
         RealtimeNumberParameterOut: {
             /** Default */
@@ -15793,6 +16176,27 @@ export interface components {
             value: string;
             /** Window Id */
             window_id?: number | null;
+        };
+        /** ReferenceTarget */
+        ReferenceTarget: {
+            /** Available */
+            available: boolean;
+            /**
+             * Excerpt
+             * @default
+             */
+            excerpt: string;
+            /** Id */
+            id: string;
+            /** Knowledge Base Id */
+            knowledge_base_id?: string | null;
+            /** Revision */
+            revision?: number | null;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
         };
         /** RegistrationIn */
         RegistrationIn: {
@@ -15947,6 +16351,11 @@ export interface components {
             account: components["schemas"]["AccountOut"];
             /** Temporary Password */
             temporary_password: string;
+        };
+        /** ResolveReferences */
+        ResolveReferences: {
+            /** Ids */
+            ids: string[];
         };
         /** RestoreClipStatesOperation */
         RestoreClipStatesOperation: {
@@ -16208,6 +16617,30 @@ export interface components {
             revision: number;
             value: components["schemas"]["RuntimeQuotas"];
         };
+        /** SavedFilterIn */
+        SavedFilterIn: {
+            criteria: components["schemas"]["SearchCriteria"];
+            /** Name */
+            name: string;
+        };
+        /** SavedFilterOut */
+        SavedFilterOut: {
+            criteria: components["schemas"]["SearchCriteria"];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Revision */
+            revision: number;
+        };
+        /** SavedFilterPut */
+        SavedFilterPut: {
+            criteria: components["schemas"]["SearchCriteria"];
+            /** Expected Revision */
+            expected_revision: number;
+            /** Name */
+            name: string;
+        };
         /** SavedSegmentTranscriptionIn */
         SavedSegmentTranscriptionIn: {
             /** Expected Revision */
@@ -16218,6 +16651,81 @@ export interface components {
             model_id: string;
             /** Target Language */
             target_language?: string | null;
+        };
+        /** SearchCriteria */
+        SearchCriteria: {
+            /**
+             * Favorite
+             * @default false
+             */
+            favorite: boolean;
+            /** Knowledge Base Id */
+            knowledge_base_id?: string | null;
+            /**
+             * Query
+             * @default
+             */
+            query: string;
+            /**
+             * Tag
+             * @default
+             */
+            tag: string;
+            /**
+             * Title Only
+             * @default false
+             */
+            title_only: boolean;
+        };
+        /** SearchHit */
+        SearchHit: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+            /** Excerpt */
+            excerpt: string;
+            /** Favorite */
+            favorite: boolean;
+            /** Id */
+            id: string;
+            /** Is Home */
+            is_home: boolean;
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /** Knowledge Base Title */
+            knowledge_base_title: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Path */
+            path: string[];
+            /** Pinned */
+            pinned: boolean;
+            /** Position */
+            position: number;
+            /** Revision */
+            revision: number;
+            /** Snippet */
+            snippet: string;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** SearchResult */
+        SearchResult: {
+            /** Items */
+            items: components["schemas"]["SearchHit"][];
+            /** Total */
+            total: number;
         };
         /** SecretOut */
         SecretOut: {
@@ -16522,6 +17030,41 @@ export interface components {
             /** Width */
             width: number;
         };
+        /** TemplateApply */
+        TemplateApply: {
+            /** Expected Knowledge Revision */
+            expected_knowledge_revision: number;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** TemplateIn */
+        TemplateIn: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name: string;
+            /**
+             * Schema Version
+             * @default 3
+             * @enum {integer}
+             */
+            schema_version: 2 | 3;
+            /** Tags */
+            tags?: string[];
+        };
         /** TemplateModel */
         TemplateModel: {
             /** Capabilities */
@@ -16547,6 +17090,42 @@ export interface components {
             slug: string;
             /** Template Key */
             template_key: string;
+        };
+        /** TemplateOut */
+        TemplateOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Schema Version
+             * @default 3
+             * @enum {integer}
+             */
+            schema_version: 2 | 3;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** TemplatePreviewIn */
         TemplatePreviewIn: {
@@ -16634,6 +17213,30 @@ export interface components {
             supplier_key?: string | null;
             /** Template Key */
             template_key: string;
+        };
+        /** TemplatePut */
+        TemplatePut: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /** Expected Revision */
+            expected_revision: number;
+            /** Name */
+            name: string;
+            /**
+             * Schema Version
+             * @default 3
+             * @enum {integer}
+             */
+            schema_version: 2 | 3;
+            /** Tags */
+            tags?: string[];
         };
         /** TemplateSupplier */
         TemplateSupplier: {
@@ -16807,9 +17410,9 @@ export interface components {
             /**
              * Schema Version
              * @default 2
-             * @constant
+             * @enum {integer}
              */
-            schema_version: 2;
+            schema_version: 2 | 3;
             /**
              * Source
              * @enum {string}
@@ -16933,9 +17536,9 @@ export interface components {
             /**
              * Schema Version
              * @default 2
-             * @constant
+             * @enum {integer}
              */
-            schema_version: 2;
+            schema_version: 2 | 3;
             /** Tags */
             tags?: string[];
             /**
@@ -16986,9 +17589,9 @@ export interface components {
             revision: number;
             /**
              * Schema Version
-             * @constant
+             * @enum {integer}
              */
-            schema_version: 2;
+            schema_version: 2 | 3;
             /** Tags */
             tags: string[];
             /** Title */
@@ -17024,9 +17627,9 @@ export interface components {
             /**
              * Schema Version
              * @default 2
-             * @constant
+             * @enum {integer}
              */
-            schema_version: 2;
+            schema_version: 2 | 3;
             /** Tags */
             tags?: string[];
             /**
@@ -32315,6 +32918,37 @@ export interface operations {
             };
         };
     };
+    library_export_snapshot_v1_thought_workshop_knowledge_bases__project_id__export_snapshot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryExportSnapshot"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     move_entry_v1_thought_workshop_knowledge_bases__project_id__move_post: {
         parameters: {
             query?: never;
@@ -32694,6 +33328,242 @@ export interface operations {
             };
         };
     };
+    note_backlinks_v1_thought_workshop_notes__note_id__backlinks_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    checkpoints_v1_thought_workshop_notes__note_id__checkpoints_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_checkpoint_v1_thought_workshop_notes__note_id__checkpoints_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckpointIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_checkpoint_v1_thought_workshop_notes__note_id__checkpoints__checkpoint_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+                checkpoint_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckpointPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_checkpoint_v1_thought_workshop_notes__note_id__checkpoints__checkpoint_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                note_id: string;
+                checkpoint_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    copy_snapshot_v1_thought_workshop_notes__note_id__copy_snapshot_get: {
+        parameters: {
+            query?: {
+                subtree?: boolean;
+            };
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateSnapshot"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    duplicate_document_v1_thought_workshop_notes__note_id__duplicate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_note_content_v1_thought_workshop_notes__note_id__export_get: {
         parameters: {
             query: {
@@ -32877,6 +33747,433 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ThoughtNoteTransitionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    saved_filters_v1_thought_workshop_preferences_filters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedFilterOut"][];
+                };
+            };
+        };
+    };
+    save_filter_v1_thought_workshop_preferences_filters_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedFilterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedFilterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_filter_v1_thought_workshop_preferences_filters__filter_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedFilterPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedFilterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_filter_v1_thought_workshop_preferences_filters__filter_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                filter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reading_position_v1_thought_workshop_preferences_reading_get: {
+        parameters: {
+            query: {
+                resource_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_reading_v1_thought_workshop_preferences_reading_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recently_visited_v1_thought_workshop_preferences_recent_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingOut"][];
+                };
+            };
+        };
+    };
+    resolve_references_v1_thought_workshop_references_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveReferences"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceTarget"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    global_search_v1_thought_workshop_search_get: {
+        parameters: {
+            query?: {
+                query?: string;
+                knowledge_base_id?: string | null;
+                tag?: string;
+                favorite?: boolean;
+                title_only?: boolean;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    templates_v1_thought_workshop_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"][];
+                };
+            };
+        };
+    };
+    create_template_v1_thought_workshop_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_template_v1_thought_workshop_templates__template_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplatePut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_template_v1_thought_workshop_templates__template_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_template_v1_thought_workshop_templates__template_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateApply"];
             };
         };
         responses: {

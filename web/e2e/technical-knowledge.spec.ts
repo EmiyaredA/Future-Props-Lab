@@ -99,10 +99,9 @@ test("all 22 technical articles render their bundled UML and canvas without writ
   }
   await page.goto(root);
   await page
-    .locator(".official-home")
+    .locator(".official-article-cards")
     .getByRole("button", {
-      name: TECHNICAL_LIBRARY.documents[0].title,
-      exact: true,
+      name: new RegExp(TECHNICAL_LIBRARY.documents[0].title),
     })
     .click();
   await expect(page).toHaveURL(`${root}/documents/system`);
@@ -182,6 +181,9 @@ test("official UML and canvas copies remain editable personal notes after refres
     page.getByRole("button", { name: "复制到个人笔记", exact: true }),
   ).toHaveCount(2);
   await copyFigure(page, "mermaid", library);
+  await expect(
+    page.getByRole("button", { name: "编辑图表", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "编辑图表", exact: true }).click();
   await page
     .getByLabel("Mermaid 源码")
@@ -264,13 +266,14 @@ test("personal canvas inserts, saves managed images, and exports portable editab
   await prose.press("End");
   await prose.press("Enter");
   await prose.pressSequentially("/");
-  await page
+  const insertCanvas = page
     .locator(".thought-insert-menu")
-    .getByRole("option", { name: /画板/ })
-    .click();
+    .getByRole("option", { name: /画板/ });
+  await expect(insertCanvas).toBeVisible();
+  await insertCanvas.click();
   await page.getByRole("button", { name: "编辑画板", exact: true }).click();
   const editor = page.getByRole("dialog", { name: "编辑画板", exact: true });
-  await choose(page, "画板模板", "系统架构");
+  await choose(page, "替换画板模板", "系统架构");
   await editor.getByRole("button", { name: "应用模板", exact: true }).click();
   await expect(editor.locator(".react-flow__node")).toHaveCount(3);
   await editor.locator(".react-flow__node").nth(0).click();

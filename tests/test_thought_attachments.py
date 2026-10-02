@@ -82,7 +82,7 @@ async def test_supported_upload_metadata_download_and_normalization(name, mime, 
         saved = await create_note(client, json={"schema_version": 2, "document": document(asset)})
         assert saved.status_code == 200, saved.text
         note = saved.json()
-        assert note["schema_version"] == 2
+        assert note["schema_version"] == 3
         assert note["document"]["content"][0]["attrs"] == {
             "assetId": asset["asset_id"],
             "filename": name,
@@ -152,7 +152,7 @@ async def test_limits_unlink_cas_backup_and_legacy_import(monkeypatch, legacy_ve
         )
         with zipfile.ZipFile(io.BytesIO(backup.content)) as archive:
             manifest = json.loads(archive.read("manifest.json"))
-            assert manifest["version"] == 5
+            assert manifest["version"] == 6
             assert archive.read("assets/" + asset["asset_id"]) == b"private attachment content"
         restored = await client.post(
             ROOT + "/imports", files={"upload": ("backup.zip", backup.content, "application/zip")}

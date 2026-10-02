@@ -2,6 +2,7 @@
 
 import json
 import re
+from urllib.parse import parse_qs, urlsplit
 
 import mistune
 
@@ -41,6 +42,32 @@ def parse_markdown(text, assets):
             }
             if kind == "link":
                 href = attrs.get("url", "")
+                if href.startswith(("fpl-note:", "fpl-official:")):
+                    parsed = urlsplit(href)
+                    label = "".join(child.get("raw", "") for child in children) or "文档"
+                    target = (
+                        {"kind": "note", "noteId": parsed.path}
+                        if parsed.scheme == "fpl-note"
+                        else {
+                            "kind": "official",
+                            "libraryId": parsed.path.partition("/")[0],
+                            "documentId": parsed.path.partition("/")[2],
+                        }
+                    )
+                    return [
+                        {
+                            "type": "documentReference",
+                            "attrs": {
+                                **target,
+                                "label": label,
+                                **(
+                                    {"customLabel": label}
+                                    if parse_qs(parsed.query).get("custom")
+                                    else {}
+                                ),
+                            },
+                        }
+                    ]
                 if href in assets:
                     asset = assets[href]
                     return [
@@ -184,6 +211,27 @@ def parse_markdown(text, assets):
             "table_head": "tableRow",
             "table_row": "tableRow",
         }.get(kind)
+        if kind == "block_quote" and content and content[0].get("type") == "paragraph":
+            first = content[0].get("content", [])
+            if first and first[0].get("type") == "text":
+                marker = re.match(
+                    r"^\[!(INFO|NOTE|SUCCESS|WARNING|DANGER)\](?:\n|$)", first[0]["text"], re.I
+                )
+                if marker:
+                    first[0]["text"] = first[0]["text"][marker.end() :]
+                    if not first[0]["text"]:
+                        first.pop(0)
+                    if first and first[0].get("type") == "hardBreak":
+                        first.pop(0)
+                    if not first:
+                        content.pop(0)
+                    return [
+                        {
+                            "type": "callout",
+                            "attrs": {"variant": marker[1].lower()},
+                            "content": content or [{"type": "paragraph"}],
+                        }
+                    ]
         if tag:
             return [{"type": tag, "content": content}]
         raise ThoughtError("不支持的 Markdown 结构：" + kind)
@@ -204,6 +252,23 @@ def markdown(document, paths):
         kind, attrs = node["type"], node.get("attrs", {})
         children = node.get("content", [])
         content = "".join(walk(child) for child in children)
+        if kind == "documentReference":
+            label = attrs.get("customLabel") or attrs["label"]
+            label = re.sub(r"([\\\[\]])", r"\\\1", label)
+            href = (
+                "fpl-note:" + attrs["noteId"]
+                if attrs["kind"] == "note"
+                else "fpl-official:" + attrs["libraryId"] + "/" + attrs["documentId"]
+            )
+            return f"[{label}]({href}{'?custom=1' if attrs.get('customLabel') else ''})"
+        if kind == "callout":
+            return (
+                "> [!"
+                + attrs["variant"].upper()
+                + "]\n>\n"
+                + "\n".join("> " + line for line in content.strip().splitlines())
+                + "\n\n"
+            )
         if kind == "text":
             text = re.sub(r"([\\`*_\[\]<>|])", r"\\\1", node.get("text", ""))
             for mark in node.get("marks", []):

@@ -58,3 +58,31 @@ test("supports Escape and blocks dismissal while an action is pending", () => {
   expect(document.body.style.overflow).toBe("hidden");
   document.body.style.overflow = "";
 });
+
+test("allows cancellation while required confirmation data is loading", async () => {
+  const user = userEvent.setup(),
+    onCancel = vi.fn(),
+    onConfirm = vi.fn();
+  const renderDialog = (disabled: boolean) => (
+    <ConfirmDialog
+      open
+      title="复制文档"
+      description="等待来源版本"
+      confirmLabel="创建副本"
+      confirmDisabled={disabled}
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
+  );
+  const { rerender } = render(renderDialog(true));
+  const button = screen.getByRole("button", { name: "创建副本" });
+  expect(button).toBeDisabled();
+  expect(screen.getByRole("button", { name: "取消" })).toBeEnabled();
+  await user.click(button);
+  expect(onConfirm).not.toHaveBeenCalled();
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(onCancel).toHaveBeenCalledOnce();
+  rerender(renderDialog(false));
+  await user.click(button);
+  expect(onConfirm).toHaveBeenCalledOnce();
+});

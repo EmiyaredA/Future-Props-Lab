@@ -25,6 +25,12 @@ from app.apps.thought_workshop.history_archive import (
     validate_history,
 )
 from app.apps.thought_workshop.knowledge import KnowledgeBases
+from app.apps.thought_workshop.knowledge_tools.archive import (
+    export_tools,
+    import_tools,
+    validate_tools,
+)
+from app.apps.thought_workshop.knowledge_tools.references import remap_references
 from app.apps.thought_workshop.legacy_import import convert_legacy_backup
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 from app.apps.thought_workshop.notes import Notes, ThoughtError, note_out
@@ -86,8 +92,12 @@ async def export_backup(
     ).all()
     documents = [note_out(row).model_dump(mode="json") for row in rows]
     history = await export_history(notes.session, [row.id for row in rows])
+    tools = await export_tools(
+        notes.session, notes.workspace_id, [row.id for row in rows], knowledge_base_id is None
+    )
     ids = {asset_id for doc in documents for asset_id in file_ids(doc["document"])}
     ids.update(asset_id for record in history for asset_id in file_ids(record["document"]))
+    ids.update(asset for template in tools["templates"] for asset in file_ids(template["document"]))
     ids.update(p.cover_asset_id for p in projects if p.cover_asset_id)
     assets = (
         (
@@ -107,7 +117,8 @@ async def export_backup(
     sources = [(r.id, storage.path_for(r), r.original_filename, r.mime_type) for r in assets]
     payload = {
         "format": FORMAT,
-        "version": 5,
+        "version": 6,
+        **tools,
         "history": history,
         "knowledge_bases": [r.model_dump(mode="json") for r in projects],
         "folders": [],
@@ -168,13 +179,14 @@ def validate_archive(
         if (
             not isinstance(payload, dict)
             or payload.get("format") != FORMAT
-            or payload.get("version") not in {1, 2, 3, 4, 5}
+            or payload.get("version") not in {1, 2, 3, 4, 5, 6}
         ):
             raise ThoughtError("不支持的备份格式或版本")
         payload = convert_legacy_backup(payload)
         payload = convert_v3_folders_to_notes(payload)
         parsed = validate_structure(payload)
         validate_history(payload)
+        validate_tools(payload)
         for group in ("knowledge_bases", "notes"):
             for record in payload.get(group, []):
                 archive_times(record)
@@ -237,10 +249,15 @@ async def import_backup(
         project_mapping = {}
         note_mapping = {n["id"]: str(uuid4()) for n in payload.get("notes", [])}
         project_rows = {}
+        warnings = set()
         if knowledge_base_id:
             if expected_revision is None:
                 raise ThoughtError("导入当前知识库需要修订号")
             await knowledge.reserve(knowledge_base_id, expected_revision)
+            target_project = await knowledge.get(knowledge_base_id)
+            for note in payload["notes"]:
+                if note.get("is_home"):
+                    note_mapping[note["id"]] = target_project.home_note_id
         for project in payload["knowledge_bases"]:
             if knowledge_base_id:
                 project_mapping[project["id"]] = knowledge_base_id
@@ -273,7 +290,9 @@ async def import_backup(
                     pending.pop(index)
                     progressed = True
                     break
-                document = copy.deepcopy(body.document)
+                document = remap_references(
+                    copy.deepcopy(body.document), note_mapping, portable=True, warnings=warnings
+                )
                 remap_images(document, mapping)
                 created = body.model_copy(
                     update={
@@ -304,11 +323,32 @@ async def import_backup(
                 raise ThoughtError("备份目录循环或归属错误")
         for row in project_rows.values():
             await knowledge.cover(row.cover_asset_id)
-        await import_history(notes, payload, inserted, note_mapping, mapping, remap_images)
+
+        def remap_all(document, assets):
+            remap_images(document, assets)
+            rewritten = remap_references(document, note_mapping, portable=True, warnings=warnings)
+            document.clear()
+            document.update(rewritten)
+
+        history_mapping = await import_history(
+            notes, payload, inserted, note_mapping, mapping, remap_all
+        )
+        await import_tools(
+            notes.session,
+            notes.workspace_id,
+            payload,
+            note_mapping,
+            history_mapping,
+            mapping,
+            remap_images,
+            warnings,
+        )
         await notes.session.commit()
         files.clear()
         return ThoughtImportOut(
-            note_ids=result, knowledge_base_ids=list(dict.fromkeys(project_mapping.values()))
+            warnings=sorted(warnings),
+            note_ids=result,
+            knowledge_base_ids=list(dict.fromkeys(project_mapping.values())),
         )
     except (KeyError, TypeError, ValueError, zipfile.BadZipFile, ValidationError) as exc:
         await notes.session.rollback()

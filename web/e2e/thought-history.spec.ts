@@ -69,7 +69,14 @@ test("document autosave, visible save controls, inline history and safe restore"
   ).toBeVisible();
   await prose.locator("p").last().click();
   await page.keyboard.press("End");
+  const autosave = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(path) &&
+      response.request().method() === "PUT" &&
+      response.ok(),
+  );
   await page.keyboard.type(" Verification complete.");
+  await autosave;
   await expect(page.getByText(/^已保存 ·/)).toBeVisible();
   await expect(
     page.getByRole("button", { name: "笔记更多操作", exact: true }),
@@ -144,7 +151,7 @@ test("document autosave, visible save controls, inline history and safe restore"
     return route.continue();
   });
   await title.fill("不能丢失的草稿");
-  await page.getByRole("button", { name: "知识库", exact: true }).click();
+  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
   const leave = page.getByRole("alertdialog", { name: "仍有未保存的内容" });
   await expect(leave).toBeVisible();
   await expect(title).toHaveValue("不能丢失的草稿");

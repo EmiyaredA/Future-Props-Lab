@@ -686,6 +686,23 @@ class CharacterTrack(WireModel):
     keys: list[TimeKeyframe] | None = Field(default=None, alias='keys', max_length=1000)
     parameter_id: str = Field(default=..., alias='parameterId')
 
+class CheckpointIn(WireModel):
+    expected_note_revision: int = Field(default=..., alias='expected_note_revision', ge=0.0)
+    history_id: str = Field(default=..., alias='history_id')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+
+class CheckpointOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    history_id: str = Field(default=..., alias='history_id')
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name')
+    note_id: str = Field(default=..., alias='note_id')
+    revision: int = Field(default=..., alias='revision')
+
+class CheckpointPut(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+
 class ClipIdOperation(WireModel):
     clip_id: str = Field(default=..., alias='clipId')
     new_clip_id: str | None = Field(default=None, alias='newClipId')
@@ -1037,6 +1054,23 @@ class DirectorToolOut(WireModel):
 class DocumentOut(WireModel):
     document: MotionComposition = Field(default=..., alias='document')
     revision: int = Field(default=..., alias='revision')
+
+class DuplicateIn(WireModel):
+    expected_knowledge_revision: int = Field(default=..., alias='expected_knowledge_revision', ge=0.0)
+    expected_revisions: dict[str, int] = Field(default=..., alias='expected_revisions')
+    knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
+    parent_id: str | None = Field(default=None, alias='parent_id')
+    source_knowledge_revision: int = Field(default=..., alias='source_knowledge_revision', ge=0.0)
+    subtree: bool = Field(default=False, alias='subtree')
+
+class DuplicateOut(WireModel):
+    knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
+    note_ids: list[str] = Field(default=..., alias='note_ids')
+    root_id: str = Field(default=..., alias='root_id')
+
+class DuplicateSnapshot(WireModel):
+    knowledge_revision: int = Field(default=..., alias='knowledge_revision')
+    revisions: dict[str, int] = Field(default=..., alias='revisions')
 
 class ExportCreateIn(WireModel):
     end_frame: int | None = Field(default=None, alias='endFrame')
@@ -2602,6 +2636,11 @@ class LibraryAssetImportIn(WireModel):
     folder_id: str | None = Field(default=None, alias='folder_id')
     source_project_id: str = Field(default=..., alias='source_project_id')
 
+class LibraryExportSnapshot(WireModel):
+    asset_ids: list[str] = Field(default=..., alias='asset_ids')
+    documents: list[dict[str, Any]] = Field(default=..., alias='documents')
+    knowledge_base: dict[str, Any] = Field(default=..., alias='knowledge_base')
+
 class LibraryFolderImportOut(WireModel):
     created_files: int = Field(default=..., alias='created_files', ge=0.0)
     created_folders: int = Field(default=..., alias='created_folders', ge=0.0)
@@ -3714,6 +3753,22 @@ class QuotaLimit(WireModel):
     realtime_voice: int = Field(default=..., alias='realtime_voice', ge=0.0, le=1024.0)
     total: int = Field(default=..., alias='total', ge=0.0, le=1024.0)
 
+class ReadingIn(WireModel):
+    position: ReadingPosition | None = Field(default=None, alias='position')
+    resource_id: str = Field(default=..., alias='resource_id', min_length=1, max_length=200)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=240)
+
+class ReadingOut(WireModel):
+    position: ReadingPosition | None = Field(default=None, alias='position')
+    resource_id: str = Field(default=..., alias='resource_id', min_length=1, max_length=200)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=240)
+    visited_at: datetime = Field(default=..., alias='visited_at')
+
+class ReadingPosition(WireModel):
+    note_revision: int | None = Field(default=None, alias='note_revision')
+    paragraph: str = Field(default='', alias='paragraph', max_length=240)
+    ratio: float = Field(default=0, alias='ratio', ge=0.0, le=1.0)
+
 class RealtimeNumberParameterOut(WireModel):
     default: float = Field(default=..., alias='default')
     maximum: float = Field(default=..., alias='maximum')
@@ -3790,6 +3845,14 @@ class Reference(WireModel):
     value: str = Field(default='', alias='value', max_length=2000)
     window_id: int | None = Field(default=None, alias='window_id')
 
+class ReferenceTarget(WireModel):
+    available: bool = Field(default=..., alias='available')
+    excerpt: str = Field(default='', alias='excerpt')
+    id: str = Field(default=..., alias='id')
+    knowledge_base_id: str | None = Field(default=None, alias='knowledge_base_id')
+    revision: int | None = Field(default=None, alias='revision')
+    title: str = Field(default='', alias='title')
+
 class RegistrationIn(WireModel):
     display_name: str = Field(default='', alias='display_name', max_length=120)
     email: str | None = Field(default=None, alias='email')
@@ -3855,6 +3918,9 @@ class ReorderTrackOperation(WireModel):
 class ResetPasswordOut(WireModel):
     account: AccountOut = Field(default=..., alias='account')
     temporary_password: str = Field(default=..., alias='temporary_password', repr=False)
+
+class ResolveReferences(WireModel):
+    ids: list[str] = Field(default=..., alias='ids', max_length=100)
 
 class RestoreClipStatesOperation(WireModel):
     clips: list[VideoEditorClip] = Field(default=..., alias='clips', min_length=1)
@@ -3953,11 +4019,56 @@ class RuntimeQuotasOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     value: RuntimeQuotas = Field(default=..., alias='value')
 
+class SavedFilterIn(WireModel):
+    criteria: SearchCriteria = Field(default=..., alias='criteria')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+
+class SavedFilterOut(WireModel):
+    criteria: SearchCriteria = Field(default=..., alias='criteria')
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    revision: int = Field(default=..., alias='revision')
+
+class SavedFilterPut(WireModel):
+    criteria: SearchCriteria = Field(default=..., alias='criteria')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+
 class SavedSegmentTranscriptionIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     language: str | None = Field(default=None, alias='language')
     model_id: str = Field(default=..., alias='model_id')
     target_language: str | None = Field(default=None, alias='target_language')
+
+class SearchCriteria(WireModel):
+    favorite: bool = Field(default=False, alias='favorite')
+    knowledge_base_id: str | None = Field(default=None, alias='knowledge_base_id')
+    query: str = Field(default='', alias='query', max_length=500)
+    tag: str = Field(default='', alias='tag', max_length=40)
+    title_only: bool = Field(default=False, alias='title_only')
+
+class SearchHit(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    deleted_at: datetime | None = Field(default=..., alias='deleted_at')
+    excerpt: str = Field(default=..., alias='excerpt')
+    favorite: bool = Field(default=..., alias='favorite')
+    id: str = Field(default=..., alias='id')
+    is_home: bool = Field(default=..., alias='is_home')
+    knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
+    knowledge_base_title: str = Field(default=..., alias='knowledge_base_title')
+    parent_id: str | None = Field(default=..., alias='parent_id')
+    path: list[str] = Field(default=..., alias='path')
+    pinned: bool = Field(default=..., alias='pinned')
+    position: int = Field(default=..., alias='position')
+    revision: int = Field(default=..., alias='revision')
+    snippet: str = Field(default=..., alias='snippet')
+    tags: list[str] = Field(default=..., alias='tags')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class SearchResult(WireModel):
+    items: list[SearchHit] = Field(default=..., alias='items')
+    total: int = Field(default=..., alias='total')
 
 class SecretOut(WireModel):
     secret: str = Field(default=..., alias='secret', repr=False)
@@ -4097,6 +4208,20 @@ class SvgPreviewOut(WireModel):
     svg: str = Field(default=..., alias='svg')
     width: float = Field(default=..., alias='width')
 
+class TemplateApply(WireModel):
+    expected_knowledge_revision: int = Field(default=..., alias='expected_knowledge_revision', ge=0.0)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
+    parent_id: str | None = Field(default=None, alias='parent_id')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=240)
+
+class TemplateIn(WireModel):
+    description: str = Field(default='', alias='description', max_length=2000)
+    document: dict[str, Any] = Field(default=..., alias='document')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
+
 class TemplateModel(WireModel):
     capabilities: list[Literal['chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
     categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'image_generation', 'end_to_end_speech']] | None = Field(default=None, alias='categories')
@@ -4105,6 +4230,17 @@ class TemplateModel(WireModel):
     label: str = Field(default='', alias='label', max_length=160)
     slug: str = Field(default=..., alias='slug', min_length=1, max_length=160)
     template_key: str = Field(default=..., alias='template_key', min_length=1, max_length=100)
+
+class TemplateOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    description: str = Field(default='', alias='description', max_length=2000)
+    document: dict[str, Any] = Field(default=..., alias='document')
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    revision: int = Field(default=..., alias='revision')
+    schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
+    updated_at: datetime = Field(default=..., alias='updated_at')
 
 class TemplatePreviewIn(WireModel):
     expected_template_revision: int = Field(default=..., alias='expected_template_revision', ge=0.0)
@@ -4132,6 +4268,14 @@ class TemplateProvider_Output(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
     template_key: str = Field(default=..., alias='template_key', min_length=1, max_length=100)
+
+class TemplatePut(WireModel):
+    description: str = Field(default='', alias='description', max_length=2000)
+    document: dict[str, Any] = Field(default=..., alias='document')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
 
 class TemplateSupplier(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
@@ -4207,7 +4351,7 @@ class ThoughtHistorySnapshot(WireModel):
     id: str = Field(default=..., alias='id')
     note_id: str = Field(default=..., alias='note_id')
     revision: int = Field(default=..., alias='revision', ge=0.0)
-    schema_version: Literal[2] = Field(default=2, alias='schema_version')
+    schema_version: Literal[2, 3] = Field(default=2, alias='schema_version')
     source: Literal['baseline', 'create', 'edit', 'restore', 'import'] = Field(default=..., alias='source')
     tags: list[str] = Field(default=..., alias='tags', max_length=30)
     title: str = Field(default=..., alias='title', min_length=1, max_length=240)
@@ -4262,7 +4406,7 @@ class ThoughtNoteCreate(WireModel):
     knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
     parent_id: str | None = Field(default=None, alias='parent_id')
     pinned: bool = Field(default=False, alias='pinned')
-    schema_version: Literal[2] = Field(default=2, alias='schema_version')
+    schema_version: Literal[2, 3] = Field(default=2, alias='schema_version')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
     title: str = Field(default='未命名笔记', alias='title', min_length=1, max_length=240)
 
@@ -4284,7 +4428,7 @@ class ThoughtNoteOut(WireModel):
     pinned: bool = Field(default=..., alias='pinned')
     position: int = Field(default=..., alias='position')
     revision: int = Field(default=..., alias='revision')
-    schema_version: Literal[2] = Field(default=..., alias='schema_version')
+    schema_version: Literal[2, 3] = Field(default=..., alias='schema_version')
     tags: list[str] = Field(default=..., alias='tags')
     title: str = Field(default=..., alias='title')
     updated_at: datetime = Field(default=..., alias='updated_at')
@@ -4296,7 +4440,7 @@ class ThoughtNotePut(WireModel):
     knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
     parent_id: str | None = Field(default=None, alias='parent_id')
     pinned: bool = Field(default=False, alias='pinned')
-    schema_version: Literal[2] = Field(default=2, alias='schema_version')
+    schema_version: Literal[2, 3] = Field(default=2, alias='schema_version')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
     title: str = Field(default='未命名笔记', alias='title', min_length=1, max_length=240)
 
@@ -5235,6 +5379,9 @@ CharacterParameter.model_rebuild()
 CharacterPart.model_rebuild()
 CharacterStateBinding.model_rebuild()
 CharacterTrack.model_rebuild()
+CheckpointIn.model_rebuild()
+CheckpointOut.model_rebuild()
+CheckpointPut.model_rebuild()
 ClipIdOperation.model_rebuild()
 CodexSourceRestore.model_rebuild()
 CodexSourceState.model_rebuild()
@@ -5294,6 +5441,9 @@ DirectorProjectSummary.model_rebuild()
 DirectorToolCall.model_rebuild()
 DirectorToolOut.model_rebuild()
 DocumentOut.model_rebuild()
+DuplicateIn.model_rebuild()
+DuplicateOut.model_rebuild()
+DuplicateSnapshot.model_rebuild()
 ExportCreateIn.model_rebuild()
 ExportListOut.model_rebuild()
 ExportOut.model_rebuild()
@@ -5507,6 +5657,7 @@ KnowledgeBaseOut.model_rebuild()
 KnowledgeBasePut.model_rebuild()
 KnowledgeNoteCreate.model_rebuild()
 LibraryAssetImportIn.model_rebuild()
+LibraryExportSnapshot.model_rebuild()
 LibraryFolderImportOut.model_rebuild()
 LibraryFolderImportSkippedOut.model_rebuild()
 LinkClipsOperation.model_rebuild()
@@ -5663,6 +5814,9 @@ QuestionAnswerIn.model_rebuild()
 QuestionIn.model_rebuild()
 QuestionOut.model_rebuild()
 QuotaLimit.model_rebuild()
+ReadingIn.model_rebuild()
+ReadingOut.model_rebuild()
+ReadingPosition.model_rebuild()
 RealtimeNumberParameterOut.model_rebuild()
 RealtimeVoiceMicrophoneOut.model_rebuild()
 RealtimeVoiceModelOut.model_rebuild()
@@ -5674,6 +5828,7 @@ ReauthIn.model_rebuild()
 RedemptionOut.model_rebuild()
 RedemptionPage.model_rebuild()
 Reference.model_rebuild()
+ReferenceTarget.model_rebuild()
 RegistrationIn.model_rebuild()
 RegistrationInviteAction.model_rebuild()
 RegistrationInviteCreated.model_rebuild()
@@ -5686,6 +5841,7 @@ RemoveTransitionOperation.model_rebuild()
 RenewApiKeyIn.model_rebuild()
 ReorderTrackOperation.model_rebuild()
 ResetPasswordOut.model_rebuild()
+ResolveReferences.model_rebuild()
 RestoreClipStatesOperation.model_rebuild()
 RevokeApiKeyIn.model_rebuild()
 RoleModelTemplate_Input.model_rebuild()
@@ -5702,7 +5858,13 @@ RunOut.model_rebuild()
 RuntimeQuotas.model_rebuild()
 RuntimeQuotasIn.model_rebuild()
 RuntimeQuotasOut.model_rebuild()
+SavedFilterIn.model_rebuild()
+SavedFilterOut.model_rebuild()
+SavedFilterPut.model_rebuild()
 SavedSegmentTranscriptionIn.model_rebuild()
+SearchCriteria.model_rebuild()
+SearchHit.model_rebuild()
+SearchResult.model_rebuild()
 SecretOut.model_rebuild()
 SecurityAuditEventOut.model_rebuild()
 SecurityAuditListOut.model_rebuild()
@@ -5722,10 +5884,14 @@ StorageLayoutMigrationOut.model_rebuild()
 StorageLayoutStatusOut.model_rebuild()
 SvgPreviewIn.model_rebuild()
 SvgPreviewOut.model_rebuild()
+TemplateApply.model_rebuild()
+TemplateIn.model_rebuild()
 TemplateModel.model_rebuild()
+TemplateOut.model_rebuild()
 TemplatePreviewIn.model_rebuild()
 TemplateProvider_Input.model_rebuild()
 TemplateProvider_Output.model_rebuild()
+TemplatePut.model_rebuild()
 TemplateSupplier.model_rebuild()
 TemplateSyncIn.model_rebuild()
 TemplateSyncItemOut.model_rebuild()

@@ -4,11 +4,16 @@ import { Plus, Pencil } from "lucide-react";
 function TagInput({
   tags,
   finish,
+  onDraft,
+  onComposition,
 }: {
   tags: string[];
   finish: (tags?: string[], restoreFocus?: boolean) => void;
+  onDraft?: (tags: string[]) => void;
+  onComposition?: (active: boolean) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const original = useRef(tags);
   const cancelled = useRef(false);
   const keyboardFinish = useRef(false);
   useEffect(() => {
@@ -21,6 +26,9 @@ function TagInput({
       aria-label="笔记标签"
       placeholder="添加标签，以逗号分隔"
       defaultValue={tags.join(", ")}
+      onChange={(event) => onDraft?.(parseTags(event.target.value))}
+      onCompositionStart={() => onComposition?.(true)}
+      onCompositionEnd={() => onComposition?.(false)}
       onBlur={(event) => {
         if (!cancelled.current)
           finish(
@@ -40,6 +48,7 @@ function TagInput({
         if (event.key === "Escape") {
           event.preventDefault();
           cancelled.current = true;
+          onDraft?.(original.current);
           finish(undefined, true);
         } else if (
           event.key === "Enter" ||
@@ -57,9 +66,15 @@ function TagInput({
 export function NoteTags({
   tags,
   onChange,
+  onDraft,
+  onComposition,
+  disabled,
 }: {
   tags: string[];
   onChange: (tags: string[]) => void;
+  onDraft?: (tags: string[]) => void;
+  onComposition?: (active: boolean) => void;
+  disabled?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -67,8 +82,9 @@ export function NoteTags({
     <div className="thought-note-tags" aria-label="笔记标签列表">
       {editing ? (
         <TagInput
-          key={JSON.stringify(tags)}
           tags={tags}
+          onDraft={onDraft}
+          onComposition={onComposition}
           finish={(next, restoreFocus) => {
             if (next && JSON.stringify(next) !== JSON.stringify(tags))
               onChange(next);
@@ -89,6 +105,7 @@ export function NoteTags({
             ref={trigger}
             type="button"
             aria-label="编辑标签"
+            disabled={disabled}
             onClick={() => setEditing(true)}
           >
             {tags.length ? (
@@ -102,4 +119,15 @@ export function NoteTags({
       )}
     </div>
   );
+}
+
+function parseTags(value: string) {
+  return [
+    ...new Set(
+      value
+        .split(/[,，]/)
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
