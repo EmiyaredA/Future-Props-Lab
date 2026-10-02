@@ -4,6 +4,12 @@ export const videoEditorQueryKeys = {
   timeline: (projectId: string) =>
     ["video-editor-timeline", projectId] as const,
   assets: (projectId: string) => ["video-editor-assets", projectId] as const,
+  audioSeam: (
+    projectId: string,
+    revision: number,
+    fromId: string,
+    toId: string,
+  ) => ["video-editor-audio-seam", projectId, revision, fromId, toId] as const,
   renders: (projectId: string) => ["video-editor-renders", projectId] as const,
   segmentExports: (projectId: string) =>
     ["video-editor-segment-exports", projectId] as const,

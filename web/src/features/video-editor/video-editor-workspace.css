@@ -221,6 +221,10 @@
   color: #ddd8ff;
   background: #2b2752;
 }
+.ve-right-panel-tabs button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .ve-right-panel > .ve-inspector,
 .ve-right-panel > .ve-transition-panel {
   flex: 1;

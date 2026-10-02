@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.video_editor.audio_seam_edit import align_audio_seam
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
@@ -121,6 +122,8 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
         guarded_ids = set(data.get("clipIds", []))
         if data.get("clipId"):
             guarded_ids.add(data["clipId"])
+        if kind == "alignAudioSeam":
+            guarded_ids.update((data["fromClipId"], data["toClipId"]))
         transition_payload = data.get("transition")
         if transition_payload:
             guarded_ids.update(
@@ -336,6 +339,8 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                                 duration, 10_000_000, round(clip[edge]["durationUs"] * ratio)
                             )
                     clip.update(durationUs=duration, playbackRate=data["playbackRate"])
+        elif kind == "alignAudioSeam":
+            align_audio_seam(result, data)
         elif kind == "restoreClipStates":
             for restored in data["clips"]:
                 track, current = _find_clip(result, restored["id"])
@@ -800,6 +805,19 @@ class VideoEditorTimelines:
         document = await validate_timeline(
             self.session, project_id, apply_operations(row.document, body)
         )
+        for operation in body.operations:
+            if operation.type != "alignAudioSeam":
+                continue
+            _track, target = _find_clip(document, operation.to_clip_id)
+            asset = await self.session.get(VisualAsset, target["assetId"])
+            metadata = await self.session.get(VideoEditorAssetMetadata, target["assetId"])
+            if (
+                asset is None
+                or asset.media_kind != "audio"
+                or metadata is None
+                or metadata.processing_status != "ready"
+            ):
+                raise VideoEditorValidationError("音频素材尚未准备好", code="audio_not_ready")
         now = utc_now()
         result = await self.session.execute(
             update(VideoEditorTimeline)

@@ -3,6 +3,7 @@ import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { useVideoEditorLayout } from "./useVideoEditorLayout";
 import { VideoEditorSeparator } from "./VideoEditorSeparator";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Film,
@@ -23,6 +24,13 @@ import { VideoEditorBatchInspector } from "./VideoEditorBatchInspector";
 import { VideoEditorExportDialog } from "./VideoEditorExportDialog";
 import { VideoEditorInspector } from "./VideoEditorInspector";
 import { VideoEditorTransitionPanel } from "./VideoEditorTransitionPanel";
+import { VideoEditorAudioSeamPanel } from "./VideoEditorAudioSeamPanel";
+import {
+  audioSeamOperations,
+  audioSeamPairForSelection,
+} from "./audioSeamModel";
+import { findAudioSeamCandidates } from "./api";
+import { videoEditorQueryKeys } from "./queryKeys";
 import { VideoEditorPreview } from "./VideoEditorPreview";
 import { VideoEditorTimeline } from "./VideoEditorTimeline";
 import { VideoEditorSegmentExportDialog } from "./VideoEditorSegmentExportDialog";
@@ -57,9 +65,14 @@ export function VideoEditorPage({
 }) {
   const editor = useVideoEditor(projectId);
   const [mobilePanel, setMobilePanel] = useState("preview");
-  const [rightPanel, setRightPanel] = useState<"inspector" | "transitions">(
-    "inspector",
-  );
+  const [rightPanel, setRightPanel] = useState<
+    "inspector" | "transitions" | "audio-seam"
+  >("inspector");
+  const [audioSeamTarget, setAudioSeamTarget] = useState<{
+    fromId: string;
+    toId: string;
+  }>();
+  const [selectedAudioCandidate, setSelectedAudioCandidate] = useState(0);
   const [selectedTransitionId, setSelectedTransitionId] = useState<string>();
   const [transitionTarget, setTransitionTarget] = useState<{
     fromClipId?: string;
@@ -81,6 +94,14 @@ export function VideoEditorPage({
   }>();
   const [subtitleImportPending, setSubtitleImportPending] = useState(false);
   const discardTitle = useRef(false);
+  const {
+    zoom: editorZoom,
+    setZoom: editorSetZoom,
+    saving: editorSaving,
+    setNotice: editorSetNotice,
+    selectedClipIds: editorSelectedClipIds,
+  } = editor;
+  const { data: timelineData, refetch: timelineRefetch } = editor.timeline;
   const contentDurationSeconds = Math.max(1, editor.durationUs / 1_000_000);
   const zoomMin = timelineZoomMinimum(
     contentViewportWidthPx,
@@ -91,14 +112,14 @@ export function VideoEditorPage({
   };
   useEffect(() => {
     if (!(contentViewportWidthPx > 0)) return;
-    if (editor.zoom < zoomMin) {
-      editor.setZoom(clampTimelineZoom(zoomMin, zoomMin));
+    if (editorZoom < zoomMin) {
+      editorSetZoom(clampTimelineZoom(zoomMin, zoomMin));
     }
-  }, [contentViewportWidthPx, editor.zoom, editor.setZoom, zoomMin]);
+  }, [contentViewportWidthPx, editorZoom, editorSetZoom, zoomMin]);
   useEffect(() => {
-    const clip = (editor.timeline.data?.document.tracks ?? [])
+    const clip = (timelineData?.document.tracks ?? [])
       .flatMap((track) => track.clips ?? [])
-      .find((item) => editor.selectedClipIds.includes(item.id));
+      .find((item) => editorSelectedClipIds.includes(item.id));
     window.dispatchEvent(
       new CustomEvent("future-props:amadeus-context", {
         detail: {
@@ -111,11 +132,11 @@ export function VideoEditorPage({
                 value: `${clip.kind} · ${(clip.durationUs / 1_000_000).toFixed(2)} 秒`,
               }
             : undefined,
-          unsaved: editor.saving,
+          unsaved: editorSaving,
         },
       }),
     );
-  }, [projectId, editor.timeline.data, editor.selectedClipIds, editor.saving]);
+  }, [projectId, timelineData, editorSelectedClipIds, editorSaving]);
   useEffect(
     () =>
       window.futurePropsDesktop?.onAmadeusMutation?.((value) => {
@@ -125,16 +146,31 @@ export function VideoEditorPage({
           changed.projectId !== projectId
         )
           return;
-        if (editor.saving) {
-          editor.setNotice(
-            "Amadeus 已修改时间线；请先处理当前保存，再刷新项目",
-          );
+        if (editorSaving) {
+          editorSetNotice("Amadeus 已修改时间线；请先处理当前保存，再刷新项目");
           return;
         }
-        void editor.timeline.refetch();
+        void timelineRefetch();
       }),
-    [projectId, editor.saving, editor.timeline.refetch, editor.setNotice],
+    [projectId, editorSaving, timelineRefetch, editorSetNotice],
   );
+  const audioSeamQuery = useQuery({
+    queryKey: videoEditorQueryKeys.audioSeam(
+      projectId,
+      editor.timeline.data?.revision ?? -1,
+      audioSeamTarget?.fromId ?? "",
+      audioSeamTarget?.toId ?? "",
+    ),
+    enabled: Boolean(audioSeamTarget && editor.timeline.data),
+    queryFn: () =>
+      findAudioSeamCandidates(
+        projectId,
+        editor.timeline.data!.revision,
+        audioSeamTarget!.fromId,
+        audioSeamTarget!.toId,
+      ),
+    retry: false,
+  });
   if (editor.project.isLoading || editor.timeline.isLoading)
     return <div className="ve-editor-state">正在装配剪辑工作区…</div>;
   if (!editor.project.data || !editor.timeline.data)
@@ -142,6 +178,25 @@ export function VideoEditorPage({
   const project = editor.project.data;
   const timeline = editor.timeline.data;
   const tracks = timeline.document.tracks ?? [];
+  const selectableAudioSeam = audioSeamPairForSelection(
+    tracks,
+    editor.selectedClipIds,
+  );
+  const activeAudioClips = audioSeamTarget
+    ? tracks
+        .flatMap((track) => track.clips ?? [])
+        .filter(
+          (clip) =>
+            clip.id === audioSeamTarget.fromId ||
+            clip.id === audioSeamTarget.toId,
+        )
+    : [];
+  const audioFrom = activeAudioClips.find(
+    (clip) => clip.id === audioSeamTarget?.fromId,
+  );
+  const audioTo = activeAudioClips.find(
+    (clip) => clip.id === audioSeamTarget?.toId,
+  );
   const nextTrackOrder =
     Math.max(-1, ...tracks.map((track) => track.order)) + 1;
   const assets = editor.assets.data?.items ?? [];
@@ -586,8 +641,51 @@ export function VideoEditorPage({
               >
                 转场
               </button>
+              <button
+                type="button"
+                className={rightPanel === "audio-seam" ? "active" : ""}
+                disabled={!audioSeamTarget}
+                onClick={() => {
+                  setRightPanel("audio-seam");
+                  setMobilePanel("inspector");
+                }}
+              >
+                音频接点
+              </button>
             </div>
-            {rightPanel === "transitions" ? (
+            {rightPanel === "audio-seam" && audioFrom && audioTo ? (
+              <VideoEditorAudioSeamPanel
+                from={audioFrom}
+                to={audioTo}
+                asset={assets.find((asset) => asset.id === audioFrom.assetId)}
+                data={audioSeamQuery.data}
+                loading={audioSeamQuery.isLoading}
+                error={
+                  audioSeamQuery.error instanceof Error
+                    ? audioSeamQuery.error.message
+                    : undefined
+                }
+                selected={selectedAudioCandidate}
+                onSelect={setSelectedAudioCandidate}
+                fps={timeline.document.settings?.fps ?? 30}
+                onClose={() => {
+                  setAudioSeamTarget(undefined);
+                  setRightPanel("inspector");
+                }}
+                onApply={async (sourceInUs, fadeUs) => {
+                  const { redo, undo } = audioSeamOperations(
+                    timeline,
+                    audioFrom,
+                    audioTo,
+                    sourceInUs,
+                    fadeUs,
+                  );
+                  await editor.commit(redo, undo);
+                  setAudioSeamTarget(undefined);
+                  setRightPanel("inspector");
+                }}
+              />
+            ) : rightPanel === "transitions" ? (
               <VideoEditorTransitionPanel
                 clips={tracks.flatMap((track) => track.clips ?? [])}
                 tracks={tracks}
@@ -693,6 +791,22 @@ export function VideoEditorPage({
             >
               <Plus aria-hidden /> 音频轨
             </button>
+            <button
+              type="button"
+              disabled={!selectableAudioSeam || editor.saving}
+              onClick={() => {
+                if (!selectableAudioSeam) return;
+                setAudioSeamTarget({
+                  fromId: selectableAudioSeam.from.id,
+                  toId: selectableAudioSeam.to.id,
+                });
+                setSelectedAudioCandidate(0);
+                setRightPanel("audio-seam");
+                setMobilePanel("inspector");
+              }}
+            >
+              找相似接点
+            </button>
           </div>
           <div>
             <button onClick={workspaceLayout.reset}>重置布局</button>
@@ -721,6 +835,19 @@ export function VideoEditorPage({
         <VideoEditorTimeline
           timeline={timeline}
           assets={assets}
+          audioSeam={
+            audioSeamTarget && audioTo && audioSeamQuery.data
+              ? {
+                  toClipId: audioTo.id,
+                  candidates: audioSeamQuery.data.candidates,
+                  selected: selectedAudioCandidate,
+                  onSelect: (index) => {
+                    setSelectedAudioCandidate(index);
+                    setRightPanel("audio-seam");
+                  },
+                }
+              : undefined
+          }
           playheadUs={editor.playheadUs}
           setPlayheadUs={setPlayheadUs}
           zoom={editor.zoom}

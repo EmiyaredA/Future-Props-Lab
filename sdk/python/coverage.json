@@ -770,6 +770,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/desktop-pet/projects/{project_id}/chat/messages",
+    "sdk": "client.desktop_pet.clear_chat",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#clear-chat",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/desktop-pet/projects",
     "sdk": "client.desktop_pet.list_projects",
     "document": "/docs.html?page=sdk-reference-desktop-pet#list-projects",
@@ -791,6 +798,20 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/desktop-pet/projects/{project_id}/chat",
+    "sdk": "client.desktop_pet.get_chat",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#get-chat",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/desktop-pet/projects/{project_id}/chat/messages",
+    "sdk": "client.desktop_pet.chat_messages",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#chat-messages",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/desktop-pet/projects/{project_id}/document",
     "sdk": "client.desktop_pet.get_document",
     "document": "/docs.html?page=sdk-reference-desktop-pet#get-document",
@@ -805,6 +826,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "PATCH /v1/desktop-pet/projects/{project_id}/chat",
+    "sdk": "client.desktop_pet.update_chat",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#update-chat",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/desktop-pet/projects",
     "sdk": "client.desktop_pet.create_project",
     "document": "/docs.html?page=sdk-reference-desktop-pet#create-project",
@@ -815,6 +843,13 @@
     "http": "POST /v1/desktop-pet/projects/import-whale",
     "sdk": "client.desktop_pet.import_whale",
     "document": "/docs.html?page=sdk-reference-desktop-pet#import-whale",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream",
+    "sdk": "client.desktop_pet.send_chat_message",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#send-chat-message",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3174,6 +3209,13 @@
     "http": "POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry",
     "sdk": "client.video.retry_proxy",
     "document": "/docs.html?page=sdk-reference-video#retry-proxy",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/audio-seams/candidates",
+    "sdk": "client.video.audio_seam_candidates",
+    "document": "/docs.html?page=sdk-reference-video#audio-seam-candidates",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

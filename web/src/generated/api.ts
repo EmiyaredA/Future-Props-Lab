@@ -5927,6 +5927,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/video-editor/projects/{project_id}/audio-seams/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Audio Seam Candidates */
+        post: operations["audio_seam_candidates_v1_video_editor_projects__project_id__audio_seams_candidates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/video-editor/projects/{project_id}/open-folder": {
         parameters: {
             query?: never;
@@ -6914,6 +6931,24 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** AlignAudioSeamOperation */
+        AlignAudioSeamOperation: {
+            /** Fadedurationus */
+            fadeDurationUs: number;
+            /** Fromclipid */
+            fromClipId: string;
+            /** Sourceinus */
+            sourceInUs: number;
+            /** Toclipid */
+            toClipId: string;
+            /** Transitionid */
+            transitionId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "alignAudioSeam";
+        };
         /** AnnotationEntityOperation */
         AnnotationEntityOperation: {
             /**
@@ -7349,6 +7384,37 @@ export interface components {
              * @default
              */
             theme: string;
+        };
+        /** AudioSeamCandidateOut */
+        AudioSeamCandidateOut: {
+            /** Matchreasons */
+            matchReasons: string[];
+            /** Peaks */
+            peaks: number[];
+            /** Sourceinus */
+            sourceInUs: number;
+            /** Suggestedfadeus */
+            suggestedFadeUs: number;
+        };
+        /** AudioSeamCandidatesIn */
+        AudioSeamCandidatesIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Fromclipid */
+            fromClipId: string;
+            /** Toclipid */
+            toClipId: string;
+        };
+        /** AudioSeamCandidatesOut */
+        AudioSeamCandidatesOut: {
+            /** Assetid */
+            assetId: string;
+            /** Candidates */
+            candidates: components["schemas"]["AudioSeamCandidateOut"][];
+            /** Referencepeaks */
+            referencePeaks: number[];
+            /** Referencestartus */
+            referenceStartUs: number;
         };
         /** AuthMeOut */
         AuthMeOut: {
@@ -17819,7 +17885,7 @@ export interface components {
             /** Expectedrevision */
             expectedRevision: number;
             /** Operations */
-            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["RestoreClipStatesOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"] | components["schemas"]["AddTransitionOperation"] | components["schemas"]["UpdateTransitionOperation"] | components["schemas"]["RemoveTransitionOperation"])[];
+            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["AlignAudioSeamOperation"] | components["schemas"]["RestoreClipStatesOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"] | components["schemas"]["AddTransitionOperation"] | components["schemas"]["UpdateTransitionOperation"] | components["schemas"]["RemoveTransitionOperation"])[];
             /** Requestid */
             requestId: string;
         };
@@ -33477,6 +33543,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audio_seam_candidates_v1_video_editor_projects__project_id__audio_seams_candidates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioSeamCandidatesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioSeamCandidatesOut"];
                 };
             };
             /** @description Validation Error */

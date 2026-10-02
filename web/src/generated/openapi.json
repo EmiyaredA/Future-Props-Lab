@@ -801,6 +801,54 @@
         "title": "AgentPairStarted",
         "type": "object"
       },
+      "AlignAudioSeamOperation": {
+        "properties": {
+          "fadeDurationUs": {
+            "maximum": 1000000.0,
+            "minimum": 50000.0,
+            "title": "Fadedurationus",
+            "type": "integer"
+          },
+          "fromClipId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Fromclipid",
+            "type": "string"
+          },
+          "sourceInUs": {
+            "minimum": 0.0,
+            "title": "Sourceinus",
+            "type": "integer"
+          },
+          "toClipId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Toclipid",
+            "type": "string"
+          },
+          "transitionId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Transitionid",
+            "type": "string"
+          },
+          "type": {
+            "const": "alignAudioSeam",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "fromClipId",
+          "toClipId",
+          "sourceInUs",
+          "fadeDurationUs",
+          "transitionId"
+        ],
+        "title": "AlignAudioSeamOperation",
+        "type": "object"
+      },
       "AnnotationEntityOperation": {
         "additionalProperties": false,
         "properties": {
@@ -2009,6 +2057,102 @@
           "prompt"
         ],
         "title": "AudioGenerationTaskCreateIn",
+        "type": "object"
+      },
+      "AudioSeamCandidateOut": {
+        "properties": {
+          "matchReasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Matchreasons",
+            "type": "array"
+          },
+          "peaks": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Peaks",
+            "type": "array"
+          },
+          "sourceInUs": {
+            "title": "Sourceinus",
+            "type": "integer"
+          },
+          "suggestedFadeUs": {
+            "title": "Suggestedfadeus",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sourceInUs",
+          "suggestedFadeUs",
+          "matchReasons",
+          "peaks"
+        ],
+        "title": "AudioSeamCandidateOut",
+        "type": "object"
+      },
+      "AudioSeamCandidatesIn": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "fromClipId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Fromclipid",
+            "type": "string"
+          },
+          "toClipId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Toclipid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "fromClipId",
+          "toClipId"
+        ],
+        "title": "AudioSeamCandidatesIn",
+        "type": "object"
+      },
+      "AudioSeamCandidatesOut": {
+        "properties": {
+          "assetId": {
+            "title": "Assetid",
+            "type": "string"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/AudioSeamCandidateOut"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "referencePeaks": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Referencepeaks",
+            "type": "array"
+          },
+          "referenceStartUs": {
+            "title": "Referencestartus",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assetId",
+          "referenceStartUs",
+          "referencePeaks",
+          "candidates"
+        ],
+        "title": "AudioSeamCandidatesOut",
         "type": "object"
       },
       "AuthMeOut": {
@@ -29299,6 +29443,7 @@
                   "addKeyframe": "#/components/schemas/KeyframeOperation",
                   "addTrack": "#/components/schemas/AddTrackOperation",
                   "addTransition": "#/components/schemas/AddTransitionOperation",
+                  "alignAudioSeam": "#/components/schemas/AlignAudioSeamOperation",
                   "duplicateClip": "#/components/schemas/ClipIdOperation",
                   "linkClips": "#/components/schemas/LinkClipsOperation",
                   "moveClip": "#/components/schemas/MoveClipOperation",
@@ -29363,6 +29508,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/SetClipSpeedOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/AlignAudioSeamOperation"
                 },
                 {
                   "$ref": "#/components/schemas/RestoreClipStatesOperation"
@@ -54190,6 +54338,58 @@
           }
         },
         "summary": "Asset Variant",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/audio-seams/candidates": {
+      "post": {
+        "operationId": "audio_seam_candidates_v1_video_editor_projects__project_id__audio_seams_candidates_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioSeamCandidatesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioSeamCandidatesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Audio Seam Candidates",
         "tags": [
           "video-editor"
         ]

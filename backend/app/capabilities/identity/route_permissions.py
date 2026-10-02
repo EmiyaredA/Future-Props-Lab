@@ -388,6 +388,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download"),
         ("GET", "/v1/video-editor/projects/{project_id}/snapshot"),
         ("GET", "/v1/video-editor/projects/{project_id}/timeline"),
+        ("POST", "/v1/video-editor/projects/{project_id}/audio-seams/candidates"),
         ("GET", "/v1/visual-workshop/generation-batches"),
         ("GET", "/v1/visual-workshop/generation-batches/{batch_id}"),
         ("GET", "/v1/visual-workshop/generation-options"),

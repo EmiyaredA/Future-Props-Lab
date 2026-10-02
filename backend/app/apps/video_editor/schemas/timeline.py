@@ -86,6 +86,15 @@ class SetClipSpeedOperation(BaseModel):
     ripple: bool = False
 
 
+class AlignAudioSeamOperation(BaseModel):
+    type: Literal["alignAudioSeam"]
+    from_clip_id: str = Field(alias="fromClipId", min_length=1, max_length=64)
+    to_clip_id: str = Field(alias="toClipId", min_length=1, max_length=64)
+    source_in_us: int = Field(alias="sourceInUs", ge=0)
+    fade_duration_us: int = Field(alias="fadeDurationUs", ge=50_000, le=1_000_000)
+    transition_id: str = Field(alias="transitionId", min_length=1, max_length=64)
+
+
 class RestoreClipStatesOperation(BaseModel):
     type: Literal["restoreClipStates"]
     clips: list[VideoEditorClip] = Field(min_length=1)
@@ -186,6 +195,7 @@ VideoEditorTimelineOperation = Annotated[
     | TrimClipOperation
     | SplitClipOperation
     | SetClipSpeedOperation
+    | AlignAudioSeamOperation
     | RestoreClipStatesOperation
     | LinkClipsOperation
     | SeparateClipOperation

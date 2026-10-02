@@ -97,6 +97,22 @@ export const listVideoEditorAssets = async (projectId: string) =>
     }),
   );
 
+export const findAudioSeamCandidates = async (
+  projectId: string,
+  expectedRevision: number,
+  fromClipId: string,
+  toClipId: string,
+) =>
+  unwrap(
+    await api.POST(
+      "/v1/video-editor/projects/{project_id}/audio-seams/candidates",
+      {
+        params: { path: { project_id: projectId } },
+        body: { expectedRevision, fromClipId, toClipId },
+      },
+    ),
+  );
+
 export const deleteVideoEditorAsset = async (
   projectId: string,
   assetId: string,
@@ -152,9 +168,12 @@ export const getVideoEditorAssetBake = async (
   taskId: string,
 ) =>
   unwrap(
-    await api.GET("/v1/video-editor/projects/{project_id}/asset-bakes/{task_id}", {
-      params: { path: { project_id: projectId, task_id: taskId } },
-    }),
+    await api.GET(
+      "/v1/video-editor/projects/{project_id}/asset-bakes/{task_id}",
+      {
+        params: { path: { project_id: projectId, task_id: taskId } },
+      },
+    ),
   );
 
 export const listVideoEditorImportSources = async () =>

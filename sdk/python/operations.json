@@ -1843,6 +1843,10 @@
     "method": "retry_proxy",
     "resource": "video"
   },
+  "POST /v1/video-editor/projects/{project_id}/audio-seams/candidates": {
+    "method": "audio_seam_candidates",
+    "resource": "video"
+  },
   "POST /v1/video-editor/projects/{project_id}/open-folder": {
     "method": "reveal_project_folder",
     "resource": "video"

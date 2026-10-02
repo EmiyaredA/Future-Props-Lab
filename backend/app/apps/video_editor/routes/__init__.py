@@ -7,12 +7,15 @@ from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
 from app.apps.video_editor.asset_bakes import VideoEditorAssetBakes
+from app.apps.video_editor.audio_matching import VideoEditorAudioMatching
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.frames import VideoEditorFrames
 from app.apps.video_editor.media import VideoEditorMedia, guessed_mime
 from app.apps.video_editor.projects import VideoEditorProjects
 from app.apps.video_editor.rendering import VideoEditorRenders
 from app.apps.video_editor.schemas import (
+    AudioSeamCandidatesIn,
+    AudioSeamCandidatesOut,
     VideoEditorAssetBakeCreateIn,
     VideoEditorAssetImportIn,
     VideoEditorAssetListOut,
@@ -244,9 +247,7 @@ async def patch_asset(
         raise _error(exc) from None
 
 
-@router.post(
-    "/projects/{project_id}/assets/{asset_id}/bakes", response_model=VideoEditorTaskOut
-)
+@router.post("/projects/{project_id}/assets/{asset_id}/bakes", response_model=VideoEditorTaskOut)
 async def create_asset_bake(
     session: SessionDep,
     workspace_id: WorkspaceDep,
@@ -255,16 +256,12 @@ async def create_asset_bake(
     body: VideoEditorAssetBakeCreateIn,
 ) -> VideoEditorTaskOut:
     try:
-        return await VideoEditorAssetBakes(session, workspace_id).create(
-            project_id, asset_id, body
-        )
+        return await VideoEditorAssetBakes(session, workspace_id).create(project_id, asset_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 
 
-@router.get(
-    "/projects/{project_id}/asset-bakes/{task_id}", response_model=VideoEditorTaskOut
-)
+@router.get("/projects/{project_id}/asset-bakes/{task_id}", response_model=VideoEditorTaskOut)
 async def get_asset_bake(
     session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
 ) -> VideoEditorTaskOut:
@@ -327,6 +324,22 @@ async def apply_timeline_operations(
 ) -> VideoEditorTimelineOut:
     try:
         return await VideoEditorTimelines(session, workspace_id).apply(project_id, body)
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/projects/{project_id}/audio-seams/candidates",
+    response_model=AudioSeamCandidatesOut,
+)
+async def audio_seam_candidates(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    body: AudioSeamCandidatesIn,
+) -> AudioSeamCandidatesOut:
+    try:
+        return await VideoEditorAudioMatching(session, workspace_id).candidates(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 

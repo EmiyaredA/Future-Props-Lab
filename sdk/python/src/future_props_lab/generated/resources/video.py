@@ -75,6 +75,10 @@ class Video:
         'Asset Variant. GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}'
         return self._client._call('GET', '/v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id), ('variant', 'path', variant)], response_type=Any)
 
+    def audio_seam_candidates(self, *, project_id: str, body: models.AudioSeamCandidatesIn | dict) -> models.AudioSeamCandidatesOut:
+        'Audio Seam Candidates. POST /v1/video-editor/projects/{project_id}/audio-seams/candidates'
+        return self._client._call('POST', '/v1/video-editor/projects/{project_id}/audio-seams/candidates', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.AudioSeamCandidatesOut)
+
     def reveal_project_folder(self, *, project_id: str) -> models.ProjectFolderOpenOut:
         'Reveal Project Folder. POST /v1/video-editor/projects/{project_id}/open-folder'
         return self._client._call('POST', '/v1/video-editor/projects/{project_id}/open-folder', parameters=[('project_id', 'path', project_id)], response_type=models.ProjectFolderOpenOut)
@@ -210,6 +214,10 @@ class AsyncVideo:
     async def asset_variant(self, *, project_id: str, asset_id: str, variant: str) -> Any:
         'Asset Variant. GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}'
         return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}', parameters=[('project_id', 'path', project_id), ('asset_id', 'path', asset_id), ('variant', 'path', variant)], response_type=Any)
+
+    async def audio_seam_candidates(self, *, project_id: str, body: models.AudioSeamCandidatesIn | dict) -> models.AudioSeamCandidatesOut:
+        'Audio Seam Candidates. POST /v1/video-editor/projects/{project_id}/audio-seams/candidates'
+        return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/audio-seams/candidates', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.AudioSeamCandidatesOut)
 
     async def reveal_project_folder(self, *, project_id: str) -> models.ProjectFolderOpenOut:
         'Reveal Project Folder. POST /v1/video-editor/projects/{project_id}/open-folder'

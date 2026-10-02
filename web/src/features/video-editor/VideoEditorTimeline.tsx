@@ -12,6 +12,9 @@ import { formatTime, newTrack, snapUs } from "./editorModel";
 import { BATCH_OPS_LIMIT } from "./batchClipPatch";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
 import { VideoEditorTrackHeads } from "./VideoEditorTrackHeads";
+import { VideoEditorClipWaveform } from "./VideoEditorClipWaveform";
+import { VideoEditorAudioCandidateMarkers } from "./VideoEditorAudioCandidateMarkers";
+import { useAudioWaveformUrls } from "./useAudioWaveformUrls";
 import {
   VideoEditorSeparator,
   type VideoEditorSeparatorProps,
@@ -31,6 +34,7 @@ import {
   type TimelineContextMenuState,
 } from "./VideoEditorTimelineContextMenu";
 import type {
+  AudioSeamCandidate,
   VideoEditorAsset,
   VideoEditorClip,
   VideoEditorOperation,
@@ -65,6 +69,7 @@ export function VideoEditorTimeline({
   onCopyClip,
   onPasteClip,
   onContentViewportWidthChange,
+  audioSeam,
 }: {
   draggingAsset?: VideoEditorAsset;
   timeline: Timeline;
@@ -107,7 +112,15 @@ export function VideoEditorTimeline({
   onCopyClip?: (clipOrClips?: VideoEditorClip | VideoEditorClip[]) => void;
   onPasteClip?: () => void;
   onContentViewportWidthChange?: (widthPx: number) => void;
+  audioSeam?: {
+    toClipId: string;
+    candidates: AudioSeamCandidate[];
+    selected: number;
+    onSelect: (index: number) => void;
+  };
 }) {
+  const waveformUrls = useAudioWaveformUrls(assets);
+  const assetById = new Map(assets.map((asset) => [asset.id, asset]));
   const scroller = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const [selectionBox, setSelectionBox] = useState<{
@@ -841,6 +854,18 @@ export function VideoEditorTimeline({
                           aria-label={`${clip.name} ${((trimStates?.find((item) => item.id === clip.id)?.durationUs ?? clip.durationUs) / 1_000_000).toFixed(2)}s`}
                         >
                           <span>{clip.name}</span>
+                          {clip.kind === "audio" ? (
+                            <VideoEditorClipWaveform
+                              clip={clip}
+                              asset={assetById.get(clip.assetId ?? "")}
+                              url={
+                                waveformUrls[
+                                  assetById.get(clip.assetId ?? "")
+                                    ?.waveformUrl ?? ""
+                                ]
+                              }
+                            />
+                          ) : null}
                           <small>
                             {(
                               (trimStates?.find((item) => item.id === clip.id)
@@ -858,6 +883,9 @@ export function VideoEditorTimeline({
                             />
                           ))}
                         </button>
+                        {audioSeam?.toClipId === clip.id ? (
+                          <VideoEditorAudioCandidateMarkers {...audioSeam} />
+                        ) : null}
                         {(
                           [
                             ["in", clip.transitionIn],

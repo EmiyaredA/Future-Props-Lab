@@ -2,6 +2,11 @@
 
 # ruff: noqa: F401
 
+from app.apps.video_editor.schemas.audio_seam import (
+    AudioSeamCandidateOut,
+    AudioSeamCandidatesIn,
+    AudioSeamCandidatesOut,
+)
 from app.apps.video_editor.schemas.base import (
     VideoEditorAssetBakeCreateIn,
     VideoEditorAssetImportIn,
@@ -32,6 +37,7 @@ from app.apps.video_editor.schemas.timeline import (
     AddClipOperation,
     AddTrackOperation,
     AddTransitionOperation,
+    AlignAudioSeamOperation,
     ClipIdOperation,
     KeyframeOperation,
     LinkClipsOperation,
@@ -71,6 +77,10 @@ from app.capabilities.media_rendering.timeline_document import (
 )
 
 __all__ = [
+    "AudioSeamCandidateOut",
+    "AudioSeamCandidatesIn",
+    "AudioSeamCandidatesOut",
+    "AlignAudioSeamOperation",
     "AddTransitionOperation",
     "AddClipOperation",
     "AddTrackOperation",

@@ -26,3 +26,6 @@ export type VideoEditorSegmentExportItem =
   components["schemas"]["VideoEditorSegmentExportItem"];
 export type VideoEditorPreset =
   components["schemas"]["VideoEditorRenderPreviewIn"]["preset"];
+export type AudioSeamCandidates =
+  components["schemas"]["AudioSeamCandidatesOut"];
+export type AudioSeamCandidate = components["schemas"]["AudioSeamCandidateOut"];

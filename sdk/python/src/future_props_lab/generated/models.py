@@ -143,6 +143,14 @@ class AgentPairStarted(WireModel):
     scope: str = Field(default=..., alias='scope')
     status: str = Field(default=..., alias='status')
 
+class AlignAudioSeamOperation(WireModel):
+    fade_duration_us: int = Field(default=..., alias='fadeDurationUs', ge=50000.0, le=1000000.0)
+    from_clip_id: str = Field(default=..., alias='fromClipId', min_length=1, max_length=64)
+    source_in_us: int = Field(default=..., alias='sourceInUs', ge=0.0)
+    to_clip_id: str = Field(default=..., alias='toClipId', min_length=1, max_length=64)
+    transition_id: str = Field(default=..., alias='transitionId', min_length=1, max_length=64)
+    type: Literal['alignAudioSeam'] = Field(default=..., alias='type')
+
 class AnnotationEntityOperation(WireModel):
     action: Literal['insert', 'update', 'remove', 'move', 'duplicate'] = Field(default=..., alias='action')
     entity: Literal['speaker', 'segment'] = Field(default=..., alias='entity')
@@ -334,6 +342,23 @@ class AudioGenerationTaskCreateIn(WireModel):
     smart_duration: bool = Field(default=True, alias='smart_duration')
     style: str = Field(default='', alias='style', max_length=500)
     theme: str = Field(default='', alias='theme', max_length=500)
+
+class AudioSeamCandidateOut(WireModel):
+    match_reasons: list[str] = Field(default=..., alias='matchReasons')
+    peaks: list[float] = Field(default=..., alias='peaks')
+    source_in_us: int = Field(default=..., alias='sourceInUs')
+    suggested_fade_us: int = Field(default=..., alias='suggestedFadeUs')
+
+class AudioSeamCandidatesIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    from_clip_id: str = Field(default=..., alias='fromClipId', min_length=1, max_length=64)
+    to_clip_id: str = Field(default=..., alias='toClipId', min_length=1, max_length=64)
+
+class AudioSeamCandidatesOut(WireModel):
+    asset_id: str = Field(default=..., alias='assetId')
+    candidates: list[AudioSeamCandidateOut] = Field(default=..., alias='candidates')
+    reference_peaks: list[float] = Field(default=..., alias='referencePeaks')
+    reference_start_us: int = Field(default=..., alias='referenceStartUs')
 
 class AuthMeOut(WireModel):
     must_change_password: bool = Field(default=..., alias='must_change_password', repr=False)
@@ -4619,7 +4644,7 @@ class VideoEditorTextStyle(WireModel):
 
 class VideoEditorTimelineBatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    operations: list[AddTrackOperation | UpdateSettingsOperation | SetAssetOrganizationOperation | UpdateTrackOperation | RemoveTrackOperation | ReorderTrackOperation | AddClipOperation | UpdateClipOperation | ClipIdOperation | MoveClipOperation | TrimClipOperation | SplitClipOperation | SetClipSpeedOperation | RestoreClipStatesOperation | LinkClipsOperation | SeparateClipOperation | KeyframeOperation | SetTransitionOperation | AddTransitionOperation | UpdateTransitionOperation | RemoveTransitionOperation] = Field(default=..., alias='operations', min_length=1, max_length=200)
+    operations: list[AddTrackOperation | UpdateSettingsOperation | SetAssetOrganizationOperation | UpdateTrackOperation | RemoveTrackOperation | ReorderTrackOperation | AddClipOperation | UpdateClipOperation | ClipIdOperation | MoveClipOperation | TrimClipOperation | SplitClipOperation | SetClipSpeedOperation | AlignAudioSeamOperation | RestoreClipStatesOperation | LinkClipsOperation | SeparateClipOperation | KeyframeOperation | SetTransitionOperation | AddTransitionOperation | UpdateTransitionOperation | RemoveTransitionOperation] = Field(default=..., alias='operations', min_length=1, max_length=200)
     request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
 
 class VideoEditorTimelineDocument(WireModel):
@@ -5112,6 +5137,7 @@ AgentDecisionIn.model_rebuild()
 AgentPairIn.model_rebuild()
 AgentPairOut.model_rebuild()
 AgentPairStarted.model_rebuild()
+AlignAudioSeamOperation.model_rebuild()
 AnnotationEntityOperation.model_rebuild()
 AnnotationMergeOperation.model_rebuild()
 AnnotationOperationsIn.model_rebuild()
@@ -5141,6 +5167,9 @@ AudioAnnotationTranscriptionTaskImportIn.model_rebuild()
 AudioAnnotationWaveformOut.model_rebuild()
 AudioAnnotationWaveformPutIn.model_rebuild()
 AudioGenerationTaskCreateIn.model_rebuild()
+AudioSeamCandidateOut.model_rebuild()
+AudioSeamCandidatesIn.model_rebuild()
+AudioSeamCandidatesOut.model_rebuild()
 AuthMeOut.model_rebuild()
 BatchDeleteIn.model_rebuild()
 Body_add_skill_version_v1_integrations_skills__skill_id__versions_post.model_rebuild()

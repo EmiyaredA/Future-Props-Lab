@@ -1,0 +1,113 @@
+.ve-audio-seam-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  background: #151925;
+  color: #e7e5f2;
+}
+.ve-audio-seam-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ve-audio-seam-panel header button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #474159;
+  border-radius: 5px;
+  background: #232030;
+}
+.ve-audio-seam-panel p {
+  color: #b7b1c9;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ve-audio-seam-reference {
+  margin: 12px 0;
+  padding: 9px;
+  border: 1px solid #403951;
+  border-radius: 7px;
+  background: #211b2b;
+}
+.ve-audio-seam-reference > span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #d0cae1;
+}
+.ve-audio-seam-wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 48px;
+  overflow: hidden;
+}
+.ve-audio-seam-wave i {
+  flex: 1;
+  min-width: 1px;
+  background: #aa93ed;
+  border-radius: 2px;
+}
+.ve-audio-seam-candidates {
+  display: grid;
+  gap: 6px;
+}
+.ve-audio-seam-candidates button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 7px 9px;
+  border: 1px solid #49415d;
+  border-radius: 6px;
+  background: #221d2e;
+  text-align: left;
+}
+.ve-audio-seam-candidates button.selected {
+  border-color: #b09dff;
+  background: #373055;
+}
+.ve-audio-seam-candidates small {
+  color: #bdb6d0;
+}
+.ve-audio-seam-fade {
+  display: grid;
+  gap: 7px;
+  margin: 13px 0;
+  font-size: 12px;
+}
+.ve-audio-seam-fade input {
+  width: 100%;
+  accent-color: #a491f2;
+}
+.ve-audio-seam-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ve-audio-seam-actions button {
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid #5b5271;
+  border-radius: 6px;
+  background: #2a2538;
+}
+.ve-audio-seam-actions button.primary {
+  border-color: #8d7ce8;
+  background: #6251c7;
+  color: #fff;
+}
+.ve-audio-seam-panel button:focus-visible,
+.ve-audio-seam-fade input:focus-visible {
+  outline: 2px solid #c8beff;
+  outline-offset: 2px;
+}
+@media (max-width: 560px) {
+  .ve-audio-seam-candidates button {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

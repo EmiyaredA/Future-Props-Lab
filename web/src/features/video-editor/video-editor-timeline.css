@@ -398,6 +398,47 @@
   border-color: #8a58ae;
   background: #543568;
 }
+.ve-clip-waveform {
+  position: absolute;
+  inset: 10px 0 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ve-clip-waveform img {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  max-width: none;
+  opacity: 0.58;
+  object-fit: fill;
+}
+.ve-clip-body > span:not(.ve-clip-waveform),
+.ve-clip-body > small {
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+  max-width: 100%;
+  background: rgb(40 25 55 / 66%);
+}
+.ve-audio-candidate-marker {
+  position: absolute;
+  z-index: 4;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1px solid #c4f5e9;
+  border-radius: 50%;
+  background: #1f645f;
+  color: #fff;
+  font-size: 10px;
+  line-height: 12px;
+  transform: translateX(-50%);
+}
+.ve-audio-candidate-marker.selected,
+.ve-audio-candidate-marker:focus-visible {
+  background: #ad9cff;
+  outline: 2px solid #fff;
+}
 .ve-clip.text {
   border-color: #a397ff;
   background: #4b3c79;
