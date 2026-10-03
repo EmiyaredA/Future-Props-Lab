@@ -12,10 +12,17 @@ import { idlePose } from "@shared/live2d/idle";
 import { evaluate, parameterValues } from "@shared/live2d/pose";
 import type { CharacterDocument } from "@shared/live2d/types";
 import type { PetDocument } from "./api";
+import type { PetGeometry } from "@platform/petMotion";
+import {
+  live2dPlayback,
+  type PetPlaybackMode,
+  type PetEvent,
+} from "./playback";
 
 export type PetRendererHandle = {
   hitTest: (x: number, y: number) => boolean;
   pointerMove?: (x: number, y: number) => void;
+  geometry?: () => PetGeometry | null;
 };
 
 export const PetRenderer = forwardRef<
@@ -26,9 +33,17 @@ export const PetRenderer = forwardRef<
     eventName?: string;
     reactionKey?: number;
     className?: string;
+    playbackMode?: PetPlaybackMode;
   }
 >(function PetRenderer(
-  { document, skinId, eventName, reactionKey = 0, className = "" },
+  {
+    document,
+    skinId,
+    eventName,
+    reactionKey = 0,
+    className = "",
+    playbackMode = "runtime",
+  },
   ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
@@ -45,19 +60,26 @@ export const PetRenderer = forwardRef<
     (id) => document.assetUrls[replacements[id] ?? id],
   );
   const assetKey = textureUrls.join("|");
+  const characterKey = JSON.stringify(character);
   const events = useRef(document.config.events);
   events.current = document.config.events;
   const playback = useRef({
     name: eventName ?? "idle",
     started: performance.now(),
+    mode: playbackMode,
   });
+  const reactionSignature = JSON.stringify([
+    document.config.events?.[eventName as PetEvent],
+    document.config.events?.idle,
+  ]);
 
   useEffect(() => {
     playback.current = {
       name: eventName ?? "idle",
       started: performance.now(),
+      mode: playbackMode,
     };
-  }, [eventName, reactionKey]);
+  }, [eventName, reactionKey, playbackMode, reactionSignature]);
 
   useImperativeHandle(ref, () => ({
     hitTest(x, y) {
@@ -158,6 +180,7 @@ export const PetRenderer = forwardRef<
         );
       };
       fit();
+      playback.current.started = performance.now();
       resize = new ResizeObserver(fit);
       resize.observe(element);
       let last = 0;
@@ -167,22 +190,14 @@ export const PetRenderer = forwardRef<
         if (globalThis.document.hidden || now - last < 1000 / 30) return;
         last = now;
         const active = playback.current;
-        const selected = events.current?.[active.name];
-        const motion = character.motions.find(
-          (item) => item.id === selected?.motionId,
-        );
         const elapsed = Math.max(0, now - active.started);
-        const duration = motion ? (motion.duration / motion.fps) * 1000 : 850;
-        const playing =
-          active.name !== "idle" && elapsed < Math.max(duration, 500);
-        const reaction = playing ? selected : events.current?.idle;
-        const clip = character.motions.find(
-          (item) => item.id === reaction?.motionId,
+        const { reaction, clipFrame } = live2dPlayback(
+          character,
+          events.current,
+          active.name,
+          active.mode,
+          elapsed,
         );
-        const clipFrame = clip
-          ? ((now / 1000) * clip.fps) %
-            Math.max(1, clip.loopEnd || clip.duration)
-          : 0;
         const base = parameterValues(
           character,
           clipFrame,
@@ -219,7 +234,7 @@ export const PetRenderer = forwardRef<
     };
     // A saved document is immutable until its revision or selected skin changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [document.revision, skinId, assetKey]);
+  }, [characterKey, assetKey]);
 
   return (
     <div

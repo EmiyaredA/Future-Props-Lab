@@ -87,6 +87,18 @@ def _image_size(path: Path) -> tuple[int, int]:
         return image.size
 
 
+def _write_package_images(images: dict[Path, bytes]) -> None:
+    for path, content in images.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("xb") as image:
+            image.write(content)
+
+
+def _remove_package_images(paths: list[Path]) -> None:
+    for path in paths:
+        path.unlink(missing_ok=True)
+
+
 class DesktopPetProjects:
     def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
@@ -269,6 +281,75 @@ class DesktopPetProjects:
             self.session.add(row)
         await self.session.refresh(row)
         return self.out(row)
+
+    async def replace_package(
+        self, project_id: str, expected_revision: int, incoming: IncomingFile
+    ) -> PetDocumentOut:
+        row = await self.row(project_id)
+        if row.source_type != "coopanion-whale":
+            raise PetInvalid("仅本地分层角色支持更新资源包")
+        if row.revision != expected_revision:
+            current = await self.document(project_id)
+            raise RevisionConflictError(
+                expected_revision, current.revision, current.model_dump(mode="json")
+            )
+        profile = row.whale_model.get("rigProfile", "whale")
+        config = PetConfig.model_validate(row.config)
+        old_paths = [self.whale_path(project_id, asset) for asset in row.whale_assets.values()]
+        # Close the read transaction before archive decoding and filesystem I/O.
+        await self.session.rollback()
+        data = await incoming.read(MAX_ARCHIVE + 1)
+        package = await asyncio.to_thread(read_whale_package, data)
+        if package.model.get("rigProfile", "whale") != profile:
+            raise PetInvalid("更新资源包必须使用相同骨架类型")
+        schemes = {scheme["id"] for scheme in package.model["schemes"]}
+        if config.scheme_id not in schemes:
+            raise PetInvalid("更新资源包必须保留当前默认服饰")
+        if any(
+            (event.motion_id and event.motion_id not in WHALE_MOTIONS)
+            or (event.expression_id and event.expression_id not in WHALE_EXPRESSIONS)
+            for event in config.events.values()
+        ):
+            raise PetInvalid("当前交互配置与新资源包不兼容")
+        assets = {name: new_id() for name in package.images}
+        images = {
+            self.whale_path(project_id, assets[name]): content
+            for name, content in package.images.items()
+        }
+        writer = asyncio.create_task(asyncio.to_thread(_write_package_images, images))
+        try:
+            try:
+                await asyncio.shield(writer)
+            except asyncio.CancelledError:
+                # A worker must finish before compensation can remove its files.
+                await writer
+                raise
+            await patch_revisioned_project(
+                self.session,
+                DesktopPetProject,
+                project_id,
+                self.workspace_id,
+                expected_revision=expected_revision,
+                values={
+                    "whale_model": package.model,
+                    "whale_assets": assets,
+                    "revision": expected_revision + 1,
+                    "updated_at": utc_now(),
+                },
+                load_current=lambda: self.document(project_id),
+            )
+            await self.session.commit()
+        except BaseException:
+            await self.session.rollback()
+            await asyncio.to_thread(_remove_package_images, list(images))
+            raise
+        # The switch is committed. Failure to prune obsolete files must not turn
+        # a successful update into a client retry that replaces the package again.
+        try:
+            await asyncio.to_thread(_remove_package_images, old_paths)
+        except OSError:
+            pass
+        return await self.document(project_id)
 
     async def patch(self, project_id: str, body: PetPatch) -> PetProjectOut:
         await self.row(project_id)

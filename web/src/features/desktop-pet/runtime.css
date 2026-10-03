@@ -53,21 +53,34 @@ body,
 }
 .pet-runtime-bubble {
   position: absolute;
-  top: 5px;
-  left: 50%;
-  max-width: 94%;
+  top: max(5px, calc(var(--pet-visible-top, 0px) + 5px));
+  left: clamp(
+    calc(var(--pet-visible-left, 0px) + 106px),
+    50%,
+    calc(var(--pet-visible-right, 100%) - 106px)
+  );
+  width: max-content;
+  max-width: 190px;
+  overflow-wrap: anywhere;
   transform: translateX(-50%);
   padding: 7px 10px;
   border-radius: 12px;
-  color: #342922;
-  background: #fff4e8;
+  color: var(--text);
+  background: var(--surface);
   font: 12px/1.4 system-ui;
-  box-shadow: 0 4px 16px #0003;
+  box-shadow: var(--shadow-float);
 }
 .pet-runtime-actions {
   position: absolute;
-  bottom: 4px;
-  left: 50%;
+  bottom: var(
+    --pet-actions-bottom,
+    max(4px, calc(100% - var(--pet-visible-bottom, 100%) + 6px))
+  );
+  left: clamp(
+    calc(var(--pet-visible-left, 0px) + 76px),
+    50%,
+    calc(var(--pet-visible-right, 100%) - 76px)
+  );
   display: flex;
   gap: 5px;
   transform: translateX(-50%);
@@ -75,22 +88,61 @@ body,
 .pet-runtime-actions button {
   width: 30px;
   height: 30px;
-  border: 1px solid #e2bca6;
+  border: 1px solid var(--border-strong);
   border-radius: 50%;
-  color: #513a31;
-  background: #fff3e8;
+  color: var(--text);
+  background: var(--surface);
   font-size: 17px;
   cursor: pointer;
 }
 .pet-runtime-actions button:focus-visible {
-  outline: 2px solid #ff9168;
+  outline: 2px solid var(--accent);
 }
 .pet-runtime-error {
   position: absolute;
   inset: 30% 6% auto;
   padding: 12px;
   border-radius: 10px;
-  background: #fff3e9;
-  color: #442c22;
+  background: var(--danger-soft);
+  color: var(--danger);
   font: 13px system-ui;
+}
+.pet-runtime-preview-status {
+  position: absolute;
+  top: max(2px, calc(var(--pet-visible-top, 0px) + 2px));
+  right: max(2px, calc(100% - var(--pet-visible-right, 100%) + 2px));
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: 11px/1.3 system-ui;
+}
+
+.pet-runtime-error {
+  display: grid;
+  gap: 8px;
+  max-height: 60%;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.pet-runtime-error button {
+  justify-self: start;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+  cursor: pointer;
+}
+.pet-runtime-error button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.pet-runtime-actions button:hover {
+  background: var(--surface-hover);
+}
+.pet-runtime-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

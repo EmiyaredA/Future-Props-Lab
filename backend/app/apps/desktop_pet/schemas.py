@@ -46,6 +46,8 @@ class PetHabits(ValueModel):
     draggable: bool = True
     bubbles: bool = True
     sound: bool = True
+    edge_climbing: bool = Field(default=True, alias="edgeClimbing")
+    high_gliding: bool = Field(default=True, alias="highGliding")
     hover_actions: list[HoverAction] = Field(
         default_factory=lambda: ["dress", "roam", "hide", "chat"],
         alias="hoverActions",

@@ -33,3 +33,29 @@ test("pet size is clamped if a smaller display is attached", () => {
   ]);
   assert.deepEqual(bounds, { x: 500, y: 200, width: 220, height: 250 });
 });
+
+const { companionBounds } = require("../dist/pet-window-geometry.js");
+test("companion swaps sides, follows the pet and fits small or offset displays", () => {
+  const area = { x: 0, y: 25, width: 1280, height: 775 };
+  const pet = { x: 900, y: 400, width: 300, height: 400 };
+  const compact = companionBounds(pet, area, "compact");
+  assert.equal(compact.side, "left");
+  assert.deepEqual([compact.width, compact.height], [320, 240]);
+  assert.equal(compact.x, pet.x - compact.width - 8);
+  const expanded = companionBounds(pet, area, "expanded");
+  assert.deepEqual([expanded.width, expanded.height], [360, 460]);
+  const edge = companionBounds({ ...pet, x: 0 }, area, "compact");
+  assert.equal(edge.side, "right");
+  const tiny = companionBounds(
+    pet,
+    { x: 800, y: 400, width: 280, height: 200 },
+    "expanded",
+  );
+  assert.deepEqual(tiny, {
+    x: 800,
+    y: 400,
+    width: 280,
+    height: 200,
+    side: "left",
+  });
+});

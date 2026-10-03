@@ -5,6 +5,7 @@ export type RigPart = {
   grid: number[];
   parent: string;
   z: number;
+  uvBox?: number[];
 };
 export type Deformer = {
   kind: "rot" | "warp";
@@ -13,6 +14,7 @@ export type Deformer = {
   parent?: string;
 };
 export type DeformerState = {
+  pivot?: number[];
   a?: number;
   tx?: number;
   ty?: number;
@@ -20,7 +22,10 @@ export type DeformerState = {
   sy?: number;
   fn?: (u: number, v: number) => number[];
 };
-export type RigState = Record<string, DeformerState | Record<string, number>>;
+export type RigState = Record<string, DeformerState | Record<string, number>> & {
+  alpha: Record<string, number>;
+  z?: Record<string, number>;
+};
 export function createRig(
   canvas: HTMLCanvasElement,
   model: {
@@ -29,7 +34,7 @@ export function createRig(
     view: number[];
   },
 ): {
-  gl: WebGL2RenderingContext;
+    gl: WebGL2RenderingContext;
   upload(key: string, source: TexImageSource): void;
   render(state: RigState): void;
 };

@@ -77,12 +77,14 @@ def archive(model: dict, extra: tuple[str, bytes] | None = None) -> bytes:
             "manifest.json", json.dumps({"format": "fpl-coopanion-whale", "version": 1})
         )
         package.writestr("model.json", json.dumps(model))
-        for name in (
-            {f"tex/{part['tex']}.png" for part in model["parts"]}
-            | {f"feat/{name}.png" for name in model["feat"]["sprites"]}
-            | {"thumbs/kurisu-classic.png"}
-        ):
-            package.writestr(name, png.getvalue())
+        for index, scheme in enumerate(model["schemes"]):
+            prefix = "" if index == 0 else f"schemes/{scheme['id']}/"
+            for name in (
+                {f"{prefix}tex/{part['tex']}.png" for part in model["parts"]}
+                | {f"{prefix}feat/{name}.png" for name in model["feat"]["sprites"]}
+                | {f"thumbs/{scheme['id']}.png"}
+            ):
+                package.writestr(name, png.getvalue())
         if extra:
             package.writestr(*extra)
     return output.getvalue()

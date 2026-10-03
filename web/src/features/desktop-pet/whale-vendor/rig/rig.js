@@ -168,7 +168,7 @@ export function createRig(canvas, model) {
         s = st[id];
       if (!s) continue;
       if (d.kind === "rot") {
-        const [px, py] = d.pivot,
+        const [px, py] = s.pivot || d.pivot,
           a = ((s.a || 0) * Math.PI) / 180,
           c = Math.cos(a),
           sn = Math.sin(a);

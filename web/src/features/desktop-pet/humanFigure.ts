@@ -4,7 +4,15 @@ import {
   type RigPart,
   type RigState,
 } from "./whale-vendor/rig/rig.js";
+import type { PetMotionFrame } from "@platform/petMotion";
+import { Articulation, jointDeformers, type MotionRig } from "./locomotion/articulation";
 
+export type HumanScheme = {
+  id: string;
+  accent?: string;
+  brand?: string;
+  outfit?: { standingParts: string[]; seatedParts: string[] };
+};
 export type HumanModel = {
   rigProfile: "human-chibi";
   character: { name: string };
@@ -12,7 +20,8 @@ export type HumanModel = {
   pivots: Record<string, number[]>;
   parts: RigPart[];
   feat: { sprites: Record<string, number[]> };
-  schemes: { id: string; accent?: string; brand?: string }[];
+  schemes: HumanScheme[];
+  motionRig?: MotionRig;
 };
 export type HumanFrame = {
   t: number;
@@ -28,29 +37,107 @@ export type HumanFrame = {
   talk: number;
   tilt: number;
   lean: number;
+  gait?: { phase: number; stride: number; lift: number };
+  locomotion?: PetMotionFrame | null;
+  worldScale?: number;
+  facing?: number;
+  gripPoint?: [number, number] | null;
 };
 
 const NS = "http://www.w3.org/2000/svg";
 const clamp = (n: number, min: number, max: number) =>
   Math.max(min, Math.min(max, n));
 
+export function outfitAlpha(scheme: HumanScheme | undefined, sit: number) {
+  const seated = clamp((sit - 0.4) / 0.2, 0, 1);
+  const alpha: Record<string, number> = {
+    leg_back: 1 - seated,
+    leg_front: 1 - seated,
+    sit_lower: seated,
+  };
+  for (const id of scheme?.outfit?.standingParts ?? []) alpha[id] = 1 - seated;
+  for (const id of scheme?.outfit?.seatedParts ?? []) alpha[id] = seated;
+  return alpha;
+}
+
 /** Pure target pose; springs below smooth the independent hair/coat/neck channels. */
 export function humanPose(frame: HumanFrame) {
   const walking = frame.mode === "walk" || frame.mode === "run";
-  const held = frame.mode === "drag";
+  const held = frame.mode === "drag" || frame.mode === "held";
+  const climb = frame.mode === "climb";
+  const glide = frame.mode === "glide";
   const air = frame.mode === "air";
   const sit = clamp(frame.sit || 0, 0, 1);
-  const legAngles = frame.legs.map(([x0, y0, x1, y1]) =>
+  const rawAngles = frame.legs.map(([x0, y0, x1, y1]) =>
     clamp((-Math.atan2(x1 - x0, y1 - y0) * 180) / Math.PI, -50, 50),
+  );
+  // This figure faces the viewer: project forward/back strides into depth,
+  // rather than rotating the whale's short legs across the person's long legs.
+  const stride = frame.gait
+    ? clamp(frame.gait.stride / (frame.mode === "run" ? 17 : 10), 0, 1)
+    : 1;
+  const gaitPhase = frame.gait?.phase;
+  const legAngles = climb
+    ? [0, 1].map(
+        (i) =>
+          (frame.locomotion?.edge === "left" ? (i ? 25 : 10) : i ? -10 : -25) +
+          Math.sin((gaitPhase ?? 0) + i * Math.PI) * 3,
+      )
+    : glide
+      ? [16, 10]
+      : walking
+        ? rawAngles.map(
+            (angle, i) =>
+              (gaitPhase === undefined
+                ? clamp(angle / 25, -1, 1)
+                : -Math.sin(gaitPhase + i * Math.PI) * stride) *
+              (frame.mode === "run" ? 6 : 4),
+          )
+        : rawAngles.map((angle) =>
+            held || air || sit > 0.05 ? angle : clamp(angle / 25, -1, 1) * 4,
+          );
+  const bodyY = walking ? -(frame.low || 0) * 0.4 : (frame.low || 0) - 11 * sit;
+  const legScales = [0, 1].map((i) =>
+    climb
+      ? 0.92 - Math.max(0, Math.cos((gaitPhase ?? 0) + i * Math.PI)) * 0.12
+      : glide
+        ? 0.88
+        : walking
+          ? 1 -
+            (bodyY +
+              (frame.gait
+                ? Math.max(0, Math.cos(frame.gait.phase + i * Math.PI)) *
+                  frame.gait.lift *
+                  0.6
+                : Math.max(0, 241 - frame.legs[i][3]) * 0.6)) /
+              68
+          : 1,
   );
   const phase = Math.sin(frame.t * (frame.mode === "run" ? 14 : 9));
   const arms = held
-    ? [65 + phase * 12, -45 - phase * 10]
-    : air
-      ? [35, -30]
-      : walking
-        ? [-legAngles[0] * 0.8, -legAngles[1] * 0.8]
-        : [0, 0];
+    ? frame.mode === "drag" && !frame.locomotion
+      ? [65 + phase * 12, -45 - phase * 10]
+      : [
+          12 + (frame.locomotion?.swing ?? phase * 4) * 0.3,
+          -8 - (frame.locomotion?.swing ?? phase * 4) * 0.2,
+        ]
+    : climb
+      ? frame.locomotion?.edge === "right"
+        ? [
+            -102 + Math.sin(frame.gait?.phase ?? 0) * 12,
+            -105 - Math.sin(frame.gait?.phase ?? 0) * 14,
+          ]
+        : [
+            105 + Math.sin(frame.gait?.phase ?? 0) * 14,
+            102 - Math.sin(frame.gait?.phase ?? 0) * 12,
+          ]
+      : glide
+        ? [78, -76]
+        : air
+          ? [35, -30]
+          : walking
+            ? [-legAngles[0] * 0.8, -legAngles[1] * 0.8]
+            : [0, 0];
   const neck = clamp(
     (frame.tilt || 0) * 0.75 +
       frame.look[0] * 0.5 -
@@ -63,9 +150,19 @@ export function humanPose(frame: HumanFrame) {
   return {
     sit,
     legAngles,
+    legScales,
     arms,
-    neck,
-    bodyY: (frame.low || 0) - 11 * sit,
+    bodyAngle: climb
+      ? frame.locomotion?.edge === "left"
+        ? 10
+        : -10
+      : held
+        ? (frame.locomotion?.swing ?? 0) * 0.15
+        : glide
+          ? 10
+          : 0,
+    neck: glide ? -6 : neck,
+    bodyY,
     sway: clamp((frame.swing || 0) / 20 + (walking ? phase * 0.35 : 0), -2, 2),
   };
 }
@@ -121,7 +218,9 @@ export async function createHumanFigure(options: {
     armFar: { kind: "rot", parent: "body", pivot: model.pivots.armFar },
     legBack: { kind: "rot", parent: "body", pivot: model.pivots.legBack },
     legFront: { kind: "rot", parent: "body", pivot: model.pivots.legFront },
+    ...(model.motionRig ? jointDeformers(model.motionRig) : {}),
   };
+  const articulation = model.motionRig ? new Articulation(model.motionRig, model.pivots.body as [number, number]) : null;
   const loaded = new Map<string, Promise<Record<string, HTMLImageElement>>>();
   const loadScheme = (id: string) => {
     if (!loaded.has(id)) {
@@ -263,9 +362,8 @@ export async function createHumanFigure(options: {
       const hair = hairSpring(pose.sway * 4 - pose.neck * 0.15, dt);
       const coat = coatSpring(pose.sway * 3, dt);
       const neck = headSpring(pose.neck, dt);
-      const sitAlpha = clamp((pose.sit - 0.4) / 0.2, 0, 1);
       const state: RigState = {
-        body: { ty: pose.bodyY },
+        body: { ty: pose.bodyY, a: pose.bodyAngle },
         neck: { a: neck },
         head: { tx: frame.look[0] * 0.1, ty: frame.look[1] * 0.07 },
         hair: { fn: (_u, v) => [hair * v * v, -Math.abs(hair) * v * 0.1] },
@@ -273,19 +371,35 @@ export async function createHumanFigure(options: {
         coat: { fn: (_u, v) => [coat * v * v, 0] },
         armNear: { a: pose.arms[0] },
         armFar: { a: pose.arms[1] },
-        legBack: { a: pose.legAngles[0] * (1 - pose.sit) },
-        legFront: { a: pose.legAngles[1] * (1 - pose.sit) },
-        alpha: {
-          leg_back: 1 - sitAlpha,
-          leg_front: 1 - sitAlpha,
-          sit_lower: sitAlpha,
+        legBack: {
+          a: pose.legAngles[0] * (1 - pose.sit),
+          sy: pose.legScales[0],
         },
+        legFront: {
+          a: pose.legAngles[1] * (1 - pose.sit),
+          sy: pose.legScales[1],
+        },
+        alpha: outfitAlpha(
+          model.schemes.find((item) => item.id === scheme),
+          pose.sit,
+        ),
       };
+      if (articulation && pose.sit < 0.4) {
+        const natural = articulation.sample(frame);
+        Object.assign(state, natural.state, {
+          alpha: { ...outfitAlpha(model.schemes.find((item) => item.id === scheme), pose.sit), ...natural.state.alpha },
+        });
+      } else if (model.motionRig) {
+        for (const limb of Object.values(model.motionRig.limbs)) {
+          for (const id of limb.parts) state.alpha[id] = 0;
+          if (limb.jointPart) state.alpha[limb.jointPart] = 0;
+        }
+      }
       paintFace(frame, face.blush || 0);
       rig.render(state);
     },
     groupTilt(mode: string, tilt: number, lean: number) {
-      return ["air", "drag", "crouch", "land", "dizzy"].includes(mode)
+      return ["air", "drag", "held", "crouch", "land", "dizzy"].includes(mode)
         ? tilt + lean
         : lean * 0.35;
     },

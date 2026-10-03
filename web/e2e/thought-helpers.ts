@@ -18,7 +18,9 @@ export async function newDocument(page: Page) {
     .last()
     .click();
   await expect(page).not.toHaveURL(previousUrl);
-  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(
+    "未命名文档",
+  );
 }
 export async function setThoughtTheme(page: Page, theme: string) {
   if (page.viewportSize()!.width <= 1200) {

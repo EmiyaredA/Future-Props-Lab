@@ -105,6 +105,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0078_desktop_pet_whale",),
             ("r0079_desktop_pet_chat",),
             ("0080_thought_knowledge_tools",),
+            ("r0081_desktop_pet_presentation",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

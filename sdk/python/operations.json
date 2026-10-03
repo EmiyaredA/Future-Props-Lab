@@ -1383,6 +1383,10 @@
     "method": "send_chat_message",
     "resource": "desktop_pet"
   },
+  "POST /v1/desktop-pet/projects/{project_id}/replace-package": {
+    "method": "replace_package",
+    "resource": "desktop_pet"
+  },
   "POST /v1/desktop-pet/projects/{project_id}/sync-source": {
     "method": "sync_source",
     "resource": "desktop_pet"

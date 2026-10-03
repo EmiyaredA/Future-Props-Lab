@@ -14,6 +14,34 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke("desktop:pet-open", projectId),
     closePet: () => ipcRenderer.invoke("desktop:pet-close"),
     petStatus: () => ipcRenderer.invoke("desktop:pet-status"),
+    notifyPetResourcesChanged: (projectId: string) =>
+      ipcRenderer.invoke("desktop:pet-resources-changed", projectId),
+    onPetResourcesChanged: (callback: () => void) => {
+      const listener = () => callback();
+      ipcRenderer.on("desktop:pet-resources-changed", listener);
+      return () =>
+        ipcRenderer.removeListener("desktop:pet-resources-changed", listener);
+    },
+    beginPetPreview: (value: unknown) =>
+      ipcRenderer.invoke("desktop:pet-preview-begin", value),
+    updatePetPreview: (value: unknown) =>
+      ipcRenderer.invoke("desktop:pet-preview-update", value),
+    endPetPreview: (sessionId: string) =>
+      ipcRenderer.invoke("desktop:pet-preview-end", sessionId),
+    currentPetPreview: () => ipcRenderer.invoke("desktop:pet-preview-current"),
+    reportPetPreview: (value: unknown) =>
+      ipcRenderer.invoke("desktop:pet-preview-report", value),
+    onPetPreview: (callback: (value: unknown) => void) => {
+      const listener = (_event: unknown, value: unknown) => callback(value);
+      ipcRenderer.on("desktop:pet-preview", listener);
+      return () => ipcRenderer.removeListener("desktop:pet-preview", listener);
+    },
+    onPetPreviewStatus: (callback: (value: unknown) => void) => {
+      const listener = (_event: unknown, value: unknown) => callback(value);
+      ipcRenderer.on("desktop:pet-preview-status", listener);
+      return () =>
+        ipcRenderer.removeListener("desktop:pet-preview-status", listener);
+    },
     publishPetContext: (
       value: { userId: string; workspaceId: string } | null,
     ) => ipcRenderer.invoke("desktop:pet-context", value),
@@ -21,12 +49,36 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke("desktop:pet-hit", interactive),
     movePet: (x: number, y: number) =>
       ipcRenderer.invoke("desktop:pet-move", x, y),
+    petEnvironment: () => ipcRenderer.invoke("desktop:pet-environment"),
+    movePetFrame: (value: unknown) =>
+      ipcRenderer.invoke("desktop:pet-motion", value),
+    cancelPetMotion: (generation: number) =>
+      ipcRenderer.invoke("desktop:pet-motion-cancel", generation),
+    onPetEnvironment: (callback: (value: unknown) => void) => {
+      const listener = (_event: unknown, value: unknown) => callback(value);
+      ipcRenderer.on("desktop:pet-environment", listener);
+      return () =>
+        ipcRenderer.removeListener("desktop:pet-environment", listener);
+    },
     hidePet: () => ipcRenderer.invoke("desktop:pet-hide"),
     showStudioFromPet: () => ipcRenderer.invoke("desktop:pet-show-studio"),
     openPetChat: () => ipcRenderer.invoke("desktop:pet-chat-open"),
     openPetChatFromStudio: (projectId: string) =>
       ipcRenderer.invoke("desktop:pet-chat-open-studio", projectId),
     closePetChat: () => ipcRenderer.invoke("desktop:pet-chat-close"),
+    setPetChatLayout: (layout: "compact" | "expanded") =>
+      ipcRenderer.invoke("desktop:pet-chat-layout", layout),
+    setPetChatInteractive: (interactive: boolean) =>
+      ipcRenderer.invoke("desktop:pet-chat-hit", interactive),
+    onPetChatLayout: (
+      callback: (value: { side: "left" | "right" }) => void,
+    ) => {
+      const listener = (_event: unknown, value: { side: "left" | "right" }) =>
+        callback(value);
+      ipcRenderer.on("desktop:pet-chat-layout", listener);
+      return () =>
+        ipcRenderer.removeListener("desktop:pet-chat-layout", listener);
+    },
     sendPetChatState: (value: { phase: string; text: string }) =>
       ipcRenderer.invoke("desktop:pet-chat-state", value),
     onPetChatState: (

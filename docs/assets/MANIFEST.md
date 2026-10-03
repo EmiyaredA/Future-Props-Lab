@@ -41,6 +41,7 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 | `web/public/brand/presentation-workshop-mark.png` | 演示工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，琉华子角色与既有工坊徽章为参考；[来源与提示词](presentation-workshop-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `34895e659c9406789e9cadfe7aab0ea42f86ea3d55e868718d9714bec06357ec` | Web 需要 |
 | `web/public/brand/audio-annotation-mark.png` | 录音标注工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，萌郁角色与既有工坊徽章为参考；[来源与提示词](audio-annotation-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `a3539f2db85bdc42fdfab5dea9215b3ef1ce4e1c560bc9834d5c30feae015349` | Web 需要 |
 | `web/public/brand/director-desk-mark.png` | 导演台应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，冈部伦太郎角色与既有工坊徽章为参考；[来源与提示词](director-desk-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `fec866de8e555d43d4faa4ae818bae1725b2cfc106e79affa6be2646c4235ee0` | Web 需要 |
+| `web/public/brand/desktop-pet-mark.png` | 桌宠工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，参考视觉创作工坊，女仆装红莉栖配桌面窗口、爪印与爱心；[来源与提示词](desktop-pet-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `09ba7ae71ca38a5ee2f56b68aa44b8d330b386501d621929b2ad2d1faa8306b4` | Web 需要 |
 | `web/public/voice-vad/silero_vad_v5.onnx` | 浏览器实时语音 VAD | `@ricky0123/vad-web@0.0.30` 随包模型 | npm 包声明 ISC；对外再分发前仍应核对模型上游条款 | `2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f` | Web 需要 |
 | `web/public/voice-vad/ort-wasm-simd-threaded.wasm` | 浏览器 ONNX Runtime | `onnxruntime-web@1.27.0` | MIT | `d1ab1b94b16a65b29d710d0b587b29e7bed336827577623913479b8afe8113e6` | Web 需要 |
 

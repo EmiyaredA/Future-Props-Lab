@@ -1,5 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
+import "./editor-controls.css";
 
 export function PetPicker({
   label,
@@ -10,12 +11,12 @@ export function PetPicker({
 }: {
   label: string;
   value: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
   return (
-    <label className="dp-field">
+    <div className="dp-field">
       <span>{label}</span>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
@@ -27,18 +28,32 @@ export function PetPicker({
           <ChevronDown size={14} />
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content className="dp-menu" sideOffset={4}>
-            {options.map((option) => (
-              <DropdownMenu.Item
-                key={option.value}
-                onSelect={() => onChange(option.value)}
-              >
-                {option.label}
-              </DropdownMenu.Item>
-            ))}
+          <DropdownMenu.Content
+            className="dp-menu"
+            sideOffset={4}
+            align="start"
+            collisionPadding={12}
+            aria-label={label}
+          >
+            <DropdownMenu.RadioGroup value={value} onValueChange={onChange}>
+              {options.map((option) => (
+                <DropdownMenu.RadioItem
+                  key={option.value}
+                  value={option.value}
+                  disabled={option.disabled}
+                >
+                  <span className="dp-menu-indicator">
+                    <DropdownMenu.ItemIndicator>
+                      <Check size={14} />
+                    </DropdownMenu.ItemIndicator>
+                  </span>
+                  <span>{option.label}</span>
+                </DropdownMenu.RadioItem>
+              ))}
+            </DropdownMenu.RadioGroup>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
-    </label>
+    </div>
   );
 }

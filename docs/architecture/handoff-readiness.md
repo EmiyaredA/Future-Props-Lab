@@ -1,5 +1,7 @@
 # 开发交付说明
 
+桌宠轻伴随追加 `r0081_desktop_pet_presentation`：个人聊天保存气泡／对话展示偏好，已有会话保留对话模式，新会话默认气泡。热加载更新不得执行正式迁移；先完成隔离验证，停机备份并核验，再通过正式迁移入口升级。角色、消息和原有 revision 保留。
+
 思绪工坊补齐能力追加 `0080_thought_knowledge_tools`：引用索引、共享模板及素材保护、不可变历史的命名标记、账号与 Workspace 隔离的筛选和阅读位置。正文 schema version 3 和画板 sceneVersion 2 保持旧版读取；完整备份升级至 version 6。
 
 最新登记迁移为 `r0080_thought_knowledge_tools`（思绪工坊引用、模板、命名快照和个人阅读状态）；此前的 `r0079_desktop_pet_chat` 按账号、Workspace 和桌宠隔离文字聊天设置、请求防重放与消息记录；`r0078_desktop_pet_whale` 支持本地导入鲸鱼娘固定快照；`r0077_desktop_pet` 建立 Workspace 桌宠项目与固定角色快照；`r0076_amadeus_workflows` 记录 Amadeus 模式、继续来源与持久提问；`r0075_creative_workshop` 记录创意工坊草稿、公开版本与安装记录；`r0074_live2d_editable_runtime` 和 `r0073_live2d_cubism_attachment` 扩展 Live2D 工坊。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。

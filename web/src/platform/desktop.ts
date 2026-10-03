@@ -1,3 +1,11 @@
+import type {
+  PetPreviewIdentity,
+  PetPreviewDraft,
+  PetPreviewDelivery,
+  PetPreviewStatus,
+} from "./petPreview";
+import type { PetEnvironment, PetMotionRequest } from "./petMotion";
+
 export type DesktopDevelopmentState = {
   live: boolean;
   pending: string[];
@@ -17,10 +25,30 @@ export type DesktopBridge = {
   openPet?: (projectId: string) => Promise<void>;
   closePet?: () => Promise<void>;
   petStatus?: () => Promise<{ projectId: string | null; visible: boolean }>;
+  notifyPetResourcesChanged?: (projectId: string) => Promise<void>;
+  onPetResourcesChanged?: (callback: () => void) => () => void;
+  beginPetPreview?: (value: PetPreviewIdentity) => Promise<PetPreviewStatus>;
+  updatePetPreview?: (value: PetPreviewDraft) => Promise<PetPreviewStatus>;
+  endPetPreview?: (sessionId: string) => Promise<void>;
+  currentPetPreview?: () => Promise<PetPreviewDelivery>;
+  reportPetPreview?: (value: {
+    sessionId: string;
+    sequence: number;
+    state: "error";
+    message: string;
+  }) => Promise<void>;
+  onPetPreview?: (callback: (value: PetPreviewDelivery) => void) => () => void;
+  onPetPreviewStatus?: (
+    callback: (value: PetPreviewStatus) => void,
+  ) => () => void;
   publishPetContext?: (
     value: { userId: string; workspaceId: string } | null,
   ) => Promise<void>;
   setPetInteractive?: (interactive: boolean) => Promise<void>;
+  petEnvironment?: () => Promise<PetEnvironment>;
+  movePetFrame?: (value: PetMotionRequest) => Promise<PetEnvironment>;
+  cancelPetMotion?: (generation: number) => Promise<PetEnvironment>;
+  onPetEnvironment?: (callback: (value: PetEnvironment) => void) => () => void;
   movePet?: (
     x: number,
     y: number,
@@ -30,6 +58,13 @@ export type DesktopBridge = {
   openPetChat?: () => Promise<void>;
   openPetChatFromStudio?: (projectId: string) => Promise<void>;
   closePetChat?: () => Promise<void>;
+  setPetChatLayout?: (
+    layout: "compact" | "expanded",
+  ) => Promise<{ side: "left" | "right" }>;
+  setPetChatInteractive?: (interactive: boolean) => Promise<void>;
+  onPetChatLayout?: (
+    callback: (value: { side: "left" | "right" }) => void,
+  ) => () => void;
   sendPetChatState?: (value: {
     phase: "thinking" | "speaking" | "done" | "error";
     text: string;

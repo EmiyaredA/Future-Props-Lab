@@ -26,4 +26,8 @@
 
 `schemes` 为 1–8 套，每套唯一 `id`，可提供 `brand`、`label` 和 `accent`。第一套素材直接放在 `tex/`、`feat/`；后续配色放在 `schemes/{id}/tex/` 与 `schemes/{id}/feat/`，同名 PNG 尺寸必须一致。每套必须有 `thumbs/{id}.png`。
 
+人物服饰可提供 `outfit={standingParts:[...],seatedParts:[...]}`。两组分别登记站姿和坐姿衣物的部件 ID，每组 1–8 个、无重复且不能交叉引用，全部必须存在于 `parts`。坐姿过渡时站姿衣物淡出、坐姿衣物淡入；衣袖使用手臂父变形器，头饰使用 `head`，长裙或大褂下摆使用 `coat`。缺少 `outfit` 的旧包保持原部件行为；共用画布上的可选分件可使用同尺寸透明 PNG 占位。透明原画不要烘焙地面阴影，运行引擎统一绘制动态柔影。
+
+已有本地分层项目通过 `POST /v1/desktop-pet/projects/{project_id}/replace-package` 更新完整 ZIP，multipart 提交 `file` 和 `expectedRevision`，返回项目文档。新包必须保持骨架类型及当前默认服饰的有效 ID；其他交互引用也需兼容。服务先校验并写入新 ID 素材，再 CAS 切换模型与映射。失败或版本冲突清理本次素材并保留旧包，成功不修改项目 ID、标题、人设、习惯和私人聊天。Live2D 来源仍使用更新来源或部件换肤入口。
+
 资源包仅含清单、模型与模型登记的 PNG。ZIP 最多 32 MiB、解压最多 64 MiB、文件最多 450 个；每张 PNG 最多 16 MiB、每轴最多 4096。导入经过 Workspace 权限和完整校验，素材随后通过鉴权 API 加载。

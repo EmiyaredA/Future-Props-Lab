@@ -32,6 +32,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("DELETE", "/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}"),
         ("POST", "/v1/desktop-pet/projects"),
         ("POST", "/v1/desktop-pet/projects/import-whale"),
+        ("POST", "/v1/desktop-pet/projects/{project_id}/replace-package"),
         ("PATCH", "/v1/desktop-pet/projects/{project_id}"),
         ("DELETE", "/v1/desktop-pet/projects/{project_id}"),
         ("PUT", "/v1/desktop-pet/projects/{project_id}/document"),

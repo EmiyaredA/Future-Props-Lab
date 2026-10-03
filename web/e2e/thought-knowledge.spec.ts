@@ -32,6 +32,9 @@ test("document action menu follows the directory row and stays within the viewpo
     exact: true,
   });
   await expect(menu).toBeVisible();
+  await expect(
+    menu.getByRole("menuitem", { name: "新建子文档", exact: true }),
+  ).toBeFocused();
   await expect(menu.getByRole("menuitem")).toHaveCount(5);
   await expect(menu.getByRole("separator")).toHaveCount(2);
   const triggerBox = await trigger.boundingBox();
@@ -153,16 +156,14 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
   test.setTimeout(150000);
   await page.setViewportSize({ width: 1600, height: 1000 });
   const errors: string[] = [];
+  const libraryTitle = `产品与设计 · 灵感知识库 · 目录验收 ${Date.now()}`;
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/apps/thought-workshop");
   await expectSingleNavigation(page);
   await page.reload();
   await expectSingleNavigation(page);
   await page.getByRole("button", { name: "创建知识库", exact: true }).click();
-  await page
-    .getByRole("dialog")
-    .getByRole("textbox")
-    .fill("产品与设计 · 灵感知识库");
+  await page.getByRole("dialog").getByRole("textbox").fill(libraryTitle);
   await page.getByRole("button", { name: "确认", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "编辑首页", exact: true }),
@@ -207,14 +208,28 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
   await page.getByRole("button", { name: "编辑首页", exact: true }).click();
   await expect(prose).toHaveAttribute("contenteditable", "true");
   await prose.fill(
-    "欢迎来到灵感知识库\n在这里，记录值得探索的想法，积累阅读与观察，让知识有序生长。\n\n愿景与目标\n建立一份持续更新的设计档案，让每一次思考都能成为下一次创作的起点。\n\n知识库简介\n收集产品研究、体验设计与日常阅读，连接想法与行动。\n\n常用资料\n用文档、图片、表格和附件，把重要内容放在一起。",
+    [
+      "欢迎来到灵感知识库\n在这里，记录值得探索的想法，积累阅读与观察，让知识有序生长。\n\n愿景与目标\n建立一份持续更新的设计档案，让每一次思考都能成为下一次创作的起点。\n\n知识库简介\n收集产品研究、体验设计与日常阅读，连接想法与行动。\n\n常用资料\n用文档、图片、表格和附件，把重要内容放在一起。",
+      ...Array.from(
+        { length: 20 },
+        (_, index) =>
+          `阅读资料 ${index + 1}：记录可复核的研究、观察和设计结论。`,
+      ),
+    ].join("\n"),
   );
   for (const heading of ["愿景与目标", "知识库简介", "常用资料"]) {
     await prose
       .locator("p")
       .filter({ hasText: new RegExp(`^${heading}$`) })
-      .dblclick();
-    await page.getByRole("combobox", { name: "段落样式", exact: true }).click();
+      .hover({ position: { x: 5, y: 5 } });
+    await page
+      .locator(".thought-drag-handle")
+      .getByRole("button", { name: /打开正文菜单/ })
+      .click();
+    await page
+      .getByRole("dialog", { name: "块操作", exact: true })
+      .getByRole("combobox", { name: "转换块类型", exact: true })
+      .click();
     await page.getByRole("option", { name: "标题 2", exact: true }).click();
   }
   await page.getByRole("button", { name: "返回阅读", exact: true }).click();
@@ -355,7 +370,7 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
           ).json()
         ).parent_id,
     )
-    .not.toBeNull();
+    .toBe(childId);
   await page
     .getByRole("button", { name: "一份有层次的设计笔记操作", exact: true })
     .click();
@@ -392,7 +407,9 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
         const sidebar = page.getByRole("complementary", { name: "知识库导航" });
         const main = await page.getByRole("main").boundingBox();
         const rail = await track.boundingBox();
-        expect(rail!.height).toBeGreaterThan(page.viewportSize()!.height);
+        expect(
+          Math.abs(rail!.height - page.viewportSize()!.height),
+        ).toBeLessThan(1);
         expect(
           Math.abs(rail!.y + rail!.height - main!.y - main!.height),
         ).toBeLessThan(1);
@@ -401,14 +418,22 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
         ).toBe(
           await sidebar.evaluate((el) => getComputedStyle(el).backgroundColor),
         );
-        await page.evaluate(() =>
-          window.scrollTo(0, document.documentElement.scrollHeight),
-        );
+        const content = page.getByRole("main");
+        expect(
+          await content.evaluate(
+            (element) => element.scrollHeight > element.clientHeight,
+          ),
+        ).toBe(true);
+        await content.evaluate((element) => {
+          element.scrollTop = element.scrollHeight;
+        });
         await expect(
           sidebar.getByRole("group", { name: "外观模式" }),
         ).toBeInViewport();
         expect(Math.abs((await sidebar.boundingBox())!.y)).toBeLessThan(1);
-        await page.evaluate(() => window.scrollTo(0, 0));
+        await content.evaluate((element) => {
+          element.scrollTop = 0;
+        });
       }
       expect(
         await page.evaluate(
@@ -434,6 +459,9 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
         exact: true,
       });
       await expect(menu).toBeVisible();
+      await expect(
+        menu.getByRole("menuitem", { name: "新建子文档", exact: true }),
+      ).toBeFocused();
       const menuBox = await menu.boundingBox();
       expect(menuBox!.x).toBeGreaterThanOrEqual(0);
       expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(844);
@@ -495,16 +523,13 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
     .getByRole("button", { name: "知识库更多操作", exact: true })
     .click();
   await page.getByRole("menuitem", { name: "重命名", exact: true }).click();
-  await page
-    .getByRole("dialog")
-    .getByRole("textbox")
-    .fill("产品与设计 · 灵感知识库");
+  await page.getByRole("dialog").getByRole("textbox").fill(libraryTitle);
   await page.getByRole("button", { name: "确认", exact: true }).click();
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.getByRole("button", { name: "所有知识库", exact: true }).click();
   await page
     .getByRole("textbox", { name: "搜索知识库", exact: true })
-    .fill("产品与设计");
+    .fill(libraryTitle);
   await expect(page.locator(".workshop-project-card")).toHaveCount(1);
   await expect(page.locator(".workshop-project-card")).toContainText(
     "3 篇文档",

@@ -151,6 +151,7 @@ export function ProjectsPage({
               </button>
               <button
                 className="workshop-primary"
+                disabled={busy}
                 onClick={() => setDialog("create")}
               >
                 <Plus size={16} />
@@ -273,8 +274,25 @@ export function ProjectsPage({
       ) : (
         <div className="workshop-state dp-empty">
           <Heart aria-hidden />
-          <strong>还没有桌宠项目</strong>
-          <p>先在 Live2D 工坊保存角色，再从这里创建桌宠。</p>
+          <strong>
+            {query.trim() ? "没有匹配的桌宠项目" : "还没有桌宠项目"}
+          </strong>
+          <p>
+            {query.trim()
+              ? "试试其他名称，或清空搜索查看全部项目。"
+              : readOnly
+                ? "当前空间还没有桌宠项目。"
+                : "导入角色资源包，或从已保存的 Live2D 角色创建桌宠。"}
+          </p>
+          {query.trim() && (
+            <button
+              type="button"
+              className="workshop-secondary"
+              onClick={() => setQuery("")}
+            >
+              清空搜索
+            </button>
+          )}
         </div>
       )}
       <Dialog.Root

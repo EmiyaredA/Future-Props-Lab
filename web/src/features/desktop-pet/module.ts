@@ -10,6 +10,7 @@ export const DESKTOP_PET_MODULE = defineApplicationModule({
     capabilities: ["角色", "动画", "桌宠", "皮肤"],
     path: "/apps/desktop-pet",
     icon: Heart,
+    brandImage: "/brand/desktop-pet-mark.png",
   },
   supportsProjects: true,
   shell: "desktop-pet",

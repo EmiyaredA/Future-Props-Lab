@@ -1678,6 +1678,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/desktop-pet/projects/{project_id}/replace-package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace Package */
+        post: operations["replace_package_v1_desktop_pet_projects__project_id__replace_package_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}": {
         parameters: {
             query?: never;
@@ -7824,6 +7841,13 @@ export interface components {
         Body_put_avatar_v1_account_profile_avatar_put: {
             /** Expected Revision */
             expected_revision: number;
+            /** File */
+            file: string;
+        };
+        /** Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post */
+        Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post: {
+            /** Expectedrevision */
+            expectedRevision: number;
             /** File */
             file: string;
         };
@@ -15233,6 +15257,11 @@ export interface components {
             modelId: string | null;
             /** Nextbefore */
             nextBefore: number | null;
+            /**
+             * Presentationmode
+             * @enum {string}
+             */
+            presentationMode: "bubble" | "dialogue";
             /** Proactivelinesenabled */
             proactiveLinesEnabled: boolean;
             /** Revision */
@@ -15253,6 +15282,8 @@ export interface components {
             expectedRevision: number;
             /** Modelid */
             modelId: string | null;
+            /** Presentationmode */
+            presentationMode?: ("bubble" | "dialogue") | null;
             /** Proactivelinesenabled */
             proactiveLinesEnabled: boolean;
         };
@@ -15327,6 +15358,16 @@ export interface components {
              * @default true
              */
             draggable: boolean;
+            /**
+             * Edgeclimbing
+             * @default true
+             */
+            edgeClimbing: boolean;
+            /**
+             * Highgliding
+             * @default true
+             */
+            highGliding: boolean;
             /** Hoveractions */
             hoverActions?: ("dress" | "roam" | "hide" | "settings" | "chat")[];
             /**
@@ -23581,6 +23622,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PetSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PetDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_package_v1_desktop_pet_projects__project_id__replace_package_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post"];
             };
         };
         responses: {

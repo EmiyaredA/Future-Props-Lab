@@ -149,6 +149,7 @@ class DesktopPetChats:
                 else (project.whale_model or {}).get("rigProfile") != "human-chibi"
             ),
             active=bool(row and row.active_request_id),
+            presentation_mode=row.presentation_mode if row else "bubble",
             messages=page.items,
             nextBefore=page.next_before,
         )
@@ -181,6 +182,7 @@ class DesktopPetChats:
                     user_id=self.user_id,
                     model_id=body.model_id,
                     proactive_lines_enabled=body.proactive_lines_enabled,
+                    presentation_mode=body.presentation_mode or "bubble",
                     revision=1,
                 )
                 .on_conflict_do_nothing(
@@ -206,6 +208,7 @@ class DesktopPetChats:
             .values(
                 model_id=body.model_id,
                 proactive_lines_enabled=body.proactive_lines_enabled,
+                presentation_mode=body.presentation_mode or row.presentation_mode,
                 revision=body.expected_revision + 1,
                 updated_at=utc_now(),
             )

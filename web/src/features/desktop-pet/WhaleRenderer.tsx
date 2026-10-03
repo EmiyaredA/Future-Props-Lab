@@ -2,6 +2,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -13,6 +14,10 @@ import {
 import type { PetDocument } from "./api";
 import type { PetRendererHandle } from "./PetRenderer";
 import { createHumanFigure, type HumanModel } from "./humanFigure";
+import { reactionFor, type PetEvent, type PetPlaybackMode } from "./playback";
+import type { PetMotionFrame } from "@platform/petMotion";
+import { figureGeometry } from "./locomotion/measure";
+import { demoMotion, type MotionDemo } from "./locomotion/demo";
 
 type Props = {
   document: PetDocument;
@@ -20,14 +25,18 @@ type Props = {
   eventName?: string;
   reactionKey?: number;
   view?: "center" | "floor";
+  dragged?: boolean;
+  playbackMode?: PetPlaybackMode;
+  locomotion?: PetMotionFrame | null;
+  motionDemo?: MotionDemo | null;
 };
 
 function applyReaction(
   pet: WhaleController,
   name: string,
-  events: PetDocument["config"]["events"],
+  document: PetDocument,
+  mode: PetPlaybackMode,
 ) {
-  if (name === "idle") return;
   if (name === "chatThinking") {
     pet.act("look");
     pet.setExpr("thinking", 2);
@@ -38,39 +47,76 @@ function applyReaction(
     pet.setExpr("happy", 2);
     return;
   }
-  const reaction = events?.[name as keyof typeof events];
-  const defaults: Record<string, string> = {
-    click: "hop",
-    pet: "nod",
-    grab: "look",
-    drop: "stand",
-    roam: "walk",
-  };
-  const motion = reaction?.motionId || defaults[name];
-  if (motion) pet.act(motion);
-  if (reaction?.expressionId) pet.setExpr(reaction.expressionId, 2);
+  const reaction = reactionFor(document, name as PetEvent);
+  pet.replaceReaction(
+    reaction.motionId ?? null,
+    reaction.expressionId ?? null,
+    mode === "inspect" || name === "idle",
+  );
 }
 
 export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
   function WhaleRenderer(
-    { document, skinId, eventName = "idle", reactionKey = 0, view = "floor" },
+    {
+      document,
+      skinId,
+      eventName = "idle",
+      reactionKey = 0,
+      view = "floor",
+      dragged = false,
+      playbackMode = "runtime",
+      locomotion = null,
+      motionDemo = null,
+    },
     ref,
   ) {
     const host = useRef<HTMLDivElement>(null);
     const petGroup = useRef<SVGGElement>(null);
     const shadow = useRef<SVGEllipseElement>(null);
+    const shadowId = `pet-shadow-${useId().replaceAll(":", "")}`;
     const effects = useRef<SVGGElement>(null);
     const controller = useRef<WhaleController | null>(null);
     const figure = useRef<WhaleFigure | null>(null);
     const [error, setError] = useState("");
     const assetMap = document.whaleAssets ?? {};
     const assetUrls = document.assetUrls;
-    const events = document.config.events;
+    const reactionSignature = JSON.stringify([
+      document.config.events?.[eventName as PetEvent],
+      document.config.events?.idle,
+    ]);
+    const resourceKey = JSON.stringify([
+      document.whaleModel,
+      assetMap,
+      assetUrls,
+    ]);
     const scheme = skinId || document.config.schemeId || "deepseek";
-    const latest = useRef({ scheme, eventName, events });
-    latest.current = { scheme, eventName, events };
+    const latest = useRef({ scheme, eventName, document, playbackMode });
+    latest.current = { scheme, eventName, document, playbackMode };
+    const finishAt = useRef(Infinity);
+    const movement = useRef(locomotion);
+    movement.current = locomotion;
+    const demo = useRef({ name: motionDemo, started: performance.now() });
+    useEffect(() => {
+      demo.current = { name: motionDemo, started: performance.now() };
+    }, [motionDemo, reactionKey]);
+    const measured = useRef<{
+      at: number;
+      value: ReturnType<typeof figureGeometry>;
+    }>({ at: 0, value: null });
 
     useImperativeHandle(ref, () => ({
+      geometry() {
+        if (!petGroup.current) return null;
+        if (
+          performance.now() - measured.current.at >= 100 ||
+          !measured.current.value
+        )
+          measured.current = {
+            at: performance.now(),
+            value: figureGeometry(petGroup.current),
+          };
+        return measured.current.value;
+      },
       hitTest(x, y) {
         const bounds = host.current?.getBoundingClientRect();
         return Boolean(
@@ -134,6 +180,7 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
             figure: whale,
             sfx: silent,
             roam: "off",
+            walkInPlace: true,
             startX: element.clientWidth / 2,
             bounds: () => {
               const width = element.clientWidth;
@@ -156,7 +203,16 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
         const current = latest.current;
         if (current.scheme !== scheme)
           void whale.setScheme(current.scheme, { fade: 0.35 });
-        applyReaction(pet, current.eventName, current.events);
+        applyReaction(
+          pet,
+          current.eventName,
+          current.document,
+          current.playbackMode,
+        );
+        finishAt.current =
+          current.playbackMode === "event" && current.eventName !== "idle"
+            ? performance.now() + 1800
+            : Infinity;
         observer = new ResizeObserver(() => pet.resize());
         observer.observe(element);
         let last = performance.now();
@@ -167,7 +223,32 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
             last = now;
             return;
           }
+          const physical =
+            movement.current && movement.current.state !== "idle"
+              ? movement.current
+              : demo.current.name
+                ? demoMotion(
+                    demo.current.name,
+                    (now - demo.current.started) / 1000,
+                  )
+                : movement.current;
+          const origin = element.getBoundingClientRect();
+          pet.setLocomotion(
+            physical?.grip
+              ? {
+                  ...physical,
+                  grip: {
+                    x: physical.grip.x - origin.left,
+                    y: physical.grip.y - origin.top,
+                  },
+                }
+              : physical,
+          );
           pet.step(Math.min(0.05, (now - last) / 1000));
+          if (now >= finishAt.current) {
+            finishAt.current = Infinity;
+            applyReaction(pet, "idle", latest.current.document, "runtime");
+          }
           last = now;
           pet.render();
         };
@@ -194,7 +275,7 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
       };
       // The imported snapshot is immutable until its project revision changes.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [document.revision, view]);
+    }, [resourceKey, view]);
 
     useEffect(() => {
       void figure.current?.setScheme(scheme, { fade: 0.35 });
@@ -202,13 +283,45 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
 
     useEffect(() => {
       const pet = controller.current;
-      if (pet) applyReaction(pet, eventName, events);
-    }, [events, eventName, reactionKey]);
+      if (pet) {
+        const current = latest.current;
+        applyReaction(
+          pet,
+          current.eventName,
+          current.document,
+          current.playbackMode,
+        );
+        finishAt.current =
+          current.playbackMode === "event" && current.eventName !== "idle"
+            ? performance.now() + 1800
+            : Infinity;
+      }
+    }, [reactionSignature, eventName, reactionKey, playbackMode]);
 
     return (
       <div className="dp-pet-renderer dp-whale-renderer" ref={host}>
         <svg aria-hidden="true" width="100%" height="100%">
-          <ellipse ref={shadow} fill="#192027" opacity="0.16" />
+          <defs>
+            <radialGradient id={shadowId}>
+              <stop offset="0" stopColor="#192027" />
+              <stop offset="0.45" stopColor="#192027" stopOpacity="0.55" />
+              <stop offset="1" stopColor="#192027" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <g
+            opacity={
+              dragged ||
+              motionDemo ||
+              eventName === "grab" ||
+              (locomotion &&
+                ["held", "climb", "glide"].includes(locomotion.state))
+                ? 0
+                : 1
+            }
+            data-contact-shadow
+          >
+            <ellipse ref={shadow} fill={`url(#${shadowId})`} opacity="0.12" />
+          </g>
           <g ref={petGroup} />
           <g ref={effects} />
         </svg>

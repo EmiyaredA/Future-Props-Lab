@@ -22,6 +22,7 @@ class PetChatOut(ValueModel):
     revision: int
     model_id: str | None = Field(alias="modelId")
     proactive_lines_enabled: bool = Field(alias="proactiveLinesEnabled")
+    presentation_mode: Literal["bubble", "dialogue"] = Field(alias="presentationMode")
     active: bool
     messages: list[PetChatMessageOut]
     next_before: int | None = Field(alias="nextBefore")
@@ -36,6 +37,9 @@ class PetChatSettingsIn(ValueModel):
     expected_revision: int = Field(alias="expectedRevision", ge=0)
     model_id: str | None = Field(alias="modelId")
     proactive_lines_enabled: bool = Field(alias="proactiveLinesEnabled")
+    presentation_mode: Literal["bubble", "dialogue"] | None = Field(
+        default=None, alias="presentationMode"
+    )
 
 
 class PetChatClearIn(ValueModel):

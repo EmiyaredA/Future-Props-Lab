@@ -212,6 +212,7 @@ function showStudio(win = activeStudio()): void {
 }
 
 function trackStudio(win: BrowserWindow): void {
+  const contentsId = win.webContents.id;
   studioWindows.add(win);
   focusedStudio = win;
   win.on("focus", () => {
@@ -224,7 +225,7 @@ function trackStudio(win: BrowserWindow): void {
   });
   win.on("blur", queueAmadeusAlwaysOnTopSync);
   win.on("closed", () => {
-    petController.detachStudio(win.webContents.id);
+    petController.detachStudio(contentsId);
   });
 }
 
@@ -780,7 +781,7 @@ else {
       close: (win) => win.close(),
       "open-new-window": (win) => {
         if (state.phase !== "ready" || quitting) return;
-        return openStudioWindow(studioPathForNewWindow(win));
+        openStudioWindow(studioPathForNewWindow(win));
       },
       "agent-status": () => agent?.status(),
       "agent-enable": () => agent?.setEnabled(true),

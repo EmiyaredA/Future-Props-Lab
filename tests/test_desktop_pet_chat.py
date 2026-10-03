@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 
 import httpx
 import pytest
@@ -8,6 +9,7 @@ import pytest
 from app.apps.desktop_pet.chat import DesktopPetChats, stream_reply
 from app.apps.desktop_pet.chat_schemas import PetChatSendIn
 from app.apps.desktop_pet.models import DesktopPetProject
+from app.apps.desktop_pet.projects import PetNotFound
 from app.apps.desktop_pet.schemas import PetConfig
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.route_permissions import route_permission
@@ -83,17 +85,50 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
     ) as client:
         initial = await client.get(base)
         assert initial.status_code == 200 and initial.json()["revision"] == 0
+        assert initial.json()["presentationMode"] == "bubble"
         settings = await client.patch(
             base,
             json={
                 "expectedRevision": 0,
                 "modelId": model_id,
                 "proactiveLinesEnabled": False,
+                "presentationMode": "dialogue",
             },
         )
         assert settings.status_code == 200, settings.text
         assert settings.json()["revision"] == 1
         assert settings.json()["proactiveLinesEnabled"] is False
+        assert settings.json()["presentationMode"] == "dialogue"
+        legacy = await client.patch(
+            base,
+            json={
+                "expectedRevision": 1,
+                "modelId": model_id,
+                "proactiveLinesEnabled": False,
+            },
+        )
+        assert legacy.status_code == 200
+        assert legacy.json()["presentationMode"] == "dialogue"
+        invalid = await client.patch(
+            base,
+            json={
+                "expectedRevision": 2,
+                "modelId": model_id,
+                "proactiveLinesEnabled": False,
+                "presentationMode": "unknown",
+            },
+        )
+        assert invalid.status_code == 422
+        assert (
+            await client.patch(
+                base,
+                json={
+                    "modelId": model_id,
+                    "proactiveLinesEnabled": False,
+                    "presentationMode": "bubble",
+                },
+            )
+        ).status_code == 422
         assert (
             await client.patch(
                 base,
@@ -104,7 +139,7 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
                 },
             )
         ).status_code == 409
-        body = {"expectedRevision": 1, "requestId": "fixed-request", "content": "嗨"}
+        body = {"expectedRevision": 2, "requestId": "fixed-request", "content": "嗨"}
         response = await client.post(base + "/messages/stream", json=body)
         assert response.status_code == 200, response.text
         events = [
@@ -150,9 +185,24 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
             separate = await client.get(base)
             assert separate.status_code == 200
             assert separate.json()["messages"] == [] and separate.json()["modelId"] is None
+            assert separate.json()["presentationMode"] == "bubble"
+            own = await client.patch(
+                base,
+                json={
+                    "expectedRevision": 0,
+                    "modelId": None,
+                    "proactiveLinesEnabled": False,
+                    "presentationMode": "bubble",
+                },
+            )
+            assert own.status_code == 200
 
         finally:
             app.dependency_overrides[require_studio_auth] = original
+        assert (await client.get(base)).json()["presentationMode"] == "dialogue"
+        async with SessionLocal() as session:
+            with pytest.raises(PetNotFound):
+                await DesktopPetChats(session, "other-workspace", "test-user").get(pet_id)
         cleared = await client.request(
             "DELETE", base + "/messages", json={"expectedRevision": revision}
         )
@@ -239,3 +289,28 @@ def test_legacy_pet_lines_and_limits():
         PetConfig.model_validate({"events": {"idle": {"lines": ["x"] * 9}}})
     with pytest.raises(ValueError):
         PetConfig.model_validate({"events": {"idle": {"lines": ["x" * 141]}}})
+
+
+def test_presentation_migration_preserves_existing_chats_and_messages():
+    from db.migrations.versions import r0079_desktop_pet_chat, r0081_desktop_pet_presentation
+
+    # Storage-only migration fixture: disposable in-memory database.
+    with sqlite3.connect(":memory:") as connection:
+        connection.executescript(r0079_desktop_pet_chat.SQL)
+        connection.execute(
+            "INSERT INTO desktop_pet_chats VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("chat", "workspace", "pet", "user", None, 0, 7, None, "now", "now"),
+        )
+        connection.execute(
+            "INSERT INTO desktop_pet_chat_messages VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("message", "chat", 1, None, "assistant", "保留回复", "completed", "now", "now"),
+        )
+        connection.executescript(r0081_desktop_pet_presentation.SQL)
+        assert connection.execute(
+            "SELECT revision, proactive_lines_enabled, presentation_mode FROM desktop_pet_chats"
+        ).fetchone() == (7, 0, "dialogue")
+        assert connection.execute("SELECT content FROM desktop_pet_chat_messages").fetchone() == (
+            "保留回复",
+        )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute("UPDATE desktop_pet_chats SET presentation_mode='invalid'")

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowLeft,
@@ -7,12 +7,12 @@ import {
   Plus,
   RefreshCw,
   Save,
-  Upload,
 } from "lucide-react";
 import { api, ApiError, unwrap } from "@platform/api/client";
 import {
   getDocument,
   getProject,
+  replacePackage,
   saveDocument,
   syncSource,
   uploadSkin,
@@ -22,7 +22,15 @@ import {
   type PetProject,
   type PetReaction,
 } from "./api";
-import { DesktopPetFigure } from "./DesktopPetFigure";
+import { EditorStage } from "./EditorStage";
+import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
+import { SkinUpload } from "./SkinUpload";
+import "./editor-layout.css";
+import "./editor-controls.css";
+import { PackageUpdate } from "./PackageUpdate";
+import { useEditorPreview } from "./useEditorPreview";
+import { useDesktopPreviewLink } from "./useDesktopPreviewLink";
+import { reactionFor } from "./playback";
 import { DialogueInspector } from "./DialogueInspector";
 import "./workshop.css";
 
@@ -58,6 +66,8 @@ const DEFAULT_HABITS: PetHabits = {
   draggable: true,
   bubbles: true,
   sound: true,
+  edgeClimbing: true,
+  highGliding: true,
   hoverActions: ["dress", "roam", "hide", "chat"],
 };
 
@@ -95,12 +105,9 @@ export function EditorPage({
   const [snapshot, setSnapshot] = useState<PetDocument | null>(null);
   const [config, setConfig] = useState<PetConfig | null>(null);
   const [tab, setTab] = useState<Tab>("look");
+  const [panel, setPanel] = useState("preview");
   const [skinId, setSkinId] = useState<string | null>(null);
   const [eventName, setEventName] = useState<EventName>("click");
-  const [reactionKey, setReactionKey] = useState(0);
-  const [playingEvent, setPlayingEvent] = useState<EventName>("idle");
-  const [previewBubble, setPreviewBubble] = useState("");
-  const previewLineIndex = useRef<Partial<Record<EventName, number>>>({});
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
@@ -147,14 +154,15 @@ export function EditorPage({
     [snapshot, config],
   );
   const whale = snapshot?.sourceType === "coopanion-whale";
-  const human = snapshot?.whaleModel?.rigProfile === "human-chibi";
   const figureName = project?.title || "桌宠角色";
   const schemes =
     (snapshot?.whaleModel?.schemes as
       { id: string; brand: string; label: string }[] | undefined) ?? [];
   const skins = config?.skins ?? [];
   const selectedSkin = skins.find((item) => item.id === skinId);
-  const reaction = config?.events?.[eventName] ?? EMPTY_REACTION;
+  const reaction = draft ? reactionFor(draft, eventName) : EMPTY_REACTION;
+  const preview = useEditorPreview(draft, tab, eventName);
+  const link = useDesktopPreviewLink(projectId, draft, skinId, preview);
   const habits = config?.habits ?? DEFAULT_HABITS;
   const assets = useMemo(() => {
     if (!snapshot) return [];
@@ -176,8 +184,9 @@ export function EditorPage({
       events: {
         ...value.events,
         [eventName]: {
-          ...EMPTY_REACTION,
-          ...value.events?.[eventName],
+          ...(snapshot
+            ? reactionFor({ ...snapshot, config: value }, eventName)
+            : EMPTY_REACTION),
           ...patch,
         },
       },
@@ -187,23 +196,6 @@ export function EditorPage({
       ...value,
       habits: { ...DEFAULT_HABITS, ...value.habits, ...patch },
     }));
-  const playPreview = (name: EventName) => {
-    setPlayingEvent(name);
-    setReactionKey((value) => value + 1);
-    const lines = config?.events?.[name]?.lines ?? [];
-    if (!lines.length) {
-      setPreviewBubble("");
-      return;
-    }
-    const next = ((previewLineIndex.current[name] ?? -1) + 1) % lines.length;
-    previewLineIndex.current[name] = next;
-    setPreviewBubble(lines[next]);
-  };
-  useEffect(() => {
-    if (!previewBubble) return;
-    const timer = window.setTimeout(() => setPreviewBubble(""), 3200);
-    return () => window.clearTimeout(timer);
-  }, [previewBubble, reactionKey]);
   const save = async (): Promise<PetDocument> => {
     if (!snapshot || !config) throw new Error("桌宠项目尚未加载");
     if (!dirty) return snapshot;
@@ -325,18 +317,35 @@ export function EditorPage({
           },
       );
     });
+  const updatePackage = (file: File) =>
+    run(async () => {
+      if (!snapshot || dirty || link.enabled) return;
+      const updated = await replacePackage(projectId, snapshot.revision, file);
+      setSnapshot(updated);
+      setConfig(normalize(updated.config));
+      setSkinId(updated.config.schemeId ?? null);
+      setProject(
+        (current) => current && { ...current, revision: updated.revision },
+      );
+      setConflict(false);
+      try {
+        await window.futurePropsDesktop?.notifyPetResourcesChanged?.(projectId);
+      } catch {
+        setError("资源包已更新，桌面刷新失败；请重新显示桌宠。不要重复上传。");
+      }
+    });
 
   return (
-    <section className="dp-editor">
+    <section className="dp-editor" data-panel={panel}>
       <header className="dp-editor-header">
         <button className="dp-back" onClick={leave} aria-label="返回桌宠项目">
           <ArrowLeft size={18} />
         </button>
         <div className="dp-editor-title">
-          <strong>{project?.title ?? "桌宠项目"}</strong>
+          <strong title={project?.title}>{project?.title ?? "桌宠项目"}</strong>
           <small>
-            {dirty ? "未保存修改" : "已保存"} · 来源 r
-            {project?.sourceRevision ?? "—"}
+            {!snapshot ? "尚未加载" : dirty ? "未保存修改" : "已保存"} ·{" "}
+            {whale ? "分层角色快照" : `来源 r${project?.sourceRevision ?? "—"}`}
           </small>
         </div>
         <nav aria-label="桌宠编辑步骤">
@@ -379,6 +388,11 @@ export function EditorPage({
           {active ? "显示桌宠" : "放到桌面"}
         </button>
       </header>
+      {readOnly && (
+        <p className="dp-readonly" role="status">
+          只读浏览 · 可调整预览，项目配置不可修改
+        </p>
+      )}
       {error && (
         <div className="dp-editor-alert" role="alert">
           {error}
@@ -388,548 +402,514 @@ export function EditorPage({
         </div>
       )}
       {!draft || !config ? (
-        <div className="dp-loading">正在加载桌宠工程…</div>
+        <div className="dp-loading" role="status">
+          {error ? "桌宠工程加载失败" : "正在加载桌宠工程…"}
+          {error && (
+            <button
+              className="dp-side-action"
+              disabled={busy}
+              onClick={() => void reload()}
+            >
+              重新加载
+            </button>
+          )}
+        </div>
       ) : (
-        <div className="dp-editor-body">
-          <aside className="dp-editor-left">
-            {tab === "look" && (
-              <>
-                <div className="dp-panel-heading">
-                  <strong>形象与皮肤</strong>
-                  <small>{whale ? schemes.length : skins.length} 套</small>
-                </div>
-                <div className="dp-source-card">
-                  <strong>{whale ? figureName : project?.sourceTitle}</strong>
-                  <small>
-                    {whale
-                      ? "分层角色 · 本地导入快照"
-                      : `Live2D 工坊 · 固定版本 r${project?.sourceRevision}`}
-                  </small>
-                </div>
-                <p className="dp-section-label">
-                  {whale ? "原版配色" : "皮肤列表"}
-                </p>
-                {whale ? (
-                  schemes.map((item) => (
-                    <button
-                      key={item.id}
-                      className="dp-side-item"
-                      aria-pressed={skinId === item.id}
-                      onClick={() => setSkinId(item.id)}
-                    >
-                      {item.brand} · {item.label}
-                    </button>
-                  ))
-                ) : (
-                  <>
-                    <button
-                      className="dp-side-item"
-                      aria-pressed={!skinId}
-                      onClick={() => setSkinId(null)}
-                    >
-                      默认形象
-                    </button>
-                    {skins.map((item) => (
+        <>
+          <CompactPanelTabs
+            label="桌宠工作区面板"
+            value={panel}
+            onChange={setPanel}
+            options={[
+              { value: "list", label: "列表" },
+              { value: "preview", label: "预览" },
+              { value: "properties", label: "属性" },
+            ]}
+          />
+          <div className="dp-editor-body">
+            <aside className="dp-editor-left">
+              {tab === "look" && (
+                <>
+                  <div className="dp-panel-heading">
+                    <strong>形象与皮肤</strong>
+                    <small>{whale ? schemes.length : skins.length} 套</small>
+                  </div>
+                  <div className="dp-source-card">
+                    <strong>{whale ? figureName : project?.sourceTitle}</strong>
+                    <small>
+                      {whale
+                        ? "分层角色 · 本地导入快照"
+                        : `Live2D 工坊 · 固定版本 r${project?.sourceRevision}`}
+                    </small>
+                  </div>
+                  {whale && !readOnly && (
+                    <PackageUpdate
+                      disabled={busy || dirty || link.enabled}
+                      reason={
+                        dirty
+                          ? "请先保存当前修改"
+                          : link.enabled
+                            ? "请先结束桌面联动"
+                            : undefined
+                      }
+                      onUpdate={(file) => void updatePackage(file)}
+                    />
+                  )}
+                  <p className="dp-section-label">
+                    {whale ? "原版配色" : "皮肤列表"}
+                  </p>
+                  {whale ? (
+                    schemes.map((item) => (
                       <button
                         key={item.id}
                         className="dp-side-item"
                         aria-pressed={skinId === item.id}
                         onClick={() => setSkinId(item.id)}
                       >
-                        {item.name}
+                        {item.brand} · {item.label}
                       </button>
-                    ))}
-                    {!readOnly && (
-                      <div className="dp-add-skin">
-                        <input
-                          aria-label="新皮肤名称"
-                          maxLength={60}
-                          placeholder="新皮肤名称"
-                          value={newSkinName}
-                          onChange={(event) =>
-                            setNewSkinName(event.target.value)
-                          }
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") addSkin();
-                          }}
-                        />
+                    ))
+                  ) : (
+                    <>
+                      <button
+                        className="dp-side-item"
+                        aria-pressed={!skinId}
+                        onClick={() => setSkinId(null)}
+                      >
+                        默认形象
+                      </button>
+                      {skins.map((item) => (
                         <button
-                          onClick={addSkin}
-                          disabled={!newSkinName.trim()}
-                          aria-label="添加皮肤"
+                          key={item.id}
+                          className="dp-side-item"
+                          aria-pressed={skinId === item.id}
+                          onClick={() => setSkinId(item.id)}
                         >
-                          <Plus size={15} />
+                          {item.name}
                         </button>
-                      </div>
-                    )}
-                    <div className="dp-hint">
-                      皮肤替换部件贴图，继续使用来源角色的网格与动作。
-                    </div>
-                  </>
-                )}
-                {whale && (
-                  <div className="dp-hint">
-                    {schemes.length}{" "}
-                    套配色共用角色分件动画；选中后可设为桌宠默认外观。
-                  </div>
-                )}
-              </>
-            )}
-            {(tab === "events" || tab === "lines") && (
-              <>
-                <div className="dp-panel-heading">
-                  <strong>{tab === "lines" ? "事件台词" : "触发事件"}</strong>
-                  <small>6 种</small>
-                </div>
-                {EVENTS.map((item) => (
-                  <button
-                    key={item.id}
-                    className="dp-side-item"
-                    aria-pressed={eventName === item.id}
-                    onClick={() => setEventName(item.id)}
-                  >
-                    {item.label}
-                    <small>{item.detail}</small>
-                  </button>
-                ))}
-                <div className="dp-hint">
-                  点击头部热区触发「摸头」，身体其他区域触发「点击」；拖拽产生「拖起」「放下」。
-                </div>
-              </>
-            )}
-            {tab === "chat" && (
-              <>
-                <div className="dp-panel-heading">
-                  <strong>角色聊天</strong>
-                </div>
-                <p className="dp-hint">
-                  填写人设后，模型会按这些设定回复。聊天模型和私人记录由使用者在桌面小窗中单独选择与保存。
-                </p>
-              </>
-            )}
-            {tab === "habits" && (
-              <>
-                <div className="dp-panel-heading">
-                  <strong>行为习惯</strong>
-                </div>
-                <p className="dp-hint">
-                  桌宠会限制在屏幕可用区域内。右侧的值是下次放到桌面的默认配置。
-                </p>
-                <p className="dp-section-label">悬停按钮</p>
-                <div className="dp-hint">
-                  最多选择四个；聊天按钮会打开桌宠旁的小窗。运行时改动只影响当前会话。
-                </div>
-              </>
-            )}
-            {tab === "preview" && (
-              <>
-                <div className="dp-panel-heading">
-                  <strong>试玩与来源</strong>
-                </div>
-                <div className="dp-source-card">
-                  <strong>
-                    {whale
-                      ? "分层角色本地快照"
-                      : `来源角色 r${project?.sourceRevision}`}
-                  </strong>
-                  <small>{whale ? figureName : project?.sourceTitle}</small>
-                </div>
-                {!whale && (
-                  <button
-                    className="dp-side-action"
-                    disabled={busy || readOnly}
-                    onClick={() => void updateSource()}
-                  >
-                    <RefreshCw size={15} />
-                    检查并更新来源
-                  </button>
-                )}
-                <div className="dp-hint">
-                  {whale
-                    ? "资源已保存为当前 Workspace 的固定快照，不再依赖原始目录。"
-                    : "更新来源前会检查动作、表情和换肤贴图的兼容性；不兼容时保留当前快照。"}
-                </div>
-              </>
-            )}
-          </aside>
-          <main className="dp-editor-center">
-            <div className="dp-stage-tools">
-              {tab === "events" || tab === "lines" ? (
-                <button onClick={() => playPreview(eventName)}>
-                  ▶ 播放事件
-                </button>
-              ) : (
-                <span>{tab === "look" ? "透明取景" : "模拟桌面"}</span>
-              )}
-              <span>
-                {tab === "events" || tab === "lines"
-                  ? EVENTS.find((item) => item.id === eventName)?.label
-                  : `${habits.size} px`}
-              </span>
-            </div>
-            {tab === "look" || tab === "events" || tab === "lines" ? (
-              <div className="dp-checker-stage">
-                <span className="dp-stage-badge">
-                  {tab === "look"
-                    ? whale
-                      ? (schemes.find((item) => item.id === skinId)?.brand ??
-                        figureName)
-                      : (selectedSkin?.name ?? "默认形象")
-                    : EVENTS.find((item) => item.id === eventName)?.label}
-                </span>
-                <div className="dp-character-frame">
-                  <DesktopPetFigure
-                    document={draft}
-                    skinId={skinId}
-                    view="center"
-                    eventName={
-                      tab === "events" || tab === "lines"
-                        ? playingEvent
-                        : "idle"
-                    }
-                    reactionKey={reactionKey}
-                  />
-                </div>
-                {(tab === "events" || tab === "lines") && previewBubble && (
-                  <div className="dp-desktop-bubble">{previewBubble}</div>
-                )}
-              </div>
-            ) : (
-              <div className="dp-desktop-stage">
-                <div className="dp-desktop-menubar">
-                  Future Props Lab · 文件 · 编辑 · 视图
-                </div>
-                <div className="dp-desktop-window">
-                  <div>正在工作的窗口</div>
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <button
-                  type="button"
-                  aria-label="触摸桌宠，试听反应"
-                  className="dp-desktop-pet"
-                  style={{ height: habits.size, width: habits.size * 0.75 }}
-                  onClick={(event) => {
-                    const bounds = event.currentTarget.getBoundingClientRect();
-                    playPreview(
-                      event.clientY < bounds.top + bounds.height * 0.48
-                        ? "pet"
-                        : "click",
-                    );
-                  }}
-                >
-                  <DesktopPetFigure
-                    document={draft}
-                    skinId={skinId}
-                    eventName={playingEvent}
-                    reactionKey={reactionKey}
-                  />
-                </button>
-                {habits.bubbles && previewBubble && (
-                  <div className="dp-desktop-bubble">{previewBubble}</div>
-                )}
-                <div className="dp-desktop-state">
-                  {habits.roam === "off"
-                    ? "不乱动"
-                    : habits.roam === "free"
-                      ? "常走动"
-                      : "多待着"}{" "}
-                  · 透明区域穿透
-                </div>
-              </div>
-            )}
-            <footer className="dp-stage-footer">
-              <span>
-                {whale
-                  ? human
-                    ? "人物分件动画"
-                    : "原版鲸鱼娘分件动画"
-                  : `角色画布 ${draft.character?.width} × ${draft.character?.height}`}
-              </span>
-              <span>
-                {tab === "preview" ? "macOS 桌面运行预览" : "角色底边锚点"}
-              </span>
-            </footer>
-          </main>
-          <aside className="dp-editor-right">
-            {tab === "look" && (
-              <>
-                {whale ? (
-                  <>
-                    <div className="dp-panel-heading">
-                      <strong>
-                        {schemes.find((item) => item.id === skinId)?.brand ??
-                          figureName}
-                      </strong>
-                      <small>{schemes.length} 套配色</small>
-                    </div>
-                    <p className="dp-hint">
-                      使用资源包中的贴图、表情与分件动画。配色仅影响当前预览，保存默认值后下次启动生效。
-                    </p>
-                    <button
-                      className="dp-side-action"
-                      disabled={readOnly || !skinId}
-                      onClick={() =>
-                        edit((value) => ({ ...value, schemeId: skinId }))
-                      }
-                    >
-                      <Check size={15} />
-                      设为桌宠默认配色
-                    </button>
-                    <p className="dp-hint">
-                      当前默认：
-                      {schemes.find((item) => item.id === config.schemeId)
-                        ?.brand ?? figureName}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="dp-panel-heading">
-                      <strong>{selectedSkin?.name ?? "默认形象"}</strong>
-                      <small>装扮属性</small>
-                    </div>
-                    {selectedSkin ? (
-                      <>
-                        <label className="dp-field">
-                          <span>皮肤名称</span>
+                      ))}
+                      {!readOnly && (
+                        <div className="dp-add-skin">
                           <input
-                            disabled={readOnly}
+                            aria-label="新皮肤名称"
                             maxLength={60}
-                            value={selectedSkin.name}
+                            placeholder="新皮肤名称"
+                            value={newSkinName}
                             onChange={(event) =>
-                              edit((value) => ({
-                                ...value,
-                                skins: value.skins?.map((skin) =>
-                                  skin.id === selectedSkin.id
-                                    ? { ...skin, name: event.target.value }
-                                    : skin,
-                                ),
-                              }))
+                              setNewSkinName(event.target.value)
                             }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") addSkin();
+                            }}
                           />
-                        </label>
-                        <p className="dp-section-label">替换部件贴图</p>
-                        <div className="dp-asset-list">
-                          {assets.map((item) => (
-                            <div key={item.id} className="dp-asset-row">
-                              <span>
-                                {item.name}
-                                <small>
-                                  {selectedSkin.replacements?.[item.id]
-                                    ? "已替换"
-                                    : "使用默认"}
-                                </small>
-                              </span>
-                              <label className="dp-upload">
-                                <Upload size={13} />
-                                上传 PNG
-                                <input
-                                  type="file"
-                                  accept="image/png"
-                                  hidden
-                                  disabled={busy || readOnly}
-                                  onChange={(event) => {
-                                    const file = event.target.files?.[0];
-                                    event.target.value = "";
-                                    if (file) void upload(item.id, file);
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          ))}
+                          <button
+                            onClick={addSkin}
+                            disabled={!newSkinName.trim()}
+                            aria-label="添加皮肤"
+                          >
+                            <Plus size={15} />
+                          </button>
                         </div>
-                        <button
-                          className="dp-side-action"
-                          disabled={readOnly}
-                          onClick={() => {
-                            edit((value) => ({
-                              ...value,
-                              skins: value.skins?.filter(
-                                (item) => item.id !== skinId,
-                              ),
-                              activeSkinId:
-                                value.activeSkinId === skinId
-                                  ? null
-                                  : value.activeSkinId,
-                            }));
-                            setSkinId(null);
-                          }}
-                        >
-                          删除这套皮肤
-                        </button>
-                      </>
-                    ) : (
+                      )}
                       <div className="dp-hint">
-                        默认形象使用来源角色的原始贴图。新增皮肤后，可逐个替换需要换装的部件。
+                        皮肤替换部件贴图，继续使用来源角色的网格与动作。
                       </div>
-                    )}
-                    <div className="dp-divider" />
+                    </>
+                  )}
+                  {whale && (
+                    <div className="dp-hint">
+                      {schemes.length}{" "}
+                      套配色共用角色分件动画；选中后可设为桌宠默认外观。
+                    </div>
+                  )}
+                </>
+              )}
+              {(tab === "events" || tab === "lines") && (
+                <>
+                  <div className="dp-panel-heading">
+                    <strong>{tab === "lines" ? "事件台词" : "触发事件"}</strong>
+                    <small>6 种</small>
+                  </div>
+                  {EVENTS.map((item) => (
                     <button
-                      className="dp-side-action"
-                      disabled={readOnly}
-                      onClick={() =>
-                        edit((value) => ({ ...value, activeSkinId: skinId }))
-                      }
+                      key={item.id}
+                      className="dp-side-item"
+                      aria-pressed={eventName === item.id}
+                      onClick={() => {
+                        if (eventName === item.id) preview.inspect(item.id);
+                        setEventName(item.id);
+                      }}
                     >
-                      <Check size={15} />
-                      设为桌宠默认皮肤
-                    </button>
-                    <p className="dp-hint">
-                      皮肤贴图必须与对应原部件尺寸一致；未替换的部件沿用默认贴图。
-                    </p>
-                  </>
-                )}
-              </>
-            )}
-            <DialogueInspector
-              tab={tab}
-              eventLabel={EVENTS.find((item) => item.id === eventName)?.label}
-              reaction={reaction}
-              whale={whale}
-              draft={draft}
-              config={config}
-              readOnly={readOnly}
-              editReaction={editReaction}
-              edit={edit}
-            />
-            {tab === "habits" && (
-              <>
-                <div className="dp-panel-heading">
-                  <strong>习惯设置</strong>
-                  <small>用户可临时调整</small>
-                </div>
-                <p className="dp-section-label">走动强度</p>
-                <div className="dp-segments">
-                  {(
-                    [
-                      ["free", "常走动"],
-                      ["calm", "多待着"],
-                      ["off", "不乱动"],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      aria-pressed={habits.roam === id}
-                      disabled={readOnly}
-                      onClick={() => editHabits({ roam: id })}
-                    >
-                      {label}
+                      {item.label}
+                      <small>{item.detail}</small>
                     </button>
                   ))}
-                </div>
-                <label className="dp-field">
-                  <span>桌宠高度 {habits.size} px</span>
-                  <input
-                    type="range"
-                    min={160}
-                    max={300}
-                    step={10}
-                    value={habits.size}
-                    disabled={readOnly}
-                    onChange={(event) =>
-                      editHabits({ size: Number(event.target.value) })
-                    }
-                  />
-                </label>
-                {(
-                  [
-                    ["draggable", "允许拖动"],
-                    ["bubbles", "显示气泡"],
-                    ["sound", "播放音效"],
-                  ] as const
-                ).map(([id, label]) => (
-                  <label className="dp-checkbox" key={id}>
+                  <div className="dp-hint">
+                    点击头部热区触发「摸头」，身体其他区域触发「点击」；拖拽产生「拖起」「放下」。
+                  </div>
+                </>
+              )}
+              {tab === "chat" && (
+                <>
+                  <div className="dp-panel-heading">
+                    <strong>角色聊天</strong>
+                  </div>
+                  <p className="dp-hint">
+                    填写人设后，模型会按这些设定回复。聊天模型和私人记录由使用者在桌面小窗中单独选择与保存。
+                  </p>
+                </>
+              )}
+              {tab === "habits" && (
+                <>
+                  <div className="dp-panel-heading">
+                    <strong>行为习惯</strong>
+                  </div>
+                  <p className="dp-hint">
+                    桌宠会限制在屏幕可用区域内。右侧的值是下次放到桌面的默认配置。
+                  </p>
+                  <p className="dp-section-label">悬停按钮</p>
+                  <div className="dp-hint">
+                    最多选择四个；聊天按钮会打开桌宠旁的小窗。运行时改动只影响当前会话。
+                  </div>
+                </>
+              )}
+              {tab === "preview" && (
+                <>
+                  <div className="dp-panel-heading">
+                    <strong>试玩与来源</strong>
+                  </div>
+                  <div className="dp-source-card">
+                    <strong>
+                      {whale
+                        ? "分层角色本地快照"
+                        : `来源角色 r${project?.sourceRevision}`}
+                    </strong>
+                    <small>{whale ? figureName : project?.sourceTitle}</small>
+                  </div>
+                  {!whale && (
+                    <button
+                      className="dp-side-action"
+                      disabled={busy || readOnly}
+                      onClick={() => void updateSource()}
+                    >
+                      <RefreshCw size={15} />
+                      检查并更新来源
+                    </button>
+                  )}
+                  <div className="dp-hint">
+                    {whale
+                      ? "资源已保存为当前 Workspace 的固定快照，不再依赖原始目录。"
+                      : "更新来源前会检查动作、表情和换肤贴图的兼容性；不兼容时保留当前快照。"}
+                  </div>
+                </>
+              )}
+            </aside>
+            <EditorStage
+              document={draft}
+              tab={tab}
+              skinId={skinId}
+              figureName={figureName}
+              preview={preview}
+              link={link}
+            />
+            <aside className="dp-editor-right">
+              {tab === "look" && (
+                <>
+                  {whale ? (
+                    <>
+                      <div className="dp-panel-heading">
+                        <strong>
+                          {schemes.find((item) => item.id === skinId)?.brand ??
+                            figureName}
+                        </strong>
+                        <small>{schemes.length} 套配色</small>
+                      </div>
+                      <p className="dp-hint">
+                        使用资源包中的贴图、表情与分件动画。配色仅影响当前预览，保存默认值后下次启动生效。
+                      </p>
+                      <button
+                        className="dp-side-action"
+                        disabled={readOnly || !skinId}
+                        onClick={() =>
+                          edit((value) => ({ ...value, schemeId: skinId }))
+                        }
+                      >
+                        <Check size={15} />
+                        设为桌宠默认配色
+                      </button>
+                      <p className="dp-hint">
+                        当前默认：
+                        {(() => {
+                          const scheme = schemes.find(
+                            (item) => item.id === config.schemeId,
+                          );
+                          return scheme
+                            ? `${scheme.brand} · ${scheme.label}`
+                            : "尚未设置";
+                        })()}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="dp-panel-heading">
+                        <strong>{selectedSkin?.name ?? "默认形象"}</strong>
+                        <small>装扮属性</small>
+                      </div>
+                      {selectedSkin ? (
+                        <>
+                          <label className="dp-field">
+                            <span>皮肤名称</span>
+                            <input
+                              disabled={readOnly}
+                              maxLength={60}
+                              value={selectedSkin.name}
+                              onChange={(event) =>
+                                edit((value) => ({
+                                  ...value,
+                                  skins: value.skins?.map((skin) =>
+                                    skin.id === selectedSkin.id
+                                      ? { ...skin, name: event.target.value }
+                                      : skin,
+                                  ),
+                                }))
+                              }
+                            />
+                          </label>
+                          <p className="dp-section-label">替换部件贴图</p>
+                          <div className="dp-asset-list">
+                            {assets.map((item) => (
+                              <div key={item.id} className="dp-asset-row">
+                                <span>
+                                  {item.name}
+                                  <small>
+                                    {selectedSkin.replacements?.[item.id]
+                                      ? "已替换"
+                                      : "使用默认"}
+                                  </small>
+                                </span>
+                                <SkinUpload
+                                  name={item.name}
+                                  disabled={busy || readOnly}
+                                  onUpload={(file) =>
+                                    void upload(item.id, file)
+                                  }
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            className="dp-side-action"
+                            disabled={readOnly}
+                            onClick={() => {
+                              edit((value) => ({
+                                ...value,
+                                skins: value.skins?.filter(
+                                  (item) => item.id !== skinId,
+                                ),
+                                activeSkinId:
+                                  value.activeSkinId === skinId
+                                    ? null
+                                    : value.activeSkinId,
+                              }));
+                              setSkinId(null);
+                            }}
+                          >
+                            删除这套皮肤
+                          </button>
+                        </>
+                      ) : (
+                        <div className="dp-hint">
+                          默认形象使用来源角色的原始贴图。新增皮肤后，可逐个替换需要换装的部件。
+                        </div>
+                      )}
+                      <div className="dp-divider" />
+                      <button
+                        className="dp-side-action"
+                        disabled={readOnly}
+                        onClick={() =>
+                          edit((value) => ({ ...value, activeSkinId: skinId }))
+                        }
+                      >
+                        <Check size={15} />
+                        设为桌宠默认皮肤
+                      </button>
+                      <p className="dp-hint">
+                        皮肤贴图必须与对应原部件尺寸一致；未替换的部件沿用默认贴图。
+                      </p>
+                    </>
+                  )}
+                </>
+              )}
+              <DialogueInspector
+                tab={tab}
+                eventLabel={EVENTS.find((item) => item.id === eventName)?.label}
+                reaction={reaction}
+                whale={whale}
+                draft={draft}
+                config={config}
+                readOnly={readOnly}
+                selectLine={preview.selectLine}
+                editReaction={editReaction}
+                edit={edit}
+              />
+              {tab === "habits" && (
+                <>
+                  <div className="dp-panel-heading">
+                    <strong>习惯设置</strong>
+                    <small>用户可临时调整</small>
+                  </div>
+                  <p className="dp-section-label">走动强度</p>
+                  <div className="dp-segments">
+                    {(
+                      [
+                        ["free", "常走动"],
+                        ["calm", "多待着"],
+                        ["off", "不乱动"],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        aria-pressed={habits.roam === id}
+                        disabled={readOnly}
+                        onClick={() => editHabits({ roam: id })}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="dp-field">
+                    <span>桌宠高度 {habits.size} px</span>
                     <input
-                      type="checkbox"
-                      checked={habits[id]}
+                      type="range"
+                      aria-label="桌宠高度"
+                      className="dp-size-slider"
+                      style={
+                        {
+                          "--dp-slider-progress": `${((habits.size - 160) / 140) * 100}%`,
+                        } as import("react").CSSProperties
+                      }
+                      min={160}
+                      max={300}
+                      step={10}
+                      value={habits.size}
                       disabled={readOnly}
                       onChange={(event) =>
-                        editHabits({ [id]: event.target.checked })
+                        editHabits({ size: Number(event.target.value) })
                       }
                     />
-                    <span>{label}</span>
                   </label>
-                ))}
-                <p className="dp-section-label">悬停按钮，最多 4 个</p>
-                <div className="dp-hover-actions">
-                  {ACTIONS.map((action) => (
+                  {(
+                    [
+                      ["draggable", "允许拖动"],
+                      ["bubbles", "显示气泡"],
+                      ["sound", "播放音效"],
+                      ["edgeClimbing", "边缘攀爬"],
+                      ["highGliding", "高处滑翔"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <label className="dp-checkbox" key={id}>
+                      <input
+                        type="checkbox"
+                        checked={habits[id]}
+                        disabled={
+                          readOnly ||
+                          (!whale &&
+                            ["edgeClimbing", "highGliding"].includes(id))
+                        }
+                        onChange={(event) =>
+                          editHabits({ [id]: event.target.checked })
+                        }
+                      />
+                      <span>
+                        {label}
+                        {!whale && ["edgeClimbing", "highGliding"].includes(id)
+                          ? "（Live2D 暂不支持）"
+                          : ""}
+                      </span>
+                    </label>
+                  ))}
+                  <p className="dp-section-label">悬停按钮，最多 4 个</p>
+                  <div className="dp-hover-actions">
+                    {ACTIONS.map((action) => (
+                      <button
+                        key={action.id}
+                        aria-pressed={habits.hoverActions?.includes(action.id)}
+                        disabled={readOnly}
+                        onClick={() =>
+                          editHabits({
+                            hoverActions: habits.hoverActions?.includes(
+                              action.id,
+                            )
+                              ? habits.hoverActions.filter(
+                                  (id) => id !== action.id,
+                                )
+                              : [
+                                  ...(habits.hoverActions ?? []),
+                                  action.id,
+                                ].slice(0, 4),
+                          })
+                        }
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              {tab === "preview" && (
+                <>
+                  <div className="dp-panel-heading">
+                    <strong>桌面试玩</strong>
+                  </div>
+                  <p className="dp-check">
+                    <Check size={15} />
+                    角色与皮肤素材独立保存
+                  </p>
+                  <p className="dp-check">
+                    <Check size={15} />
+                    点击、摸头、拖放可恢复待机
+                  </p>
+                  <p className="dp-check">
+                    <Check size={15} />
+                    限制在当前屏幕可用范围
+                  </p>
+                  <div className="dp-divider" />
+                  <button
+                    className="dp-primary dp-wide"
+                    disabled={busy}
+                    onClick={() => void launch()}
+                  >
+                    <CirclePlay size={15} />
+                    {active ? "显示桌宠" : "放到桌面"}
+                  </button>
+                  <button
+                    className="dp-wide"
+                    disabled={busy}
+                    onClick={() => void launchChat()}
+                  >
+                    启动桌宠并试聊
+                  </button>
+                  {active && (
                     <button
-                      key={action.id}
-                      aria-pressed={habits.hoverActions?.includes(action.id)}
-                      disabled={readOnly}
+                      className="dp-wide"
                       onClick={() =>
-                        editHabits({
-                          hoverActions: habits.hoverActions?.includes(action.id)
-                            ? habits.hoverActions.filter(
-                                (id) => id !== action.id,
-                              )
-                            : [...(habits.hoverActions ?? []), action.id].slice(
-                                0,
-                                4,
-                              ),
+                        void run(async () => {
+                          await window.futurePropsDesktop?.closePet?.();
+                          setActive(false);
                         })
                       }
                     >
-                      {action.label}
+                      收起桌宠
                     </button>
-                  ))}
-                </div>
-              </>
-            )}
-            {tab === "preview" && (
-              <>
-                <div className="dp-panel-heading">
-                  <strong>桌面试玩</strong>
-                </div>
-                <p className="dp-check">
-                  <Check size={15} />
-                  角色与皮肤素材独立保存
-                </p>
-                <p className="dp-check">
-                  <Check size={15} />
-                  点击、摸头、拖放可恢复待机
-                </p>
-                <p className="dp-check">
-                  <Check size={15} />
-                  限制在当前屏幕可用范围
-                </p>
-                <div className="dp-divider" />
-                <button
-                  className="dp-primary dp-wide"
-                  disabled={busy}
-                  onClick={() => void launch()}
-                >
-                  <CirclePlay size={15} />
-                  {active ? "显示桌宠" : "放到桌面"}
-                </button>
-                <button
-                  className="dp-wide"
-                  disabled={busy}
-                  onClick={() => void launchChat()}
-                >
-                  启动桌宠并试聊
-                </button>
-                {active && (
-                  <button
-                    className="dp-wide"
-                    onClick={() =>
-                      void run(async () => {
-                        await window.futurePropsDesktop?.closePet?.();
-                        setActive(false);
-                      })
-                    }
-                  >
-                    收起桌宠
-                  </button>
-                )}
-                <div className="dp-hint">
-                  桌宠只会手动启动。桌宠包导出与公开发布留到下一阶段。
-                </div>
-              </>
-            )}
-          </aside>
-        </div>
+                  )}
+                  <div className="dp-hint">
+                    桌宠只会手动启动。桌宠包导出与公开发布留到下一阶段。
+                  </div>
+                </>
+              )}
+            </aside>
+          </div>
+        </>
       )}
       <Dialog.Root
         open={Boolean(leaving)}

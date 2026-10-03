@@ -899,19 +899,19 @@ Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验�
 
 ### 引用、复用和个人阅读状态
 
-| 接口 | 行为 |
-| --- | --- |
-| `POST /references/resolve` | `ids` 最多 100 个；仅返回当前 Workspace 可访问目标的标题、库、摘要与修订号；失效目标只返回不可用状态 |
-| `GET /notes/{id}/backlinks` | 反向链接摘要，offset/limit 分页，不暴露跨空间来源 |
-| `GET /search` | query、title_only、knowledge_base_id、tag、favorite、offset/limit；标题、标签、正文命中依次排序，再按更新时间和 ID；返回片段、库名与父级路径 |
-| `GET/POST /templates`、`PUT/DELETE /templates/{id}` | Workspace 共享的独立正文和标签快照；修改与删除提供 expected_revision，素材参与引用保护 |
-| `POST /templates/{id}/apply` | expected_revision 校验模板，expected_knowledge_revision 校验目标库；创建新文档及初始历史 |
-| `GET /notes/{id}/copy-snapshot` | subtree 选择单文档或子树；返回源库 revision 和全部来源文档 revision |
-| `POST /notes/{id}/duplicate` | 同 Workspace 内原子复制；校验源库、每篇源文档和目标库版本，重映射副本内部引用，保留外部与素材引用，不复制收藏、置顶或原历史 |
-| `GET/POST /notes/{id}/checkpoints`、`PUT/DELETE /notes/{id}/checkpoints/{checkpoint_id}` | 命名标记绑定不可变历史；创建校验 expected_note_revision，改名与删除校验标记 expected_revision，不删除历史 |
-| `GET/POST /preferences/filters`、`PUT/DELETE /preferences/filters/{id}` | 当前账号、当前 Workspace 的保存筛选；修改和删除使用 CAS |
-| `GET /preferences/recent`、`GET/POST /preferences/reading` | 最近访问最多 50 篇、独立阅读位置；位置存段落文本和比例，写入不修改文档 revision；官方文章用 official/{library}/{document} 标识 |
-| `GET /knowledge-bases/{id}/export-snapshot` | SQLite 一致读快照中的库、文档、目录和受校验素材清单；Web 生成含离线图形、公式、附件及相对导航的 HTML ZIP |
+| 接口                                                                                     | 行为                                                                                                                                         |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /references/resolve`                                                               | `ids` 最多 100 个；仅返回当前 Workspace 可访问目标的标题、库、摘要与修订号；失效目标只返回不可用状态                                         |
+| `GET /notes/{id}/backlinks`                                                              | 反向链接摘要，offset/limit 分页，不暴露跨空间来源                                                                                            |
+| `GET /search`                                                                            | query、title_only、knowledge_base_id、tag、favorite、offset/limit；标题、标签、正文命中依次排序，再按更新时间和 ID；返回片段、库名与父级路径 |
+| `GET/POST /templates`、`PUT/DELETE /templates/{id}`                                      | Workspace 共享的独立正文和标签快照；修改与删除提供 expected_revision，素材参与引用保护                                                       |
+| `POST /templates/{id}/apply`                                                             | expected_revision 校验模板，expected_knowledge_revision 校验目标库；创建新文档及初始历史                                                     |
+| `GET /notes/{id}/copy-snapshot`                                                          | subtree 选择单文档或子树；返回源库 revision 和全部来源文档 revision                                                                          |
+| `POST /notes/{id}/duplicate`                                                             | 同 Workspace 内原子复制；校验源库、每篇源文档和目标库版本，重映射副本内部引用，保留外部与素材引用，不复制收藏、置顶或原历史                  |
+| `GET/POST /notes/{id}/checkpoints`、`PUT/DELETE /notes/{id}/checkpoints/{checkpoint_id}` | 命名标记绑定不可变历史；创建校验 expected_note_revision，改名与删除校验标记 expected_revision，不删除历史                                    |
+| `GET/POST /preferences/filters`、`PUT/DELETE /preferences/filters/{id}`                  | 当前账号、当前 Workspace 的保存筛选；修改和删除使用 CAS                                                                                      |
+| `GET /preferences/recent`、`GET/POST /preferences/reading`                               | 最近访问最多 50 篇、独立阅读位置；位置存段落文本和比例，写入不修改文档 revision；官方文章用 official/{library}/{document} 标识               |
+| `GET /knowledge-bases/{id}/export-snapshot`                                              | SQLite 一致读快照中的库、文档、目录和受校验素材清单；Web 生成含离线图形、公式、附件及相对导航的 HTML ZIP                                     |
 
 检索、引用和导出要求 `content.read`；模板、复制、命名快照要求 `content.write`。个人偏好只允许当前账号维护，具备 `content.read` 的成员可使用。正文 `documentReference` 保存稳定文档 ID 或官方静态标识，可选 customLabel；`callout` variant 为 info/note/success/warning/danger。画板 sceneVersion 2 新增字号、对齐和四侧锚点，兼容 version 1。
 
@@ -1040,15 +1040,18 @@ ID 集合使用 `insert/update/remove/move/duplicate`，`value` 字段采用对�
 - `GET/PUT /v1/desktop-pet/projects/{project_id}/document`：读取角色快照、配置和鉴权素材 URL；保存整体配置需要 `expectedRevision`。
 - `PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}`：multipart PNG 上传，附 `expectedRevision`；替换图必须与来源部件素材尺寸相同，单张最多 16 MiB。
 - `POST /v1/desktop-pet/projects/{project_id}/sync-source`：显式更新来源，提交桌宠及来源 revision；动作、表情、部件与换肤尺寸不兼容时保留旧快照。
+- `POST /v1/desktop-pet/projects/{project_id}/replace-package`：本地分层角色的完整资源更新，multipart ZIP `file` 与 `expectedRevision`，返回 `PetDocumentOut`。要求相同骨架且保留当前默认服饰 ID；新素材全部准备后 CAS 切换，失败／冲突清理新素材，项目 ID、标题、配置及私人聊天不变。Live2D 来源不接受此入口。
 - `GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file`：仅读取该桌宠当前快照或皮肤引用的 PNG。
 
 整体配置限制为最多 20 套 Live2D 皮肤、六种事件、每事件最多 8 句、每句 1–140 字，以及最多四个悬停按钮。旧版事件 `bubble` 在读取时升级为 `lines` 的第一句；新版保存使用 `schemaVersion=2`。`persona` 包含角色简介、性格、说话方式和开场白。分层角色项目沿用 `sourceType=coopanion-whale`，文档返回 `whaleModel`、`whaleAssets` 和鉴权素材 URL；`schemeId` 选择包内配色，不支持逐部件上传或更新来源。事件的动作与表情按对应来源校验。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或桌宠包导出接口。
 
 资源包清单仍为 `{"format":"fpl-coopanion-whale","version":1}`。`model.json` 缺省 `rigProfile` 为 `whale`，旧包保持兼容。人物包使用 `rigProfile=human-chibi`，必须提供 `character.name`（1–120 字，可选 `character.persona`，结构同配置人设），导入时作为项目名称与默认人设。人物聊天首次读取默认关闭主动台词，用户保存过的偏好优先。人物骨架与分件、五官和坐姿约束详见[分层桌宠资源包](desktop-pet-sprites.md)；这些字段保存在既有 JSON 快照中，不改变 HTTP 响应形状或数据库 schema。
 
+`PetHabits` 增加布尔字段 `edgeClimbing`、`highGliding`，均默认 `true`。旧 JSON 读取时补默认值，不自动持久化；保存仍通过 document 的 CAS，`roam=off` 暂停所有自主运动。Live2D 暂不支持新增姿态。窗口运动和试玩帧只在内存，私有 Electron 桥传递工作区、显示器、可见边界与递增运动序号，不新增公共 REST 路由或数据库 schema。
+
 桌宠聊天需要 `models.use`。配置中的人设参与每次模型提示词；模型选择、主动台词开关和记录按账号、Workspace、桌宠另存，不进入角色配置。
 
-- `GET/PATCH /v1/desktop-pet/projects/{project_id}/chat`：读取会话最近 50 条消息，或以 `expectedRevision` 保存文字模型 ID 与主动台词开关；首次读取返回 revision 0，首次设置以 0 创建会话。
+- `GET/PATCH /v1/desktop-pet/projects/{project_id}/chat`：读取会话最近 50 条消息，或以 `expectedRevision` 保存文字模型 ID、主动台词开关与 `presentationMode`（`bubble` / `dialogue`）；首次读取返回 revision 0 和气泡模式，首次设置以 0 创建会话。PATCH 省略 `presentationMode` 时保留已有值，新建会话缺省为 `bubble`；迁移前已有会话保留 `dialogue`。字段只属于当前账号、Workspace 和桌宠，设置期间有活动请求或 revision 冲突返回 409 与当前快照。
 - `GET/DELETE /v1/desktop-pet/projects/{project_id}/chat/messages`：按 `before` 位置和 `limit` 倒序分页读取，或带 `expectedRevision` 清空该会话记录。清空保留请求 ID 防重放记录。
 - `POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream`：提交 `expectedRevision`、唯一 `requestId` 和最多 2000 字的 `content`，返回 `start/delta/done/error` SSE。相同请求 ID 不再次调用模型；同一会话一次只生成一轮。模型不可用返回明确错误，失败或取消的回复标记为中断；完整历史仍可分页读取。
 

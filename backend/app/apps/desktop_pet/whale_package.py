@@ -13,6 +13,8 @@ from pathlib import PurePosixPath
 
 from PIL import Image, UnidentifiedImageError
 
+from .human_motion import JOINT_PARENTS, validate_motion_rig
+
 MAX_ARCHIVE = 32 * 1024 * 1024
 MAX_UNPACKED = 64 * 1024 * 1024
 NAME = re.compile(r"^[a-zA-Z0-9_-]{1,48}$")
@@ -138,6 +140,7 @@ def _expected_paths(model: dict) -> set[str]:
                     "armFar",
                     "legBack",
                     "legFront",
+                    *(JOINT_PARENTS if model.get("motionRig") is not None else ()),
                 }
                 or not _finite(part.get("z"))
                 or box[2] <= 0
@@ -145,6 +148,16 @@ def _expected_paths(model: dict) -> set[str]:
             ):
                 raise ValueError("人物桌宠分件定义无效")
             part_ids.add(part_id)
+        uv = part.get("uvBox")
+        if uv is not None and (
+            not isinstance(uv, list)
+            or len(uv) != 4
+            or not all(_finite(n, 1) and n >= 0 for n in uv)
+            or uv[2] <= uv[0]
+            or uv[3] <= uv[1]
+        ):
+            raise ValueError("分件贴图裁切范围无效")
+    validate_motion_rig(model)
     required = (
         {
             "hair_back",
@@ -205,6 +218,23 @@ def _expected_paths(model: dict) -> set[str]:
         ):
             raise ValueError("鲸鱼娘配色定义无效")
         scheme_ids.add(scheme_id)
+        outfit = scheme.get("outfit")
+        if outfit is not None:
+            if (
+                not human
+                or not isinstance(outfit, dict)
+                or set(outfit) != {"standingParts", "seatedParts"}
+            ):
+                raise ValueError("人物桌宠服饰姿态定义无效")
+            standing, seated = outfit["standingParts"], outfit["seatedParts"]
+            if any(
+                not isinstance(group, list)
+                or not 1 <= len(group) <= 8
+                or any(not isinstance(name, str) or name not in part_ids for name in group)
+                or len(set(group)) != len(group)
+                for group in (standing, seated)
+            ) or set(standing) & set(seated):
+                raise ValueError("人物桌宠服饰姿态引用无效")
         prefix = "" if index == 0 else f"schemes/{scheme_id}/"
         paths.update(f"{prefix}tex/{name}.png" for name in textures)
         paths.update(f"{prefix}feat/{name}.png" for name in feature_names)

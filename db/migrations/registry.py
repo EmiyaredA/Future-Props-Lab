@@ -82,6 +82,7 @@ from db.migrations.versions import (
     r0078_desktop_pet_whale,
     r0079_desktop_pet_chat,
     r0080_thought_knowledge_tools,
+    r0081_desktop_pet_presentation,
 )
 
 
@@ -363,6 +364,7 @@ MIGRATIONS += (Migration(r0079_desktop_pet_chat.MIGRATION_ID, r0079_desktop_pet_
 
 MIGRATIONS += (
     Migration(r0080_thought_knowledge_tools.MIGRATION_ID, r0080_thought_knowledge_tools.SQL),
+    Migration(r0081_desktop_pet_presentation.MIGRATION_ID, r0081_desktop_pet_presentation.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

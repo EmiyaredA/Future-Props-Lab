@@ -42,6 +42,7 @@ function DocumentActionMenu({
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const positioned = position !== undefined;
 
   useLayoutEffect(() => {
     if (!open || !trigger.current || !menu.current) return;
@@ -74,11 +75,6 @@ function DocumentActionMenu({
     window.addEventListener("scroll", reposition, true);
     window.visualViewport?.addEventListener("resize", reposition);
     window.visualViewport?.addEventListener("scroll", reposition);
-    menu.current
-      .querySelector<HTMLButtonElement>(
-        'button[role="menuitem"]:not(:disabled)',
-      )
-      ?.focus();
     return () => {
       window.removeEventListener("resize", reposition);
       window.removeEventListener("scroll", reposition, true);
@@ -86,6 +82,15 @@ function DocumentActionMenu({
       window.visualViewport?.removeEventListener("scroll", reposition);
     };
   }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open || !positioned) return;
+    menu.current
+      ?.querySelector<HTMLButtonElement>(
+        'button[role="menuitem"]:not(:disabled)',
+      )
+      ?.focus();
+  }, [open, positioned]);
 
   useEffect(() => {
     if (!open) return;
@@ -95,7 +100,9 @@ function DocumentActionMenu({
         setOpen(false);
     };
     const closeWithEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      if (event.defaultPrevented || event.isComposing || event.key !== "Escape")
+        return;
+      event.preventDefault();
       setOpen(false);
       trigger.current?.focus();
     };
@@ -108,6 +115,13 @@ function DocumentActionMenu({
   }, [open]);
 
   const handleMenuKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape" && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      trigger.current?.focus();
+      return;
+    }
     const items = Array.from(
       event.currentTarget.querySelectorAll<HTMLButtonElement>(
         'button[role="menuitem"]:not(:disabled)',

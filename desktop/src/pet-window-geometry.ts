@@ -1,5 +1,27 @@
 export type Rect = { x: number; y: number; width: number; height: number };
 
+export type ChatLayout = "compact" | "expanded";
+
+export function companionBounds(pet: Rect, area: Rect, layout: ChatLayout) {
+  const width = Math.min(layout === "compact" ? 320 : 360, area.width);
+  const height = Math.min(layout === "compact" ? 240 : 460, area.height);
+  const gap = 8;
+  const leftSpace = pet.x - area.x;
+  const rightSpace = area.x + area.width - pet.x - pet.width;
+  const side =
+    leftSpace >= width + gap || leftSpace >= rightSpace ? "left" : "right";
+  const bounds = clampPetBounds(
+    {
+      x: side === "left" ? pet.x - width - gap : pet.x + pet.width + gap,
+      y: layout === "compact" ? pet.y + 32 : pet.y + pet.height - height,
+      width,
+      height,
+    },
+    [area],
+  );
+  return { ...bounds, side: side as "left" | "right" };
+}
+
 export function clampPetBounds(bounds: Rect, areas: Rect[]): Rect {
   if (!areas.length) return bounds;
   const center = {

@@ -16,3 +16,4 @@ web/src/features/amadeus/art/*.png filter=lfs diff=lfs merge=lfs -text
 desktop/assets/*.png filter=lfs diff=lfs merge=lfs -text
 desktop/assets/*.icns filter=lfs diff=lfs merge=lfs -text
 web/public/brand/live2d-workshop-mark.png filter=lfs diff=lfs merge=lfs -text
+web/public/brand/desktop-pet-mark.png filter=lfs diff=lfs merge=lfs -text

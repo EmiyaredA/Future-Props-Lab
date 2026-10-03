@@ -2588,6 +2588,26 @@
         "title": "Body_put_avatar_v1_account_profile_avatar_put",
         "type": "object"
       },
+      "Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "expectedRevision"
+        ],
+        "title": "Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post",
+        "type": "object"
+      },
       "Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post": {
         "properties": {
           "end_ms": {
@@ -22107,6 +22127,14 @@
             ],
             "title": "Nextbefore"
           },
+          "presentationMode": {
+            "enum": [
+              "bubble",
+              "dialogue"
+            ],
+            "title": "Presentationmode",
+            "type": "string"
+          },
           "proactiveLinesEnabled": {
             "title": "Proactivelinesenabled",
             "type": "boolean"
@@ -22120,6 +22148,7 @@
           "revision",
           "modelId",
           "proactiveLinesEnabled",
+          "presentationMode",
           "active",
           "messages",
           "nextBefore"
@@ -22174,6 +22203,21 @@
               }
             ],
             "title": "Modelid"
+          },
+          "presentationMode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "bubble",
+                  "dialogue"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presentationmode"
           },
           "proactiveLinesEnabled": {
             "title": "Proactivelinesenabled",
@@ -22382,6 +22426,16 @@
           "draggable": {
             "default": true,
             "title": "Draggable",
+            "type": "boolean"
+          },
+          "edgeClimbing": {
+            "default": true,
+            "title": "Edgeclimbing",
+            "type": "boolean"
+          },
+          "highGliding": {
+            "default": true,
+            "title": "Highgliding",
             "type": "boolean"
           },
           "hoverActions": {
@@ -39518,6 +39572,58 @@
           }
         },
         "summary": "Save Document",
+        "tags": [
+          "desktop-pet"
+        ]
+      }
+    },
+    "/v1/desktop-pet/projects/{project_id}/replace-package": {
+      "post": {
+        "operationId": "replace_package_v1_desktop_pet_projects__project_id__replace_package_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Package",
         "tags": [
           "desktop-pet"
         ]

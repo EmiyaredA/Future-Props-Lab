@@ -67,6 +67,10 @@ class DesktopPet:
         'Save Document. PUT /v1/desktop-pet/projects/{project_id}/document'
         return self._client._call('PUT', '/v1/desktop-pet/projects/{project_id}/document', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PetDocumentOut)
 
+    def replace_package(self, *, project_id: str, body: models.Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post | dict, files: dict | list | None = None) -> models.PetDocumentOut:
+        'Replace Package. POST /v1/desktop-pet/projects/{project_id}/replace-package'
+        return self._client._call('POST', '/v1/desktop-pet/projects/{project_id}/replace-package', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.PetDocumentOut)
+
     def upload_skin_replacement(self, *, project_id: str, skin_id: str, source_asset_id: str, body: models.Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put | dict, files: dict | list | None = None) -> models.PetDocumentOut:
         'Upload Skin Replacement. PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}'
         return self._client._call('PUT', '/v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}', parameters=[('project_id', 'path', project_id), ('skin_id', 'path', skin_id), ('source_asset_id', 'path', source_asset_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.PetDocumentOut)
@@ -134,6 +138,10 @@ class AsyncDesktopPet:
     async def save_document(self, *, project_id: str, body: models.PetSave | dict) -> models.PetDocumentOut:
         'Save Document. PUT /v1/desktop-pet/projects/{project_id}/document'
         return await self._client._call('PUT', '/v1/desktop-pet/projects/{project_id}/document', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PetDocumentOut)
+
+    async def replace_package(self, *, project_id: str, body: models.Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post | dict, files: dict | list | None = None) -> models.PetDocumentOut:
+        'Replace Package. POST /v1/desktop-pet/projects/{project_id}/replace-package'
+        return await self._client._call('POST', '/v1/desktop-pet/projects/{project_id}/replace-package', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.PetDocumentOut)
 
     async def upload_skin_replacement(self, *, project_id: str, skin_id: str, source_asset_id: str, body: models.Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put | dict, files: dict | list | None = None) -> models.PetDocumentOut:
         'Upload Skin Replacement. PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}'

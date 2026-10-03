@@ -854,6 +854,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/desktop-pet/projects/{project_id}/replace-package",
+    "sdk": "client.desktop_pet.replace_package",
+    "document": "/docs.html?page=sdk-reference-desktop-pet#replace-package",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/desktop-pet/projects/{project_id}/sync-source",
     "sdk": "client.desktop_pet.sync_source",
     "document": "/docs.html?page=sdk-reference-desktop-pet#sync-source",

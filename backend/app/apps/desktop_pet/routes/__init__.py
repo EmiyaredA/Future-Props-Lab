@@ -76,6 +76,19 @@ async def get_project(session: SessionDep, workspace_id: WorkspaceDep, project_i
     return await DesktopPetProjects(session, workspace_id).get(project_id)
 
 
+@router.post("/projects/{project_id}/replace-package", response_model=PetDocumentOut)
+async def replace_package(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    file: Annotated[UploadFile, File()],
+    expected_revision: Annotated[int, Form(alias="expectedRevision", ge=0)],
+):
+    return await DesktopPetProjects(session, workspace_id).replace_package(
+        project_id, expected_revision, file
+    )
+
+
 @router.patch("/projects/{project_id}", response_model=PetProjectOut)
 async def patch_project(
     session: SessionDep, workspace_id: WorkspaceDep, project_id: str, body: PetPatch

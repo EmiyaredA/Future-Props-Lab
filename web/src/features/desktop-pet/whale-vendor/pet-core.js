@@ -8,6 +8,8 @@
  * point back to stage pixels for hit tests, particles and bubble placement.
  */
 
+import { contactShadow } from "./shadow.js";
+
 export const f = (n) => Math.round(n * 10) / 10;
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, k) => a + (b - a) * k;
@@ -1255,6 +1257,7 @@ export const MOTIONS = [
  * `opts.bounds()` returns { W, H, floorY, S } in stage pixels.
  * `opts.onEvent(kind, detail)` reports what happened to the body: arrived, interrupted, touch, mode.
  * `opts.enter: 'drop'` starts the pet above the top edge, falling to the floor.
+ * `opts.walkInPlace` animates strides at a fixed anchor; the desktop host owns screen movement.
  * `opts.figure`, when given, draws the body instead of the built-in one: `figure.draw(petG, face, frame)` keeps
  * its own elements inside `petG` (same logo space, feet at y=256). Its frame adds the face's name, the mode,
  * how long the mode has run, the talk level, drowsiness and how far the body sits.
@@ -1349,6 +1352,37 @@ export function createPet(els, opts) {
   let press = null,
     strokeAcc = 0,
     petCool = 0;
+  let locomotion = null;
+  let heldAnchor = null;
+  function setLocomotion(value) {
+    const active = value && value.state !== "idle" ? value : null;
+    if (
+      active?.state === "held" &&
+      locomotion?.state !== "held" &&
+      active.grip &&
+      pet.xf
+    ) {
+      const c = pet.xf,
+        r = (c.rot * Math.PI) / 180;
+      const dx = active.grip.x - c.AX,
+        dy = active.grip.y - c.AY;
+      heldAnchor = {
+        point: active.grip,
+        x: c.ax + (dx * Math.cos(r) + dy * Math.sin(r)) / c.kx,
+        y: c.ay + (-dx * Math.sin(r) + dy * Math.cos(r)) / c.ky,
+      };
+    }
+    if (active?.state !== "held") heldAnchor = null;
+    if (
+      active?.state !== locomotion?.state ||
+      (active && pet.mode !== `locomotion-${active.state}`)
+    ) {
+      setMode(active ? `locomotion-${active.state}` : "idle");
+      pet.fy = floorY;
+      pet.vx = pet.vy = 0;
+    }
+    locomotion = active;
+  }
   const P = [];
 
   // points on the body in logo units: where the eyes look from, where tears, z's and hearts start, the bubble's spot
@@ -1360,8 +1394,8 @@ export function createPet(els, opts) {
     bubble: [146, 0],
   };
   let A = { ...COO_ANCHORS, ...custom?.anchors };
-  const minX = () => 104 * S + 8,
-    maxX = () => W - 104 * S - 8;
+  const minX = () => Math.min(W / 2, 104 * S + 8),
+    maxX = () => Math.max(W / 2, W - 104 * S - 8);
 
   function resize() {
     const b = opts.bounds();
@@ -1381,7 +1415,7 @@ export function createPet(els, opts) {
       }
     }
     pet.x = clamp(pet.x, minX(), maxX());
-    pet.target = clamp(pet.target, minX(), maxX());
+    if (!opts.walkInPlace) pet.target = clamp(pet.target, minX(), maxX());
     if (pet.mode !== "air" && pet.mode !== "drag") pet.fy = floorY;
   }
 
@@ -1442,11 +1476,17 @@ export function createPet(els, opts) {
         pet.nextAt = T + 3;
         break;
       case "walk":
-        setMode("walk", { target: pickTarget(160) });
+        setMode("walk", {
+          target: opts.walkInPlace ? pet.x + pet.facing * 160 : pickTarget(160),
+        });
         break;
       case "run":
         setMode("run", {
-          target: pet.x < W / 2 ? maxX() - rnd(0, 30) : minX() + rnd(0, 30),
+          target: opts.walkInPlace
+            ? pet.x + pet.facing * 320
+            : pet.x < W / 2
+              ? maxX() - rnd(0, 30)
+              : minX() + rnd(0, 30),
         });
         break;
       case "jump":
@@ -1700,7 +1740,9 @@ export function createPet(els, opts) {
         }
         const ramp = Math.min(1, mt / (run ? 0.35 : 0.25));
         pet.speed = lerp(pet.speed, vT * smooth(ramp), ease(run ? 6 : 9, dt));
-        pet.x += dir * Math.min(dist, pet.speed * dt);
+        const travel = dir * Math.min(dist, pet.speed * dt);
+        if (opts.walkInPlace) pet.target -= travel;
+        else pet.x += travel;
         const k = clamp(pet.speed / vMax, 0, 1);
         strideT *= 0.4 + 0.6 * k;
         liftT *= 0.4 + 0.6 * k;
@@ -1880,6 +1922,24 @@ export function createPet(els, opts) {
       }
     }
 
+    if (locomotion) {
+      pet.phase = locomotion.phase;
+      pet.facing = locomotion.state === "climb" ? 1 : locomotion.facing;
+      const walking = locomotion.state === "walk";
+      strideT = walking ? 10 : locomotion.state === "climb" ? 12 : 0;
+      liftT = walking ? 8 : locomotion.state === "climb" ? 15 : 0;
+      bobT = walking ? 2 : 0;
+      tiltT =
+        locomotion.state === "glide"
+          ? 18 * locomotion.facing
+          : locomotion.state === "held"
+            ? locomotion.swing * 0.4
+            : 0;
+      pet.swing = locomotion.swing;
+      leanT = 0;
+      sitT = locomotion.state === "land" ? 0.12 : 0;
+    }
+
     // short gestures layered over whatever the body is doing
     if (pet.pulse) {
       const k = (T - pet.pulse.t0) / pet.pulse.dur;
@@ -1937,7 +1997,11 @@ export function createPet(els, opts) {
       drowseT,
       ease(m === "sit" || m === "sleep" ? 1.5 : 6, dt),
     );
-    pet.stretch = lerp(pet.stretch, m === "drag" ? 1 : 0, ease(8, dt));
+    pet.stretch = lerp(
+      pet.stretch,
+      m === "drag" || locomotion?.state === "held" ? 1 : 0,
+      ease(8, dt),
+    );
     pet.stride = lerp(pet.stride, strideT, ease(10, dt));
     pet.lift = lerp(pet.lift, liftT, ease(10, dt));
     pet.bob = lerp(pet.bob, bobT, ease(10, dt));
@@ -1947,7 +2011,7 @@ export function createPet(els, opts) {
     pet.gap[1] = lerp(pet.gap[1], fc.gap[1], ease(8, dt));
     // turning reads as a quick card flip rather than a mirror snap
     pet.faceVis = lerp(pet.faceVis, pet.facing, ease(15, dt));
-    if (m !== "walk" && m !== "run")
+    if (m !== "walk" && m !== "run" && !locomotion)
       pet.phase = lerp(
         pet.phase,
         Math.round(pet.phase / Math.PI) * Math.PI,
@@ -1967,13 +2031,20 @@ export function createPet(els, opts) {
     );
     pet.swingV += ((swingT - pet.swing) * 110 - pet.swingV * 7) * dt;
     pet.swing = clamp(pet.swing + pet.swingV * dt, -40, 40);
+    if (locomotion) pet.swing = locomotion.swing;
 
     pet.low = pet.sitK * 29 + pet.bob * Math.abs(Math.sin(pet.phase));
     pet.feet.forEach((ft, i) => {
       const hx = HIPS[i][0],
         hy = HIPS[i][1] + pet.low;
       let tx, ty;
-      if (m === "drag") {
+      if (locomotion?.state === "held") {
+        tx = hx + Math.sin(T * 2 + i) * 2;
+        ty = FOOT_Y;
+      } else if (locomotion?.state === "glide") {
+        tx = hx + (i ? 8 : -6);
+        ty = FOOT_Y - 12;
+      } else if (m === "drag") {
         tx = hx + 7 * Math.sin(T * 11 + i * 2.2);
         ty = hy + 36;
       } else if (m === "air") {
@@ -2076,9 +2147,17 @@ export function createPet(els, opts) {
     const kx = S * pet.faceVis * sx,
       ky = S * sy,
       lean = pet.lean * pet.faceVis;
+    const renderMode = locomotion?.state ?? pet.mode;
     const rot = custom?.groupTilt
-      ? custom.groupTilt(pet.mode, pet.tilt, lean)
+      ? custom.groupTilt(renderMode, pet.tilt, lean)
       : pet.tilt + lean;
+    if (heldAnchor) {
+      const r = (rot * Math.PI) / 180,
+        x = (heldAnchor.x - ax) * kx,
+        y = (heldAnchor.y - ay) * ky;
+      AX = heldAnchor.point.x - x * Math.cos(r) + y * Math.sin(r);
+      AY = heldAnchor.point.y - x * Math.sin(r) - y * Math.cos(r);
+    }
     pet.xf = { AX, AY, ax, ay, kx, ky, rot };
     petG.setAttribute(
       "transform",
@@ -2114,12 +2193,13 @@ export function createPet(els, opts) {
       eyeClose,
       acc: skin,
       swing: pet.swing,
+      gait: { phase: pet.phase, stride: pet.stride, lift: pet.lift },
     };
     if (custom)
       custom.draw(petG, face, {
         ...frame,
         face: fname,
-        mode: pet.mode,
+        mode: renderMode,
         modeT: pet.modeT,
         talk: pet.talkK,
         drowse: pet.drowse,
@@ -2128,16 +2208,19 @@ export function createPet(els, opts) {
         tilt: pet.tilt,
         lean,
         groupRot: rot,
+        worldScale: S,
+        gripPoint: heldAnchor ? [heldAnchor.x, heldAnchor.y] : null,
+        locomotion,
       });
     else petG.innerHTML = figure(face, frame);
 
     const footY = drag ? pet.dy + 220 * S * 1.09 : pet.fy;
-    const k = clamp(1 - (floorY - footY) / 420, 0.3, 1);
+    const shadow = contactShadow(S, floorY - footY, pet.sq, Boolean(drag));
     shadowEl.setAttribute("cx", f(AX));
     shadowEl.setAttribute("cy", f(floorY - 2));
-    shadowEl.setAttribute("rx", f(72 * S * k * (1 + pet.sq * 0.5)));
-    shadowEl.setAttribute("ry", f(10 * S * k + 1));
-    shadowEl.setAttribute("opacity", f(k));
+    shadowEl.setAttribute("rx", f(shadow.rx));
+    shadowEl.setAttribute("ry", f(shadow.ry));
+    shadowEl.setAttribute("opacity", shadow.opacity.toFixed(3));
 
     let s = "";
     const sc = S / 0.48;
@@ -2261,6 +2344,22 @@ export function createPet(els, opts) {
     if (!press) pointer.inside = false;
   }
 
+  // A new authored reaction replaces the old one, including airborne or seated poses.
+  // Callers never mutate simulation state to force an editor preview through busy().
+  function replaceReaction(motion, expression, holdExpression = false) {
+    setMode("idle");
+    pet.fy = floorY;
+    pet.vx = pet.vy = pet.speed = 0;
+    pet.pulse = null;
+    pet.expr = null;
+    pet.sitK = pet.low = pet.stride = pet.lift = pet.bob = 0;
+    pet.feet = STAND.map((leg) => [leg[2], leg[3]]);
+    P.length = 0;
+    if (motion) act(motion);
+    pet.expr = expression || "neutral";
+    pet.exprUntil = holdExpression ? Infinity : T + 2;
+  }
+
   resize();
   return {
     pet,
@@ -2268,6 +2367,8 @@ export function createPet(els, opts) {
     render,
     resize,
     act,
+    replaceReaction,
+    setLocomotion,
     setExpr,
     walkTo,
     toStage,

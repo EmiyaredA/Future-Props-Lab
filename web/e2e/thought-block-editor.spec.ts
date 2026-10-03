@@ -104,6 +104,21 @@ async function focusBodyStart(prose: Locator) {
     const paragraph = root.querySelector("p")!;
     window.getSelection()!.setPosition(paragraph.firstChild ?? paragraph, 0);
   });
+  await expect
+    .poll(() =>
+      prose.evaluate((root) => {
+        const editor = (
+          root as HTMLElement & { editor: import("@tiptap/core").Editor }
+        ).editor;
+        const selection = editor.state.selection;
+        return (
+          selection.empty &&
+          selection.$from.parent.type.name === "paragraph" &&
+          selection.$from.parentOffset === 0
+        );
+      }),
+    )
+    .toBe(true);
 }
 
 async function expectMenuFits(menu: Locator) {

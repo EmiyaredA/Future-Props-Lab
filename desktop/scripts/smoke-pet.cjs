@@ -10,17 +10,32 @@ const {
 const { unzipSync, strFromU8 } = require("fflate");
 const { createServer } = require("node:net");
 const { once } = require("node:events");
-const os = require("node:os");
 const path = require("node:path");
 const assert = require("node:assert/strict");
 const { chromium, expect } = require("@playwright/test");
-const { inspectHumanPet } = require("./inspect-human-pet.cjs");
+const {
+  inspectHumanPet,
+  inspectHumanWalk,
+} = require("./inspect-human-pet.cjs");
+const { inspectCompanionChat } = require("./inspect-companion-chat.cjs");
+const { inspectPetPreview } = require("./inspect-pet-preview.cjs");
+const {
+  inspectPetMotion,
+  inspectMotionPoses,
+} = require("./inspect-pet-motion.cjs");
 
 const root = path.resolve(__dirname, "../..");
 const whaleArchive = process.argv[2] || null;
+const replacementArchive = process.argv[3] || null;
+if (replacementArchive)
+  assert.ok(
+    whaleArchive &&
+      path.isAbsolute(replacementArchive) &&
+      existsSync(replacementArchive),
+  );
 if (whaleArchive)
   assert.ok(path.isAbsolute(whaleArchive) && existsSync(whaleArchive));
-const importedModel = whaleArchive
+let importedModel = whaleArchive
   ? JSON.parse(strFromU8(unzipSync(readFileSync(whaleArchive))["model.json"]))
   : null;
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -39,7 +54,9 @@ async function until(fn, timeout = 120000) {
 }
 
 async function main() {
-  const directory = mkdtempSync(path.join(os.tmpdir(), "fpl-pet-smoke-"));
+  const dataParent = path.join(root, ".local/desktop-pet/smoke-data");
+  mkdirSync(dataParent, { recursive: true });
+  const directory = mkdtempSync(path.join(dataParent, "fpl-pet-smoke-"));
   const listener = createServer().listen(0, "127.0.0.1");
   await once(listener, "listening");
   const port = listener.address().port;
@@ -121,6 +138,38 @@ async function main() {
         importedModel.schemes.length,
       );
       await studio.locator(".dp-whale-renderer canvas").waitFor();
+      if (replacementArchive) {
+        const id = studio.url().split("/projects/")[1].split("/")[0];
+        const before = await studio.evaluate(async (id) => {
+          const base = `/v1/desktop-pet/projects/${id}`;
+          return {
+            project: await (await fetch(base)).json(),
+            document: await (await fetch(`${base}/document`)).json(),
+            chat: await (await fetch(`${base}/chat`)).json(),
+          };
+        }, id);
+        importedModel = JSON.parse(
+          strFromU8(unzipSync(readFileSync(replacementArchive))["model.json"]),
+        );
+        await studio
+          .getByLabel("选择更新角色资源包")
+          .setInputFiles(replacementArchive);
+        await expect(studio.locator(".dp-side-item")).toHaveCount(
+          importedModel.schemes.length,
+        );
+        const after = await studio.evaluate(async (id) => {
+          const base = `/v1/desktop-pet/projects/${id}`;
+          return {
+            project: await (await fetch(base)).json(),
+            document: await (await fetch(`${base}/document`)).json(),
+            chat: await (await fetch(`${base}/chat`)).json(),
+          };
+        }, id);
+        assert.equal(after.project.id, before.project.id);
+        assert.equal(after.document.revision, before.document.revision + 1);
+        assert.deepEqual(after.document.config, before.document.config);
+        assert.deepEqual(after.chat, before.chat);
+      }
       for (let index = 0; index < importedModel.schemes.length; index++) {
         await studio.locator(".dp-side-item").nth(index).click();
         await expect(
@@ -133,7 +182,9 @@ async function main() {
       await studio.getByRole("button", { name: "保存", exact: true }).click();
       await studio.reload();
       await expect(
-        studio.getByText(`当前默认：${importedModel.schemes[selected].brand}`),
+        studio.getByText(
+          `当前默认：${importedModel.schemes[selected].brand} · ${importedModel.schemes[selected].label}`,
+        ),
       ).toBeVisible();
     }
     await studio.locator(".dp-editor").waitFor();
@@ -162,11 +213,14 @@ async function main() {
     await expect(pet.getByTitle("隐藏")).toBeVisible();
     const screenshotDir = path.join(
       root,
-      whaleArchive
-        ? importedModel.rigProfile === "human-chibi"
-          ? ".local/desktop-pet/kurisu/smoke"
-          : ".local/desktop-pet/whale/smoke"
-        : ".local/desktop-pet/smoke",
+      process.env.FPL_SMOKE_PET_OUTPUT ||
+        (whaleArchive
+          ? importedModel.rigProfile === "human-chibi"
+            ? importedModel.schemes.length > 1
+              ? ".local/desktop-pet/kurisu/wardrobe/smoke"
+              : ".local/desktop-pet/kurisu/smoke"
+            : ".local/desktop-pet/whale/smoke"
+          : ".local/desktop-pet/smoke"),
     );
     mkdirSync(screenshotDir, { recursive: true });
     await pet.screenshot({ path: path.join(screenshotDir, "pet-window.png") });
@@ -184,6 +238,7 @@ async function main() {
     const chatPage = await until(() =>
       context.pages().find((page) => page.url().includes("/pet-chat.html?id=")),
     );
+    await chatPage.getByRole("button", { name: "聊天设置" }).click();
     await expect(
       chatPage.getByText("当前 Workspace 没有可用的文字模型"),
     ).toBeVisible();
@@ -200,10 +255,35 @@ async function main() {
           .pages()
           .some((page) => page.url().includes("/pet-chat.html?id=")),
     );
+    if (whaleArchive)
+      await inspectPetPreview(
+        studio,
+        pet,
+        context,
+        new URL(pet.url()).searchParams.get("id"),
+        screenshotDir,
+        importedModel.rigProfile === "human-chibi",
+      );
     const first = await studio.evaluate(() =>
       window.futurePropsDesktop.petStatus(),
     );
     assert.ok(first.projectId && first.visible);
+    if (whaleArchive && process.env.FPL_SMOKE_PET_MOTION === "1") {
+      await inspectPetMotion(
+        studio,
+        pet,
+        context,
+        first.projectId,
+        screenshotDir,
+      );
+      for (const scheme of importedModel.schemes)
+        await inspectMotionPoses(
+          studio,
+          first.projectId,
+          screenshotDir,
+          scheme.id,
+        );
+    }
     await studio.evaluate(async () => {
       const csrf = document.cookie
         .split("; ")
@@ -240,12 +320,22 @@ async function main() {
     const activeChat = await until(() =>
       context.pages().find((page) => page.url().includes("/pet-chat.html?id=")),
     );
+    await activeChat.getByRole("button", { name: "聊天设置" }).click();
     await activeChat.locator(".dp-chat-models button").first().click();
+    await activeChat.getByRole("button", { name: "完成设置" }).click();
     await activeChat
       .getByRole("textbox", { name: "输入消息" })
       .fill("你好，小鱼");
     await activeChat.keyboard.press("Enter");
     await expect(activeChat.getByText("小鱼收到你的消息啦。")).toBeVisible();
+    await expect(pet.locator(".pet-runtime-bubble")).toHaveCount(0);
+    await inspectCompanionChat(
+      activeChat,
+      pet,
+      studio,
+      first.projectId,
+      screenshotDir,
+    );
     await activeChat.screenshot({
       path: path.join(screenshotDir, "chat-reply.png"),
     });
@@ -262,6 +352,9 @@ async function main() {
     const reopenedChat = await until(() =>
       context.pages().find((page) => page.url().includes("/pet-chat.html?id=")),
     );
+    await expect(
+      reopenedChat.getByRole("button", { name: "完整对话" }),
+    ).toHaveAttribute("aria-pressed", "true");
     await expect(reopenedChat.getByText("小鱼收到你的消息啦。")).toBeVisible();
     await reopenedChat.keyboard.press("Escape").catch((error) => {
       if (!reopenedChat.isClosed()) throw error;
@@ -322,8 +415,14 @@ async function main() {
           .projectId,
     );
 
-    if (importedModel?.rigProfile === "human-chibi")
-      await inspectHumanPet(studio, first.projectId, screenshotDir);
+    if (importedModel?.rigProfile === "human-chibi") {
+      for (const scheme of importedModel.schemes) {
+        const outfitDir = path.join(screenshotDir, scheme.id);
+        mkdirSync(outfitDir, { recursive: true });
+        await inspectHumanPet(studio, first.projectId, outfitDir, scheme.id);
+        await inspectHumanWalk(studio, first.projectId, outfitDir, scheme.id);
+      }
+    }
 
     await studio.screenshot({
       path: path.join(screenshotDir, "editor-interaction-light.png"),
@@ -337,6 +436,8 @@ async function main() {
     await studio.screenshot({
       path: path.join(screenshotDir, "editor-look-dark.png"),
     });
+    if (importedModel?.rigProfile === "human-chibi")
+      await inspectHumanWalk(studio, first.projectId, screenshotDir);
     await studio.getByRole("button", { name: "习惯", exact: true }).click();
     await expect(studio.locator(".dp-pet-renderer canvas")).toBeVisible();
     await pause(350);
@@ -350,6 +451,7 @@ async function main() {
       path: path.join(screenshotDir, "editor-preview-dark.png"),
     });
     await studio.setViewportSize({ width: 700, height: 820 });
+    await studio.getByRole("button", { name: "预览", exact: true }).click();
     await studio.getByRole("button", { name: "习惯", exact: true }).click();
     await expect(studio.locator(".dp-pet-renderer canvas")).toBeVisible();
     await pause(350);
@@ -362,6 +464,23 @@ async function main() {
     await studio.screenshot({
       path: path.join(screenshotDir, "editor-narrow-dark.png"),
     });
+    const existingPages = new Set(context.pages());
+    await studio.evaluate(() => window.futurePropsDesktop.openNewWindow());
+    const extra = await until(() =>
+      context
+        .pages()
+        .find(
+          (page) => !existingPages.has(page) && page.url().startsWith("http:"),
+        ),
+    );
+    await extra.waitForLoadState("domcontentloaded");
+    await extra.evaluate(() => {
+      // Let the evaluation return before the normal IPC destroys its context.
+      setTimeout(() => void window.futurePropsDesktop.close(), 0);
+    });
+    await until(() => extra.isClosed());
+    assert.equal(studio.isClosed(), false);
+    assert.equal(output.includes("Object has been destroyed"), false);
     console.log(
       whaleArchive
         ? `PASS isolated ${importedModel.rigProfile || "whale"} import, ${importedModel.schemes.length} schemes, lines, chat stream, history and identity cleanup`

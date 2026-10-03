@@ -526,8 +526,8 @@
   align-items: center;
   gap: 5px;
   border-radius: 99px;
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  color: var(--faint);
+  background: var(--surface-soft);
+  color: var(--muted);
   font-size: 9px;
 }
 

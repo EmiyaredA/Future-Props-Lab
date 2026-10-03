@@ -21,6 +21,7 @@ WEB_ASSETS = (
     Path("web/public/brand/amadeus/amadeus-poster.png"),
     Path("web/public/brand/amadeus/amadeus-stage-poster.png"),
     Path("web/public/brand/live2d-workshop-mark.png"),
+    Path("web/public/brand/desktop-pet-mark.png"),
     Path("web/public/brand/audio-annotation-mark.png"),
     Path("web/public/brand/director-desk-mark.png"),
     Path("web/public/brand/presentation-workshop-mark.png"),
@@ -41,6 +42,9 @@ EXPECTED_SHA256 = {
     Path(
         "web/public/brand/live2d-workshop-mark.png"
     ): "e8b8839472bdfc9923aba39987568392d0619ad834e41b7c96cd039352d6eecd",
+    Path("web/public/brand/desktop-pet-mark.png"): (
+        "09ba7ae71ca38a5ee2f56b68aa44b8d330b386501d621929b2ad2d1faa8306b4"
+    ),
     Path(
         "web/public/brand/audio-annotation-mark.png"
     ): "a3539f2db85bdc42fdfab5dea9215b3ef1ce4e1c560bc9834d5c30feae015349",
@@ -240,6 +244,7 @@ def main() -> None:
             "web/public/brand/presentation-workshop-mark.png,"
             "web/public/brand/audio-annotation-mark.png,"
             "web/public/brand/director-desk-mark.png,web/public/brand/live2d-workshop-mark.png,"
+            "web/public/brand/desktop-pet-mark.png,"
             "web/public/brand/amadeus/amadeus.fpllive2d,web/public/brand/amadeus/amadeus-poster.png,web/public/brand/amadeus/amadeus-stage-poster.png",
         )
 

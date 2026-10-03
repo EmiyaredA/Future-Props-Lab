@@ -46,6 +46,19 @@ export async function importWhale(file: File): Promise<PetProject> {
     body,
   });
 }
+export async function replacePackage(
+  id: string,
+  expectedRevision: number,
+  file: File,
+): Promise<PetDocument> {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("expectedRevision", String(expectedRevision));
+  return fetchApiJson(
+    `/v1/desktop-pet/projects/${encodeURIComponent(id)}/replace-package`,
+    { method: "POST", body },
+  );
+}
 export const renameProject = async (
   id: string,
   expectedRevision: number,
@@ -82,11 +95,17 @@ export const updateChat = async (
   expectedRevision: number,
   modelId: string | null,
   proactiveLinesEnabled: boolean,
+  presentationMode?: PetChat["presentationMode"],
 ) =>
   unwrap(
     await api.PATCH("/v1/desktop-pet/projects/{project_id}/chat", {
       params: path(id),
-      body: { expectedRevision, modelId, proactiveLinesEnabled },
+      body: {
+        expectedRevision,
+        modelId,
+        proactiveLinesEnabled,
+        presentationMode,
+      },
     }),
   );
 

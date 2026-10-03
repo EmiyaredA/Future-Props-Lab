@@ -4,6 +4,7 @@ import { KnowledgeTree } from "@features/thought-workshop/KnowledgeTree";
 import { THOUGHT_WORKSHOP_MODULE } from "@features/thought-workshop/module";
 import type { Directory } from "@features/thought-workshop/knowledgeApi";
 import { ProjectLibraryCard } from "@shared/ui/project-library/ProjectLibraryCard";
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 const time = "2026-09-08T00:00:00Z";
 const doc = (
   id: string,
@@ -108,5 +109,32 @@ describe("knowledge projects", () => {
     expect(screen.getByText("封面")).toBeVisible();
     expect(screen.getByText("0 篇文档")).toBeVisible();
     expect(screen.queryByText(/创建于/)).not.toBeInTheDocument();
+  });
+  it("closes the document menu before its enclosing navigation drawer", () => {
+    const close = vi.fn();
+    function Drawer({ active }: { active: boolean }) {
+      const root = useDrawerFocus<HTMLDivElement>(close, active, false);
+      return (
+        <div ref={root}>
+          <KnowledgeTree
+            directory={directory}
+            open={vi.fn()}
+            action={vi.fn()}
+            move={vi.fn()}
+          />
+        </div>
+      );
+    }
+    const { rerender } = render(<Drawer active={false} />);
+    const trigger = screen.getByRole("button", { name: "一级操作" });
+    fireEvent.click(trigger);
+    const menu = screen.getByRole("menu", { name: "一级操作" });
+    rerender(<Drawer active />);
+    fireEvent.keyDown(menu, { key: "Escape" });
+    expect(screen.queryByRole("menu", { name: "一级操作" })).toBeNull();
+    expect(close).not.toHaveBeenCalled();
+    expect(trigger).toHaveFocus();
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(close).toHaveBeenCalledOnce();
   });
 });

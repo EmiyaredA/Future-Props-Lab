@@ -1,6 +1,11 @@
 import { Plus } from "lucide-react";
 import type { PetConfig, PetDocument, PetReaction } from "./api";
 import { PetPicker } from "./PetPicker";
+import {
+  MOTION_LABELS,
+  EXPRESSION_LABELS,
+  expressionSupported,
+} from "./playback";
 
 const WHALE_MOTIONS = [
   "stand",
@@ -41,6 +46,7 @@ export function DialogueInspector({
   config,
   readOnly,
   editReaction,
+  selectLine,
   edit,
 }: {
   tab: DialogueTab;
@@ -51,6 +57,7 @@ export function DialogueInspector({
   config: PetConfig;
   readOnly: boolean;
   editReaction: (patch: Partial<PetReaction>) => void;
+  selectLine: (line: number) => void;
   edit: (update: (value: PetConfig) => PetConfig) => void;
 }) {
   return (
@@ -67,7 +74,10 @@ export function DialogueInspector({
             options={[
               { value: "", label: "无动作" },
               ...(whale
-                ? WHALE_MOTIONS.map((id) => ({ value: id, label: id }))
+                ? WHALE_MOTIONS.map((id) => ({
+                    value: id,
+                    label: MOTION_LABELS[id],
+                  }))
                 : (draft.character?.motions ?? []).map((motion) => ({
                     value: motion.id,
                     label: motion.name,
@@ -84,7 +94,8 @@ export function DialogueInspector({
               ...(whale
                 ? WHALE_EXPRESSIONS.map((id) => ({
                     value: id,
-                    label: id,
+                    label: `${EXPRESSION_LABELS[id]}${expressionSupported(draft, id) ? "" : "（当前角色未支持）"}`,
+                    disabled: !expressionSupported(draft, id),
                   }))
                 : (draft.character?.expressions ?? []).map((expression) => ({
                     value: expression.id,
@@ -108,7 +119,7 @@ export function DialogueInspector({
             disabled={readOnly}
           />
           <div className="dp-hint">
-            动作与表情并行播放，事件结束自动回到待机。音效是内置提示音，不执行脚本。
+            修改后立即预览，表情保持到下一次调整。“播放事件”演示完整触发并返回待机；只有手动播放才试听音效。
           </div>
         </>
       )}
@@ -125,13 +136,14 @@ export function DialogueInspector({
                 disabled={readOnly}
                 maxLength={140}
                 value={line}
-                onChange={(event) =>
+                onChange={(event) => {
+                  selectLine(index);
                   editReaction({
                     lines: (reaction.lines ?? []).map((item, position) =>
                       position === index ? event.target.value : item,
                     ),
-                  })
-                }
+                  });
+                }}
               />
               <button
                 type="button"

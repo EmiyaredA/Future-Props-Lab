@@ -440,6 +440,10 @@ class Body_put_avatar_v1_account_profile_avatar_put(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
 
+class Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    file: str = Field(default=..., alias='file')
+
 class Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post(WireModel):
     end_ms: int = Field(default=..., alias='end_ms', gt=0.0)
     language_tag: str | None = Field(default=None, alias='language_tag')
@@ -3435,6 +3439,7 @@ class PetChatOut(WireModel):
     messages: list[PetChatMessageOut] = Field(default=..., alias='messages')
     model_id: str | None = Field(default=..., alias='modelId')
     next_before: int | None = Field(default=..., alias='nextBefore')
+    presentation_mode: Literal['bubble', 'dialogue'] = Field(default=..., alias='presentationMode')
     proactive_lines_enabled: bool = Field(default=..., alias='proactiveLinesEnabled')
     revision: int = Field(default=..., alias='revision')
 
@@ -3446,6 +3451,7 @@ class PetChatSendIn(WireModel):
 class PetChatSettingsIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
     model_id: str | None = Field(default=..., alias='modelId')
+    presentation_mode: Literal['bubble', 'dialogue'] | None = Field(default=None, alias='presentationMode')
     proactive_lines_enabled: bool = Field(default=..., alias='proactiveLinesEnabled')
 
 class PetConfig(WireModel):
@@ -3475,6 +3481,8 @@ class PetDocumentOut(WireModel):
 class PetHabits(WireModel):
     bubbles: bool = Field(default=True, alias='bubbles')
     draggable: bool = Field(default=True, alias='draggable')
+    edge_climbing: bool = Field(default=True, alias='edgeClimbing')
+    high_gliding: bool = Field(default=True, alias='highGliding')
     hover_actions: list[Literal['dress', 'roam', 'hide', 'settings', 'chat']] | None = Field(default=None, alias='hoverActions', max_length=4)
     roam: Literal['free', 'calm', 'off'] = Field(default='calm', alias='roam')
     size: int = Field(default=220, alias='size', ge=160.0, le=300.0)
@@ -5344,6 +5352,7 @@ Body_import_whale_v1_desktop_pet_projects_import_whale_post.model_rebuild()
 Body_imports_v1_thought_workshop_imports_post.model_rebuild()
 Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post.model_rebuild()
 Body_put_avatar_v1_account_profile_avatar_put.model_rebuild()
+Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post.model_rebuild()
 Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post.model_rebuild()
 Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post.model_rebuild()
 Body_upload_asset_v1_model_inference_assets_post.model_rebuild()

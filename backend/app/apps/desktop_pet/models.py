@@ -57,6 +57,7 @@ class DesktopPetChat(Base):
         ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
     )
     proactive_lines_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    presentation_mode: Mapped[str] = mapped_column(String(16), default="bubble")
     revision: Mapped[int] = mapped_column(Integer, default=0)
     active_request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
