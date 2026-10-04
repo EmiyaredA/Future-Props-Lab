@@ -14,6 +14,7 @@ from pathlib import PurePosixPath
 from PIL import Image, UnidentifiedImageError
 
 from .authored_motion import validate_face_source_images
+from .frame_sequences import validate_frame_sequence_images, validate_frame_sequences
 from .human_motion import JOINT_PARENTS, validate_motion_rig
 from .part_registration import validate_part_registrations
 from .whale_motion import PARENTS as WHALE_PARENTS
@@ -170,6 +171,7 @@ def _expected_paths(model: dict) -> set[str]:
             raise ValueError("分件贴图裁切范围无效")
     validate_motion_rig(model)
     validate_part_registrations(model)
+    textures.update(validate_frame_sequences(model))
     required = (
         {
             "hair_back",
@@ -318,6 +320,7 @@ def read_whale_package(data: bytes) -> WhalePackage:
                         ):
                             raise ValueError("鲸鱼娘配色贴图尺寸不一致")
             validate_face_source_images(model, dimensions)
+            validate_frame_sequence_images(model, dimensions)
             return WhalePackage(model=model, images=images)
     except (
         zipfile.BadZipFile,

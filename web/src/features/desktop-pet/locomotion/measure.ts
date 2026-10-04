@@ -2,7 +2,10 @@ import type { PetEdge, PetGeometry } from "@platform/petMotion";
 
 /** Sample the painted alpha at small resolution, not a full-resolution GPU readback. */
 export function figureGeometry(group: SVGGElement): PetGeometry | null {
-  const canvas = group.querySelector("canvas");
+  const canvas =
+    group.querySelector<HTMLCanvasElement>(
+      'canvas[data-pet-raster-active="true"]',
+    ) ?? group.querySelector("canvas");
   const object = canvas?.closest("foreignObject");
   const matrix = object?.getScreenCTM();
   if (!canvas || !object || !matrix) return null;
@@ -58,7 +61,26 @@ export function figureGeometry(group: SVGGElement): PetGeometry | null {
   );
   const edges = planes
     ? (Object.fromEntries(
-        Object.entries(planes).map(([edge, p]) => {
+        (["left", "right", "top", "bottom"] as PetEdge[]).map((edge) => {
+          const p = planes[edge];
+          if (!p)
+            return [
+              edge,
+              {
+                x:
+                  edge === "left"
+                    ? visible.x
+                    : edge === "right"
+                      ? visible.x + visible.width
+                      : feet.x,
+                y:
+                  edge === "top"
+                    ? visible.y
+                    : edge === "bottom"
+                      ? feet.y
+                      : visible.y + visible.height / 2,
+              },
+            ];
           const mapped = new DOMPoint(...p).matrixTransform(anchorMatrix);
           const reflected =
             anchorMatrix.a < 0 && (edge === "left" || edge === "right");

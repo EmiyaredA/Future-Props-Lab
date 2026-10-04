@@ -27,6 +27,7 @@ export type WhaleFaceState = {
 };
 export interface WhaleFigure {
   fixedScale?: boolean;
+  groupTilt?(mode: string, tilt: number, lean: number): number;
   motionFacing?(motion: PetMotionFrame, seconds?: number): number;
   pickupPoint?(): number[] | null;
   getMotionFailure?(): string | null;

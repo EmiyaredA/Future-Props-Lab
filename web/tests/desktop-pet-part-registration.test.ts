@@ -7,11 +7,13 @@ import {
 import {
   bindPoseParts,
   type AuthoredPose,
+  type PoseLimb,
 } from "../src/features/desktop-pet/locomotion/authoredPose";
 import { authoredRestSample } from "../src/features/desktop-pet/locomotion/transitions/transitionPlayer";
 import {
   jointDeformers,
   type MotionRig,
+  type Limb,
 } from "../src/features/desktop-pet/locomotion/articulation";
 import {
   createRig,
@@ -77,13 +79,9 @@ test("registration requires a v2 rigid segment, including native inline transiti
   for (const value of [undefined, { ...rig, version: 1 }, { version: 2 }])
     expect(() => validatePartRegistrations([part], value)).toThrow();
   for (const id of [pose.part, "head", "whole_limb"])
-    expect(() =>
-      validatePartRegistrations([{ ...part, id }], rig),
-    ).toThrow();
+    expect(() => validatePartRegistrations([{ ...part, id }], rig)).toThrow();
   for (const skin of [[], null, [{ deformer: "armNear", weights: [1] }]])
-    expect(() =>
-      validatePartRegistrations([{ ...part, skin }], rig),
-    ).toThrow();
+    expect(() => validatePartRegistrations([{ ...part, skin }], rig)).toThrow();
   // A renderer-owned binder may explicitly clear the skin field after validation.
   expect(() =>
     validatePartRegistrations([{ ...part, skin: undefined }], rig),
@@ -97,15 +95,18 @@ test("registration requires a v2 rigid segment, including native inline transiti
   ).not.toThrow();
 });
 
-test.each([-180, 0, 180])("registration accepts inclusive finite angle %d", (angle) => {
-  const { part, rig } = resource();
-  expect(() =>
-    validatePartRegistrations(
-      [{ ...part, restTransform: { angle, pivot: [-512, 512] } }],
-      rig,
-    ),
-  ).not.toThrow();
-});
+test.each([-180, 0, 180])(
+  "registration accepts inclusive finite angle %d",
+  (angle) => {
+    const { part, rig } = resource();
+    expect(() =>
+      validatePartRegistrations(
+        [{ ...part, restTransform: { angle, pivot: [-512, 512] } }],
+        rig,
+      ),
+    ).not.toThrow();
+  },
+);
 
 test("real binder and GPU rest vertices preserve uniform registration and UV before zero-angle FK", () => {
   const { part, pose, rig: declaration } = resource();
@@ -132,18 +133,32 @@ test("real binder and GPU rest vertices preserve uniform registration and UV bef
       },
     },
   );
+  const registeredLimb = (limb: PoseLimb): Limb => {
+    if (!limb.segments)
+      throw new Error("Synthetic rigid registration missing segments");
+    return {
+      root: limb.root,
+      joint: limb.joint,
+      end: limb.end,
+      parts: limb.segments,
+    };
+  };
   const motionRig: MotionRig = {
     version: 2,
     hiddenParts: [],
-    limbs: Object.fromEntries(
-      Object.entries(pose.limbs).map(([name, limb]) => [
-        name,
-        { ...limb, parts: limb.segments },
-      ]),
-    ) as MotionRig["limbs"],
+    limbs: {
+      armNear: registeredLimb(pose.limbs.armNear),
+      armFar: registeredLimb(pose.limbs.armFar),
+      legBack: registeredLimb(pose.limbs.legBack),
+      legFront: registeredLimb(pose.limbs.legFront),
+    },
   };
   const renderer = createRig(
-    { width: 256, height: 256, getContext: () => gl } as unknown as HTMLCanvasElement,
+    {
+      width: 256,
+      height: 256,
+      getContext: () => gl,
+    } as unknown as HTMLCanvasElement,
     {
       parts: bound,
       view: [0, 0, 256, 256],
@@ -155,14 +170,21 @@ test("real binder and GPU rest vertices preserve uniform registration and UV bef
   );
   renderer.upload(part.tex, {} as TexImageSource);
   renderer.render(authoredRestSample(pose, "walk", "walk", 1).state);
-  const vertices = methods.get("bufferSubData")!.mock.calls[0][2] as Float32Array;
+  const vertices = methods.get("bufferSubData")!.mock
+    .calls[0][2] as Float32Array;
   // Source rectangle rotated 90 degrees around [11,22], with no animated compensation.
   const expected = [13, 21, 13, 25, 7, 21, 7, 25];
   expect([...vertices]).toEqual(expected);
-  const uv = methods.get("bufferData")!.mock.calls.find(
-    (call) => call[1] instanceof Float32Array,
-  )![1] as Float32Array;
-  expect([...uv]).toEqual([0.1, 0.2, 0.3, 0.2, 0.1, 0.5, 0.3, 0.5].map(Math.fround));
+  const uv = methods
+    .get("bufferData")!
+    .mock.calls.find(
+      (call) => call[1] instanceof Float32Array,
+    )![1] as Float32Array;
+  expect([...uv]).toEqual(
+    [0.1, 0.2, 0.3, 0.2, 0.1, 0.5, 0.3, 0.5].map(Math.fround),
+  );
   expect(part.box).toEqual([10, 20, 4, 6]);
-  expect(pose.limbs.armNear.root).toEqual(geometry.poses.walk.limbs.armNear.root);
+  expect(pose.limbs.armNear.root).toEqual(
+    geometry.poses.walk.limbs.armNear.root,
+  );
 });

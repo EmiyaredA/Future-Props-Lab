@@ -51,7 +51,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   await page.goto(`/apps/thought-workshop/knowledge-bases/${kb.id}`);
   await page
     .getByRole("button", { name: "新建文档", exact: true })
-    .last()
+    .and(page.locator('[aria-haspopup="menu"]'))
     .click();
   await page.getByRole("menuitem", { name: "多维表格", exact: true }).click();
   await expect(
@@ -308,6 +308,35 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
           .getByRole("button", { name: "关闭", exact: true })
           .click();
       }
+      for (const [name, className, fileName] of [
+        ["任务看板", ".multitable-board", "kanban"],
+        ["任务日历", ".multitable-calendar", "calendar"],
+      ]) {
+        await page.getByRole("tab", { name, exact: true }).click();
+        await expect(page.locator(className)).toBeVisible();
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth + 1,
+            ),
+          )
+          .toBeTruthy();
+        await expect(
+          page.getByRole("textbox", { name: "搜索记录" }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "新增记录", exact: true }),
+        ).toBeVisible();
+        if (directory)
+          await page.screenshot({
+            path: `${directory}/${fileName}-${width}-${theme}.png`,
+            animations: "disabled",
+          });
+      }
+      await page.getByRole("tab", { name: "表格", exact: true }).click();
+      await expect(
+        page.getByRole("region", { name: "表格记录" }),
+      ).toBeVisible();
     }
   }
 });

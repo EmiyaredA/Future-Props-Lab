@@ -4,14 +4,16 @@ export type RestTransform = { angle: number; pivot: [number, number] };
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const finite = (value: unknown, limit: number): value is number =>
-  typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= limit;
+  typeof value === "number" &&
+  Number.isFinite(value) &&
+  Math.abs(value) <= limit;
 
 /** Package boundary only: renderer-compiled typed meshes must never pass this reader. */
 export function validatePartRegistrations(parts: unknown, rig: unknown): void {
   const fail = (): never => {
     throw new Error("静态素材登记仅支持版本二刚性骨段及有限旋转锚点");
   };
-  if (!Array.isArray(parts)) fail();
+  if (!Array.isArray(parts)) return fail();
   const versionTwo = record(rig) && rig.version === 2;
   const segments = new Set<string>();
   if (versionTwo) {
@@ -29,7 +31,7 @@ export function validatePartRegistrations(parts: unknown, rig: unknown): void {
               if (typeof id === "string") segments.add(id);
   }
   for (const part of parts) {
-    if (!record(part)) fail();
+    if (!record(part)) return fail();
     if ("mesh" in part || "restAngle" in part)
       throw new Error("资源包不支持运行时网格或未登记的旋转字段");
     if (!("restTransform" in part)) continue;

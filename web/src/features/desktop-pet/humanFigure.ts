@@ -6,6 +6,7 @@ import {
 } from "./whale-vendor/rig/rig.js";
 import type { PetMotionFrame } from "@platform/petMotion";
 import { paintHumanFace } from "./humanFace";
+import { validatePartRegistrations } from "./partRegistration";
 import {
   Articulation,
   jointDeformers,
@@ -203,6 +204,7 @@ export async function createHumanFigure(options: {
   scheme: string;
 }) {
   const { model } = options;
+  validatePartRegistrations(model.parts, model.motionRig);
   const [x0, y0, x1, y1] = model.view;
   const width = x1 - x0;
   const height = y1 - y0;
@@ -314,6 +316,9 @@ export async function createHumanFigure(options: {
     // Joint poses own breathing and impact recovery; keep physical bone/head
     // proportions and planted contacts independent of the outer logo squash.
     fixedScale: Boolean(authored) || unsupportedMotion,
+    get scheme() {
+      return scheme;
+    },
     getMotionFailure() {
       return motionFailure ?? authored?.getMotionFailure() ?? null;
     },

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -124,6 +125,8 @@ beforeEach(() => {
   }));
 });
 afterEach(() => {
+  // Reading-position cleanup needs the Promise-returning API mocks while unmounting.
+  cleanup();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });

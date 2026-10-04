@@ -146,9 +146,12 @@ async def test_public_import_and_cas_replace_reject_json_mesh_without_changing_b
         assert created.status_code == 200, created.text
         base = f"/v1/desktop-pet/projects/{created.json()['id']}"
         baseline = (await client.get(f"{base}/document")).json()
-        assert next(p for p in baseline["whaleModel"]["parts"] if p["id"] == part["id"])[
-            "restTransform"
-        ] == part["restTransform"]
+        assert (
+            next(p for p in baseline["whaleModel"]["parts"] if p["id"] == part["id"])[
+                "restTransform"
+            ]
+            == part["restTransform"]
+        )
         part["mesh"] = {"positions": [0, 0, 1, 0, 0, 1], "indices": [0, 1, 2]}
         bad_data = archive(model)
         rejected = await client.post(

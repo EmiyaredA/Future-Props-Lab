@@ -22,6 +22,8 @@ import {
 } from "@platform/petMotion";
 import { figureGeometry } from "./locomotion/measure";
 import { demoMotion, type MotionDemo } from "./locomotion/demo";
+import { readFrameSequences } from "./sequences/validation";
+import { createSequenceFigure } from "./sequences/figure";
 
 type Props = {
   document: PetDocument;
@@ -200,13 +202,24 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
             return url;
           },
         };
-        const whale =
+        const sequences = readFrameSequences(options.model.frameSequences);
+        const original =
           options.model.rigProfile === "human-chibi"
             ? await createHumanFigure({
                 ...options,
                 model: options.model as unknown as HumanModel,
               })
             : await createWhaleFigure(undefined, options);
+        const schemes = options.model.schemes as { id: string }[];
+        const whale = sequences
+          ? createSequenceFigure({
+              base: original,
+              sequences,
+              scheme,
+              defaultScheme: schemes[0].id,
+              asset: options.asset,
+            })
+          : original;
         if (stopped) {
           whale.dispose?.();
           return;
