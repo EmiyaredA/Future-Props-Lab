@@ -215,7 +215,7 @@ export function CsvDialog({
             </p>
           ))}
           <button
-            className="btn btn-primary"
+            className="btn primary"
             disabled={
               busy ||
               preview.errors.length > 0 ||

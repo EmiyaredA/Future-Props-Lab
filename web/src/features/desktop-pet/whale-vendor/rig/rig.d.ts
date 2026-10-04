@@ -8,6 +8,8 @@ export type RigPart = {
   parent: string;
   z: number;
   uvBox?: number[];
+  /** Static source-art registration, applied once before articulated movement. */
+  restTransform?: { angle: number; pivot: [number, number] };
   skin?: { deformer: string; weights: number[] }[];
   /** Frontend-compiled mesh; package schema and original texture remain unchanged. */
   mesh?: MeshGeometry;

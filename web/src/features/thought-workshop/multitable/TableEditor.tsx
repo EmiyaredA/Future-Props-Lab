@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import {
   useWorkspacePermission,
@@ -23,7 +22,11 @@ import { display, emptyRow, newTable, uid } from "./model";
 import { useTableDocument } from "./useTableDocument";
 import { GridView } from "./GridView";
 import { KanbanView, CalendarView } from "./BoardViews";
-import { FieldSettings, ViewSettings } from "./Settings";
+import { FieldSettings } from "./Settings";
+import { ViewSettings } from "./ViewSettings";
+import { TableWorkspace, ViewTabs } from "./Navigation";
+import { TableToolbar, type TableAction, type ViewSection } from "./Toolbar";
+import { Database, CheckCircle2 } from "lucide-react";
 import { CellEditor } from "./CellEditor";
 import { Modal } from "./Modal";
 import { CsvDialog, HistoryDialog } from "./ExchangeDialogs";
@@ -57,7 +60,10 @@ export function TableEditor({
     [search, setSearch] = useState("");
   const [fieldsOpen, setFieldsOpen] = useState(false),
     [conflictOpen, setConflictOpen] = useState(false),
-    [viewOpen, setViewOpen] = useState(false),
+    [viewOpen, setViewOpen] = useState<{
+      view: View;
+      section: ViewSection;
+    } | null>(null),
     [csvOpen, setCsvOpen] = useState(false),
     [historyOpen, setHistoryOpen] = useState(false),
     [detailId, setDetailId] = useState<string | null>(null),
@@ -211,21 +217,32 @@ export function TableEditor({
       {!embedded && (
         <header className="multitable-heading">
           <div>
-            <span>多维表格</span>
+            <span className="multitable-kind">
+              <Database size={14} />
+              多维表格
+            </span>
             <h1>{note?.title ?? "多维表格"}</h1>
           </div>
-          <span role="status">
-            {
+          <div className="multitable-save-status">
+            <span role="status" data-state={controller.state}>
+              {controller.state === "saved" && <CheckCircle2 size={14} />}
               {
-                saved: "已保存",
-                dirty: "待保存",
-                saving: "保存中…",
-                recovering: "正在恢复草稿…",
-                error: "保存失败",
-                conflict: "保存冲突",
-              }[controller.state]
-            }
-          </span>
+                {
+                  saved: "已保存",
+                  dirty: "待保存",
+                  saving: "保存中…",
+                  recovering: "正在恢复草稿…",
+                  error: "保存失败",
+                  conflict: "保存冲突",
+                }[controller.state]
+              }
+            </span>
+            {canEdit && controller.state !== "saved" && (
+              <button className="btn" onClick={() => run(controller.flush)}>
+                保存
+              </button>
+            )}
+          </div>
         </header>
       )}
       {controller.error && (
@@ -271,220 +288,167 @@ export function TableEditor({
           </button>
         </div>
       )}
-      {!embedded && (
-        <div className="multitable-tabs" role="tablist" aria-label="数据表">
-          {tables.map((t) => (
-            <button
-              role="tab"
-              aria-selected={table.id === t.id}
-              key={t.id}
-              onClick={() => choose(t.id, t.views[0].id)}
-            >
-              {t.name}
-            </button>
-          ))}
-          {canEdit && (
-            <button
-              className="btn"
-              disabled={tables.length >= 30}
-              onClick={() => {
-                const t = newTable(tables.length);
-                putTable(t);
-                choose(t.id, t.views[0].id);
-              }}
-            >
-              ＋ 数据表
-            </button>
-          )}
-        </div>
-      )}
-      <div className="multitable-toolbar">
-        {embedded ? (
-          <strong>
-            {table.name} · {view.name}
-          </strong>
-        ) : (
-          <CustomSelect
-            ariaLabel="当前视图"
-            value={view.id}
-            options={table.views.map((v) => ({ value: v.id, label: v.name }))}
-            onChange={(v) => choose(table.id, v)}
+      <TableWorkspace
+        embedded={!!embedded}
+        tables={tables}
+        table={table}
+        preference={preference}
+        canEdit={canEdit}
+        choose={(id) => {
+          const target = tables.find((t) => t.id === id)!;
+          choose(id, target.views[0].id);
+        }}
+        add={() => {
+          const t = newTable(tables.length);
+          putTable(t);
+          choose(t.id, t.views[0].id);
+        }}
+        configure={() => setFieldsOpen(true)}
+        remove={() => setRemove("table")}
+      >
+        {!embedded && (
+          <ViewTabs
+            views={table.views}
+            view={view}
+            choose={(id) => choose(table.id, id)}
+            add={
+              canEdit
+                ? () =>
+                    setViewOpen({
+                      section: "basic",
+                      view: {
+                        id: uid(),
+                        name: "新视图",
+                        type: "grid",
+                        position: table.views.length,
+                        config: { filter_mode: "all" },
+                      },
+                    })
+                : undefined
+            }
           />
         )}
-        <input
-          aria-label="搜索记录"
-          placeholder="搜索记录…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+        <TableToolbar
+          table={table}
+          view={view}
+          embedded={!!embedded}
+          canEdit={canEdit}
+          workspace={!scope.publication}
+          canDeleteTable={tables.length > 1}
+          search={search}
+          setSearch={setSearch}
+          add={() => add()}
+          full={(results.data?.pages[0].total ?? 0) >= 5000}
+          fields={() => setFieldsOpen(true)}
+          settings={(section) => setViewOpen({ view, section })}
+          action={(action: TableAction) => {
+            if (action === "history") setHistoryOpen(true);
+            if (action === "import") setCsvOpen(true);
+            if (action === "delete-view") setRemove("view");
+            if (action === "delete-table") setRemove("table");
+            if (action.startsWith("export-"))
+              run(async () => {
+                await controller.flush();
+                download(
+                  await csvExport(noteId, table.id, {
+                    view_id: action === "export-view" ? view.id : null,
+                    search: action === "export-view" ? search : "",
+                    limit: 100,
+                    offset: 0,
+                  }),
+                  `${table.name}.csv`,
+                );
+              });
+          }}
         />
-        {canEdit && (
-          <button
-            className="btn btn-primary"
-            disabled={(results.data?.pages[0].total ?? 0) >= 5000}
-            onClick={() => add()}
-          >
-            ＋ 记录
-          </button>
-        )}
-        {!embedded && canEdit && (
-          <>
-            <button className="btn" onClick={() => setFieldsOpen(true)}>
-              字段
-            </button>
-            <button className="btn" onClick={() => setViewOpen(true)}>
-              视图设置
-            </button>
-            <button
-              className="btn"
-              disabled={table.views.length >= 30}
-              onClick={() => {
-                const v: View = {
-                  id: uid(),
-                  name: "新视图",
-                  type: "grid",
-                  position: table.views.length,
-                  config: { filter_mode: "all" },
-                };
-                putTable({ ...table, views: [...table.views, v] });
-                setViewId(v.id);
-              }}
-            >
-              ＋ 视图
-            </button>
-            <button
-              className="btn"
-              disabled={table.views.length <= 1}
-              onClick={() => setRemove("view")}
-            >
-              删除视图
-            </button>
-            <button
-              className="btn"
-              disabled={tables.length <= 1}
-              onClick={() => setRemove("table")}
-            >
-              删除表
-            </button>
-          </>
-        )}
-        {!embedded && !scope.publication && (
-          <>
-            <button className="btn" onClick={() => setHistoryOpen(true)}>
-              历史
-            </button>
-            {canEdit && (
-              <button className="btn" onClick={() => setCsvOpen(true)}>
-                导入 CSV
-              </button>
-            )}
-            <CustomSelect
-              ariaLabel="导出 CSV"
-              value=""
-              options={[
-                { value: "", label: "导出 CSV" },
-                { value: "all", label: "全部记录" },
-                { value: "view", label: "当前筛选结果" },
-              ]}
-              onChange={(v) => {
-                if (v)
-                  run(async () => {
-                    await controller.flush();
-                    download(
-                      await csvExport(noteId, table.id, {
-                        view_id: v === "view" ? view.id : null,
-                        search: v === "view" ? search : "",
-                        limit: 100,
-                        offset: 0,
-                      }),
-                      `${table.name}.csv`,
-                    );
-                  });
-              }}
-            />
-          </>
-        )}
-        {canEdit && controller.state !== "saved" && (
+        {embedded && canEdit && controller.state !== "saved" && (
           <button className="btn" onClick={() => run(controller.flush)}>
             保存
           </button>
         )}
-      </div>
-      {view.config?.group_field_id && results.data?.pages[0].groups && (
-        <div className="multitable-group-summary">
-          {Object.entries(results.data.pages[0].groups).map(([key, count]) => (
-            <span key={key}>
-              {table.fields
-                .find((f) => f.id === view.config?.group_field_id)
-                ?.options?.find((o) => o.id === key)?.label ??
-                (key || "未分配")}
-              ：{count}
-            </span>
-          ))}
-        </div>
-      )}
-      {results.isError ? (
-        <p role="alert">
-          记录读取失败。
-          <button className="btn" onClick={() => void results.refetch()}>
-            重试
-          </button>
-        </p>
-      ) : view.type === "kanban" ? (
-        <KanbanView
-          table={table}
-          view={view}
-          rows={rows}
-          readOnly={!canEdit}
-          move={move}
-          open={(r) => setDetailId(r.id)}
-        />
-      ) : view.type === "calendar" ? (
-        <CalendarView
-          table={table}
-          view={view}
-          rows={rows}
-          readOnly={!canEdit}
-          move={move}
-          open={(r) => setDetailId(r.id)}
-          add={add}
-        />
-      ) : (
-        <GridView
-          positionKey={`${preference}/${table.id}/${view.id}`}
-          hasMore={!!results.hasNextPage}
-          loadMore={() => {
-            if (!results.isFetchingNextPage && results.hasNextPage)
-              void results.fetchNextPage();
-          }}
-          table={table}
-          view={view}
-          rows={rows}
-          readOnly={!canEdit}
-          change={change}
-          open={(r) => setDetailId(r.id)}
-          error={controller.setError}
-          scope={cellScope}
-          noteId={noteId}
-          configure={!embedded && canEdit ? putView : undefined}
-        />
-      )}
-      <footer className="multitable-footer">
-        <span>
-          已加载 {rows.length} / {results.data?.pages[0].total ?? 0} 条记录 ·
-          每表最多 5,000 条
-        </span>
-        {results.hasNextPage && (
-          <button
-            className="btn"
-            disabled={results.isFetchingNextPage}
-            onClick={() => void results.fetchNextPage()}
-          >
-            {results.isFetchingNextPage ? "加载中…" : "加载更多"}
-          </button>
+        {view.config?.group_field_id && results.data?.pages[0].groups && (
+          <div className="multitable-group-summary">
+            {Object.entries(results.data.pages[0].groups).map(
+              ([key, count]) => (
+                <span key={key}>
+                  {table.fields
+                    .find((f) => f.id === view.config?.group_field_id)
+                    ?.options?.find((o) => o.id === key)?.label ??
+                    (key || "未分配")}
+                  ：{count}
+                </span>
+              ),
+            )}
+          </div>
         )}
-      </footer>
+        {results.isError ? (
+          <p role="alert">
+            记录读取失败。
+            <button className="btn" onClick={() => void results.refetch()}>
+              重试
+            </button>
+          </p>
+        ) : view.type === "kanban" ? (
+          <KanbanView
+            table={table}
+            view={view}
+            rows={rows}
+            readOnly={!canEdit}
+            move={move}
+            open={(r) => setDetailId(r.id)}
+          />
+        ) : view.type === "calendar" ? (
+          <CalendarView
+            table={table}
+            view={view}
+            rows={rows}
+            readOnly={!canEdit}
+            move={move}
+            open={(r) => setDetailId(r.id)}
+            add={add}
+          />
+        ) : (
+          <GridView
+            positionKey={`${preference}/${table.id}/${view.id}`}
+            hasMore={!!results.hasNextPage}
+            loadMore={() => {
+              if (!results.isFetchingNextPage && results.hasNextPage)
+                void results.fetchNextPage();
+            }}
+            table={table}
+            view={view}
+            rows={rows}
+            readOnly={!canEdit}
+            change={change}
+            open={(r) => setDetailId(r.id)}
+            error={controller.setError}
+            scope={cellScope}
+            noteId={noteId}
+            configure={!embedded && canEdit ? putView : undefined}
+          />
+        )}
+        <footer className="multitable-footer">
+          <span>
+            已加载 {rows.length} / {results.data?.pages[0].total ?? 0} 条记录 ·
+            每表最多 5,000 条
+          </span>
+          {results.hasNextPage && (
+            <button
+              className="btn"
+              disabled={results.isFetchingNextPage}
+              onClick={() => void results.fetchNextPage()}
+            >
+              {results.isFetchingNextPage ? "加载中…" : "加载更多"}
+            </button>
+          )}
+        </footer>
+      </TableWorkspace>
       {detail && (
-        <Modal title="记录详情" close={() => setDetailId(null)}>
+        <Modal
+          variant="drawer"
+          title="记录详情"
+          close={() => setDetailId(null)}
+        >
           {table.fields.map((f) => (
             <div className="multitable-detail-field" key={f.id}>
               <strong>{f.name}</strong>
@@ -525,19 +489,22 @@ export function TableEditor({
       {viewOpen && (
         <ViewSettings
           table={table}
-          view={view}
-          close={() => setViewOpen(false)}
+          view={viewOpen.view}
+          initialSection={viewOpen.section}
+          close={() => setViewOpen(null)}
           save={async (v) => {
             await controller.flush();
-            await conversionPreview(
-              noteId,
-              {
-                ...table,
-                views: table.views.map((x) => (x.id === v.id ? v : x)),
-              },
-              scope,
-            );
-            putView(v);
+            const next = {
+              ...table,
+              views: table.views.some((x) => x.id === v.id)
+                ? table.views.map((x) => (x.id === v.id ? v : x))
+                : [...table.views, v],
+            };
+            const preview = await conversionPreview(noteId, next, scope);
+            if (!preview.valid)
+              throw new Error("视图配置无效，请检查字段与条件");
+            putTable(next);
+            choose(table.id, v.id);
           }}
         />
       )}

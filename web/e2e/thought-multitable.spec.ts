@@ -59,7 +59,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   ).toBeVisible();
   const noteId = page.url().split("/").at(-1)!;
   const base = root + `/notes/${noteId}/multitable`;
-  await page.getByRole("button", { name: "＋ 记录", exact: true }).click();
+  await page.getByRole("button", { name: "新增记录", exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: "记录详情", exact: true }),
   ).toBeVisible();
@@ -74,15 +74,21 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   await page.getByRole("button", { name: "预览字段变更", exact: true }).click();
   await page.getByRole("button", { name: "确认保存字段", exact: true }).click();
   await saved(page);
-  await page.getByRole("button", { name: "＋ 数据表", exact: true }).click();
+  await page.getByRole("button", { name: "新建数据表", exact: true }).click();
   await saved(page);
-  await page.getByRole("tab", { name: "数据表 1", exact: true }).click();
+  await page.getByRole("button", { name: "数据表 1", exact: true }).click();
+  const beforeCancelledView = (await (await page.request.get(base)).json())
+    .revision;
+  await page.getByRole("button", { name: "新建视图", exact: true }).click();
+  await page.getByRole("button", { name: "取消", exact: true }).click();
+  expect((await (await page.request.get(base)).json()).revision).toBe(
+    beforeCancelledView,
+  );
   for (const [name, type, fieldLabel, field] of [
     ["任务看板", "看板", "看板分栏字段", "状态"],
     ["任务日历", "日历", "日历日期字段", "截止日期"],
   ]) {
-    await page.getByRole("button", { name: "＋ 视图", exact: true }).click();
-    await page.getByRole("button", { name: "视图设置", exact: true }).click();
+    await page.getByRole("button", { name: "新建视图", exact: true }).click();
     await page.getByLabel("视图名称", { exact: true }).fill(name);
     await choose(page, "视图类型", type);
     await choose(page, fieldLabel, field);
@@ -90,7 +96,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
     await saved(page);
   }
   await expect(page.locator(".multitable-calendar")).toBeVisible();
-  await choose(page, "当前视图", "任务看板");
+  await page.getByRole("tab", { name: "任务看板", exact: true }).click();
   await expect(
     page.locator(".multitable-card").filter({ hasText: "中文任务" }),
   ).toBeVisible();
@@ -103,8 +109,8 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
         .filter({ has: page.getByRole("heading", { name: /已完成/ }) }),
     );
   await saved(page);
-  await choose(page, "当前视图", "表格");
-  await choose(page, "当前视图", "任务日历");
+  await page.getByRole("tab", { name: "表格", exact: true }).click();
+  await page.getByRole("tab", { name: "任务日历", exact: true }).click();
   await page
     .locator(".multitable-day:not(.is-outside) .multitable-day-add")
     .nth(2)
@@ -132,8 +138,9 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
         r.values[calendarTable.fields[0].id] === "月历任务",
     ).values[calendarTable.fields[2].id],
   ).toBe(targetDate);
-  await choose(page, "当前视图", "表格");
-  await page.getByRole("button", { name: "导入 CSV", exact: true }).click();
+  await page.getByRole("tab", { name: "表格", exact: true }).click();
+  await page.getByRole("button", { name: "多维表格更多操作" }).click();
+  await page.getByRole("menuitem", { name: "导入 CSV", exact: true }).click();
   await page.getByLabel("选择 CSV", { exact: true }).setInputFiles({
     name: "tasks.csv",
     mimeType: "text/csv",
@@ -152,12 +159,30 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
       .getByRole("button", { name: "编辑 名称", exact: true })
       .filter({ hasText: "CSV 任务" }),
   ).toBeVisible();
+  const resizeHandle = page.getByRole("separator", { name: "调整名称列宽" });
+  await resizeHandle.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(resizeHandle).toHaveAttribute("aria-valuenow", "340");
+  await saved(page);
+  const box = (await resizeHandle.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2);
+  await page.mouse.up();
+  await expect(resizeHandle).toHaveAttribute("aria-valuenow", "380");
+  await saved(page);
   const downloading = page.waitForEvent("download");
-  await choose(page, "导出 CSV", "全部记录");
+  await page.getByRole("button", { name: "多维表格更多操作" }).click();
+  await page
+    .getByRole("menuitem", { name: "导出全部记录", exact: true })
+    .click();
   const download = await downloading;
   const data = await fs.readFile((await download.path())!, "utf8");
   expect(data).toContain("CSV 任务");
   await page.reload();
+  await expect(
+    page.getByRole("separator", { name: "调整名称列宽" }),
+  ).toHaveAttribute("aria-valuenow", "380");
   await expect(
     page
       .getByRole("button", { name: "编辑 名称", exact: true })
@@ -231,7 +256,10 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   await page.goto(
     `/apps/thought-workshop/knowledge-bases/${kb.id}/documents/${noteId}`,
   );
-  for (const width of [1600, 768, 390]) {
+  await expect(
+    page.getByRole("columnheader", { name: "名称", exact: true }),
+  ).toHaveCSS("position", "sticky");
+  for (const width of [1600, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 900 });
     for (const theme of ["light", "dark"]) {
       await setResponsiveTheme(page, theme);
@@ -243,14 +271,43 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
         )
         .toBeTruthy();
       await expect(
-        page.getByRole("button", { name: "＋ 记录", exact: true }),
+        page.getByRole("button", { name: "新增记录", exact: true }),
       ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "新增记录", exact: true }),
+      ).toHaveClass(/primary/);
+      if (width === 390) {
+        const gridWidth = await page
+          .getByRole("region", { name: "表格记录" })
+          .evaluate((el) => el.clientWidth);
+        const nameWidth = await page
+          .getByRole("columnheader", { name: "名称", exact: true })
+          .evaluate((el) => el.getBoundingClientRect().width);
+        expect(nameWidth).toBeLessThanOrEqual(gridWidth / 2 + 1);
+      }
       const directory = process.env.FPL_MULTITABLE_PREVIEWS;
       if (directory)
         await page.screenshot({
           path: `${directory}/grid-${width}-${theme}.png`,
           animations: "disabled",
         });
+      if (width === 1600 || width === 390) {
+        await page
+          .getByRole("button", { name: "打开记录 1", exact: true })
+          .click();
+        await expect(
+          page.getByRole("dialog", { name: "记录详情", exact: true }),
+        ).toHaveClass(/is-drawer/);
+        if (directory)
+          await page.screenshot({
+            path: `${directory}/detail-${width}-${theme}.png`,
+            animations: "disabled",
+          });
+        await page
+          .getByRole("dialog", { name: "记录详情", exact: true })
+          .getByRole("button", { name: "关闭", exact: true })
+          .click();
+      }
     }
   }
 });
@@ -361,7 +418,7 @@ test("断网保留操作、刷新恢复，以及第二标签页冲突", async ({
   await page.route("**/multitable/operations", (route) =>
     route.abort("internetdisconnected"),
   );
-  await page.getByRole("button", { name: "＋ 记录", exact: true }).click();
+  await page.getByRole("button", { name: "新增记录", exact: true }).click();
   await cell(page, "名称", "离线保留");
   await page.keyboard.press("Escape");
   await expect(

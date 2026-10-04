@@ -15,6 +15,7 @@ from PIL import Image, UnidentifiedImageError
 
 from .authored_motion import validate_face_source_images
 from .human_motion import JOINT_PARENTS, validate_motion_rig
+from .part_registration import validate_part_registrations
 from .whale_motion import PARENTS as WHALE_PARENTS
 
 MAX_ARCHIVE = 32 * 1024 * 1024
@@ -168,6 +169,7 @@ def _expected_paths(model: dict) -> set[str]:
         ):
             raise ValueError("分件贴图裁切范围无效")
     validate_motion_rig(model)
+    validate_part_registrations(model)
     required = (
         {
             "hair_back",

@@ -17,26 +17,35 @@ export function KanbanView({
   move: (row: RecordRow, field: string, value: string) => void;
   open: (row: RecordRow) => void;
 }) {
+  const [drop, setDrop] = useState<string | null>(null);
   const field = table.fields.find((f) => f.id === view.config?.stack_field_id);
   if (!field) return <p>请为看板选择单选字段。</p>;
   const primary = table.fields.find((f) => f.position === 0)!;
   return (
     <div className="multitable-board" aria-label="看板记录">
       {[
-        { id: "", label: "未分配", color: "#7c89c9" },
+        { id: "", label: "未分配", color: "var(--faint)" },
         ...(field.options ?? []),
       ].map((o) => {
         const items = rows.filter((r) => (r.values[field.id] ?? "") === o.id);
         return (
           <section
             key={o.id}
-            className="multitable-lane"
+            className={`multitable-lane${drop === o.id ? " is-drop-target" : ""}`}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                setDrop(null);
+            }}
             onDragOver={(e) => {
-              if (!readOnly) e.preventDefault();
+              if (!readOnly) {
+                e.preventDefault();
+                setDrop(o.id);
+              }
             }}
             onDrop={(e) => {
               if (readOnly) return;
               e.preventDefault();
+              setDrop(null);
               const r = rows.find(
                 (r) =>
                   r.id === e.dataTransfer.getData("application/fpl-record"),
@@ -96,6 +105,7 @@ export function CalendarView({
   open: (row: RecordRow) => void;
   add: (values: RecordRow["values"]) => void;
 }) {
+  const [dropDate, setDropDate] = useState<string | null>(null);
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -140,17 +150,21 @@ export function CalendarView({
               key={value}
               data-date={value}
               aria-label={value}
-              className={
-                d.getMonth() === m - 1
-                  ? "multitable-day"
-                  : "multitable-day is-outside"
-              }
+              className={`multitable-day${d.getMonth() !== m - 1 ? " is-outside" : ""}${value === dateString(new Date()) ? " is-today" : ""}${dropDate === value ? " is-drop-target" : ""}`}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                  setDropDate(null);
+              }}
               onDragOver={(e) => {
-                if (!readOnly) e.preventDefault();
+                if (!readOnly) {
+                  e.preventDefault();
+                  setDropDate(value);
+                }
               }}
               onDrop={(e) => {
                 if (readOnly) return;
                 e.preventDefault();
+                setDropDate(null);
                 const r = rows.find(
                   (r) =>
                     r.id === e.dataTransfer.getData("application/fpl-record"),

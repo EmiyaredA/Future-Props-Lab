@@ -116,7 +116,8 @@ export function usePetLocomotion({
         dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const value = model.current;
-      if (!value || pending.current || failed.current) return;
+      if (!value || failed.current || (pending.current && !value.pressing))
+        return;
       const poseFailure = latest.current.motionFailure?.();
       if (poseFailure) {
         failed.current = true;
@@ -148,6 +149,9 @@ export function usePetLocomotion({
         return;
       }
       setFrame({ ...value.frame });
+      // Network backpressure must not suspend the 150ms gesture threshold or
+      // held settling. Only the latest target is sent once the in-flight RPC ends.
+      if (pending.current) return;
       pending.current = true;
       const owner = generation.current;
       const target = { x: value.x, y: value.y };

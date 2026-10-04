@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy import delete, select
 
 from app.apps.galgame_workshop.models import GalgameWorkshopProject
+from app.apps.thought_workshop.models import ThoughtNote
 from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.capabilities.asset_store.layout_migration import reconcile_project_trash
 from app.capabilities.asset_store.models import VisualAsset
@@ -20,6 +21,9 @@ async def _reset() -> None:
     async with SessionLocal() as session:
         await session.execute(delete(GalgameWorkshopProject))
         await session.execute(delete(VisualWorkshopProject))
+        # Historical table attachments restrict asset deletion until their owning
+        # documents are removed; reset roots first in this isolated storage fixture.
+        await session.execute(delete(ThoughtNote))
         await session.execute(delete(VisualAsset))
         await session.commit()
 

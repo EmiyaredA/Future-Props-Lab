@@ -15,7 +15,10 @@ import {
   readTsv,
   writeTsv,
 } from "./model";
+import { ColumnResize } from "./ColumnResize";
+import { FieldIcon } from "./FieldValue";
 import { CellEditor } from "./CellEditor";
+import "./grid.css";
 
 export function GridView({
   table,
@@ -49,7 +52,17 @@ export function GridView({
   const container = useRef<HTMLDivElement>(null),
     [anchor, setAnchor] = useState<[number, number] | null>(null),
     [end, setEnd] = useState<[number, number] | null>(null);
-  const fields = useMemo(() => visibleFields(table, view), [table, view]);
+  const [resizing, setResizing] = useState<{
+    id: string;
+    width: number;
+  } | null>(null);
+  const fields = useMemo(
+    () =>
+      visibleFields(table, view).sort((a, b) =>
+        a.position === 0 ? -1 : b.position === 0 ? 1 : 0,
+      ),
+    [table, view],
+  );
   const groupField = table.fields.find(
     (f) => f.id === view.config?.group_field_id,
   );
@@ -79,14 +92,35 @@ export function GridView({
     if (wanted > rows.length * 44 - 480 && hasMore) loadMore();
     else restoreOffset.current = null;
   }, [rows.length, positionKey, loadMore, hasMore]);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  useEffect(() => {
+    const element = container.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) =>
+      setViewportWidth(entry.contentRect.width),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const compactName = viewportWidth > 0 && viewportWidth < 560;
   const columns = useMemo<ColumnDef<RecordRow>[]>(
     () =>
-      fields.map((f) => ({
-        id: f.id,
-        header: f.name,
-        size: view.config?.column_widths?.[f.id] ?? 180,
-      })),
-    [fields, view.config?.column_widths],
+      fields.map((field) => {
+        const saved =
+          view.config?.column_widths?.[field.id] ??
+          (field.position === 0 ? 320 : 180);
+        const width = resizing?.id === field.id ? resizing.width : saved;
+        return {
+          id: field.id,
+          header: field.name,
+          minSize: 80,
+          size:
+            field.position === 0 && viewportWidth > 0 && viewportWidth < 560
+              ? Math.min(width, Math.max(120, Math.floor(viewportWidth / 2)))
+              : width,
+        };
+      }),
+    [fields, view.config?.column_widths, resizing, viewportWidth],
   );
   const grid = useReactTable({
     data: rows,
@@ -192,46 +226,56 @@ export function GridView({
         aria-rowcount={rows.length + 1}
         aria-colcount={fields.length + 1}
         style={{
-          minWidth: fields.reduce(
-            (n, f) => n + (view.config?.column_widths?.[f.id] ?? 180),
-            48,
-          ),
+          minWidth: columns.reduce((n, c) => n + (c.size ?? 180), 48),
         }}
       >
         <div role="row" className="multitable-grid-header">
           <div className="multitable-row-number" role="columnheader">
             #
           </div>
-          {grid.getHeaderGroups()[0]?.headers.map((h, i) => (
-            <div key={h.id} role="columnheader" style={{ width: h.getSize() }}>
-              <span>
-                {flexRender(h.column.columnDef.header, h.getContext())}
-              </span>
-              {configure && (
-                <input
-                  type="range"
-                  aria-label={`${fields[i].name}列宽`}
-                  min={80}
-                  max={800}
-                  step={20}
-                  value={h.getSize()}
-                  onChange={(e) =>
-                    configure({
-                      ...view,
-                      config: {
-                        filter_mode: view.config?.filter_mode ?? "all",
-                        ...view.config,
-                        column_widths: {
-                          ...view.config?.column_widths,
-                          [h.id]: Number(e.target.value),
+          {grid.getHeaderGroups()[0]?.headers.map((h, i) => {
+            const field = fields[i];
+            return (
+              <div
+                key={h.id}
+                role="columnheader"
+                aria-label={field.name}
+                className={
+                  field.position === 0 ? "is-primary-column" : undefined
+                }
+                style={{ width: h.getSize() }}
+              >
+                <span>
+                  <FieldIcon type={field.type} />
+                  {flexRender(h.column.columnDef.header, h.getContext())}
+                </span>
+                {configure && !(compactName && field.position === 0) && (
+                  <ColumnResize
+                    name={field.name}
+                    width={h.getSize()}
+                    preview={(width) =>
+                      setResizing(
+                        width === null ? null : { id: field.id, width },
+                      )
+                    }
+                    commit={(width) =>
+                      configure({
+                        ...view,
+                        config: {
+                          filter_mode: view.config?.filter_mode ?? "all",
+                          ...view.config,
+                          column_widths: {
+                            ...view.config?.column_widths,
+                            [field.id]: width,
+                          },
                         },
-                      },
-                    })
-                  }
-                />
-              )}
-            </div>
-          ))}
+                      })
+                    }
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
         <div style={{ height: virtual.getTotalSize(), position: "relative" }}>
           {virtual.getVirtualItems().map((item) => {
@@ -266,6 +310,11 @@ export function GridView({
                 {row.getVisibleCells().map((c, col) => (
                   <div
                     role="gridcell"
+                    className={
+                      fields[col].position === 0
+                        ? "is-primary-column"
+                        : undefined
+                    }
                     key={c.id}
                     tabIndex={0}
                     data-cell={`${col}:${item.index}`}

@@ -1,27 +1,204 @@
-.multitable-editor {
+/* Theme-owned colors; option colors are data, not interface accents. */
+.multitable-editor,
+.multitable-dialog {
   --table-border: var(--border);
   --table-bg: var(--surface);
-  --table-soft: var(--surface-soft, var(--background));
+  --table-soft: var(--surface-soft);
+  color: var(--text);
+}
+.multitable-editor {
   min-width: 0;
-  color: var(--text-primary);
-  padding: 24px;
+  padding: 20px 24px;
+  container: multitable / inline-size;
 }
 .multitable-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
-.multitable-heading span {
-  color: var(--text-secondary);
+.multitable-kind,
+.multitable-save-status,
+.multitable-save-status > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
   font-size: 12px;
 }
-.multitable-heading h1 {
-  margin: 6px 0;
-  font-size: 28px;
+.multitable-kind {
+  color: var(--accent);
 }
-.multitable-tabs,
+.multitable-heading h1 {
+  margin: 6px 0 0;
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+.multitable-save-status {
+  flex-shrink: 0;
+}
+.multitable-save-status svg {
+  color: var(--ok);
+}
+.multitable-save-status [data-state="error"],
+.multitable-save-status [data-state="conflict"] {
+  color: var(--warning);
+}
+.multitable-workspace {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  border: 1px solid var(--table-border);
+  border-radius: 10px;
+  overflow: clip;
+  background: var(--table-bg);
+}
+.multitable-workspace.is-compact {
+  grid-template-columns: minmax(0, 1fr);
+}
+.multitable-sidebar {
+  background: var(--surface-raised);
+  border-right: 1px solid var(--table-border);
+  padding: 12px 8px;
+  min-width: 0;
+}
+.multitable-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.multitable-sidebar-heading:last-child {
+  margin-top: 12px;
+  border-top: 1px solid var(--table-border);
+  padding-top: 8px;
+}
+.multitable-table-list {
+  max-height: 360px;
+  overflow-y: auto;
+  margin: 8px 0;
+}
+.multitable-table-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+}
+.multitable-table-link span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.multitable-table-link svg {
+  flex-shrink: 0;
+}
+.multitable-table-link:hover {
+  background: var(--surface-hover);
+}
+.multitable-table-link[aria-current] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+.multitable-table-link:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.multitable-main {
+  min-width: 0;
+  padding: 0 12px 12px;
+}
+.multitable-icon-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+.multitable-icon-button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.multitable-icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.multitable-compact-navigation {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 0;
+}
+.multitable-compact-navigation > .custom-select {
+  min-width: 0;
+  max-width: 260px;
+  flex: 1;
+}
+.multitable-compact-navigation .custom-select-trigger {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.multitable-sidebar .knowledge-topbar-menu-trigger,
+.multitable-compact-navigation .knowledge-topbar-menu-trigger {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+}
+.multitable-view-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--table-border);
+}
+.multitable-view-tabs {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: thin;
+}
+.multitable-view-tabs > button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 14px 12px 12px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+}
+.multitable-view-tabs > button[aria-selected="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.multitable-view-tabs > button:hover {
+  background: var(--surface-raised);
+}
 .multitable-toolbar,
 .multitable-actions,
 .multitable-footer,
@@ -31,40 +208,107 @@
   align-items: center;
   gap: 8px;
 }
-.multitable-tabs {
-  margin-bottom: 14px;
-  border-bottom: 1px solid var(--table-border);
-  padding-bottom: 8px;
-}
-.multitable-tabs > button {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 8px 14px;
-  color: inherit;
-  cursor: pointer;
-}
-.multitable-tabs > button[aria-selected="true"] {
-  background: var(--table-soft);
-  border-color: var(--table-border);
-  font-weight: 600;
-}
 .multitable-toolbar {
-  margin-bottom: 12px;
+  justify-content: space-between;
+  padding: 10px 0;
+  gap: 10px;
 }
-.multitable-toolbar > input {
-  flex: 1;
-  min-width: 140px;
-  max-width: 260px;
+.multitable-configuration-tools {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
-.multitable-editor
-  input:not([type="checkbox"]):not([type="file"]):not([type="range"]),
+.multitable-configuration-tools > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.multitable-configuration-tools > button:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.multitable-configuration-tools > button.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.multitable-configuration-tools small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  min-width: 16px;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: var(--surface);
+}
+.multitable-record-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-left: auto;
+}
+.multitable-record-tools > .btn {
+  padding: 6px 10px;
+  min-height: 34px;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: none;
+}
+.multitable-record-tools .knowledge-topbar-menu-trigger {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+}
+.multitable-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 80px;
+  max-width: 200px;
+  border: 1px solid var(--table-border);
+  border-radius: 6px;
+  background: var(--table-bg);
+  color: var(--muted);
+  padding: 6px 8px;
+}
+.multitable-search:focus-within {
+  border-color: var(--accent);
+}
+.multitable-search svg {
+  flex-shrink: 0;
+}
+.multitable-editor .multitable-toolbar label.multitable-search > input {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  min-width: 0;
+  font-size: 12px;
+}
+.multitable-embedded-title {
+  font-size: 12px;
+  color: var(--muted);
+}
+.multitable-editor input:not([type="checkbox"]):not([type="file"]),
 .multitable-dialog input:not([type="checkbox"]):not([type="file"]),
 .multitable-dialog textarea {
   background: var(--table-bg);
-  color: inherit;
+  color: var(--text);
   border: 1px solid var(--table-border);
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 8px 10px;
   min-width: 0;
 }
@@ -75,124 +319,70 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.multitable-grid-scroll {
-  overflow: auto;
-  height: 480px;
-  border: 1px solid var(--table-border);
-  border-radius: 10px;
-  background: var(--table-bg);
-  max-width: 100%;
-}
-.multitable-grid-header,
-.multitable-grid-row {
-  display: flex;
-  width: 100%;
-}
-.multitable-grid-header {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--table-soft);
-  height: 48px;
-}
-.multitable-grid-header > div:not(.multitable-row-number) {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  padding: 6px 10px;
-}
-.multitable-grid-header input[type="range"] {
-  width: 100%;
-  height: 4px;
-  accent-color: #7c89c9;
-}
-.multitable-grid-header > *,
-.multitable-grid-row > * {
-  flex: none;
-  border-right: 1px solid var(--table-border);
-  border-bottom: 1px solid var(--table-border);
-  box-sizing: border-box;
-}
-.multitable-grid-row > [role="gridcell"] {
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  gap: 4px;
-}
-.multitable-grid-row > [aria-selected="true"] {
-  background: color-mix(in srgb, var(--accent) 12%, var(--table-bg));
-}
-.multitable-row-number {
-  width: 48px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: var(--table-soft);
-  color: var(--text-secondary);
-  font-size: 12px;
-  border: 0;
-  cursor: pointer;
-}
-.multitable-cell-trigger {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: left;
-  color: inherit;
-  padding: 4px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.multitable-value {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .multitable-footer {
   justify-content: space-between;
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  padding-top: 10px;
 }
 .multitable-group-summary {
-  padding: 8px;
-  font-size: 12px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  border-radius: 5px;
   background: var(--table-soft);
+  color: var(--muted);
+}
+.multitable-group-heading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 28px;
+  padding: 4px 12px;
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
 }
 .multitable-board {
   display: flex;
   overflow: auto;
-  gap: 14px;
-  padding: 4px 0 16px;
+  gap: 12px;
+  padding: 4px 0 12px;
   min-height: 320px;
 }
 .multitable-lane {
-  width: 260px;
+  width: 250px;
   flex: none;
   border: 1px solid var(--table-border);
-  border-radius: 12px;
-  background: var(--table-soft);
-  padding: 12px;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  padding: 10px;
+}
+.multitable-lane.is-drop-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 .multitable-lane h3 {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: 12px;
   margin: 0 0 12px;
+  color: var(--text);
 }
 .multitable-lane h3 > span {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
 }
 .multitable-lane h3 small {
   margin-left: auto;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--table-bg);
+  color: var(--muted);
 }
 .multitable-card {
   display: flex;
@@ -203,30 +393,54 @@
   width: 100%;
   background: var(--table-bg);
   border: 1px solid var(--table-border);
-  border-radius: 8px;
-  margin-bottom: 10px;
+  border-radius: 7px;
+  margin-bottom: 8px;
   cursor: pointer;
-  color: inherit;
+  color: var(--text);
 }
-.multitable-card span {
-  font-size: 12px;
-  color: var(--text-secondary);
+.multitable-card[draggable="true"] {
+  cursor: grab;
+}
+.multitable-card:hover {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow);
+}
+.multitable-card > strong {
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.multitable-card > span {
+  font-size: 11px;
+  color: var(--muted);
   overflow-wrap: anywhere;
 }
 .multitable-calendar {
   overflow: auto;
+}
+.multitable-calendar .multitable-actions {
+  justify-content: center;
+}
+.multitable-calendar .multitable-actions strong {
+  min-width: 90px;
+  text-align: center;
+  font-size: 13px;
 }
 .multitable-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(100px, 1fr));
   min-width: 700px;
   border: 1px solid var(--table-border);
+  border-radius: 6px;
+  overflow: clip;
   margin-top: 10px;
 }
 .multitable-weekday {
   text-align: center;
   padding: 8px;
   background: var(--table-soft);
+  color: var(--muted);
+  font-size: 11px;
 }
 .multitable-day {
   min-height: 110px;
@@ -237,44 +451,65 @@
 .multitable-day > div {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  align-items: center;
+  font-size: 11px;
 }
 .multitable-day.is-outside {
-  color: var(--text-secondary);
-  background: var(--table-soft);
+  color: var(--faint);
+  background: var(--surface-raised);
+}
+.multitable-day.is-today > div > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--surface);
+}
+.multitable-day.is-drop-target {
+  background: var(--accent-soft);
 }
 .multitable-event {
   display: block;
   width: 100%;
   text-align: left;
   border: 0;
-  border-radius: 5px;
-  color: inherit;
-  background: color-mix(in srgb, #7c89c9 16%, var(--table-bg));
+  border-left: 2px solid var(--accent-line);
+  border-radius: 4px;
+  color: var(--text);
+  background: var(--accent-soft);
   margin-top: 4px;
-  padding: 4px;
+  padding: 5px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: pointer;
+  font-size: 11px;
 }
 .multitable-day-add {
   border: 0;
+  border-radius: 4px;
   background: transparent;
-  color: inherit;
+  color: var(--muted);
   cursor: pointer;
+}
+.multitable-day-add:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 .multitable-undated {
   padding: 12px 0;
+  font-size: 12px;
 }
 .multitable-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: #10142480;
+  background: var(--overlay);
 }
 .multitable-dialog {
-  --table-border: var(--border);
-  --table-bg: var(--surface);
   position: fixed;
   z-index: 201;
   top: 50%;
@@ -283,17 +518,37 @@
   width: min(760px, calc(100vw - 32px));
   max-height: calc(100dvh - 48px);
   overflow: auto;
-  box-sizing: border-box;
   background: var(--table-bg);
-  color: var(--text-primary);
   border: 1px solid var(--table-border);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 24px 80px #0004;
+  box-shadow: var(--shadow-float);
+  font-size: 13px;
+}
+.multitable-dialog.is-drawer {
+  inset: 0 0 0 auto;
+  transform: none;
+  width: min(420px, 100vw);
+  height: 100dvh;
+  max-height: none;
+  border-radius: 12px 0 0 12px;
+  padding-top: 24px;
 }
 .multitable-dialog h2 {
   margin: 0 38px 20px 0;
-  font-size: 20px;
+  font-size: 18px;
+  color: var(--text-strong);
+}
+.multitable-dialog h3 {
+  font-size: 13px;
+  color: var(--text-strong);
+}
+.multitable-dialog p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.multitable-dialog [role="alert"] {
+  color: var(--danger);
 }
 .multitable-close {
   position: absolute;
@@ -302,16 +557,17 @@
 }
 .multitable-dialog textarea {
   width: 100%;
-  box-sizing: border-box;
   min-height: 120px;
 }
-.multitable-dialog > label {
+.multitable-dialog > label,
+.multitable-settings-section > label {
   display: flex;
   align-items: center;
   gap: 10px;
   margin: 12px 0;
 }
-.multitable-dialog > label > input:not([type="checkbox"]) {
+.multitable-dialog > label > input:not([type="checkbox"]),
+.multitable-settings-section > label > input:not([type="checkbox"]) {
   flex: 1;
 }
 .multitable-field-setting {
@@ -335,6 +591,7 @@
 .multitable-options > div {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
   margin: 6px 0;
 }
 .multitable-option {
@@ -345,10 +602,11 @@
 }
 .multitable-warning {
   padding: 12px;
-  border: 1px solid #c99054;
-  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--table-border));
+  border-radius: 8px;
   margin-bottom: 12px;
-  background: color-mix(in srgb, #c99054 10%, var(--table-bg));
+  color: var(--text);
+  background: var(--warning-soft);
 }
 .multitable-detail-field {
   display: flex;
@@ -359,7 +617,7 @@
 }
 .multitable-detail-field > strong {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--muted);
 }
 .multitable-detail-field .multitable-cell-trigger {
   min-height: 36px;
@@ -373,11 +631,27 @@
   max-height: 280px;
   margin: 12px 0;
 }
-.multitable-dialog td {
+.multitable-dialog table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.multitable-dialog th {
+  background: var(--table-soft);
+  color: var(--muted);
+  text-align: left;
+}
+.multitable-dialog td,
+.multitable-dialog th {
   border-bottom: 1px solid var(--table-border);
-  padding: 6px;
+  padding: 8px;
   max-width: 240px;
   overflow-wrap: anywhere;
+}
+.multitable-dialog > .multitable-actions {
+  justify-content: flex-end;
+  margin-top: 20px;
+  border-top: 1px solid var(--table-border);
+  padding-top: 14px;
 }
 .multitable-history-row {
   display: block;
@@ -385,10 +659,33 @@
   width: 100%;
   text-align: left;
 }
+.multitable-settings-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--table-border);
+}
+.multitable-settings-tabs > button {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+.multitable-settings-tabs > button[aria-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.multitable-settings-section {
+  padding: 8px 0;
+}
 .multitable-embed {
   margin: 16px 0;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   min-width: 0;
 }
 .multitable-embed > .btn {
@@ -400,29 +697,19 @@
 .multitable-editor.is-embedded .multitable-grid-scroll {
   height: 360px;
 }
+.multitable-editor.is-embedded .multitable-main {
+  padding: 0;
+}
 .multitable-unavailable {
   padding: 20px;
-  color: var(--text-secondary);
-}
-@media (max-width: 640px) {
-  .multitable-editor {
-    padding: 12px;
-  }
-  .multitable-heading h1 {
-    font-size: 22px;
-  }
-  .multitable-dialog {
-    padding: 16px;
-  }
-  .multitable-toolbar > .custom-select {
-    max-width: 100%;
-  }
+  color: var(--muted);
 }
 .multitable-editor input[type="checkbox"],
 .multitable-dialog input[type="checkbox"] {
   appearance: none;
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
   border: 1px solid var(--table-border);
   border-radius: 4px;
   background: var(--table-bg);
@@ -435,34 +722,42 @@
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E")
     center/14px no-repeat;
 }
-.multitable-editor input[type="range"] {
-  appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--table-border);
+@container multitable (max-width: 760px) {
+  .multitable-configuration-tools {
+    width: 100%;
+  }
+  .multitable-record-tools {
+    width: 100%;
+  }
+  .multitable-search {
+    flex: 1;
+    max-width: none;
+  }
 }
-.multitable-editor input[type="range"]::-webkit-slider-thumb {
-  appearance: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-.multitable-editor input[type="range"]::-moz-range-thumb {
-  border: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-.multitable-group-heading {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 28px;
-  padding: 4px 12px;
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-weight: 600;
+@media (max-width: 640px) {
+  .multitable-editor {
+    padding: 14px 12px;
+  }
+  .multitable-heading h1 {
+    font-size: 20px;
+  }
+  .multitable-save-status {
+    font-size: 11px;
+  }
+  .multitable-main {
+    padding: 0 8px 8px;
+  }
+  .multitable-dialog {
+    padding: 16px;
+  }
+  .multitable-dialog.is-drawer {
+    border-radius: 0;
+  }
+  .multitable-grid-scroll {
+    height: 400px;
+  }
+  .multitable-field-setting .custom-select,
+  .multitable-setting-rule .custom-select {
+    max-width: 100%;
+  }
 }

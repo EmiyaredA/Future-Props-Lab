@@ -142,7 +142,8 @@ def validate_whale_motion_rig(model: dict) -> None:
         part.get("parent") not in PARENTS
         or part["id"] in {"faceFx", "brows_through"}
         or part["tex"] == "faceFx"
-        or set(part) - {"id", "tex", "parent", "z", "box", "grid", "uvBox", "alpha"}
+        or set(part)
+        - {"id", "tex", "parent", "z", "box", "grid", "uvBox", "alpha", "restTransform"}
         or ("alpha" in part and (not _finite(part["alpha"], 1) or part["alpha"] < 0))
         for part in parts.values()
     ):

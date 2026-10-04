@@ -12,6 +12,7 @@ import {
 } from "../community/api";
 import type { Field, RecordRow, Scope } from "./api";
 import { display, parseCell } from "./model";
+import { FieldValue } from "./FieldValue";
 import { Modal } from "./Modal";
 
 type Value = RecordRow["values"][string];
@@ -138,11 +139,7 @@ export function CellEditor({
           {value}
         </a>
       );
-    return (
-      <span className={`multitable-value is-${field.type}`}>
-        {display(field, value)}
-      </span>
-    );
+    return <FieldValue field={field} value={value} />;
   }
   if (field.type === "checkbox")
     return (
@@ -157,6 +154,9 @@ export function CellEditor({
     return (
       <CustomSelect
         ariaLabel={field.name}
+        className="multitable-choice"
+        leadingIcon={<FieldValue field={field} value={value} />}
+        showChevron={false}
         value={typeof value === "string" ? value : ""}
         options={[
           { value: "", label: "未设置" },
@@ -187,13 +187,15 @@ export function CellEditor({
           setEdit(true);
         }}
       >
-        {field.type === "note"
-          ? references.data
-              ?.map((r) => (r.available ? r.title : "文档不可访问"))
-              .join("; ") || "添加笔记引用"
-          : field.type === "attachment"
-            ? `${Array.isArray(value) ? value.length : 0} 个附件`
-            : display(field, value) || "—"}
+        {field.type === "note" ? (
+          references.data
+            ?.map((r) => (r.available ? r.title : "文档不可访问"))
+            .join("; ") || "添加笔记引用"
+        ) : field.type === "attachment" ? (
+          `${Array.isArray(value) ? value.length : 0} 个附件`
+        ) : (
+          <FieldValue field={field} value={value} />
+        )}
       </button>
       {edit && (
         <Modal title={`编辑 ${field.name}`} close={() => setEdit(false)}>
@@ -328,7 +330,7 @@ export function CellEditor({
               清空
             </button>
             <button
-              className="btn btn-primary"
+              className="btn primary"
               onClick={() =>
                 ["multi", "attachment", "note"].includes(field.type)
                   ? setEdit(false)

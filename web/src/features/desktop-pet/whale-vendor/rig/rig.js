@@ -101,8 +101,33 @@ export function createRig(canvas, model) {
   // parts: rest grid, uv, index buffer; `uvBox` picks a sub-rect of the texture (atlas), default whole
   const meshes = model.parts.map((p) => {
     const geometry = p.mesh ? validateMesh(p.mesh) : gridMesh(p);
-    const rest = geometry.positions,
-      uv = geometry.uv,
+    let rest = geometry.positions;
+    if (p.restTransform) {
+      const { angle, pivot } = p.restTransform;
+      if (
+        p.mesh ||
+        p.skin ||
+        !Number.isFinite(angle) ||
+        Math.abs(angle) > 180 ||
+        !Array.isArray(pivot) ||
+        pivot.length !== 2 ||
+        !pivot.every((n) => Number.isFinite(n) && Math.abs(n) <= 512)
+      )
+        throw new Error("Invalid rigid part registration");
+      // Rotate painted rest positions once. UVs, bone lengths and animation
+      // pivots retain their independently validated model coordinates.
+      const radians = (angle * Math.PI) / 180,
+        c = Math.cos(radians),
+        s = Math.sin(radians);
+      rest = new Float32Array(rest);
+      for (let i = 0; i < rest.length; i += 2) {
+        const dx = rest[i] - pivot[0],
+          dy = rest[i + 1] - pivot[1];
+        rest[i] = pivot[0] + dx * c - dy * s;
+        rest[i + 1] = pivot[1] + dx * s + dy * c;
+      }
+    }
+    const uv = geometry.uv,
       idx = geometry.indices;
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);

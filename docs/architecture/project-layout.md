@@ -353,7 +353,7 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 
 后端 `multitable/` 拥有多维表格的独立 ORM、类型化契约、字段转换、受控 SQLite 查询、原子批次、CSV、差量历史及 version 7 备份重映射；`content.py` 投影当前数据用于静态导出。`routes/multitable.py` 适配 Workspace API；`publication/tables.py` 在独立会话分别校验父文章与目标表格授权，`routes/community_tables.py` 与社区路由一起装配，避免继承普通 Workspace 权限。文档根 `ThoughtNote.kind` 默认 note，子实体通过已验证根继承 Workspace 与生命周期。
 
-Web `features/thought-workshop/multitable/` 拥有 TanStack Table/Virtual 网格、看板、月历、字段/视图配置、记录编辑、CSV、历史、嵌入节点和静态内容导出；所有缓存键继续由现有 `queryKeys.ts` 维护。`useTableDocument.ts` 合并连续编辑、串行提交并保存按账号/访问上下文/文档/标签页隔离的 IndexedDB 待保存操作；`saveLane.ts` 协调当前页面的提交顺序，服务器 CAS 判定跨标签页冲突。当前表、视图与滚动位置是个人阅读状态，视图配置是共享文档数据。
+Web `features/thought-workshop/multitable/` 拥有 TanStack Table/Virtual 网格、看板、月历、字段/视图配置、记录编辑、CSV、历史、嵌入节点和静态内容导出；所有缓存键继续由现有 `queryKeys.ts` 维护。`useTableDocument.ts` 合并连续编辑、串行提交并保存按账号/访问上下文/文档/标签页隔离的 IndexedDB 待保存操作；`saveLane.ts` 协调当前页面的提交顺序，服务器 CAS 判定跨标签页冲突。当前表、视图、滚动位置与侧栏折叠是个人阅读状态，视图配置是共享文档数据。`Navigation.tsx` 拥有容器响应式数据表导航和视图标签，`Toolbar.tsx` 通过回调提供配置与记录操作；`ColumnResize.tsx` 只在拖动结束提交列宽，`FieldValue.tsx` 显示主题安全标签。`ViewSettings.tsx` 保存一份跨页签草稿；`grid.css` 拥有网格和单元格呈现，`multitable.css` 拥有导航、其他视图与弹层样式。
 
 `publication/` 拥有同部署知识社区的发布、目录过滤、逐篇授权、收藏和素材访问；`routes/community.py` 仅做浏览器 Session 协议适配。发布记录直接保存源 Workspace，成员授权仅作用于已发布文章。`Community` 为每次操作创建独立会话，授权后显式绑定源空间调用 `Notes`；写入采用短事务串行化权限检查、撤回与正文 CAS。`lifecycle.py` 在源回收站事务内关闭文章或整库，恢复不自动重新发布。迁移 `0082_thought_publications` 只建发布表，不复制正文、不自动公开现有内容。
 

@@ -1,4 +1,5 @@
 import type { PetEdge } from "@platform/petMotion";
+import { validatePartRegistrations } from "../partRegistration";
 import type { Deformer, RigPart, RigState } from "../whale-vendor/rig/rig.js";
 import type { ArticulationFrame, Limb, Point } from "./articulation";
 import { jointDeformers } from "./articulation";
@@ -84,6 +85,7 @@ export function readWhaleAuthoredRig(
   value: unknown,
   parts: RigPart[],
 ): WhaleAuthoredRig | null {
+  validatePartRegistrations(parts, value);
   if (value == null) return null;
   const fail = (): never => {
     throw new Error("鲸鱼动作资源缺少有效的版本二姿势与四边绑定");

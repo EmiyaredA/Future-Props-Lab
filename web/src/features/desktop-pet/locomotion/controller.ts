@@ -348,7 +348,7 @@ export class PetLocomotion {
     this.frame.attachment = activity.stage;
     if (activity.stage === "resting") {
       this.frame.velocity = { x: 0, y: 0 };
-      if (activity.age < interval) return false;
+      if (activity.age + 0.00001 < interval) return false;
       if (
         nearestEdge(
           this.x,
@@ -460,7 +460,11 @@ export class PetLocomotion {
             ? -1
             : 1;
         this.frame.contactAnchors = undefined;
-      } else activity.direction = activity.direction === 1 ? -1 : 1;
+      } else {
+        activity.direction = activity.direction === 1 ? -1 : 1;
+        if (horizontalEdge(activity.edge))
+          this.frame.facing = activity.direction;
+      }
     } else if (activity.elapsed >= activity.duration) {
       activity.stage = "resting";
       activity.age = 0;
@@ -507,7 +511,12 @@ export class PetLocomotion {
         this.environment.workArea,
         this.settings.size,
       );
-      if (edge) this.attach(edge, geometry, true);
+      if (edge) {
+        this.attach(edge, geometry, true);
+        // Publish the edge entry before settling moves the host window. A
+        // complete drop/entry resource can now block its first displacement.
+        return false;
+      }
     }
     // Full-view transitions own their resource duration. Keep the current
     // trajectory and activity/rest clocks still until their last cel is drawn.

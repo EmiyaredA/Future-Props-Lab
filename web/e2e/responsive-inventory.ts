@@ -1,4 +1,4 @@
-// 思绪工坊多维表格的三种视图、局部滚动、明暗主题与手机操作由 thought-multitable.spec.ts 覆盖。
+// 思绪工坊多维表格的数据表侧栏、视图标签、详情抽屉、三种视图、局部滚动、明暗主题与手机操作由 thought-multitable.spec.ts 覆盖。
 // 文档导航、SDK 示例切换、受控渲染块、公式/图表、桌面三栏和手机抽屉由 docs-sdk.spec.ts 补充验证。
 // 账号公共入口、工作区全屏弹窗与管理抽屉由 account-ui.spec.ts 验证。
 // 独立成员/角色/审计管理与收到邀请弹窗由 workspace-management.spec.ts 验证。
