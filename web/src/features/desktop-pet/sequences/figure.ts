@@ -4,7 +4,12 @@ import type {
 } from "../whale-vendor/whale/figure.js";
 import { SequencePlayer } from "./player";
 import { validateSequenceImages } from "./validation";
-import type { FrameSequences, SequenceSample } from "./types";
+import type {
+  FrameSequences,
+  SequenceSample,
+  SequenceInput,
+  SequenceFailure,
+} from "./types";
 import { clipForFrame, sequenceEdges } from "./capabilities";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -46,6 +51,7 @@ export function createSequenceFigure(options: {
   let clock = 0;
   let lastTime: number | null = null;
   let requested: string | null = null;
+  let wasPhysical = false;
   const images = new Map<string, HTMLImageElement>();
   const keyOf = (texture: string) => `${scheme}/${texture}`;
   const supportedEdges = sequenceEdges(sequences);
@@ -161,6 +167,7 @@ export function createSequenceFigure(options: {
       lastTime = null;
       revision += 1;
       requested = null;
+      wasPhysical = false;
     },
     reset() {
       player.cancelMotionPlayback();
@@ -169,6 +176,7 @@ export function createSequenceFigure(options: {
       requested = null;
       failure = null;
       progress = null;
+      wasPhysical = false;
       base.reset?.();
     },
     preload() {
@@ -213,25 +221,86 @@ export function createSequenceFigure(options: {
         original?.setAttribute("data-pet-raster-active", "true");
       }
       group.setAttribute("data-pet-supported-edges", supportedEdges.join(","));
-      const stride =
-        sequences.clips["walk-right"]?.distancePerCycle ??
-        sequences.clips["walk-left"]?.distancePerCycle;
+      const stride = sequences.clips[clip]?.distancePerCycle;
       if (stride) group.setAttribute("data-pet-stride", String(stride));
-      if (!load(clip)) {
-        progress = failure
-          ? null
-          : { id: `sequence-assets:${scheme}:${clip}`, progress: 0 };
-        return;
-      }
+      else group.removeAttribute("data-pet-stride");
+      const motion = frame.locomotion;
+      const physical = motion?.state === "walk" || motion?.state === "climb";
+      if (physical) wasPhysical = true;
+      const supportRequired = wasPhysical;
       // Paint the complete idle cel once; entry feedback must follow an actual draw.
       const initializing = !displayed && clip !== "idle";
-      const sample = player.sample({
+      // The outer SVG rounds its scale to four decimals. Use the matrix that
+      // was actually installed, including the viewport, rather than nominal S.
+      const matrix = group.getScreenCTM?.();
+      const worldScale = matrix
+        ? Math.hypot(matrix.a, matrix.b)
+        : (frame.worldScale ?? 1);
+      const direction =
+        motion?.state === "walk" ||
+        motion?.edge === "top" ||
+        motion?.edge === "bottom"
+          ? ([motion.facing, 0] as [number, number])
+          : motion?.state === "climb" && motion.velocity.y !== 0
+            ? ([0, Math.sign(motion.velocity.y)] as [number, number])
+            : undefined;
+      const input: SequenceInput = {
         clip: initializing ? "idle" : clip,
         t: clock + dt,
         phase: frame.locomotion?.phase ?? frame.gait?.phase,
         ...(frame.gripPoint ? { grip: frame.gripPoint } : {}),
-      });
-      if (!sample || sample.motionFailure) {
+        ...(supportRequired && motion?.travel
+          ? {
+              travel: [
+                motion.travel.x / worldScale,
+                motion.travel.y / worldScale,
+              ] as [number, number],
+              worldScale,
+              ...(direction ? { direction } : {}),
+            }
+          : {}),
+        ...(supportRequired ? { supportRequired: true } : {}),
+        ...(supportRequired &&
+        (motion?.state === "glide" || motion?.state === "held")
+          ? { releaseSupportAtExit: true }
+          : {}),
+      };
+
+      let invalid: SequenceFailure["reason"] | null = null;
+      if (physical) {
+        if (!motion.travel) invalid = "missing-confirmed-travel";
+        else if (!sequences.clips[clip]) invalid = "missing-clip";
+        else if (!stride) invalid = "missing-distance-per-cycle";
+        else if (
+          sequences.clips[clip].frames.some(
+            (cel) => !Object.keys(cel.supports ?? {}).length,
+          )
+        )
+          invalid = "missing-support";
+      }
+      let sample: SequenceSample | null;
+      if (invalid)
+        sample = player.rejectMotionPlayback({ ...input, clip }, invalid);
+      else {
+        if (!load(clip)) {
+          progress = failure
+            ? null
+            : { id: `sequence-assets:${scheme}:${clip}`, progress: 0 };
+          return;
+        }
+        sample = player.sample(input);
+      }
+      if (!sample) {
+        progress = null;
+        return;
+      }
+      if (
+        sample.motionFailure &&
+        displayed &&
+        sample.translation.every(
+          (value, axis) => value === displayed!.translation[axis],
+        )
+      ) {
         progress = null;
         return;
       }
@@ -270,12 +339,24 @@ export function createSequenceFigure(options: {
         }),
       );
       displayed = sample;
-      clock += dt;
-      progress = sample.transition
-        ? { ...sample.transition }
-        : player.getMotionTransition();
+      if (!sample.motionFailure) clock += dt;
+      progress = sample.motionFailure
+        ? null
+        : sample.transition
+          ? { ...sample.transition }
+          : player.getMotionTransition();
       if (initializing)
         progress = { id: `sequence-entry:${clip}`, progress: 0 };
+      if (
+        supportRequired &&
+        !physical &&
+        !sample.motionFailure &&
+        !sample.transition &&
+        sample.clip === clip
+      ) {
+        player.endMotionSupport();
+        wasPhysical = false;
+      }
     },
   };
 }

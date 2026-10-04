@@ -138,3 +138,35 @@ export function sequenceClipUnavailable(
     sequenceLinkUnavailable(sequences, clip, "idle")
   );
 }
+
+/** Physical capability preflight; event inspection keeps the source-only contract above. */
+export function sequencePhysicalLinkUnavailable(
+  sequences: FrameSequences,
+  from: string,
+  to: string,
+): string | null {
+  const unavailable = sequenceLinkUnavailable(sequences, from, to);
+  if (unavailable) return unavailable;
+  const link = sequences.transitions.find(
+    (item) => item.from === from && item.to === to,
+  );
+  const ids = [...new Set([from, to, ...(link ? [link.clip] : [])])];
+  for (const id of ids) {
+    const frames = sequences.clips[id]?.frames;
+    if (!frames?.every((frame) => Object.keys(frame.supports ?? {}).length))
+      return `完整序列帧缺少实际支撑点：${id}`;
+  }
+  if (link) {
+    const frames = sequences.clips[link.clip].frames;
+    for (let i = 1; i < frames.length; i++)
+      if (
+        !Object.keys(frames[i].supports!).some(
+          (name) => name in frames[i - 1].supports!,
+        )
+      )
+        return `完整序列帧过渡缺少支点交接：${from} → ${to}`;
+  }
+  // Pixel registration is checked by the player in actual DIP at draw time;
+  // this structural preflight cannot certify painted contacts or actor scale.
+  return null;
+}

@@ -108,7 +108,11 @@ export class PetLocomotion {
     this.attached = null;
     this.placementPending = false;
     this.placedDelay = null;
-    this.frame = { ...idleMotion(), facing: this.frame.facing };
+    this.frame = {
+      ...idleMotion(),
+      facing: this.frame.facing,
+      travel: { ...this.travel },
+    };
     this.x = motionOrigin(this.environment).x;
     this.y = motionOrigin(this.environment).y;
     this.wait = this.age = 0;

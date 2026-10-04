@@ -35,6 +35,7 @@ function cel(n = 0): SequenceFrame {
       [8, 0],
       [8, 6],
     ],
+    supports: { legFront: [8, 16] },
   };
 }
 function resource(): FrameSequences {
@@ -52,6 +53,19 @@ function connect(seq: FrameSequences, from: string, to: string) {
   seq.clips[id] = {
     frames: [
       ...structuredClone(seq.clips[from].frames),
+      ...(Object.keys(seq.clips[from].frames.at(-1)!.supports ?? {}).some(
+        (key) => key in (seq.clips[to].frames[0].supports ?? {}),
+      )
+        ? []
+        : [
+            {
+              ...structuredClone(seq.clips[from].frames.at(-1)!),
+              supports: {
+                ...seq.clips[from].frames.at(-1)!.supports,
+                ...seq.clips[to].frames[0].supports,
+              },
+            },
+          ]),
       structuredClone(seq.clips[to].frames[0]),
     ],
     loop: false,

@@ -47,6 +47,16 @@ export type SequenceInput = {
   /** Desired model-space anchors, before the caller's single actor scale. */
   grip?: SequencePoint;
   foot?: SequencePoint;
+  /** Host-confirmed signed displacement, converted to model units by the renderer. */
+  travel?: SequencePoint;
+  /** Model-to-DIP scale; support tolerance is measured in DIP, never source pixels. */
+  worldScale?: number;
+  /** Unit signed motion direction when known (walk/horizontal edge); never inferred from phase alone. */
+  direction?: SequencePoint;
+  /** Actual physical entry/exit bridges also require registered world supports. */
+  supportRequired?: boolean;
+  /** Only the exact terminal airborne target cel may release departure supports. */
+  releaseSupportAtExit?: boolean;
 };
 export type SequenceProgress = { id: string; progress: number };
 export type SequenceFailure = {
@@ -61,7 +71,14 @@ export type SequenceFailure = {
     | "anchor-conflict"
     | "missing-transition"
     | "transition-entry-mismatch"
-    | "transition-exit-mismatch";
+    | "transition-exit-mismatch"
+    | "missing-confirmed-travel"
+    | "missing-distance-per-cycle"
+    | "missing-support"
+    | "support-registration-mismatch"
+    | "support-handoff-missing"
+    | "support-conflict"
+    | "invalid-support-motion";
   clip?: string;
 };
 export type SequenceSample = {

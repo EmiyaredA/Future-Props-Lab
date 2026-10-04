@@ -20,6 +20,23 @@ type Playback = {
   entry: number;
   transition?: string;
 };
+type SupportName = keyof NonNullable<SequenceFrame["supports"]>;
+type Support = {
+  world: SequencePoint;
+  source: SequencePoint;
+  referenceTravel: SequencePoint;
+};
+type SupportPlayback = {
+  clip: string;
+  actualClip: string;
+  reference: number;
+  referenceTravel: SequencePoint;
+  scale: number;
+  travel: SequencePoint;
+  phase: number;
+  direction: SequencePoint | null;
+  points: Partial<Record<SupportName, Support>>;
+};
 const TAU = Math.PI * 2;
 const modulo = (n: number, d: number) => ((n % d) + d) % d;
 const duration = (clip: SequenceClip) =>
@@ -49,7 +66,8 @@ const sameCel = (a: SequenceFrame, b: SequenceFrame) =>
   a.head.every((point, i) => samePoint(point, b.head[i])) &&
   sameAnchors(a.contacts, b.contacts) &&
   sameAnchors(a.supports, b.supports);
-const finitePoint = (point: SequencePoint) => point.every(Number.isFinite);
+const finitePoint = (point: SequencePoint) =>
+  Array.isArray(point) && point.length === 2 && point.every(Number.isFinite);
 
 /** Chooses complete source cels; no mesh, rotation, per-cel fitting or alpha blend. */
 export class SequencePlayer {
@@ -60,10 +78,18 @@ export class SequencePlayer {
   private failure: SequenceFailure | null = null;
   private failedRequest: string | null = null;
   private progress: SequenceProgress | null = null;
+  private support: SupportPlayback | null = null;
+  private rejectedSupport: SupportPlayback | null = null;
 
   constructor(sequences: FrameSequences) {
     this.sequences = structuredClone(sequences);
     this.scale = sequences.modelBox[2] / sequences.frameSize[0];
+  }
+
+  /** End a completed physical exit; preserve the cel and its registration. */
+  endMotionSupport(): void {
+    this.support = null;
+    this.rejectedSupport = null;
   }
 
   getMotionFailure(): string | null {
@@ -88,6 +114,8 @@ export class SequencePlayer {
     this.failure = null;
     this.failedRequest = null;
     this.progress = null;
+    this.support = null;
+    this.rejectedSupport = null;
     if (this.last) {
       delete this.last.transition;
       delete this.last.motionFailure;
@@ -138,7 +166,14 @@ export class SequencePlayer {
         frame.durationMs <= 0 ||
         !finitePoint(frame.grip) ||
         !finitePoint(frame.foot) ||
-        !frame.head.every(finitePoint)
+        !frame.head.every(finitePoint) ||
+        [frame.supports, frame.contacts].some((map) =>
+          Object.values(map ?? {}).some(
+            (point) =>
+              !finitePoint(point) ||
+              point.some((value, axis) => value < 0 || value > frameSize[axis]),
+          ),
+        )
       )
         return "invalid-frame";
       const cranial = Math.hypot(
@@ -199,9 +234,153 @@ export class SequencePlayer {
     return null;
   }
 
+  /** Check painted registrations first, then translate one whole cel around its real supports. */
+  private supportTranslation(
+    input: SequenceInput,
+    clip: SequenceClip,
+    actualClip: string,
+    frame: SequenceFrame,
+    reference: number,
+    translation: SequencePoint,
+  ):
+    | { translation: SequencePoint; support: SupportPlayback }
+    | SequenceFailure["reason"] {
+    const travel = input.travel!;
+    const scale = input.worldScale ?? 1;
+    const phase = input.phase ?? 0;
+    if (!finitePoint(travel) || !Number.isFinite(scale) || scale <= 0)
+      return "invalid-support-motion";
+    const entries = Object.entries(frame.supports ?? {}) as [
+      SupportName,
+      SequencePoint,
+    ][];
+    if (!entries.length) return "missing-support";
+    const prior = this.support?.scale === scale ? this.support : null;
+    const sameClip = prior?.actualClip === actualClip;
+    let direction = input.direction ?? prior?.direction ?? null;
+    if (
+      direction &&
+      (!finitePoint(direction) || Math.abs(Math.hypot(...direction) - 1) > 1e-6)
+    )
+      return "invalid-support-motion";
+    if (prior && sameClip && clip.distancePerCycle !== undefined) {
+      const delta: SequencePoint = [
+        travel[0] - prior.travel[0],
+        travel[1] - prior.travel[1],
+      ];
+      const distance = Math.hypot(...delta);
+      const deltaPhase = phase - prior.phase;
+      if (deltaPhase < -1e-8 || (distance > 1e-8 && deltaPhase <= 0))
+        return "invalid-support-motion";
+      if (
+        deltaPhase > 1e-8 &&
+        Math.abs(distance - (deltaPhase / TAU) * clip.distancePerCycle) *
+          scale >
+          1e-6
+      )
+        return "invalid-support-motion";
+      if (distance > 1e-8) {
+        const confirmed: SequencePoint = [
+          delta[0] / distance,
+          delta[1] / distance,
+        ];
+        if (
+          direction &&
+          Math.hypot(confirmed[0] - direction[0], confirmed[1] - direction[1]) >
+            1e-6
+        )
+          return "invalid-support-motion";
+        direction = confirmed;
+      }
+    }
+    const referenceTravel: SequencePoint = prior
+      ? [...prior.referenceTravel]
+      : [0, 0];
+    if (prior && sameClip && clip.distancePerCycle !== undefined) {
+      const advance = (reference - prior.reference) * clip.distancePerCycle;
+      if (Math.abs(advance) > 1e-8) {
+        if (!direction) return "invalid-support-motion";
+        referenceTravel[0] += direction[0] * advance;
+        referenceTravel[1] += direction[1] * advance;
+      }
+    }
+    const project = (point: SequencePoint): SequencePoint => [
+      this.sequences.modelBox[0] + point[0] * this.scale,
+      this.sequences.modelBox[1] + point[1] * this.scale,
+    ];
+    const common = entries.filter(([name]) => prior?.points[name]);
+    if (prior && !common.length) return "support-handoff-missing";
+    const offsets: SequencePoint[] = [];
+    for (const [name, point] of common) {
+      const old = prior!.points[name]!;
+      const source = project(point);
+      // Timed bridges have no nominal window displacement: the same painted
+      // support must stay at the same registered pixel, not be rescued by a fit.
+      if (
+        Math.hypot(
+          source[0] -
+            old.source[0] +
+            referenceTravel[0] -
+            old.referenceTravel[0],
+          source[1] -
+            old.source[1] +
+            referenceTravel[1] -
+            old.referenceTravel[1],
+        ) *
+          scale >
+        1 + 1e-8
+      )
+        return "support-registration-mismatch";
+      offsets.push([
+        old.world[0] - travel[0] - source[0],
+        old.world[1] - travel[1] - source[1],
+      ]);
+    }
+    if (offsets.length) {
+      translation = [
+        offsets.reduce((sum, p) => sum + p[0], 0) / offsets.length,
+        offsets.reduce((sum, p) => sum + p[1], 0) / offsets.length,
+      ];
+      if (
+        offsets.some(
+          (p) =>
+            Math.hypot(p[0] - translation[0], p[1] - translation[1]) * scale >
+            1 + 1e-8,
+        )
+      )
+        return "support-conflict";
+    }
+    const points: SupportPlayback["points"] = {};
+    for (const [name, point] of entries) {
+      const source = project(point);
+      points[name] = prior?.points[name] ?? {
+        source,
+        referenceTravel: [...referenceTravel],
+        world: [
+          travel[0] + source[0] + translation[0],
+          travel[1] + source[1] + translation[1],
+        ],
+      };
+    }
+    return {
+      translation,
+      support: {
+        clip: input.clip,
+        actualClip,
+        reference,
+        referenceTravel,
+        scale,
+        travel: [...travel],
+        phase,
+        direction,
+        points,
+      },
+    };
+  }
+
   sample(input: SequenceInput): SequenceSample | null {
     const prior = this.playback ? { ...this.playback } : null;
-    const result = this.sampleNext(input);
+    let result = this.sampleNext(input);
     if (this.failure) {
       this.playback = prior;
       // A rejected selection freezes the actual cel; returning to the previous
@@ -211,7 +390,73 @@ export class SequencePlayer {
         prior.lastTime = null;
         prior.offset = prior.position;
       }
+      result = this.retainRejectedSupport(input, result);
     }
+    return result;
+  }
+
+  /** Preflight failure can arrive after a previous motion RPC was acknowledged. */
+  rejectMotionPlayback(
+    input: SequenceInput,
+    reason: SequenceFailure["reason"],
+  ): SequenceSample | null {
+    const result = this.reject(reason, input.clip);
+    if (this.playback) {
+      this.playback.start = null;
+      this.playback.lastTime = null;
+      this.playback.offset = this.playback.position;
+    }
+    return this.retainRejectedSupport(input, result);
+  }
+
+  private retainRejectedSupport(
+    input: SequenceInput,
+    result: SequenceSample | null,
+  ): SequenceSample | null {
+    const support = this.support ?? this.rejectedSupport;
+    // The host may already have acknowledged this displacement. Refusing a
+    // bad new cel must still keep the last painted sole at its world point.
+    if (
+      result &&
+      input.travel &&
+      finitePoint(input.travel) &&
+      support &&
+      support.scale === (input.worldScale ?? 1)
+    ) {
+      const targets = Object.entries(support.points).map(([name, point]) => {
+        const anchor = result!.anchors.supports[name as SupportName]!;
+        return [
+          point.world[0] - input.travel![0] - anchor[0],
+          point.world[1] - input.travel![1] - anchor[1],
+        ] as SequencePoint;
+      });
+      if (targets.length) {
+        const offset: SequencePoint = [
+          targets.reduce((sum, p) => sum + p[0], 0) / targets.length,
+          targets.reduce((sum, p) => sum + p[1], 0) / targets.length,
+        ];
+        const shift = (point: SequencePoint): SequencePoint => [
+          point[0] + offset[0],
+          point[1] + offset[1],
+        ];
+        result.translation = shift(result.translation);
+        result.anchors.grip = shift(result.anchors.grip);
+        result.anchors.foot = shift(result.anchors.foot);
+        result.anchors.head = [
+          shift(result.anchors.head[0]),
+          shift(result.anchors.head[1]),
+        ];
+        for (const map of [result.anchors.contacts, result.anchors.supports])
+          for (const key of Object.keys(map))
+            (map as Record<string, SequencePoint>)[key] = shift(
+              (map as Record<string, SequencePoint>)[key],
+            );
+        this.last = structuredClone(result);
+        delete this.last.motionFailure;
+      }
+    }
+    this.rejectedSupport = support;
+    if (this.support?.clip !== input.clip) this.support = null;
     return result;
   }
 
@@ -250,7 +495,9 @@ export class SequencePlayer {
         ? run.offset + (((input.phase ?? 0) - run.phaseOrigin) / TAU) * total
         : run.offset + (input.t - run.start) * 1000;
     this.progress = null;
+    let completedBridge = false;
     if (run.transition && position >= total) {
+      completedBridge = true;
       // The terminal painted cel is exactly the destination's first cel.
       run.clip = run.target;
       run.start = input.t;
@@ -309,6 +556,45 @@ export class SequencePlayer {
     )
       return this.reject("anchor-conflict", input.clip);
     if (offsets[0]) translation = offsets[0];
+    let support: SupportPlayback | null = null;
+    if (input.supportRequired && !input.travel)
+      return this.reject("missing-confirmed-travel", input.clip);
+    if (
+      input.supportRequired &&
+      (!finitePoint(input.travel!) ||
+        !Number.isFinite(input.worldScale ?? 1) ||
+        (input.worldScale ?? 1) <= 0)
+    )
+      return this.reject("invalid-support-motion", input.clip);
+    const release =
+      input.releaseSupportAtExit &&
+      !Object.keys(frame.supports ?? {}).length &&
+      sameCel(frame, target.frames[0]) &&
+      (completedBridge ||
+        Boolean(run.transition && frameIndex === clip.frames.length - 1));
+    if (
+      input.travel &&
+      (input.supportRequired || clip.distancePerCycle !== undefined) &&
+      !release
+    ) {
+      if (offsets.length) return this.reject("anchor-conflict", input.clip);
+      const frameStart = clip.frames
+        .slice(0, frameIndex)
+        .reduce((sum, cel) => sum + cel.durationMs, 0);
+      const reference =
+        Math.floor(position / duration(clip)) + frameStart / duration(clip);
+      const result = this.supportTranslation(
+        input,
+        clip,
+        run.clip,
+        frame,
+        reference,
+        translation,
+      );
+      if (typeof result === "string") return this.reject(result, input.clip);
+      translation = result.translation;
+      support = result.support;
+    }
     const projectedMap = <K extends string>(
       map?: Partial<Record<K, SequencePoint>>,
     ) =>
@@ -341,6 +627,8 @@ export class SequencePlayer {
       sample.distancePerCycle = target.distancePerCycle;
     if (this.progress) sample.transition = { ...this.progress };
     this.last = structuredClone(sample);
+    this.support = support;
+    this.rejectedSupport = null;
     return structuredClone(sample);
   }
 }

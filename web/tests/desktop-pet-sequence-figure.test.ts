@@ -20,6 +20,7 @@ const cel = (texture: string, index: number): SequenceFrame => ({
     [50, 10],
     [50, 50],
   ],
+  supports: { legFront: [texture === "walk" ? 80 - index * 60 : 80, 190] },
 });
 const fixture = (): FrameSequences => {
   const idle = cel("idle", 0),
@@ -63,6 +64,7 @@ const frame = (t: number, mode = "idle", phase = 0): WhaleFrame => ({
           phase,
           velocity: { x: 60, y: 0 },
           swing: 0,
+          travel: { x: (phase / (Math.PI * 2)) * 60, y: 0 },
         },
       }
     : {}),
@@ -182,6 +184,327 @@ afterEach(() => {
 });
 
 describe("real whole sequence Canvas figure", () => {
+  const beginWalk = async (h: ReturnType<typeof setup>) => {
+    await h.figure.preload();
+    h.draw(0);
+    h.draw(0, "walk");
+    await settle();
+    for (const t of [0.01, 0.11, 0.21, 0.31, 0.41]) h.draw(t, "walk");
+    expect(h.figure.getMotionFailure?.()).toBeNull();
+    expect(decodeKey(h.latest()[0].src)).toBe("walk");
+  };
+  it("translates the actual painted Canvas cel by signed confirmed travel without changing its scale", async () => {
+    const h = setup();
+    await beginWalk(h);
+    const initial = h.box();
+    h.draw(0.42, "walk", (6 / 60) * Math.PI * 2);
+    expect(h.box()).toEqual([
+      initial[0] - 6,
+      initial[1],
+      initial[2],
+      initial[3],
+    ]);
+    expect(6 + h.box()[0] + 80 * 0.5).toBe(initial[0] + 80 * 0.5);
+    expect(h.latest().slice(5)).toEqual([0, 0, 100, 200]);
+    expect(h.figure.getMotionFailure?.()).toBeNull();
+  });
+  it("converts actual DIP travel once at worldScale two and does not fit or resize the source", async () => {
+    const h = setup();
+    await beginWalk(h);
+    const initial = h.box();
+    const input = frame(0.42, "walk", (3 / 60) * Math.PI * 2);
+    input.worldScale = 2;
+    input.locomotion!.travel = { x: 6, y: 0 };
+    h.figure.draw(h.group, face, input);
+    // A scale change starts a new support lifetime; next confirmed tick locks it.
+    input.t = 0.43;
+    input.locomotion!.phase = (4 / 60) * Math.PI * 2;
+    input.locomotion!.travel = { x: 8, y: 0 };
+    h.figure.draw(h.group, face, input);
+    expect(h.box()).toEqual([
+      initial[0] - 1,
+      initial[1],
+      initial[2],
+      initial[3],
+    ]);
+    expect(h.figure.getMotionFailure?.()).toBeNull();
+  });
+  it("rejects a bad next painted sole but redraws only the retained cel at its safe world support", async () => {
+    const source = fixture();
+    source.clips["walk-right"].frames[1].supports!.legFront![0] += 4;
+    const h = setup(source);
+    await beginWalk(h);
+    const before = h.latest().slice(1, 5);
+    h.draw(0.42, "walk", Math.PI);
+    expect(h.figure.getMotionFailure?.()).toBe(
+      "sequence:support-registration-mismatch",
+    );
+    expect(h.latest().slice(1, 5)).toEqual(before);
+    expect(h.box()).toEqual([-10, 30, 50, 100]);
+    expect(30 + h.box()[0] + 80 * 0.5).toBe(60);
+    expect(h.figure.getMotionTransition?.()).toBeNull();
+  });
+  it("requires host travel and supports for physical locomotion while source-only event inspection remains usable", async () => {
+    const source = fixture();
+    delete source.clips["walk-right"].frames[0].supports;
+    const h = setup(source);
+    await h.figure.preload();
+    h.draw(0);
+    const before = h.drawImage.mock.calls.length;
+    h.draw(0.01, "walk");
+    expect(h.figure.getMotionFailure?.()).toBe("sequence:missing-support");
+    expect(h.drawImage).toHaveBeenCalledTimes(before);
+    h.figure.cancelMotionPlayback?.();
+    const input = frame(0.02, "walk");
+    delete input.locomotion!.travel;
+    h.figure.draw(h.group, face, input);
+    expect(h.figure.getMotionFailure?.()).toBe(
+      "sequence:missing-confirmed-travel",
+    );
+    h.figure.cancelMotionPlayback?.();
+    delete input.locomotion;
+    input.gait = { phase: 0, stride: 0, lift: 0 };
+    h.figure.draw(h.group, face, input);
+    await settle();
+    h.figure.draw(h.group, face, { ...input, t: 0.03 });
+    expect(h.figure.getMotionFailure?.()).toBeNull();
+  });
+  it("publishes the selected left/climb clip stride instead of always using walk-right", () => {
+    const source = fixture();
+    source.clips["walk-left"] = {
+      ...source.clips["walk-right"],
+      distancePerCycle: 80,
+    };
+    source.clips["side-left"] = {
+      ...source.clips["walk-right"],
+      distancePerCycle: 40,
+    };
+    const h = setup(source);
+    const input = frame(0, "walk");
+    input.locomotion!.facing = -1;
+    h.figure.draw(h.group, face, input);
+    expect(h.group.getAttribute("data-pet-stride")).toBe("80");
+    input.locomotion!.state = "climb";
+    input.locomotion!.edge = "left";
+    h.figure.draw(h.group, face, input);
+    expect(h.group.getAttribute("data-pet-stride")).toBe("40");
+    h.draw(0.01);
+    expect(h.group.hasAttribute("data-pet-stride")).toBe(false);
+  });
+  it("a different missing physical clip still compensates a late confirmed host receipt around the retained painted sole", async () => {
+    const h = setup();
+    await beginWalk(h);
+    const input = frame(0.42, "walk", (7.5 / 60) * Math.PI * 2);
+    input.locomotion!.state = "climb";
+    input.locomotion!.edge = "left";
+    h.figure.draw(h.group, face, input);
+    expect(h.figure.getMotionFailure?.()).toBe("sequence:missing-clip");
+    expect(h.box()).toEqual([12.5, 30, 50, 100]);
+    expect(decodeKey(h.latest()[0].src)).toBe("walk");
+    expect(7.5 + h.box()[0] + 80 * 0.5).toBe(60);
+    input.t = 0.43;
+    input.locomotion!.travel = { x: 9, y: 0 };
+    h.figure.draw(h.group, face, input);
+    expect(9 + h.box()[0] + 80 * 0.5).toBe(60);
+    expect(h.figure.getMotionTransition?.()).toBeNull();
+  });
+  it("consumes the actual SVG matrix scale rather than a different nominal worldScale", async () => {
+    const h = setup();
+    await beginWalk(h);
+    Object.defineProperty(h.group, "getScreenCTM", {
+      value: () => ({ a: 2, b: 0, c: 0, d: 2, e: 0, f: 0 }),
+    });
+    const input = frame(0.42, "walk", 0);
+    input.worldScale = 1.23456;
+    h.figure.draw(h.group, face, input);
+    input.t = 0.43;
+    input.locomotion!.travel = { x: 2, y: 0 };
+    input.locomotion!.phase = (1 / 60) * Math.PI * 2;
+    h.figure.draw(h.group, face, input);
+    expect(h.box()).toEqual([19, 30, 50, 100]);
+    expect(2 + (h.box()[0] + 80 * 0.5) * 2).toBe(120);
+    expect(h.figure.getMotionFailure?.()).toBeNull();
+  });
+  it("explicit cancel before event inspection clears the old support lifetime before a new host origin", async () => {
+    const h = setup();
+    await beginWalk(h);
+    h.draw(0.42, "walk", (6 / 60) * Math.PI * 2);
+    const before = h.box();
+    h.figure.cancelMotionPlayback?.();
+    const event = frame(0.43, "walk", (6 / 60) * Math.PI * 2);
+    delete event.locomotion;
+    event.gait = { phase: (6 / 60) * Math.PI * 2, stride: 0, lift: 0 };
+    h.figure.draw(h.group, face, event);
+    const next = frame(0.44, "walk", 0);
+    next.locomotion!.travel = { x: -1000, y: 300 };
+    h.figure.draw(h.group, face, next);
+    expect(h.figure.getMotionFailure?.()).toBeNull();
+    expect(h.box()).toEqual(before);
+  });
+  it("keeps the actual painted world sole through every complete timed exit until its final idle cel is drawn", async () => {
+    const source = fixture();
+    source.clips.exit = {
+      frames: [
+        source.clips["walk-right"].frames[0],
+        cel("exit", 0),
+        source.clips.idle.frames[0],
+      ],
+      loop: false,
+    };
+    source.transitions.push({
+      id: "stop",
+      from: "walk-right",
+      to: "idle",
+      clip: "exit",
+    });
+    const h = setup(source);
+    await beginWalk(h);
+    h.draw(0.42, "walk", (6 / 60) * Math.PI * 2);
+    const stop = frame(0.43, "walk", 0);
+    stop.locomotion!.state = "idle";
+    stop.locomotion!.travel = { x: 6, y: 0 };
+    h.figure.draw(h.group, face, stop);
+    await settle();
+    for (let i = 0; i <= 30; i++) {
+      h.figure.draw(h.group, face, { ...stop, t: 0.44 + i / 60 });
+      expect(h.figure.getMotionFailure?.()).toBeNull();
+      expect(6 + h.box()[0] + 80 * 0.5).toBe(60);
+    }
+    expect(decodeKey(h.latest()[0].src)).toBe("idle");
+    expect(h.figure.getMotionTransition?.()).toBeNull();
+  });
+  it("rejects a middle exit source whose floor point moves five DIP even while the real host stays still", async () => {
+    const source = fixture();
+    const bad = cel("exit", 0);
+    bad.supports!.legFront![0] += 10;
+    source.clips.exit = {
+      frames: [
+        source.clips["walk-right"].frames[0],
+        bad,
+        source.clips.idle.frames[0],
+      ],
+      loop: false,
+    };
+    source.transitions.push({
+      id: "stop",
+      from: "walk-right",
+      to: "idle",
+      clip: "exit",
+    });
+    const h = setup(source);
+    await beginWalk(h);
+    const stop = frame(0.42, "walk", 0);
+    stop.locomotion!.state = "idle";
+    h.figure.draw(h.group, face, stop);
+    await settle();
+    for (const t of [0.43, 0.53, 0.63])
+      h.figure.draw(h.group, face, { ...stop, t });
+    expect(h.figure.getMotionFailure?.()).toBe(
+      "sequence:support-registration-mismatch",
+    );
+    expect(decodeKey(h.latest()[0].src)).toBe("walk");
+    expect(h.figure.getMotionTransition?.()).toBeNull();
+    expect(h.box()).toEqual([20, 30, 50, 100]);
+  });
+  it("a physical exit with no confirmed travel is rejected instead of using an invented zero origin", async () => {
+    const source = fixture();
+    source.clips.exit = {
+      frames: [
+        source.clips["walk-right"].frames[0],
+        source.clips.idle.frames[0],
+      ],
+      loop: false,
+    };
+    source.transitions.push({
+      id: "stop",
+      from: "walk-right",
+      to: "idle",
+      clip: "exit",
+    });
+    const h = setup(source);
+    await beginWalk(h);
+    const stop = frame(0.42, "walk", 0);
+    stop.locomotion!.state = "idle";
+    delete stop.locomotion!.travel;
+    h.figure.draw(h.group, face, stop);
+    await settle();
+    h.figure.draw(h.group, face, { ...stop, t: 0.43 });
+    expect(h.figure.getMotionFailure?.()).toBe(
+      "sequence:missing-confirmed-travel",
+    );
+    expect(h.box()).toEqual([20, 30, 50, 100]);
+    expect(h.figure.getMotionTransition?.()).toBeNull();
+  });
+  it.each(["glide", "held"] as const)(
+    "a complete %s departure releases floor supports only at the exact airborne terminal cel",
+    async (mode) => {
+      const source = fixture();
+      const air = cel(mode, 0);
+      delete air.supports;
+      const id = mode === "glide" ? "glide-right" : "held";
+      source.clips[id] = { frames: [air], loop: true };
+      source.clips.departure = {
+        frames: [source.clips["walk-right"].frames[0], cel("exit", 0), air],
+        loop: false,
+      };
+      source.transitions.push({
+        id: "depart",
+        from: "walk-right",
+        to: id,
+        clip: "departure",
+      });
+      const h = setup(source);
+      await beginWalk(h);
+      h.draw(0.42, "walk", (6 / 60) * Math.PI * 2);
+      const flight = frame(0.43, "walk", 0);
+      flight.locomotion!.state = mode;
+      flight.locomotion!.travel = { x: 6, y: 0 };
+      h.figure.draw(h.group, face, flight);
+      await settle();
+      h.figure.draw(h.group, face, { ...flight, t: 0.44 });
+      expect(h.figure.getMotionTransition?.()?.id).toBe("depart");
+      h.figure.draw(h.group, face, { ...flight, t: 0.54 });
+      expect(6 + h.box()[0] + 80 * 0.5).toBe(60);
+      for (const t of [0.64, 0.74, 0.84, 0.94])
+        h.figure.draw(h.group, face, { ...flight, t });
+      expect(h.figure.getMotionFailure?.()).toBeNull();
+      expect(decodeKey(h.latest()[0].src)).toBe(mode);
+      expect(h.figure.getMotionTransition?.()).toBeNull();
+      flight.t = 0.95;
+      flight.locomotion!.travel = { x: 100, y: 100 };
+      h.figure.draw(h.group, face, flight);
+      expect(h.figure.getMotionFailure?.()).toBeNull();
+    },
+  );
+  it("an airborne target cannot authorize a missing support in the middle of its departure bridge", async () => {
+    const source = fixture();
+    const air = cel("glide", 0);
+    delete air.supports;
+    const unsupported = cel("exit", 0);
+    delete unsupported.supports;
+    source.clips["glide-right"] = { frames: [air], loop: true };
+    source.clips.departure = {
+      frames: [source.clips["walk-right"].frames[0], unsupported, air],
+      loop: false,
+    };
+    source.transitions.push({
+      id: "depart",
+      from: "walk-right",
+      to: "glide-right",
+      clip: "departure",
+    });
+    const h = setup(source);
+    await beginWalk(h);
+    const flight = frame(0.42, "walk", 0);
+    flight.locomotion!.state = "glide";
+    h.figure.draw(h.group, face, flight);
+    await settle();
+    for (const t of [0.43, 0.53, 0.63])
+      h.figure.draw(h.group, face, { ...flight, t });
+    expect(h.figure.getMotionFailure?.()).toBe("sequence:missing-support");
+    expect(decodeKey(h.latest()[0].src)).toBe("walk");
+    expect(h.figure.getMotionTransition?.()).toBeNull();
+  });
   it("draws the initial complete idle cel at the fixed modelBox", async () => {
     const h = setup();
     await h.figure.preload();

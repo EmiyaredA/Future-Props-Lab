@@ -5,6 +5,7 @@ import {
   sequenceDemoClips,
   sequenceEdges,
   sequenceLinkUnavailable,
+  sequencePhysicalLinkUnavailable,
 } from "../sequences/capabilities";
 
 /** Old human rigs split standing bitmaps; they cannot supply coherent motion views. */
@@ -33,6 +34,10 @@ export function humanMotionUnavailable(model: unknown): string | null {
     const walk = resource.sequences.clips[clip];
     if (!walk.loop || !walk.distancePerCycle)
       return `完整序列帧缺少循环步距：${clip}，已暂停自主走动`;
+    const support =
+      sequencePhysicalLinkUnavailable(resource.sequences, "idle", clip) ??
+      sequencePhysicalLinkUnavailable(resource.sequences, clip, "idle");
+    if (support) return `${support}，已暂停自主走动`;
   }
   return null;
 }
@@ -76,6 +81,12 @@ export function sequenceDemoUnavailable(
       return "完整序列帧缺少该边的接触与支撑姿势";
   }
   for (const clip of sequenceDemoClips(demo)) {
+    if (demo.startsWith("walk-") || demo.startsWith("climb-")) {
+      const support =
+        sequencePhysicalLinkUnavailable(sequences, "idle", clip) ??
+        sequencePhysicalLinkUnavailable(sequences, clip, "idle");
+      if (support) return support;
+    }
     if (demo.startsWith("glide-")) {
       const unavailable =
         sequenceLinkUnavailable(sequences, "idle", clip) ??

@@ -51,3 +51,9 @@ Status: proposed
 真实 Chrome 生产画布的最终比例诊断保存于 `sequence-renderer-checks/run-2026-10-04T05-47-18-373Z/`：144 个实际录像帧、4.767785 秒、30 fps，289 个实际 RAF tick，48 张 10 fps 抽帧。两幅完整原画以相同 1182×1330 画布及 0.19984586693 单一比例绘制，Canvas 不透明像素／alpha 与原 PNG 相同；原图头部细节有重绘，不声称像素锁死。该诊断只是两个已拒绝静图的比例播放，并非完整步态、实际 Electron 或世界支点通过。三次诊断的旧命名／稀疏 tick／源码采集问题已保留 limitation；最终 onLoad 源码 hash 与执行 bundle 独立保存。
 
 passing-v3 降低膝位但失去后折，拒绝；带独立骨架导引的 v4（SHA 0d51c10b695f4888c02cc98c88570baf5adc1b78d82fbe02e093f473792563ae）后折方向改善，膝位与鞋视角及近远遮挡仍错误，拒绝。四张完整 passing 候选都未应用。此批停止重复盲生；完整自然步态、其他姿势／服饰／鲸鱼、动态表情变体和世界支点仍须继续完成，不把固定画布当作全目标完成。源码最终快照与逐项日志在 `quality-sequences/`，没有正式 CAS 更新或 App 重启。
+
+### 用户指出动作仍未交付后的复查
+
+当前正式项目 revision 8 仍为 motionRig v1，没有 frameSequences。UI 更新、能力反馈及此前重开窗口均不代表新运动素材已应用。本轮新 atlas-v2／edit1 仍重复支撑腿；单张 opposite-passing-v2（SHA 8a30d8cb0b80c25a00f7e491ba43d63c5e6e48b59282936636e8629635b3e617）首次明确近腿摆动／远腿承重且头腰尺寸接近参考，仍只有单张候选。其邻接 contact-v1 头高增约 3.4%，拒绝。双姿势参考的 atlas-v3（SHA da157d7ff61961e950d543a41ba8bfdc6b7386f4166ed43b4b2888bd165ebd4c）局部承重交换改善，但头高比参考小约 5%，03→04 身份及整幅登记仍未连续，拒绝。所有原图未改像素，prompt、逐帧及独立报告保留在 full-frame-sequences/。
+
+[世界支撑修复](../../implemented/bug-fix/2026-10-04-pet-sequence-world-support.md)接入真实确认位移，并覆盖计时桥、失败后实际画面保留及合法离地；技术校准不证明人体自然。完整素材、三服饰、鲸鱼、所有动作和隔离 Electron 视觉仍未完成，不应用正式 CAS，不用旧运动填补。
