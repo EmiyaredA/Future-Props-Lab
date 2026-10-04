@@ -7433,9 +7433,62 @@
         "title": "FavoritesOut",
         "type": "object"
       },
+      "FieldConfig": {
+        "additionalProperties": false,
+        "properties": {
+          "date_format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "YYYY-MM-DD",
+                  "YYYY/MM/DD",
+                  "YYYY.MM.DD",
+                  "YYYY年M月D日",
+                  "DD/MM/YYYY",
+                  "MM/DD/YYYY"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Format"
+          },
+          "decimal_places": {
+            "anyOf": [
+              {
+                "maximum": 8.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decimal Places"
+          },
+          "use_grouping": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Grouping"
+          }
+        },
+        "title": "FieldConfig",
+        "type": "object"
+      },
       "FieldSpec": {
         "additionalProperties": false,
         "properties": {
+          "config": {
+            "$ref": "#/components/schemas/FieldConfig"
+          },
           "id": {
             "maxLength": 36,
             "minLength": 1,

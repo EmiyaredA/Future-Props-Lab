@@ -1,5 +1,10 @@
 import type { PetDocument, PetReaction } from "./api";
 import type { CharacterDocument } from "@shared/live2d/types";
+import {
+  clipForFrame,
+  modelSequences,
+  sequenceClipUnavailable,
+} from "./sequences/capabilities";
 
 export type PetPlaybackMode = "runtime" | "inspect" | "event";
 export type PetEvent = "idle" | "click" | "pet" | "grab" | "drop" | "roam";
@@ -61,11 +66,72 @@ export function reactionFor(
     }
   );
 }
+/** Capability feedback does not edit the saved reaction or substitute another action. */
+export function reactionMotionUnavailable(
+  document: PetDocument,
+  id: string | null | undefined,
+): string | null {
+  if (!id) return null;
+  if (document.sourceType !== "coopanion-whale")
+    return document.character?.motions?.some((motion) => motion.id === id)
+      ? null
+      : "当前角色缺少此动作资源";
+  if (!Object.hasOwn(MOTION_LABELS, id)) return "当前动作尚未接入渲染器";
+  const resource = modelSequences(document.whaleModel);
+  if (resource.kind === "invalid") return resource.reason;
+  if (resource.kind === "valid") {
+    // These legacy actions change physics/pulses rather than request their own
+    // complete-cel mode. A similarly named atlas cannot make them render.
+    if (["jump", "hop", "nod", "shake", "spin", "turn"].includes(id))
+      return "完整序列帧尚未接入此动作阶段，暂不支持";
+    const clip = clipForFrame({ mode: id, facing: 1 });
+    const unavailable = sequenceClipUnavailable(resource.sequences, clip);
+    if (unavailable) return unavailable;
+    if (id === "walk" || id === "run") {
+      const walk = resource.sequences.clips[clip];
+      if (!walk.loop || !walk.distancePerCycle)
+        return "完整序列帧缺少循环步距，暂不支持此动作";
+    }
+    return null;
+  }
+  const model = document.whaleModel;
+  const rig = model?.motionRig;
+  if (
+    model?.rigProfile === "human-chibi" &&
+    rig &&
+    typeof rig === "object" &&
+    "version" in rig &&
+    rig.version === 1 &&
+    !["stand", "sit", "sleep"].includes(id)
+  )
+    return "当前人物资源已暂停旧分件动作；仅保留站立、坐下和睡觉";
+  return null;
+}
+
+export function reactionExpressionUnavailable(
+  document: PetDocument,
+  id: string | null | undefined,
+): string | null {
+  if (!id) return null;
+  if (document.sourceType !== "coopanion-whale")
+    return document.character?.expressions?.some(
+      (expression) => expression.id === id,
+    )
+      ? null
+      : "当前角色缺少此表情资源";
+  if (!Object.hasOwn(EXPRESSION_LABELS, id)) return "当前表情尚未接入渲染器";
+  const resource = modelSequences(document.whaleModel);
+  if (resource.kind === "invalid") return resource.reason;
+  if (resource.kind === "valid")
+    return id === "neutral" ? null : "完整序列帧未提供表情变体，暂不支持";
+  return document.whaleModel?.rigProfile === "human-chibi" &&
+    ["wink", "sad"].includes(id)
+    ? "当前角色未支持此表情素材"
+    : null;
+}
+
 export function expressionSupported(document: PetDocument, id: string) {
-  return (
-    document.whaleModel?.rigProfile !== "human-chibi" ||
-    !["wink", "sad"].includes(id)
-  );
+  return reactionExpressionUnavailable(document, id) === null;
 }
 export function playbackDuration(document: PetDocument, name: PetEvent) {
   if (document.sourceType === "coopanion-whale") return 1800;

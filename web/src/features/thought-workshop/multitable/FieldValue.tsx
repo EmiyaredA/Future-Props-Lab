@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Field } from "./api";
-import { display } from "./model";
+import { formatFieldValue } from "./formatting";
 
 const fieldIcon: Record<Field["type"], LucideIcon> = {
   text: Type,
@@ -53,7 +53,7 @@ export function FieldValue({ field, value }: { field: Field; value: unknown }) {
   }
   return (
     <span className={`multitable-value is-${field.type}`}>
-      {display(field, value) || (
+      {formatFieldValue(field, value) || (
         <span className="multitable-empty-value">—</span>
       )}
     </span>

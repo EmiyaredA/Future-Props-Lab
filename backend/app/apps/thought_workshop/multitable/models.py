@@ -28,6 +28,7 @@ class DataField(Base):
     type: Mapped[str] = mapped_column(String(20))
     position: Mapped[int] = mapped_column(Integer)
     options: Mapped[list] = mapped_column(JSON, default=list)
+    config: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class DataView(Base):

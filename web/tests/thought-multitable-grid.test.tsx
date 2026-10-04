@@ -22,7 +22,7 @@ const table = newTable(0),
     position: 0,
     values: { [table.fields[0].id]: "已有任务" },
   };
-function grid(readOnly = false) {
+function grid(readOnly = false, editField = vi.fn()) {
   const change = vi.fn(),
     error = vi.fn();
   const props = {
@@ -38,6 +38,8 @@ function grid(readOnly = false) {
     positionKey: "test",
     loadMore: vi.fn(),
     hasMore: false,
+    editField,
+    configure: vi.fn(),
   };
   const result = render(
     <QueryClientProvider client={new QueryClient()}>
@@ -68,6 +70,22 @@ it("opens an existing cell after range selection and retains its dialog across a
     { ...row, values: { [table.fields[0].id]: "已有任务追加" } },
   ]);
 });
+it("opens header configuration by keyboard, keeps resizing independent and hides it in readonly mode", async () => {
+  const user = userEvent.setup(),
+    { props, unmount } = grid();
+  const header = screen.getByRole("button", { name: "配置字段 名称" });
+  header.focus();
+  await user.keyboard("{Enter} ");
+  expect(props.editField).toHaveBeenCalledTimes(2);
+  expect(props.editField).toHaveBeenLastCalledWith(table.fields[0], header);
+  screen.getByRole("separator", { name: "调整名称列宽" }).focus();
+  await user.keyboard("{ArrowRight}");
+  expect(props.configure).toHaveBeenCalledOnce();
+  expect(props.editField).toHaveBeenCalledTimes(2);
+  unmount();
+  grid(true, props.editField);
+  expect(screen.queryByRole("button", { name: /配置字段/ })).toBeNull();
+});
 it("validates every pasted cell before submitting one batch and prevents readonly writes", () => {
   const { change, error, unmount } = grid();
   const region = screen.getByRole("region", { name: "表格记录" });
@@ -91,4 +109,42 @@ it("validates every pasted cell before submitting one batch and prevents readonl
   expect(
     screen.queryByRole("button", { name: "编辑 名称" }),
   ).not.toBeInTheDocument();
+});
+it("copies formatted dates and numbers as canonical TSV and pastes without losing precision", () => {
+  const { props, unmount } = grid();
+  unmount();
+  const formatted = structuredClone(table);
+  formatted.fields[2].config = { date_format: "YYYY年M月D日" };
+  formatted.fields[3] = {
+    ...formatted.fields[3],
+    type: "number",
+    config: { decimal_places: 2, use_grouping: true },
+  };
+  const values = {
+    ...row.values,
+    [formatted.fields[2].id]: "2026-10-04",
+    [formatted.fields[3].id]: 12345.6789,
+  };
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <GridView {...props} table={formatted} rows={[{ ...row, values }]} />
+    </QueryClientProvider>,
+  );
+  expect(
+    screen.getByRole("button", { name: "编辑 截止日期" }),
+  ).toHaveTextContent("2026年10月4日");
+  expect(screen.getByRole("button", { name: "编辑 备注" })).toHaveTextContent(
+    "12,345.68",
+  );
+  const cells = screen.getAllByRole("gridcell");
+  fireEvent.mouseDown(cells[2]);
+  fireEvent.mouseDown(cells[3], { shiftKey: true });
+  const copy = vi.fn(),
+    region = screen.getByRole("region", { name: "表格记录" });
+  fireEvent.copy(region, { clipboardData: { setData: copy } });
+  expect(copy).toHaveBeenCalledWith("text/plain", "2026-10-04\t12345.6789");
+  fireEvent.paste(region, {
+    clipboardData: { getData: () => "2026-10-04\t12345.6789" },
+  });
+  expect(props.change).toHaveBeenCalledWith([{ ...row, values }]);
 });

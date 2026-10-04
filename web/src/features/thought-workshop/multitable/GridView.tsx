@@ -6,7 +6,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { RecordRow, Table, View, Scope } from "./api";
+import type { Field, RecordRow, Table, View, Scope } from "./api";
 import {
   display,
   emptyRow,
@@ -16,6 +16,7 @@ import {
   writeTsv,
 } from "./model";
 import { ColumnResize } from "./ColumnResize";
+import { formatFieldValue } from "./formatting";
 import { FieldIcon } from "./FieldValue";
 import { CellEditor } from "./CellEditor";
 import "./grid.css";
@@ -31,6 +32,7 @@ export function GridView({
   scope,
   noteId,
   configure,
+  editField,
   positionKey,
   loadMore,
   hasMore,
@@ -45,6 +47,7 @@ export function GridView({
   scope: Scope;
   noteId: string;
   configure?: (view: View) => void;
+  editField?: (field: Field, anchor: HTMLElement) => void;
   positionKey: string;
   loadMore: () => void;
   hasMore: boolean;
@@ -245,10 +248,23 @@ export function GridView({
                 }
                 style={{ width: h.getSize() }}
               >
-                <span>
-                  <FieldIcon type={field.type} />
-                  {flexRender(h.column.columnDef.header, h.getContext())}
-                </span>
+                {editField && !readOnly ? (
+                  <button
+                    className="multitable-field-header"
+                    aria-label={`配置字段 ${field.name}`}
+                    aria-haspopup="dialog"
+                    onClick={(e) => editField(field, e.currentTarget)}
+                  >
+                    <FieldIcon type={field.type} />
+                    <span>{field.name}</span>
+                    <span aria-hidden="true">⌄</span>
+                  </button>
+                ) : (
+                  <span>
+                    <FieldIcon type={field.type} />
+                    {flexRender(h.column.columnDef.header, h.getContext())}
+                  </span>
+                )}
                 {configure && !(compactName && field.position === 0) && (
                   <ColumnResize
                     name={field.name}
@@ -296,8 +312,10 @@ export function GridView({
                 {startsGroup(item.index) && groupField && (
                   <div className="multitable-group-heading">
                     {groupField.name}：
-                    {display(groupField, row.original.values[groupField.id]) ||
-                      "未分配"}
+                    {formatFieldValue(
+                      groupField,
+                      row.original.values[groupField.id],
+                    ) || "未分配"}
                   </div>
                 )}
                 <button

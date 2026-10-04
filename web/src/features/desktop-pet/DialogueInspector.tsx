@@ -4,7 +4,8 @@ import { PetPicker } from "./PetPicker";
 import {
   MOTION_LABELS,
   EXPRESSION_LABELS,
-  expressionSupported,
+  reactionMotionUnavailable,
+  reactionExpressionUnavailable,
 } from "./playback";
 
 const WHALE_MOTIONS = [
@@ -60,6 +61,54 @@ export function DialogueInspector({
   selectLine: (line: number) => void;
   edit: (update: (value: PetConfig) => PetConfig) => void;
 }) {
+  const option = (id: string, label: string, expression = false) => {
+    const reason = expression
+      ? reactionExpressionUnavailable(draft, id)
+      : reactionMotionUnavailable(draft, id);
+    return {
+      value: id,
+      label: reason ? `${label}（暂不支持）` : label,
+      disabled: Boolean(reason),
+      description: reason ?? undefined,
+    };
+  };
+  const motions = whale
+    ? WHALE_MOTIONS.map((id) => option(id, MOTION_LABELS[id]))
+    : (draft.character?.motions ?? []).map((motion) =>
+        option(motion.id, motion.name),
+      );
+  const expressions = whale
+    ? WHALE_EXPRESSIONS.map((id) => option(id, EXPRESSION_LABELS[id], true))
+    : (draft.character?.expressions ?? []).map((expression) =>
+        option(expression.id, expression.name, true),
+      );
+  // Stale saved IDs remain visible and clearable; capability changes never rewrite them.
+  if (
+    reaction.motionId &&
+    !motions.some((item) => item.value === reaction.motionId)
+  )
+    motions.push(
+      option(
+        reaction.motionId,
+        MOTION_LABELS[reaction.motionId] ?? reaction.motionId,
+      ),
+    );
+  if (
+    reaction.expressionId &&
+    !expressions.some((item) => item.value === reaction.expressionId)
+  )
+    expressions.push(
+      option(
+        reaction.expressionId,
+        EXPRESSION_LABELS[reaction.expressionId] ?? reaction.expressionId,
+        true,
+      ),
+    );
+  const motionReason = reactionMotionUnavailable(draft, reaction.motionId);
+  const expressionReason = reactionExpressionUnavailable(
+    draft,
+    reaction.expressionId,
+  );
   return (
     <>
       {tab === "events" && (
@@ -71,40 +120,27 @@ export function DialogueInspector({
           <PetPicker
             label="动作"
             value={reaction.motionId ?? ""}
-            options={[
-              { value: "", label: "无动作" },
-              ...(whale
-                ? WHALE_MOTIONS.map((id) => ({
-                    value: id,
-                    label: MOTION_LABELS[id],
-                  }))
-                : (draft.character?.motions ?? []).map((motion) => ({
-                    value: motion.id,
-                    label: motion.name,
-                  }))),
-            ]}
+            options={[{ value: "", label: "无动作" }, ...motions]}
             onChange={(value) => editReaction({ motionId: value || null })}
             disabled={readOnly}
           />
+          {motionReason && (
+            <p className="dp-hint" role="status">
+              {motionReason}
+            </p>
+          )}
           <PetPicker
             label="表情"
             value={reaction.expressionId ?? ""}
-            options={[
-              { value: "", label: "无表情" },
-              ...(whale
-                ? WHALE_EXPRESSIONS.map((id) => ({
-                    value: id,
-                    label: `${EXPRESSION_LABELS[id]}${expressionSupported(draft, id) ? "" : "（当前角色未支持）"}`,
-                    disabled: !expressionSupported(draft, id),
-                  }))
-                : (draft.character?.expressions ?? []).map((expression) => ({
-                    value: expression.id,
-                    label: expression.name,
-                  }))),
-            ]}
+            options={[{ value: "", label: "无表情" }, ...expressions]}
             onChange={(value) => editReaction({ expressionId: value || null })}
             disabled={readOnly}
           />
+          {expressionReason && (
+            <p className="dp-hint" role="status">
+              {expressionReason}
+            </p>
+          )}
           <PetPicker
             label="音效"
             value={reaction.sound}

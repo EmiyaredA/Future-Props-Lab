@@ -1,20 +1,15 @@
-import type { PetEdge } from "@platform/petMotion";
 import type {
   LoadedWhaleFigure,
   WhaleFigure,
-  WhaleFrame,
 } from "../whale-vendor/whale/figure.js";
 import { SequencePlayer } from "./player";
 import { validateSequenceImages } from "./validation";
 import type { FrameSequences, SequenceSample } from "./types";
+import { clipForFrame, sequenceEdges } from "./capabilities";
 
 const NS = "http://www.w3.org/2000/svg";
 const MAX_REQUEST_PIXELS = 16 * 1024 * 1024;
 const MAX_CACHE_PIXELS = 32 * 1024 * 1024;
-const edgeClip = (edge: PetEdge, facing: number) =>
-  edge === "left" || edge === "right"
-    ? `side-${edge}`
-    : `${edge}-${facing < 0 ? "left" : "right"}`;
 
 type SequenceSourceFigure = WhaleFigure & {
   draw: LoadedWhaleFigure["draw"];
@@ -53,43 +48,7 @@ export function createSequenceFigure(options: {
   let requested: string | null = null;
   const images = new Map<string, HTMLImageElement>();
   const keyOf = (texture: string) => `${scheme}/${texture}`;
-  const requestedClip = (frame: WhaleFrame) => {
-    const motion = frame.locomotion;
-    if (!motion) return frame.mode === "idle" ? "idle" : frame.mode;
-    if (motion.state === "walk" || motion.state === "glide")
-      return `${motion.state}-${motion.facing < 0 ? "left" : "right"}`;
-    if (motion.state === "climb" && motion.edge)
-      return edgeClip(motion.edge, motion.facing);
-    return motion.state;
-  };
-
-  const supportsEdge = (edge: PetEdge) => {
-    const ids =
-      edge === "left" || edge === "right"
-        ? [edgeClip(edge, 1)]
-        : [edgeClip(edge, -1), edgeClip(edge, 1)];
-    return ids.every((id) =>
-      sequences.clips[id]?.frames.every((frame) => {
-        const contact = frame.contacts?.[edge];
-        const supports = Object.entries(frame.supports ?? {});
-        if (!contact || !supports.length) return false;
-        if (
-          edge === "top" &&
-          !supports.some(([name]) => name.startsWith("arm"))
-        )
-          return false;
-        if (edge === "bottom" && supports.length < 2) return false;
-        const normal = edge === "left" || edge === "right" ? 0 : 1;
-        const scale = sequences.modelBox[2] / sequences.frameSize[0];
-        return supports.every(
-          ([, p]) => Math.abs(p[normal] - contact[normal]) * scale <= 1,
-        );
-      }),
-    );
-  };
-  const supportedEdges = (
-    ["left", "right", "top", "bottom"] as PetEdge[]
-  ).filter(supportsEdge);
+  const supportedEdges = sequenceEdges(sequences);
 
   function load(clip: string) {
     if (failure) return false;
@@ -237,7 +196,7 @@ export function createSequenceFigure(options: {
         group.replaceChildren(standing, object);
         owner = group;
       }
-      const clip = requestedClip(frame);
+      const clip = clipForFrame(frame);
       if (clip !== requested) {
         requested = clip;
         revision += 1;

@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import {
-  ArrowLeft,
-  Check,
-  CirclePlay,
-  Plus,
-  RefreshCw,
-  Save,
-} from "lucide-react";
+import { Check, CirclePlay, Plus, RefreshCw } from "lucide-react";
 import { api, ApiError, unwrap } from "@platform/api/client";
 import {
   getDocument,
@@ -23,6 +16,7 @@ import {
   type PetReaction,
 } from "./api";
 import { EditorStage } from "./EditorStage";
+import { EditorHeader, type EditorTab } from "./EditorHeader";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { SkinUpload } from "./SkinUpload";
 import "./editor-layout.css";
@@ -35,7 +29,7 @@ import { humanMotionUnavailable } from "./locomotion/motionAvailability";
 import { DialogueInspector } from "./DialogueInspector";
 import "./workshop.css";
 
-type Tab = "look" | "events" | "lines" | "chat" | "habits" | "preview";
+type Tab = EditorTab;
 type EventName = "idle" | "click" | "pet" | "grab" | "drop" | "roam";
 const EVENTS: { id: EventName; label: string; detail: string }[] = [
   { id: "idle", label: "待机", detail: "循环" },
@@ -252,7 +246,6 @@ export function EditorPage({
     run(async () => {
       if (!window.futurePropsDesktop?.openPet)
         throw new Error("真实桌宠仅在 macOS 桌面版中运行");
-      await save();
       await window.futurePropsDesktop.openPet(projectId);
       setActive(true);
     });
@@ -263,7 +256,6 @@ export function EditorPage({
         !window.futurePropsDesktop.openPetChatFromStudio
       )
         throw new Error("聊天小窗仅在 macOS 桌面版中运行");
-      await save();
       await window.futurePropsDesktop.openPet(projectId);
       setActive(true);
       await window.futurePropsDesktop.openPetChatFromStudio(projectId);
@@ -344,61 +336,36 @@ export function EditorPage({
 
   return (
     <section className="dp-editor" data-panel={panel}>
-      <header className="dp-editor-header">
-        <button className="dp-back" onClick={leave} aria-label="返回桌宠项目">
-          <ArrowLeft size={18} />
-        </button>
-        <div className="dp-editor-title">
-          <strong title={project?.title}>{project?.title ?? "桌宠项目"}</strong>
-          <small>
-            {!snapshot ? "尚未加载" : dirty ? "未保存修改" : "已保存"} ·{" "}
-            {!snapshot
-              ? "来源尚未加载"
-              : whale
-                ? "分层角色快照"
-                : `来源 r${project?.sourceRevision ?? "—"}`}
-          </small>
-        </div>
-        <nav aria-label="桌宠编辑步骤">
-          {(
-            [
-              ["look", "形象"],
-              ["events", "交互"],
-              ["lines", "台词"],
-              ["chat", "聊天"],
-              ["habits", "习惯"],
-              ["preview", "试玩"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              aria-pressed={tab === id}
-              onClick={() => setTab(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-        <button
-          disabled={busy || !dirty || readOnly}
-          onClick={() =>
-            void run(async () => {
-              await save();
-            })
-          }
-        >
-          <Save size={15} />
-          保存
-        </button>
-        <button
-          className="dp-primary"
-          disabled={busy}
-          onClick={() => void launch()}
-        >
-          <CirclePlay size={15} />
-          {active ? "显示桌宠" : "放到桌面"}
-        </button>
-      </header>
+      <EditorHeader
+        title={project?.title ?? "桌宠项目"}
+        status={`${!snapshot ? "尚未加载" : dirty ? "未保存修改" : "已保存"} · ${!snapshot ? "来源尚未加载" : whale ? "分层角色快照" : `来源 r${project?.sourceRevision ?? "—"}`}`}
+        tab={tab}
+        busy={busy}
+        canSave={Boolean(snapshot) && dirty && !readOnly}
+        active={active}
+        onBack={leave}
+        onTab={setTab}
+        onSave={() =>
+          void run(async () => {
+            await save();
+          })
+        }
+        onLaunch={() => void launch()}
+        onRestart={() =>
+          void run(async () => {
+            if (
+              !window.futurePropsDesktop?.closePet ||
+              !window.futurePropsDesktop.openPet
+            )
+              throw new Error("重启桌宠仅在 macOS 桌面版中可用");
+            if (link.enabled) await link.toggle();
+            await window.futurePropsDesktop.closePet();
+            setActive(false);
+            await window.futurePropsDesktop.openPet(projectId);
+            setActive(true);
+          })
+        }
+      />
       {readOnly && (
         <p className="dp-readonly" role="status">
           只读浏览 · 可调整预览，项目配置不可修改
@@ -911,7 +878,10 @@ export function EditorPage({
                       className="dp-wide"
                       onClick={() =>
                         void run(async () => {
-                          await window.futurePropsDesktop?.closePet?.();
+                          if (!window.futurePropsDesktop?.closePet)
+                            throw new Error("关闭桌宠仅在 macOS 桌面版中可用");
+                          if (link.enabled) await link.toggle();
+                          await window.futurePropsDesktop.closePet();
                           setActive(false);
                         })
                       }
@@ -920,7 +890,7 @@ export function EditorPage({
                     </button>
                   )}
                   <div className="dp-hint">
-                    桌宠只会手动启动。桌宠包导出与公开发布留到下一阶段。
+                    桌宠按已保存配置启动；未保存调整可通过同步预览临时查看。重启和收起不保存草稿。
                   </div>
                 </>
               )}

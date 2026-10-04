@@ -8,7 +8,7 @@ from app.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
 
 def convert_v3_folders_to_notes(payload: dict) -> dict:
     """Upgrade v3 folder+note archives into nestable documents."""
-    if payload.get("version") in {4, 5, 6, 7} and not payload.get("folders"):
+    if payload.get("version") in {4, 5, 6, 7, 8} and not payload.get("folders"):
         for note in payload.get("notes") or []:
             if "parent_id" not in note and "folder_id" in note:
                 note["parent_id"] = note.pop("folder_id")

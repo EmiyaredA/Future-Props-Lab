@@ -273,6 +273,11 @@ export function useTableDocument(
   };
   return {
     structure,
+    currentStructure: () =>
+      structuredClone(
+        client.getQueryData<Structure>(thoughtKeys.multitable(context, note)) ??
+          dataRef.current,
+      ),
     enqueue,
     flush,
     pending,

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { CustomSelect } from "@shared/ui/CustomSelect";
-import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import type { Field, Table } from "./api";
 import type { components } from "@generated/api";
-import { cleanConfig, fieldTypes, uid } from "./model";
+import { cleanConfig, uid } from "./model";
 import { Modal } from "./Modal";
+import { FieldForm } from "./FieldForm";
+import { needsFieldPreview } from "./fieldChanges";
 
 export function FieldSettings({
   table,
@@ -13,10 +13,14 @@ export function FieldSettings({
   close,
 }: {
   table: Table;
-  save: (table: Table) => Promise<void>;
-  preview: (table: Table) => Promise<components["schemas"]["ConversionOut"]>;
+  save: (table: Table, base: Table) => Promise<void>;
+  preview: (
+    table: Table,
+    base: Table,
+  ) => Promise<components["schemas"]["ConversionOut"]>;
   close: () => void;
 }) {
+  const [base] = useState(() => structuredClone(table));
   const [draft, setDraft] = useState(structuredClone(table)),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -82,28 +86,6 @@ export function FieldSettings({
       {draft.fields.map((f, i) => (
         <section className="multitable-field-setting" key={f.id}>
           <div>
-            <input
-              aria-label={`字段 ${i + 1} 名称`}
-              value={f.name}
-              maxLength={120}
-              onChange={(e) => update({ ...f, name: e.target.value })}
-            />
-            <CustomSelect
-              ariaLabel={`${f.name}类型`}
-              options={fieldTypes}
-              disabled={i === 0}
-              value={f.type}
-              onChange={(type) =>
-                update({
-                  ...f,
-                  type: type as Field["type"],
-                  options:
-                    type === "single" || type === "multi"
-                      ? (f.options ?? [])
-                      : [],
-                })
-              }
-            />
             <button
               className="btn"
               disabled={i <= 1}
@@ -128,65 +110,12 @@ export function FieldSettings({
               删除
             </button>
           </div>
-          {["single", "multi"].includes(f.type) && (
-            <div className="multitable-options">
-              {(f.options ?? []).map((o) => (
-                <div key={o.id}>
-                  <CustomColorPicker
-                    compact
-                    ariaLabel={`${f.name} ${o.label}颜色`}
-                    value={o.color}
-                    onChange={(color) =>
-                      update({
-                        ...f,
-                        options: f.options?.map((x) =>
-                          x.id === o.id ? { ...x, color } : x,
-                        ),
-                      })
-                    }
-                  />
-                  <input
-                    aria-label={`${f.name}选项名称`}
-                    value={o.label}
-                    maxLength={120}
-                    onChange={(e) =>
-                      update({
-                        ...f,
-                        options: (f.options ?? []).map((x) =>
-                          x.id === o.id ? { ...x, label: e.target.value } : x,
-                        ),
-                      })
-                    }
-                  />
-                  <button
-                    className="btn"
-                    onClick={() =>
-                      update({
-                        ...f,
-                        options: (f.options ?? []).filter((x) => x.id !== o.id),
-                      })
-                    }
-                  >
-                    移除选项
-                  </button>
-                </div>
-              ))}
-              <button
-                className="btn"
-                onClick={() =>
-                  update({
-                    ...f,
-                    options: [
-                      ...(f.options ?? []),
-                      { id: uid(), label: "新选项", color: "#7c89c9" },
-                    ],
-                  })
-                }
-              >
-                新增选项
-              </button>
-            </div>
-          )}
+          <FieldForm
+            field={f}
+            primary={i === 0}
+            nameLabel={`字段 ${i + 1} 名称`}
+            change={update}
+          />
         </section>
       ))}
       <button
@@ -247,9 +176,9 @@ export function FieldSettings({
           onClick={() => {
             setBusy(true);
             void (
-              conversion?.valid
-                ? save(draft).then(close)
-                : preview(draft).then(setConversion)
+              conversion?.valid || !needsFieldPreview(base, draft)
+                ? save(draft, base).then(close)
+                : preview(draft, base).then(setConversion)
             )
               .catch((e) =>
                 setError(e instanceof Error ? e.message : "保存失败"),
@@ -259,7 +188,7 @@ export function FieldSettings({
         >
           {busy
             ? "校验中…"
-            : conversion?.valid
+            : conversion?.valid || !needsFieldPreview(base, draft)
               ? "确认保存字段"
               : "预览字段变更"}
         </button>

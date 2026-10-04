@@ -9,7 +9,8 @@ import {
   type Scope,
   type RecordRow,
 } from "./api";
-import { display, visibleFields } from "./model";
+import { visibleFields } from "./model";
+import { formatFieldValue } from "./formatting";
 
 const paragraph = (text: string): JSONContent => ({
   type: "paragraph",
@@ -78,7 +79,7 @@ async function content(
                 ? value.map((id) => titles.get(id) ?? "文档不可访问").join("; ")
                 : f.type === "attachment" && Array.isArray(value)
                   ? `${value.length} 个附件（请从原表下载）`
-                  : display(f, value);
+                  : formatFieldValue(f, value);
             return { type: "tableCell", content: [paragraph(label)] };
           }),
         })),

@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 
+from .formatting import format_value
 from .query import records
 from .schemas import QueryIn
 from .storage import snapshot
@@ -60,7 +61,7 @@ async def table_nodes(session, workspace_id, table, rows, *, view=None, readable
             return f"{len(value)} 个附件（请从原表下载）"
         if f.type == "checkbox":
             return "是" if value else "否"
-        return str(value)
+        return format_value(f, value)
 
     return [
         {

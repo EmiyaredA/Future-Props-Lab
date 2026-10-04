@@ -61,8 +61,7 @@ def cell(field, value, *, convert=False):
                     next((id for id, label in options.items() if label == v), v) for v in labels
                 ]
             if isinstance(value, list) and all(isinstance(v, str) and v in options for v in value):
-                selected = set(value)
-                return [id for id in options if id in selected]
+                return list(dict.fromkeys(value))
     elif kind in {"attachment", "note"}:
         if convert and isinstance(value, str):
             value = [v.strip() for v in value.split(";") if v.strip()]
@@ -85,6 +84,14 @@ def validate_table(table, previous=None):
     if previous and min(previous.fields, key=lambda f: (f.position, f.id)).id != primary.id:
         raise ThoughtError("名称字段不能删除或移出第一列", 422, "invalid_table")
     for f in table.fields:
+        config = f.config.model_dump()
+        allowed = (
+            {"date_format"}
+            if f.type == "date"
+            else ({"decimal_places", "use_grouping"} if f.type == "number" else set())
+        )
+        if not config.keys() <= allowed:
+            raise ThoughtError(f"字段「{f.name}」的配置不符合类型", 422, "invalid_field_config")
         if len({o.id for o in f.options}) != len(f.options):
             raise ThoughtError("选项 ID 重复", 422, "invalid_table")
         if f.type not in {"single", "multi"} and f.options:
@@ -125,19 +132,46 @@ def validate_table(table, previous=None):
                 f.value = cell(fields[f.field_id], f.value)
             elif f.operator == "contains" and not isinstance(f.value, str):
                 raise ThoughtError("包含筛选需要文字或一个选项 ID", 422, "invalid_filter")
+            elif f.operator == "contains" and kind in {"single", "multi"}:
+                if f.value not in {o.id for o in fields[f.field_id].options}:
+                    raise ThoughtError(
+                        "筛选引用的选项不存在，请先修改视图条件", 422, "invalid_filter"
+                    )
 
 
 def convert_records(table, records, old_table=None):
     old = {f.id: f for f in old_table.fields} if old_table else {}
+    removed_options = {}
+    field_ids = {f.id for f in table.fields}
+    for f in table.fields:
+        previous = old.get(f.id)
+        if previous and previous.type == f.type and f.type in {"single", "multi"}:
+            retained = {o.id for o in f.options}
+            removed_options[f.id] = {
+                o.id: o.label for o in previous.options if o.id not in retained
+            }
     errors = []
     for r in records:
         for f in table.fields:
             try:
                 if f.id in r.values:
-                    r.values[f.id] = cell(f, r.values[f.id], convert=old.get(f.id) != f)
+                    previous = old.get(f.id)
+                    removed = removed_options.get(f.id)
+                    if removed:
+                        selected = r.values[f.id] if f.type == "multi" else [r.values[f.id]]
+                        for option_id in selected or []:
+                            if option_id in removed:
+                                raise ThoughtError(
+                                    f"选项「{removed[option_id]}」仍被记录引用，请先修改对应记录",
+                                    422,
+                                    "referenced_option",
+                                )
+                    r.values[f.id] = cell(
+                        f, r.values[f.id], convert=previous is None or previous.type != f.type
+                    )
             except ThoughtError as exc:
                 errors.append({"record_id": r.id, "field_id": f.id, "message": str(exc)})
-        r.values = {k: v for k, v in r.values.items() if k in {f.id for f in table.fields}}
+        r.values = {k: v for k, v in r.values.items() if k in field_ids}
     return errors
 
 

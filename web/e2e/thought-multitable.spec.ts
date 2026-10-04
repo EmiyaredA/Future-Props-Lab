@@ -40,6 +40,15 @@ async function cell(page: Page, name: string, value: string) {
   await modal.getByRole("textbox", { name, exact: true }).fill(value);
   await modal.getByRole("button", { name: "完成", exact: true }).click();
 }
+async function captureField(page: Page, name: string) {
+  const directory = process.env.FPL_MULTITABLE_PREVIEWS;
+  if (!directory) return;
+  await fs.mkdir(directory, { recursive: true });
+  await page.screenshot({
+    path: `${directory}/${name}.png`,
+    animations: "disabled",
+  });
+}
 test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ page }) => {
   test.setTimeout(120000);
   await page.goto("/apps/thought-workshop");
@@ -71,9 +80,47 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   await page.getByRole("button", { name: /新增字段/ }).click();
   await page.getByLabel("字段 5 名称", { exact: true }).fill("预算");
   await choose(page, "预算类型", "数字");
-  await page.getByRole("button", { name: "预览字段变更", exact: true }).click();
   await page.getByRole("button", { name: "确认保存字段", exact: true }).click();
   await saved(page);
+  await cell(page, "预算", "12345.6789");
+  await cell(page, "截止日期", "2026-10-04");
+  await saved(page);
+  await page
+    .getByRole("button", { name: "配置字段 预算", exact: true })
+    .click();
+  await choose(page, "小数位数", "2 位小数");
+  await page.getByRole("checkbox", { name: "千位分隔", exact: true }).check();
+  await expect(page.getByRole("dialog", { name: "字段配置" })).toHaveClass(
+    /is-field-editor/,
+  );
+  await captureField(page, "number-config");
+  await page.getByRole("button", { name: "保存字段", exact: true }).click();
+  await saved(page);
+  await expect(
+    page.getByRole("button", { name: "编辑 预算", exact: true }).first(),
+  ).toHaveText("12,345.68");
+  await page
+    .getByRole("button", { name: "编辑 预算", exact: true })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("textbox", { name: "预算", exact: true }),
+  ).toHaveValue("12345.6789");
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "配置字段 截止日期", exact: true })
+    .click();
+  await choose(page, "日期显示格式", "YYYY年M月D日 · 2026年10月4日");
+  await captureField(page, "date-config");
+  await page.getByRole("button", { name: "保存字段", exact: true }).click();
+  await saved(page);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "编辑 截止日期", exact: true }).first(),
+  ).toHaveText("2026年10月4日");
+  await expect(
+    page.getByRole("button", { name: "编辑 预算", exact: true }).first(),
+  ).toHaveText("12,345.68");
   await page.getByRole("button", { name: "新建数据表", exact: true }).click();
   await saved(page);
   await page.getByRole("button", { name: "数据表 1", exact: true }).click();
@@ -179,6 +226,9 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   const download = await downloading;
   const data = await fs.readFile((await download.path())!, "utf8");
   expect(data).toContain("CSV 任务");
+  expect(data).toContain("12345.6789");
+  expect(data).toContain("2026-10-04");
+  expect(data).not.toContain("12,345.68");
   await page.reload();
   await expect(
     page.getByRole("separator", { name: "调整名称列宽" }),
@@ -214,6 +264,17 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
     `/apps/thought-workshop/knowledge-bases/${kb.id}/documents/${parent.id}`,
   );
   await expect(page.locator(".multitable-embed")).toBeVisible();
+  await expect(
+    page
+      .locator(".multitable-embed")
+      .getByRole("button", { name: "编辑 预算", exact: true })
+      .first(),
+  ).toHaveText("12,345.68");
+  await expect(
+    page
+      .locator(".multitable-embed")
+      .getByRole("button", { name: "配置字段 预算", exact: true }),
+  ).toHaveCount(0);
   await cell(page, "名称", "正文修改任务");
   await expect
     .poll(
@@ -234,7 +295,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   ).body();
   const files = unzipSync(archive);
   const manifest = JSON.parse(strFromU8(files["manifest.json"]));
-  expect(manifest.version).toBe(7);
+  expect(manifest.version).toBe(8);
   expect(manifest.multitables[noteId].state.tables).toHaveLength(2);
   expect(manifest.multitables[noteId].history.length).toBeGreaterThan(3);
   const imported = await page.request.post(root + "/imports", {
@@ -286,6 +347,43 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
         expect(nameWidth).toBeLessThanOrEqual(gridWidth / 2 + 1);
       }
       const directory = process.env.FPL_MULTITABLE_PREVIEWS;
+      await page
+        .getByRole("button", { name: "配置字段 名称", exact: true })
+        .click();
+      const fieldDialog = page.getByRole("dialog", {
+        name: "字段配置",
+        exact: true,
+      });
+      await expect(
+        fieldDialog.getByRole("button", { name: "保存字段", exact: true }),
+      ).toBeInViewport();
+      await expect(
+        fieldDialog.getByRole("combobox", { name: "名称类型" }),
+      ).toBeDisabled();
+      if (directory)
+        await page.screenshot({
+          path: `${directory}/field-${width}-${theme}.png`,
+          animations: "disabled",
+        });
+      await fieldDialog
+        .getByRole("button", { name: "取消", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", { name: "配置字段 名称", exact: true }),
+      ).toBeFocused();
+      await page
+        .getByRole("button", { name: "配置字段 状态", exact: true })
+        .click();
+      await expect(
+        page
+          .getByRole("dialog", { name: "字段配置" })
+          .getByRole("button", { name: "保存字段", exact: true }),
+      ).toBeInViewport();
+      await captureField(page, `options-${width}-${theme}`);
+      await page
+        .getByRole("dialog", { name: "字段配置" })
+        .getByRole("button", { name: "取消", exact: true })
+        .click();
       if (directory)
         await page.screenshot({
           path: `${directory}/grid-${width}-${theme}.png`,

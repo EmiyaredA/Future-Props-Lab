@@ -1217,7 +1217,13 @@ class FavoriteInput(WireModel):
 class FavoritesOut(WireModel):
     resource_ids: list[str] = Field(default=..., alias='resource_ids')
 
+class FieldConfig(WireModel):
+    date_format: Literal['YYYY-MM-DD', 'YYYY/MM/DD', 'YYYY.MM.DD', 'YYYY年M月D日', 'DD/MM/YYYY', 'MM/DD/YYYY'] | None = Field(default=None, alias='date_format')
+    decimal_places: int | None = Field(default=None, alias='decimal_places')
+    use_grouping: bool | None = Field(default=None, alias='use_grouping')
+
 class FieldSpec(WireModel):
+    config: FieldConfig | None = Field(default=None, alias='config')
     id: str = Field(default=..., alias='id', min_length=1, max_length=36)
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     options: list[SelectOption] | None = Field(default=None, alias='options', max_length=100)
@@ -5770,6 +5776,7 @@ ExportListOut.model_rebuild()
 ExportOut.model_rebuild()
 FavoriteInput.model_rebuild()
 FavoritesOut.model_rebuild()
+FieldConfig.model_rebuild()
 FieldSpec.model_rebuild()
 FileListOut.model_rebuild()
 FileOut.model_rebuild()

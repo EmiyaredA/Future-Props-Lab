@@ -135,7 +135,7 @@ async def export_backup(
     sources = [(r.id, storage.path_for(r), r.original_filename, r.mime_type) for r in assets]
     payload = {
         "format": FORMAT,
-        "version": 7,
+        "version": 8,
         "multitables": multitables,
         **tools,
         "history": history,
@@ -198,7 +198,7 @@ def validate_archive(
         if (
             not isinstance(payload, dict)
             or payload.get("format") != FORMAT
-            or payload.get("version") not in {1, 2, 3, 4, 5, 6, 7}
+            or payload.get("version") not in {1, 2, 3, 4, 5, 6, 7, 8}
         ):
             raise ThoughtError("不支持的备份格式或版本")
         payload = convert_legacy_backup(payload)

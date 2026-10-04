@@ -181,3 +181,36 @@
   min-width: 0;
   overflow: hidden;
 }
+.multitable-field-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.multitable-field-header > span:first-of-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.multitable-field-header > span:last-child {
+  margin-left: auto;
+  opacity: 0;
+}
+.multitable-field-header:hover > span:last-child,
+.multitable-field-header:focus-visible > span:last-child {
+  opacity: 1;
+}
+.multitable-field-header:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 4px;
+}

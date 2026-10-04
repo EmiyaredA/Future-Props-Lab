@@ -1,4 +1,4 @@
-"""Version 7 archive additions and ID remapping shared by backups and copies."""
+"""Table archives, legacy metadata normalization and ID remapping for backups/copies."""
 
 from copy import deepcopy
 from datetime import datetime
@@ -10,7 +10,7 @@ from app.apps.thought_workshop.models import ThoughtNote
 from app.runtime.ids import new_id
 
 from .models import DataAsset, DataChange, DataTable
-from .schemas import Snapshot
+from .schemas import RecordSpec, Snapshot, TableSpec
 from .storage import asset_ids, entities, journal, persist, snapshot
 from .validation import validate_snapshot
 
@@ -32,8 +32,17 @@ async def export_tables(session, notes):
             "history": [
                 {
                     "revision": r.revision,
-                    "changes": r.changes,
-                    "checkpoint": r.checkpoint,
+                    "changes": [
+                        {
+                            **c,
+                            "before": normalize_entity(c["before"]),
+                            "after": normalize_entity(c["after"]),
+                        }
+                        for c in r.changes
+                    ],
+                    "checkpoint": Snapshot.model_validate(r.checkpoint).model_dump(mode="json")
+                    if r.checkpoint is not None
+                    else None,
                     "author_id": r.author_id,
                     "created_at": r.created_at.isoformat(),
                 }
@@ -75,6 +84,14 @@ def from_entities(values):
     )
 
 
+def normalize_entity(value):
+    """Normalize missing optional metadata without rewriting stored legacy journals."""
+    if value is None:
+        return None
+    model = TableSpec if "fields" in value else RecordSpec
+    return model.model_validate(value).model_dump(mode="json")
+
+
 def validate_archive(payload):
     data = payload.get("multitables", {})
     expected = {n["id"] for n in payload["notes"] if n.get("kind") == "multitable"}
@@ -96,12 +113,12 @@ def validate_archive(payload):
                 reconstructed = entities(checked)
             else:
                 for c in row["changes"]:
-                    if reconstructed.get(c["key"]) != c["before"]:
+                    if reconstructed.get(c["key"]) != normalize_entity(c["before"]):
                         raise ThoughtError("表格历史链不完整")
                     if c["after"] is None:
                         reconstructed.pop(c["key"], None)
                     else:
-                        reconstructed[c["key"]] = c["after"]
+                        reconstructed[c["key"]] = normalize_entity(c["after"])
                 validate_snapshot(from_entities(reconstructed))
         if not history or entities(state) != reconstructed:
             raise ThoughtError("表格历史与当前状态不一致")

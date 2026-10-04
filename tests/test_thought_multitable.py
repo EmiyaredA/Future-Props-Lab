@@ -139,17 +139,19 @@ async def test_backup_template_and_copy_remap_all_entities_and_history():
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as c:
         note, base, _, table = await setup(c)
+        table["fields"][2]["config"] = {"date_format": "DD/MM/YYYY"}
         assert (
             await c.post(
                 base + "/operations",
                 json={
                     "expected_revision": 0,
                     "operations": [
+                        {"op": "table.put", "table": table},
                         {
                             "op": "records.put",
                             "table_id": table["id"],
                             "records": [row(table, text="备份值")],
-                        }
+                        },
                     ],
                 },
             )
@@ -180,6 +182,7 @@ async def test_backup_template_and_copy_remap_all_entities_and_history():
         assert applied.status_code == 200, applied.text
         new_base = ROOT + f"/notes/{applied.json()['id']}/multitable"
         new = (await c.get(new_base)).json()["tables"][0]
+        assert new["fields"][2]["config"] == table["fields"][2]["config"]
         assert new["id"] != table["id"] and new["fields"][0]["id"] != table["fields"][0]["id"]
         assert (await c.post(new_base + f"/tables/{new['id']}/query", json={})).json()["total"] == 1
         snapshot = (await c.get(ROOT + f"/notes/{note['id']}/copy-snapshot")).json()
@@ -196,11 +199,18 @@ async def test_backup_template_and_copy_remap_all_entities_and_history():
         )
         assert copy.status_code == 200, copy.text
         copied = ROOT + f"/notes/{copy.json()['root_id']}/multitable"
-        assert (await c.get(copied + "/history/0")).json()["records"]
+        copied_state = (await c.get(copied + "/history/0")).json()
+        assert copied_state["records"]
+        assert copied_state["tables"][0]["fields"][2]["config"] == {}
+        copied_state = (await c.get(copied + "/history/1")).json()
+        assert copied_state["tables"][0]["fields"][2]["config"] == table["fields"][2]["config"]
+        assert (await c.get(copied)).json()["tables"][0]["fields"][2]["config"] == table["fields"][
+            2
+        ]["config"]
         backup = await c.get(ROOT + "/backup", params={"knowledge_base_id": p["id"]})
         with zipfile.ZipFile(io.BytesIO(backup.content)) as z:
             manifest = json.loads(z.read("manifest.json"))
-        assert manifest["version"] == 7 and note["id"] in manifest["multitables"]
+        assert manifest["version"] == 8 and note["id"] in manifest["multitables"]
         imported = await c.post(
             ROOT + "/imports", files={"upload": ("backup.zip", backup.content, "application/zip")}
         )

@@ -343,3 +343,59 @@ test("compact panel switches retain draft fields and the mounted stage", async (
   expect(stage).toHaveAttribute("data-key", key);
   expect(state.save).not.toHaveBeenCalled();
 });
+
+test("opening and restarting a pet retains an unsaved draft without CAS saving", async () => {
+  const calls: string[] = [];
+  const openPet = vi.fn(async () => {
+    calls.push("open");
+  });
+  const closePet = vi.fn(async () => {
+    calls.push("close");
+  });
+  Object.defineProperty(window, "futurePropsDesktop", {
+    configurable: true,
+    value: { openPet, closePet },
+  });
+  render(<EditorPage projectId="pet-1" onBack={() => {}} />);
+  await screen.findByText("形象与皮肤");
+  fireEvent.click(screen.getByRole("button", { name: "习惯" }));
+  fireEvent.click(screen.getByRole("button", { name: "常走动" }));
+  fireEvent.click(screen.getByRole("button", { name: "放到桌面" }));
+  await screen.findByRole("button", { name: "重启桌宠" });
+  expect(screen.getByText(/未保存修改/)).toBeVisible();
+  expect(state.save).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "重启桌宠" }));
+  await waitFor(() => expect(openPet).toHaveBeenCalledTimes(2));
+  expect(calls).toEqual(["open", "close", "open"]);
+  expect(screen.getByRole("button", { name: "保存" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "常走动" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  expect(state.save).not.toHaveBeenCalled();
+});
+
+test("restart failure leaves the draft intact and reports the failed reopen", async () => {
+  const openPet = vi.fn().mockRejectedValue(new Error("无法重新打开桌宠"));
+  const closePet = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(window, "futurePropsDesktop", {
+    configurable: true,
+    value: {
+      openPet,
+      closePet,
+      petStatus: async () => ({ projectId: "pet-1" }),
+    },
+  });
+  render(<EditorPage projectId="pet-1" onBack={() => {}} />);
+  await screen.findByText("形象与皮肤");
+  fireEvent.click(screen.getByRole("button", { name: "习惯" }));
+  fireEvent.click(screen.getByRole("button", { name: "常走动" }));
+  fireEvent.click(await screen.findByRole("button", { name: "重启桌宠" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "无法重新打开桌宠",
+  );
+  expect(closePet).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: "放到桌面" })).toBeEnabled();
+  expect(screen.getByText(/未保存修改/)).toBeVisible();
+  expect(state.save).not.toHaveBeenCalled();
+});

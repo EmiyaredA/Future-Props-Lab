@@ -10186,8 +10186,18 @@ export interface components {
             /** Resource Ids */
             resource_ids: string[];
         };
+        /** FieldConfig */
+        FieldConfig: {
+            /** Date Format */
+            date_format?: ("YYYY-MM-DD" | "YYYY/MM/DD" | "YYYY.MM.DD" | "YYYY年M月D日" | "DD/MM/YYYY" | "MM/DD/YYYY") | null;
+            /** Decimal Places */
+            decimal_places?: number | null;
+            /** Use Grouping */
+            use_grouping?: boolean | null;
+        };
         /** FieldSpec */
         FieldSpec: {
+            config?: components["schemas"]["FieldConfig"];
             /** Id */
             id: string;
             /** Name */

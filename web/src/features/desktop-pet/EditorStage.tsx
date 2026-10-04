@@ -1,4 +1,13 @@
-import { useRef } from "react";
+import { useId, useMemo, useRef } from "react";
+import {
+  Info,
+  Monitor,
+  Play,
+  SlidersHorizontal,
+  TriangleAlert,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import type { PetDocument } from "./api";
 import type { PetRendererHandle } from "./PetRenderer";
 import { DesktopPetFigure } from "./DesktopPetFigure";
@@ -7,12 +16,18 @@ import {
   MOTION_LABELS,
   EXPRESSION_LABELS,
   reactionFor,
+  reactionMotionUnavailable,
+  reactionExpressionUnavailable,
 } from "./playback";
 import type { EditorTab, useEditorPreview } from "./useEditorPreview";
 import type { useDesktopPreviewLink } from "./useDesktopPreviewLink";
 import { MOTION_DEMOS, type MotionDemo } from "./locomotion/demo";
 import { useVirtualMotion } from "./locomotion/useVirtualMotion";
-import { humanMotionUnavailable } from "./locomotion/motionAvailability";
+import {
+  humanMotionUnavailable,
+  sequenceDemoUnavailable,
+} from "./locomotion/motionAvailability";
+import { modelSequences } from "./sequences/capabilities";
 
 export function EditorStage({
   document,
@@ -29,9 +44,28 @@ export function EditorStage({
   preview: ReturnType<typeof useEditorPreview>;
   link: ReturnType<typeof useDesktopPreviewLink>;
 }) {
+  const linkStatusId = useId();
   const checker = ["look", "events", "lines"].includes(tab);
   const habits = document.config.habits;
-  const unavailableMotion = humanMotionUnavailable(document.whaleModel);
+  const availability = useMemo(
+    () =>
+      Object.fromEntries(
+        (Object.keys(MOTION_DEMOS) as MotionDemo[]).map((id) => [
+          id,
+          document.sourceType !== "coopanion-whale"
+            ? "Live2D 暂不支持"
+            : sequenceDemoUnavailable(document.whaleModel, id),
+        ]),
+      ),
+    [document.whaleModel, document.sourceType],
+  );
+  const unavailableMotion = preview.motionDemo
+    ? availability[preview.motionDemo]
+    : null;
+  const sequenceResource = useMemo(
+    () => modelSequences(document.whaleModel),
+    [document.whaleModel],
+  );
   const figureRef = useRef<PetRendererHandle>(null);
   const virtual = useVirtualMotion(
     tab === "preview" && !unavailableMotion ? preview.motionDemo : null,
@@ -46,9 +80,6 @@ export function EditorStage({
   );
   const reaction = reactionFor(document, preview.eventName);
   const whale = document.sourceType === "coopanion-whale";
-  const fourEdges =
-    (document.whaleModel?.motionRig as { version?: number } | undefined)
-      ?.version === 2;
   const motion = reaction.motionId
     ? ((whale
         ? MOTION_LABELS[reaction.motionId]
@@ -63,6 +94,19 @@ export function EditorStage({
             (item) => item.id === reaction.expressionId,
           )?.name) ?? reaction.expressionId)
     : "无表情";
+  const previewIssues = Array.from(
+    new Set(
+      [
+        unavailableMotion,
+        reactionMotionUnavailable(document, reaction.motionId),
+        reactionExpressionUnavailable(document, reaction.expressionId),
+        virtual.error,
+      ].filter((message): message is string => Boolean(message)),
+    ),
+  );
+  const resourceIssue = whale
+    ? humanMotionUnavailable(document.whaleModel)
+    : null;
   const figure = (
     <DesktopPetFigure
       ref={figureRef}
@@ -79,42 +123,45 @@ export function EditorStage({
   return (
     <main className="dp-editor-center">
       <div className="dp-stage-tools">
-        <button type="button" onClick={preview.playSelected}>
-          ▶ 播放事件
-        </button>
-        <span>
-          {preview.mode === "inspect"
-            ? "调整预览"
-            : preview.mode === "event"
-              ? "事件播放"
-              : "已返回待机"}
-        </span>
+        <div className="dp-stage-heading">
+          <h2>实时预览</h2>
+          <p>修改后立即查看当前效果</p>
+        </div>
+        <div className="dp-stage-actions">
+          <span className="dp-preview-mode" data-mode={preview.mode}>
+            {preview.mode === "inspect" ? (
+              <SlidersHorizontal size={15} aria-hidden="true" />
+            ) : (
+              <Play size={15} aria-hidden="true" />
+            )}
+            {preview.mode === "inspect"
+              ? "调整预览"
+              : preview.mode === "event"
+                ? "事件播放"
+                : "已返回待机"}
+          </span>
+          <button type="button" onClick={preview.playSelected}>
+            <Play size={16} aria-hidden="true" />
+            播放事件
+          </button>
+        </div>
       </div>
       <div className="dp-preview-details" role="status">
-        {EVENT_LABELS[preview.eventName]} · {motion} · {expression}
-        {preview.motionDemo && ` · 姿态：${MOTION_DEMOS[preview.motionDemo]}`}
-      </div>
-      {unavailableMotion && (
-        <div className="dp-preview-details" role="status">
-          {unavailableMotion}
-        </div>
-      )}
-      {virtual.error && (
-        <div className="dp-preview-details" role="status">
-          {virtual.error}
-        </div>
-      )}
-      <div className="dp-preview-link">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={link.enabled}
-          disabled={!link.available && !link.enabled}
-          onClick={() => link.toggle()}
-        >
-          同步预览到桌宠{link.enabled ? "：开启" : "：关闭"}
-        </button>
-        <span role="status">{link.message}</span>
+        <span className="dp-preview-chip dp-preview-event">
+          {EVENT_LABELS[preview.eventName]}
+        </span>
+        <span className="dp-preview-chip" aria-label={`动作：${motion}`}>
+          {motion}
+        </span>
+        <span className="dp-preview-chip" aria-label={`表情：${expression}`}>
+          {expression}
+        </span>
+        {preview.motionDemo && (
+          <span className="dp-preview-chip">
+            姿态：{MOTION_DEMOS[preview.motionDemo]}
+            {unavailableMotion ? "（暂不支持）" : ""}
+          </span>
+        )}
       </div>
       {tab === "preview" && (
         <div className="dp-motion-demos dp-segments" aria-label="桌面活动演示">
@@ -123,28 +170,13 @@ export function EditorStage({
               <button
                 key={id}
                 type="button"
-                disabled={
-                  !whale ||
-                  Boolean(unavailableMotion) ||
-                  (!fourEdges && ["climb-top", "climb-bottom"].includes(id))
-                }
-                title={
-                  !whale
-                    ? "Live2D 暂不支持"
-                    : unavailableMotion
-                      ? unavailableMotion
-                      : !fourEdges && ["climb-top", "climb-bottom"].includes(id)
-                        ? "此资源包未提供四边姿势"
-                        : undefined
-                }
+                disabled={Boolean(availability[id])}
+                title={availability[id] ?? undefined}
                 aria-pressed={preview.motionDemo === id}
                 onClick={() => preview.demonstrate(id)}
               >
                 {label}
-                {unavailableMotion ||
-                (!fourEdges && ["climb-top", "climb-bottom"].includes(id))
-                  ? "（暂不支持）"
-                  : ""}
+                {whale && availability[id] ? "（暂不支持）" : ""}
               </button>
             ),
           )}
@@ -153,9 +185,9 @@ export function EditorStage({
       )}
       {checker ? (
         <div className="dp-checker-stage">
-          <span className="dp-stage-badge">
-            {tab === "look" ? figureName : EVENT_LABELS[preview.eventName]}
-          </span>
+          {tab === "look" && (
+            <span className="dp-stage-badge">{figureName}</span>
+          )}
           <div className="dp-character-frame">{figure}</div>
           {preview.bubble && (
             <div className="dp-desktop-bubble">{preview.bubble}</div>
@@ -212,12 +244,71 @@ export function EditorStage({
           </div>
         </div>
       )}
+      {(previewIssues.length > 0 || resourceIssue) && (
+        <div className="dp-stage-capability" role="status">
+          <TriangleAlert size={18} aria-hidden="true" />
+          <div>
+            <strong>
+              {previewIssues.length > 0
+                ? "当前效果暂不可预览"
+                : "部分动作尚未就绪"}
+            </strong>
+            {previewIssues.length > 0 ? (
+              previewIssues.map((message) => <p key={message}>{message}</p>)
+            ) : (
+              <p>{resourceIssue}</p>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="dp-preview-link">
+        <button
+          type="button"
+          role="switch"
+          className="dp-preview-link-toggle"
+          aria-checked={link.enabled}
+          aria-describedby={linkStatusId}
+          disabled={!link.available && !link.enabled}
+          onClick={() => link.toggle()}
+        >
+          <Monitor size={16} aria-hidden="true" />
+          同步预览到桌宠
+          <span className="dp-switch-track" aria-hidden="true">
+            <span />
+          </span>
+        </button>
+        <span id={linkStatusId} role="status">
+          {link.message}
+        </span>
+      </div>
+      <div className="dp-stage-guidance">
+        {preview.mode === "event" && habits?.sound ? (
+          <Volume2 size={15} aria-hidden="true" />
+        ) : (
+          <VolumeX size={15} aria-hidden="true" />
+        )}
+        <span>
+          {preview.mode === "event"
+            ? habits?.sound
+              ? "事件音效已开启"
+              : "事件音效已关闭"
+            : "自动预览 · 静音"}
+        </span>
+        <span className="dp-stage-play-hint">
+          <Info size={15} aria-hidden="true" />
+          播放事件检查完整反应
+        </span>
+      </div>
       <footer className="dp-stage-footer">
         <span>
           {whale
-            ? document.whaleModel?.rigProfile === "human-chibi"
-              ? "人物分件动画"
-              : "原版鲸鱼娘分件动画"
+            ? sequenceResource.kind === "valid"
+              ? "完整序列帧动画"
+              : sequenceResource.kind === "invalid"
+                ? "完整序列帧资源无效"
+                : document.whaleModel?.rigProfile === "human-chibi"
+                  ? "人物资源预览"
+                  : "原版鲸鱼娘分件动画"
             : `角色画布 ${document.character?.width} × ${document.character?.height}`}
         </span>
         <span>草稿预览 · 保存后成为默认配置</span>

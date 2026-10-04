@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { RecordRow, Table, View } from "./api";
-import { display } from "./model";
+import { formatFieldValue } from "./formatting";
 
 export function KanbanView({
   table,
@@ -69,14 +69,15 @@ export function KanbanView({
                 onClick={() => open(r)}
               >
                 <strong>
-                  {display(primary, r.values[primary.id]) || "未命名记录"}
+                  {formatFieldValue(primary, r.values[primary.id]) ||
+                    "未命名记录"}
                 </strong>
                 {table.fields
                   .filter((f) => f.id !== primary.id && f.id !== field.id)
                   .slice(0, 3)
                   .map((f) => (
                     <span key={f.id}>
-                      {f.name}：{display(f, r.values[f.id]) || "—"}
+                      {f.name}：{formatFieldValue(f, r.values[f.id]) || "—"}
                     </span>
                   ))}
               </button>
@@ -196,7 +197,8 @@ export function CalendarView({
                     }
                     onClick={() => open(r)}
                   >
-                    {display(primary, r.values[primary.id]) || "未命名记录"}
+                    {formatFieldValue(primary, r.values[primary.id]) ||
+                      "未命名记录"}
                   </button>
                 ))}
             </section>
@@ -211,7 +213,7 @@ export function CalendarView({
           .filter((r) => !r.values[field.id])
           .map((r) => (
             <button className="btn" key={r.id} onClick={() => open(r)}>
-              {display(primary, r.values[primary.id]) || "未命名记录"}
+              {formatFieldValue(primary, r.values[primary.id]) || "未命名记录"}
             </button>
           ))}
       </details>

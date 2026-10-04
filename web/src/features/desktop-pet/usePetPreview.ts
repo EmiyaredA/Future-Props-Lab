@@ -8,6 +8,7 @@ import {
 import type { PetPreviewDelivery, PetPreviewDraft } from "@platform/petPreview";
 import { getDocument, type PetDocument } from "./api";
 import { expressionSupported } from "./playback";
+import { sequenceDemoUnavailable } from "./locomotion/motionAvailability";
 
 export function validatePreview(
   document: PetDocument,
@@ -17,6 +18,13 @@ export function validatePreview(
     throw new Error("项目版本已变化，请重新加载编辑器后联动");
   if (draft.motionDemo && document.sourceType !== "coopanion-whale")
     throw new Error("当前角色不支持桌面运动姿态");
+  if (draft.motionDemo) {
+    const unavailable = sequenceDemoUnavailable(
+      document.whaleModel,
+      draft.motionDemo,
+    );
+    if (unavailable) throw new Error(unavailable);
+  }
   const config = { ...document.config, ...draft.config };
   const schemes = (document.whaleModel?.schemes ?? []) as { id: string }[];
   if (document.sourceType === "coopanion-whale") {

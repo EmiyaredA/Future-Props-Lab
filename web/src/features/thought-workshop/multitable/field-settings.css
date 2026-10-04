@@ -1,0 +1,95 @@
+.multitable-field-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.multitable-field-form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.multitable-field-form .custom-select {
+  width: 100%;
+  min-width: 0;
+}
+.multitable-field-form p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+.multitable-field-form .multitable-field-check {
+  flex-direction: row;
+  align-items: center;
+}
+.multitable-field-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.multitable-field-options > strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.multitable-field-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.multitable-field-option > input {
+  min-width: 0;
+  width: 100%;
+  flex: 1;
+}
+.multitable-field-option .multitable-icon-button {
+  flex-shrink: 0;
+  width: 26px;
+  height: 30px;
+}
+.multitable-field-example {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-raised);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.multitable-field-example small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.multitable-overlay.is-field-overlay {
+  background: transparent;
+}
+.multitable-dialog.is-field-editor {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px;
+  gap: 16px;
+  box-sizing: border-box;
+}
+.multitable-dialog.is-field-editor > h2 {
+  flex-shrink: 0;
+  margin: 0;
+  padding-right: 36px;
+}
+.multitable-field-editor-body {
+  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.multitable-field-editor-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin: 0;
+}

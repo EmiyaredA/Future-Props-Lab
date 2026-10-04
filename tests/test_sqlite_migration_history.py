@@ -145,6 +145,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("0082_thought_publications",),
             ("0083_thought_multitable",),
             ("0084_unified_official_publications",),
+            ("0085_thought_field_config",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

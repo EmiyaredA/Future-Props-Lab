@@ -86,6 +86,7 @@ from db.migrations.versions import (
     r0082_thought_publications,
     r0083_thought_multitable,
     r0084_unified_official_publications,
+    r0085_thought_field_config,
 )
 
 
@@ -379,5 +380,7 @@ MIGRATIONS += (
         r0084_unified_official_publications.MIGRATION_ID, r0084_unified_official_publications.SQL
     ),
 )
+
+MIGRATIONS += (Migration(r0085_thought_field_config.MIGRATION_ID, r0085_thought_field_config.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

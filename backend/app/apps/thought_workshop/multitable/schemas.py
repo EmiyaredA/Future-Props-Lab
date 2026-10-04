@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, model_serializer
 
 FieldType = Literal[
     "text", "number", "single", "multi", "date", "checkbox", "url", "attachment", "note"
@@ -21,12 +21,28 @@ class SelectOption(Contract):
     color: str = Field(default="#7c89c9", pattern=r"^#[0-9a-fA-F]{6}$")
 
 
+DateFormat = Literal[
+    "YYYY-MM-DD", "YYYY/MM/DD", "YYYY.MM.DD", "YYYY年M月D日", "DD/MM/YYYY", "MM/DD/YYYY"
+]
+
+
+class FieldConfig(Contract):
+    date_format: DateFormat | None = None
+    decimal_places: StrictInt | None = Field(default=None, ge=0, le=8)
+    use_grouping: StrictBool | None = None
+
+    @model_serializer(mode="wrap")
+    def compact(self, handler):
+        return {key: value for key, value in handler(self).items() if value is not None}
+
+
 class FieldSpec(Contract):
     id: str = Field(min_length=1, max_length=36, pattern=r"^[a-zA-Z0-9_-]+$")
     name: str = Field(min_length=1, max_length=120)
     type: FieldType
     position: int = Field(ge=0)
     options: list[SelectOption] = Field(default_factory=list, max_length=100)
+    config: FieldConfig = Field(default_factory=FieldConfig)
 
 
 class Filter(Contract):

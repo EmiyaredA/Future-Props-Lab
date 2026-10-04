@@ -11,10 +11,16 @@ export function PetPicker({
 }: {
   label: string;
   value: string;
-  options: { value: string; label: string; disabled?: boolean }[];
+  options: {
+    value: string;
+    label: string;
+    disabled?: boolean;
+    description?: string;
+  }[];
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
+  const selected = options.find((item) => item.value === value);
   return (
     <div className="dp-field">
       <span>{label}</span>
@@ -23,8 +29,9 @@ export function PetPicker({
           className="dp-picker"
           disabled={disabled}
           aria-label={label}
+          aria-description={selected?.description}
         >
-          {options.find((item) => item.value === value)?.label ?? "未设置"}
+          {selected?.label ?? "未设置"}
           <ChevronDown size={14} />
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
@@ -41,6 +48,8 @@ export function PetPicker({
                   key={option.value}
                   value={option.value}
                   disabled={option.disabled}
+                  title={option.description}
+                  aria-description={option.description}
                 >
                   <span className="dp-menu-indicator">
                     <DropdownMenu.ItemIndicator>

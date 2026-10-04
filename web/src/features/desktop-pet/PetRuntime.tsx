@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   type PointerEvent,
@@ -53,6 +54,8 @@ export function PetRuntime({ projectId }: { projectId: string }) {
   const [pressed, setPressed] = useState(false);
   const [chatActive, setChatActive] = useState(false);
   const [proactive, setProactive] = useState(true);
+  const [statusExpanded, setStatusExpanded] = useState(false);
+  const statusDetailsId = useId();
   const chatOpen = useRef(false);
   const skinOverride = useRef(false);
   const roamOverride = useRef(false);
@@ -312,14 +315,16 @@ export function PetRuntime({ projectId }: { projectId: string }) {
     setInteractive(
       hit(event) ||
         Boolean(actionPath) ||
-        Boolean((event.target as HTMLElement).closest("button")),
+        Boolean(
+          (event.target as HTMLElement).closest("button, .pet-runtime-status"),
+        ),
     );
   };
   const onDown = (event: PointerEvent<HTMLDivElement>) => {
     if (
       !document ||
       !hit(event) ||
-      (event.target as HTMLElement).closest("button")
+      (event.target as HTMLElement).closest("button, .pet-runtime-status")
     )
       return;
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -389,6 +394,16 @@ export function PetRuntime({ projectId }: { projectId: string }) {
         ]?.lines?.[preview.display.draft.line] ?? "")
       : ""
     : bubble;
+  const statusError = error ? "桌宠加载失败" : preview.error || roamError;
+  const previewStatus = preview.linked
+    ? preview.paused
+      ? "聊天中，联动暂停"
+      : "临时预览，尚未保存"
+    : "";
+  const statusMessages = [
+    previewStatus,
+    statusError || unavailableMotion,
+  ].filter((message): message is string => Boolean(message));
   return (
     <div
       className="pet-runtime"
@@ -486,11 +501,6 @@ export function PetRuntime({ projectId }: { projectId: string }) {
           />
         </div>
       )}
-      {preview.linked && (
-        <div className="pet-runtime-preview-status">
-          {preview.paused ? "聊天中，联动暂停" : "临时预览，尚未保存"}
-        </div>
-      )}
       {displayedBubble && (
         <div className="pet-runtime-bubble">{displayedBubble}</div>
       )}
@@ -536,32 +546,49 @@ export function PetRuntime({ projectId }: { projectId: string }) {
           ))}
         </div>
       )}
-      {unavailableMotion && !error && !roamError && !preview.error && (
+      {statusMessages.length > 0 && (
         <div
-          className="pet-runtime-motion-notice"
-          role="status"
-          aria-label={unavailableMotion}
+          className="pet-runtime-status"
+          role={statusError ? "alert" : "status"}
+          aria-label={statusMessages.join("；")}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setStatusExpanded(false);
+              event.currentTarget
+                .querySelector<HTMLButtonElement>("button")
+                ?.focus();
+            }
+          }}
         >
-          <span>旧分件动画已暂停</span>
+          {statusError && (
+            <span className="pet-runtime-status-error-message">
+              {statusError}
+            </span>
+          )}
           <button
-            onClick={() =>
-              void window.futurePropsDesktop?.showStudioFromPet?.()
-            }
+            type="button"
+            className="pet-runtime-status-summary"
+            aria-expanded={statusExpanded}
+            aria-controls={statusDetailsId}
+            onClick={() => setStatusExpanded((value) => !value)}
           >
-            打开应用
+            {statusError ? "桌宠状态异常" : previewStatus || "部分动作不可用"}
           </button>
-        </div>
-      )}
-      {(error || roamError || preview.error) && (
-        <div className="pet-runtime-error" role="alert">
-          {error ? "桌宠加载失败" : preview.error || roamError}
-          <button
-            onClick={() =>
-              void window.futurePropsDesktop?.showStudioFromPet?.()
-            }
-          >
-            打开应用
-          </button>
+          {statusExpanded && (
+            <div id={statusDetailsId} className="pet-runtime-status-details">
+              {statusMessages.map((message) => (
+                <p key={message}>{message}</p>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  void window.futurePropsDesktop?.showStudioFromPet?.()
+                }
+              >
+                打开应用
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

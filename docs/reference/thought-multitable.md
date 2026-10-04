@@ -29,7 +29,7 @@ Workspace 请求使用当前 Principal，不接受 workspace_id。字段 ID 指�
 
 普通正文保存不得变更 kind，也不得覆盖多维表格正文；表格写入只由本接口执行。记录编辑、表配置、素材引用及差量历史在同一短事务完成。创建、CSV 导入、历史还原及每 100 个操作批次建立检查点。历史引用附件受删除保护，永久删除表格文档后一起释放。
 
-迁移 `0083_thought_multitable` 追加实体表与模板快照字段，根文档拥有 Workspace，子实体通过根继承隔离。完整备份 version 7 保留结构、记录、配置、历史、附件与引用，读取 version 1–6；导入、复制和模板应用重映射内部 ID。模板保存当前快照，应用建立新文档；复制表格保留表格自己的差量历史。普通笔记导出只投影嵌入视图当前筛选后的静态数据，不包含源表历史或整个源文档；附件保留数量并提示从原表下载。
+迁移 `0083_thought_multitable` 追加实体表与模板快照字段，根文档拥有 Workspace，子实体通过根继承隔离。完整备份 version 8 保留结构、记录、配置、历史、附件与引用，读取 version 1–7；导入、复制和模板应用重映射内部 ID。模板保存当前快照，应用建立新文档；复制表格保留表格自己的差量历史。普通笔记导出只投影嵌入视图当前筛选后的静态数据，不包含源表历史或整个源文档；附件保留数量并提示从原表下载。
 
 ## 社区
 
@@ -40,3 +40,11 @@ SDK 的 `thought` 资源提供 `get_multitable`、`query_multitable_records`、`
 ## 参考
 
 设计参考 [Teable](https://github.com/teableio/teable)、[Baserow](https://github.com/baserow/baserow) 的字段/记录/视图分离与交互，自行实现业务逻辑。Web 使用 [TanStack Table 的虚拟化集成](https://tanstack.com/table/v8/docs/guide/virtualization)，不接入参考应用的数据库或服务。
+
+## 字段展示配置
+
+`FieldSpec.config` 与字段一起经现有原子批次保存，缺省 `{}`。日期字段可设置 `date_format`：YYYY-MM-DD、YYYY/MM/DD、YYYY.MM.DD、YYYY年M月D日、DD/MM/YYYY、MM/DD/YYYY。数字字段可设置 `decimal_places`（null 或 0–8）及 `use_grouping`（布尔值）。未知参数、越界值、非对应类型的非空配置返回 422。
+
+展示格式不转换记录值；日期仍为 ISO 日期，数字保留完整精度。TSV 和 CSV 使用原始值，静态正文导出使用显示格式。选项仍通过 `options` 保存稳定 ID、名称与颜色，删除被记录或条件引用的选项会被校验阻止。配置修改遵守文档 CAS；名称字段仍为文本且不可删除。
+
+迁移 `0085_thought_field_config` 为旧字段添加空配置。完整备份 version 8 保留配置、历史和复制重映射；version 1–7 的缺省配置在读取时归一化，不修改旧历史。

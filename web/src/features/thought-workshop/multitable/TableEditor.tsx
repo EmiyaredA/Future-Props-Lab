@@ -29,6 +29,9 @@ import { TableToolbar, type TableAction, type ViewSection } from "./Toolbar";
 import { Database, CheckCircle2 } from "lucide-react";
 import { CellEditor } from "./CellEditor";
 import { Modal } from "./Modal";
+import { FieldEditor } from "./FieldEditor";
+import { mergeFieldChanges, validateFieldDraft } from "./fieldChanges";
+import { formatFieldValue } from "./formatting";
 import { CsvDialog, HistoryDialog } from "./ExchangeDialogs";
 import "./multitable.css";
 
@@ -68,6 +71,28 @@ export function TableEditor({
     [historyOpen, setHistoryOpen] = useState(false),
     [detailId, setDetailId] = useState<string | null>(null),
     [remove, setRemove] = useState<"record" | "table" | "view" | null>(null);
+  const [fieldEditor, setFieldEditor] = useState<{
+    field: Table["fields"][number];
+    anchor: HTMLElement;
+  } | null>(null);
+  const prepareFields = async (draft: Table, base: Table) => {
+    validateFieldDraft(draft);
+    await controller.flush();
+    const latest = controller
+      .currentStructure()
+      ?.tables.find((t) => t.id === base.id);
+    if (!latest) throw new Error("数据表已删除，请保留草稿并核对");
+    return mergeFieldChanges(base, draft, latest);
+  };
+  const previewFields = async (draft: Table, base: Table) =>
+    conversionPreview(noteId, await prepareFields(draft, base), scope);
+  const saveFields = async (draft: Table, base: Table) => {
+    controller.enqueue({
+      op: "table.put",
+      table: await prepareFields(draft, base),
+    });
+    await controller.flush();
+  };
   const tables = useMemo(() => {
     let result = [...(controller.structure.data?.tables ?? [])];
     for (const op of controller.pending) {
@@ -371,10 +396,17 @@ export function TableEditor({
             {Object.entries(results.data.pages[0].groups).map(
               ([key, count]) => (
                 <span key={key}>
-                  {table.fields
-                    .find((f) => f.id === view.config?.group_field_id)
-                    ?.options?.find((o) => o.id === key)?.label ??
-                    (key || "未分配")}
+                  {(() => {
+                    const field = table.fields.find(
+                      (f) => f.id === view.config?.group_field_id,
+                    );
+                    return field && key
+                      ? formatFieldValue(
+                          field,
+                          field.type === "number" ? Number(key) : key,
+                        )
+                      : "未分配";
+                  })()}
                   ：{count}
                 </span>
               ),
@@ -425,6 +457,11 @@ export function TableEditor({
             scope={cellScope}
             noteId={noteId}
             configure={!embedded && canEdit ? putView : undefined}
+            editField={
+              !embedded && canEdit
+                ? (field, anchor) => setFieldEditor({ field, anchor })
+                : undefined
+            }
           />
         )}
         <footer className="multitable-footer">
@@ -477,13 +514,18 @@ export function TableEditor({
         <FieldSettings
           table={table}
           close={() => setFieldsOpen(false)}
-          preview={async (t) => {
-            await controller.flush();
-            return conversionPreview(noteId, t, scope);
-          }}
-          save={async (t) => {
-            putTable(t);
-          }}
+          preview={previewFields}
+          save={saveFields}
+        />
+      )}
+      {fieldEditor && (
+        <FieldEditor
+          table={table}
+          field={fieldEditor.field}
+          anchor={fieldEditor.anchor}
+          close={() => setFieldEditor(null)}
+          preview={previewFields}
+          save={saveFields}
         />
       )}
       {viewOpen && (
