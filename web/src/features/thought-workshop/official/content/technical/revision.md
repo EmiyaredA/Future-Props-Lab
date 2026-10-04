@@ -1,4 +1,4 @@
-# 保存、历史与并发：防止静默覆盖
+# 编辑、保存、历史与并发
 
 两个窗口都打开了同一篇笔记。窗口 A 修改标题，窗口 B 修改画板；如果 B 保存时直接覆盖整个文档，A 的标题就可能消失。自动保存越快，并不会自动解决这个问题。
 
@@ -56,11 +56,22 @@ sequenceDiagram
 > [!TIP]
 > 收到 409 后先比较当前快照，再决定采用服务器内容或另存本地副本。缺少 revision 的 422 是请求缺项，不应通过无版本写入绕过。
 
+## 本机恢复副本与服务器历史的不同责任
+
+useNoteDraft 按账号、Workspace、笔记和标签页保存本机草稿，提供未确认输入的恢复机会。服务器历史记录已接受内容，两者不互相替代。本机草稿不是另一个可跳过 CAS 的写入入口；加载到恢复候选时先由用户恢复或丢弃，再继续保存。
+
+一次 flush 克隆当前草稿，记录发送代次；响应只确认这次发送并推进 revision。若用户继续输入，较新的草稿仍需提交。输入法组合期间延后保存，组件关闭后旧响应不得更新新资源。目录移动有目录版本前提，不能借正文保存偷偷更改父节点或知识库。
+
+## 用故障场景验证保存队列
+
+检查两个窗口从相同 revision 出发只有一次成功、409 保留两份内容、网络错误保留草稿、旧成功响应不覆盖新输入，以及恢复历史生成新版本。离开编辑页或打开官方阅读仍走未保存保护。响应丢失时先读取状态确认，不机械地改 revision 后重发同一旧正文。
+
 ## 相关阅读
 
 - [思绪工坊：富文本、画板与知识库](/apps/thought-workshop/official-knowledge-bases/technical/documents/thought-workshop)
-- [SQLite 与迁移：单机数据如何可靠演进](/apps/thought-workshop/official-knowledge-bases/technical/documents/sqlite)
+- [SQLite、事务与迁移](/apps/thought-workshop/official-knowledge-bases/technical/documents/sqlite)
 - [思绪工坊：保存与素材管理](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/storage)
+- [前端组件与状态分工](/apps/thought-workshop/official-knowledge-bases/technical/documents/frontend-design)
 
 ## 代码入口
 

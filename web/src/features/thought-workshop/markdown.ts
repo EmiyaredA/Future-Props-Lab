@@ -41,7 +41,7 @@ export function parseMarkdown(
     if (node.type === "blockquote" && node.content?.[0]?.type === "paragraph") {
       const first = node.content[0].content?.[0];
       const match = first?.text?.match(
-        /^\[!(INFO|NOTE|SUCCESS|WARNING|DANGER)\](?:\n|$)/i,
+        /^\[!(INFO|NOTE|TIP|SUCCESS|WARNING|DANGER)\](?:\n|$)/i,
       );
       if (match) {
         const content = structuredClone(node.content);
@@ -120,6 +120,16 @@ export function markdownWarnings(doc: JSONContent): string[] {
         Number(node.attrs?.rowspan || 1) > 1)
     )
       warnings.add("合并单元格将展开为普通表格，建议另存完整备份。");
+    if (
+      ["documentCard", "cardGrid", "documentDirectory"].includes(
+        node.type || "",
+      )
+    )
+      warnings.add(
+        "文档卡片与目录将转换为可访问的文字和链接，卡片排版请使用 HTML 或完整备份。",
+      );
+    if (node.type === "callout" && node.attrs?.title)
+      warnings.add("提示块标题将转换为正文。");
     if (node.type === "details") warnings.add("折叠段落将展开为正文。");
     if (node.type === "canvas")
       warnings.add(
@@ -142,6 +152,23 @@ export function toMarkdown(
   const tokens: Record<string, string> = {};
   let index = 0;
   const walk = (node: JSONContent): JSONContent => {
+    if (node.type === "documentCard")
+      return {
+        type: "paragraph",
+        content: [{ type: "text", text: "文档卡片（导出时解析可访问目标）" }],
+      };
+    if (node.type === "documentDirectory")
+      return {
+        type: "paragraph",
+        content: [{ type: "text", text: "文档目录（导出时解析可访问文章）" }],
+      };
+    if (node.type === "cardGrid")
+      return {
+        type: "blockquote",
+        content: node.content?.length
+          ? node.content.map(walk)
+          : [{ type: "paragraph" }],
+      };
     if (node.type === "callout") {
       const token = `THOUGHTEXPORT${index++}TOKEN`;
       tokens[token] =
@@ -158,6 +185,14 @@ export function toMarkdown(
               },
             ],
           },
+          ...(node.attrs?.title
+            ? [
+                {
+                  type: "paragraph",
+                  content: [{ type: "text", text: node.attrs.title }],
+                },
+              ]
+            : []),
           ...(node.content || []).map(walk),
         ],
       };

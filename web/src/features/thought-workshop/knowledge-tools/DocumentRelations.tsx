@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { thoughtKeys } from "../queryKeys";
 import type { NoteSummary } from "../api";
-import { listBacklinks } from "./api";
+import { useDocumentAccess } from "../DocumentAccess";
 export function DocumentRelations({
   id,
   isHome,
@@ -14,11 +14,14 @@ export function DocumentRelations({
   documents: NoteSummary[];
   open: (id: string) => void;
 }) {
+  const access = useDocumentAccess();
   const [show, setShow] = useState(false);
   const links = useInfiniteQuery({
-    queryKey: thoughtKeys.backlinks(id),
+    queryKey: thoughtKeys.backlinks(
+      access.community ? `${access.namespace}/${id}` : id,
+    ),
     initialPageParam: 0,
-    queryFn: ({ pageParam }) => listBacklinks(id, pageParam),
+    queryFn: ({ pageParam }) => access.backlinks(id, pageParam),
     getNextPageParam: (last, pages) =>
       last.length === 40 ? pages.length * 40 : undefined,
     enabled: show,
@@ -57,7 +60,13 @@ export function DocumentRelations({
             .map((item) => (
               <a
                 key={item.id}
-                href={`/apps/thought-workshop/knowledge-bases/${item.knowledge_base_id}/documents/${item.id}`}
+                href={access.referenceHref(item.id, item.knowledge_base_id!)}
+                onClick={(event) => {
+                  if (!event.metaKey && !event.ctrlKey) {
+                    event.preventDefault();
+                    open(item.id);
+                  }
+                }}
               >
                 {item.title}
                 <small> · {item.excerpt}</small>

@@ -54,11 +54,22 @@ sequenceDiagram
 > [!WARNING]
 > 不要把自动重连等同于安全重试。模型请求中断时，先检查原调用或任务状态，再决定是否由用户显式创建新请求。
 
+## 请求、增量与调用日志由不同组件处理
+
+业务层组装模型输入与能力，providers 把统一请求映射成供应商协议；适配后的片段进入公共流式消费，结束语义交给推理用例结算日志。文字模型调用、测试会话与独立推理有各自的数据所有者，不能把供应商原始事件直接保存成全部页面依赖的共享契约。
+
+部分文字已显示而连接中断时，草稿输出仍可供诊断，但不能将这次调用结算为正常完成。调用日志应保留实际错误与可获得的用量信息，不能根据界面的最后一句话猜测供应商结果。
+
+## 替换供应商后的验证范围
+
+用确定性事件测试重复增量、正常结束、空输出、错误结束和流中断，检查公共消费者与日志一致。模型能力不足在输入阶段明确拒绝；需要真实凭证的网络测试另行说明未执行范围。界面显示出内容只能证明部分响应已经到达，不能证明后续结算和结果保存成功。
+
 ## 相关阅读
 
-- [后台任务：提交中断与结果恢复](/apps/thought-workshop/official-knowledge-bases/technical/documents/tasks)
+- [后台任务与恢复](/apps/thought-workshop/official-knowledge-bases/technical/documents/tasks)
 - [模型测试与后台任务](/apps/thought-workshop/official-knowledge-bases/general/documents/testing)
 - [调用日志与排查](/apps/thought-workshop/official-knowledge-bases/general/documents/logs)
+- [OpenAPI、Web 与 SDK 契约](/apps/thought-workshop/official-knowledge-bases/technical/documents/contracts)
 
 ## 代码入口
 

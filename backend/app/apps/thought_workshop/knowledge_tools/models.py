@@ -25,6 +25,8 @@ class ThoughtTemplate(Base):
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     document: Mapped[dict] = mapped_column(JSON)
+    kind: Mapped[str] = mapped_column(String(20), default="note")
+    multitable: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     tags: Mapped[list[str]] = mapped_column(JSON, default=list)
     schema_version: Mapped[int] = mapped_column(Integer, default=3)
     revision: Mapped[int] = mapped_column(Integer, default=0)

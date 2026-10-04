@@ -32,7 +32,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "桌宠项目\n保存角色、皮肤与事件",
+      "text": "桌宠项目\n来源快照、皮肤与配置",
       "fill": "#fff1dd",
       "stroke": "#365f62",
       "icon": "database"
@@ -55,7 +55,7 @@
       "y": 310,
       "width": 220,
       "height": 110,
-      "text": "桌面运行\n使用已保存配置",
+      "text": "桌面运行\n基线配置与临时联动",
       "fill": "#f2edf8",
       "stroke": "#365f62",
       "icon": "cpu"
@@ -75,6 +75,14 @@
       "source": "snapshot",
       "target": "pet",
       "label": "固定引用",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "pet_runtime",
+      "source": "pet",
+      "target": "runtime",
+      "label": "读取授权基线",
       "arrow": true,
       "style": "step"
     }

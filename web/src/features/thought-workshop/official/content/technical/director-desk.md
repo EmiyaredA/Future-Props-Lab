@@ -50,11 +50,22 @@ flowchart TD
 > [!TIP]
 > 为演员走到桌边的例子保留三个检查时刻：开始迈步、到达桌边、停止后。分别看脚底接触与镜头遮挡，比只播放整段更容易找出问题。
 
+## 场景描述和当前预演状态如何分工
+
+工程保存对象、资源、动作路径、摄影机与时间描述；当前选中对象、视角操作和播放时刻是视图状态。前端按某一时刻计算演员与镜头，projects 用例拥有保存与归属。让演员走到桌边修改的是路径与时间，播放预演只是消费这些输入，不另存一份共享的实时世界对象。
+
+一个输出时刻先求对象状态，再求摄影机观察关系，资源决定对象如何呈现。工程 JSON 保留后续编辑信息，屏幕预演说明特定时间和视角的结果。具体输出能力以实际导出入口为准，不能从三维预览推导存在任意视频或外部模型生成。
+
+## 场景组件替换的验收依据
+
+检查路径起止、动作交接、摄影机目标和丢失资源，再核对保存后重新打开状态一致。演员状态正确但画面看不到时先检查摄影机，轨迹跳变检查时间和路径；版本冲突保留工程草稿。测试需要固定时刻与输入，比较关键状态而非只保存一张随机截图。
+
 ## 相关阅读
 
-- [时间线与媒体渲染：从状态到帧](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
-- [集成与 Agent/SDK：受控的自动化入口](/apps/thought-workshop/official-knowledge-bases/technical/documents/automation)
+- [时间线与媒体渲染](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
+- [集成与 Agent/CLI/SDK](/apps/thought-workshop/official-knowledge-bases/technical/documents/automation)
 - [导演台：保存与素材管理](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/storage)
+- [前端组件与状态分工](/apps/thought-workshop/official-knowledge-bases/technical/documents/frontend-design)
 
 ## 代码入口
 

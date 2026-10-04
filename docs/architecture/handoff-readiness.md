@@ -1,10 +1,26 @@
 # 开发交付说明
 
+## 官方文档与普通笔记发布
+
+追加 `0084_unified_official_publications`，保存库级官方标记、只读与角色编辑授权，以及导入来源映射和成功回执。已有发布保持非官方、非只读，新增发布默认只读。不自动导入、发布或修改正文。迁移仅在隔离数据库验收，正式数据须按桌面停机备份与迁移流程应用。
+
+管理员在知识社区明确导入现有指南；导入包复用普通备份用例，105 份标准笔记包含 93 篇文章与 12 篇首页。构建和检查使用 `knowledge:seed:generate` 与 `knowledge:seed:check`，桌面后端携带 seed.json。旧 URL 只解析可访问官方发布，多匹配选择，无匹配提示。运行期阅读、编辑、历史与表格统一普通笔记机制，升级不覆盖导入内容。
+
+## 多维表格
+
+追加 `0083_thought_multitable`，旧文档 kind 默认为 note，知识库首页保持普通笔记。新增表、字段、视图、记录、差量历史和素材引用表，以及模板快照字段；不动态建 SQL 表，不改旧迁移。完整备份升级至 version 7，继续导入 version 1–6。迁移仅在隔离数据库验证，正式数据升级仍经停机备份与正式迁移入口，桌面热加载不执行迁移。
+
+## 知识社区
+
+知识社区追加 `0082_thought_publications`：新增发布记录、逐篇成员授权、用户收藏及编辑上传登记，正文继续保存在原知识库。迁移仅建表，不自动发布任何现有文章。迁移先在隔离数据库完成验证；正式数据停机备份后再通过正式迁移入口升级，开发热加载不执行正式迁移。
+
+## 既有交付变更
+
 桌宠轻伴随追加 `r0081_desktop_pet_presentation`：个人聊天保存气泡／对话展示偏好，已有会话保留对话模式，新会话默认气泡。热加载更新不得执行正式迁移；先完成隔离验证，停机备份并核验，再通过正式迁移入口升级。角色、消息和原有 revision 保留。
 
 思绪工坊补齐能力追加 `0080_thought_knowledge_tools`：引用索引、共享模板及素材保护、不可变历史的命名标记、账号与 Workspace 隔离的筛选和阅读位置。正文 schema version 3 和画板 sceneVersion 2 保持旧版读取；完整备份升级至 version 6。
 
-最新登记迁移为 `r0080_thought_knowledge_tools`（思绪工坊引用、模板、命名快照和个人阅读状态）；此前的 `r0079_desktop_pet_chat` 按账号、Workspace 和桌宠隔离文字聊天设置、请求防重放与消息记录；`r0078_desktop_pet_whale` 支持本地导入鲸鱼娘固定快照；`r0077_desktop_pet` 建立 Workspace 桌宠项目与固定角色快照；`r0076_amadeus_workflows` 记录 Amadeus 模式、继续来源与持久提问；`r0075_creative_workshop` 记录创意工坊草稿、公开版本与安装记录；`r0074_live2d_editable_runtime` 和 `r0073_live2d_cubism_attachment` 扩展 Live2D 工坊。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。
+最新登记迁移为 `0083_thought_multitable`（多维表格与历史），此前 `0082_thought_publications`（发布与逐篇授权），此前 `r0080_thought_knowledge_tools`（思绪工坊引用、模板、命名快照和个人阅读状态）；此前的 `r0079_desktop_pet_chat` 按账号、Workspace 和桌宠隔离文字聊天设置、请求防重放与消息记录；`r0078_desktop_pet_whale` 支持本地导入鲸鱼娘固定快照；`r0077_desktop_pet` 建立 Workspace 桌宠项目与固定角色快照；`r0076_amadeus_workflows` 记录 Amadeus 模式、继续来源与持久提问；`r0075_creative_workshop` 记录创意工坊草稿、公开版本与安装记录；`r0074_live2d_editable_runtime` 和 `r0073_live2d_cubism_attachment` 扩展 Live2D 工坊。历史迁移仍按 registry 的既定顺序追加；升级细节见[账号治理](../reference/account-governance.md)。
 
 账号治理迁移为 `r0050_workspace_governance`，追加在思绪工坊历史迁移之后。扩展固定成员角色并保存邀请目标角色，保留旧数据；升级影响见[账号与工作区治理](../reference/account-governance.md)。
 

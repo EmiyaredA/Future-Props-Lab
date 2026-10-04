@@ -1,7 +1,13 @@
+import { importAndPublish, legacyTarget } from "./official-import-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { unzipSync, strFromU8 } from "fflate";
-import { openNoteHistory, saveNote } from "./thought-helpers";
+import {
+  openNoteHistory,
+  saveNote,
+  pickNoteMore,
+  pickProjectMore,
+} from "./thought-helpers";
 
 const root = "/v1/thought-workshop";
 async function fixture(page: Page, count = 1) {
@@ -323,9 +329,7 @@ test("whole library HTML contains relative navigation, references, offline math 
   expect(updated.ok(), await updated.text()).toBe(true);
   await page.goto(`/apps/thought-workshop/knowledge-bases/${project.id}`);
   const download = page.waitForEvent("download");
-  await page
-    .getByRole("button", { name: "导出整库 HTML", exact: true })
-    .click();
+  await pickProjectMore(page, "导出整库 HTML");
   const path = await (await download).path();
   const files = unzipSync(new Uint8Array(await readFile(path!)));
   const html = strFromU8(files[`documents/${note.id}.html`]);
@@ -375,54 +379,50 @@ test("whole library HTML contains relative navigation, references, offline math 
   await offline.close();
 });
 
-test("official reading synchronizes personal position and explicit chapter links take priority", async ({
+test("official articles retain ordinary community reading position after refresh", async ({
   page,
 }) => {
-  const { headers } = await fixture(page);
-  const resourceId = "official/technical/thought-workshop",
-    url =
-      "/apps/thought-workshop/official-knowledge-bases/technical/documents/thought-workshop";
+  test.setTimeout(90000);
+  const { publication } = await importAndPublish(page, "technical");
+  const target = await legacyTarget(
+    page,
+    "technical",
+    "thought-workshop",
+    publication.id,
+  );
+  const me = await (await page.request.get("/v1/auth/me")).json();
+  const resourceId = `community/${me.user.id}/${publication.id}/${target.note_id}`;
+  const key = `fpl-reading:${me.user.id}:${resourceId}`;
+  const url = `/apps/thought-workshop/community/${publication.id}/documents/${target.note_id}`;
   const reading = () =>
-    page.request
-      .get(
-        root +
-          "/preferences/reading?resource_id=" +
-          encodeURIComponent(resourceId),
-      )
-      .then((response) => response.json());
+    page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+      key,
+    );
   await page.goto(url);
-  await expect(
-    page.getByRole("article", { name: "官方文档正文" }),
-  ).toBeVisible();
+  await expect(page.locator(".thought-prose")).toBeVisible();
   await expect
-    .poll(async () => (await reading())?.resource_id)
-    .toBe(resourceId);
+    .poll(async () => (await reading())?.position?.ratio)
+    .toBeDefined();
   await page.locator(".knowledge-main").evaluate((main) => {
     main.scrollTop = main.scrollHeight / 2;
   });
   await expect
     .poll(async () => (await reading())?.position?.ratio ?? 0)
     .toBeGreaterThan(0.2);
-  const anchor = await page
-    .locator(".official-outline a")
-    .first()
-    .getAttribute("href");
-  expect(anchor).toMatch(/^#/);
-  const old = await reading();
-  const response = await page.request.post(root + "/preferences/reading", {
-    headers,
-    data: {
-      resource_id: resourceId,
-      title: old.title,
-      position: { paragraph: "不存在的旧段落", ratio: 1 },
-    },
-  });
-  expect(response.ok(), await response.text()).toBe(true);
-  await page.goto(url + anchor);
-  await expect(page.locator(anchor!)).toBeInViewport();
+  const before = (await reading()).position.ratio;
+  await page.reload();
+  await expect(page.locator(".thought-prose")).toBeVisible();
   await expect
-    .poll(async () => (await reading())?.position?.ratio ?? 1)
-    .toBeLessThan(0.5);
+    .poll(async () =>
+      page
+        .locator(".knowledge-main")
+        .evaluate(
+          (main) =>
+            main.scrollTop / Math.max(1, main.scrollHeight - main.clientHeight),
+        ),
+    )
+    .toBeGreaterThan(before / 2);
 });
 
 test("reference, find replacement, templates, copies and named history connect in the editor", async ({
@@ -468,7 +468,11 @@ test("reference, find replacement, templates, copies and named history connect i
   await expect(prose).toContainText("查找替换完成");
   await page.getByRole("button", { name: "关闭查找", exact: true }).click();
   await saveNote(page);
-  await page.getByRole("button", { name: "文档模板", exact: true }).click();
+  await page
+    .getByRole("button", { name: "新建文档", exact: true })
+    .last()
+    .click();
+  await page.getByRole("menuitem", { name: "从模板新建", exact: true }).click();
   const templates = page.getByRole("alertdialog", {
     name: "Workspace 文档模板",
     exact: true,
@@ -488,9 +492,7 @@ test("reference, find replacement, templates, copies and named history connect i
   await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(
     "编辑器复用模板",
   );
-  await page
-    .getByRole("button", { name: "复制文档 / 子树", exact: true })
-    .click();
+  await pickNoteMore(page, "复制文档 / 子树");
   await page
     .getByRole("alertdialog", { name: /复制「编辑器复用模板」/ })
     .getByRole("button", { name: "创建副本", exact: true })

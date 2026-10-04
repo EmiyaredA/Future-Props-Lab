@@ -8,7 +8,7 @@ from app.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
 
 def convert_v3_folders_to_notes(payload: dict) -> dict:
     """Upgrade v3 folder+note archives into nestable documents."""
-    if payload.get("version") in {4, 5, 6} and not payload.get("folders"):
+    if payload.get("version") in {4, 5, 6, 7} and not payload.get("folders"):
         for note in payload.get("notes") or []:
             if "parent_id" not in note and "folder_id" in note:
                 note["parent_id"] = note.pop("folder_id")
@@ -73,6 +73,7 @@ def validate_structure(payload: dict) -> list[ThoughtNoteIn]:
             or not home.get("is_home")
             or home.get("parent_id")
             or home.get("deleted_at")
+            or home.get("kind", "note") != "note"
         ):
             raise ThoughtError("知识库首页无效")
         if project.get("cover_asset_id") and project["cover_asset_id"] not in assets:

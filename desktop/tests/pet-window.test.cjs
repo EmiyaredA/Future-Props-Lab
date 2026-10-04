@@ -369,3 +369,232 @@ test("motion IPC rejects stale, foreign and paused updates and follows display c
   controller.close();
   assert.throws(read, /非桌宠/);
 });
+
+test("continuous motion confirmation is pet-only, reports actual host bounds and never cancels motion", async () => {
+  const controller = new PetWindowController({
+    preload: "fixture",
+    pageOrigin: () => "http://fixture",
+    trusted: (url) => url.startsWith("http://fixture/"),
+    isStudioSender: (event) => event.sender.id === 1,
+    showStudio() {},
+    canOpen: () => true,
+  });
+  controller.installIpc();
+  const studioContents = new EventEmitter();
+  studioContents.id = 1;
+  const studio = {
+    sender: studioContents,
+    senderFrame: { url: "http://fixture/home" },
+  };
+  handlers.get("desktop:pet-context")(studio, {
+    userId: "u",
+    workspaceId: "w",
+  });
+  await handlers.get("desktop:pet-open")(
+    studio,
+    "11111111-1111-1111-1111-111111111111",
+  );
+  const pet = windows.at(-1),
+    trusted = sender(pet);
+  await handlers.get("desktop:pet-chat-open")(trusted);
+  const chat = windows.at(-1);
+  // Simulate a native window constraint after setBounds: the menu bar limits
+  // the shell even though the transparent canvas may extend above that shell.
+  pet.setBounds = (bounds) => {
+    pet.bounds = { ...bounds, y: Math.max(25, bounds.y) };
+  };
+  const read = () => handlers.get("desktop:pet-environment")(trusted);
+  const move = (event, value) =>
+    handlers.get("desktop:pet-motion")(event, value);
+  const alignmentOrder = [];
+  chat.webContents.on("desktop:pet-chat-layout", () =>
+    alignmentOrder.push("chat"),
+  );
+  const confirmations = [],
+    environmentEvents = [],
+    foreignReceipts = [];
+  pet.webContents.on("desktop:pet-motion-confirmed", (value) => {
+    confirmations.push(value);
+    alignmentOrder.push("confirmed");
+  });
+  pet.webContents.on("desktop:pet-environment", (value) =>
+    environmentEvents.push(value),
+  );
+  chat.webContents.on("desktop:pet-motion-confirmed", (value) =>
+    foreignReceipts.push(value),
+  );
+  studioContents.on("desktop:pet-motion-confirmed", (value) =>
+    foreignReceipts.push(value),
+  );
+  const generation = read().generation;
+  const request = {
+    generation,
+    sequence: 1,
+    environmentRevision: read().revision,
+    x: 400,
+    y: -70,
+    manual: true,
+    geometry: {
+      visible: { x: 80, y: 130, width: 140, height: 220 },
+      feet: { x: 150, y: 350 },
+    },
+  };
+  const placed = move(trusted, request);
+  assert.equal(placed.bounds.y, 25);
+  assert.deepEqual(placed.bounds, pet.getBounds());
+  assert.deepEqual(placed.sceneOffset, { x: 0, y: -95 });
+  assert.equal(placed.generation, generation);
+  assert.deepEqual(confirmations, [{ sequence: 1, environment: placed }]);
+  assert.equal(environmentEvents.length, 0);
+  assert.equal(foreignReceipts.length, 0);
+  assert.deepEqual(alignmentOrder, ["chat", "confirmed"]);
+  const second = move(trusted, { ...request, sequence: 2, x: 440 });
+  assert.deepEqual(confirmations.at(-1), { sequence: 2, environment: second });
+  assert.equal(second.generation, generation);
+  assert.equal(environmentEvents.length, 0);
+  assert.throws(() => move(trusted, request), /过期/);
+  assert.throws(() => move(studio, { ...request, sequence: 3 }), /不可用/);
+  assert.throws(
+    () => move(sender(chat), { ...request, sequence: 3 }),
+    /不可用/,
+  );
+  assert.throws(
+    () =>
+      move(
+        { ...trusted, senderFrame: { ...trusted.senderFrame } },
+        { ...request, sequence: 3 },
+      ),
+    /不可用/,
+  );
+  const url = pet.webContents.mainFrame.url;
+  pet.webContents.mainFrame.url = "http://evil/pet.html";
+  assert.throws(() => move(trusted, { ...request, sequence: 3 }), /不可用/);
+  pet.webContents.mainFrame.url = url;
+  assert.equal(confirmations.length, 2);
+  const nativePlacement = pet.setBounds;
+  pet.setBounds = (bounds) => {
+    pet.bounds = { ...bounds, x: 2000 };
+  };
+  assert.throws(
+    () => move(trusted, { ...request, sequence: 3 }),
+    /无法将完整角色/,
+  );
+  assert.equal(confirmations.length, 2);
+  pet.setBounds = nativePlacement;
+  // Cancellation uses its existing channel; its old generation cannot emit a receipt.
+  handlers.get("desktop:pet-motion-cancel")(trusted, generation + 1);
+  assert.throws(() => move(trusted, { ...request, sequence: 3 }), /过期/);
+  assert.equal(confirmations.length, 2);
+  handlers.get("desktop:pet-hide")(trusted);
+  assert.throws(
+    () =>
+      move(trusted, { ...request, generation: read().generation, sequence: 3 }),
+    /不可用/,
+  );
+  assert.equal(confirmations.length, 2);
+  controller.close();
+  assert.throws(() => move(trusted, request), /不可用/);
+  assert.equal(confirmations.length, 2);
+  assert.equal(foreignReceipts.length, 0);
+});
+
+test("a window closed during host placement emits no motion confirmation", async () => {
+  const controller = new PetWindowController({
+    preload: "fixture",
+    pageOrigin: () => "http://fixture",
+    trusted: () => true,
+    isStudioSender: (event) => event.sender.id === 1,
+    showStudio() {},
+    canOpen: () => true,
+  });
+  controller.installIpc();
+  const studio = {
+    sender: { id: 1 },
+    senderFrame: { url: "http://fixture/home" },
+  };
+  handlers.get("desktop:pet-context")(studio, {
+    userId: "u",
+    workspaceId: "w",
+  });
+  await handlers.get("desktop:pet-open")(
+    studio,
+    "11111111-1111-1111-1111-111111111111",
+  );
+  const pet = windows.at(-1),
+    trusted = sender(pet),
+    receipts = [];
+  const environment = handlers.get("desktop:pet-environment")(trusted);
+  pet.webContents.on("desktop:pet-motion-confirmed", (value) =>
+    receipts.push(value),
+  );
+  pet.setBounds = (bounds) => {
+    pet.bounds = bounds;
+    controller.close();
+  };
+  assert.throws(
+    () =>
+      handlers.get("desktop:pet-motion")(trusted, {
+        generation: environment.generation,
+        sequence: 1,
+        environmentRevision: environment.revision,
+        x: 500,
+        y: 400,
+        manual: true,
+        geometry: {
+          visible: { x: 80, y: 130, width: 140, height: 220 },
+          feet: { x: 150, y: 350 },
+        },
+      }),
+    /不可用/,
+  );
+  assert.equal(receipts.length, 0);
+});
+
+test("preload motion confirmation subscription is read-only, independent and removable", () => {
+  const renderer = new EventEmitter();
+  let bridge;
+  const previousLoad = Module._load;
+  Module._load = function (name, ...args) {
+    return name === "electron"
+      ? {
+          ipcRenderer: renderer,
+          contextBridge: {
+            exposeInMainWorld: (_name, value) => {
+              bridge = value;
+            },
+          },
+        }
+      : previousLoad.call(this, name, ...args);
+  };
+  try {
+    const preload = require.resolve("../dist/preload.js");
+    delete require.cache[preload];
+    require(preload);
+  } finally {
+    Module._load = previousLoad;
+  }
+  assert.equal(Object.isFrozen(bridge), true);
+  const receipts = [],
+    environments = [];
+  const stopReceipt = bridge.onPetMotionConfirmed((value) =>
+    receipts.push(value),
+  );
+  const stopEnvironment = bridge.onPetEnvironment((value) =>
+    environments.push(value),
+  );
+  const receipt = {
+    sequence: 7,
+    environment: { generation: 3, bounds: { x: 10, y: 20 } },
+  };
+  renderer.emit("desktop:pet-motion-confirmed", {}, receipt);
+  assert.deepEqual(receipts, [receipt]);
+  assert.equal(environments.length, 0);
+  stopReceipt();
+  assert.equal(renderer.listenerCount("desktop:pet-motion-confirmed"), 0);
+  assert.equal(renderer.listenerCount("desktop:pet-environment"), 1);
+  renderer.emit("desktop:pet-motion-confirmed", {}, receipt);
+  renderer.emit("desktop:pet-environment", {}, receipt.environment);
+  assert.equal(receipts.length, 1);
+  assert.deepEqual(environments, [receipt.environment]);
+  stopEnvironment();
+});

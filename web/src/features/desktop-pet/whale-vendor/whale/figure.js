@@ -15,7 +15,15 @@
  * model.json keeps the master drawing's pixel frame for the face sprites; U/V convert.
  */
 import { createRig } from "../rig/rig.js";
-import { Articulation, jointDeformers } from "../../locomotion/articulation";
+import { whaleTextureLibrary } from "./textures";
+import {
+  applyWhaleMotionPose,
+  whaleMotionRig,
+} from "../../locomotion/whaleRig";
+import {
+  createWhaleFaceProjector,
+  whaleGeometryAttributes,
+} from "../../locomotion/whaleAuthored";
 
 const f1 = (n) => Math.round(n * 100) / 100;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -51,15 +59,6 @@ function spring(k, c, lim = Infinity) {
   };
 }
 
-function loadImage(url) {
-  return new Promise((ok, bad) => {
-    const im = new Image();
-    im.onload = () => ok(im);
-    im.onerror = bad;
-    im.src = url;
-  });
-}
-
 /**
  * Loads the model and textures; resolves to a figure object for createPet's `opts.figure`.
  * `opts.raster` shows each frame as an SVG <image> copied from the canvas instead of the canvas itself (slower;
@@ -88,29 +87,13 @@ export async function createWhaleFigure(
       ),
     ),
   ];
-  // a scheme is a set of textures over the same geometry; the original's are at tex/ and feat/
-  const SCHEMES = (model.schemes || [{ id: "deepseek" }]).filter(
-    (sc) => sc.ready !== false,
-  );
-  const schemeInfo = (id) => SCHEMES.find((sc) => sc.id === id) || SCHEMES[0];
-  // the scheme's accent colours the listening arcs, thought bubbles and sleep z's
+  const {
+    schemes: SCHEMES,
+    schemeInfo,
+    ready,
+    loadScheme,
+  } = whaleTextureLibrary(model, featNames, asset);
   const accent = () => schemeInfo(scheme).accent || "#4d6bfe";
-  const loaded = {},
-    ready = {};
-  function loadScheme(id) {
-    if (loaded[id]) return loaded[id];
-    const dir = id === SCHEMES[0].id ? "" : `schemes/${id}/`;
-    const set = { tex: {}, img: {} };
-    loaded[id] = Promise.all([
-      ...model.parts.map(async (p) => {
-        set.tex[p.tex] = await loadImage(asset(`${dir}tex/${p.tex}.png`));
-      }),
-      ...featNames.map(async (n) => {
-        set.img[n] = await loadImage(asset(`${dir}feat/${n}.png`));
-      }),
-    ]).then(() => (ready[id] = set));
-    return loaded[id];
-  }
   let scheme = schemeInfo(opts.scheme).id;
   let { tex, img } = await loadScheme(scheme);
   const box = Object.fromEntries(model.parts.map((p) => [p.id, p.box]));
@@ -120,7 +103,7 @@ export async function createWhaleFigure(
   };
 
   /* deformers: each acts in rest space; parents act after children */
-  const deformers = {
+  const sourceDeformers = {
     body: { kind: "rot", pivot: PV.body },
     skirt: { kind: "warp", parent: "body", rect: rectOf("skirt") },
     skirtSit: { kind: "warp", parent: "body", rect: rectOf("skirt_sit") },
@@ -141,41 +124,23 @@ export async function createWhaleFigure(
     finFar: { kind: "rot", parent: "headBack", pivot: PV.finFar },
     ahoge: { kind: "rot", parent: "headFront", pivot: PV.ahoge },
   };
-  const parts = model.parts.map((p) => ({ ...p }));
-  // Coo's short limbs use the existing painted regions, split at their joints in UV space.
-  // This stays local to the figure; the imported legacy package remains unchanged.
-  const motionRig = {
-    version: 1,
-    hiddenParts: ["arm_near", "arm_far", "leg_back", "leg_front"],
-    limbs: {
-      armNear: { root: PV.armNear, joint: [108, 185], end: [103, 203] },
-      armFar: { root: PV.armFar, joint: [161, 183], end: [168, 198] },
-      legBack: { root: PV.legBack, joint: [112, 228], end: [110, 248] },
-      legFront: { root: PV.legFront, joint: [143, 228], end: [142, 246] },
-    },
-  };
-  const articulated = motionRig.hiddenParts.every((id) => parts.some((p) => p.id === id));
-  if (articulated) {
-    Object.assign(deformers, jointDeformers(motionRig));
-    Object.entries(motionRig.limbs).forEach(([name, limb], i) => {
-      const source = parts.find((p) => p.id === motionRig.hiddenParts[i]);
-      const [x, y, w, h] = source.box;
-      const cuts = [y, limb.joint[1], limb.end[1], y + h];
-      limb.parts = [name, `${name}Lower`, `${name}End`].map((parent, j) => {
-        const top = Math.max(y, cuts[j] - (j ? 2 : 0));
-        const bottom = Math.min(y + h, cuts[j + 1] + (j < 2 ? 2 : 0));
-        const id = `motion_${parent}`;
-        parts.push({ ...source, id, parent, box: [x, top, w, bottom - top], uvBox: [0, (top - y) / h, 1, (bottom - y) / h] });
-        return id;
-      });
-    });
-  }
-  const articulation = articulated ? new Articulation(motionRig, PV.body) : null;
+  const {
+    rig: motionRig,
+    parts,
+    view: VIEW,
+    deformers,
+    engine: articulation,
+    authored,
+    supportedEdges,
+    waist,
+  } = whaleMotionRig(model, sourceDeformers);
   // the face features ride a little ahead of the face for the turn
   parts.push({
     id: "faceFx",
     tex: "faceFx",
-    box: [U(FACE.x), V(FACE.y), FACE.w * S, FACE.h * S],
+    box: authored
+      ? [VIEW[0], VIEW[1], VIEW[2] - VIEW[0], VIEW[3] - VIEW[1]]
+      : [U(FACE.x), V(FACE.y), FACE.w * S, FACE.h * S],
     z: 9,
     parent: "headFeat",
     grid: [4, 4],
@@ -214,6 +179,16 @@ export async function createWhaleFigure(
   const fg1 = faceCv.getContext("2d"),
     fg2 = faceCv2.getContext("2d");
   let fg = fg1;
+  const faceTexture = createWhaleFaceProjector(authored, VIEW, {
+    kind: "whale",
+    transform: [S, 0, 0, S, U(FACE.x), V(FACE.y)],
+    clip: [
+      [U(FACE.x), V(FACE.y)],
+      [U(FACE.x + FACE.w), V(FACE.y)],
+      [U(FACE.x + FACE.w), V(FACE.y + FACE.h)],
+      [U(FACE.x), V(FACE.y + FACE.h)],
+    ],
+  });
   const eyeCv = document.createElement("canvas");
   const INK = "#5a2330";
   const poly2 = (c, x) => c[0] * x * x + c[1] * x + c[2];
@@ -428,7 +403,7 @@ export async function createWhaleFigure(
   }
 
   /* ---------- mounting inside the pet's SVG group ---------- */
-  const VIEW = model.view;
+
   let fo = null,
     canvas = null,
     fxG = null,
@@ -466,6 +441,7 @@ export async function createWhaleFigure(
   }
   // a fade in progress: the rig crossfades every part from `tex` to fade.set's textures over fade.dur seconds
   let fade = null;
+  let schemeSelection = 0;
   function endFade() {
     if (!fade) return;
     tex = fade.set.tex;
@@ -479,9 +455,10 @@ export async function createWhaleFigure(
    * (the pet's time now) or else at the next frame drawn.
    */
   function setScheme(id, o = {}) {
+    const selection = ++schemeSelection;
     const next = schemeInfo(id).id;
     const apply = (set) => {
-      if (disposed) return;
+      if (disposed || selection !== schemeSelection) return;
       endFade();
       if (scheme === next && tex === set.tex) return;
       scheme = next;
@@ -552,7 +529,8 @@ export async function createWhaleFigure(
   };
   let wTilt = 0,
     wLean = 0;
-  const groupTilt = (mode, tilt, lean) => tilt * wTilt + lean * wLean;
+  const groupTilt = (mode, tilt, lean) =>
+    authored?.pose ? 0 : tilt * wTilt + lean * wLean;
   let finMood = 0,
     tailMood = 0,
     wagAmp = 0,
@@ -631,6 +609,9 @@ export async function createWhaleFigure(
     const walking = mode === "walk" || mode === "run",
       held = mode === "drag" || mode === "held",
       airborne = mode === "air";
+    // A released authored pose must not leave standing parts hidden in the next frame.
+    st.alpha = {};
+    st.z = {};
 
     /* body: pet-core's `low` is how far the hips sink (sitting, the walk's bob), in these units */
     sitK = lerp(sitK, clamp(o.sit ?? 0, 0, 1), ease(12, dt));
@@ -741,19 +722,6 @@ export async function createWhaleFigure(
       aN = 20 + 3 * Math.sin(t * 30);
       aF = -18 - 3 * Math.sin(t * 30);
     }
-    if (mode === "held") {
-      aN = 20 + o.swing * 0.3;
-      aF = -15 - o.swing * 0.2;
-    }
-    if (mode === "climb") {
-      const phase = o.gait?.phase ?? 0;
-      aN = (o.locomotion?.edge === "right" ? -80 : 105) + 16 * Math.sin(phase);
-      aF = (o.locomotion?.edge === "right" ? -105 : 80) - 16 * Math.sin(phase);
-    }
-    if (mode === "glide") {
-      aN = 75;
-      aF = -72;
-    }
     const armN = sp.armN.step(aN, dt),
       armF = sp.armF.step(aF, dt);
 
@@ -794,17 +762,6 @@ export async function createWhaleFigure(
       a: lerp(legA[1], -60, sitK),
       ty: -lift[1] * 0.9 * (1 - sitK),
     };
-    if (articulation) {
-      const active = sitK < 0.4;
-      if (active) {
-        const pose = articulation.sample(o);
-        Object.assign(st, pose.state, { alpha: { ...st.alpha, ...pose.state.alpha }, z: { ...st.z, ...pose.state.z } });
-      } else {
-        for (const limb of Object.values(motionRig.limbs))
-          for (const id of limb.parts) st.alpha[id] = 0;
-        st.alpha.arm_near = st.alpha.arm_far = 1;
-      }
-    }
     st.tail = { a: tail - 10 * sitK };
     st.tailBend = { fn: (u) => [0, -tail * 0.5 * u * u] };
     st.neck = {
@@ -895,8 +852,11 @@ export async function createWhaleFigure(
     st.finNear = { a: fins + Math.sin(t * 1.4) * 1.5 };
     st.finFar = { a: -fins * 0.8 - Math.sin(t * 1.4) * 1.2 };
 
+    if (authored) authored.apply({ ...o, sit: sitK }, st);
+    else applyWhaleMotionPose(articulation, o, motionRig, sitK, st);
+    whaleGeometryAttributes(petG, supportedEdges, authored?.pose ?? null);
     paintFace(fc, face, o, t);
-    rig.upload("faceFx", faceCv);
+    rig.upload("faceFx", faceTexture(faceCv));
     st.mix = 0;
     if (fade) {
       if (fade.t0 == null) fade.t0 = t;
@@ -907,7 +867,7 @@ export async function createWhaleFigure(
       paintFace(fc, face, o, t);
       img = own;
       fg = fg1;
-      rig.upload("faceFx@mix", faceCv2);
+      rig.upload("faceFx@mix", faceTexture(faceCv2));
     }
     rig.render(st);
     if (opts.raster) {
@@ -971,9 +931,20 @@ export async function createWhaleFigure(
       rig?.gl.getExtension("WEBGL_lose_context")?.loseContext();
     },
     draw,
+    fixedScale: Boolean(authored),
+    getMotionFailure: () => authored?.getMotionFailure() ?? null,
+    getMotionTransition: () => authored?.getMotionTransition() ?? null,
+    cancelMotionPlayback: () => authored?.cancelMotionPlayback(),
+    motionFacing: (motion, seconds) =>
+      authored
+        ? authored.displayFacing(motion.facing, seconds)
+        : motion.state === "climb"
+          ? 1
+          : motion.facing,
+    pickupPoint: () =>
+      authored?.pose ? rig.point("torso", st, ...authored.pose.waist) : waist,
     groupTilt,
     setScheme,
-    /** Forgets the motion state (springs, clocks), for callers that replay a timeline from its start. */
     /**
      * Renders `frames` frames of one pose (face `fc`, frame fields `o`, its clock starting at o.t) at `res` canvas
      * pixels per rig unit, then gives up the WebGL context; returns an SVG <image> for the result in rig space.
@@ -993,6 +964,7 @@ export async function createWhaleFigure(
     },
     reset() {
       endFade();
+      authored?.reset();
       for (const k in sp) {
         sp[k].x = 0;
         sp[k].v = 0;

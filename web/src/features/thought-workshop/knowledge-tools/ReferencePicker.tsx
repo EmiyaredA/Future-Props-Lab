@@ -1,46 +1,48 @@
 import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { OFFICIAL_KNOWLEDGE_BASES } from "../official/catalog";
 import { thoughtKeys } from "../queryKeys";
-import { globalSearch } from "./api";
+import { useDocumentAccess } from "../DocumentAccess";
 import type { DocumentReference } from "./ContentNodes";
 
 export function ReferencePicker({
   choose,
   close,
+  title = "引用文档",
+  confirmLabel = "插入引用",
+  allowCustomLabel = true,
 }: {
   choose: (reference: DocumentReference) => void;
   close: () => void;
+  title?: string;
+  confirmLabel?: string;
+  allowCustomLabel?: boolean;
 }) {
+  const access = useDocumentAccess();
   const [query, setQuery] = useState(""),
     [customLabel, setCustomLabel] = useState("");
   const [selected, setSelected] = useState<DocumentReference | null>(null);
   const search = useInfiniteQuery({
-    queryKey: thoughtKeys.search({ query, title_only: true, picker: true }),
+    queryKey: thoughtKeys.search({
+      query,
+      title_only: true,
+      picker: true,
+      access: access.namespace,
+    }),
     initialPageParam: 0,
     queryFn: ({ pageParam, signal }) =>
-      globalSearch({ query, title_only: true }, pageParam, signal),
+      access.searchNotes({ query, title_only: true }, pageParam, signal),
     getNextPageParam: (last, pages) => {
       const count = pages.reduce((sum, page) => sum + page.items.length, 0);
       return count < last.total ? count : undefined;
     },
     retry: false,
   });
-  const official = OFFICIAL_KNOWLEDGE_BASES.flatMap((library) =>
-    library.documents
-      .filter((doc) =>
-        `${library.title} ${doc.title}`
-          .toLocaleLowerCase()
-          .includes(query.toLocaleLowerCase()),
-      )
-      .map((doc) => ({ library, doc })),
-  );
   return (
     <ConfirmDialog
       open
-      title="引用文档"
-      confirmLabel="插入引用"
+      title={title}
+      confirmLabel={confirmLabel}
       onCancel={close}
       onConfirm={() => {
         if (selected)
@@ -55,17 +57,21 @@ export function ReferencePicker({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="搜索文档标题…"
             />
-            <input
-              aria-label="引用显示文字"
-              value={customLabel}
-              maxLength={240}
-              onChange={(event) => setCustomLabel(event.target.value)}
-              placeholder="显示文字（默认跟随标题）"
-            />
+            {allowCustomLabel && (
+              <input
+                aria-label="引用显示文字"
+                value={customLabel}
+                maxLength={240}
+                onChange={(event) => setCustomLabel(event.target.value)}
+                placeholder="显示文字（默认跟随标题）"
+              />
+            )}
           </div>
           {selected && <p>已选择：{selected.label}</p>}
           <div className="thought-tools-list">
-            <strong>Workspace 文档</strong>
+            <strong>
+              {access.community ? "可访问的社区文章" : "Workspace 文档"}
+            </strong>
             {search.data?.pages
               .flatMap((page) => page.items)
               .map((item) => (
@@ -101,27 +107,6 @@ export function ReferencePicker({
                 加载更多
               </button>
             )}
-            <strong>官方文章</strong>
-            {official.map(({ library, doc }) => (
-              <button
-                className="btn"
-                key={`${library.id}/${doc.id}`}
-                aria-pressed={
-                  selected?.libraryId === library.id &&
-                  selected?.documentId === doc.id
-                }
-                onClick={() =>
-                  setSelected({
-                    kind: "official",
-                    libraryId: library.id,
-                    documentId: doc.id,
-                    label: doc.title,
-                  })
-                }
-              >
-                {doc.title} · {library.title}
-              </button>
-            ))}
           </div>
         </div>
       }

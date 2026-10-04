@@ -1,3 +1,4 @@
+import { useDocumentAccess } from "./DocumentAccess";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useAccountId,
@@ -13,18 +14,14 @@ import {
 } from "./drafts/storage";
 import { ApiError } from "@platform/api/client";
 import { publishResourceRevision } from "@platform/sync/resourceBroadcast";
-import {
-  createNote,
-  noteInput,
-  saveNote,
-  type Note,
-  type NoteInput,
-} from "./api";
+import { noteInput, type Note, type NoteInput } from "./api";
 
 export type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
+  const access = useDocumentAccess();
+  const activeWorkspace = useWorkspaceId();
   const userId = useAccountId(),
-    workspaceId = useWorkspaceId();
+    workspaceId = access.community ? access.namespace : activeWorkspace;
   const [tabId] = useState(draftTabId);
   const identity = userId && workspaceId ? { userId, workspaceId } : null;
   const key = identity ? draftKey(identity, initial.id, tabId) : null;
@@ -145,14 +142,17 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
       if (generation.current !== savedGeneration.current) return flush();
       return saved.current;
     }
-    if (blocked.current) throw new Error("请先处理保存冲突");
+    if (blocked.current)
+      throw new Error(
+        "保存已停止，请先处理保存冲突或确认文章访问权限；本机草稿已保留。",
+      );
     if (generation.current === savedGeneration.current) return saved.current;
     const sent = generation.current;
     const acknowledgedAt = localTime.current;
     const body = structuredClone(draftRef.current);
     setState("saving");
     setError("");
-    const promise = saveNote(initial.id, body, saved.current.revision);
+    const promise = access.save(initial.id, body, saved.current.revision);
     flight.current = promise;
     try {
       const next = await promise;
@@ -182,14 +182,22 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
           blocked.current = true;
           setConflict((caught.problem.current as Note | undefined) ?? null);
           setState("conflict");
-        } else setState("error");
+        } else {
+          if (
+            access.community &&
+            caught instanceof ApiError &&
+            [403, 404].includes(caught.status)
+          )
+            blocked.current = true;
+          setState("error");
+        }
         setError(caught instanceof Error ? caught.message : "保存失败");
       }
       throw caught;
     } finally {
       flight.current = null;
     }
-  }, [initial.id, key]);
+  }, [initial.id, key, access]);
 
   useEffect(() => {
     if (state !== "dirty" || composing || recovery.length) return;
@@ -242,7 +250,13 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
     setComposing(active);
   }, []);
   const duplicate = () =>
-    createNote({
+    (
+      access.duplicate ??
+      (() =>
+        Promise.reject(
+          new Error("社区草稿不能另存到源 Workspace；请保留草稿或复制文本。"),
+        ))
+    )({
       ...draftRef.current,
       title: `${draftRef.current.title.slice(0, 230)}（本地副本）`,
     });
@@ -278,7 +292,10 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
     discardLocal,
     restoreLocal,
     duplicateLocal: async (row: LocalDraft) => {
-      const next = await createNote({
+      const next = await (
+        access.duplicate ??
+        (() => Promise.reject(new Error("社区草稿不能另存到源 Workspace")))
+      )({
         ...row.body,
         title: row.body.title.slice(0, 230) + "（恢复副本）",
       });

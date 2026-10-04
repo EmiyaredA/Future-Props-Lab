@@ -29,6 +29,9 @@
 | [export_note_content](#export-note-content) | `GET /v1/thought-workshop/notes/{note_id}/export` |
 | [note_history](#note-history) | `GET /v1/thought-workshop/notes/{note_id}/history` |
 | [note_history_detail](#note-history-detail) | `GET /v1/thought-workshop/notes/{note_id}/history/{history_id}` |
+| [get_multitable](#get-multitable) | `GET /v1/thought-workshop/notes/{note_id}/multitable` |
+| [list_multitable_history](#list-multitable-history) | `GET /v1/thought-workshop/notes/{note_id}/multitable/history` |
+| [get_multitable_history](#get-multitable-history) | `GET /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}` |
 | [saved_filters](#saved-filters) | `GET /v1/thought-workshop/preferences/filters` |
 | [reading_position](#reading-position) | `GET /v1/thought-workshop/preferences/reading` |
 | [recently_visited](#recently-visited) | `GET /v1/thought-workshop/preferences/recent` |
@@ -47,6 +50,13 @@
 | [create_checkpoint](#create-checkpoint) | `POST /v1/thought-workshop/notes/{note_id}/checkpoints` |
 | [duplicate_document](#duplicate-document) | `POST /v1/thought-workshop/notes/{note_id}/duplicate` |
 | [restore_note_history](#restore-note-history) | `POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore` |
+| [preview_multitable_conversion](#preview-multitable-conversion) | `POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview` |
+| [preview_multitable_csv](#preview-multitable-csv) | `POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview` |
+| [restore_multitable_history](#restore-multitable-history) | `POST /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore` |
+| [apply_multitable_operations](#apply-multitable-operations) | `POST /v1/thought-workshop/notes/{note_id}/multitable/operations` |
+| [export_multitable_csv](#export-multitable-csv) | `POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export` |
+| [import_multitable_csv](#import-multitable-csv) | `POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import` |
+| [query_multitable_records](#query-multitable-records) | `POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query` |
 | [apply_note_operations](#apply-note-operations) | `POST /v1/thought-workshop/notes/{note_id}/operations` |
 | [restore_note](#restore-note) | `POST /v1/thought-workshop/notes/{note_id}/restore` |
 | [save_filter](#save-filter) | `POST /v1/thought-workshop/preferences/filters` |
@@ -464,6 +474,65 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## get_multitable {#get-multitable}
+
+`client.thought.get_multitable(...)`
+
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `Structure`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_multitable_history {#list-multitable-history}
+
+`client.thought.list_multitable_history(...)`
+
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable/history`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `offset` | query | integer | 否 |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_multitable_history {#get-multitable-history}
+
+`client.thought.get_multitable_history(...)`
+
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `revision` | path | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `Snapshot`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## saved_filters {#saved-filters}
 
 `client.thought.saved_filters(...)`
@@ -667,6 +736,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `project_id` | path | string | 是 |
 | `body` | application/json | KnowledgeNoteCreate | 是 |
 | `body.expected_revision` | 请求体 | integer | 是 |
+| `body.kind` | 请求体 | note / multitable | 否 |
 | `body.parent_id` | 请求体 | string / null | 否 |
 | `body.title` | 请求体 | string | 否 |
 
@@ -757,6 +827,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.document` | 请求体 | object | 否 |
 | `body.expected_knowledge_revision` | 请求体 | integer | 是 |
 | `body.favorite` | 请求体 | boolean | 否 |
+| `body.kind` | 请求体 | note / multitable | 否 |
 | `body.knowledge_base_id` | 请求体 | string | 是 |
 | `body.parent_id` | 请求体 | string / null | 否 |
 | `body.pinned` | 请求体 | boolean | 否 |
@@ -863,6 +934,171 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ThoughtNoteOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## preview_multitable_conversion {#preview-multitable-conversion}
+
+`client.thought.preview_multitable_conversion(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `body` | application/json | ConversionIn | 是 |
+| `body.table` | 请求体 | TableSpec | 是 |
+
+**响应**：
+- `200` · `application/json` · `ConversionOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## preview_multitable_csv {#preview-multitable-csv}
+
+`client.thought.preview_multitable_csv(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `body` | application/json | CsvSource | 是 |
+| `body.csv` | 请求体 | string | 是 |
+| `body.header` | 请求体 | boolean | 否 |
+| `body.mapping` | 请求体 | array / null | 否 |
+| `body.table` | 请求体 | TableSpec / null | 否 |
+
+**响应**：
+- `200` · `application/json` · `CsvPreview`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## restore_multitable_history {#restore-multitable-history}
+
+`client.thought.restore_multitable_history(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `revision` | path | integer | 是 |
+| `body` | application/json | RestoreIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `BatchOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## apply_multitable_operations {#apply-multitable-operations}
+
+`client.thought.apply_multitable_operations(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/operations`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `body` | application/json | BatchIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.operations` | 请求体 | array | 是 |
+
+**响应**：
+- `200` · `application/json` · `BatchOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## export_multitable_csv {#export-multitable-csv}
+
+`client.thought.export_multitable_csv(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `table_id` | path | string | 是 |
+| `body` | application/json | QueryIn | 是 |
+| `body.limit` | 请求体 | integer | 否 |
+| `body.offset` | 请求体 | integer | 否 |
+| `body.search` | 请求体 | string | 否 |
+| `body.view_id` | 请求体 | string / null | 否 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## import_multitable_csv {#import-multitable-csv}
+
+`client.thought.import_multitable_csv(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `table_id` | path | string | 是 |
+| `body` | application/json | CsvIn | 是 |
+| `body.csv` | 请求体 | string | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.header` | 请求体 | boolean | 否 |
+| `body.mapping` | 请求体 | array | 是 |
+| `body.table` | 请求体 | TableSpec / null | 否 |
+
+**响应**：
+- `200` · `application/json` · `BatchOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## query_multitable_records {#query-multitable-records}
+
+`client.thought.query_multitable_records(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `table_id` | path | string | 是 |
+| `body` | application/json | QueryIn | 是 |
+| `body.limit` | 请求体 | integer | 否 |
+| `body.offset` | 请求体 | integer | 否 |
+| `body.search` | 请求体 | string | 否 |
+| `body.view_id` | 请求体 | string / null | 否 |
+
+**响应**：
+- `200` · `application/json` · `RecordPage`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -989,6 +1225,8 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body` | application/json | TemplateIn | 是 |
 | `body.description` | 请求体 | string | 否 |
 | `body.document` | 请求体 | object | 是 |
+| `body.kind` | 请求体 | note / multitable | 否 |
+| `body.multitable` | 请求体 | Snapshot / null | 否 |
 | `body.name` | 请求体 | string | 是 |
 | `body.schema_version` | 请求体 | 2 / 3 | 否 |
 | `body.tags` | 请求体 | array | 否 |
@@ -1064,6 +1302,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.document` | 请求体 | object | 否 |
 | `body.expected_revision` | 请求体 | integer | 是 |
 | `body.favorite` | 请求体 | boolean | 否 |
+| `body.kind` | 请求体 | note / multitable | 否 |
 | `body.knowledge_base_id` | 请求体 | string | 是 |
 | `body.parent_id` | 请求体 | string / null | 否 |
 | `body.pinned` | 请求体 | boolean | 否 |
@@ -1139,6 +1378,8 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.description` | 请求体 | string | 否 |
 | `body.document` | 请求体 | object | 是 |
 | `body.expected_revision` | 请求体 | integer | 是 |
+| `body.kind` | 请求体 | note / multitable | 否 |
+| `body.multitable` | 请求体 | Snapshot / null | 否 |
 | `body.name` | 请求体 | string | 是 |
 | `body.schema_version` | 请求体 | 2 / 3 | 否 |
 | `body.tags` | 请求体 | array | 否 |

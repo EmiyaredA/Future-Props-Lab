@@ -215,7 +215,7 @@ def parse_markdown(text, assets):
             first = content[0].get("content", [])
             if first and first[0].get("type") == "text":
                 marker = re.match(
-                    r"^\[!(INFO|NOTE|SUCCESS|WARNING|DANGER)\](?:\n|$)", first[0]["text"], re.I
+                    r"^\[!(INFO|NOTE|TIP|SUCCESS|WARNING|DANGER)\](?:\n|$)", first[0]["text"], re.I
                 )
                 if marker:
                     first[0]["text"] = first[0]["text"][marker.end() :]
@@ -252,6 +252,18 @@ def markdown(document, paths):
         kind, attrs = node["type"], node.get("attrs", {})
         children = node.get("content", [])
         content = "".join(walk(child) for child in children)
+        if kind == "documentDirectory":
+            return "文档目录（完整备份保留动态目录）\n\n"
+        if kind == "documentCard":
+            target = attrs.get("noteId") if attrs.get("kind") == "note" else attrs.get("documentId")
+            if not target:
+                return "文档不可访问\n\n"
+            href = (
+                "fpl-note:" + target
+                if attrs.get("kind") == "note"
+                else "fpl-official:" + attrs["libraryId"] + "/" + target
+            )
+            return f"[文档]({href})\n\n"
         if kind == "documentReference":
             label = attrs.get("customLabel") or attrs["label"]
             label = re.sub(r"([\\\[\]])", r"\\\1", label)
@@ -262,6 +274,8 @@ def markdown(document, paths):
             )
             return f"[{label}]({href}{'?custom=1' if attrs.get('customLabel') else ''})"
         if kind == "callout":
+            if attrs.get("title"):
+                content = attrs["title"] + "\n\n" + content
             return (
                 "> [!"
                 + attrs["variant"].upper()

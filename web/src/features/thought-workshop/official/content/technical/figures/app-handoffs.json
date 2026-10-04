@@ -1,0 +1,130 @@
+{
+  "sceneVersion": 2,
+  "title": "公共能力与应用交接的不同路径",
+  "elements": [
+    {
+      "id": "video",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "视频剪辑工坊\n片段与工程生命周期",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "visual",
+      "kind": "icon",
+      "x": 720,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "视觉创作工坊\n接收片段素材",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "motion",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "特效制作工坊\n交付成片",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "media",
+      "kind": "icon",
+      "x": 40,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "公共媒体渲染\n确定性时间与输出",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "pet",
+      "kind": "icon",
+      "x": 380,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "桌宠工坊\n自己的配置与素材",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "live",
+      "kind": "icon",
+      "x": 720,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "Live2D 公开快照\n只读文档与版本",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "code"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "video",
+      "target": "visual",
+      "label": "公开片段交接",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e1",
+      "source": "motion",
+      "target": "video",
+      "label": "公开成片交接",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e2",
+      "source": "video",
+      "target": "media",
+      "label": "消费渲染契约",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e3",
+      "source": "motion",
+      "target": "media",
+      "label": "消费渲染契约",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e4",
+      "source": "pet",
+      "target": "live",
+      "label": "只读来源请求",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    }
+  ]
+}

@@ -1,211 +1,245 @@
+import "./document-layout/reading.css";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { OfficialLibraryCards } from "./official/OfficialLibraryCards";
-import { ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
+import { lazy, Suspense, useState } from "react";
+import { FileCode2 } from "lucide-react";
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { getNote } from "./api";
 import { getDirectory, listKnowledge } from "./knowledgeApi";
 import { thoughtKeys } from "./queryKeys";
+import { KnowledgeSidebar } from "./KnowledgeSidebar";
+import { KnowledgeTree } from "./KnowledgeTree";
+import { KnowledgeSections, type KnowledgeSection } from "./KnowledgeSections";
+import { KnowledgeActionMenu } from "./KnowledgeActionMenu";
+import { NoteReaderPane } from "./NoteReaderPane";
+import { useDocumentChrome } from "./document-layout/useDocumentChrome";
 import { DiscoveryPanel } from "./knowledge-tools/DiscoveryPanel";
 import { DocumentRelations } from "./knowledge-tools/DocumentRelations";
 import { useNoteResults } from "./useNoteResults";
 import { KnowledgeDocumentResults } from "./KnowledgeDocumentResults";
-import { RichEditor } from "./RichEditor";
 import { exportLibraryHtml } from "./knowledge-tools/libraryExport";
+import "./thought-workshop.css";
+import "./knowledge.css";
+import "./writing-layout.css";
+import "./community/community.css";
+const TableEditor = lazy(() =>
+  import("./multitable/TableEditor").then((m) => ({ default: m.TableEditor })),
+);
 export function ThoughtReadOnlyPage({
   projectId,
   documentId,
   onOpen,
-  onOpenOfficial,
+  onNavigateSection,
 }: {
   projectId?: string;
   documentId?: string;
   onOpen: (projectId?: string, documentId?: string) => void;
   onOpenOfficial: (libraryId: string) => void;
+  onNavigateSection?: (section: KnowledgeSection) => void;
 }) {
-  const [discovery, setDiscovery] = useState(false);
-  const [query, setQuery] = useState("");
-  const [exportError, setExportError] = useState("");
-  const [exporting, setExporting] = useState(false);
+  const documentUI = useDocumentChrome();
+  const [discovery, setDiscovery] = useState(false),
+    [query, setQuery] = useState(""),
+    [drawer, setDrawer] = useState(false),
+    [view, setView] = useState("all"),
+    [browsing, setBrowsing] = useState(false),
+    [error, setError] = useState("");
+  const sidebar = useDrawerFocus(() => setDrawer(false), drawer);
   const projects = useQuery({
     queryKey: thoughtKeys.projects(),
     queryFn: ({ signal }) => listKnowledge("", false, signal),
   });
   const directory = useQuery({
-    queryKey: thoughtKeys.directory(projectId || ""),
+    queryKey: thoughtKeys.directory(projectId ?? ""),
     queryFn: ({ signal }) => getDirectory(projectId!, signal),
     enabled: !!projectId,
   });
+  const current = documentId ?? directory.data?.knowledge_base.home_note_id;
   const note = useQuery({
-    queryKey: thoughtKeys.note(documentId || ""),
-    queryFn: ({ signal }) => getNote(documentId!, signal),
-    enabled: !!documentId,
+    queryKey: thoughtKeys.note(current ?? ""),
+    queryFn: ({ signal }) => getNote(current!, signal),
+    enabled: !!current,
   });
-  const homeId = directory.data?.knowledge_base.home_note_id;
-  const home = useQuery({
-    queryKey: thoughtKeys.note(homeId ?? ""),
-    queryFn: ({ signal }) => getNote(homeId!, signal),
-    enabled: !!homeId && !documentId,
-  });
-  const results = useNoteResults(projectId, query, "all", !documentId);
-  const filteredProjects = projects.data?.filter((item) =>
-    item.title
-      .toLocaleLowerCase("zh-CN")
-      .includes(query.trim().toLocaleLowerCase("zh-CN")),
-  );
+  const filtered = useNoteResults(projectId, query, view, browsing);
+  const open = (id?: string) => {
+    setDrawer(false);
+    setBrowsing(false);
+    setQuery("");
+    onOpen(projectId, id);
+  };
   return (
-    <ReadOnlyPage
-      title={
-        note.data?.title || directory.data?.knowledge_base.title || "所有知识库"
-      }
-      error={projectId ? directory.error || note.error : undefined}
-      loading={
-        documentId
-          ? note.isPending
-          : projectId
-            ? directory.isPending
-            : projects.isPending
-      }
-      onBack={
-        projectId ? () => onOpen(documentId ? projectId : undefined) : undefined
-      }
-    >
-      <button className="btn" onClick={() => setDiscovery(!discovery)}>
-        全局搜索与最近访问
-      </button>
-      {projectId && (
+    <div className="thought-shell knowledge-shell">
+      <KnowledgeSidebar
+        readOnly
+        sidebarRef={sidebar}
+        drawer={drawer}
+        close={() => setDrawer(false)}
+        onBack={() => onNavigateSection?.("community")}
+        onNavigate={() => onOpen()}
+        inside={!!projectId}
+        query={query}
+        search={(q) => {
+          setQuery(q);
+          setBrowsing(true);
+        }}
+        view={view}
+        browsing={browsing}
+        noteId={documentId}
+        home={() => open()}
+        selectView={(v) => {
+          setView(v);
+          setBrowsing(true);
+        }}
+        trash={false}
+        selectTrash={() => {}}
+        discover={() => setDiscovery(!discovery)}
+        sections={
+          onNavigateSection ? (
+            <KnowledgeSections active="private" navigate={onNavigateSection} />
+          ) : undefined
+        }
+      >
+        <div className="knowledge-reading-directory">
+          <KnowledgeTree
+            directory={{
+              documents: (directory.data?.documents ?? []).filter(
+                (n) => !n.is_home,
+              ),
+            }}
+            label="知识库目录"
+            activeId={current}
+            open={open}
+          />
+        </div>
+      </KnowledgeSidebar>
+      {drawer && (
         <button
-          className="btn"
-          disabled={exporting}
-          onClick={() => {
-            setExporting(true);
-            setExportError("");
-            void exportLibraryHtml(projectId)
-              .catch((error) => setExportError(error.message))
-              .finally(() => setExporting(false));
-          }}
-        >
-          {exporting ? "正在导出…" : "整库 HTML 导出"}
-        </button>
-      )}
-      {exportError && <p role="alert">{exportError}</p>}
-      {discovery && (
-        <DiscoveryPanel
-          projects={projects.data ?? []}
-          close={() => setDiscovery(false)}
-          navigate={(href) => {
-            history.pushState({}, "", href);
-            window.dispatchEvent(new PopStateEvent("popstate"));
-          }}
+          className="knowledge-backdrop"
+          aria-label="关闭目录遮罩"
+          onClick={() => setDrawer(false)}
         />
       )}
-      {documentId && note.data ? (
-        <>
-          <p>{note.data.tags.join(" · ")}</p>
-          <RichEditor
-            key={note.data.id}
-            readingId={note.data.id}
-            readingRevision={note.data.revision}
-            outlineTitle={note.data.title}
-            document={note.data.document}
-            readOnly
-            onChange={() => {}}
-            onReady={() => {}}
-          />
-          <DocumentRelations
-            id={note.data.id}
-            isHome={note.data.is_home}
-            documents={directory.data?.documents ?? []}
-            open={(id) => onOpen(projectId, id)}
-          />
-        </>
-      ) : projectId ? (
-        <>
-          {home.data && !query && (
-            <>
-              <RichEditor
-                key={home.data.id}
-                document={home.data.document}
-                outlineTitle={directory.data?.knowledge_base.title}
-                readOnly
-                onChange={() => {}}
-                onReady={() => {}}
-                readingId={home.data.id}
-                readingRevision={home.data.revision}
+      <main className="knowledge-main">
+        <header className="knowledge-topbar is-note">
+          <button
+            className="btn knowledge-mobile"
+            onClick={() => setDrawer(true)}
+          >
+            目录
+          </button>
+          <div className="knowledge-topbar-start">
+            <nav className="knowledge-breadcrumb" aria-label="文档路径">
+              <button onClick={() => open()}>
+                {directory.data?.knowledge_base.title ?? "我的知识库"}
+              </button>
+              {documentId && (
+                <>
+                  <span>/</span>
+                  <span>{note.data?.title}</span>
+                </>
+              )}
+            </nav>
+          </div>
+          <div className="knowledge-top-actions">
+            <div
+              className="knowledge-document-tools"
+              ref={documentUI.toolsRef}
+            />
+            <span className="community-permission-badge">可读</span>
+            {projectId && (
+              <KnowledgeActionMenu
+                ariaLabel="知识库更多操作"
+                groups={[
+                  [
+                    {
+                      value: "export",
+                      label: "导出整库 HTML",
+                      icon: FileCode2,
+                    },
+                  ],
+                ]}
+                onAction={() =>
+                  void exportLibraryHtml(projectId).catch((e) =>
+                    setError(e.message),
+                  )
+                }
               />
-              <DocumentRelations
-                id={home.data.id}
-                isHome
-                documents={directory.data?.documents ?? []}
-                open={(id) => onOpen(projectId, id)}
-              />
-            </>
-          )}
-          <input
-            className="readonly-search"
-            aria-label="搜索知识库文档"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜索标题、正文与标签…"
+            )}
+          </div>
+        </header>
+        {(error || note.error || directory.error || projects.error) && (
+          <p className="thought-error" role="alert">
+            {error ||
+              note.error?.message ||
+              directory.error?.message ||
+              projects.error?.message}
+          </p>
+        )}
+        {discovery && (
+          <DiscoveryPanel
+            projects={projects.data ?? []}
+            close={() => setDiscovery(false)}
+            navigate={(href) => {
+              history.pushState({}, "", href);
+              window.dispatchEvent(new PopStateEvent("popstate"));
+            }}
           />
+        )}
+        {!projectId ? (
+          <section className="knowledge-library">
+            <h1>我的知识库</h1>
+            <div className="community-books">
+              {projects.data?.map((p) => (
+                <article className="community-book" key={p.id}>
+                  <div className="community-book-copy">
+                    <h3>{p.title}</h3>
+                    <p>{p.description}</p>
+                    <button className="btn" onClick={() => onOpen(p.id)}>
+                      进入知识库
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : browsing ? (
           <KnowledgeDocumentResults
-            view="all"
+            view={view}
             query={query}
-            loading={results.isPending}
-            items={results.items}
-            total={results.total}
-            hasMore={results.hasNextPage}
-            loadingMore={results.isFetchingNextPage}
-            onLoadMore={() => void results.fetchNextPage()}
-            onOpen={(id) => onOpen(projectId, id)}
+            loading={filtered.isLoading}
+            items={filtered.items}
+            total={filtered.total}
+            hasMore={filtered.hasNextPage}
+            loadingMore={filtered.isFetchingNextPage}
+            onLoadMore={() => void filtered.fetchNextPage()}
+            onOpen={open}
             onRestore={() => {}}
             onDeleteForever={() => {}}
           />
-          {results.error && (
-            <p role="alert">
-              {results.error.message}
-              <button className="btn" onClick={() => void results.refetch()}>
-                重试
-              </button>
-            </p>
-          )}
-        </>
-      ) : (
-        <>
-          <input
-            className="readonly-search"
-            aria-label="搜索知识库"
-            placeholder="搜索知识库…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <OfficialLibraryCards query={query} onOpen={onOpenOfficial} />
-          <h2>我的知识库</h2>
-          {projects.error && (
-            <p role="alert">
-              个人知识库暂时无法读取。
-              <button className="btn" onClick={() => void projects.refetch()}>
-                重试
-              </button>
-            </p>
-          )}
-          <div className="readonly-collection">
-            {filteredProjects?.map((item) => (
-              <button
-                className="readonly-card"
-                key={item.id}
-                onClick={() => onOpen(item.id)}
-              >
-                <strong>{item.title}</strong>
-                <span>{item.description}</span>
-                <small>查看内容 →</small>
-              </button>
-            ))}
-          </div>
-          {projects.isSuccess && !filteredProjects?.length && (
-            <p>没有匹配的个人知识库。</p>
-          )}
-        </>
-      )}
-    </ReadOnlyPage>
+        ) : note.data ? (
+          <>
+            {note.data.kind === "multitable" ? (
+              <Suspense fallback={<p>正在加载表格…</p>}>
+                <TableEditor noteId={note.data.id} note={note.data} readOnly />
+              </Suspense>
+            ) : (
+              <NoteReaderPane
+                note={note.data}
+                documentChrome={documentUI.chrome}
+              />
+            )}
+            <DocumentRelations
+              id={note.data.id}
+              isHome={note.data.is_home}
+              documents={directory.data?.documents ?? []}
+              open={open}
+            />
+          </>
+        ) : (
+          <p role="status" className="knowledge-notice">
+            正在加载文档…
+          </p>
+        )}
+      </main>
+    </div>
   );
 }

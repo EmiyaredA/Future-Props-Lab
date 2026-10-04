@@ -156,7 +156,7 @@ async def test_subtree_copy_remaps_internal_references_and_stale_copy_is_atomic(
 
 
 @pytest.mark.asyncio
-async def test_templates_checkpoints_and_version_six_backup_roundtrip():
+async def test_templates_checkpoints_and_version_seven_backup_roundtrip():
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as c:
@@ -207,7 +207,7 @@ async def test_templates_checkpoints_and_version_six_backup_roundtrip():
         payload = (await c.get(ROOT + "/backup")).content
         with zipfile.ZipFile(io.BytesIO(payload)) as archive:
             manifest = json.loads(archive.read("manifest.json"))
-        assert manifest["version"] == 6 and manifest["templates"] and manifest["checkpoints"]
+        assert manifest["version"] == 7 and manifest["templates"] and manifest["checkpoints"]
         imported = await c.post(
             ROOT + "/imports", files={"upload": ("backup.zip", payload, "application/zip")}
         )

@@ -51,11 +51,22 @@ erDiagram
 > [!TIP]
 > 对重叠语音先确定标注目标：是保留同一时间片段的多人标签，还是重新切出更细的可听区间。不要为了让表格整齐而改变真实音频边界。
 
+## 片段编辑与转写结果怎样汇入项目
+
+项目拥有音频身份、说话人、毫秒片段、文本与情绪；播放器当前进度和选中片段属于视图。projects 与 operations 负责归属和编辑校验，转写能力提供识别结果，exports 提供项目数据、字幕或片段交付。模型返回的文本仍需与明确音频区间关联，不能直接改变另一段正在编辑的草稿。
+
+一次修改说话人应命中稳定 ID 并保留时间区间，保存时比较项目版本；导出消费确认内容。重叠语音允许多个关联，不能因为界面当前只选中一个人就删除另一标签。SRT 与项目 JSON 保留信息不同，导出字幕不等于迁移全部工程。
+
+## 时间区间和识别失败分别验证
+
+检查毫秒边界、片段结束晚于起点、重叠关系、删除说话人后的引用、保存冲突与未配置转写模型。识别失败保留已有标注，输入区间变化后重新确认采用哪个结果。重新打开项目与裁切实际音频对应，才能证明文本和源声音没有错位。
+
 ## 相关阅读
 
 - [供应商适配与流式推理](/apps/thought-workshop/official-knowledge-bases/technical/documents/providers)
-- [保存、历史与并发：防止静默覆盖](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
+- [编辑、保存、历史与并发](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
 - [录音标注工坊：导入导出与交付](/apps/thought-workshop/official-knowledge-bases/audio-annotation/documents/delivery)
+- [核心对象与数据归属](/apps/thought-workshop/official-knowledge-bases/technical/documents/data-model)
 
 ## 代码入口
 

@@ -1,6 +1,7 @@
 // Assertions target only the disposable Electron smoke process and demo model.
 const assert = require("node:assert/strict");
 const path = require("node:path");
+const { writeFileSync } = require("node:fs");
 const { expect } = require("@playwright/test");
 
 async function inspectCompanionChat(chat, pet, studio, projectId, directory) {
@@ -80,27 +81,121 @@ async function inspectCompanionChat(chat, pet, studio, projectId, directory) {
   await expect(pet.locator(".pet-runtime-bubble")).toHaveCount(0);
   const layered = (await pet.locator(".dp-whale-renderer").count()) > 0;
   const original = await pet.evaluate(() => ({ x: screenX, y: screenY }));
-  await pet.mouse.move(150, 300, { steps: 8 });
-  await pet.mouse.down();
-  await pet.mouse.move(175, 275, { steps: 10 });
-  if (layered)
-    await expect(pet.locator("[data-contact-shadow]")).toHaveAttribute(
-      "opacity",
-      "0",
+  const gesture = [];
+  const observe = async (label) => {
+    const value = await pet.evaluate(async () => {
+      const runtime = document.querySelector(".pet-runtime"),
+        object = runtime?.querySelector("foreignObject"),
+        matrix = object?.getScreenCTM(),
+        waist = matrix && new DOMPoint(128, 188).matrixTransform(matrix);
+      return {
+        seconds: performance.now() / 1000,
+        environment: await window.futurePropsDesktop.petEnvironment(),
+        state: runtime?.getAttribute("data-motion"),
+        grip: runtime?.getAttribute("data-motion-grip"),
+        shadow: runtime
+          ?.querySelector("[data-contact-shadow]")
+          ?.getAttribute("opacity"),
+        waist: waist ? { x: waist.x, y: waist.y } : null,
+        hitCircleCenter: matrix
+          ? (() => {
+              const p = new DOMPoint(128, 128).matrixTransform(matrix);
+              return { x: p.x, y: p.y };
+            })()
+          : null,
+        hitRadius: matrix
+          ? 108 * Math.sqrt(Math.abs(matrix.a * matrix.d - matrix.b * matrix.c))
+          : null,
+      };
+    });
+    gesture.push({ label, ...value });
+    return value;
+  };
+  try {
+    const before = await observe("chat-paused");
+    await pet.waitForTimeout(300);
+    const paused = await observe("chat-pause-stable");
+    assert.deepEqual(
+      paused.environment.bounds,
+      before.environment.bounds,
+      "Chat must pause autonomous window movement",
     );
-  await pet.mouse.up();
-  if (layered)
-    await expect(pet.locator("[data-contact-shadow]")).toHaveAttribute(
-      "opacity",
-      "1",
+    // Pose changes can move the painted waist. Hit the actual current model
+    // anchor rather than assuming a fixed viewport pixel is interactive.
+    const legacyPoint = process.env.FPL_SMOKE_PET_LEGACY_GESTURE === "1";
+    const point = layered && !legacyPoint ? paused.waist : { x: 150, y: 300 };
+    assert.ok(point, "The renderer must expose a real waist transform");
+    await pet.mouse.move(point.x, point.y, { steps: 8 });
+    await pet.mouse.down();
+    if (layered && !legacyPoint)
+      await expect(pet.locator(".pet-runtime")).toHaveAttribute(
+        "data-motion",
+        "held",
+      );
+    const held = await observe(
+      legacyPoint ? "legacy-pressed" : "held-at-waist",
     );
+    await pet.mouse.move(
+      paused.environment.bounds.x + point.x + 25 - held.environment.bounds.x,
+      paused.environment.bounds.y + point.y - 25 - held.environment.bounds.y,
+      { steps: 10 },
+    );
+    if (layered)
+      await expect(pet.locator("[data-contact-shadow]")).toHaveAttribute(
+        "opacity",
+        "0",
+      );
+    await observe("held-moved");
+    await pet.screenshot({
+      path: path.join(directory, "chat-held-shadow.png"),
+    });
+    await pet.mouse.up();
+    if (layered) {
+      await expect(pet.locator(".pet-runtime")).toHaveAttribute(
+        "data-motion",
+        "idle",
+      );
+      await expect(pet.locator("[data-contact-shadow]")).toHaveAttribute(
+        "opacity",
+        "1",
+      );
+    }
+    await observe("released");
+    await pet.screenshot({
+      path: path.join(directory, "chat-released-shadow.png"),
+    });
+  } finally {
+    await observe("gesture-final").catch((error) =>
+      gesture.push({ error: error.message }),
+    );
+    writeFileSync(
+      path.join(directory, "chat-gesture.json"),
+      JSON.stringify(gesture, null, 2),
+    );
+  }
   await pet.evaluate(() => window.futurePropsDesktop.movePet(0, 50));
   await expect(chat.locator(".dp-chat-window")).toHaveClass(/tail-right/);
   await pet.evaluate(
     ({ x, y }) => window.futurePropsDesktop.movePet(x, y),
     original,
   );
+  // Motion checks may have left the pet on either side; explicitly exercise the right edge.
+  const area = await pet.evaluate(() =>
+    window.futurePropsDesktop.petEnvironment(),
+  );
+  await pet.evaluate(
+    ({ workArea, bounds }) =>
+      window.futurePropsDesktop.movePet(
+        workArea.x + workArea.width - bounds.width,
+        workArea.y + 50,
+      ),
+    area,
+  );
   await expect(chat.locator(".dp-chat-window")).toHaveClass(/tail-left/);
+  await pet.evaluate(
+    ({ x, y }) => window.futurePropsDesktop.movePet(x, y),
+    original,
+  );
   await chat.reload();
   await expect(chat.getByRole("button", { name: "完整对话" })).toHaveAttribute(
     "aria-pressed",

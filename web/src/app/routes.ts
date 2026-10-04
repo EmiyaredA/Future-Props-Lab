@@ -1,4 +1,7 @@
 export type StudioPage =
+  | "thought-workshop-community"
+  | "thought-workshop-favorites"
+  | "thought-workshop-published"
   | "management-accounts"
   | "management-workspaces"
   | "management-audit"
@@ -137,6 +140,19 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
     return { page: "management-audit" };
   if (pathname.startsWith("/management"))
     return { page: "management-accounts" };
+  const community = pathname.match(
+    /^\/apps\/thought-workshop\/community(?:\/([^/]+)(?:\/documents\/([^/]+))?)?\/?$/,
+  );
+  if (community)
+    return {
+      page: "thought-workshop-community",
+      projectId: community[1] ? decodeURIComponent(community[1]) : undefined,
+      documentId: community[2] ? decodeURIComponent(community[2]) : undefined,
+    };
+  if (pathname === "/apps/thought-workshop/favorites")
+    return { page: "thought-workshop-favorites" };
+  if (pathname === "/apps/thought-workshop/published")
+    return { page: "thought-workshop-published" };
   const application = matchApplicationPath(pathname);
   if (application) return application as AppRoute;
   // Legacy tool URLs keep resolving so bookmarks and old agent opens still land.
@@ -211,6 +227,9 @@ export function pathFor(
     "thought-workshop-editor": "/apps/thought-workshop",
     "thought-workshop-legacy": "/apps/thought-workshop",
     "thought-workshop-official": "/apps/thought-workshop",
+    "thought-workshop-community": `/apps/thought-workshop/community${projectId ? `/${encodeURIComponent(projectId)}${documentId ? `/documents/${encodeURIComponent(documentId)}` : ""}` : ""}`,
+    "thought-workshop-favorites": "/apps/thought-workshop/favorites",
+    "thought-workshop-published": "/apps/thought-workshop/published",
     "management-accounts": "/management/accounts",
     "management-workspaces": "/management/workspaces",
     "management-audit": "/management/audit",

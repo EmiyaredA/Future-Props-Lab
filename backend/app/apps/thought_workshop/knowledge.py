@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.history import History
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+from app.apps.thought_workshop.publication.lifecycle import withdraw_library
 from app.apps.thought_workshop.schemas.document import empty_document
 from app.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBaseIn,
@@ -137,5 +138,7 @@ class KnowledgeBases:
     async def transition(self, project_id: str, expected: int, restore: bool) -> KnowledgeBaseOut:
         row = await self.reserve(project_id, expected, include_deleted=True)
         row.deleted_at = None if restore else utc_now()
+        if not restore:
+            await withdraw_library(self.session, project_id)
         await self.session.commit()
         return await self.output(await self.get(project_id, include_deleted=True))

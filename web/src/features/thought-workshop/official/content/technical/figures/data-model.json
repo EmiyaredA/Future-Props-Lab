@@ -1,0 +1,140 @@
+{
+  "sceneVersion": 2,
+  "title": "归属、内容与执行三个维度",
+  "elements": [
+    {
+      "id": "account",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "账号与空间成员关系\n身份和角色",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "workspace",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "Workspace\n逻辑资源归属",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "lock"
+    },
+    {
+      "id": "project",
+      "kind": "icon",
+      "x": 720,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "应用项目 / 知识库\n根资源与 revision",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "note",
+      "kind": "icon",
+      "x": 720,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "笔记 / 工程文档\n内容与格式版本",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "asset",
+      "kind": "icon",
+      "x": 380,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "托管素材\n身份、类型与文件",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "task",
+      "kind": "icon",
+      "x": 40,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "任务记录\n输入、阶段与结果引用",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "clock"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "account",
+      "target": "workspace",
+      "label": "经成员关系访问",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e1",
+      "source": "workspace",
+      "target": "project",
+      "label": "资源归属",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e2",
+      "source": "project",
+      "target": "note",
+      "label": "内容包含",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e3",
+      "source": "note",
+      "target": "asset",
+      "label": "正文引用",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "left",
+      "targetAnchor": "right"
+    },
+    {
+      "id": "e4",
+      "source": "workspace",
+      "target": "asset",
+      "label": "素材归属",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e5",
+      "source": "workspace",
+      "target": "task",
+      "label": "任务归属",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    }
+  ]
+}

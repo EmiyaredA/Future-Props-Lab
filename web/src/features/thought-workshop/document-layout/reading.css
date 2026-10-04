@@ -1,0 +1,97 @@
+.knowledge-reading-directory button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 10px;
+  border-radius: 8px;
+  line-height: 1.5;
+}
+.knowledge-reading-directory button:hover,
+.knowledge-reading-directory button[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.knowledge-reading-home {
+  max-width: 880px;
+  padding: 36px;
+  margin: 0 auto;
+}
+.knowledge-reading-home h1 {
+  font-size: clamp(24px, 4vw, 36px);
+  overflow-wrap: anywhere;
+}
+.knowledge-reading-home p {
+  color: var(--muted);
+  line-height: 1.8;
+}
+@media (max-width: 700px) {
+  .knowledge-reading-home {
+    padding: 20px;
+  }
+}
+
+.thought-shell .thought-rich-editor {
+  box-sizing: border-box;
+  container-type: inline-size;
+}
+.thought-shell .thought-rich-editor.has-docked-outline {
+  padding-right: 252px;
+}
+.thought-shell .thought-note-heading,
+.thought-shell .thought-prose,
+.thought-shell .knowledge-home-reading .thought-prose {
+  width: calc(100% - 64px);
+  max-width: 820px;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+.thought-shell .thought-note-heading {
+  padding: 40px 0 4px;
+}
+.thought-shell .thought-note-heading > h1 {
+  margin: 8px 0 18px;
+  font-size: clamp(27px, 2.8vw, 38px);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.4;
+}
+.thought-shell .thought-title-input {
+  font-size: clamp(27px, 2.8vw, 38px);
+}
+.thought-shell .knowledge-home-reading .thought-prose {
+  padding: 16px 0 60px;
+}
+.thought-shell .thought-prose {
+  padding-top: 16px;
+}
+.knowledge-reading-directory .knowledge-tree-row {
+  margin-block: 4px;
+}
+.knowledge-reading-directory .knowledge-tree-name {
+  padding: 9px 4px;
+}
+@media (max-width: 700px) {
+  .thought-shell .thought-note-heading,
+  .thought-shell .thought-prose,
+  .thought-shell .knowledge-home-reading .thought-prose {
+    width: calc(100% - 32px);
+  }
+  .thought-shell .thought-note-heading {
+    padding-top: 24px;
+  }
+}
+
+:root[data-theme="light"] .thought-shell {
+  --bg: #faf8f5;
+  --surface: #fffdfb;
+  --surface-soft: #f3efea;
+  --surface-hover: #f0ebe4;
+  --border: #e7e1d8;
+  --text: #36332e;
+  --text-strong: #282520;
+  --muted: #78736a;
+  --accent-soft: #fcece4;
+}

@@ -5,6 +5,9 @@ from copy import deepcopy
 from sqlalchemy import select
 
 from app.apps.thought_workshop.errors import ThoughtError
+from app.apps.thought_workshop.multitable.archive import entity_mapping, remap_state
+from app.apps.thought_workshop.multitable.schemas import Snapshot
+from app.apps.thought_workshop.multitable.storage import asset_ids
 from app.apps.thought_workshop.schemas.document import file_ids
 from app.runtime.ids import new_id
 
@@ -53,7 +56,14 @@ def validate_tools(payload):
             if row.id in seen:
                 raise ThoughtError("模板或快照标识重复")
             seen.add(row.id)
-            if group == "templates" and not file_ids(row.document) <= assets:
+            if (
+                group == "templates"
+                and not (
+                    file_ids(row.document)
+                    | (asset_ids(row.multitable) if row.multitable else set())
+                )
+                <= assets
+            ):
                 raise ThoughtError("备份缺少模板素材")
             if group == "checkpoints" and (
                 row.history_id not in history or history[row.history_id]["note_id"] != row.note_id
@@ -75,12 +85,20 @@ async def import_tools(
         source = TemplateOut.model_validate(value)
         document = remap_references(source.document, note_mapping, portable=True, warnings=warnings)
         remap_assets(document, asset_mapping)
+        state = None
+        if source.multitable:
+            raw = source.multitable.model_dump(mode="json")
+            state = remap_state(
+                raw, entity_mapping({"template": {"state": raw}}), note_mapping, asset_mapping
+            ).model_dump(mode="json")
         row = ThoughtTemplate(
             id=new_id(),
             workspace_id=workspace_id,
             name=source.name,
             description=source.description,
             document=deepcopy(document),
+            kind=source.kind,
+            multitable=state,
             tags=source.tags,
             schema_version=3,
             revision=0,
@@ -88,7 +106,9 @@ async def import_tools(
         session.add(row)
         await session.flush()
         session.add_all(
-            ThoughtTemplateAsset(template_id=row.id, asset_id=asset) for asset in file_ids(document)
+            ThoughtTemplateAsset(template_id=row.id, asset_id=asset)
+            for asset in file_ids(document)
+            | (asset_ids(Snapshot.model_validate(state)) if state else set())
         )
     for value in payload.get("checkpoints", []):
         source = CheckpointOut.model_validate(value)

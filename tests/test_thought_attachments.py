@@ -152,7 +152,7 @@ async def test_limits_unlink_cas_backup_and_legacy_import(monkeypatch, legacy_ve
         )
         with zipfile.ZipFile(io.BytesIO(backup.content)) as archive:
             manifest = json.loads(archive.read("manifest.json"))
-            assert manifest["version"] == 6
+            assert manifest["version"] == 7
             assert archive.read("assets/" + asset["asset_id"]) == b"private attachment content"
         restored = await client.post(
             ROOT + "/imports", files={"upload": ("backup.zip", backup.content, "application/zip")}

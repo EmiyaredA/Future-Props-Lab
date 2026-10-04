@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app.apps.thought_workshop.canvas_export import CanvasHtmlRenderer, canvas_sources
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.markdown_conversion import markdown, parse_markdown
+from app.apps.thought_workshop.multitable.content import project
 from app.apps.thought_workshop.notes import Notes, note_out
 from app.apps.thought_workshop.schemas.conversion import ThoughtMarkdownOut
 from app.apps.thought_workshop.schemas.document import file_ids
@@ -57,7 +58,7 @@ async def export_note(session, workspace_id, note_id, expected_revision, format)
         id: (storage.path_for(row), "assets/" + id + Path(row.original_filename).suffix.lower())
         for id, row in assets.items()
     }
-    title, document = note.title, note.document
+    title, document = note.title, await project(session, workspace_id, note)
     await session.rollback()
     content = (
         "# " + title + "\n\n" + markdown(document, {id: item[1] for id, item in files.items()})

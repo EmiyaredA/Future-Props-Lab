@@ -6,7 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import fixture from "../../tests/fixtures/live2d-evaluation.json";
 import type {
   PetConfig,
@@ -22,6 +22,31 @@ const state = vi.hoisted(() => ({
   preview: vi.fn(),
   replace: vi.fn(),
 }));
+const previousDesktop = window.futurePropsDesktop;
+afterEach(() => {
+  Object.defineProperty(window, "futurePropsDesktop", {
+    configurable: true,
+    value: previousDesktop,
+  });
+});
+
+test("a successful CAS save refreshes the open pet and a failed notification does not repeat the save", async () => {
+  const notify = vi.fn().mockRejectedValue(new Error("bridge unavailable"));
+  Object.defineProperty(window, "futurePropsDesktop", {
+    configurable: true,
+    value: { notifyPetResourcesChanged: notify },
+  });
+  render(<EditorPage projectId="pet-1" onBack={() => {}} />);
+  await screen.findByText("形象与皮肤");
+  fireEvent.click(screen.getByRole("button", { name: "习惯" }));
+  fireEvent.click(screen.getByRole("button", { name: "常走动" }));
+  fireEvent.click(screen.getByRole("button", { name: "保存" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("配置已保存");
+  expect(notify).toHaveBeenCalledWith("pet-1");
+  expect(state.save).toHaveBeenCalledTimes(1);
+  expect(state.document?.revision).toBe(1);
+  expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+});
 
 vi.mock("../src/features/desktop-pet/PetRenderer", () => ({
   PetRenderer: (props: {

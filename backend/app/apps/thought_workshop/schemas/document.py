@@ -37,9 +37,14 @@ NODES = {
     "canvas",
     "callout",
     "documentReference",
+    "documentCard",
+    "cardGrid",
+    "documentDirectory",
+    "multitableView",
 }
 MARKS = {"bold", "italic", "strike", "underline", "code", "textStyle", "highlight", "link"}
 ATTRS = {
+    "multitableView": {"noteId", "tableId", "viewId"},
     "paragraph": {"textAlign"},
     "heading": {"level", "textAlign"},
     "orderedList": {"start", "type"},
@@ -66,7 +71,9 @@ ATTRS = {
     "blockMath": {"latex"},
     "mermaid": {"source"},
     "canvas": {"scene"},
-    "callout": {"variant"},
+    "callout": {"variant", "title"},
+    "documentCard": {"kind", "noteId", "libraryId", "documentId", "style", "eyebrow"},
+    "documentDirectory": {"parentId", "style"},
     "documentReference": {"kind", "noteId", "libraryId", "documentId", "label", "customLabel"},
     "textStyle": {"color", "fontSize", "backgroundColor", "fontFamily"},
     "highlight": {"color"},
@@ -88,6 +95,7 @@ BLOCKS = (
     }
 )
 CHILDREN = {
+    "cardGrid": {"documentCard"},
     "doc": BLOCKS,
     "blockquote": BLOCKS,
     "callout": BLOCKS,
@@ -204,8 +212,19 @@ def validate_document(document: dict) -> dict:
             "success",
             "warning",
             "danger",
+            "tip",
         ):
             raise ValueError("提示块类型无效")
+        if (
+            kind == "callout"
+            and values.get("title") is not None
+            and (not isinstance(values["title"], str) or len(values["title"]) > 240)
+        ):
+            raise ValueError("提示块标题无效")
+        if kind in {"documentCard", "documentDirectory"}:
+            from .navigation import validate_navigation
+
+            validate_navigation(kind, values)
         if kind == "documentReference":
             if (
                 values.get("kind") not in ("note", "official")
@@ -231,6 +250,13 @@ def validate_document(document: dict) -> dict:
                 for k in ("libraryId", "documentId")
             ):
                 raise ValueError("官方引用标识无效")
+        if kind == "multitableView":
+            if any(values.get(key) for key in ("noteId", "tableId", "viewId")) and any(
+                not isinstance(values.get(key), str)
+                or not re.fullmatch(r"[a-zA-Z0-9_-]{1,36}", values[key])
+                for key in ("noteId", "tableId", "viewId")
+            ):
+                raise ValueError("多维表格引用无效")
         if kind == "canvas":
             validate_canvas(values.get("scene"))
         if kind in {"image", "attachment"} and not values.get("assetId"):
@@ -328,6 +354,10 @@ def document_text(node: dict) -> str:
     if node.get("type") == "attachment":
         return node.get("attrs", {}).get("filename", "")
     value = node.get("text", "")
+    if node.get("type") == "callout":
+        value = node.get("attrs", {}).get("title", "") or ""
+    if node.get("type") == "documentCard":
+        value = node.get("attrs", {}).get("eyebrow", "") or ""
     if node.get("type") == "documentReference":
         value = node["attrs"].get("customLabel") or node["attrs"]["label"]
     if node.get("type") in {"inlineMath", "blockMath"}:

@@ -5,24 +5,18 @@
 
 ## 思绪工坊官方知识库
 
-`web/src/features/thought-workshop/official/` 拥有内置只读库清单、分组目录、正文搜索、大纲与阅读页。
-`content/` 下的中文 Markdown 是知识库版主要使用指南，按总库、十个应用与技术原理库分目录维护；
-正文经 Vite 懒加载随 Web 和桌面包发布，不依赖原有文档中心或网络文档服务。
-官方阅读使用独立 `official-knowledge-bases` 路径和 `content.read` 权限，所有角色共用阅读组件；
-官方正文不创建 ORM 记录，不接入用户编辑、备份或回收站接口；个人阅读位置独立归账号偏好接口，按账号和 Workspace 隔离。查询键归思绪工坊 `queryKeys.ts`。
-`reading.ts` 汇合平台、创作应用和技术文章的简介与相关阅读，附加到稳定目录条目；
-`ReadingBlocks.tsx` 负责受控 Markdown 提示框、代码高亮后的复制和标题链接，
-`ReadingOutline.tsx` 跟踪正文滚动位置，`ReadingNavigation.tsx` 拥有首页、前后篇与相关阅读。
-`official.css` 负责知识库壳与阅读布局，`reading.css` 负责文章块和阅读导航样式。
-写作与渲染约定统一维护在 `docs/operations/official-knowledge-writing.md`。
-`web/tests/official-knowledge.test.tsx` 检查内容、链接、路由与阅读行为，
-`web/e2e/official-knowledge.spec.ts` 覆盖账号入口、搜索、导航保护及响应式阅读。
-`web/tests/official-reading.test.tsx` 检查受控提示框、复制、大纲、导航与表格状态，
-`web/e2e/docs-reading.spec.ts` 验证三栏阅读、键盘焦点、零正文写请求及全部 84 篇静态文章离线加载；`thought-completion.spec.ts` 检查个人阅读同步及 URL 章节定位优先。
+`web/src/features/thought-workshop/official/` 保留现有指南的导入来源：稳定清单、Markdown、简介、相关阅读和 CanvasScene。它不参与运行期社区列表、搜索或阅读。`scripts/official_seed_source.ts` 提取受控来源，`scripts/build_official_seed.py` 转换为普通 version 7 备份包，生成 `backend/app/apps/thought_workshop/publication/seed.json`；`knowledge:seed:check` 验证来源与包一致，桌面后端打包携带该 JSON。
 
-`official/technicalCatalog.ts` 登记十二篇平台原理和十篇应用原理；`content/technical/figures/`
-保存版本化 CanvasScene，`figures.ts` 通过受控懒加载清单解析图形和搜索标签。
-`OfficialFigure.tsx` 与 `CopyOfficialFigure.tsx` 负责只读图展示和显式创建个人副本。
+`publication/imports.py` 复用普通备份导入用例，平台管理员在当前 Workspace 明确确认数量后创建 12 个私人库、93 篇文章及 12 篇首页。导入正文、目录和跨库 ID 引用与来源映射、请求回执在同一事务提交；回执按 Workspace、操作者、请求 ID 隔离。再次主动导入创建独立副本，不自动发布或覆盖。`OfficialSource` 只定位旧来源，`OfficialImportReceipt` 只记录成功结果。
+
+官方内容与普通发布共用 Notes、编辑器、历史、搜索、收藏、导出和素材权限。Publication 保存 `is_official`、`read_only`、`editable_platform_roles`；只有平台超级管理员／管理员能改官方标记和角色授权。新发布默认只读；源普通成员不继承社区编辑权，逐篇账号授权仍生效，角色编辑授权不扩大可见范围或管理能力。能力字段独立返回，所有写入重新校验当前角色与发布权限。
+
+`community/LegacyOfficialPage.tsx` 保留 `official-knowledge-bases` URL 兼容入口，依据来源映射解析当前可访问的官方发布。唯一匹配跳转，多匹配由用户选择，无匹配显示提示，不回退静态阅读。旧官方引用与收藏使用同一授权边界。`publication/references.py` 解析同一源空间的已发布跨库笔记引用，过滤不可见目标。
+
+`document-layout/` 拥有普通与社区笔记的排版、卡片、动态目录、代码高亮、提示块和导出；`reading.css` 保存共用阅读首页及排版样式；`useDocumentChrome` 的页面状态通过显式 props 提供顶栏 Portal 宿主和整栏展开偏好。文章大纲从 H1–H6 派生父子关系，在右侧停靠或紧凑弹层中展开；折叠状态按编辑事务映射，不进入正文和数据库。`official/homeDocument.ts` 仅构建导入包首页。卡片保存引用和样式，标题、简介按实时权限解析；`KnowledgeTree` 仅表达父子关系。`official/technicalCatalog.ts` 和 `content/technical/figures/` 保存 31 篇技术文档及版本化图形的来源。写作约定见 `docs/operations/official-knowledge-writing.md`。
+
+`tests/test_unified_official_publications.py` 验证导入、重试、权限、官方筛选与旧链接；`web/tests/official-knowledge.test.tsx` 验证来源，`official-reading.test.tsx` 验证兼容入口，`web/e2e/official-knowledge.spec.ts` 在隔离数据中验证实际导入与发布。
+
 `diagrams/` 拥有 CanvasScene 模型、模板、纯操作、React Flow 全屏编辑器、Tiptap 节点、
 Mermaid 共用阅读器及 SVG/PNG 导出。运行期选择和视口不进入正文；场景变更进入现有保存队列与历史。
 `backend/app/apps/thought_workshop/schemas/canvas.py` 校验画板结构与关系；
@@ -357,6 +351,14 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 
 ## 思绪工坊
 
+后端 `multitable/` 拥有多维表格的独立 ORM、类型化契约、字段转换、受控 SQLite 查询、原子批次、CSV、差量历史及 version 7 备份重映射；`content.py` 投影当前数据用于静态导出。`routes/multitable.py` 适配 Workspace API；`publication/tables.py` 在独立会话分别校验父文章与目标表格授权，`routes/community_tables.py` 与社区路由一起装配，避免继承普通 Workspace 权限。文档根 `ThoughtNote.kind` 默认 note，子实体通过已验证根继承 Workspace 与生命周期。
+
+Web `features/thought-workshop/multitable/` 拥有 TanStack Table/Virtual 网格、看板、月历、字段/视图配置、记录编辑、CSV、历史、嵌入节点和静态内容导出；所有缓存键继续由现有 `queryKeys.ts` 维护。`useTableDocument.ts` 合并连续编辑、串行提交并保存按账号/访问上下文/文档/标签页隔离的 IndexedDB 待保存操作；`saveLane.ts` 协调当前页面的提交顺序，服务器 CAS 判定跨标签页冲突。当前表、视图与滚动位置是个人阅读状态，视图配置是共享文档数据。
+
+`publication/` 拥有同部署知识社区的发布、目录过滤、逐篇授权、收藏和素材访问；`routes/community.py` 仅做浏览器 Session 协议适配。发布记录直接保存源 Workspace，成员授权仅作用于已发布文章。`Community` 为每次操作创建独立会话，授权后显式绑定源空间调用 `Notes`；写入采用短事务串行化权限检查、撤回与正文 CAS。`lifecycle.py` 在源回收站事务内关闭文章或整库，恢复不自动重新发布。迁移 `0082_thought_publications` 只建发布表，不复制正文、不自动公开现有内容。
+
+Web `community/` 拥有精选书架、发布与权限弹窗及社区阅读入口；`DocumentAccess.tsx` 是普通与社区保存、引用、上传、素材读取和导出的显式适配接口。`KnowledgeSidebar`、`KnowledgeTopbar`、`NoteReaderPane` 统一目录、顶栏和富文本阅读布局；官方与普通发布使用同一富文本阅读器，旧地址由授权后的发布映射解析。社区缓存、草稿和阅读位置按账号及发布资源隔离，权限失效停止保存并保留本机草稿。搜索、计数、反向链接与导出只返回可访问的当前文章，隐藏父文档的子文章提升到可见目录顶层；未发布首页使用社区简介。
+
 `DocumentOutline`、`outlineHeadings.ts` 与 `useDocumentOutline` 负责从当前编辑器提取章节、
 左侧留白布局和滚动定位；`document-outline.css` 拥有常驻目录及窄屏浮层样式。
 目录及临时展开折叠内容只属于界面状态，不写入正文或修改 revision。
@@ -371,9 +373,9 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 `apps/thought_workshop/knowledge_tools/` 拥有引用索引和解析、SQLite 检索、独立模板与原子子树复制、历史命名标记、账号偏好及一致导出快照；`archive.py` 拥有 version 6 模板与标记的校验和重映射。`routes/knowledge_tools.py` 只做协议适配。新增表由 `0080_thought_knowledge_tools` 登记，不改变旧迁移。
 
-Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发现、模板与复制对话框、关联文档、阅读位置和整库 HTML 打包；`drafts/storage.ts` 以账号、Workspace、文档、标签页隔离 IndexedDB 草稿。`useNoteResults.ts` 统一编辑和只读入口的 40 条分页。个人状态经 Principal 访问，官方正文仍来自静态清单；阅读偏好不修改官方内容。画板 version 2 的确定性锚点、文字和连线路径归 `diagrams/model.ts`，React Flow 只承载交互。
+Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发现、模板与复制对话框、关联文档、阅读位置和整库 HTML 打包；`drafts/storage.ts` 以账号、Workspace、文档、标签页隔离 IndexedDB 草稿。`useNoteResults.ts` 统一编辑和只读入口的 40 条分页。个人状态经 Principal 访问，官方正文也是已发布笔记；阅读偏好不修改正文。画板 version 2 的确定性锚点、文字和连线路径归 `diagrams/model.ts`，React Flow 只承载交互。
 
-`backend/app/apps/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索、文件内容解析或独立权限系统。
+`backend/app/apps/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索或文件内容解析。普通目录沿用 Workspace 权限，社区发布有明确的逐篇授权边界。
 
 - `knowledge.py`：知识库元数据、封面归属、首页创建、库级 revision/CAS、整库删除与恢复。
 - `directory.py`：库内嵌套文档树、移动排序、循环校验；移动正文归属时推进文档 revision。
@@ -491,7 +493,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 - `sdk/python/`：可独立构建安装的 `future-props-lab-sdk`；`src/future_props_lab/generated/` 只保存生成模型和具名资源方法，其他模块拥有 HTTPX 通信、流、鉴权、实时语音和本地文档构建器。
 - `sdk/python/operations.json`：受版本控制的 HTTP 操作到稳定 Python 方法名映射；`coverage.json` 记录契约与文档证据，不能替代业务闭环验收。
-- `scripts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。
+- `scripts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。仅浏览器 Session 的知识社区操作不加入 SDK 方法映射，相关 HTTP 数据类型仍由 OpenAPI 生成。
 - `backend/app/llm/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`llm/routes/model_inference.py` 只处理协议。
 - 工坊各自的 `operations.py` 拥有细粒度编辑校验与一次事务；`runtime/operation_receipts.py` 仅提供持久化回执原语，`entity_edits.py` 仅提供纯列表编辑。
 - `backend/app/llm/models/model_inference.py` 与 `models/project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
@@ -513,9 +515,14 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 `web/src/shared/live2d/` 提供工坊与 Amadeus 头像共用的纯姿态计算、类型和 PixiJS 网格装配。内置 Amadeus 的原画由 `scripts/build_amadeus_model.py` 打包成 `web/public/brand/amadeus/amadeus.fpllive2d`，用户可通过现有工坊导入 API 主动创建可编辑副本；助手窗口直接读取随应用提供的工程包，不依赖用户 Workspace 项目。
 
-`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、分层角色本地导入包校验、皮肤 PNG、台词与配置 CAS；`whale_package.py` 按缺省鲸鱼娘或可选 `human-chibi` 骨架验证必要部件与角色资料，沿用原数据 ZIP 与素材路径。`chat.py` 拥有按账号和 Workspace 隔离的聊天会话、请求防重放与消息记录，迁移 `r0079_desktop_pet_chat` 登记三张聊天表，`r0081_desktop_pet_presentation` 追加个人展示偏好，旧会话保留对话模式、新会话默认气泡。文字模型调用通过 `backend/app/llm/text_client.py` 的公共入口完成，保留调用日志，不使用模型测试会话。Live2D 来源只通过 `apps/live2d_workshop/public.py` 的 Workspace 只读入口取得。素材位于当前 Workspace 的 `applications/desktop-pet/projects/<id>/assets/{source,skins,whale}/`，迁移 `r0077_desktop_pet` 登记根项目，`r0078_desktop_pet_whale` 扩展来源类型。`scripts/pack_whale_demo.py` 将显式指定的本地角色目录打包为数据 ZIP，不把角色贴图提交或随应用打包。`web/src/features/desktop-pet/` 拥有项目页、台词与人设编辑器、PixiJS 预览、鲸鱼娘原版动态适配、`humanFigure.ts` 人物骨架与表情适配、独立 `web/pet.html` 运行页与 `web/pet-chat.html` 聊天小窗；`whale-vendor/` 只保存 MIT 动画代码与许可，运行贴图从 Workspace API 读取。`EditorStage.tsx` 拥有中央舞台与联动入口，`useEditorPreview.ts` 管理选择、草稿变化、重播与计时，`playback.ts` 统一运行／调整／完整事件语义；`useDesktopPreviewLink.ts` 与 `usePetPreview.ts` 分别拥有编辑器租约和桌宠授权快照校验，展示草稿仅在内存覆盖。`desktop/src/pet-preview-protocol.ts` 校验有界展示数据与素材 ID，`pet-preview-relay.ts` 管理单一所有者、递增序号、租约过期与聊天暂停，私有 IPC 由 `pet-window.ts` 校验主窗口、账号、Workspace 和项目。`humanFigure.ts` 将正面人物步幅投影为交替抬脚和小角度摆动，避免鲸鱼短腿角度造成交叉步。`chatPresentation.ts` 拥有原文气泡摘要，`useChatWindowLayout.ts` 管理同窗布局及透明命中，聊天文本不通过角色动作 IPC 重复展示；接触阴影由 `whale-vendor/shadow.js` 统一计算。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/pet-window.ts` 约束单只透明窗口、聊天小窗跟随、点击穿透和多屏可用区；主应用负责手动启动及关闭。`desktop/scripts/inspect-companion-chat.cjs` 验证两种聊天呈现与保存；`desktop/scripts/inspect-human-pet.cjs` 在隔离烟测中渲染人物动作、表情和真实步周期的明暗背景验收图；`inspect-pet-preview.cjs` 验证草稿联动、保存、退出恢复及聊天暂停；本地角色原画、图层和资源包只保存在被忽略的 `.local/desktop-pet/<character>/`。
+`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、分层角色本地导入包校验、皮肤 PNG、台词与配置 CAS；`whale_package.py` 按缺省鲸鱼娘或可选 `human-chibi` 骨架验证必要部件与角色资料，沿用原数据 ZIP 与素材路径。`chat.py` 拥有按账号和 Workspace 隔离的聊天会话、请求防重放与消息记录，迁移 `r0079_desktop_pet_chat` 登记三张聊天表，`r0081_desktop_pet_presentation` 追加个人展示偏好，旧会话保留对话模式、新会话默认气泡。文字模型调用通过 `backend/app/llm/text_client.py` 的公共入口完成，保留调用日志，不使用模型测试会话。Live2D 来源只通过 `apps/live2d_workshop/public.py` 的 Workspace 只读入口取得。素材位于当前 Workspace 的 `applications/desktop-pet/projects/<id>/assets/{source,skins,whale}/`，迁移 `r0077_desktop_pet` 登记根项目，`r0078_desktop_pet_whale` 扩展来源类型。`scripts/pack_whale_demo.py` 将显式指定的本地角色目录打包为数据 ZIP，不把角色贴图提交或随应用打包。`web/src/features/desktop-pet/` 拥有项目页、台词与人设编辑器、PixiJS 预览、鲸鱼娘原版动态适配、`humanFigure.ts` 人物骨架与服饰适配、`humanFace.ts` 五官绘制与刘海遮挡、独立 `web/pet.html` 运行页与 `web/pet-chat.html` 聊天小窗；`whale-vendor/` 只保存 MIT 动画代码与许可，运行贴图从 Workspace API 读取。`EditorStage.tsx` 拥有中央舞台与联动入口，`useEditorPreview.ts` 管理选择、草稿变化、重播与计时，`playback.ts` 统一运行／调整／完整事件语义；`useDesktopPreviewLink.ts` 与 `usePetPreview.ts` 分别拥有编辑器租约和桌宠授权快照校验，展示草稿仅在内存覆盖。`desktop/src/pet-preview-protocol.ts` 校验有界展示数据与素材 ID，`pet-preview-relay.ts` 管理单一所有者、递增序号、租约过期与聊天暂停，私有 IPC 由 `pet-window.ts` 校验主窗口、账号、Workspace 和项目。`humanFigure.ts` 兼容旧人物包，并为版本化关节分件装配固定父子树及侧向头部；`humanFace.ts` 集中绘制原有表情、视线与眨眼，已映射的侧眼素材保持自身宽高比，可按原图像素 sourceRects 取样，再按真实露出面部范围遮挡；完整姿态自带头部时五官跟随该姿态，避免独立旧颈部位移；`human_motion.py` 校验骨段、锚点、UV 与素材引用。`chatPresentation.ts` 拥有原文气泡摘要，`useChatWindowLayout.ts` 管理同窗布局及透明命中，聊天文本不通过角色动作 IPC 重复展示；接触阴影由 `whale-vendor/shadow.js` 统一计算。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/pet-window.ts` 约束单只透明窗口、聊天小窗跟随、点击穿透和多屏可用区；主应用负责手动启动及关闭。`desktop/scripts/inspect-companion-chat.cjs` 验证两种聊天呈现与保存，通过实际腰部投影执行拎起／松手并严格检查阴影消失／恢复，记录手势、截图与聊天暂停位置；`desktop/scripts/inspect-human-pet.cjs` 在隔离烟测中渲染人物动作、表情和真实步周期的明暗背景验收图；`inspect-pet-preview.cjs` 验证草稿联动、保存、退出恢复及聊天暂停；本地角色原画、图层和资源包只保存在被忽略的 `.local/desktop-pet/<character>/`。
 分层绑定审阅草案由 `scripts/build_amadeus_rig_draft.py` 和 `scripts/write_live2d_review_psd.mjs` 生成到 `.local/output/live2d-rig-review/`，`scripts/check_amadeus_rig_draft.py` 校验包与像素；草案在用户验收前不替换内置运行工程。
 
-`web/src/features/desktop-pet/locomotion/` 拥有纯轨迹与手势控制器、实际像素可见范围测量、单请求在途的宿主通信、旧桥兼容及虚拟工作区试玩；控制器统一取消行走、攀爬、滑翔和拎起，不由运行页写入动画引擎内部状态。`platform/petMotion.ts` 定义私有运动帧与环境契约，`desktop/src/pet-motion.ts` 校验序号、取消代次和可见边界，`pet-window.ts` 校验可信桌宠主窗口及显示器工作区。`desktop/scripts/inspect-pet-motion.cjs` 在隔离数据中记录位置回执、实际连续帧及明暗姿态图；边缘与滑翔习惯仍属于既有 `PetConfig` JSON 和 CAS。
+`web/src/features/desktop-pet/locomotion/` 拥有纯轨迹与手势控制器、实际像素可见范围测量、单请求在途的宿主通信、旧桥兼容及虚拟工作区试玩；控制器统一取消行走、攀爬、滑翔和拎起，不由运行页写入动画引擎内部状态。`platform/petMotion.ts` 定义私有运动帧与环境契约，`desktop/src/pet-motion.ts` 校验序号、取消代次和可见边界，`pet-window.ts` 校验可信桌宠主窗口及显示器工作区；独立 `onPetMotionConfirmed` 只读事件反馈实际移动后的序号、代次、位置和画布补偿，不能复用会取消轨迹的外部环境变化事件。`desktop/scripts/inspect-pet-motion.cjs` 在隔离数据中记录位置回执、实际连续帧及明暗姿态图；`phases.ts` 统一动作阶段及支撑时序，`articulation.ts` 拥有双骨段求解、接触锁定、腰部折叠及平滑衔接，`whaleRig.ts` 适配鲸鱼原画的骨段与坐姿保留；`whaleAuthored.ts` 拥有新鲸鱼包的专属姿势层绑定、原生面部投影和能力反馈，复用有界关节求解而不套用人物表情纹理；`whale-vendor/whale/textures.ts` 拥有配色在途缓存、失败重试与按素材 ID 去重加载；`edges.ts` 拥有四边接触平面、进入／退出阈值及角落优先级；控制器等待最终放置回执及放下反应，再管理贴附、附着休息和转角，只有行进方向前方的边界触发转边。`authoredPose.ts` 拥有版本 2 的姿势绑定和受限关节；`poseSkin.ts` 根据动作用途编译完整素材及独立四肢的蒙皮：完整拎腰的小幅惯性保持连续表面与肩胯渐变，接触动作按区域分别编译；`whale-vendor/rig/meshGeometry.js` 校验和编译固定网格、区域边界及共享 UV，`rig.js` 只消费已编译几何和权重；同模块的 `posePartIds` 收集姿势素材引用，`bindPoseParts` 为可选独立头部及三段刚性四肢建立固定关节绑定，不改变资源中固定为 `body` 的父级描述；步态收步保留同一姿势，通过短步交接支撑后回到安全中立膝角，外层呼吸缩放不影响已登记关节或足底。`walkStart.ts` 管理已登记步态的首次支撑交接，`walkArmPose.ts` 按原始手臂轴计算受限摆臂，`heldRecovery.ts` 保留原画静止关节角度、有限拖动惯性、同姿势重抓和松手恢复窗口；`supportHeight.ts` 计算固定鞋底和关节限制下的共同身体高度区间；`walkSupport.ts` 提供按确认位移预检连续支撑窗口的独立控制器，保留实际快照、固定世界支点及交接先后，不在运行时逐帧投影身体；`walkRuntime.ts` 将它接入具备完整鞋底注册的行走姿态，预检当前和下一步可达窗口，保留支撑快照并明确反馈不可达或缺少转向视图；公开朝向接口在绘制前保留当前视图，避免拒绝转向后外层仍镜像。恢复窗口不代替缺失的跨姿态素材。`authored_motion.py` 校验姿势、接触平面、五官映射、可选五官源矩形、互斥的四肢绑定方式及全局唯一分件引用；`whale_package.py` 另按所有服饰实际 PNG 尺寸校验源矩形；`whale_motion.py` 校验鲸鱼版本 2 的完整姿势、固定头发／鳍尾／裙摆层、原生眼睑纹理与非退化五官投影；`human_motion.py` 按骨架类型分派专属校验。`whale_package.py` 仅对通过完整版本 2 校验的人物或鲸鱼允许 128 分件，其他包保持 80，ZIP 与图片预算不变。跨姿势素材使用原站姿头高、躯干和骨段标尺校准物理比例，不能按各姿势轮廓总高度缩放；旧完整姿势和独立蒙皮包保留兼容路径。`record-pet-motion.cjs` 输出正常速度 GPU 录像；`pet-recording-timeline.cjs` 区分渲染时间与编码源 PTS，`extract-pet-source-frames.cjs` 按原始源帧索引分批提取，每批最多 48 项，保留源索引、PTS 与 SHA，不插帧补足频率。循环至少每秒检查 10 个原始帧，起停逐帧；录制目标帧率不等于实际源帧率；`record-live-pet.cjs` 在实际隔离桌宠接受指针手势及宿主移动期间记录工作区位置与渲染画面，异步编码快照并消费实际确认事件，保存输入指针、确认序号及接收时间，不以请求目标或旧位置替代回执。素材视觉验收与数值／安全校验分开，旧验收已撤回，候选仍需完整服饰与鲸鱼验收。边缘与滑翔习惯仍属于既有 `PetConfig` JSON 和 CAS。
+
+`locomotion/motionAvailability.ts` 统一识别旧版本 1 人物包缺少完整动作视图；运行页暂停其自主运动，中央舞台禁用运动演示和新增习惯，保留手动移动及站姿、坐姿、表情和换装。`humanFigure.ts` 停用这类包的旧横向切块及独立侧头混合路径；未写回已保存配置。运行页通过渲染器公开失败接口停止不可达轨迹并取消在途请求，不访问引擎内部状态。`motionTransitions.ts` 拥有可选版本 2 过渡端点、关键帧、原画显示基准和支点描述及安全读取；`motion_transitions.py` 复用人物／鲸鱼姿势校验，验证素材绑定一致、所有服饰的源矩形及附着端点／转角支点交接。`locomotion/transitions/transitionPlayer.ts` 拥有完整视图播放、实际世界支点校验、目标视图保留及缺少资源的失败反馈；`locomotion/transitions/poseBindings.ts` 一次编译六姿势与中间视图的分件绑定，人物／鲸鱼使用同一入口；`authoredWalkView.ts` 将移动方向转换为当前完整原画的求解坐标，保持原画与物理骨段尺寸，不在转向后硬镜像。渲染器通过私有只读 `PetPosePlayback` 反馈过渡进度，真实运动与试玩等待过渡结束后再推进位移和活动计时；按住通过公开取消接口结束旧播放并继续手动拖动，实际腰点包含当前身体补偿。离散原画与数值校验不表示自然过渡已视觉验收。编辑器 CAS 保存成功后通过既有可信资源变更桥通知同项目桌宠重新读取基线，通知失败单独反馈，不重试保存；运行中的临时换装和走动档位继续独立。
 
 桌宠资源更新由 `desktop_pet/projects.py` 拥有：完整 ZIP 验证、新 ID 素材准备和数据库 CAS 切换，失败补偿只清理本次文件，不修改原项目配置或私人聊天；`PackageUpdate.tsx` 提供编辑器正式上传入口。人物 `schemes.outfit` 登记可选站姿／坐姿衣物，`humanFigure.ts` 按姿态切换透明度，旧包继续沿用原行为。可信角色编辑器通过 `pet-window.ts` 的资源变更 IPC 刷新同账号、Workspace 和项目的桌宠素材，保留聊天窗口及消息流；SDK 通过 `desktop_pet.replace_package` 调用正式 API。
+
+桌宠编辑器的 `editor-layout.css` 拥有三栏、1200px 以下的列表／预览／属性切换与舞台布局；`editor-controls.css` 拥有字段、自绘滑块、按钮及基于主题变量的 Radix 单选菜单；`workshop.css` 拥有项目列表状态与项目弹窗。紧凑面板只改变 CSS 可见性，不重建舞台或保存 UI 状态。`SkinUpload.tsx` 提供有名称、可键盘触发的 PNG 上传适配，文件继续走原业务用例。`useChatHistoryScroll.ts` 管理阅读位置、历史前插补偿和距底部 48px 内的新回复跟随，聊天请求与分页状态仍归 `ChatWindow.tsx`。`web/e2e/desktop-pet-ui.spec.ts` 覆盖六个编辑步骤、项目弹窗、明暗主题与菜单边界，默认使用合成数据包，可通过环境变量显式提供本地角色包作目视验收。
+`desktop/scripts/inspect-pet-ui.cjs` 随隔离桌宠烟测检查菜单、主题、悬停操作、聊天阅读位置及临时读取失败后的恢复，截图输出沿用烟测的显式目标目录。

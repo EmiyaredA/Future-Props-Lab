@@ -1,4 +1,5 @@
 export interface WhaleController {
+  placementDelta(): { x: number; y: number };
   setLocomotion(
     value: import("@platform/petMotion").PetMotionFrame | null,
   ): void;

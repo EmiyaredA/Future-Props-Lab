@@ -8,6 +8,9 @@ from app.apps.thought_workshop.schemas.document import empty_document, validate_
 
 class ThoughtNoteIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    kind: Literal["note", "multitable"] = Field(
+        default="note", json_schema_extra=lambda s: s.pop("default", None)
+    )
     title: str = Field(default="未命名笔记", min_length=1, max_length=240)
     knowledge_base_id: str
     parent_id: str | None = None
@@ -56,6 +59,9 @@ class ThoughtNoteTransitionIn(ThoughtRevisionIn):
 class ThoughtNoteSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    kind: Literal["note", "multitable"] = Field(
+        default="note", json_schema_extra=lambda s: s.pop("default", None)
+    )
     title: str
     knowledge_base_id: str
     parent_id: str | None

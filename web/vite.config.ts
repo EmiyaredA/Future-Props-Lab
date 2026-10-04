@@ -30,8 +30,17 @@ export default defineConfig(({ mode }) => ({
   // These dependencies are first reached through lazy routes or a Web Worker.
   // Pre-bundling them at startup prevents Vite from replacing the dependency
   // graph and reloading an editor while a dialog or PSD import is in progress.
+  // Desktop defers full reloads for unsaved drafts. A late optimizer rebuild would
+  // otherwise mix React generations and crash newly loaded NodeViews.
   optimizeDeps: {
-    include: ["react", "react-dom/client", "@radix-ui/react-dialog", "ag-psd"],
+    include: [
+      "react",
+      "react-dom/client",
+      "@radix-ui/react-dialog",
+      "ag-psd",
+      "@tiptap/extension-code-block",
+      "lowlight",
+    ],
   },
   build: {
     sourcemap: mode !== "desktop",

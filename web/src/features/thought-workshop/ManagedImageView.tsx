@@ -1,3 +1,4 @@
+import { useDocumentAccess } from "./DocumentAccess";
 import {
   useEffect,
   useRef,
@@ -53,8 +54,9 @@ export function ManagedImageView({
   editor,
   getPos,
 }: NodeViewProps) {
+  const access = useDocumentAccess();
   const { url, error } = useApiBlobUrl(
-    `/v1/files/${encodeURIComponent(String(node.attrs.assetId))}/content`,
+    access.assetUrl(String(node.attrs.assetId)),
   );
   const [natural, setNatural] = useState({ width: 0, height: 0 });
   const [cropping, setCropping] = useState(false);

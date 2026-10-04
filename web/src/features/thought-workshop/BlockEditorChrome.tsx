@@ -1,3 +1,4 @@
+import { useDocumentAccess } from "./DocumentAccess";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import type { NestedOptions } from "@tiptap/extension-drag-handle";
@@ -69,6 +70,10 @@ const BLOCK_LABELS: Record<string, string> = {
   mathBlock: "公式",
   mermaid: "图表",
   canvas: "画板",
+  documentCard: "文档卡片",
+  cardGrid: "卡片组",
+  documentDirectory: "文档目录",
+  callout: "提示块",
 };
 
 function blockLabel(block: ActiveBlock) {
@@ -256,6 +261,7 @@ function BlockMenu({
   onError: (message: string) => void;
   assetScopeId?: string;
 }) {
+  const access = useDocumentAccess();
   const atomic =
     block.node.isAtom ||
     [
@@ -377,7 +383,7 @@ function BlockMenu({
         <button
           type="button"
           onClick={() => {
-            void copyBlockSelection(editor, assetScopeId)
+            void copyBlockSelection(editor, assetScopeId, access)
               .then(close)
               .catch((error: Error) => onError(error.message));
           }}
@@ -449,6 +455,7 @@ export function BlockEditorChrome({
   readOnly: boolean;
   assetScopeId?: string;
 }) {
+  const access = useDocumentAccess();
   const [block, setBlock] = useState<ActiveBlock>(null);
   const [menu, setMenu] = useState<OpenMenu>(null);
   const [mobileMenu, setMobileMenu] = useState<OpenMenu>(null);
@@ -661,7 +668,7 @@ export function BlockEditorChrome({
           <button
             type="button"
             onClick={() => {
-              void copyBlockSelection(editor, assetScopeId).catch(
+              void copyBlockSelection(editor, assetScopeId, access).catch(
                 (error: Error) => onError(error.message),
               );
             }}

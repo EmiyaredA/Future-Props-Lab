@@ -4,6 +4,7 @@ import { fetchApiBlob } from "@platform/api/client";
 import { editorExtensions } from "../editorExtensions";
 import { buildHtmlDocument } from "../portability";
 import { download } from "../download";
+import type { DocumentAccess } from "../DocumentAccess";
 import type { Note } from "../api";
 import { libraryExportSnapshot } from "./api";
 
@@ -15,20 +16,31 @@ const escape = (value: string) =>
         char
       ]!,
   );
-export async function exportLibraryHtml(id: string) {
-  const snapshot = await libraryExportSnapshot(id),
+export async function exportLibraryHtml(
+  id: string,
+  source?: {
+    navigation?: DocumentAccess;
+    snapshot: () => Promise<{
+      knowledge_base: { title: string };
+      documents: unknown[];
+      asset_ids: string[];
+    }>;
+    assetUrl: (id: string) => string;
+  },
+) {
+  const snapshot = await (source?.snapshot() ?? libraryExportSnapshot(id)),
     files: Record<string, Uint8Array> = {},
     cache = new Map<string, Promise<Blob>>();
   const documents = snapshot.documents as Note[],
-    paths: Record<string, string> = {},
-    titles: Record<string, string> = {};
+    paths: Record<string, string> = {};
   documents.forEach((note) => {
     paths[note.id] = `${note.id}.html`;
-    titles[note.id] = note.title;
   });
   const resources: Record<string, string> = {};
   for (const asset of snapshot.asset_ids) {
-    const path = `/v1/files/${encodeURIComponent(asset)}/download`,
+    const path =
+        source?.assetUrl(asset) ??
+        `/v1/files/${encodeURIComponent(asset)}/download`,
       promise = fetchApiBlob(path);
     cache.set(path, promise);
     const blob = await promise;
@@ -69,9 +81,11 @@ export async function exportLibraryHtml(id: string) {
     });
     try {
       const { html } = await buildHtmlDocument(note, editor, {
+        navigation: source?.navigation,
+        directoryEntries: documents,
         assetPaths: resources,
+        assetUrl: source?.assetUrl,
         referencePaths: paths,
-        referenceTitles: titles,
         cache,
       });
       const children = documents.filter(

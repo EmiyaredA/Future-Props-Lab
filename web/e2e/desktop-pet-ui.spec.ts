@@ -161,6 +161,33 @@ test("project dialogs, all editor steps and menus fit both themes and preserve t
             return { color: style.color, background: style.backgroundColor };
           });
           expect(colors.color).not.toBe(colors.background);
+          const contrast = await stand.evaluate((element) => {
+            const luminance = (color: string) => {
+              const channels = color
+                .match(/[\d.]+/g)!
+                .slice(0, 3)
+                .map(Number)
+                .map((channel) => {
+                  const value = channel / 255;
+                  return value <= 0.04045
+                    ? value / 12.92
+                    : ((value + 0.055) / 1.055) ** 2.4;
+                });
+              return (
+                channels[0] * 0.2126 +
+                channels[1] * 0.7152 +
+                channels[2] * 0.0722
+              );
+            };
+            const style = getComputedStyle(element);
+            const text = luminance(style.color),
+              background = luminance(style.backgroundColor);
+            return (
+              (Math.max(text, background) + 0.05) /
+              (Math.min(text, background) + 0.05)
+            );
+          });
+          expect(contrast).toBeGreaterThanOrEqual(4.5);
           expect(await stage!.evaluate((element) => element.isConnected)).toBe(
             true,
           );
@@ -172,6 +199,16 @@ test("project dialogs, all editor steps and menus fit both themes and preserve t
       }
     }
   }
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page
+    .getByRole("navigation", { name: "桌宠编辑步骤" })
+    .getByRole("button", { name: "习惯", exact: true })
+    .click();
+  const slider = page.getByRole("slider", { name: "桌宠高度" });
+  const previousSize = Number(await slider.inputValue());
+  await slider.focus();
+  await slider.press("ArrowRight");
+  await expect(slider).toHaveValue(String(Math.min(300, previousSize + 10)));
   // Only UI panel switches and resizes occur after the draft edit.
   await page.setViewportSize({ width: 768, height: 850 });
   await page

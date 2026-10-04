@@ -14,6 +14,8 @@ from app.apps.thought_workshop.models import (
     ThoughtNote,
     ThoughtNoteAsset,
 )
+from app.apps.thought_workshop.multitable.storage import initialize
+from app.apps.thought_workshop.publication.lifecycle import touch_note, withdraw_notes
 from app.apps.thought_workshop.schemas.document import (
     attachment_nodes,
     document_text,
@@ -214,6 +216,8 @@ class Notes:
             row.id = note_id
         self.session.add(row)
         await self.session.flush()
+        if row.kind == "multitable":
+            await initialize(self.session, row)
         await self.references(row.id, ids)
         await index_references(self.session, row.id, row.document)
         if not importing:
@@ -227,6 +231,10 @@ class Notes:
         self, note_id: str, body: ThoughtNotePut, *, restoring: bool = False, commit: bool = True
     ) -> ThoughtNoteOut:
         current = await self.get(note_id)
+        if body.kind != current.kind:
+            raise ThoughtError("不能改变文档类型")
+        if current.kind == "multitable" and body.document != current.document:
+            raise ThoughtError("请使用多维表格操作接口编辑数据")
         if current.deleted_at:
             raise ThoughtError("请先恢复笔记", 409, "note_deleted")
         if current.revision != body.expected_revision:
@@ -268,6 +276,7 @@ class Notes:
             .where(ThoughtKnowledgeBase.id == current.knowledge_base_id)
             .values(updated_at=utc_now())
         )
+        await touch_note(self.session, note_id)
         if commit:
             await self.session.commit()
         return note_out(await self.get(note_id))
@@ -410,6 +419,7 @@ class Notes:
                     revision=ThoughtNote.revision + 1,
                 )
             )
+        await withdraw_notes(self.session, targets)
         siblings = (
             await self.session.scalars(
                 select(ThoughtNote)

@@ -83,6 +83,9 @@ from db.migrations.versions import (
     r0079_desktop_pet_chat,
     r0080_thought_knowledge_tools,
     r0081_desktop_pet_presentation,
+    r0082_thought_publications,
+    r0083_thought_multitable,
+    r0084_unified_official_publications,
 )
 
 
@@ -365,6 +368,16 @@ MIGRATIONS += (Migration(r0079_desktop_pet_chat.MIGRATION_ID, r0079_desktop_pet_
 MIGRATIONS += (
     Migration(r0080_thought_knowledge_tools.MIGRATION_ID, r0080_thought_knowledge_tools.SQL),
     Migration(r0081_desktop_pet_presentation.MIGRATION_ID, r0081_desktop_pet_presentation.SQL),
+)
+
+MIGRATIONS += (Migration(r0082_thought_publications.MIGRATION_ID, r0082_thought_publications.SQL),)
+
+MIGRATIONS += (Migration(r0083_thought_multitable.MIGRATION_ID, r0083_thought_multitable.SQL),)
+
+MIGRATIONS += (
+    Migration(
+        r0084_unified_official_publications.MIGRATION_ID, r0084_unified_official_publications.SQL
+    ),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

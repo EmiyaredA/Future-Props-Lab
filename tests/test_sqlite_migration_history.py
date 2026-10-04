@@ -1,8 +1,44 @@
+import json
 from pathlib import Path
 
-from db.migrations import apply_migrations
+from db.migrations import apply_migrations, runner
 from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
+
+
+def test_multitable_migration_preserves_existing_note_payload(tmp_path: Path, monkeypatch) -> None:
+    database = tmp_path / "multitable-upgrade.db"
+    original = json.dumps(
+        {
+            "type": "doc",
+            "content": [{"type": "paragraph", "content": [{"type": "text", "text": "旧笔记正文"}]}],
+        },
+        ensure_ascii=False,
+    )
+    with monkeypatch.context() as patch:
+        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:-1])
+        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[-2].migration_id)
+        apply_migrations(database)
+    with connect_database(database) as connection:
+        workspace = connection.execute("SELECT id FROM workspaces LIMIT 1").fetchone()[0]
+        connection.execute(
+            "INSERT INTO thought_knowledge_bases (id,workspace_id,title,created_at,updated_at) "
+            "VALUES ('legacy-kb',?,'旧知识库','2026-01-01','2026-01-01')",
+            (workspace,),
+        )
+        connection.execute(
+            "INSERT INTO thought_notes (id,workspace_id,knowledge_base_id,title,document,revision,"
+            "created_at,updated_at) VALUES ('legacy-note',?,'legacy-kb','旧笔记',?,7,"
+            "'2026-01-01','2026-01-01')",
+            (workspace, original),
+        )
+        connection.commit()
+    assert apply_migrations(database) == (LATEST_MIGRATION_ID, True)
+    with connect_database(database) as connection:
+        assert connection.execute(
+            "SELECT kind,document,revision FROM thought_notes WHERE id='legacy-note'"
+        ).fetchone() == ("note", original, 7)
+        assert connection.execute("SELECT count(*) FROM thought_data_tables").fetchone() == (0,)
 
 
 def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Path) -> None:
@@ -106,6 +142,9 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0079_desktop_pet_chat",),
             ("0080_thought_knowledge_tools",),
             ("r0081_desktop_pet_presentation",),
+            ("0082_thought_publications",),
+            ("0083_thought_multitable",),
+            ("0084_unified_official_publications",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -148,3 +187,51 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             "storage_key",
             "legacy_visual_asset_id",
         } <= generation_asset_columns
+
+
+def test_official_publication_migration_retains_existing_publication_behavior(
+    tmp_path, monkeypatch
+):
+    database = tmp_path / "official-upgrade.db"
+    with monkeypatch.context() as patch:
+        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:-1])
+        apply_migrations(database)
+    with connect_database(database) as connection:
+        # All rows belong to this test's temporary database, never runtime data.
+        connection.execute("""
+            INSERT INTO users (id, username, username_normalized, display_name,
+                password_hash, status, is_platform_admin, platform_role,
+                must_change_password, revision, created_at, updated_at)
+            VALUES ('official-user', 'official-user', 'official-user', 'User',
+                'test', 'active', 0, 'member', 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """)
+        connection.execute("""
+            INSERT INTO workspaces (id, name, visibility, revision, created_at, updated_at)
+            VALUES ('official-ws', 'Test', 'private', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """)
+        connection.execute("""
+            INSERT INTO thought_knowledge_bases
+                (id, title, description, workspace_id, revision, created_at, updated_at)
+            VALUES ('official-library', 'Test', '', 'official-ws', 0,
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """)
+        connection.execute("""
+            INSERT INTO thought_publications (id, workspace_id, knowledge_base_id,
+                publisher_id, title, description, active, revision, updated_at)
+            VALUES ('legacy-pub', 'official-ws', 'official-library', 'official-user',
+                'Test', '', 1, 7, CURRENT_TIMESTAMP)
+        """)
+        connection.commit()
+    apply_migrations(database)
+    with connect_database(database) as connection:
+        row = connection.execute(
+            "SELECT is_official, read_only, editable_platform_roles, revision "
+            "FROM thought_publications WHERE id='legacy-pub'"
+        ).fetchone()
+        assert row == (0, 0, "[]", 7)
+        assert connection.execute("SELECT COUNT(*) FROM thought_official_sources").fetchone() == (
+            0,
+        )
+        assert connection.execute(
+            "SELECT COUNT(*) FROM thought_official_import_receipts"
+        ).fetchone() == (0,)

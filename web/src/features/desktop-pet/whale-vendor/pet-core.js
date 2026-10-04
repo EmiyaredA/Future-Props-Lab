@@ -1354,14 +1354,10 @@ export function createPet(els, opts) {
     petCool = 0;
   let locomotion = null;
   let heldAnchor = null;
+  let releaseOrigin = null;
   function setLocomotion(value) {
     const active = value && value.state !== "idle" ? value : null;
-    if (
-      active?.state === "held" &&
-      locomotion?.state !== "held" &&
-      active.grip &&
-      pet.xf
-    ) {
+    if (active?.state === "held" && !heldAnchor && active.grip && pet.xf) {
       const c = pet.xf,
         r = (c.rot * Math.PI) / 180;
       const dx = active.grip.x - c.AX,
@@ -1370,9 +1366,24 @@ export function createPet(els, opts) {
         point: active.grip,
         x: c.ax + (dx * Math.cos(r) + dy * Math.sin(r)) / c.kx,
         y: c.ay + (-dx * Math.sin(r) + dy * Math.cos(r)) / c.ky,
+        pickup: custom?.pickupPoint?.() || null,
+        at: T,
       };
+      heldAnchor.startX = heldAnchor.x;
+      heldAnchor.startY = heldAnchor.y;
+      releaseOrigin = null;
     }
-    if (active?.state !== "held") heldAnchor = null;
+    if (active?.state === "held" && heldAnchor && active.grip)
+      heldAnchor.point = active.grip;
+    if (active?.state !== "held" && heldAnchor) {
+      if (pet.xf)
+        releaseOrigin = {
+          x: pet.xf.AX - (value?.placementShift?.x ?? 0),
+          y: pet.xf.AY - (value?.placementShift?.y ?? 0),
+          at: T,
+        };
+      heldAnchor = null;
+    }
     if (
       active?.state !== locomotion?.state ||
       (active && pet.mode !== `locomotion-${active.state}`)
@@ -1924,7 +1935,9 @@ export function createPet(els, opts) {
 
     if (locomotion) {
       pet.phase = locomotion.phase;
-      pet.facing = locomotion.state === "climb" ? 1 : locomotion.facing;
+      pet.facing =
+        custom?.motionFacing?.(locomotion, T) ??
+        (locomotion.state === "climb" ? 1 : locomotion.facing);
       const walking = locomotion.state === "walk";
       strideT = walking ? 10 : locomotion.state === "climb" ? 12 : 0;
       liftT = walking ? 8 : locomotion.state === "climb" ? 15 : 0;
@@ -2009,8 +2022,10 @@ export function createPet(els, opts) {
     pet.look[1] = lerp(pet.look[1], lookT[1], ease(9, dt));
     pet.gap[0] = lerp(pet.gap[0], fc.gap[0], ease(8, dt));
     pet.gap[1] = lerp(pet.gap[1], fc.gap[1], ease(8, dt));
-    // turning reads as a quick card flip rather than a mirror snap
-    pet.faceVis = lerp(pet.faceVis, pet.facing, ease(15, dt));
+    // Physical contacts require a stable coordinate scale; articulated directional poses handle the turn.
+    pet.faceVis = locomotion
+      ? pet.facing
+      : lerp(pet.faceVis, pet.facing, ease(15, dt));
     if (m !== "walk" && m !== "run" && !locomotion)
       pet.phase = lerp(
         pet.phase,
@@ -2136,8 +2151,14 @@ export function createPet(els, opts) {
       fname = pet._fname || "neutral";
     const drag = pet.mode === "drag";
     const br = Math.sin(T * (pet.mode === "sleep" ? 1.7 : 2.4));
-    const sx = (1 + pet.sq * 0.7) * (1 - 0.05 * pet.stretch) * (1 - 0.009 * br);
-    const sy = (1 - pet.sq) * (1 + 0.09 * pet.stretch) * (1 + 0.016 * br);
+    // Contact IK owns physical weight shift; whole-group breathing would slide planted soles.
+    const fixedScale = locomotion || releaseOrigin || custom?.fixedScale;
+    const sx = fixedScale
+      ? 1
+      : (1 + pet.sq * 0.7) * (1 - 0.05 * pet.stretch) * (1 - 0.009 * br);
+    const sy = fixedScale
+      ? 1
+      : (1 - pet.sq) * (1 + 0.09 * pet.stretch) * (1 + 0.016 * br);
     const ax = 128,
       ay = drag ? 36 : 256;
     let AX = drag ? pet.dx : pet.x,
@@ -2148,15 +2169,29 @@ export function createPet(els, opts) {
       ky = S * sy,
       lean = pet.lean * pet.faceVis;
     const renderMode = locomotion?.state ?? pet.mode;
-    const rot = custom?.groupTilt
-      ? custom.groupTilt(renderMode, pet.tilt, lean)
-      : pet.tilt + lean;
+    const rot = locomotion
+      ? 0
+      : custom?.groupTilt
+        ? custom.groupTilt(renderMode, pet.tilt, lean)
+        : pet.tilt + lean;
     if (heldAnchor) {
+      if (heldAnchor.pickup) {
+        const blend = clamp((T - heldAnchor.at) / 0.22, 0, 1);
+        const eased = blend * blend * (3 - 2 * blend);
+        heldAnchor.x = lerp(heldAnchor.startX, heldAnchor.pickup[0], eased);
+        heldAnchor.y = lerp(heldAnchor.startY, heldAnchor.pickup[1], eased);
+      }
       const r = (rot * Math.PI) / 180,
         x = (heldAnchor.x - ax) * kx,
         y = (heldAnchor.y - ay) * ky;
       AX = heldAnchor.point.x - x * Math.cos(r) + y * Math.sin(r);
       AY = heldAnchor.point.y - x * Math.sin(r) - y * Math.cos(r);
+    } else if (releaseOrigin) {
+      const blend = clamp((T - releaseOrigin.at) / 0.24, 0, 1);
+      const eased = blend * blend * (3 - 2 * blend);
+      AX = lerp(releaseOrigin.x, AX, eased);
+      AY = lerp(releaseOrigin.y, AY, eased);
+      if (blend >= 1) releaseOrigin = null;
     }
     pet.xf = { AX, AY, ax, ay, kx, ky, rot };
     petG.setAttribute(
@@ -2368,6 +2403,11 @@ export function createPet(els, opts) {
     resize,
     act,
     replaceReaction,
+    placementDelta() {
+      return heldAnchor && pet.xf
+        ? { x: pet.xf.AX - pet.x, y: pet.xf.AY - floorY }
+        : { x: 0, y: 0 };
+    },
     setLocomotion,
     setExpr,
     walkTo,

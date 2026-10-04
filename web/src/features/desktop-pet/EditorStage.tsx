@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import type { PetDocument } from "./api";
+import type { PetRendererHandle } from "./PetRenderer";
 import { DesktopPetFigure } from "./DesktopPetFigure";
 import {
   EVENT_LABELS,
@@ -10,6 +12,7 @@ import type { EditorTab, useEditorPreview } from "./useEditorPreview";
 import type { useDesktopPreviewLink } from "./useDesktopPreviewLink";
 import { MOTION_DEMOS, type MotionDemo } from "./locomotion/demo";
 import { useVirtualMotion } from "./locomotion/useVirtualMotion";
+import { humanMotionUnavailable } from "./locomotion/motionAvailability";
 
 export function EditorStage({
   document,
@@ -28,13 +31,24 @@ export function EditorStage({
 }) {
   const checker = ["look", "events", "lines"].includes(tab);
   const habits = document.config.habits;
+  const unavailableMotion = humanMotionUnavailable(document.whaleModel);
+  const figureRef = useRef<PetRendererHandle>(null);
   const virtual = useVirtualMotion(
-    tab === "preview" ? preview.motionDemo : null,
+    tab === "preview" && !unavailableMotion ? preview.motionDemo : null,
     preview.key,
     habits?.size ?? 220,
+    () => figureRef.current?.geometry?.()?.strideLength,
+    () => ({
+      transition: figureRef.current?.motionTransition?.() ?? null,
+      failure: figureRef.current?.motionFailure?.() ?? null,
+    }),
+    () => figureRef.current?.cancelMotionPlayback?.(),
   );
   const reaction = reactionFor(document, preview.eventName);
   const whale = document.sourceType === "coopanion-whale";
+  const fourEdges =
+    (document.whaleModel?.motionRig as { version?: number } | undefined)
+      ?.version === 2;
   const motion = reaction.motionId
     ? ((whale
         ? MOTION_LABELS[reaction.motionId]
@@ -51,13 +65,14 @@ export function EditorStage({
     : "无表情";
   const figure = (
     <DesktopPetFigure
+      ref={figureRef}
       document={document}
       skinId={skinId}
       view={checker ? "center" : "floor"}
       eventName={preview.eventName}
       reactionKey={preview.key}
       playbackMode={preview.mode}
-      motionDemo={preview.motionDemo}
+      motionDemo={unavailableMotion ? null : preview.motionDemo}
       locomotion={virtual.placement?.frame}
     />
   );
@@ -79,6 +94,16 @@ export function EditorStage({
         {EVENT_LABELS[preview.eventName]} · {motion} · {expression}
         {preview.motionDemo && ` · 姿态：${MOTION_DEMOS[preview.motionDemo]}`}
       </div>
+      {unavailableMotion && (
+        <div className="dp-preview-details" role="status">
+          {unavailableMotion}
+        </div>
+      )}
+      {virtual.error && (
+        <div className="dp-preview-details" role="status">
+          {virtual.error}
+        </div>
+      )}
       <div className="dp-preview-link">
         <button
           type="button"
@@ -98,11 +123,28 @@ export function EditorStage({
               <button
                 key={id}
                 type="button"
-                disabled={!whale}
+                disabled={
+                  !whale ||
+                  Boolean(unavailableMotion) ||
+                  (!fourEdges && ["climb-top", "climb-bottom"].includes(id))
+                }
+                title={
+                  !whale
+                    ? "Live2D 暂不支持"
+                    : unavailableMotion
+                      ? unavailableMotion
+                      : !fourEdges && ["climb-top", "climb-bottom"].includes(id)
+                        ? "此资源包未提供四边姿势"
+                        : undefined
+                }
                 aria-pressed={preview.motionDemo === id}
                 onClick={() => preview.demonstrate(id)}
               >
                 {label}
+                {unavailableMotion ||
+                (!fourEdges && ["climb-top", "climb-bottom"].includes(id))
+                  ? "（暂不支持）"
+                  : ""}
               </button>
             ),
           )}

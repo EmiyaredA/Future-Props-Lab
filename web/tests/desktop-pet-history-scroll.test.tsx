@@ -53,9 +53,9 @@ const previousScrollTo = HTMLElement.prototype.scrollTo;
 beforeEach(() => {
   HTMLElement.prototype.scrollTo = vi.fn(function (
     this: HTMLElement,
-    options: ScrollToOptions | number,
+    options?: ScrollToOptions | number,
   ) {
-    const top = typeof options === "number" ? options : (options.top ?? 0);
+    const top = typeof options === "number" ? options : (options?.top ?? 0);
     this.scrollTop = Math.max(
       0,
       Math.min(top, this.scrollHeight - this.clientHeight),

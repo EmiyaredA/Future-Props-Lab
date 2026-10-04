@@ -2,10 +2,17 @@ import {
   CalloutNode,
   DocumentReferenceNode,
 } from "./knowledge-tools/ContentNodes";
+import { MultitableViewNode } from "./multitable/EmbedNode";
 import { CanvasNode } from "./diagrams/CanvasNode";
 import { AttachmentNode } from "./AttachmentNode";
 import type { AnyExtension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
+import { DocumentCodeNode } from "./document-layout/CodeNode";
+import {
+  DocumentCardNode,
+  CardGridNode,
+  DocumentDirectoryNode,
+} from "./document-layout/NavigationNodes";
 import {
   TextStyle,
   Color,
@@ -35,6 +42,7 @@ export function editorExtensions(
 ) {
   const extensions: AnyExtension[] = [
     StarterKit.configure({
+      codeBlock: false,
       link: {
         openOnClick: true,
         protocols: ["http", "https", "mailto"],
@@ -43,6 +51,7 @@ export function editorExtensions(
       dropcursor: { color: "#f08b62", width: 3 },
     }),
     TextStyle,
+    DocumentCodeNode,
     Color,
     FontSize,
     BackgroundColor,
@@ -67,8 +76,12 @@ export function editorExtensions(
     AttachmentNode,
     MermaidNode,
     CanvasNode,
+    MultitableViewNode,
     CalloutNode,
     DocumentReferenceNode,
+    DocumentCardNode,
+    CardGridNode,
+    DocumentDirectoryNode,
     Placeholder.configure({ placeholder: "从一个想法开始…" }),
   ];
   if (!readOnly) extensions.push(NodeRange.configure({ key: "Mod" }));

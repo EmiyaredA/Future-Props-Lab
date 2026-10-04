@@ -64,6 +64,7 @@ class ThoughtNote(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
     is_home: Mapped[bool] = mapped_column(Boolean, default=False)
     title: Mapped[str] = mapped_column(String(240))
+    kind: Mapped[str] = mapped_column(String(20), default="note")
     document: Mapped[dict] = mapped_column(JSON)
     schema_version: Mapped[int] = mapped_column(Integer, default=2)
     search_text: Mapped[str] = mapped_column(Text, default="")

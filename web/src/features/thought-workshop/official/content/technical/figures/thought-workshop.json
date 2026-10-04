@@ -1,6 +1,6 @@
 {
   "sceneVersion": 1,
-  "title": "两类知识库与可编辑笔记的边界",
+  "title": "笔记存储与发布权限的边界",
   "elements": [
     {
       "id": "static",
@@ -9,7 +9,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "官方库\n随包 Markdown / 图形",
+      "text": "发布配置\n官方 / 只读 / 角色授权",
       "fill": "#eef5f3",
       "stroke": "#365f62",
       "icon": "file"
@@ -21,7 +21,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "官方阅读\n搜索、目录与图表",
+      "text": "社区阅读与编辑\n可见文章与有效能力",
       "fill": "#edf2fb",
       "stroke": "#365f62"
     },
@@ -67,8 +67,19 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "个人图形副本\n源码或场景 + 来源链接",
+      "text": "逐篇授权\n账号角色与编辑角色",
       "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "multitable",
+      "kind": "rounded",
+      "x": 380,
+      "y": 560,
+      "width": 260,
+      "height": 130,
+      "text": "多维表格独立文档\n字段 / 记录 / 共享视图\n嵌入引用目标，不复制数据",
+      "fill": "#eef5f3",
       "stroke": "#365f62"
     }
   ],
@@ -77,7 +88,7 @@
       "id": "static_reader",
       "source": "static",
       "target": "reader",
-      "label": "静态加载",
+      "label": "发布授权",
       "arrow": true,
       "style": "step"
     },
@@ -85,7 +96,7 @@
       "id": "reader_copy",
       "source": "reader",
       "target": "copy",
-      "label": "授权复制",
+      "label": "有效权限",
       "arrow": true,
       "style": "step"
     },
@@ -102,6 +113,22 @@
       "source": "note",
       "target": "save",
       "label": "正式 API",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "note-multitable",
+      "source": "note",
+      "target": "multitable",
+      "label": "正文嵌入 ID / 双重授权",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "granted-save",
+      "source": "copy",
+      "target": "save",
+      "label": "授权后共用 Notes",
       "arrow": true,
       "style": "step"
     }

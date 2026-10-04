@@ -22,6 +22,7 @@
 | [create_project](#create-project) | `POST /v1/desktop-pet/projects` |
 | [import_whale](#import-whale) | `POST /v1/desktop-pet/projects/import-whale` |
 | [send_chat_message](#send-chat-message) | `POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream` |
+| [replace_package](#replace-package) | `POST /v1/desktop-pet/projects/{project_id}/replace-package` |
 | [sync_source](#sync-source) | `POST /v1/desktop-pet/projects/{project_id}/sync-source` |
 | [save_document](#save-document) | `PUT /v1/desktop-pet/projects/{project_id}/document` |
 | [upload_skin_replacement](#upload-skin-replacement) | `PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}` |
@@ -221,6 +222,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body` | application/json | PetChatSettingsIn | 是 |
 | `body.expectedRevision` | 请求体 | integer | 是 |
 | `body.modelId` | 请求体 | string / null | 是 |
+| `body.presentationMode` | 请求体 | bubble / dialogue / null | 否 |
 | `body.proactiveLinesEnabled` | 请求体 | boolean | 是 |
 
 **响应**：
@@ -293,6 +295,30 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 **响应**：
 - `200` · `application/json` · `object`
 - `200` · `text/event-stream` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## replace_package {#replace-package}
+
+`client.desktop_pet.replace_package(...)`
+
+**接口**：`POST /v1/desktop-pet/projects/{project_id}/replace-package`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | multipart/form-data | Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post | 是 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+| `body.file` | 请求体 | string | 是 |
+
+文件通过 `files={字段名: (文件名, 二进制文件对象, MIME)}` 传入；其他表单字段放在 `body`。
+
+**响应**：
+- `200` · `application/json` · `PetDocumentOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

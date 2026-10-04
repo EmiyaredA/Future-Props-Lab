@@ -73,6 +73,7 @@ export const restoreKnowledge = async (project: KnowledgeBase) =>
 export const createDocument = async (
   project: KnowledgeBase,
   parent_id: string | null = null,
+  kind: "note" | "multitable" = "note",
 ) =>
   unwrap(
     await api.POST(
@@ -80,7 +81,8 @@ export const createDocument = async (
       {
         params: { path: { project_id: project.id } },
         body: {
-          title: "未命名文档",
+          title: kind === "multitable" ? "未命名多维表格" : "未命名文档",
+          kind,
           parent_id,
           expected_revision: project.revision,
         },

@@ -1,4 +1,4 @@
-/** Concise reading context for the bundled technical principles chapters. */
+/** Reading context for the bundled technical documentation. */
 export const TECHNICAL_READING: Record<
   string,
   {
@@ -21,6 +21,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "technical",
         documentId: "modules",
       },
+      {
+        libraryId: "technical",
+        documentId: "scope",
+      },
     ],
   },
   modules: {
@@ -37,6 +41,10 @@ export const TECHNICAL_READING: Record<
       {
         libraryId: "technical",
         documentId: "thought-workshop",
+      },
+      {
+        libraryId: "technical",
+        documentId: "backend-design",
       },
     ],
   },
@@ -56,6 +64,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "general",
         documentId: "accounts",
       },
+      {
+        libraryId: "technical",
+        documentId: "data-model",
+      },
     ],
   },
   sqlite: {
@@ -73,6 +85,10 @@ export const TECHNICAL_READING: Record<
       {
         libraryId: "technical",
         documentId: "assets",
+      },
+      {
+        libraryId: "technical",
+        documentId: "decisions",
       },
     ],
   },
@@ -92,23 +108,27 @@ export const TECHNICAL_READING: Record<
         libraryId: "thought-workshop",
         documentId: "storage",
       },
+      {
+        libraryId: "technical",
+        documentId: "frontend-design",
+      },
     ],
   },
   assets: {
     summary:
-      "用含图片画板的迁移说明素材引用、完整备份、Markdown 包与成品导出的区别。",
+      "追踪一张画板图片从上传到正文引用与鉴权预览，明确文件、素材身份和显示 URL 的生命周期。",
     related: [
       {
         libraryId: "technical",
-        documentId: "identity",
+        documentId: "data-model",
       },
       {
         libraryId: "technical",
-        documentId: "thought-workshop",
+        documentId: "data-exchange",
       },
       {
-        libraryId: "thought-workshop",
-        documentId: "delivery",
+        libraryId: "technical",
+        documentId: "identity",
       },
     ],
   },
@@ -127,6 +147,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "general",
         documentId: "logs",
       },
+      {
+        libraryId: "technical",
+        documentId: "contracts",
+      },
     ],
   },
   tasks: {
@@ -144,6 +168,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "general",
         documentId: "logs",
       },
+      {
+        libraryId: "technical",
+        documentId: "backend-design",
+      },
     ],
   },
   rendering: {
@@ -160,6 +188,10 @@ export const TECHNICAL_READING: Record<
       {
         libraryId: "technical",
         documentId: "galgame-workshop",
+      },
+      {
+        libraryId: "technical",
+        documentId: "app-handoffs",
       },
     ],
   },
@@ -179,6 +211,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "general",
         documentId: "automation",
       },
+      {
+        libraryId: "technical",
+        documentId: "contracts",
+      },
     ],
   },
   desktop: {
@@ -196,23 +232,27 @@ export const TECHNICAL_READING: Record<
         libraryId: "general",
         documentId: "desktop",
       },
+      {
+        libraryId: "technical",
+        documentId: "scope",
+      },
     ],
   },
   engineering: {
     summary:
-      "把画板功能从源码到离线安装包的验证，拆成契约、行为、边界和资源证据。",
+      "沿画板保存、图片生成与视频输出建立验证证据，区分契约、行为、边界和交付检查。",
     related: [
       {
         libraryId: "technical",
-        documentId: "modules",
+        documentId: "contracts",
+      },
+      {
+        libraryId: "technical",
+        documentId: "decisions",
       },
       {
         libraryId: "technical",
         documentId: "thought-workshop",
-      },
-      {
-        libraryId: "technical",
-        documentId: "desktop",
       },
     ],
   },
@@ -230,6 +270,10 @@ export const TECHNICAL_READING: Record<
       {
         libraryId: "presentation-workshop",
         documentId: "delivery",
+      },
+      {
+        libraryId: "technical",
+        documentId: "data-exchange",
       },
     ],
   },
@@ -249,6 +293,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "thought-workshop",
         documentId: "workflow",
       },
+      {
+        libraryId: "technical",
+        documentId: "component-contracts",
+      },
     ],
   },
   "visual-workshop": {
@@ -267,6 +315,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "visual-workshop",
         documentId: "workflow",
       },
+      {
+        libraryId: "technical",
+        documentId: "frontend-design",
+      },
     ],
   },
   "galgame-workshop": {
@@ -283,6 +335,10 @@ export const TECHNICAL_READING: Record<
       {
         libraryId: "galgame-workshop",
         documentId: "delivery",
+      },
+      {
+        libraryId: "technical",
+        documentId: "app-handoffs",
       },
     ],
   },
@@ -302,6 +358,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "video-editor",
         documentId: "workflow",
       },
+      {
+        libraryId: "technical",
+        documentId: "data-exchange",
+      },
     ],
   },
   "motion-compositor": {
@@ -319,6 +379,10 @@ export const TECHNICAL_READING: Record<
       {
         libraryId: "motion-compositor",
         documentId: "delivery",
+      },
+      {
+        libraryId: "technical",
+        documentId: "app-handoffs",
       },
     ],
   },
@@ -338,11 +402,15 @@ export const TECHNICAL_READING: Record<
         libraryId: "live2d-workshop",
         documentId: "delivery",
       },
+      {
+        libraryId: "technical",
+        documentId: "component-contracts",
+      },
     ],
   },
   "desktop-pet": {
     summary:
-      "解释固定 Live2D 快照怎样隔离源工程变化，以及显式同步为何需要重新验证。",
+      "解释桌宠素材与固定 Live2D 快照、预览租约、动作运行和独立聊天请求怎样协作。",
     related: [
       {
         libraryId: "technical",
@@ -355,6 +423,10 @@ export const TECHNICAL_READING: Record<
       {
         libraryId: "desktop-pet",
         documentId: "workflow",
+      },
+      {
+        libraryId: "technical",
+        documentId: "app-handoffs",
       },
     ],
   },
@@ -374,6 +446,10 @@ export const TECHNICAL_READING: Record<
         libraryId: "audio-annotation",
         documentId: "delivery",
       },
+      {
+        libraryId: "technical",
+        documentId: "data-model",
+      },
     ],
   },
   "director-desk": {
@@ -391,6 +467,172 @@ export const TECHNICAL_READING: Record<
       {
         libraryId: "director-desk",
         documentId: "storage",
+      },
+      {
+        libraryId: "technical",
+        documentId: "frontend-design",
+      },
+    ],
+  },
+  scope: {
+    summary:
+      "明确单机、多账号和逻辑 Workspace 的边界，找到适合当前问题的阅读路径。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "system",
+      },
+      {
+        libraryId: "technical",
+        documentId: "modules",
+      },
+      {
+        libraryId: "technical",
+        documentId: "decisions",
+      },
+    ],
+  },
+  "frontend-design": {
+    summary:
+      "沿画板编辑拆开业务组件、服务器缓存、本机草稿和临时视图，理解前端状态归属。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "component-contracts",
+      },
+      {
+        libraryId: "technical",
+        documentId: "revision",
+      },
+      {
+        libraryId: "technical",
+        documentId: "thought-workshop",
+      },
+    ],
+  },
+  "backend-design": {
+    summary:
+      "跟踪笔记保存如何通过路由进入功能用例，区分校验、短事务和共享能力。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "modules",
+      },
+      {
+        libraryId: "technical",
+        documentId: "identity",
+      },
+      {
+        libraryId: "technical",
+        documentId: "sqlite",
+      },
+    ],
+  },
+  "component-contracts": {
+    summary:
+      "用画板场景与异步保存解释输入输出、状态所有权、取消和组件替换的边界。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "frontend-design",
+      },
+      {
+        libraryId: "technical",
+        documentId: "backend-design",
+      },
+      {
+        libraryId: "technical",
+        documentId: "thought-workshop",
+      },
+    ],
+  },
+  "app-handoffs": {
+    summary:
+      "区分公共媒体能力与应用交接，追踪片段、成片和固定角色快照怎样形成目标数据。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "rendering",
+      },
+      {
+        libraryId: "technical",
+        documentId: "desktop-pet",
+      },
+      {
+        libraryId: "technical",
+        documentId: "visual-workshop",
+      },
+    ],
+  },
+  "data-model": {
+    summary:
+      "从账号到项目、笔记、素材和任务逐层定位数据，区分租户归属与内容包含。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "identity",
+      },
+      {
+        libraryId: "technical",
+        documentId: "assets",
+      },
+      {
+        libraryId: "technical",
+        documentId: "thought-workshop",
+      },
+    ],
+  },
+  "data-exchange": {
+    summary:
+      "用含图片笔记的迁移与视频交付，解释包校验、身份重映射、文件准备和失败补偿。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "assets",
+      },
+      {
+        libraryId: "technical",
+        documentId: "revision",
+      },
+      {
+        libraryId: "technical",
+        documentId: "rendering",
+      },
+    ],
+  },
+  contracts: {
+    summary:
+      "追踪一个 API 字段如何进入 OpenAPI、Web 和独立 SDK，理解生成检查与行为验证的区别。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "automation",
+      },
+      {
+        libraryId: "technical",
+        documentId: "engineering",
+      },
+      {
+        libraryId: "technical",
+        documentId: "backend-design",
+      },
+    ],
+  },
+  decisions: {
+    summary:
+      "结合当前实现解释单机、功能切片、CAS 和统一任务驱动的收益、代价与验证边界。",
+    related: [
+      {
+        libraryId: "technical",
+        documentId: "scope",
+      },
+      {
+        libraryId: "technical",
+        documentId: "modules",
+      },
+      {
+        libraryId: "technical",
+        documentId: "tasks",
       },
     ],
   },

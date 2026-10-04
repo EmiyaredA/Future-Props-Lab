@@ -151,7 +151,7 @@ test("document autosave, visible save controls, inline history and safe restore"
     return route.continue();
   });
   await title.fill("不能丢失的草稿");
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
+  await page.getByRole("button", { name: "我的知识库", exact: true }).click();
   const leave = page.getByRole("alertdialog", { name: "仍有未保存的内容" });
   await expect(leave).toBeVisible();
   await expect(title).toHaveValue("不能丢失的草稿");

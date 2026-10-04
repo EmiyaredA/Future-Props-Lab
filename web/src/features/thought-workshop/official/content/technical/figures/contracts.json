@@ -1,0 +1,140 @@
+{
+  "sceneVersion": 2,
+  "title": "同一接口的生成与消费链",
+  "elements": [
+    {
+      "id": "schema",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "后端 schema 与路由\n请求响应的定义",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "code"
+    },
+    {
+      "id": "openapi",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "OpenAPI\n可生成的公共契约",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "web",
+      "kind": "icon",
+      "x": 720,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "Web 生成类型\n业务 API 消费",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "code"
+    },
+    {
+      "id": "mapping",
+      "kind": "icon",
+      "x": 40,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "operations.json\nSDK 方法映射",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "sdk",
+      "kind": "icon",
+      "x": 380,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "独立 Python SDK\n具名资源方法",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "code"
+    },
+    {
+      "id": "check",
+      "kind": "icon",
+      "x": 720,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "契约与行为检查\n生成一致与实际结果",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "lock"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "schema",
+      "target": "openapi",
+      "label": "导出",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e1",
+      "source": "openapi",
+      "target": "web",
+      "label": "生成",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e2",
+      "source": "openapi",
+      "target": "sdk",
+      "label": "生成",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e3",
+      "source": "mapping",
+      "target": "sdk",
+      "label": "方法映射",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e4",
+      "source": "web",
+      "target": "check",
+      "label": "消费验证",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e5",
+      "source": "sdk",
+      "target": "check",
+      "label": "消费验证",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    }
+  ]
+}

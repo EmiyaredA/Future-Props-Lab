@@ -526,7 +526,7 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
   await page.getByRole("dialog").getByRole("textbox").fill(libraryTitle);
   await page.getByRole("button", { name: "确认", exact: true }).click();
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
+  await page.getByRole("button", { name: "我的知识库", exact: true }).click();
   await page
     .getByRole("textbox", { name: "搜索知识库", exact: true })
     .fill(libraryTitle);

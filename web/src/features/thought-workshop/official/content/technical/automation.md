@@ -1,4 +1,4 @@
-# 集成与 Agent/SDK：受控的自动化入口
+# 集成与 Agent/CLI/SDK
 
 让 Agent 把架构图写进知识库，最关键的不是生成 JSON，而是明确写到哪一个库、使用哪个版本，以及失败后是否已经创建成功。
 
@@ -86,11 +86,22 @@ def create_diagram_note(client: Client, knowledge_base_id: str):
 > [!TIP]
 > 把“目标资源、读取到的版本、请求结果、新快照”作为自动化日志的四个关键字段。不要把密钥、Session 或桌面私有 token 写进笔记或日志。
 
+## 认证、操作白名单与业务前提分别检查
+
+独立 SDK 只消费正式 HTTP 契约，不导入后端 ORM。桌面 Agent 连接使用专用凭据和 Unix Socket，白名单操作是额外入口限制；私有启动 token 不交给 SDK。请求仍需要当前权限、目标归属与 expected_revision，不能因由本机脚本发起就自动获得全局权限。
+
+创建笔记确认目标知识库与目录前提，修改笔记先读取当前快照；调用成功后重新获取或检查返回版本。请求结果不明时先确认目标是否已生成，避免把重试解释成无条件重复创建。
+
+## 让样例证明可观察结果
+
+画板样例说明调用入口、可替换项目参数、权限和预期元素，不只列 SDK 方法。生成任务样例说明提交后查询任务、读取结果的独立阶段；导出样例说明保存版本与交付格式。确定性工作流验证闭环，外部模型凭证缺失时保留明确限制，不借用日常账号真实数据作自动验收。
+
 ## 相关阅读
 
-- [Workspace 与权限：资源为什么不能串空间](/apps/thought-workshop/official-knowledge-bases/technical/documents/identity)
-- [保存、历史与并发：防止静默覆盖](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
+- [Workspace 与权限](/apps/thought-workshop/official-knowledge-bases/technical/documents/identity)
+- [编辑、保存、历史与并发](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
 - [SDK/API 使用指南](/apps/thought-workshop/official-knowledge-bases/general/documents/automation)
+- [OpenAPI、Web 与 SDK 契约](/apps/thought-workshop/official-knowledge-bases/technical/documents/contracts)
 
 ## 代码入口
 

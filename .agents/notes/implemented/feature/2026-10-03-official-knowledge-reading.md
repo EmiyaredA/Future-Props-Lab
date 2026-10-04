@@ -35,3 +35,5 @@ Markdown 关闭原始 HTML，不引入 MDX。内容和高亮资源随构建发�
 全仓 lint、格式、契约与最终 TypeScript 检查通过；Web 和桌面静态构建及产物预算验证通过。过程中其他并行改动一度产生类型与测试失败，已与本次修复分开记录。尚有两项范围外门禁：既存 proposed 笔记 `2026-10-02-thought-workshop-completion.md` 缺少 Risks 节；文档保护检查发现本任务开始前已修改的 `web/src/docs/articles/sdk/sdk-reference-thought.md`。本任务未重写该受保护路径或改动该提案。日志、截图和初始状态保存在忽略的 `.local/docs-reading/`。
 
 后续明确要求在 [思绪工坊完整功能补齐](2026-10-02-thought-workshop-completion.md) 中扩展官方文章的个人阅读位置同步，正文仍为静态只读，章节锚点与搜索定位优先。此前零偏好请求的决定和验收记录保留为当时范围。
+
+2026-10-04：[官方文档统一到普通笔记发布](../architecture/2026-10-04-unified-official-publications.md)替代本文中官方独立静态阅读的约束。本文保留当时决定与验证记录。

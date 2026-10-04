@@ -1,0 +1,168 @@
+.document-prose.document-prose {
+  font-size: 17px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+.document-prose.document-prose :is(h1, h2, h3, h4, h5, h6) {
+  line-height: 1.4;
+  margin: 1.3em 0 0.6em;
+  scroll-margin-top: 120px;
+}
+.document-prose.document-prose h1 {
+  font-size: clamp(26px, 4vw, 36px);
+}
+.document-prose.document-prose h2 {
+  font-size: 26px;
+}
+.document-prose.document-prose h3 {
+  font-size: 21px;
+}
+.document-prose.document-prose p {
+  margin: 14px 0 20px;
+}
+.document-prose.document-prose :is(ul, ol) {
+  padding-left: 1.6em;
+  margin: 18px 0 24px;
+}
+.document-prose.document-prose li {
+  padding-left: 0.3em;
+  margin: 8px 0;
+}
+.document-prose.document-prose li > p {
+  margin: 8px 0;
+}
+.document-prose.document-prose ol > li::marker {
+  color: var(--accent);
+  font-weight: 600;
+}
+.document-prose.document-prose table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.document-prose.document-prose :is(td, th) {
+  border: 1px solid var(--border-strong);
+  padding: 8px 12px;
+  vertical-align: top;
+}
+.document-prose.document-prose th {
+  background: var(--surface-soft);
+}
+.document-prose.document-prose blockquote {
+  padding: 12px 22px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 6px 6px 0;
+}
+.document-prose .thought-callout {
+  --callout-color: var(--accent);
+  margin: 24px 0;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--callout-color);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+:is(
+  .thought-callout.is-tip,
+  .thought-callout.is-success,
+  .thought-callout.is-tip
+) {
+  --callout-color: var(--success, #60816d);
+}
+.thought-callout.is-warning {
+  --callout-color: var(--warning, #a87838);
+}
+.thought-callout.is-danger {
+  --callout-color: var(--danger, #b95656);
+}
+.document-callout-title {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--callout-color);
+  font-size: 14px;
+}
+.document-callout-title strong {
+  font-size: inherit;
+}
+.document-prose .thought-callout > :last-child {
+  margin-bottom: 0;
+}
+.document-code-block {
+  min-width: 0;
+  margin: 24px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.document-code-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+.document-code-toolbar input {
+  min-width: 0;
+  width: 150px;
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 6px;
+}
+.document-copy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 6px;
+}
+.document-copy-button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.document-copy-feedback:not(:empty) {
+  font-size: 12px;
+  color: var(--muted);
+}
+.thought-note-heading > h1 {
+  margin: 20px 0 12px;
+  font-size: clamp(26px, 4vw, 36px);
+  line-height: 1.4;
+}
+.document-prose.document-prose .document-code-block pre {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  padding: 20px;
+  overflow-x: auto;
+  font:
+    13px/1.8 ui-monospace,
+    monospace;
+}
+.document-code-block .hljs-comment {
+  color: var(--muted);
+  font-style: italic;
+}
+.document-code-block :is(.hljs-keyword, .hljs-literal, .hljs-built_in) {
+  color: var(--accent);
+}
+.document-code-block :is(.hljs-string, .hljs-title, .hljs-attr) {
+  color: var(--success, #60816d);
+}
+.document-code-block :is(.hljs-number, .hljs-type) {
+  color: var(--warning, #a87838);
+}
+@media (max-width: 700px) {
+  .document-prose.document-prose {
+    font-size: 16px;
+  }
+}

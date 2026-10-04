@@ -41,3 +41,17 @@ async def protect_document_references(session: AsyncSession, asset_ids: list[str
         select(knowledge_bases.c.id).where(knowledge_bases.c.cover_asset_id.in_(asset_ids)).limit(1)
     ):
         raise AssetError("文件正在用作知识库封面（含回收站）", code="asset_in_use", status=409)
+
+    publications = Base.metadata.tables.get("thought_publications")
+    if publications is not None and await session.scalar(
+        select(publications.c.id).where(publications.c.cover_asset_id.in_(asset_ids)).limit(1)
+    ):
+        raise AssetError("文件正在用作社区发布封面（含撤回配置）", code="asset_in_use", status=409)
+
+    table_assets = Base.metadata.tables.get("thought_data_assets")
+    if table_assets is not None and await session.scalar(
+        select(table_assets.c.note_id).where(table_assets.c.asset_id.in_(asset_ids)).limit(1)
+    ):
+        raise AssetError(
+            "文件正在被多维表格使用（含历史和回收站）", code="asset_in_use", status=409
+        )

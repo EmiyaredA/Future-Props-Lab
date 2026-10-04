@@ -17,7 +17,11 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { KnowledgeSidebar } from "./KnowledgeSidebar";
-import { OfficialLibraryCards } from "./official/OfficialLibraryCards";
+import { PublicationDialog } from "./community/PublicationDialog";
+import { KnowledgeSections, type KnowledgeSection } from "./KnowledgeSections";
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { NoteReaderPane } from "./NoteReaderPane";
+import { useDocumentChrome } from "./document-layout/useDocumentChrome";
 import { ProjectLibraryCard } from "@shared/ui/project-library/ProjectLibraryCard";
 import {
   deleteNote,
@@ -57,6 +61,9 @@ import type { NoteSummary } from "./api";
 import "./thought-workshop.css";
 import "./writing-layout.css";
 import "./knowledge.css";
+const TableEditor = lazy(() =>
+  import("./multitable/TableEditor").then((m) => ({ default: m.TableEditor })),
+);
 const NoteEditorPane = lazy(() =>
   import("./NoteEditorPane").then((m) => ({ default: m.NoteEditorPane })),
 );
@@ -76,7 +83,7 @@ export function ThoughtWorkshopPage({
   onNavigate,
   onBack,
   registerNavigationGuard,
-  onOpenOfficial,
+  onNavigateSection,
 }: {
   page: string;
   projectId?: string;
@@ -85,7 +92,12 @@ export function ThoughtWorkshopPage({
   onBack: () => void;
   registerNavigationGuard: NavigationGuard;
   onOpenOfficial: (libraryId: string) => void;
+  onNavigateSection?: (section: KnowledgeSection) => void;
 }) {
+  const documentUI = useDocumentChrome();
+  const canPublish = useWorkspacePermission("workspace.manage");
+  const [publishing, setPublishing] = useState(false),
+    [reading, setReading] = useState(false);
   const client = useQueryClient();
   const accountId = useAccountId(),
     workspaceId = useWorkspaceId();
@@ -230,9 +242,12 @@ export function ThoughtWorkshopPage({
       queryKey: thoughtKeys.directory(saved.knowledge_base_id),
     });
   };
-  const create = (parent: string | null = null) =>
+  const create = (
+    parent: string | null = null,
+    kind: "note" | "multitable" = "note",
+  ) =>
     run(async () => {
-      const n = await createDocument(project!, parent);
+      const n = await createDocument(project!, parent, kind);
       open(n.id);
     });
   const backup = (id?: string) =>
@@ -243,7 +258,16 @@ export function ThoughtWorkshopPage({
       initial: p[field] || "",
       apply: (value) => updateKnowledge(p, { [field]: value }),
     });
+  const libraryHtml = () =>
+    void run(async () => {
+      if (noteChrome) await noteChrome.save();
+      const { exportLibraryHtml } =
+        await import("./knowledge-tools/libraryExport");
+      await exportLibraryHtml(project!.id);
+    });
   const projectAction = (value: string, p: KnowledgeBase) => {
+    if (value === "publish" && canPublish) guarded(() => setPublishing(true));
+    if (value === "library-html") libraryHtml();
     if (value === "rename") metadata(p, "title");
     if (value === "description") metadata(p, "description");
     if (value === "cover") {
@@ -327,6 +351,11 @@ export function ThoughtWorkshopPage({
   ];
   const noteMode = (!!noteId || editHome) && !browsing;
   const noteMoreAction = (value: string) => {
+    if (value === "library-html") libraryHtml();
+    if (value === "copy" && note.data && !note.data.is_home)
+      void (noteChrome ? noteChrome.save() : Promise.resolve(note.data))
+        .then(setCopySource)
+        .catch(() => {});
     if (value === "import") importInput.current?.click();
     if (value === "save") void noteChrome?.save().catch(() => {});
     if (value === "history") noteChrome?.openHistory();
@@ -377,6 +406,21 @@ export function ThoughtWorkshopPage({
         close={() => setDrawer(false)}
         onBack={onBack}
         onNavigate={onNavigate}
+        sections={
+          onNavigateSection ? (
+            <KnowledgeSections
+              active="private"
+              navigate={(section) =>
+                guarded(() => {
+                  if (section === "private") setTrash(false);
+                  setDrawer(false);
+                  onNavigateSection(section);
+                })
+              }
+            />
+          ) : undefined
+        }
+        discover={() => guarded(() => setDiscovery(!discovery))}
         inside={!!projectId}
         query={query}
         search={search}
@@ -412,49 +456,18 @@ export function ThoughtWorkshopPage({
           />
         )}
       </KnowledgeSidebar>
+      {publishing && directory.data && (
+        <PublicationDialog
+          directory={directory.data}
+          close={() => setPublishing(false)}
+          saved={() => {
+            setPublishing(false);
+            void refresh();
+            onNavigateSection?.("published");
+          }}
+        />
+      )}
       <main className="knowledge-main">
-        <div className="thought-tools">
-          <button
-            className="btn"
-            onClick={() => guarded(() => setDiscovery(!discovery))}
-          >
-            全局搜索与最近访问
-          </button>
-          {project && (
-            <button className="btn" onClick={() => setTemplatesOpen(true)}>
-              文档模板
-            </button>
-          )}
-          {note.data && !note.data.is_home && (
-            <button
-              className="btn"
-              onClick={() =>
-                void (
-                  noteChrome ? noteChrome.save() : Promise.resolve(note.data!)
-                )
-                  .then((next) => setCopySource(next))
-                  .catch(() => {})
-              }
-            >
-              复制文档 / 子树
-            </button>
-          )}
-          {project && (
-            <button
-              className="btn"
-              onClick={() =>
-                void run(async () => {
-                  if (noteChrome) await noteChrome.save();
-                  const { exportLibraryHtml } =
-                    await import("./knowledge-tools/libraryExport");
-                  await exportLibraryHtml(project.id);
-                })
-              }
-            >
-              导出整库 HTML
-            </button>
-          )}
-        </div>
         {discovery && (
           <DiscoveryPanel
             projects={projects.data ?? []}
@@ -486,6 +499,8 @@ export function ThoughtWorkshopPage({
           />
         )}
         <KnowledgeTopbar
+          documentToolsRef={documentUI.toolsRef}
+          homeMode={!!project && !noteId && !browsing}
           noteMode={noteMode}
           busy={busy}
           projectTitle={project?.title}
@@ -493,7 +508,7 @@ export function ThoughtWorkshopPage({
             !projectId && page !== "thought-workshop-legacy"
               ? trash
                 ? "知识库回收站"
-                : "所有知识库"
+                : "我的知识库"
               : undefined
           }
           libraryDescription={
@@ -511,7 +526,17 @@ export function ThoughtWorkshopPage({
           onOpenDocument={open}
           onOpenDirectory={() => setDrawer(true)}
           onImport={() => importInput.current?.click()}
-          onCreateDocument={() => void create()}
+          canPublish={canPublish}
+          onToggleReading={
+            project && !noteId && !browsing
+              ? toggleHome
+              : noteMode && !editHome
+                ? () => guarded(() => setReading(!reading))
+                : undefined
+          }
+          reading={project && !noteId ? !editHome : reading}
+          onTemplates={() => guarded(() => setTemplatesOpen(true))}
+          onCreateDocument={(kind) => void create(null, kind)}
           onBackup={() => void backup()}
           onCreateKnowledge={() =>
             setInput({
@@ -553,9 +578,7 @@ export function ThoughtWorkshopPage({
                 />
               </label>
             </div>
-            {!trash && (
-              <OfficialLibraryCards query={query} onOpen={onOpenOfficial} />
-            )}
+
             <h2>{trash ? "已删除的知识库" : "我的知识库"}</h2>
             <div className="knowledge-cards">
               {projects.data?.map((p) => (
@@ -627,18 +650,8 @@ export function ThoughtWorkshopPage({
           />
         ) : (
           <>
-            {project && !noteId && (
-              <>
-                <KnowledgeCover assetId={project.cover_asset_id} />
-                <div className="knowledge-home-heading">
-                  <span>知识库首页</span>
-                  <h1>{project.title}</h1>
-                  {project.description && <p>{project.description}</p>}
-                  <button className="btn" onClick={toggleHome}>
-                    {editHome ? "返回阅读" : "编辑首页"}
-                  </button>
-                </div>
-              </>
+            {project && !noteId && project.cover_asset_id && (
+              <KnowledgeCover assetId={project.cover_asset_id} />
             )}
             {note.isLoading && (
               <p role="status" className="knowledge-notice">
@@ -661,6 +674,15 @@ export function ThoughtWorkshopPage({
                   ) : note.data.is_home && !editHome ? (
                     <div className="knowledge-home-reading">
                       <RichEditor
+                        documentChrome={documentUI.chrome}
+                        beforeContent={
+                          <div className="thought-note-heading">
+                            <span className="community-meta">知识库首页</span>
+                            <h1>{project?.title || note.data.title}</h1>
+                          </div>
+                        }
+                        libraryId={note.data.knowledge_base_id}
+                        onNavigateHref={navigateResource}
                         readingId={note.data.id}
                         readingRevision={note.data.revision}
                         outlineTitle={project?.title || note.data.title}
@@ -676,12 +698,28 @@ export function ThoughtWorkshopPage({
                         </p>
                       )}
                     </div>
+                  ) : note.data.kind === "multitable" ? (
+                    <TableEditor
+                      key={`${accountId}:${workspaceId}:${note.data.id}`}
+                      noteId={note.data.id}
+                      note={note.data}
+                      readOnly={reading}
+                      guard={registerEditorGuard}
+                    />
+                  ) : reading ? (
+                    <NoteReaderPane
+                      documentChrome={documentUI.chrome}
+                      note={note.data}
+                      onNavigateHref={navigateResource}
+                    />
                   ) : (
                     <NoteEditorPane
+                      documentChrome={documentUI.chrome}
                       key={`${accountId}:${workspaceId}:${note.data.id}`}
                       note={note.data}
                       onSaved={save}
                       onOpen={open}
+                      onNavigateHref={navigateResource}
                       onChromeChange={onNoteChromeChange}
                       registerNavigationGuard={registerEditorGuard}
                     />

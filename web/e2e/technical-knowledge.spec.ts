@@ -3,9 +3,8 @@ import fs from "node:fs/promises";
 import { unzipSync, strFromU8 } from "fflate";
 import { TECHNICAL_LIBRARY } from "../src/features/thought-workshop/official/technicalCatalog";
 import { newDocument, pickNoteMore, saveNote } from "./thought-helpers";
-import { setResponsiveTheme } from "./responsive-capture";
+import { importAndPublish, legacyTarget } from "./official-import-helpers";
 
-const root = "/apps/thought-workshop/official-knowledge-bases/technical";
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAI0lEQVR4nGN8Wh3JQApgIkk1w6gG4gATkergYFQDMYDkUAIAeAUB2WkfhqEAAAAASUVORK5CYII=",
   "base64",
@@ -38,220 +37,36 @@ async function choose(page: Page, name: string, value: string) {
   await page.getByRole("combobox", { name, exact: true }).click();
   await page.getByRole("option", { name: value, exact: true }).click();
 }
-async function copyFigure(
-  page: Page,
-  kind: "canvas" | "mermaid",
-  library: string,
-) {
-  await page
-    .locator(".diagram-viewer")
-    .filter({
-      has: page.locator(
-        kind === "canvas" ? "svg[role=img]" : ".thought-mermaid-preview",
-      ),
-    })
-    .getByRole("button", { name: "复制到个人笔记", exact: true })
-    .click();
-  const dialog = page.getByRole("dialog", {
-    name: "复制到个人笔记",
-    exact: true,
-  });
-  await choose(page, "目标知识库", library);
-  await dialog.getByRole("button", { name: "创建副本", exact: true }).click();
-  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("textbox", { name: "笔记正文", exact: true }),
-  ).toContainText("来源：官方技术原理");
-}
-
-test("all 22 technical articles render their bundled UML and canvas without write requests", async ({
-  page,
-}) => {
-  test.setTimeout(180_000);
-  await page.setViewportSize({ width: 1600, height: 1000 });
-  const writes: string[] = [];
-  page.on("request", (request) => {
-    if (
-      request.url().includes("/v1/thought-workshop/") &&
-      !["GET", "HEAD"].includes(request.method())
-    )
-      writes.push(request.url());
-  });
-  await page.route("**/*", (route) =>
-    ["127.0.0.1", "localhost"].includes(new URL(route.request().url()).hostname)
-      ? route.fallback()
-      : route.abort(),
-  );
-  for (const document of TECHNICAL_LIBRARY.documents) {
-    await page.goto(`${root}/documents/${document.id}`);
-    const article = page.getByRole("article", { name: "官方文档正文" });
-    await expect(article).toBeVisible();
-    await expect(article.locator(".thought-mermaid-preview svg")).toBeVisible({
-      timeout: 20_000,
-    });
-    await expect(article.locator(".diagram-viewer svg[role=img]")).toHaveCount(
-      1,
-    );
-    await expect(article.getByText("图表语法有误，请编辑源码")).toHaveCount(0);
-    await expect(
-      article.getByRole("button", { name: "复制到个人笔记", exact: true }),
-    ).toHaveCount(2);
-  }
-  await page.goto(root);
-  await page
-    .locator(".official-article-cards")
-    .getByRole("button", {
-      name: new RegExp(TECHNICAL_LIBRARY.documents[0].title),
-    })
-    .click();
-  await expect(page).toHaveURL(`${root}/documents/system`);
-  await page
-    .getByRole("navigation", { name: "官方文档目录" })
-    .getByRole("button", {
-      name: TECHNICAL_LIBRARY.documents[1].title,
-      exact: true,
-    })
-    .click();
-  await expect(page).toHaveURL(`${root}/documents/modules`);
-  await page.reload();
-  await expect(page.locator(".thought-mermaid-preview svg")).toBeVisible();
-  expect(writes).toEqual([]);
-});
-
-test("official UML and canvas copies remain editable personal notes after refresh", async ({
-  page,
-}) => {
-  test.setTimeout(90_000);
-  await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto("/apps/thought-workshop");
-  const library = `技术副本 ${Date.now()}`;
-  await page.getByRole("button", { name: "创建知识库", exact: true }).click();
-  await page.getByRole("dialog").getByRole("textbox").fill(library);
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "确认", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible();
-  await page.goto(`${root}/documents/system`);
-  await expect(
-    page.getByRole("button", { name: "复制到个人笔记", exact: true }),
-  ).toHaveCount(2);
-  const copyCanvas = page
-    .locator(".diagram-viewer")
-    .filter({ has: page.locator("svg[role=img]") })
-    .getByRole("button", { name: "复制到个人笔记", exact: true });
-  await copyCanvas.click();
-  await page
-    .getByRole("dialog", { name: "复制到个人笔记", exact: true })
-    .getByRole("button", { name: "取消", exact: true })
-    .click();
-  await expect(copyCanvas).toBeFocused();
-  await copyFigure(page, "canvas", library);
-  await page.getByRole("button", { name: "编辑画板", exact: true }).click();
-  const editor = page.getByRole("dialog", { name: "编辑画板", exact: true });
-  const viewWrites: string[] = [];
-  const recordWrite = (request: import("@playwright/test").Request) => {
-    if (
-      request.method() === "PUT" &&
-      request.url().includes("/thought-workshop/notes/")
-    )
-      viewWrites.push(request.url());
-  };
-  page.on("request", recordWrite);
-  await editor.locator(".react-flow__node").first().click();
-  await editor.locator(".react-flow__controls-zoomin").click();
-  await editor.locator(".react-flow__controls-fitview").click();
-  // Watch through one complete autosave debounce: view state must never save.
-  await page.waitForTimeout(1200);
-  expect(viewWrites).toEqual([]);
-  page.off("request", recordWrite);
-  await editor.getByLabel("画板标题", { exact: true }).fill("我自己的系统架构");
-  await choose(page, "添加图形", "菱形");
-  await editor.getByRole("button", { name: "返回笔记", exact: true }).click();
-  await saveNote(page);
-  await expect(page.getByText("已保存", { exact: true })).toBeVisible();
-  await page.reload();
-  await expect(
-    page.getByRole("region", { name: "我自己的系统架构", exact: true }),
-  ).toBeVisible();
-  await page.goto(`${root}/documents/system`);
-  await expect(
-    page.getByRole("button", { name: "复制到个人笔记", exact: true }),
-  ).toHaveCount(2);
-  await copyFigure(page, "mermaid", library);
-  await expect(
-    page.getByRole("button", { name: "编辑图表", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "编辑图表", exact: true }).click();
-  await page
-    .getByLabel("Mermaid 源码")
-    .fill("flowchart LR\n  A[个人副本] --> B[保存成功]");
-  await expect(page.locator(".thought-mermaid-preview svg")).toContainText(
-    "个人副本",
-  );
-  await saveNote(page);
-  await expect(page.getByText("已保存", { exact: true })).toBeVisible();
-  await page.reload();
-  await expect(page.locator(".thought-mermaid-preview svg")).toContainText(
-    "个人副本",
-  );
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出 SVG", exact: true }).click();
-  expect(await fs.readFile((await (await download).path())!, "utf8")).toContain(
-    "个人副本",
-  );
-});
-
-test("read-only technical figures stay readable offline across themes and viewport sizes", async ({
+test("imported technical articles retain CanvasScene and Mermaid in the shared reader", async ({
   page,
 }, info) => {
-  test.setTimeout(90_000);
-  await page.route("**/v1/auth/me", async (route) => {
-    const response = await route.fetch();
-    const principal = await response.json();
-    principal.workspace.permission_keys = ["content.read"];
-    await route.fulfill({ response, json: principal });
-  });
-  await page.goto(`${root}/documents/system`);
-  await expect(page.locator(".thought-mermaid-preview svg")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "复制到个人笔记", exact: true }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "编辑画板", exact: true }),
-  ).toHaveCount(0);
-  for (const width of [1600, 768, 390]) {
-    await page.setViewportSize({ width, height: 1000 });
-    for (const theme of ["light", "dark"]) {
-      await setResponsiveTheme(page, theme);
-      await page.locator(".diagram-viewer").first().scrollIntoViewIfNeeded();
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth + 1,
-        ),
-      ).toBe(true);
+  test.setTimeout(240000);
+  const { publication } = await importAndPublish(page, "technical");
+  for (const document of TECHNICAL_LIBRARY.documents) {
+    const target = await legacyTarget(
+      page,
+      "technical",
+      document.id,
+      publication.id,
+    );
+    await page.goto(
+      `/apps/thought-workshop/community/${publication.id}/documents/${target.note_id}`,
+    );
+    await expect(
+      page.getByRole("heading", { name: document.title, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.locator(".thought-mermaid-preview svg").first(),
+    ).toBeVisible({ timeout: 20000 });
+    await expect(
+      page.locator(".diagram-viewer svg[role=img]").first(),
+    ).toBeVisible();
+    await expect(page.getByText("图表语法有误，请编辑源码")).toHaveCount(0);
+    if (document.id === "thought-workshop")
       await page.screenshot({
-        path: info.outputPath(`technical-${width}-${theme}.png`),
+        path: info.outputPath("imported-architecture.png"),
       });
-    }
   }
-  const enlarge = page
-    .getByRole("button", { name: "放大阅读", exact: true })
-    .first();
-  await enlarge.click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(enlarge).toBeFocused();
-  await page.route("**/*", (route) =>
-    ["127.0.0.1", "localhost"].includes(new URL(route.request().url()).hostname)
-      ? route.fallback()
-      : route.abort(),
-  );
-  await page.goto(`${root}/documents/tasks`);
-  await expect(page.locator(".thought-mermaid-preview svg")).toBeVisible();
 });
 
 test("personal canvas inserts, saves managed images, and exports portable editable packages", async ({
@@ -496,7 +311,7 @@ test("canvas failures and real revision conflicts preserve drafts and guard navi
   await expect(
     page.getByRole("region", { name: "失败时保留的画板", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
+  await page.getByRole("button", { name: "我的知识库", exact: true }).click();
   const guard = page.getByRole("alertdialog", { name: "仍有未保存的内容" });
   await expect(guard).toBeVisible();
   await guard.getByRole("button", { name: "继续编辑", exact: true }).click();

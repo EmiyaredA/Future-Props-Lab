@@ -1,3 +1,8 @@
+import { Search, TextSearch, Link2 } from "lucide-react";
+import { KnowledgeActionMenu } from "./KnowledgeActionMenu";
+import { useDocumentAccess } from "./DocumentAccess";
+import { NavigationScope } from "./document-layout/NavigationScope";
+import "./document-layout/prose.css";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   EditorContent,
@@ -18,6 +23,7 @@ import { BlockEditorChrome } from "./BlockEditorChrome";
 import { EditorContextMenus } from "./EditorContextMenus";
 import { LinkPreviewCard } from "./LinkPreviewCard";
 import { DocumentOutline } from "./DocumentOutline.tsx";
+import type { DocumentChrome } from "./document-layout/useDocumentChrome";
 import type { InsertCallbacks } from "./blockCommands";
 import {
   clearSessionThoughtClipboard,
@@ -33,6 +39,7 @@ import {
 import "./attachments.css";
 import "katex/dist/katex.min.css";
 import "./editor.css";
+import "./document-layout/reading.css";
 import "./block-editor.css";
 import { HistoryDecorations, historyDecorationKey } from "./HistoryDecorations";
 import type { HistoryMark } from "./historyDiff";
@@ -43,6 +50,7 @@ export function RichEditor({
   onReady,
   beforeContent,
   outlineTitle,
+  documentChrome,
   readOnly = false,
   historyMarks,
   historyAuthor = "",
@@ -51,26 +59,30 @@ export function RichEditor({
   assetScopeId,
   readingId,
   readingRevision,
+  libraryId = "",
+  official = false,
+  onNavigateHref,
 }: {
   onBackspaceAtStart?: () => boolean;
   assetScopeId?: string;
   readingId?: string;
   readingRevision?: number;
+  libraryId?: string;
+  official?: boolean;
+  onNavigateHref?: (href: string) => void;
   historyMarks?: HistoryMark[];
   historyAuthor?: string;
   onCompositionChange?: (active: boolean) => void;
   beforeContent?: ReactNode;
   outlineTitle?: string;
+  documentChrome?: DocumentChrome;
   readOnly?: boolean;
   document: JSONContent;
   onChange: (document: JSONContent) => void;
   onReady: (editor: Editor) => void;
 }) {
-  const reading = useReadingPosition(
-    readingId,
-    outlineTitle ?? "文档",
-    readingRevision ?? null,
-  );
+  const access = useDocumentAccess();
+  const [outlineDocked, setOutlineDocked] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const attachmentFile = useRef<HTMLInputElement>(null);
   const uploadPosition = useRef<number | undefined>(undefined);
@@ -133,7 +145,7 @@ export function RichEditor({
     shouldRerenderOnTransaction: true,
     editorProps: {
       attributes: {
-        class: "thought-prose",
+        class: "thought-prose document-prose",
         "aria-label": "笔记正文",
         role: "textbox",
         "aria-multiline": "true",
@@ -179,7 +191,7 @@ export function RichEditor({
 
         const reportPasteError = (error: unknown) => {
           if (error instanceof ThoughtClipboardFormatError && html) {
-            void pasteThoughtHTML(currentEditor, html, assetScopeId)
+            void pasteThoughtHTML(currentEditor, html, assetScopeId, access)
               .then(() => setError(""))
               .catch((fallbackError: Error) => setError(fallbackError.message));
             return;
@@ -205,6 +217,7 @@ export function RichEditor({
               currentEditor,
               sessionPayload,
               assetScopeId,
+              access,
             )
               .then(() => setError(""))
               .catch(reportPasteError);
@@ -228,6 +241,7 @@ export function RichEditor({
                 currentEditor,
                 fromClipboard,
                 assetScopeId,
+                access,
               );
               setError("");
               return;
@@ -238,12 +252,13 @@ export function RichEditor({
                 currentEditor,
                 session,
                 assetScopeId,
+                access,
               );
               setError("");
               return;
             }
             if (htmlNeedsManagedMigration(html, assetScopeId)) {
-              await pasteThoughtHTML(currentEditor, html, assetScopeId);
+              await pasteThoughtHTML(currentEditor, html, assetScopeId, access);
               setError("");
               return;
             }
@@ -284,7 +299,7 @@ export function RichEditor({
           if (!view.editable) return false;
           const currentEditor = editorRef.current;
           if (!currentEditor) return false;
-          void writeThoughtClipboard(currentEditor, assetScopeId).catch(
+          void writeThoughtClipboard(currentEditor, assetScopeId, access).catch(
             (error: Error) => setError(error.message),
           );
           return true;
@@ -334,6 +349,12 @@ export function RichEditor({
     editor.setEditable(!readOnly, false);
     editor.view.dom.setAttribute("aria-readonly", String(readOnly));
   }, [editor, readOnly]);
+  const reading = useReadingPosition(
+    readingId,
+    outlineTitle ?? "文档",
+    readingRevision ?? null,
+    !!editor,
+  );
   const uploads = useFileUploads(editor);
   uploadRef.current = readOnly ? () => {} : uploads.enqueue;
   if (!editor) return <p>编辑器加载中…</p>;
@@ -344,7 +365,7 @@ export function RichEditor({
       ref={(node) => {
         reading.current = node;
       }}
-      className="thought-rich-editor"
+      className={`thought-rich-editor${outlineDocked ? " has-docked-outline" : ""}`}
       onKeyDown={(event) => {
         if (
           (event.metaKey || event.ctrlKey) &&
@@ -359,29 +380,76 @@ export function RichEditor({
         }
       }}
     >
-      <div className="thought-tools">
-        <button className="btn small" onClick={() => setFind("find")}>
-          文内查找
-        </button>
-        {!readOnly && (
-          <>
-            <button className="btn small" onClick={() => setFind("replace")}>
-              查找替换
-            </button>
-            <button
-              className="btn small"
-              onClick={() =>
-                setReferenceRange({
-                  from: editor.state.selection.from,
-                  to: editor.state.selection.to,
-                })
+      {outlineTitle !== undefined ? (
+        <DocumentOutline
+          key={readingId}
+          editor={editor}
+          title={outlineTitle}
+          chrome={documentChrome}
+          onDockChange={setOutlineDocked}
+          tools={
+            <div className="thought-tools">
+              <button
+                className="btn small"
+                aria-label="文内查找"
+                onClick={() => setFind("find")}
+              >
+                <Search size={15} aria-hidden />
+                查找
+              </button>
+              {!readOnly && (
+                <KnowledgeActionMenu
+                  ariaLabel="正文工具"
+                  groups={[
+                    [
+                      { value: "replace", label: "查找替换", icon: TextSearch },
+                      { value: "reference", label: "引用文档", icon: Link2 },
+                    ],
+                  ]}
+                  onAction={(value) =>
+                    value === "replace"
+                      ? setFind("replace")
+                      : setReferenceRange({
+                          from: editor.state.selection.from,
+                          to: editor.state.selection.to,
+                        })
+                  }
+                />
+              )}
+            </div>
+          }
+        />
+      ) : (
+        <div className="thought-tools">
+          <button
+            className="btn small"
+            aria-label="文内查找"
+            onClick={() => setFind("find")}
+          >
+            <Search size={15} aria-hidden />
+            查找
+          </button>
+          {!readOnly && (
+            <KnowledgeActionMenu
+              ariaLabel="正文工具"
+              groups={[
+                [
+                  { value: "replace", label: "查找替换", icon: TextSearch },
+                  { value: "reference", label: "引用文档", icon: Link2 },
+                ],
+              ]}
+              onAction={(value) =>
+                value === "replace"
+                  ? setFind("replace")
+                  : setReferenceRange({
+                      from: editor.state.selection.from,
+                      to: editor.state.selection.to,
+                    })
               }
-            >
-              引用文档
-            </button>
-          </>
-        )}
-      </div>
+            />
+          )}
+        </div>
+      )}
       {find && (
         <FindPanel
           editor={editor}
@@ -468,22 +536,26 @@ export function RichEditor({
           {error}
         </p>
       )}
-      {outlineTitle !== undefined && (
-        <DocumentOutline editor={editor} title={outlineTitle} />
-      )}
       {beforeContent}
-      <div ref={canvas} className="thought-editor-canvas">
-        <EditorContent editor={editor} />
-        <LinkPreviewCard editor={editor} />
-        <BlockEditorChrome
-          editor={editor}
-          canvas={canvas}
-          callbacks={insertCallbacks.current}
-          onError={setError}
-          readOnly={readOnly}
-          assetScopeId={assetScopeId}
-        />
-      </div>
+      <NavigationScope
+        libraryId={libraryId}
+        official={official}
+        document={document}
+        navigate={onNavigateHref}
+      >
+        <div ref={canvas} className="thought-editor-canvas">
+          <EditorContent editor={editor} />
+          <LinkPreviewCard editor={editor} />
+          <BlockEditorChrome
+            editor={editor}
+            canvas={canvas}
+            callbacks={insertCallbacks.current}
+            onError={setError}
+            readOnly={readOnly}
+            assetScopeId={assetScopeId}
+          />
+        </div>
+      </NavigationScope>
       {!readOnly ? <EditorContextMenus editor={editor} onLink={link} /> : null}
       <TextInputDialog
         open={!!dialog}

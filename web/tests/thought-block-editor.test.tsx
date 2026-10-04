@@ -210,7 +210,7 @@ describe("共享插入菜单", () => {
       />,
     );
     const input = screen.getByRole("textbox", { name: "筛选插入内容" });
-    fireEvent.change(input, { target: { value: "表格" } });
+    fireEvent.change(input, { target: { value: "3 × 3" } });
     expect(screen.getByRole("option", { name: /表格/ })).toBeVisible();
     fireEvent.keyDown(input, { key: "End" });
     fireEvent.keyDown(input, { key: "Home" });

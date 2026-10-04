@@ -1,9 +1,10 @@
 .thought-outline {
   position: fixed;
-  z-index: 5;
+  z-index: 65;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
+  box-sizing: border-box;
 }
 .thought-outline-panel,
 .thought-outline-popover {
@@ -11,14 +12,19 @@
   flex-direction: column;
   min-height: 0;
 }
+.thought-outline-panel {
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+}
 .thought-outline header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 4px 10px 10px;
-  font-size: 12px;
-  color: var(--faint);
+  padding: 0 4px 16px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
 }
 .thought-outline button {
   font: inherit;
@@ -26,11 +32,12 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 7px;
 }
 .thought-outline header button {
   display: inline-flex;
-  padding: 5px;
+  padding: 6px;
+  color: var(--muted);
 }
 .thought-outline nav {
   overflow-y: auto;
@@ -39,19 +46,40 @@
   scrollbar-width: thin;
   padding: 3px;
 }
-.thought-outline nav button {
+.thought-outline nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.thought-outline-row {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
+.thought-outline-link {
   position: relative;
   display: block;
+  min-width: 0;
   width: 100%;
   text-align: left;
-  padding: 7px 10px;
+  padding: 8px 10px;
   line-height: 1.65;
 }
-.thought-outline nav button > span:first-child {
+.thought-outline-link > span {
   display: block;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+.thought-outline .thought-outline-chevron,
+.thought-outline-chevron-space {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 32px;
+  margin-top: 3px;
+}
+.thought-outline .thought-outline-chevron {
+  display: grid;
+  place-items: center;
+  padding: 0;
 }
 .thought-outline button:hover {
   background: var(--surface-hover);
@@ -63,38 +91,28 @@
 }
 .thought-outline nav button[aria-current="location"] {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  background: var(--accent-soft);
 }
-.thought-outline .thought-outline-title {
+.thought-outline nav button[aria-current="location"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.thought-outline-title {
   font-weight: 600;
   margin-bottom: 4px;
 }
-.thought-outline nav button:hover > span:first-child,
-.thought-outline nav button:focus-visible > span:first-child {
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.thought-outline-launcher-space {
-  height: 44px;
-}
-.thought-outline-trigger {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 9px;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 8%);
-}
-.thought-outline .thought-outline-trigger {
-  background: var(--bg);
-}
 .thought-outline-popover {
-  position: fixed;
   inset: auto;
   margin: 0;
-  padding: 12px;
-  box-sizing: border-box;
+  padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--surface);
   color: var(--muted);
   box-shadow: 0 12px 32px rgb(0 0 0 / 14%);
@@ -106,4 +124,34 @@
   font-size: 13px;
   line-height: 1.7;
   color: var(--muted);
+}
+.thought-document-tools {
+  padding: 8px 32px;
+}
+.thought-document-controls,
+.thought-document-controls .thought-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.thought-document-controls .btn.small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .thought-document-tools {
+    padding: 8px 16px;
+  }
+  .knowledge-document-tools .thought-document-controls .btn > span {
+    display: none;
+  }
+  .knowledge-document-tools .thought-outline-trigger {
+    width: 36px;
+    padding: 0;
+  }
 }

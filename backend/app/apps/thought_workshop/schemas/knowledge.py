@@ -1,6 +1,7 @@
 """Document project and directory contracts; revisions belong to the project."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -48,5 +49,6 @@ class ThoughtMoveIn(ThoughtRevisionIn):
 
 
 class KnowledgeNoteCreate(ThoughtRevisionIn):
+    kind: Literal["note", "multitable"] = "note"
     title: str = Field(default="未命名文档", min_length=1, max_length=240)
     parent_id: str | None = None

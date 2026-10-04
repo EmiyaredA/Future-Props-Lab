@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Editor } from "@tiptap/core";
+import { useState } from "react";
+import { useDocumentChrome } from "@features/thought-workshop/document-layout/useDocumentChrome";
 import StarterKit from "@tiptap/starter-kit";
 import {
   Details,
@@ -51,6 +53,7 @@ function make(
     left: 200,
     top: 0,
     bottom: 1200,
+    right: 1500,
     width: 1300,
     height: 1200,
   } as DOMRect);
@@ -76,6 +79,20 @@ it("extracts non-empty H1–H6, compresses skipped levels and keeps repeated tit
     { text: "深层", level: 6, depth: 2 },
   ]);
   expect(new Set(outline.map((heading) => heading.position)).size).toBe(5);
+});
+it("preserves all six heading levels and their actual parent positions", () => {
+  const editor = make(
+    Array.from(
+      { length: 6 },
+      (_, index) => `<h${index + 1}>层级${index + 1}</h${index + 1}>`,
+    ).join(""),
+  );
+  const headings = collectOutline(editor.state.doc);
+  expect(headings.map((heading) => heading.depth)).toEqual([0, 1, 2, 3, 4, 5]);
+  expect(headings.map((heading) => heading.parent)).toEqual([
+    null,
+    ...headings.slice(0, -1).map((heading) => heading.position),
+  ]);
 });
 it("updates headings after edits, undo, redo and document replacement", () => {
   const editor = make("<h1>原始标题</h1>");
@@ -197,14 +214,107 @@ it("temporarily reveals details and closes them without a document update", asyn
   expect(editor.getJSON()).toEqual(before);
   expect(update).not.toHaveBeenCalled();
 });
-it("remembers manual collapse across document components and can reopen", () => {
+it("keeps panel preference in its page owner and portals tools without sharing state between pages", () => {
   const editor = make();
-  const first = render(<DocumentOutline editor={editor} title="文档一" />);
+  function Page() {
+    const ui = useDocumentChrome();
+    const [title, setTitle] = useState("文档一");
+    return (
+      <>
+        <div role="banner" data-testid="toolbar" ref={ui.toolsRef} />
+        <button onClick={() => setTitle("文档二")}>切换文章</button>
+        <DocumentOutline
+          key={title}
+          editor={editor}
+          title={title}
+          chrome={ui.chrome}
+          tools={<button>查找</button>}
+        />
+      </>
+    );
+  }
+  const page = render(<Page />);
+  expect(screen.getByTestId("toolbar")).toContainElement(
+    screen.getByRole("button", { name: "查找" }),
+  );
+  expect(document.querySelector(".thought-document-tools")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "收起文档大纲" }));
-  expect(screen.queryByRole("navigation", { name: "文档章节" })).toBeNull();
-  first.unmount();
-  render(<DocumentOutline editor={editor} title="文档二" />);
+  fireEvent.click(screen.getByRole("button", { name: "切换文章" }));
   expect(screen.queryByRole("navigation", { name: "文档章节" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "文档大纲" }));
   expect(screen.getByRole("navigation", { name: "文档章节" })).toBeVisible();
+  page.unmount();
+  render(<Page />);
+  expect(screen.getByRole("navigation", { name: "文档章节" })).toBeVisible();
+});
+it("folds nested descendants independently and maps folded headings through edits and undo", () => {
+  const editor = make("<h1>父级</h1><h3>子级</h3><h6>末级</h6><h2>同级</h2>");
+  const before = editor.getJSON();
+  render(<DocumentOutline editor={editor} title="层级示例" />);
+  fireEvent.click(screen.getByRole("button", { name: "收起子级的子章节" }));
+  expect(screen.getByRole("button", { name: "子级" })).toBeVisible();
+  expect(screen.queryByRole("button", { name: "末级" })).toBeNull();
+  expect(editor.getJSON()).toEqual(before);
+  act(() => {
+    editor.commands.insertContentAt(0, "<p>前插内容</p>");
+  });
+  expect(
+    screen.getByRole("button", { name: "展开子级的子章节" }),
+  ).toHaveAttribute("aria-expanded", "false");
+  act(() => {
+    editor.commands.undo();
+  });
+  expect(
+    screen.getByRole("button", { name: "展开子级的子章节" }),
+  ).toHaveAttribute("aria-expanded", "false");
+  act(() => {
+    editor.commands.redo();
+  });
+  expect(screen.queryByRole("button", { name: "末级" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "收起父级的子章节" }));
+  expect(screen.queryByRole("button", { name: "子级" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "展开父级的子章节" }));
+  expect(screen.queryByRole("button", { name: "末级" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "展开子级的子章节" }));
+  expect(screen.getByRole("button", { name: "末级" })).toBeVisible();
+  act(() => {
+    editor.commands.setContent("<p>无标题</p>");
+  });
+  fireEvent.click(screen.getByRole("button", { name: "文档大纲" }));
+  expect(screen.getByText("使用标题样式生成文档目录")).toBeInTheDocument();
+});
+it("reveals the active heading's ancestors after scrolling, without undoing a manual fold at the same position", async () => {
+  const editor = make("<h1>父级</h1><h2>子级</h2><h3>末级</h3>");
+  const headings = collectOutline(editor.state.doc);
+  let at = -1;
+  headings.forEach((h, i) => {
+    const el = editor.view.nodeDOM(h.position) as HTMLElement;
+    vi.spyOn(el, "getClientRects").mockReturnValue([
+      {},
+    ] as unknown as DOMRectList);
+    vi.spyOn(el, "getBoundingClientRect").mockImplementation(
+      () =>
+        ({
+          top: i <= at ? 0 : 400 + i * 80,
+          bottom: i <= at ? 20 : 420 + i * 80,
+        }) as DOMRect,
+    );
+  });
+  render(<DocumentOutline editor={editor} title="示例" />);
+  fireEvent.click(screen.getByRole("button", { name: "收起父级的子章节" }));
+  at = 2;
+  await act(async () => {
+    fireEvent.scroll(window);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  });
+  expect(screen.getByRole("button", { name: "末级" })).toHaveAttribute(
+    "aria-current",
+    "location",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "收起父级的子章节" }));
+  await act(async () => {
+    fireEvent.scroll(window);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  });
+  expect(screen.queryByRole("button", { name: "末级" })).toBeNull();
 });

@@ -56,11 +56,22 @@ flowchart LR
 > [!TIP]
 > 为头部转向至少检查默认、左右极值和与表情同时激活的组合。若单参数正确、组合错误，优先检查共同绑定目标及默认关键形。
 
+## 参数求值与编辑保存分开协作
+
+角色工程拥有部件、网格、参数关键形、变形器与动作描述。前端 PixiJS 管交互，shared/live2d 提供共用纯姿态与网格装配；后端项目用例保存角色，公共媒体 Live2D 能力负责确定性参数求值。预览当前姿态和编辑选中部件不等于新的角色默认文档。
+
+头部转向值进入参数求值，再转成部件变换和网格顶点。动作与手动参数可能有不同来源，需要按实际求值组合检查，而不是从当前画面猜测默认姿态。保存角色修改与导出、Cubism 对照预览承担不同职责；原生工程不自动保证原生 Cubism 物理和编译能力。
+
+## 固定快照与动作异常的证据
+
+桌宠只通过 public 入口读取固定版本角色，校验使用的素材完整后拥有自己的副本。验证参数端点、中间值、默认姿态、多参数组合、缺失部件与来源版本变化，分别追到 projects、CharacterDocument 和纯求值入口。动作失效先检查输入值与绑定，再检查素材和显示，不在消费者中直接改 Live2D 的内部记录。
+
 ## 相关阅读
 
 - [桌宠：固定角色快照与运行事件](/apps/thought-workshop/official-knowledge-bases/technical/documents/desktop-pet)
-- [时间线与媒体渲染：从状态到帧](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
+- [时间线与媒体渲染](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
 - [Live2D 工坊：导入导出与交付](/apps/thought-workshop/official-knowledge-bases/live2d-workshop/documents/delivery)
+- [组件契约与生命周期](/apps/thought-workshop/official-knowledge-bases/technical/documents/component-contracts)
 
 ## 代码入口
 

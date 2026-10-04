@@ -5,7 +5,7 @@
 - 每次正式处理仓库任务前先阅读本文件；所有命令默认在仓库根目录执行。
 - 本项目定位为单机部署的模型基础设施管理台，支持同一进程和同一 SQLite 内的多账号与逻辑多
   Workspace 隔离；实时语音仅用于模型测试，不引入 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展或多实例部署能力。
-  思绪工坊中的「知识库」仅表示文档项目容器，沿用 Workspace 权限；AI 写作仅通过 Agent/SDK 接入，应用内无入口。
+  思绪工坊中的「知识库」仅表示文档项目容器，普通文档沿用 Workspace 权限；知识社区通过显式发布和逐篇授权开放给同一部署中的登录账号，不授予源 Workspace 访问权。AI 写作仅通过 Agent/SDK 接入，应用内无入口。
 - 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
   为唯一完整索引；新增目录或改变职责时同步更新该文件。
 - Python 命令与临时诊断优先通过 `uv run` 执行。
@@ -21,9 +21,9 @@
 - 非机械性的行为、架构、跨文件契约、流程工具链、测试策略或落盘/网络/配置格式改动，按
   `docs/operations/agent-notes.md` 在 `.agents/notes/` 创建或更新 Agent Note；纯格式化、样式、无歧义重命名和局部机械修复免写。
 - `web/src/docs/`、`web/public/docs/`、文档中心覆盖清单和 `scripts/generate_sdk_docs.py` 是产品文档中心的受保护内容。工程决策整理不得迁移、删除、重写或重新生成这些路径。
-- 思绪工坊的 `web/src/features/thought-workshop/official/content/` 是知识库版主要使用指南；修改用户行为时同步维护对应正文。官方库由静态清单与 Markdown 随版本发布，不写入 Workspace 数据库，不开放编辑接口；现有文档中心继续按原保护规则维护。
-- 技术原理正文与旁置图形同步反映当前实现。画板持久化使用 `CanvasScene.sceneVersion` 契约，不保存 React Flow 运行状态；前后端校验和静态 SVG 布局规则保持一致，图片只引用经 Workspace 校验的托管素材。
-- 官方文章遵守 `docs/operations/official-knowledge-writing.md`：操作步骤带可验证结果，技术图解释实例与边界，每篇维护简介和相关阅读。阅读组件只解析受控 Markdown 提示框，关闭原始 HTML；菜单和弹窗不得重建图形、重置视口。
+- 思绪工坊的 `web/src/features/thought-workshop/official/content/` 是知识库版主要使用指南；修改用户行为时同步维护对应正文。官方文档是管理员维护并发布的普通笔记；内置 Markdown 与图形仅构建管理员主动导入包，导入不自动发布，升级不覆盖已导入内容。官方标记仅平台超级管理员／管理员可设置，只读、可见范围与编辑授权独立校验；现有文档中心继续按原保护规则维护。
+- 技术文档正文与旁置图形同步反映当前实现。画板持久化使用 `CanvasScene.sceneVersion` 契约，不保存 React Flow 运行状态；前后端校验和静态 SVG 布局规则保持一致，图片只引用经 Workspace 校验的托管素材。
+- 官方文章遵守 `docs/operations/official-knowledge-writing.md`：操作步骤带可验证结果，技术图解释实例与边界，每篇维护简介和相关阅读。导入转换只解析受控 Markdown 提示框，运行期共用标准富文本阅读组件，关闭原始 HTML；菜单和弹窗不得重建图形、重置视口。
 
 ## 代码编写原则
 
@@ -122,6 +122,7 @@
   `UploadFile` 只能出现在路由适配层；`AssetStorage` 的项目路径与写入方法必须显式传入
   `workspace_id`。根资源必须直接保存 `workspace_id`，子资源通过已校验的根资源继承；跨 Workspace
   的 ID 一律按不存在处理。后台执行器必须从任务记录恢复 Workspace，不能依赖请求上下文。
+- 思绪工坊 `publication/` 拥有发布与逐篇授权，社区接口仅使用浏览器 Session；先验证发布记录、当前文章与有效角色，再在独立会话中显式绑定源 Workspace。素材仅开放可读正文实际引用的文件与发布封面；不开放历史、私人目录或普通文件库查询。正文仍由 Notes 用例执行校验、CAS 和历史，回收站事务同步撤回发布，恢复不自动重新发布。
 - 固定 Workspace 权限由 `capabilities/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
   `capabilities/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
   只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。

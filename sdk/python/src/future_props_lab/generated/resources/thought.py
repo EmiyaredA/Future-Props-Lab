@@ -147,6 +147,46 @@ class Thought:
         'Restore Note History. POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore'
         return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/history/{history_id}/restore', parameters=[('note_id', 'path', note_id), ('history_id', 'path', history_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
 
+    def get_multitable(self, *, note_id: str) -> models.Structure:
+        'Structure. GET /v1/thought-workshop/notes/{note_id}/multitable'
+        return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/multitable', parameters=[('note_id', 'path', note_id)], response_type=models.Structure)
+
+    def preview_multitable_conversion(self, *, note_id: str, body: models.ConversionIn | dict) -> models.ConversionOut:
+        'Conversion. POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/conversion-preview', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ConversionOut)
+
+    def preview_multitable_csv(self, *, note_id: str, body: models.CsvSource | dict) -> models.CsvPreview:
+        'Csv Preview. POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/csv-preview', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.CsvPreview)
+
+    def list_multitable_history(self, *, note_id: str, offset: int | Unset = UNSET) -> list[models.ChangeSummary]:
+        'History. GET /v1/thought-workshop/notes/{note_id}/multitable/history'
+        return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/multitable/history', parameters=[('note_id', 'path', note_id), ('offset', 'query', offset)], response_type=list[models.ChangeSummary])
+
+    def get_multitable_history(self, *, note_id: str, revision: int) -> models.Snapshot:
+        'Detail. GET /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}'
+        return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}', parameters=[('note_id', 'path', note_id), ('revision', 'path', revision)], response_type=models.Snapshot)
+
+    def restore_multitable_history(self, *, note_id: str, revision: int, body: models.RestoreIn | dict) -> models.BatchOut:
+        'Restore. POST /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore', parameters=[('note_id', 'path', note_id), ('revision', 'path', revision)], body=body, media_type='application/json', response_type=models.BatchOut)
+
+    def apply_multitable_operations(self, *, note_id: str, body: models.BatchIn | dict) -> models.BatchOut:
+        'Operations. POST /v1/thought-workshop/notes/{note_id}/multitable/operations'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/operations', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.BatchOut)
+
+    def export_multitable_csv(self, *, note_id: str, table_id: str, body: models.QueryIn | dict) -> Any:
+        'Csv Export. POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export', parameters=[('note_id', 'path', note_id), ('table_id', 'path', table_id)], body=body, media_type='application/json', response_type=Any)
+
+    def import_multitable_csv(self, *, note_id: str, table_id: str, body: models.CsvIn | dict) -> models.BatchOut:
+        'Csv Import. POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import', parameters=[('note_id', 'path', note_id), ('table_id', 'path', table_id)], body=body, media_type='application/json', response_type=models.BatchOut)
+
+    def query_multitable_records(self, *, note_id: str, table_id: str, body: models.QueryIn | dict) -> models.RecordPage:
+        'Records. POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query', parameters=[('note_id', 'path', note_id), ('table_id', 'path', table_id)], body=body, media_type='application/json', response_type=models.RecordPage)
+
     def apply_note_operations(self, *, note_id: str, body: models.ThoughtOperationsIn | dict) -> models.ThoughtNoteOut:
         'Apply Note Operations. POST /v1/thought-workshop/notes/{note_id}/operations'
         return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/operations', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
@@ -350,6 +390,46 @@ class AsyncThought:
     async def restore_note_history(self, *, note_id: str, history_id: str, body: models.ThoughtRevisionIn | dict) -> models.ThoughtNoteOut:
         'Restore Note History. POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore'
         return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/history/{history_id}/restore', parameters=[('note_id', 'path', note_id), ('history_id', 'path', history_id)], body=body, media_type='application/json', response_type=models.ThoughtNoteOut)
+
+    async def get_multitable(self, *, note_id: str) -> models.Structure:
+        'Structure. GET /v1/thought-workshop/notes/{note_id}/multitable'
+        return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/multitable', parameters=[('note_id', 'path', note_id)], response_type=models.Structure)
+
+    async def preview_multitable_conversion(self, *, note_id: str, body: models.ConversionIn | dict) -> models.ConversionOut:
+        'Conversion. POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/conversion-preview', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ConversionOut)
+
+    async def preview_multitable_csv(self, *, note_id: str, body: models.CsvSource | dict) -> models.CsvPreview:
+        'Csv Preview. POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/csv-preview', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.CsvPreview)
+
+    async def list_multitable_history(self, *, note_id: str, offset: int | Unset = UNSET) -> list[models.ChangeSummary]:
+        'History. GET /v1/thought-workshop/notes/{note_id}/multitable/history'
+        return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/multitable/history', parameters=[('note_id', 'path', note_id), ('offset', 'query', offset)], response_type=list[models.ChangeSummary])
+
+    async def get_multitable_history(self, *, note_id: str, revision: int) -> models.Snapshot:
+        'Detail. GET /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}'
+        return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}', parameters=[('note_id', 'path', note_id), ('revision', 'path', revision)], response_type=models.Snapshot)
+
+    async def restore_multitable_history(self, *, note_id: str, revision: int, body: models.RestoreIn | dict) -> models.BatchOut:
+        'Restore. POST /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore', parameters=[('note_id', 'path', note_id), ('revision', 'path', revision)], body=body, media_type='application/json', response_type=models.BatchOut)
+
+    async def apply_multitable_operations(self, *, note_id: str, body: models.BatchIn | dict) -> models.BatchOut:
+        'Operations. POST /v1/thought-workshop/notes/{note_id}/multitable/operations'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/operations', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.BatchOut)
+
+    async def export_multitable_csv(self, *, note_id: str, table_id: str, body: models.QueryIn | dict) -> Any:
+        'Csv Export. POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export', parameters=[('note_id', 'path', note_id), ('table_id', 'path', table_id)], body=body, media_type='application/json', response_type=Any)
+
+    async def import_multitable_csv(self, *, note_id: str, table_id: str, body: models.CsvIn | dict) -> models.BatchOut:
+        'Csv Import. POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import', parameters=[('note_id', 'path', note_id), ('table_id', 'path', table_id)], body=body, media_type='application/json', response_type=models.BatchOut)
+
+    async def query_multitable_records(self, *, note_id: str, table_id: str, body: models.QueryIn | dict) -> models.RecordPage:
+        'Records. POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query', parameters=[('note_id', 'path', note_id), ('table_id', 'path', table_id)], body=body, media_type='application/json', response_type=models.RecordPage)
 
     async def apply_note_operations(self, *, note_id: str, body: models.ThoughtOperationsIn | dict) -> models.ThoughtNoteOut:
         'Apply Note Operations. POST /v1/thought-workshop/notes/{note_id}/operations'

@@ -32,4 +32,4 @@
 ## 相关阅读
 
 - [导出与剪辑交接](/apps/thought-workshop/official-knowledge-bases/motion-compositor/documents/delivery)：下载正确格式并发送完成镜头。
-- [素材与导出技术原理](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)：理解引用、固定快照和资源包的差别。
+- [导入、备份与导出](/apps/thought-workshop/official-knowledge-bases/technical/documents/data-exchange)：理解引用、固定快照和资源包的差别。

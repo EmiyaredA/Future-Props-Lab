@@ -194,6 +194,21 @@ class ApiKeyOut(WireModel):
     revoked_at: datetime | None = Field(default=..., alias='revoked_at')
     scopes: list[str] = Field(default=..., alias='scopes')
 
+class ArticleConfig(WireModel):
+    active: bool = Field(default=..., alias='active')
+    members: list[MemberOut] = Field(default=..., alias='members')
+    note_id: str = Field(default=..., alias='note_id')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    visibility: Literal['public', 'members'] = Field(default=..., alias='visibility')
+
+class ArticleSetting(WireModel):
+    active: bool = Field(default=True, alias='active')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    members: list[MemberInput] | None = Field(default=None, alias='members', max_length=100)
+    note_id: str = Field(default=..., alias='note_id')
+    visibility: Literal['public', 'members'] = Field(default='public', alias='visibility')
+
 class AssetImportIn(WireModel):
     asset_ids: list[str] = Field(default=..., alias='assetIds', min_length=1, max_length=100)
 
@@ -370,6 +385,14 @@ class AuthMeOut(WireModel):
 class BatchDeleteIn(WireModel):
     ids: list[str] | None = Field(default=None, alias='ids', max_length=200)
 
+class BatchIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    operations: list[TablePut | TableDelete | RecordsPut | RecordsDelete] = Field(default=..., alias='operations', min_length=1, max_length=100)
+
+class BatchOut(WireModel):
+    records: dict[str, list[RecordSpec]] | None = Field(default=None, alias='records')
+    structure: Structure = Field(default=..., alias='structure')
+
 class Body_add_skill_version_v1_integrations_skills__skill_id__versions_post(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
@@ -515,6 +538,9 @@ class Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_po
     target_language: str | None = Field(default=None, alias='target_language')
     upload: str = Field(default=..., alias='upload')
 
+class Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post(WireModel):
+    upload: str = Field(default=..., alias='upload')
+
 class BoneWeight(WireModel):
     bone_id: str = Field(default=..., alias='boneId')
     weight: float = Field(default=..., alias='weight', le=1.0, gt=0.0)
@@ -580,6 +606,12 @@ class CertificationOut(WireModel):
 class ChangePasswordIn(WireModel):
     current_password: str = Field(default=..., alias='current_password', repr=False)
     new_password: str = Field(default=..., alias='new_password', repr=False)
+
+class ChangeSummary(WireModel):
+    author_id: str | None = Field(default=..., alias='author_id')
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
 
 class CharacterBone(WireModel):
     damping: float = Field(default=0.5, alias='damping', ge=0.0, le=1.0)
@@ -732,6 +764,63 @@ class CodexSourceUpdate(WireModel):
     model: str = Field(default='', alias='model')
     source: str = Field(default=..., alias='source')
 
+class CommunityArticle(WireModel):
+    can_edit: bool = Field(default=False, alias='can_edit')
+    can_manage: bool = Field(default=False, alias='can_manage')
+    created_at: datetime = Field(default=..., alias='created_at')
+    deleted_at: datetime | None = Field(default=..., alias='deleted_at')
+    excerpt: str = Field(default=..., alias='excerpt')
+    favorite: bool = Field(default=..., alias='favorite')
+    id: str = Field(default=..., alias='id')
+    is_home: bool = Field(default=..., alias='is_home')
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
+    knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
+    parent_id: str | None = Field(default=..., alias='parent_id')
+    permission_revision: int = Field(default=..., alias='permission_revision')
+    pinned: bool = Field(default=..., alias='pinned')
+    position: int = Field(default=..., alias='position')
+    revision: int = Field(default=..., alias='revision')
+    role: Literal['read', 'edit', 'manage'] = Field(default=..., alias='role')
+    tags: list[str] = Field(default=..., alias='tags')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class CommunityDirectory(WireModel):
+    documents: list[CommunityArticle] = Field(default=..., alias='documents')
+    publication: PublicationOut = Field(default=..., alias='publication')
+
+class CommunityManagement(WireModel):
+    config: PublicationConfig = Field(default=..., alias='config')
+    directory: ThoughtDirectoryOut = Field(default=..., alias='directory')
+
+class CommunityNote(WireModel):
+    can_edit: bool = Field(default=False, alias='can_edit')
+    can_manage: bool = Field(default=False, alias='can_manage')
+    note: ThoughtNoteOut = Field(default=..., alias='note')
+    permission_revision: int = Field(default=..., alias='permission_revision')
+    role: Literal['read', 'edit', 'manage'] = Field(default=..., alias='role')
+
+class CommunityNotePut(WireModel):
+    document: dict[str, Any] = Field(default=..., alias='document')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=240)
+
+class CommunityReferenceTarget(WireModel):
+    available: bool = Field(default=..., alias='available')
+    excerpt: str = Field(default='', alias='excerpt')
+    id: str = Field(default=..., alias='id')
+    knowledge_base_id: str | None = Field(default=None, alias='knowledge_base_id')
+    publication_id: str | None = Field(default=None, alias='publication_id')
+    revision: int | None = Field(default=None, alias='revision')
+    title: str = Field(default='', alias='title')
+
+class CommunitySnapshot(WireModel):
+    asset_ids: list[str] = Field(default=..., alias='asset_ids')
+    documents: list[ThoughtNoteOut] = Field(default=..., alias='documents')
+    knowledge_base: PublicationOut = Field(default=..., alias='knowledge_base')
+
 class ConversationDetailOut(WireModel):
     actions: list[ActionOut] | None = Field(default=None, alias='actions')
     conversation: ConversationOut = Field(default=..., alias='conversation')
@@ -764,6 +853,15 @@ class ConversationRevisionConflictOut(WireModel):
     status: Literal[409] = Field(default=..., alias='status')
     title: str = Field(default=..., alias='title')
     type: Literal['about:blank'] = Field(default=..., alias='type')
+
+class ConversionIn(WireModel):
+    table: TableSpec = Field(default=..., alias='table')
+
+class ConversionOut(WireModel):
+    affected_records: int = Field(default=..., alias='affected_records')
+    errors: list[dict[str, Any]] = Field(default=..., alias='errors')
+    samples: list[dict[str, Any]] | None = Field(default=None, alias='samples')
+    valid: bool = Field(default=..., alias='valid')
 
 class CreativeDraftIn(WireModel):
     components: list[str] | None = Field(default=None, alias='components', max_length=30)
@@ -887,6 +985,25 @@ class CrossWorkspaceLogPage(WireModel):
     page: int = Field(default=..., alias='page')
     page_size: int = Field(default=..., alias='page_size')
     total: int = Field(default=..., alias='total')
+
+class CsvIn(WireModel):
+    csv: str = Field(default=..., alias='csv', max_length=8388608)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    header: bool = Field(default=True, alias='header')
+    mapping: list[str | None] = Field(default=..., alias='mapping', min_length=1, max_length=50)
+    table: TableSpec | None = Field(default=None, alias='table')
+
+class CsvPreview(WireModel):
+    errors: list[dict[str, Any]] = Field(default=..., alias='errors')
+    headers: list[str] = Field(default=..., alias='headers')
+    rows: list[list[str]] = Field(default=..., alias='rows')
+    total: int = Field(default=..., alias='total')
+
+class CsvSource(WireModel):
+    csv: str = Field(default=..., alias='csv', max_length=8388608)
+    header: bool = Field(default=True, alias='header')
+    mapping: list[str | None] | None = Field(default=None, alias='mapping')
+    table: TableSpec | None = Field(default=None, alias='table')
 
 class CurrentUserOut(WireModel):
     avatar_url: str | None = Field(default=..., alias='avatar_url')
@@ -1094,6 +1211,19 @@ class ExportOut(WireModel):
     progress: int = Field(default=..., alias='progress')
     status: Literal['queued', 'running', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
 
+class FavoriteInput(WireModel):
+    favorite: bool = Field(default=..., alias='favorite')
+
+class FavoritesOut(WireModel):
+    resource_ids: list[str] = Field(default=..., alias='resource_ids')
+
+class FieldSpec(WireModel):
+    id: str = Field(default=..., alias='id', min_length=1, max_length=36)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    options: list[SelectOption] | None = Field(default=None, alias='options', max_length=100)
+    position: int = Field(default=..., alias='position', ge=0.0)
+    type: Literal['text', 'number', 'single', 'multi', 'date', 'checkbox', 'url', 'attachment', 'note'] = Field(default=..., alias='type')
+
 class FileListOut(WireModel):
     items: list[FileOut] = Field(default=..., alias='items')
 
@@ -1106,6 +1236,11 @@ class FileOut(WireModel):
 class FileWriteIn(WireModel):
     content: str = Field(default=..., alias='content', max_length=100000)
     expected_sha256: str = Field(default='', alias='expected_sha256', max_length=64)
+
+class Filter(WireModel):
+    field_id: str = Field(default=..., alias='field_id')
+    operator: Literal['eq', 'ne', 'contains', 'gt', 'gte', 'lt', 'lte', 'empty', 'not_empty'] = Field(default=..., alias='operator')
+    value: str | float | bool | list[str] | None = Field(default=None, alias='value')
 
 class GalgameAnnotationImportIn(WireModel):
     asset_prefix: str = Field(default=..., alias='assetPrefix')
@@ -2631,8 +2766,15 @@ class KnowledgeBasePut(WireModel):
 
 class KnowledgeNoteCreate(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    kind: Literal['note', 'multitable'] = Field(default='note', alias='kind')
     parent_id: str | None = Field(default=None, alias='parent_id')
     title: str = Field(default='未命名文档', alias='title', min_length=1, max_length=240)
+
+class LegacyTarget(WireModel):
+    excerpt: str = Field(default=..., alias='excerpt')
+    note_id: str = Field(default=..., alias='note_id')
+    publication: PublicationOut = Field(default=..., alias='publication')
+    title: str = Field(default=..., alias='title')
 
 class LibraryAssetImportIn(WireModel):
     asset_ids: list[str] = Field(default=..., alias='asset_ids', min_length=1)
@@ -2823,6 +2965,16 @@ class McpValidationOut(WireModel):
     check: IntegrationCheckOut = Field(default=..., alias='check')
     server: McpOut = Field(default=..., alias='server')
     tools: list[McpToolOut] = Field(default=..., alias='tools')
+
+class MemberInput(WireModel):
+    role: Literal['read', 'edit', 'manage'] = Field(default=..., alias='role')
+    username: str = Field(default=..., alias='username', min_length=1, max_length=64)
+
+class MemberOut(WireModel):
+    display_name: str = Field(default=..., alias='display_name')
+    role: Literal['read', 'edit', 'manage'] = Field(default=..., alias='role')
+    user_id: str = Field(default=..., alias='user_id')
+    username: str = Field(default=..., alias='username', min_length=1, max_length=64)
 
 class MessageIn(WireModel):
     content: str = Field(default=..., alias='content', min_length=1, max_length=100000)
@@ -3407,6 +3559,9 @@ class ParameterKeyform(WireModel):
     scale: float | None = Field(default=None, alias='scale')
     value: float = Field(default=..., alias='value', ge=-100000.0, le=100000.0)
 
+class PermissionInput(WireModel):
+    articles: list[ArticleSetting] = Field(default=..., alias='articles', min_length=1, max_length=2000)
+
 class PermissionPolicy(WireModel):
     admin: RolePolicy = Field(default=..., alias='admin')
     member: RolePolicy = Field(default=..., alias='member')
@@ -3735,6 +3890,44 @@ class PublicWorkspaceProjectionOut(WireModel):
     workspace_id: str = Field(default=..., alias='workspace_id')
     workspace_name: str = Field(default=..., alias='workspace_name')
 
+class PublicationConfig(WireModel):
+    articles: list[ArticleConfig] = Field(default=..., alias='articles')
+    can_set_official: bool = Field(default=False, alias='can_set_official')
+    publication: PublicationOut | None = Field(default=..., alias='publication')
+
+class PublicationOut(WireModel):
+    active: bool = Field(default=..., alias='active')
+    author: str = Field(default=..., alias='author')
+    can_manage_library: bool = Field(default=..., alias='can_manage_library')
+    can_set_official: bool = Field(default=False, alias='can_set_official')
+    cover_url: str | None = Field(default=None, alias='cover_url')
+    description: str = Field(default=..., alias='description')
+    document_count: int = Field(default=..., alias='document_count')
+    editable_platform_roles: list[Literal['super_admin', 'admin', 'member']] | None = Field(default=None, alias='editable_platform_roles')
+    favorite: bool = Field(default=False, alias='favorite')
+    id: str = Field(default=..., alias='id')
+    is_official: bool = Field(default=False, alias='is_official')
+    read_only: bool = Field(default=False, alias='read_only')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class PublishInput(WireModel):
+    active: bool = Field(default=True, alias='active')
+    articles: list[ArticleSetting] = Field(default=..., alias='articles', max_length=2000)
+    description: str = Field(default='', alias='description', max_length=4000)
+    editable_platform_roles: list[Literal['super_admin', 'admin', 'member']] | None = Field(default=None, alias='editable_platform_roles', max_length=3)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    is_official: bool = Field(default=False, alias='is_official')
+    read_only: bool = Field(default=True, alias='read_only')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=240)
+
+class QueryIn(WireModel):
+    limit: int = Field(default=100, alias='limit', ge=1.0, le=200.0)
+    offset: int = Field(default=0, alias='offset', ge=0.0)
+    search: str = Field(default='', alias='search', max_length=240)
+    view_id: str | None = Field(default=None, alias='view_id')
+
 class QuestionAnswerIn(WireModel):
     answer: str = Field(default=..., alias='answer', min_length=1, max_length=2000)
     note: str = Field(default='', alias='note', max_length=2000)
@@ -3831,6 +4024,27 @@ class RealtimeVoiceVadOut(WireModel):
 
 class ReauthIn(WireModel):
     password: str = Field(default=..., alias='password', repr=False)
+
+class RecordPage(WireModel):
+    groups: dict[str, int] | None = Field(default=None, alias='groups')
+    items: list[RecordSpec] = Field(default=..., alias='items')
+    revision: int = Field(default=..., alias='revision')
+    total: int = Field(default=..., alias='total')
+
+class RecordSpec(WireModel):
+    id: str = Field(default=..., alias='id', min_length=1, max_length=36)
+    position: int = Field(default=..., alias='position', ge=0.0)
+    values: dict[str, str | float | bool | list[str] | None] = Field(default=..., alias='values')
+
+class RecordsDelete(WireModel):
+    ids: list[str] = Field(default=..., alias='ids', min_length=1, max_length=5000)
+    op: Literal['records.delete'] = Field(default=..., alias='op')
+    table_id: str = Field(default=..., alias='table_id')
+
+class RecordsPut(WireModel):
+    op: Literal['records.put'] = Field(default=..., alias='op')
+    records: list[RecordSpec] = Field(default=..., alias='records', min_length=1, max_length=5000)
+    table_id: str = Field(default=..., alias='table_id')
 
 class RedemptionOut(WireModel):
     created_at: datetime = Field(default=..., alias='created_at')
@@ -3933,6 +4147,9 @@ class ResolveReferences(WireModel):
 class RestoreClipStatesOperation(WireModel):
     clips: list[VideoEditorClip] = Field(default=..., alias='clips', min_length=1)
     type: Literal['restoreClipStates'] = Field(default=..., alias='type')
+
+class RestoreIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
 class RevokeApiKeyIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -4062,6 +4279,7 @@ class SearchHit(WireModel):
     favorite: bool = Field(default=..., alias='favorite')
     id: str = Field(default=..., alias='id')
     is_home: bool = Field(default=..., alias='is_home')
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
     knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
     knowledge_base_title: str = Field(default=..., alias='knowledge_base_title')
     parent_id: str | None = Field(default=..., alias='parent_id')
@@ -4098,6 +4316,22 @@ class SecurityAuditListOut(WireModel):
     page: int = Field(default=..., alias='page')
     page_size: int = Field(default=..., alias='page_size')
     total: int = Field(default=..., alias='total')
+
+class SeedImportInput(WireModel):
+    package_version: str = Field(default=..., alias='package_version', min_length=64, max_length=64)
+    request_id: str = Field(default=..., alias='request_id')
+
+class SeedPreview(WireModel):
+    article_count: int = Field(default=..., alias='article_count')
+    figure_count: int = Field(default=..., alias='figure_count')
+    library_count: int = Field(default=..., alias='library_count')
+    package_version: str = Field(default=..., alias='package_version')
+    titles: list[str] = Field(default=..., alias='titles')
+
+class SelectOption(WireModel):
+    color: str = Field(default='#7c89c9', alias='color')
+    id: str = Field(default=..., alias='id', min_length=1, max_length=36)
+    label: str = Field(default=..., alias='label', min_length=1, max_length=120)
 
 class SeparateClipOperation(WireModel):
     audio_clip_id: str = Field(default=..., alias='audioClipId', min_length=1, max_length=64)
@@ -4172,6 +4406,14 @@ class SkillVersionOut(WireModel):
     name: str = Field(default=..., alias='name')
     version: str = Field(default=..., alias='version')
 
+class Snapshot(WireModel):
+    records: dict[str, list[RecordSpec]] = Field(default=..., alias='records')
+    tables: list[TableSpec] = Field(default=..., alias='tables')
+
+class Sort(WireModel):
+    direction: Literal['asc', 'desc'] = Field(default='asc', alias='direction')
+    field_id: str = Field(default=..., alias='field_id')
+
 class SplitClipOperation(WireModel):
     at_us: int = Field(default=..., alias='atUs', gt=0.0)
     clip_id: str = Field(default=..., alias='clipId')
@@ -4207,6 +4449,15 @@ class StorageLayoutStatusOut(WireModel):
     pending_projects: int = Field(default=..., alias='pending_projects')
     target_version: Literal[2] = Field(default=2, alias='target_version')
 
+class Structure(WireModel):
+    can_edit: bool = Field(default=True, alias='can_edit')
+    can_manage: bool = Field(default=False, alias='can_manage')
+    note_id: str = Field(default=..., alias='note_id')
+    publication_id: str | None = Field(default=None, alias='publication_id')
+    revision: int = Field(default=..., alias='revision')
+    role: Literal['read', 'edit', 'manage'] = Field(default='edit', alias='role')
+    tables: list[TableSpec] = Field(default=..., alias='tables')
+
 class SvgPreviewIn(WireModel):
     svg: str = Field(default=..., alias='svg', max_length=2097152)
 
@@ -4215,6 +4466,21 @@ class SvgPreviewOut(WireModel):
     monochrome: bool = Field(default=..., alias='monochrome')
     svg: str = Field(default=..., alias='svg')
     width: float = Field(default=..., alias='width')
+
+class TableDelete(WireModel):
+    op: Literal['table.delete'] = Field(default=..., alias='op')
+    table_id: str = Field(default=..., alias='table_id')
+
+class TablePut(WireModel):
+    op: Literal['table.put'] = Field(default=..., alias='op')
+    table: TableSpec = Field(default=..., alias='table')
+
+class TableSpec(WireModel):
+    fields: list[FieldSpec] = Field(default=..., alias='fields', min_length=1, max_length=50)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=36)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    position: int = Field(default=..., alias='position', ge=0.0)
+    views: list[ViewSpec] = Field(default=..., alias='views', min_length=1, max_length=30)
 
 class TemplateApply(WireModel):
     expected_knowledge_revision: int = Field(default=..., alias='expected_knowledge_revision', ge=0.0)
@@ -4226,6 +4492,8 @@ class TemplateApply(WireModel):
 class TemplateIn(WireModel):
     description: str = Field(default='', alias='description', max_length=2000)
     document: dict[str, Any] = Field(default=..., alias='document')
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
+    multitable: Snapshot | None = Field(default=None, alias='multitable')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
@@ -4244,6 +4512,8 @@ class TemplateOut(WireModel):
     description: str = Field(default='', alias='description', max_length=2000)
     document: dict[str, Any] = Field(default=..., alias='document')
     id: str = Field(default=..., alias='id')
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
+    multitable: Snapshot | None = Field(default=None, alias='multitable')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     revision: int = Field(default=..., alias='revision')
     schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
@@ -4281,6 +4551,8 @@ class TemplatePut(WireModel):
     description: str = Field(default='', alias='description', max_length=2000)
     document: dict[str, Any] = Field(default=..., alias='document')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
+    multitable: Snapshot | None = Field(default=None, alias='multitable')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
@@ -4411,6 +4683,7 @@ class ThoughtNoteCreate(WireModel):
     document: dict[str, Any] | None = Field(default=None, alias='document')
     expected_knowledge_revision: int = Field(default=..., alias='expected_knowledge_revision', ge=0.0)
     favorite: bool = Field(default=False, alias='favorite')
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
     knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
     parent_id: str | None = Field(default=None, alias='parent_id')
     pinned: bool = Field(default=False, alias='pinned')
@@ -4431,6 +4704,7 @@ class ThoughtNoteOut(WireModel):
     favorite: bool = Field(default=..., alias='favorite')
     id: str = Field(default=..., alias='id')
     is_home: bool = Field(default=..., alias='is_home')
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
     knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
     parent_id: str | None = Field(default=..., alias='parent_id')
     pinned: bool = Field(default=..., alias='pinned')
@@ -4445,6 +4719,7 @@ class ThoughtNotePut(WireModel):
     document: dict[str, Any] | None = Field(default=None, alias='document')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     favorite: bool = Field(default=False, alias='favorite')
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
     knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
     parent_id: str | None = Field(default=None, alias='parent_id')
     pinned: bool = Field(default=False, alias='pinned')
@@ -4459,6 +4734,7 @@ class ThoughtNoteSummary(WireModel):
     favorite: bool = Field(default=..., alias='favorite')
     id: str = Field(default=..., alias='id')
     is_home: bool = Field(default=..., alias='is_home')
+    kind: Literal['note', 'multitable'] | None = Field(default=None, alias='kind')
     knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
     parent_id: str | None = Field(default=..., alias='parent_id')
     pinned: bool = Field(default=..., alias='pinned')
@@ -4879,6 +5155,24 @@ class VideoGenerationTaskCreateIn(WireModel):
     resolution: Literal['480p', '720p', '1080p'] = Field(default='720p', alias='resolution')
     video_asset_ids: list[str] | None = Field(default=None, alias='video_asset_ids', max_length=3)
     watermark: bool = Field(default=True, alias='watermark')
+
+class ViewConfig(WireModel):
+    column_order: list[str] | None = Field(default=None, alias='column_order', max_length=50)
+    column_widths: dict[str, int] | None = Field(default=None, alias='column_widths')
+    date_field_id: str | None = Field(default=None, alias='date_field_id')
+    filter_mode: Literal['all', 'any'] = Field(default='all', alias='filter_mode')
+    filters: list[Filter] | None = Field(default=None, alias='filters', max_length=30)
+    group_field_id: str | None = Field(default=None, alias='group_field_id')
+    hidden_fields: list[str] | None = Field(default=None, alias='hidden_fields', max_length=50)
+    sorts: list[Sort] | None = Field(default=None, alias='sorts', max_length=10)
+    stack_field_id: str | None = Field(default=None, alias='stack_field_id')
+
+class ViewSpec(WireModel):
+    config: ViewConfig | None = Field(default=None, alias='config')
+    id: str = Field(default=..., alias='id', min_length=1, max_length=36)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    position: int = Field(default=..., alias='position', ge=0.0)
+    type: Literal['grid', 'kanban', 'calendar'] = Field(default='grid', alias='type')
 
 class VisualAssetFolderCreateIn(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
@@ -5306,6 +5600,8 @@ AnnotationSplitOperation.model_rebuild()
 ApiKeyCreateIn.model_rebuild()
 ApiKeyCreatedOut.model_rebuild()
 ApiKeyOut.model_rebuild()
+ArticleConfig.model_rebuild()
+ArticleSetting.model_rebuild()
 AssetImportIn.model_rebuild()
 AssetListOut.model_rebuild()
 AssetOut.model_rebuild()
@@ -5333,6 +5629,8 @@ AudioSeamCandidatesIn.model_rebuild()
 AudioSeamCandidatesOut.model_rebuild()
 AuthMeOut.model_rebuild()
 BatchDeleteIn.model_rebuild()
+BatchIn.model_rebuild()
+BatchOut.model_rebuild()
 Body_add_skill_version_v1_integrations_skills__skill_id__versions_post.model_rebuild()
 Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put.model_rebuild()
 Body_attachments_v1_thought_workshop_attachments_post.model_rebuild()
@@ -5369,6 +5667,7 @@ Body_upload_project_file_v1_director_desk_projects__project_id__files_post.model
 Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post.model_rebuild()
 Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put.model_rebuild()
 Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post.model_rebuild()
+Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post.model_rebuild()
 BoneWeight.model_rebuild()
 CallLogListItem.model_rebuild()
 CallLogListOut.model_rebuild()
@@ -5377,6 +5676,7 @@ CallLogStatsOut.model_rebuild()
 CertificationIn.model_rebuild()
 CertificationOut.model_rebuild()
 ChangePasswordIn.model_rebuild()
+ChangeSummary.model_rebuild()
 CharacterBone.model_rebuild()
 CharacterCamera.model_rebuild()
 CharacterDeformer.model_rebuild()
@@ -5395,11 +5695,20 @@ ClipIdOperation.model_rebuild()
 CodexSourceRestore.model_rebuild()
 CodexSourceState.model_rebuild()
 CodexSourceUpdate.model_rebuild()
+CommunityArticle.model_rebuild()
+CommunityDirectory.model_rebuild()
+CommunityManagement.model_rebuild()
+CommunityNote.model_rebuild()
+CommunityNotePut.model_rebuild()
+CommunityReferenceTarget.model_rebuild()
+CommunitySnapshot.model_rebuild()
 ConversationDetailOut.model_rebuild()
 ConversationListOut.model_rebuild()
 ConversationOut.model_rebuild()
 ConversationPatchIn.model_rebuild()
 ConversationRevisionConflictOut.model_rebuild()
+ConversionIn.model_rebuild()
+ConversionOut.model_rebuild()
 CreativeDraftIn.model_rebuild()
 CreativeDraftUpdateIn.model_rebuild()
 CreativeImportIn.model_rebuild()
@@ -5414,6 +5723,9 @@ CreativeRevisionIn.model_rebuild()
 CreativeStdioSetupIn.model_rebuild()
 CrossWorkspaceLogOut.model_rebuild()
 CrossWorkspaceLogPage.model_rebuild()
+CsvIn.model_rebuild()
+CsvPreview.model_rebuild()
+CsvSource.model_rebuild()
 CurrentUserOut.model_rebuild()
 DeleteApiKeyIn.model_rebuild()
 DeleteMutationOut.model_rebuild()
@@ -5456,9 +5768,13 @@ DuplicateSnapshot.model_rebuild()
 ExportCreateIn.model_rebuild()
 ExportListOut.model_rebuild()
 ExportOut.model_rebuild()
+FavoriteInput.model_rebuild()
+FavoritesOut.model_rebuild()
+FieldSpec.model_rebuild()
 FileListOut.model_rebuild()
 FileOut.model_rebuild()
 FileWriteIn.model_rebuild()
+Filter.model_rebuild()
 GalgameAnnotationImportIn.model_rebuild()
 GalgameAnnotationImportIssue.model_rebuild()
 GalgameAnnotationImportPreviewOut.model_rebuild()
@@ -5665,6 +5981,7 @@ KnowledgeBaseIn.model_rebuild()
 KnowledgeBaseOut.model_rebuild()
 KnowledgeBasePut.model_rebuild()
 KnowledgeNoteCreate.model_rebuild()
+LegacyTarget.model_rebuild()
 LibraryAssetImportIn.model_rebuild()
 LibraryExportSnapshot.model_rebuild()
 LibraryFolderImportOut.model_rebuild()
@@ -5694,6 +6011,8 @@ McpOut.model_rebuild()
 McpToolOut.model_rebuild()
 McpUpdateIn.model_rebuild()
 McpValidationOut.model_rebuild()
+MemberInput.model_rebuild()
+MemberOut.model_rebuild()
 MessageIn.model_rebuild()
 MessageOut.model_rebuild()
 MockCompletionIn.model_rebuild()
@@ -5768,6 +6087,7 @@ MoveClipOperation.model_rebuild()
 OperationBatchIn.model_rebuild()
 ParameterBinding.model_rebuild()
 ParameterKeyform.model_rebuild()
+PermissionInput.model_rebuild()
 PermissionPolicy.model_rebuild()
 PermissionPolicyIn.model_rebuild()
 PermissionPolicyOut.model_rebuild()
@@ -5819,6 +6139,10 @@ PublicGalgameProjectOut.model_rebuild()
 PublicGalgameStoryOut.model_rebuild()
 PublicVisualProjectOut.model_rebuild()
 PublicWorkspaceProjectionOut.model_rebuild()
+PublicationConfig.model_rebuild()
+PublicationOut.model_rebuild()
+PublishInput.model_rebuild()
+QueryIn.model_rebuild()
 QuestionAnswerIn.model_rebuild()
 QuestionIn.model_rebuild()
 QuestionOut.model_rebuild()
@@ -5834,6 +6158,10 @@ RealtimeVoiceOptionsOut.model_rebuild()
 RealtimeVoicePlaybackOut.model_rebuild()
 RealtimeVoiceVadOut.model_rebuild()
 ReauthIn.model_rebuild()
+RecordPage.model_rebuild()
+RecordSpec.model_rebuild()
+RecordsDelete.model_rebuild()
+RecordsPut.model_rebuild()
 RedemptionOut.model_rebuild()
 RedemptionPage.model_rebuild()
 Reference.model_rebuild()
@@ -5852,6 +6180,7 @@ ReorderTrackOperation.model_rebuild()
 ResetPasswordOut.model_rebuild()
 ResolveReferences.model_rebuild()
 RestoreClipStatesOperation.model_rebuild()
+RestoreIn.model_rebuild()
 RevokeApiKeyIn.model_rebuild()
 RoleModelTemplate_Input.model_rebuild()
 RoleModelTemplate_Output.model_rebuild()
@@ -5877,6 +6206,9 @@ SearchResult.model_rebuild()
 SecretOut.model_rebuild()
 SecurityAuditEventOut.model_rebuild()
 SecurityAuditListOut.model_rebuild()
+SeedImportInput.model_rebuild()
+SeedPreview.model_rebuild()
+SelectOption.model_rebuild()
 SeparateClipOperation.model_rebuild()
 SetAssetOrganizationOperation.model_rebuild()
 SetAudioTransitionOperation.model_rebuild()
@@ -5887,12 +6219,18 @@ SkillMarkdownOut.model_rebuild()
 SkillOut.model_rebuild()
 SkillUpdateIn.model_rebuild()
 SkillVersionOut.model_rebuild()
+Snapshot.model_rebuild()
+Sort.model_rebuild()
 SplitClipOperation.model_rebuild()
 StorageLayoutIssueOut.model_rebuild()
 StorageLayoutMigrationOut.model_rebuild()
 StorageLayoutStatusOut.model_rebuild()
+Structure.model_rebuild()
 SvgPreviewIn.model_rebuild()
 SvgPreviewOut.model_rebuild()
+TableDelete.model_rebuild()
+TablePut.model_rebuild()
+TableSpec.model_rebuild()
 TemplateApply.model_rebuild()
 TemplateIn.model_rebuild()
 TemplateModel.model_rebuild()
@@ -5983,6 +6321,8 @@ VideoEditorTransform.model_rebuild()
 VideoEditorTransition.model_rebuild()
 VideoFramesIn.model_rebuild()
 VideoGenerationTaskCreateIn.model_rebuild()
+ViewConfig.model_rebuild()
+ViewSpec.model_rebuild()
 VisualAssetFolderCreateIn.model_rebuild()
 VisualAssetFolderListOut.model_rebuild()
 VisualAssetFolderOut.model_rebuild()

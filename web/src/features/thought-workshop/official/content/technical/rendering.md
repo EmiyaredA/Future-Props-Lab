@@ -1,4 +1,4 @@
-# 时间线与媒体渲染：从状态到帧
+# 时间线与媒体渲染
 
 剪辑窗口在第 2 秒显示正确，导出视频的声音却提前了半秒。这个问题无法只靠比较截图解决，因为画面和音频都要从输出时间映射到各自的素材时间。
 
@@ -48,11 +48,22 @@ flowchart LR
 > [!TIP]
 > 挑选“片段第一帧、转场中点、片段末帧”作为检查点，再试听同一时段的声音，通常比随机截取一个中间帧更容易发现边界错误。
 
+## 从已保存工程到输出文件
+
+视频剪辑预检读取时间线、素材 ready 状态、输出区间和参数，指纹包含工程与素材信息。创建渲染任务校验预检指纹，保存 snapshot_document 和执行参数；后台消费固定输入，不读取浏览器播放头或未保存草稿。渲染器在同一输出时刻求值活动画面与音频，编码后才形成完整结果。
+
+Galgame 把确定路线转换成公共渲染输入，特效把图层与关键帧转换成确定性帧；各应用仍负责自己的预检、素材授权和任务生命周期。公共能力不能绕过调用方的权限或擅自修改工程。
+
+## 渲染失败怎样保留可继续工作状态
+
+预检不通过先修缺失素材、区间或不支持能力；预检后工程变化需要重新检查。输出失败保留工程和任务诊断，部分文件不能宣称完整交付。检查恒速源采样、接缝、首尾与音画同步，比只检查视频时长更能证明确定性输入被正确解释。
+
 ## 相关阅读
 
 - [视频剪辑：多轨、速度与接缝](/apps/thought-workshop/official-knowledge-bases/technical/documents/video-editor)
 - [特效制作：关键帧与二维合成](/apps/thought-workshop/official-knowledge-bases/technical/documents/motion-compositor)
 - [Galgame 工坊：故事图与路线求值](/apps/thought-workshop/official-knowledge-bases/technical/documents/galgame-workshop)
+- [公共能力复用与应用交接](/apps/thought-workshop/official-knowledge-bases/technical/documents/app-handoffs)
 
 ## 代码入口
 

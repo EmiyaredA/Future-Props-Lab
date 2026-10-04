@@ -60,6 +60,12 @@ contextBridge.exposeInMainWorld(
       return () =>
         ipcRenderer.removeListener("desktop:pet-environment", listener);
     },
+    onPetMotionConfirmed: (callback: (value: unknown) => void) => {
+      const listener = (_event: unknown, value: unknown) => callback(value);
+      ipcRenderer.on("desktop:pet-motion-confirmed", listener);
+      return () =>
+        ipcRenderer.removeListener("desktop:pet-motion-confirmed", listener);
+    },
     hidePet: () => ipcRenderer.invoke("desktop:pet-hide"),
     showStudioFromPet: () => ipcRenderer.invoke("desktop:pet-show-studio"),
     openPetChat: () => ipcRenderer.invoke("desktop:pet-chat-open"),

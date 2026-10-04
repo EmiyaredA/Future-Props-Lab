@@ -1,6 +1,6 @@
-# 模块边界与路由：为什么按功能拆分
+# 代码组织与依赖方向
 
-增加一个官方阅读页，与增加一个可保存的画板，看起来都是“给思绪工坊加功能”，涉及的模块却不同。前者主要消费随包静态内容；后者还必须经过笔记校验、素材引用追踪、历史和导出。
+为发布增加官方徽标，与为笔记增加画板，涉及不同的职责。发布模块负责认证标记、可见范围和有效角色；笔记模块负责正文校验、素材引用追踪、历史和导出。它们通过明确契约协作，官方内容不另开存储或阅读体系。
 
 这篇用这两个改动说明一个定位方法：**先确定数据的生命周期，再找拥有它的功能**。目录名相似不代表可以共享内部状态，写入同一个 SQLite 也不代表路由可以直接查询任何表。
 
@@ -35,7 +35,7 @@ flowchart TD
 
 ## 按生命周期安排一次改动
 
-官方指南的目录、Markdown 与画板资源属于思绪工坊静态内容，阅读不创建用户项目。个人画板则是笔记节点：前端负责编辑场景，后端笔记功能负责结构与素材校验，既有保存流程负责版本与历史。二者可以共享图形展示，但不能共享项目记录。
+内置 Markdown 与图形只用来构建可校验的导入包。管理员主动导入后，它们成为普通笔记节点：前端编辑场景，Notes 校验结构与素材并管理版本和历史，publication 校验官方标记与社区权限。包升级不回写已导入记录。
 
 当多个应用都需要确定性媒体渲染时，共享的是明确的渲染文档与求值能力。应用自己的项目默认值、导入政策和导出任务仍留在应用内。边界不是“相同代码尽量合并”，而是让调用方只依赖它需要的公开契约。
 
@@ -48,11 +48,22 @@ flowchart TD
 > [!NOTE]
 > 代码依赖图与运行数据流图回答不同问题。本篇箭头主要表示“谁依赖谁”；具体请求经过哪些校验和事务，见系统全景。
 
+## 从一次改动找到所有者
+
+增加画板属性先检查 CanvasScene、前后端校验和 SVG 几何；调整保存反馈先检查笔记草稿与用例；修改素材访问检查素材能力和归属。目录索引列出实际职责，不能只凭文件名称含有 editor 就把所有规则都放入页面。
+
+Web 的 app 装配入口，features 拥有业务，shared 提供通用 UI，platform 提供 API 与认证，generated 只放生成契约。后端 apps 与 llm、console 等各自拥有模型、schema、路由和具体用例；runtime 不决定文档默认值、历史或导入政策。有明确能力契约才能跨功能复用，不能靠通用层名字掩盖依赖环。
+
+## 模块替换要观察什么
+
+替换图形编辑库应继续输出场景；替换供应商适配器应继续输出公共推理事件；替换文件实现应保持显式 Workspace 与受控读写。消费者只依赖公开输入输出。检查失败响应、取消与资源切换，而不是只检查正常路径可编译。架构测试证明依赖边界，行为测试证明边界内实现满足调用方需求。
+
 ## 相关阅读
 
-- [系统全景：一份操作如何穿过应用](/apps/thought-workshop/official-knowledge-bases/technical/documents/system)
-- [构建与契约测试：如何证明版本一致](/apps/thought-workshop/official-knowledge-bases/technical/documents/engineering)
+- [系统全景与一次操作的完整路径](/apps/thought-workshop/official-knowledge-bases/technical/documents/system)
+- [测试与交付证据](/apps/thought-workshop/official-knowledge-bases/technical/documents/engineering)
 - [思绪工坊：富文本、画板与知识库](/apps/thought-workshop/official-knowledge-bases/technical/documents/thought-workshop)
+- [后端功能切片与用例边界](/apps/thought-workshop/official-knowledge-bases/technical/documents/backend-design)
 
 ## 代码入口
 

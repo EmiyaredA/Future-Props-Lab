@@ -8,6 +8,7 @@ import {
   VISUAL_WORKSHOP_MODULE,
 } from "@app/applicationRegistry";
 import { KnowledgeSidebar } from "@features/thought-workshop/KnowledgeSidebar";
+import { KnowledgeSections } from "@features/thought-workshop/KnowledgeSections";
 import {
   DEFAULT_KNOWLEDGE_SIDEBAR_WIDTH,
   KNOWLEDGE_SIDEBAR_WIDTH_KEY,
@@ -18,6 +19,77 @@ afterEach(() => {
 });
 
 describe("shared workshop sidebar", () => {
+  it.each([false, true])(
+    "separates global navigation from library navigation (readOnly=%s)",
+    async (readOnly) => {
+      const user = userEvent.setup();
+      const onNavigate = vi.fn();
+      const props = {
+        sidebarRef: { current: null },
+        drawer: false,
+        close: vi.fn(),
+        onBack: vi.fn(),
+        onNavigate,
+        discover: vi.fn(),
+        sections: <KnowledgeSections active="private" navigate={vi.fn()} />,
+        readOnly,
+        query: "",
+        search: vi.fn(),
+        view: "all",
+        browsing: false,
+        home: vi.fn(),
+        selectView: vi.fn(),
+        trash: false,
+        selectTrash: vi.fn(),
+        children: <p>目录内容</p>,
+      };
+      const { rerender } = render(
+        <KnowledgeSidebar {...props} inside={false} />,
+      );
+      const sidebar = within(
+        screen.getByRole("complementary", { name: "知识库导航" }),
+      );
+      for (const name of ["我的知识库", "知识社区", "我的收藏", "我的发布"])
+        expect(sidebar.getByRole("button", { name })).toBeVisible();
+      expect(
+        sidebar.getByRole("button", { name: "搜索与最近访问" }),
+      ).toBeVisible();
+      expect(
+        sidebar.queryByLabelText("搜索当前知识库"),
+      ).not.toBeInTheDocument();
+
+      rerender(<KnowledgeSidebar {...props} inside />);
+      expect(
+        sidebar.queryByRole("navigation", { name: "思绪工坊入口" }),
+      ).not.toBeInTheDocument();
+      for (const name of ["知识社区", "我的收藏", "我的发布", "搜索与最近访问"])
+        expect(sidebar.queryByRole("button", { name })).not.toBeInTheDocument();
+      expect(sidebar.getByLabelText("搜索当前知识库")).toBeVisible();
+      expect(
+        sidebar.getByRole("navigation", { name: "当前知识库视图" }),
+      ).toBeVisible();
+      expect(sidebar.getByText("目录内容")).toBeVisible();
+      expect(
+        sidebar.queryByRole("button", { name: "文档回收站" }) !== null,
+      ).toBe(!readOnly);
+      const back = sidebar.getByRole("button", {
+        name: "我的知识库",
+      });
+      expect(back).toHaveClass("workshop-back");
+      back.focus();
+      await user.keyboard("{Enter}");
+      expect(onNavigate).toHaveBeenCalledWith();
+
+      rerender(<KnowledgeSidebar {...props} inside={false} />);
+      expect(
+        sidebar.getByRole("navigation", { name: "思绪工坊入口" }),
+      ).toBeVisible();
+      expect(
+        sidebar.getByRole("button", { name: "搜索与最近访问" }),
+      ).toBeVisible();
+    },
+  );
+
   for (const module of [
     GALGAME_WORKSHOP_MODULE,
     VIDEO_EDITOR_MODULE,
@@ -86,7 +158,7 @@ describe("shared workshop sidebar", () => {
     expect(
       sidebar.queryByRole("combobox", { name: "切换知识库" }),
     ).not.toBeInTheDocument();
-    expect(sidebar.getByRole("button", { name: "所有知识库" })).toBeVisible();
+    expect(sidebar.getByRole("button", { name: "我的知识库" })).toBeVisible();
     expect(sidebar.getByText("浏览全部知识库")).toBeVisible();
     expect(sidebar.getByText("目录内容")).toBeVisible();
     for (const name of [
@@ -104,7 +176,7 @@ describe("shared workshop sidebar", () => {
     sidebar.getByRole("button", { name: "收藏文档" }).focus();
     await user.keyboard("{Enter}");
     expect(selectView).toHaveBeenCalledWith("favorites");
-    await user.click(sidebar.getByRole("button", { name: "所有知识库" }));
+    await user.click(sidebar.getByRole("button", { name: "我的知识库" }));
     expect(onNavigate).toHaveBeenCalledWith();
   });
 

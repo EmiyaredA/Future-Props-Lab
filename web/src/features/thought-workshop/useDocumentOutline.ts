@@ -1,17 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/core";
+import type { Transaction } from "@tiptap/pm/state";
 import { collectOutline, revealOutlineTarget } from "./outlineHeadings";
+
+function scrollContainer(root: HTMLElement): HTMLElement | null {
+  for (let parent = root.parentElement; parent; parent = parent.parentElement) {
+    if (parent === document.body || parent === document.documentElement) break;
+    if (/(auto|scroll)/.test(getComputedStyle(parent).overflowY)) return parent;
+  }
+  return null;
+}
 
 export function useDocumentOutline(editor: Editor) {
   const [headings, setHeadings] = useState(() =>
     collectOutline(editor.state.doc),
   );
   const [active, setActive] = useState<number | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set());
+  const folded = useRef(collapsed);
+  const lastActive = useRef<number | null>(null);
   const [layout, setLayout] = useState({
     wide: false,
     left: 16,
     top: 16,
-    width: 180,
+    width: 220,
     height: 400,
     visible: false,
   });
@@ -26,14 +38,30 @@ export function useDocumentOutline(editor: Editor) {
     const update = () => {
       if (composing || editor.view.composing || editor.isDestroyed) return;
       restores.current.forEach((restore) => restore());
-      setHeadings(collectOutline(editor.state.doc));
+      const next = collectOutline(editor.state.doc);
+      const positions = new Set(next.map((heading) => heading.position));
+      folded.current = new Set(
+        [...folded.current].filter((pos) => positions.has(pos)),
+      );
+      setCollapsed(folded.current);
+      setHeadings(next);
     };
-    const transaction = ({
-      transaction: tr,
-    }: {
-      transaction: { docChanged: boolean };
-    }) => {
-      if (tr.docChanged) update();
+    const transaction = ({ transaction: tr }: { transaction: Transaction }) => {
+      if (!tr.docChanged) return;
+      const mappedActive = (position: number | null) => {
+        if (position === null) return null;
+        const mapped = tr.mapping.mapResult(position, 1);
+        return mapped.deleted ? null : mapped.pos;
+      };
+      lastActive.current = mappedActive(lastActive.current);
+      setActive(mappedActive);
+      folded.current = new Set(
+        [...folded.current].flatMap((pos) => {
+          const mapped = tr.mapping.mapResult(pos, 1);
+          return mapped.deleted ? [] : [mapped.pos];
+        }),
+      );
+      update();
     };
     const start = () => {
       composing = true;
@@ -56,42 +84,62 @@ export function useDocumentOutline(editor: Editor) {
   }, [editor]);
 
   useEffect(() => {
+    if (active === lastActive.current) return;
+    lastActive.current = active;
+    const byPosition = new Map(
+      headings.map((heading) => [heading.position, heading]),
+    );
+    const next = new Set(folded.current);
+    let parent = active === null ? null : byPosition.get(active)?.parent;
+    while (parent != null) {
+      next.delete(parent);
+      parent = byPosition.get(parent)?.parent;
+    }
+    folded.current = next;
+    setCollapsed(next);
+  }, [active, headings]);
+
+  useEffect(() => {
     const root = editor.view.dom;
     const host =
       root.closest<HTMLElement>(".thought-rich-editor") ?? root.parentElement!;
+    const scroller = scrollContainer(root);
+    const main = host.closest(".knowledge-main");
+    const toolbar =
+      main?.querySelector(".knowledge-topbar") ??
+      root
+        .closest(".thought-document")
+        ?.querySelector(".thought-document-bar") ??
+      root.closest(".readonly-page")?.querySelector("header");
     let frame = 0;
     const measure = () => {
       if (editor.isDestroyed) return;
       const viewport = window.visualViewport;
-      const viewportTop = viewport?.offsetTop ?? 0;
-      const viewportBottom = viewportTop + (viewport?.height ?? innerHeight);
+      const viewportTop = Math.max(
+        viewport?.offsetTop ?? 0,
+        scroller?.getBoundingClientRect().top ?? 0,
+      );
+      const viewportBottom = Math.min(
+        (viewport?.offsetTop ?? 0) + (viewport?.height ?? innerHeight),
+        scroller?.getBoundingClientRect().bottom ?? Infinity,
+      );
       const hostRect = host.getBoundingClientRect();
-      const proseRect = root.getBoundingClientRect();
-      const toolbar =
-        root
-          .closest(".thought-document")
-          ?.querySelector(".thought-document-bar") ??
-        document.querySelector(".knowledge-topbar") ??
-        root.closest(".readonly-page")?.querySelector("header");
       const barBottom = toolbar?.getBoundingClientRect().bottom ?? viewportTop;
-      const stickyTop = Math.max(viewportTop, barBottom) + 16;
-      const top = Math.max(stickyTop, hostRect.top + 16);
-      const gutter = proseRect.left - hostRect.left;
-      const wide = gutter >= 212;
-      const readingTop = stickyTop + (wide ? 0 : 44);
+      const formatBottom =
+        host.querySelector(".thought-toolbar")?.getBoundingClientRect()
+          .bottom ?? 0;
+      const readingTop = Math.max(viewportTop, barBottom, formatBottom) + 16;
       topOffset.current = readingTop;
+      const top = Math.max(readingTop + 16, hostRect.top + 32);
       const height = Math.max(
         0,
-        Math.min(viewportBottom - 16, hostRect.bottom) - top,
+        Math.min(viewportBottom - 24, hostRect.bottom) - top,
       );
       const next = {
-        wide,
-        left: Math.max(
-          (viewport?.offsetLeft ?? 0) + 16,
-          wide ? hostRect.left + 16 : proseRect.left,
-        ),
+        wide: hostRect.width >= 960,
+        left: hostRect.right - 252,
         top,
-        width: Math.min(220, Math.max(180, gutter - 32)),
+        width: 220,
         height,
         visible: height >= 40 && hostRect.top < viewportBottom,
       };
@@ -117,7 +165,7 @@ export function useDocumentOutline(editor: Editor) {
         visibleHeadings
           .filter((heading) => heading.rect.top <= readingTop + 12)
           .at(-1)?.position ?? null;
-      const scrolling = document.scrollingElement;
+      const scrolling = scroller ?? document.scrollingElement;
       if (
         scrolling &&
         scrolling.scrollHeight > scrolling.clientHeight + 1 &&
@@ -144,7 +192,6 @@ export function useDocumentOutline(editor: Editor) {
     const observer = new ResizeObserver(schedule);
     observer.observe(root);
     observer.observe(host);
-    const toolbar = document.querySelector(".knowledge-topbar");
     if (toolbar) observer.observe(toolbar);
     root.addEventListener("load", schedule, true);
     root.addEventListener("click", schedule);
@@ -176,9 +223,8 @@ export function useDocumentOutline(editor: Editor) {
       if (!(element instanceof HTMLElement)) return;
       revealOutlineTarget(element, restores.current);
       element.scrollIntoView({ block: "start", behavior: "instant" });
-      // Do not mutate heading styles: ProseMirror can reparse that mutation and
-      // refresh a details node view, losing its temporary UI-only revelation.
-      window.scrollBy({
+      const scroll = scrollContainer(root) ?? window;
+      scroll.scrollBy({
         top: element.getBoundingClientRect().top - topOffset.current,
         behavior: "instant",
       });
@@ -187,5 +233,12 @@ export function useDocumentOutline(editor: Editor) {
     },
     [editor],
   );
-  return { headings, active, layout, navigate };
+  const toggle = (position: number) => {
+    const next = new Set(folded.current);
+    if (next.has(position)) next.delete(position);
+    else next.add(position);
+    folded.current = next;
+    setCollapsed(next);
+  };
+  return { headings, active, layout, navigate, collapsed, toggle };
 }

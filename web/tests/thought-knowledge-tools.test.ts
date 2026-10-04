@@ -173,14 +173,25 @@ describe("knowledge content workflows", () => {
       });
       const exported = await buildHtmlDocument(note, editor, {
         referencePaths: { "note-b": "note-b.html" },
-        referenceTitles: { "note-b": "最新标题" },
+        directoryEntries: [
+          {
+            id: "note-b",
+            title: "最新标题",
+            excerpt: "",
+            parent_id: null,
+            position: 0,
+            is_home: false,
+            knowledge_base_id: "kb",
+          },
+        ],
       });
       expect(exported.html).toContain('href="note-b.html"');
       expect(exported.html).toContain("最新标题");
       const missing = await buildHtmlDocument(note, editor, {
         referencePaths: {},
+        directoryEntries: [],
       });
-      expect(missing.html).toContain("未包含");
+      expect(missing.html).toContain("文档不可访问");
       expect(missing.html).not.toContain("data-ref-noteid");
     } finally {
       editor.destroy();

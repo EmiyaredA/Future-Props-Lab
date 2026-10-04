@@ -206,7 +206,7 @@ async def test_cover_protection_and_v3_single_project_roundtrip():
         assert backup.status_code == 200, backup.text
         with zipfile.ZipFile(io.BytesIO(backup.content)) as archive:
             manifest = json.loads(archive.read("manifest.json"))
-            assert manifest["version"] == 6 and len(manifest["knowledge_bases"]) == 1
+            assert manifest["version"] == 7 and len(manifest["knowledge_bases"]) == 1
             assert archive.read("assets/" + asset) == image.getvalue()
             assert manifest["folders"] == []
         restored = await c.post(

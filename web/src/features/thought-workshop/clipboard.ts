@@ -1,3 +1,4 @@
+import type { DocumentAccess } from "./DocumentAccess";
 import {
   canvasAssetIds,
   mapCanvasAssets,
@@ -235,9 +236,16 @@ function assetFilename(node: JSONContent[], assetId: string) {
   return filename;
 }
 
+export type ClipboardAccess = Pick<DocumentAccess, "assetUrl" | "uploadImage">;
+const ordinaryClipboard: ClipboardAccess = {
+  uploadImage,
+  assetUrl: (id) => `/v1/files/${encodeURIComponent(id)}/content`,
+};
+
 async function serializeSelection(
   editor: Editor,
   sourceScopeId?: string,
+  access: ClipboardAccess = ordinaryClipboard,
 ): Promise<ThoughtClipboardPayload> {
   const selected = selectionContent(editor);
   const raw = selected.fragment.toJSON() as JSONContent[] | JSONContent;
@@ -245,9 +253,7 @@ async function serializeSelection(
   const assets: Record<string, ClipboardAsset> = {};
   let totalBytes = 0;
   for (const assetId of selected.imageIds) {
-    const blob = await fetchApiBlob(
-      `/v1/files/${encodeURIComponent(assetId)}/content`,
-    );
+    const blob = await fetchApiBlob(access.assetUrl(assetId));
     totalBytes += blob.size;
     if (totalBytes > THOUGHT_CLIPBOARD_MAX_BYTES)
       throw new Error(
@@ -277,7 +283,9 @@ async function serializeSelection(
 function htmlWithInlineAssets(html: string, payload: ThoughtClipboardPayload) {
   const parsed = new DOMParser().parseFromString(html, "text/html");
   parsed
-    .querySelectorAll("span[data-document-reference]")
+    .querySelectorAll(
+      "span[data-document-reference],div[data-document-card],div[data-document-directory]",
+    )
     .forEach((reference) => {
       reference.setAttribute(
         "data-fpl-source-scope",
@@ -329,18 +337,21 @@ async function writeClipboardItem(data: Record<string, Blob | Promise<Blob>>) {
 export async function writeThoughtClipboard(
   editor: Editor,
   sourceScopeId?: string,
+  access: ClipboardAccess = ordinaryClipboard,
 ) {
   const selected = selectionContent(editor);
   const canWriteRich =
     typeof navigator.clipboard?.write === "function" &&
     typeof globalThis.ClipboardItem === "function";
   if (canWriteRich) {
-    const payloadPromise = serializeSelection(editor, sourceScopeId).then(
-      (payload) => {
-        rememberSessionPayload(payload);
-        return payload;
-      },
-    );
+    const payloadPromise = serializeSelection(
+      editor,
+      sourceScopeId,
+      access,
+    ).then((payload) => {
+      rememberSessionPayload(payload);
+      return payload;
+    });
     const hasImages = selected.imageIds.length > 0;
     const payload = hasImages ? undefined : await payloadPromise;
     if (payload) rememberSessionPayload(payload);
@@ -385,7 +396,7 @@ export async function writeThoughtClipboard(
   }
   if (selected.imageIds.length) {
     try {
-      const payload = await serializeSelection(editor, sourceScopeId);
+      const payload = await serializeSelection(editor, sourceScopeId, access);
       rememberSessionPayload(payload);
     } catch {
       // Prefer the original browser-support error when serialization also fails.
@@ -500,6 +511,20 @@ export function sanitizeThoughtPastedHTML(
           document.createTextNode(reference.textContent || "文档引用"),
         );
     });
+  parsed
+    .querySelectorAll<HTMLElement>(
+      'div[data-document-card][data-navigation-kind="note"]',
+    )
+    .forEach((node) => {
+      if (!targetScopeId || node.dataset.fplSourceScope !== targetScopeId)
+        node.removeAttribute("data-navigation-noteid");
+    });
+  parsed
+    .querySelectorAll<HTMLElement>("div[data-document-directory]")
+    .forEach((node) => {
+      if (!targetScopeId || node.dataset.fplSourceScope !== targetScopeId)
+        node.removeAttribute("data-navigation-parentid");
+    });
   parsed.querySelectorAll("*").forEach((node) =>
     Array.from(node.attributes).forEach((attribute) => {
       const name = attribute.name.toLowerCase();
@@ -524,7 +549,21 @@ export function sanitizeThoughtPastedHTML(
       ]);
       const allowed =
         (node.matches("aside[data-callout],div[data-callout]") &&
-          name === "data-callout") ||
+          (name === "data-callout" || name === "data-callout-title")) ||
+        (node.matches("div[data-card-grid]") && name === "data-card-grid") ||
+        (node.matches("div[data-document-card],div[data-document-directory]") &&
+          (name === "data-document-card" ||
+            name === "data-document-directory" ||
+            name === "data-fpl-source-scope" ||
+            [
+              "kind",
+              "noteid",
+              "libraryid",
+              "documentid",
+              "style",
+              "eyebrow",
+              "parentid",
+            ].some((key) => name === `data-navigation-${key}`))) ||
         (node.matches("span[data-document-reference]") &&
           (name === "data-document-reference" ||
             [
@@ -694,6 +733,7 @@ export async function insertThoughtClipboardPayload(
   editor: Editor,
   payload: ThoughtClipboardPayload,
   targetScopeId?: string,
+  access: ClipboardAccess = ordinaryClipboard,
 ) {
   const content = payload.fragment.content;
   validateImageAssets(content, payload.assets);
@@ -715,21 +755,27 @@ export async function insertThoughtClipboardPayload(
         asset.filename || "粘贴图片",
         asset.mimeType,
       );
-      replacements[assetId] = (await uploadImage(file)).asset_id;
+      replacements[assetId] = (await access.uploadImage(file)).asset_id;
     }
   }
   const rewritten = rewriteAssetIds(content, replacements);
   if (shouldMigrate) {
     const strip = (node: JSONContent): JSONContent =>
-      node.type === "documentReference" && node.attrs?.kind === "note"
-        ? {
-            type: "text",
-            text: String(node.attrs.customLabel || node.attrs.label || "文档"),
-          }
-        : {
-            ...node,
-            ...(node.content ? { content: node.content.map(strip) } : {}),
-          };
+      node.type === "documentCard" && node.attrs?.kind === "note"
+        ? { ...node, attrs: { ...node.attrs, noteId: null } }
+        : node.type === "documentDirectory"
+          ? { ...node, attrs: { ...node.attrs, parentId: null } }
+          : node.type === "documentReference" && node.attrs?.kind === "note"
+            ? {
+                type: "text",
+                text: String(
+                  node.attrs.customLabel || node.attrs.label || "文档",
+                ),
+              }
+            : {
+                ...node,
+                ...(node.content ? { content: node.content.map(strip) } : {}),
+              };
     rewritten.splice(0, rewritten.length, ...rewritten.map(strip));
   }
   const { from, to } = editor.state.selection;
@@ -743,6 +789,7 @@ export async function pasteThoughtClipboard(
   editor: Editor,
   clipboardData: DataTransfer | null | undefined,
   targetScopeId?: string,
+  access: ClipboardAccess = ordinaryClipboard,
 ) {
   const raw = clipboardData?.getData(THOUGHT_CLIPBOARD_MIME) || "";
   if (!raw) return false;
@@ -750,6 +797,7 @@ export async function pasteThoughtClipboard(
     editor,
     parsePayloadText(raw),
     targetScopeId,
+    access,
   );
   return true;
 }
@@ -758,6 +806,7 @@ export async function pasteThoughtHTML(
   editor: Editor,
   html: string,
   targetScopeId?: string,
+  access: ClipboardAccess = ordinaryClipboard,
 ) {
   const source = new DOMParser().parseFromString(html, "text/html");
   // Validate every scene and its required bytes before uploads or insertion.
@@ -799,7 +848,7 @@ export async function pasteThoughtHTML(
       );
       if (!file)
         throw new Error("剪贴板中的图片数据无效，请重新复制或使用导出导入。");
-      const uploaded = await uploadImage(file);
+      const uploaded = await access.uploadImage(file);
       replacements.set(dedupeKey, uploaded.asset_id);
       image.setAttribute("data-asset-id", uploaded.asset_id);
     }
@@ -828,7 +877,7 @@ export async function pasteThoughtHTML(
           asset.filename || "画板图片",
           asset.mimeType,
         );
-        replacements.set(key, (await uploadImage(file)).asset_id);
+        replacements.set(key, (await access.uploadImage(file)).asset_id);
       }
       canvas.textContent = JSON.stringify(
         mapCanvasAssets(scene, (id) =>

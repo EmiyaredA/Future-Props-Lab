@@ -1,76 +1,74 @@
-# 素材与导出：引用、快照和包有什么不同
+# 素材上传、引用与预览
 
-把一篇含画板图片的笔记导出为 PNG，发给另一台电脑后还能拖动里面的节点吗？不能。PNG 保存显示结果，原生笔记保存元素、连线和图片引用；两者承载的信息不同。
+给画板插入图片后，正文里保存的是图片字节、磁盘路径，还是浏览器显示的地址？当前笔记引用的是托管素材 ID。图片字节由素材能力另行保存，浏览器的 Blob URL 只负责这一轮显示。
 
-要让接收方继续编辑，需要同时搬走文档结构和被引用的图片。本文跟踪一张含图片画板从保存、备份到重新导入的过程，解释为什么素材 ID、文件路径与临时预览 URL 不能互换。
+这三个对象有不同生命周期。本文跟踪一张图片上传、加入画板、保存、重新预览与解除引用的过程；把整份内容搬到另一台电脑的路径见《导入、备份与导出》。
 
-## 完整备份将文档与素材一起搬运
+## 图一：从上传到授权预览的素材路径
 
-一份可继续编辑的备份，到底要汇合哪些内容？
+什么时候获得长期素材身份，什么时候只获得临时显示地址？
 
 ```fpl-canvas
 assets
 ```
 
-图例：两张文件卡片分别代表语义数据与二进制。备份汇合它们，导入时重建对应关系。只导出一张 PNG 会失去元素结构，不能替代此路径。
+图例：箭头表示素材身份或字节经过的处理。正文到引用索引经过功能校验；预览 URL 不反向写入正文，也不成为素材的永久身份。
 
-左上是笔记结构，左下是实际文件。备份包用清单把二者联系起来；导入先检查文件和引用，再创建新的资源身份并重写文档中的 ID。接收端不需要拥有原空间的 ID，也不应直接复用它们。
+正式上传验证并托管文件，返回当前空间中的素材身份。图片节点将 assetId 加入文档；Notes 保存时检查可引用的公共文件、图片类型和归属。读取字节仍需鉴权，前端据此创建可回收的对象 URL。记录和实际文件是并列持久数据，不能仅备份 SQLite 就认为图片也已保存。
 
-## 文档、素材与归档的概念类图
+## 图二：一次带图片的笔记保存
 
-文档、素材和归档的关系，为什么不能简化成“把正文复制一遍”？
+上传成功以后，为什么还需要在正文保存中检查素材？
 
 ```mermaid
-classDiagram
-  class Document {
-    +revision
-    +content
-  }
-  class Asset {
-    +workspace_id
-    +media_kind
-  }
-  class Archive {
-    +manifest
-    +files
-  }
-  Document --> Asset : 引用
-  Archive o-- Document : 快照
-  Archive o-- Asset : 文件
+sequenceDiagram
+  participant U as 界面
+  participant F as 素材API
+  participant N as Notes
+  participant D as SQLite
+  U->>F: 上传图片字节
+  F-->>U: 托管素材 ID
+  U->>U: 将 ID 加入画板图片节点
+  U->>N: 正文与 expected_revision
+  N->>N: 校验素材归属、公共文件与类型
+  N->>D: CAS 正文及引用索引
+  D-->>N: 提交成功
+  N-->>U: 新笔记快照
 ```
 
-图例：箭头表示素材引用，空心菱形表示归档聚合内容。Archive 是可移植包的概念，不是数据库中的另一个活动项目；实际字段以对应应用导出清单为准。
+图例：图中素材上传和正文提交是两个操作。Notes 表示所属功能而不是另一条特殊 API；响应由路由映射。图片上传成功不表示笔记保存成功。
 
-文档持有引用，素材提供字节，归档同时携带二者。若历史快照仍引用旧图片，仅查看最新正文会漏掉需要保留的文件。相反，导出一份用于阅读的 HTML 可以固化图形，却不承担还原所有历史和编辑结构的责任。
+正文写入可能因为版本冲突或素材条件变化而失败。上传得到一个可使用 ID，不能绕过后续引用检查。当前 Notes.validate_refs 对笔记引用要求公共文件，并确认图片节点引用 image 类型；项目内部素材不能只靠替换 ID 强行嵌入。
 
-## 素材 ID 不是可公开访问的 URL
+## 素材记录与磁盘文件的责任
 
-图片元素保存托管素材 ID。读取时由 API 验证身份和空间，前端使用受管理的 Blob URL 显示；这个 URL 有生命周期，不能写回笔记作为长期来源。保存画板还会校验图片类型和归属。
+素材元数据记录归属、媒体类型、文件名和大小等信息，AssetStorage 按受控路径保存字节。业务用例传 IncomingFile，路由才使用 UploadFile；项目路径及写入方法显式传 workspace_id。调用方不能把客户端路径直接当作托管目录，也不能让后台任务借用一个全局“当前空间”。
 
-跨库剪贴板与可移植包都要处理引用迁移。图片字节不存在时，不能假装迁移成功并把原 ID 塞进目标文档。迁移失败应留下原稿，给出明确错误；上传了部分文件也不代表整篇正文已经成功导入。
+界面上文件名称用于识别与展示，稳定 assetId 用于关联；临时供应商 URL 与 Blob URL 都不是磁盘文件身份。生成结果先通过下载和本地结算成为托管素材，才具备可再次引用的持久结果。
 
-## 选格式前先确定交付目标
+## 预览为什么需要取消和回收
 
-| 接收方要做什么         | 应保留的内容                 | 合适的出口       |
-| ---------------------- | ---------------------------- | ---------------- |
-| 继续编辑并保留历史     | 文档、目录、历史、引用文件   | 完整备份         |
-| 与文本工具交换后再导入 | Markdown、图表源码、相对资源 | Markdown 包      |
-| 离线阅读整篇           | 排版和可显示的图形、图片     | HTML 或 HTML ZIP |
-| 放进报告或幻灯片       | 一幅图的视觉结果             | SVG / PNG        |
+useApiBlobUrl 统一管理鉴权读取、请求取消、异步竞态与 Object URL 回收。切换图片或组件关闭后，旧响应不能替代当前资源；释放对象 URL 避免大图片持续占用内存。需要自己维护缓存的播放器有独立生命周期，不能把这项例外推导成每个页面都复制预览实现。
 
-未知场景版本、包内路径穿越和缺失资源应在正式导入校验中处理。删除文档中的图片只解除当前引用，历史或其他内容仍引用时，底层文件可能必须保留。
+读取失败应保留文档结构并提示素材问题，不把缺失图片替换成错误的跨空间 URL。预览看到图片只说明当前读请求可用，不能证明导出时已取得全部历史引用文件。
+
+## 删除引用和删除文件不是同一件事
+
+当前正文移除图片会改变引用索引，历史快照、模板或其他内容仍可能持有旧引用。删除文件要经过正式用例的引用检查，不直接删磁盘路径。完整备份还收集历史和模板使用的文件；迁移创建新身份并重写引用，不沿用来源空间 ID。
+
+验证上传后重新打开笔记、引用非图片文件被拒绝、跨空间 ID 不可读、切换预览不展示旧响应，以及仍被历史引用的文件不能错误删除。对失败分别记录素材 ID、笔记 revision 与读请求错误，才能区分文件、引用和保存三个阶段。
 
 > [!NOTE]
-> fpl-canvas 代码块保存画板场景，通用 Markdown 阅读器通常只显示源码。需要让接收方直接看图时，选择 HTML 或图片；需要继续编辑时保留原生数据。
+> assetId 用于持久引用，Blob URL 用于当前预览，供应商 URL 用于取回外部结果。这三者不能互换。
 
 ## 相关阅读
 
-- [Workspace 与权限：资源为什么不能串空间](/apps/thought-workshop/official-knowledge-bases/technical/documents/identity)
-- [思绪工坊：富文本、画板与知识库](/apps/thought-workshop/official-knowledge-bases/technical/documents/thought-workshop)
-- [思绪工坊：导入导出与交付](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/delivery)
+- [核心对象与数据归属](/apps/thought-workshop/official-knowledge-bases/technical/documents/data-model)
+- [导入、备份与导出](/apps/thought-workshop/official-knowledge-bases/technical/documents/data-exchange)
+- [Workspace 与权限](/apps/thought-workshop/official-knowledge-bases/technical/documents/identity)
 
 ## 代码入口
 
 1. `backend/app/capabilities/asset_store/storage.py`
-2. `backend/app/apps/thought_workshop/portability.py`
+2. `backend/app/apps/thought_workshop/notes.py`
 3. `web/src/platform/api/useApiBlobUrl.ts`

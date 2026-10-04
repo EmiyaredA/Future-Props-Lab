@@ -47,6 +47,8 @@ export const updateTemplate = async (
         document: template.document,
         tags: template.tags,
         schema_version: template.schema_version,
+        kind: template.kind ?? "note",
+        multitable: template.multitable,
         ...patch,
         expected_revision: template.revision,
       },

@@ -1,8 +1,10 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.apps.thought_workshop.multitable.schemas import Snapshot
+from app.apps.thought_workshop.multitable.validation import validate_snapshot
 from app.apps.thought_workshop.schemas.document import validate_document
 from app.apps.thought_workshop.schemas.workshop import ThoughtNoteSummary, ThoughtRevisionIn
 
@@ -54,8 +56,20 @@ class TemplateIn(StrictInput):
     name: str = Field(min_length=1, max_length=120)
     description: str = Field(default="", max_length=2000)
     document: dict
+    kind: Literal["note", "multitable"] = Field(
+        default="note", json_schema_extra=lambda s: s.pop("default", None)
+    )
+    multitable: Snapshot | None = None
     schema_version: Literal[2, 3] = 3
     tags: list[str] = Field(default_factory=list, max_length=30)
+
+    @model_validator(mode="after")
+    def table_valid(self):
+        if (self.kind == "multitable") != (self.multitable is not None):
+            raise ValueError("多维表格模板必须包含完整表格快照")
+        if self.multitable is not None:
+            validate_snapshot(self.multitable)
+        return self
 
     @field_validator("name")
     @classmethod

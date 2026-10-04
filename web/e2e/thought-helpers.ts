@@ -17,6 +17,7 @@ export async function newDocument(page: Page) {
     .getByRole("button", { name: "新建文档", exact: true })
     .last()
     .click();
+  await page.getByRole("menuitem", { name: "空白文档", exact: true }).click();
   await expect(page).not.toHaveURL(previousUrl);
   await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(
     "未命名文档",
@@ -66,6 +67,15 @@ export async function pickProjectMore(page: Page, option: string) {
     name: "知识库更多操作",
     exact: true,
   });
+  await expect
+    .poll(
+      async () =>
+        (await more.isVisible()) ||
+        (await page
+          .getByRole("button", { name: "笔记更多操作", exact: true })
+          .isVisible()),
+    )
+    .toBeTruthy();
   if (!(await more.isVisible().catch(() => false))) {
     await page
       .locator(".knowledge-breadcrumb")

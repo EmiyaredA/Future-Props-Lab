@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
   chat: null as ((value: { phase: string }) => void) | null,
   refresh: null as (() => void) | null,
   revision: 1,
+  legacyHuman: false,
 }));
 vi.mock("../src/features/desktop-pet/usePetPreview", () => ({
   usePetPreview: () => ({
@@ -23,7 +24,12 @@ vi.mock("../src/features/desktop-pet/api", () => ({
   getDocument: async () => ({
     revision: state.revision,
     sourceType: "coopanion-whale",
-    whaleModel: { schemes: [{ id: "deepseek" }] },
+    whaleModel: {
+      schemes: [{ id: "deepseek" }],
+      ...(state.legacyHuman
+        ? { rigProfile: "human-chibi", motionRig: { version: 1 } }
+        : {}),
+    },
     config: {
       events: { roam: { motionId: "walk" } },
       habits: {
@@ -63,6 +69,7 @@ beforeEach(() => {
   state.chat = null;
   state.refresh = null;
   state.revision = 1;
+  state.legacyHuman = false;
   vi.spyOn(Math, "random").mockReturnValue(0.9);
   move
     .mockReset()
@@ -104,6 +111,40 @@ async function mount() {
   fireEvent.pointerMove(view.container.firstElementChild!);
   return view;
 }
+
+test("legacy human resource remains draggable but does not invoke old autonomous motion", async () => {
+  state.legacyHuman = true;
+  state.roam = "free";
+  const view = await mount();
+  expect(screen.getByRole("status", { name: /已暂停旧分件动画/ })).toBeTruthy();
+  await act(() => vi.advanceTimersByTimeAsync(25000));
+  expect(move).not.toHaveBeenCalled();
+  expect(screen.getByTestId("figure").textContent).toBe("idle");
+  const host = view.container.firstElementChild as HTMLElement;
+  host.setPointerCapture = vi.fn();
+  fireEvent(
+    host,
+    new MouseEvent("pointerdown", {
+      bubbles: true,
+      screenX: 100,
+      screenY: 180,
+    }),
+  );
+  await act(async () => {
+    fireEvent(
+      host,
+      new MouseEvent("pointermove", {
+        bubbles: true,
+        screenX: 130,
+        screenY: 200,
+      }),
+    );
+  });
+  expect(move).toHaveBeenCalledWith(window.screenX + 30, window.screenY + 20);
+  fireEvent.pointerUp(host);
+  expect(screen.getByTestId("figure").textContent).toBe("drop");
+  view.unmount();
+});
 
 test("resource refresh updates the figure without interrupting chat state and ignores stale snapshots", async () => {
   const view = await mount();

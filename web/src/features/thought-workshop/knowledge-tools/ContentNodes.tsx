@@ -11,11 +11,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceId } from "@platform/auth/WorkspacePermissions";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { thoughtKeys } from "../queryKeys";
-import { officialPath, findOfficialLibrary } from "../official/catalog";
-import { resolveReferences } from "./api";
+import { useLegacyReference } from "../community/legacyReference";
+import { useDocumentAccess } from "../DocumentAccess";
 import "./knowledge-tools.css";
+import { useNavigationScope } from "../document-layout/NavigationScope";
+import { CalloutHeading } from "../document-layout/ContentChrome";
 
 const variants = [
+  { value: "tip", label: "提示" },
   { value: "info", label: "信息" },
   { value: "note", label: "备注" },
   { value: "success", label: "成功" },
@@ -28,13 +31,23 @@ function CalloutView({ node, editor, updateAttributes }: NodeViewProps) {
       className={`thought-callout is-${node.attrs.variant}`}
       data-callout={node.attrs.variant}
     >
+      <CalloutHeading variant={node.attrs.variant} title={node.attrs.title} />
       {editor.isEditable && (
-        <div contentEditable={false}>
+        <div className="document-block-controls" contentEditable={false}>
           <CustomSelect
             ariaLabel="提示块类型"
             value={node.attrs.variant}
             options={variants}
             onChange={(variant) => updateAttributes({ variant })}
+          />
+          <input
+            aria-label="提示块标题"
+            maxLength={240}
+            value={node.attrs.title || ""}
+            placeholder="默认标题"
+            onChange={(event) =>
+              updateAttributes({ title: event.target.value || null })
+            }
           />
         </div>
       )}
@@ -49,6 +62,11 @@ export const CalloutNode = Node.create({
   defining: true,
   addAttributes() {
     return {
+      title: {
+        default: null,
+        parseHTML: (e) => e.getAttribute("data-callout-title"),
+        renderHTML: (a) => (a.title ? { "data-callout-title": a.title } : {}),
+      },
       variant: {
         default: "info",
         parseHTML: (e) => e.getAttribute("data-callout"),
@@ -79,30 +97,40 @@ export type DocumentReference = {
   customLabel?: string | null;
 };
 function ReferenceView({ node }: NodeViewProps) {
+  const scope = useNavigationScope();
+  const access = useDocumentAccess();
   const [preview, setPreview] = useState(false);
   const previewId = useId();
   const attrs = node.attrs as DocumentReference,
     workspace = useWorkspaceId();
   const target = useQuery({
-    queryKey: thoughtKeys.references(workspace ?? "", [attrs.noteId ?? ""]),
-    queryFn: ({ signal }) => resolveReferences([attrs.noteId!], signal),
+    queryKey: thoughtKeys.references(
+      access.community ? access.namespace : (workspace ?? ""),
+      [attrs.noteId ?? ""],
+    ),
+    queryFn: ({ signal }) => access.resolveReferences([attrs.noteId!], signal),
     enabled: attrs.kind === "note" && !!attrs.noteId,
     retry: false,
   });
-  const resolved = target.data?.[0],
-    official = findOfficialLibrary(attrs.libraryId)?.documents.find(
-      (doc) => doc.id === attrs.documentId,
-    );
-  const title =
-    attrs.customLabel ||
-    (attrs.kind === "official" ? official?.title : resolved?.title) ||
-    attrs.label;
+  const resolved = target.data?.[0];
+  const official = useLegacyReference(
+    attrs.kind,
+    attrs.libraryId,
+    attrs.documentId,
+  );
   const href =
-    attrs.kind === "official" && official
-      ? officialPath(attrs.libraryId!, attrs.documentId!)
-      : resolved?.available
-        ? `/apps/thought-workshop/knowledge-bases/${encodeURIComponent(resolved.knowledge_base_id!)}/documents/${encodeURIComponent(attrs.noteId!)}`
+    attrs.kind === "official"
+      ? official?.href
+      : !target.isError && resolved?.available
+        ? access.referenceHref(attrs.noteId!, resolved.knowledge_base_id!)
         : undefined;
+  const title = href
+    ? attrs.customLabel ||
+      (attrs.kind === "official" ? official?.title : resolved?.title) ||
+      "文档"
+    : attrs.kind === "note" && target.isPending
+      ? "正在加载引用…"
+      : "文档不可访问";
   return (
     <NodeViewWrapper
       as="span"
@@ -111,6 +139,20 @@ function ReferenceView({ node }: NodeViewProps) {
     >
       <a
         href={href}
+        onClick={(event) => {
+          if (
+            href &&
+            scope.navigate &&
+            !event.ctrlKey &&
+            !event.metaKey &&
+            !event.shiftKey &&
+            !event.altKey &&
+            event.button === 0
+          ) {
+            event.preventDefault();
+            scope.navigate(href);
+          }
+        }}
         aria-disabled={!href}
         onMouseEnter={() => setPreview(true)}
         onMouseLeave={() => setPreview(false)}
@@ -131,8 +173,10 @@ function ReferenceView({ node }: NodeViewProps) {
         >
           <strong>{title}</strong>
           <span>
-            {resolved?.excerpt ||
-              (href ? "官方只读文章" : "文档不存在或不可访问")}
+            {(href ? resolved?.excerpt : undefined) ||
+              (href
+                ? official?.summary || "可访问的文档"
+                : "文档不存在或不可访问")}
           </span>
         </span>
       )}

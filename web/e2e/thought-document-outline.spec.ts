@@ -15,7 +15,7 @@ const document = {
   content: [
     paragraph("版本：2.0 ｜ 面向：产品、算法与工程团队"),
     paragraph(
-      "本文整理语音交互的评估框架与测量方法。使用左侧文档大纲浏览章节，点击章节即可定位正文；目录不会修改文档内容。",
+      "本文整理语音交互的评估框架与测量方法。使用右侧多级目录浏览章节，点击章节即可定位正文；目录不会修改文档内容。",
     ),
     heading("1. 评估框架与证据分类"),
     paragraph(
@@ -62,7 +62,7 @@ const document = {
 async function fixture(page: Page) {
   await page.goto("/apps/thought-workshop");
   await expect(
-    page.getByRole("heading", { name: "我的知识库", exact: true }),
+    page.getByRole("heading", { name: "我的知识库", exact: true, level: 1 }),
   ).toBeVisible();
   const csrf = (await page.context().cookies()).find(
     (cookie) => cookie.name === "fpl_csrf",
@@ -108,22 +108,40 @@ test("docked outline, chapter tracking, temporary reveal, themes and no saves", 
   await expect(outline).toBeVisible();
   const original = (await prose.boundingBox())!;
   const bounds = (await outline.boundingBox())!;
-  expect(bounds.x + bounds.width).toBeLessThan(original.x);
+  expect(bounds.x).toBeGreaterThan(original.x + original.width);
   expect(bounds.width).toBeLessThanOrEqual(220);
+  await expect(
+    page.locator(".knowledge-topbar").getByRole("button", { name: "文内查找" }),
+  ).toBeVisible();
+  await expect(page.locator(".thought-document-tools")).toHaveCount(0);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(outline).toBeVisible();
-  await expect.poll(async () => (await outline.boundingBox())!.width).toBe(180);
-  await page.setViewportSize({ width: 1400, height: 1000 });
+  await expect
+    .poll(async () => (await outline.boundingBox())!.width)
+    .toBeLessThanOrEqual(220);
+  await page.setViewportSize({ width: 900, height: 1000 });
   await expect(outline).toBeHidden();
   await page.setViewportSize({ width: 1600, height: 1000 });
   await expect(outline).toBeVisible();
+  const resize = page.getByRole("separator", { name: "调整知识库导航宽度" });
+  await page.setViewportSize({ width: 1300, height: 1000 });
+  await expect(outline).toBeVisible();
+  await resize.focus();
+  for (let step = 0; step < 5; step++)
+    await page.keyboard.press("Shift+ArrowRight");
+  await expect(outline).toBeHidden();
+  await expect(
+    page.getByRole("textbox", { name: "笔记正文", exact: true }),
+  ).toBeVisible();
+  await resize.dblclick();
+  await expect(outline).toBeVisible();
+  await page.setViewportSize({ width: 1600, height: 1000 });
   await expect
     .poll(() => outline.evaluate((el) => el.scrollHeight > el.clientHeight))
     .toBe(true);
   await page.getByRole("button", { name: "收起文档大纲" }).click();
   await expect(outline).toBeHidden();
-  expect((await prose.boundingBox())!.x).toBe(original.x);
-  expect((await prose.boundingBox())!.width).toBe(original.width);
+  expect((await prose.boundingBox())!.width).toBeLessThanOrEqual(820);
   await page.getByRole("button", { name: "文档大纲", exact: true }).click();
   await outline
     .getByRole("button", { name: "2. 产品实践与测量方法", exact: true })
@@ -142,6 +160,25 @@ test("docked outline, chapter tracking, temporary reveal, themes and no saves", 
   await expect(outline.locator('[aria-current="location"]')).not.toHaveText(
     "2. 产品实践与测量方法",
   );
+  await outline
+    .getByRole("button", { name: "收起2. 产品实践与测量方法的子章节" })
+    .click();
+  await expect(
+    outline.getByRole("button", {
+      name: "2.2 任务评估与实践记录",
+      exact: true,
+    }),
+  ).toBeHidden();
+  await page.locator(".knowledge-main").evaluate((main) => {
+    const target = main.querySelectorAll(".thought-prose h3")[3];
+    main.scrollTop +=
+      target.getBoundingClientRect().top -
+      main.querySelector(".knowledge-topbar")!.getBoundingClientRect().bottom -
+      16;
+  });
+  await expect(
+    outline.getByRole("button", { name: "收起2. 产品实践与测量方法的子章节" }),
+  ).toHaveAttribute("aria-expanded", "true");
   await expect(
     prose.getByRole("heading", { name: "3. 折叠中的参考资料" }),
   ).toBeHidden();
@@ -154,12 +191,14 @@ test("docked outline, chapter tracking, temporary reveal, themes and no saves", 
     prose.getByRole("heading", { name: "3. 折叠中的参考资料" }),
   ).toBeHidden();
   await page.evaluate(() =>
-    window.scrollTo(0, document.documentElement.scrollHeight),
+    document
+      .querySelector(".knowledge-main")!
+      .scrollTo(0, document.querySelector(".knowledge-main")!.scrollHeight),
   );
   await expect(
     outline.getByRole("button", { name: "4. 总结", exact: true }),
   ).toHaveAttribute("aria-current", "location");
-  await outline.getByRole("button", { name: title, exact: true }).click();
+  await outline.getByRole("button", { name: "概览", exact: true }).click();
   await page.mouse.move(1500, 100);
   for (const theme of ["light", "dark"]) {
     await page.evaluate((value) => {
@@ -183,8 +222,18 @@ test("compact popover, keyboard, empty outline, home and read-only", async ({
 }, info) => {
   test.setTimeout(90_000);
   const { note, project, headers } = await fixture(page);
-  for (const width of [390, 320]) {
+  for (const width of [900, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
+    const directory = page.getByRole("button", {
+      name: "笔记目录",
+      exact: true,
+    });
+    await expect(directory).toBeVisible();
+    await directory.click();
+    await expect(
+      page.getByRole("dialog", { name: "知识库导航" }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
     const trigger = page.getByRole("button", { name: "文档大纲", exact: true });
     const popup = page.getByRole("dialog", { name: "文档大纲", exact: true });
     await trigger.click();
@@ -194,7 +243,7 @@ test("compact popover, keyboard, empty outline, home and read-only", async ({
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(width - 12);
     await page.keyboard.press("Tab");
     await expect(
-      popup.getByRole("button", { name: title, exact: true }),
+      popup.getByRole("button", { name: "概览", exact: true }),
     ).toBeFocused();
     await page.screenshot({
       path: info.outputPath(`outline-compact-${width}.png`),
@@ -263,7 +312,9 @@ test("compact popover, keyboard, empty outline, home and read-only", async ({
     page.getByRole("textbox", { name: "笔记正文", exact: true }),
   ).toHaveAttribute("contenteditable", "false");
   const trigger = page.getByRole("button", { name: "文档大纲", exact: true });
-  if (await trigger.isVisible()) await trigger.click();
+  await expect(trigger).toBeVisible();
+  if ((await trigger.getAttribute("aria-expanded")) !== "true")
+    await trigger.click();
   await expect(
     page.getByRole("navigation", { name: "文档章节" }),
   ).toBeVisible();

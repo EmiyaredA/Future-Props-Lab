@@ -33,6 +33,16 @@ from app.apps.thought_workshop.knowledge_tools.archive import (
 from app.apps.thought_workshop.knowledge_tools.references import remap_references
 from app.apps.thought_workshop.legacy_import import convert_legacy_backup
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+from app.apps.thought_workshop.multitable.archive import (
+    archive_assets,
+    entity_mapping,
+    export_tables,
+    import_tables,
+    remap_embeds,
+)
+from app.apps.thought_workshop.multitable.archive import (
+    validate_archive as validate_tables,
+)
 from app.apps.thought_workshop.notes import Notes, ThoughtError, note_out
 from app.apps.thought_workshop.schemas.canvas import remap_canvas
 from app.apps.thought_workshop.schemas.document import file_ids
@@ -95,9 +105,17 @@ async def export_backup(
     tools = await export_tools(
         notes.session, notes.workspace_id, [row.id for row in rows], knowledge_base_id is None
     )
-    ids = {asset_id for doc in documents for asset_id in file_ids(doc["document"])}
+    multitables = await export_tables(notes.session, rows)
+    ids = archive_assets(multitables)
+    ids.update(asset_id for doc in documents for asset_id in file_ids(doc["document"]))
     ids.update(asset_id for record in history for asset_id in file_ids(record["document"]))
     ids.update(asset for template in tools["templates"] for asset in file_ids(template["document"]))
+    ids.update(
+        asset
+        for template in tools["templates"]
+        if template.get("multitable")
+        for asset in archive_assets({"template": {"state": template["multitable"]}})
+    )
     ids.update(p.cover_asset_id for p in projects if p.cover_asset_id)
     assets = (
         (
@@ -117,7 +135,8 @@ async def export_backup(
     sources = [(r.id, storage.path_for(r), r.original_filename, r.mime_type) for r in assets]
     payload = {
         "format": FORMAT,
-        "version": 6,
+        "version": 7,
+        "multitables": multitables,
         **tools,
         "history": history,
         "knowledge_bases": [r.model_dump(mode="json") for r in projects],
@@ -179,7 +198,7 @@ def validate_archive(
         if (
             not isinstance(payload, dict)
             or payload.get("format") != FORMAT
-            or payload.get("version") not in {1, 2, 3, 4, 5, 6}
+            or payload.get("version") not in {1, 2, 3, 4, 5, 6, 7}
         ):
             raise ThoughtError("不支持的备份格式或版本")
         payload = convert_legacy_backup(payload)
@@ -187,6 +206,7 @@ def validate_archive(
         parsed = validate_structure(payload)
         validate_history(payload)
         validate_tools(payload)
+        validate_tables(payload)
         for group in ("knowledge_bases", "notes"):
             for record in payload.get(group, []):
                 archive_times(record)
@@ -210,6 +230,9 @@ async def import_backup(
     upload: IncomingFile,
     knowledge_base_id: str | None = None,
     expected_revision: int | None = None,
+    *,
+    before_write=None,
+    before_commit=None,
 ) -> ThoughtImportOut:
     root = Path(tempfile.mkdtemp(prefix="thought-import-"))
     files: list[Path] = []
@@ -243,6 +266,10 @@ async def import_backup(
                 staged_rows.append(row)
                 files.append(final_path)
                 mapping[asset["id"]] = row.id
+        if before_write:
+            replay = await before_write(notes.session)
+            if replay is not None:
+                return replay
         notes.session.add_all(staged_rows)
         await notes.session.flush()
         knowledge = KnowledgeBases(notes.session, notes.workspace_id)
@@ -250,6 +277,7 @@ async def import_backup(
         note_mapping = {n["id"]: str(uuid4()) for n in payload.get("notes", [])}
         project_rows = {}
         warnings = set()
+        table_mapping = entity_mapping(payload.get("multitables", {}))
         if knowledge_base_id:
             if expected_revision is None:
                 raise ThoughtError("导入当前知识库需要修订号")
@@ -294,6 +322,7 @@ async def import_backup(
                     copy.deepcopy(body.document), note_mapping, portable=True, warnings=warnings
                 )
                 remap_images(document, mapping)
+                remap_embeds(document, table_mapping)
                 created = body.model_copy(
                     update={
                         "document": document,
@@ -327,6 +356,7 @@ async def import_backup(
         def remap_all(document, assets):
             remap_images(document, assets)
             rewritten = remap_references(document, note_mapping, portable=True, warnings=warnings)
+            remap_embeds(rewritten, table_mapping)
             document.clear()
             document.update(rewritten)
 
@@ -343,13 +373,19 @@ async def import_backup(
             remap_images,
             warnings,
         )
-        await notes.session.commit()
-        files.clear()
-        return ThoughtImportOut(
+        await import_tables(
+            notes.session, payload.get("multitables", {}), note_mapping, mapping, table_mapping
+        )
+        output = ThoughtImportOut(
             warnings=sorted(warnings),
             note_ids=result,
             knowledge_base_ids=list(dict.fromkeys(project_mapping.values())),
         )
+        if before_commit:
+            await before_commit(notes.session, note_mapping, project_mapping, output)
+        await notes.session.commit()
+        files.clear()
+        return output
     except (KeyError, TypeError, ValueError, zipfile.BadZipFile, ValidationError) as exc:
         await notes.session.rollback()
         raise ThoughtError("备份内容无效或不完整") from exc

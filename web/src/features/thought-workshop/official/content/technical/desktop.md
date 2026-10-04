@@ -1,4 +1,4 @@
-# Electron 桌面：本机服务与私有边界
+# 桌面启动、更新与打包
 
 桌面应用里的官方指南能断网阅读，模型测试却可能失败；前端热更新已经出现，后端代码又可能尚未应用。这些差异来自桌面窗口背后不同组件的生命周期。
 
@@ -12,9 +12,9 @@ Electron 负责窗口与服务启动，Web 页面负责交互，本机后端处�
 desktop
 ```
 
-图例：左侧主进程负责生命周期，上排是页面和静态资源，下排是后端和用户数据。静态指南随包更新，用户数据独立保存；页面的业务请求仍通过本机后端完成。
+图例：左侧主进程负责生命周期，上排是页面和静态资源，下排是后端和用户数据。导入包随应用分发，导入后的笔记独立保存；页面的业务请求仍通过本机后端完成。
 
-上排的页面与静态资源跟随应用版本，下排的数据由本机后端通过正式业务规则读写。替换静态文章不需要创建一个 Workspace 项目，也不应该复制数据库；用户项目不会因为官方指南更新而被重建。
+上排的页面与静态资源跟随应用版本，下排的数据由本机后端通过正式业务规则读写。升级可更新导入包，但不自动创建或改写 Workspace 项目；已有官方笔记由管理员在普通编辑入口维护。
 
 ## 受控桌面启动过程
 
@@ -51,11 +51,22 @@ flowchart TD
 > [!WARNING]
 > 正式数据开发与隔离开发不是两个可以随意合并的缓存目录。测试和排查应使用明确的隔离入口，避免将临时状态写入日常项目。
 
+## 窗口与服务更新不改变数据所有权
+
+Electron 主进程负责窗口和后端生命周期，preload 只开放受限桥接，业务写入继续通过正式 API。主窗口、桌宠和聊天窗口有不同显示状态；宿主私有 IPC 不应变成通用系统命令入口。桌面 Agent 连接也需要独立授权与操作登记。
+
+安装包静态资源与用户数据根分开：runtime 保存数据库与素材，backend/config.toml 保存配置。开发启动器的锁覆盖后端和 Electron 更新交接，新增迁移阻止正式数据热更新；自动测试选择隔离目录。升级仅更新可选导入包，已导入的官方笔记和个人副本仍由已有记录管理。
+
+## 离线与更新验收需要真实产物
+
+构建前检查导入包与 Markdown、CanvasScene 和相关阅读一致，确认 seed.json 进入后端包；在隔离环境导入并发布后阻断外网阅读数据库笔记。检查未知 /v1、缺失资源仍返回 404，页面导航可以回退。后端更新前处理未保存内容，失败时保留原数据和停机快照；不把 Vite 页面已变化当成全部进程已更新。
+
 ## 相关阅读
 
-- [SQLite 与迁移：单机数据如何可靠演进](/apps/thought-workshop/official-knowledge-bases/technical/documents/sqlite)
-- [集成与 Agent/SDK：受控的自动化入口](/apps/thought-workshop/official-knowledge-bases/technical/documents/automation)
+- [SQLite、事务与迁移](/apps/thought-workshop/official-knowledge-bases/technical/documents/sqlite)
+- [集成与 Agent/CLI/SDK](/apps/thought-workshop/official-knowledge-bases/technical/documents/automation)
 - [桌面、Amadeus 与本地 Agent](/apps/thought-workshop/official-knowledge-bases/general/documents/desktop)
+- [项目定位与系统边界](/apps/thought-workshop/official-knowledge-bases/technical/documents/scope)
 
 ## 代码入口
 

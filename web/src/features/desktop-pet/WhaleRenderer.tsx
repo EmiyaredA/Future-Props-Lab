@@ -15,7 +15,11 @@ import type { PetDocument } from "./api";
 import type { PetRendererHandle } from "./PetRenderer";
 import { createHumanFigure, type HumanModel } from "./humanFigure";
 import { reactionFor, type PetEvent, type PetPlaybackMode } from "./playback";
-import type { PetMotionFrame } from "@platform/petMotion";
+import {
+  unshiftGeometry,
+  type PetMotionFrame,
+  type PetGeometry,
+} from "@platform/petMotion";
 import { figureGeometry } from "./locomotion/measure";
 import { demoMotion, type MotionDemo } from "./locomotion/demo";
 
@@ -103,19 +107,53 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
       at: number;
       value: ReturnType<typeof figureGeometry>;
     }>({ at: 0, value: null });
+    const neutral = useRef<PetGeometry | null>(null);
 
     useImperativeHandle(ref, () => ({
+      motionFailure() {
+        return figure.current?.getMotionFailure?.() ?? null;
+      },
+      motionTransition() {
+        return figure.current?.getMotionTransition?.() ?? null;
+      },
+      cancelMotionPlayback() {
+        figure.current?.cancelMotionPlayback?.();
+      },
+      placementDelta() {
+        return controller.current?.placementDelta() ?? { x: 0, y: 0 };
+      },
+      placementGeometry() {
+        const origin = host.current?.getBoundingClientRect();
+        return neutral.current && origin
+          ? unshiftGeometry(neutral.current, {
+              x: -origin.left,
+              y: -origin.top,
+            })
+          : null;
+      },
       geometry() {
         if (!petGroup.current) return null;
         if (
-          performance.now() - measured.current.at >= 100 ||
+          performance.now() - measured.current.at >= 16 ||
           !measured.current.value
         )
           measured.current = {
             at: performance.now(),
             value: figureGeometry(petGroup.current),
           };
-        return measured.current.value;
+        const shape = measured.current.value;
+        if (
+          shape &&
+          movement.current?.state === "idle" &&
+          !petGroup.current.hasAttribute("data-pet-edges")
+        ) {
+          const origin = host.current!.getBoundingClientRect();
+          neutral.current = unshiftGeometry(shape, {
+            x: origin.left,
+            y: origin.top,
+          });
+        }
+        return shape;
       },
       hitTest(x, y) {
         const bounds = host.current?.getBoundingClientRect();
@@ -148,6 +186,7 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
       let frame = 0;
       let observer: ResizeObserver | null = null;
       const group = petGroup.current;
+      neutral.current = null;
       const fx = effects.current;
       setError("");
       void (async () => {
@@ -223,15 +262,15 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
             last = now;
             return;
           }
-          const physical =
-            movement.current && movement.current.state !== "idle"
-              ? movement.current
-              : demo.current.name
-                ? demoMotion(
-                    demo.current.name,
-                    (now - demo.current.started) / 1000,
-                  )
-                : movement.current;
+          const physical = movement.current
+            ? movement.current
+            : demo.current.name
+              ? demoMotion(
+                  demo.current.name,
+                  (now - demo.current.started) / 1000,
+                  measured.current.value?.strideLength,
+                )
+              : movement.current;
           const origin = element.getBoundingClientRect();
           pet.setLocomotion(
             physical?.grip
@@ -242,7 +281,15 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
                     y: physical.grip.y - origin.top,
                   },
                 }
-              : physical,
+              : physical?.state === "held"
+                ? {
+                    ...physical,
+                    grip: {
+                      x: element.clientWidth * 0.6,
+                      y: element.clientHeight * 0.45,
+                    },
+                  }
+                : physical,
           );
           pet.step(Math.min(0.05, (now - last) / 1000));
           if (now >= finishAt.current) {
@@ -251,6 +298,11 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
           }
           last = now;
           pet.render();
+          if (demo.current.name && petGroup.current)
+            measured.current = {
+              at: now,
+              value: figureGeometry(petGroup.current),
+            };
         };
         frame = requestAnimationFrame(tick);
       })().catch((cause) => {

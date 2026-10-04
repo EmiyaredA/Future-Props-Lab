@@ -228,6 +228,15 @@ def main() -> None:
             ":app/console/governance"
         ),
     ]
+    args.extend(
+        [
+            "--add-data",
+            (
+                f"{ROOT / 'backend/app/apps/thought_workshop/publication/seed.json'}"
+                ":app/apps/thought_workshop/publication"
+            ),
+        ]
+    )
     docs = [ROOT / "README.md", ROOT / "CONTRIBUTING.md", ROOT / "docs/assets/MANIFEST.md"]
     for folder in ("architecture", "operations", "reference"):
         docs.extend(sorted((ROOT / "docs" / folder).glob("*.md")))

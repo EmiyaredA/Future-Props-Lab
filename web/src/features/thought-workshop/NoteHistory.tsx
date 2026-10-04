@@ -288,6 +288,7 @@ export function NoteHistory({
         {current && diff && (
           <Suspense fallback={<p>文档加载中…</p>}>
             <RichEditor
+              libraryId={note.knowledge_base_id}
               key={current.id}
               document={showChanges ? diff.document : current.document}
               historyMarks={showChanges ? diff.marks : undefined}

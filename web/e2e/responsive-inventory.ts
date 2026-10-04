@@ -1,8 +1,9 @@
+// 思绪工坊多维表格的三种视图、局部滚动、明暗主题与手机操作由 thought-multitable.spec.ts 覆盖。
 // 文档导航、SDK 示例切换、受控渲染块、公式/图表、桌面三栏和手机抽屉由 docs-sdk.spec.ts 补充验证。
 // 账号公共入口、工作区全屏弹窗与管理抽屉由 account-ui.spec.ts 验证。
 // 独立成员/角色/审计管理与收到邀请弹窗由 workspace-management.spec.ts 验证。
 // 模型目录、协议类型连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。
-// 官方技术原理图、放大阅读和个人全屏画板由 technical-knowledge.spec.ts 覆盖 390/768/1600 宽度与明暗主题。
+// 官方技术文档图、放大阅读和个人全屏画板由 technical-knowledge.spec.ts 覆盖 390/768/1600 宽度与明暗主题。
 import type { AppPage } from "../src/app/routes";
 
 // Electron-only HTML and first-run form: actual window sizing is tested by this owner.
@@ -14,6 +15,7 @@ export const desktopSurfaces = {
   "web/pet-chat.html": "desktop/scripts/smoke-pet.cjs",
 } as const;
 
+// 桌宠项目页与编辑器的明暗主题、六个步骤、紧凑面板和弹层由 desktop-pet-ui.spec.ts 覆盖。
 // Every application route must name its responsive scenario owner.
 export const responsiveOwners = {
   "management-accounts": "shell",
@@ -41,10 +43,13 @@ export const responsiveOwners = {
   "model-test-tools": "shell",
   "model-service": "shell",
   "model-call-logs": "shell",
+  "thought-workshop-community": "thought",
+  "thought-workshop-favorites": "thought",
+  "thought-workshop-published": "thought",
   "thought-workshop-notes": "thought",
   "thought-workshop-editor": "thought",
   "thought-workshop-legacy": "thought",
-  "thought-workshop-official": "thought",
+  "thought-workshop-official": "thought", // Legacy resolver; imported articles use community reader.
   "visual-workshop-projects": "shell",
   "visual-workshop-canvas": "editors",
   "visual-workshop-assets": "editors",
@@ -100,6 +105,9 @@ export const staticPaths = [
   "/model-service",
   "/model-call-logs",
   "/apps/thought-workshop",
+  "/apps/thought-workshop/community",
+  "/apps/thought-workshop/favorites",
+  "/apps/thought-workshop/published",
   "/apps/thought-workshop/official-knowledge-bases/general",
   "/apps/thought-workshop/official-knowledge-bases/technical/documents/system",
   "/apps/visual-workshop",

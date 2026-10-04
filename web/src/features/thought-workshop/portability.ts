@@ -17,7 +17,17 @@ import { zipSync, unzipSync, strToU8, strFromU8 } from "fflate";
 import { fetchApiBlob } from "@platform/api/client";
 import { importArchive, type Note, type KnowledgeBase } from "./api";
 import { parseMarkdown, toMarkdown } from "./markdown";
+import {
+  navigationHtml,
+  navigationMarkdown,
+  navigationExportCss,
+  type NavigationAccess,
+} from "./document-layout/navigationExport";
+import type { DirectoryEntry } from "./document-layout/model";
 import { renderDiagram } from "./diagram";
+import { staticTableContent } from "./multitable/staticContent";
+import { generateHTML } from "@tiptap/core";
+import { editorExtensions } from "./editorExtensions";
 
 const safeName = (title: string) =>
   title
@@ -37,12 +47,16 @@ function images(doc: JSONContent): string[] {
     ]),
   ];
 }
-export async function exportMarkdown(note: Note) {
+export async function exportMarkdown(
+  note: Note,
+  assetUrl?: (id: string) => string,
+  navigation?: NavigationAccess,
+) {
   const files: Record<string, Uint8Array> = {};
   const paths: Record<string, string> = {};
   for (const id of images(note.document)) {
     const blob = await fetchApiBlob(
-      `/v1/files/${encodeURIComponent(id)}/content`,
+      assetUrl?.(id) ?? `/v1/files/${encodeURIComponent(id)}/content`,
     );
     const suffix = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "png";
     const path = `assets/${id}.${suffix}`;
@@ -59,11 +73,18 @@ export async function exportMarkdown(note: Note) {
     paths[id] = path;
     files[path] = new Uint8Array(
       await (
-        await fetchApiBlob(`/v1/files/${encodeURIComponent(id)}/download`)
+        await fetchApiBlob(
+          assetUrl?.(id) ?? `/v1/files/${encodeURIComponent(id)}/download`,
+        )
       ).arrayBuffer(),
     );
   }
-  const content = `# ${note.title}\n\n${toMarkdown(note.document, paths)}`;
+  const resolved = await navigationMarkdown(
+    await staticTableContent(note, navigation),
+    note.knowledge_base_id,
+    navigation,
+  );
+  const content = `# ${note.title}\n\n${toMarkdown(resolved, paths)}`;
   if (!Object.keys(files).length) {
     download(
       new Blob([content], { type: "text/markdown;charset=utf-8" }),
@@ -404,9 +425,11 @@ export async function buildHtmlDocument(
   note: Note,
   editor: Editor,
   options: {
+    navigation?: NavigationAccess;
+    directoryEntries?: DirectoryEntry[];
     assetPaths?: Record<string, string>;
+    assetUrl?: (id: string) => string;
     referencePaths?: Record<string, string>;
-    referenceTitles?: Record<string, string>;
     cache?: Map<string, Promise<Blob>>;
   } = {},
 ) {
@@ -420,12 +443,28 @@ export async function buildHtmlDocument(
     return promise;
   };
   const parsed = new DOMParser().parseFromString(editor.getHTML(), "text/html");
+  if (
+    note.kind === "multitable" ||
+    parsed.querySelector("[data-multitable-view]")
+  ) {
+    const content = await staticTableContent(note, options.navigation);
+    const projection = new DOMParser().parseFromString(
+      generateHTML(content, editorExtensions(undefined, true)),
+      "text/html",
+    );
+    if (note.kind === "multitable")
+      parsed.body.replaceChildren(...Array.from(projection.body.childNodes));
+    else {
+      // Replace the serialized body with the same controlled document plus static table nodes.
+      parsed.body.replaceChildren(...Array.from(projection.body.childNodes));
+    }
+  }
   for (const image of parsed.querySelectorAll<HTMLImageElement>(
     "img[data-asset-id]",
   )) {
     const id = image.dataset.assetId || "";
     const blob = await blobFor(
-      `/v1/files/${encodeURIComponent(image.dataset.assetId || "")}/content`,
+      options.assetUrl?.(id) ?? `/v1/files/${encodeURIComponent(id)}/content`,
     );
     await prepareExportImage(parsed, image, blob);
     if (options.assetPaths?.[id]) image.src = options.assetPaths[id];
@@ -440,7 +479,10 @@ export async function buildHtmlDocument(
     if (!options.assetPaths?.[id] && !files[path])
       files[path] = new Uint8Array(
         await (
-          await blobFor(`/v1/files/${encodeURIComponent(id)}/download`)
+          await blobFor(
+            options.assetUrl?.(id) ??
+              `/v1/files/${encodeURIComponent(id)}/download`,
+          )
         ).arrayBuffer(),
       );
     const link = parsed.createElement("a");
@@ -463,7 +505,7 @@ export async function buildHtmlDocument(
           images: options.assetPaths,
         }),
       );
-    } else figure.innerHTML = await canvasSvgText(scene);
+    } else figure.innerHTML = await canvasSvgText(scene, options.assetUrl);
     canvas.replaceWith(figure);
   }
   const { default: katex } = await import("katex");
@@ -500,36 +542,31 @@ export async function buildHtmlDocument(
       if (a.name.startsWith("on")) n.removeAttribute(a.name);
     }),
   );
-  for (const reference of parsed.querySelectorAll<HTMLElement>(
-    "span[data-document-reference]",
-  )) {
-    const id = reference.dataset.refNoteid || "",
-      label =
-        reference.dataset.refCustomlabel ||
-        options.referenceTitles?.[id] ||
-        reference.textContent ||
-        "文档";
-    const path = options.referencePaths?.[id];
-    if (path) {
-      const link = parsed.createElement("a");
-      link.href = path;
-      link.textContent = label;
-      reference.replaceWith(link);
-    } else {
-      reference.replaceWith(
-        parsed.createTextNode(label + "（未包含在本次导出）"),
-      );
-    }
-  }
+  await navigationHtml(
+    parsed,
+    note.document,
+    note.knowledge_base_id,
+    options.navigation,
+    options.directoryEntries,
+    options.referencePaths,
+  );
   const heading = parsed.createElement("h1");
   heading.textContent = note.title;
   parsed.body.prepend(heading);
-  const html = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${heading.innerHTML}</title><style>body{max-width:900px;margin:48px auto;padding:24px;font:16px/1.8 system-ui;color:#242621}img,svg{max-width:100%;height:auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:8px}aside[data-callout]{border-left:4px solid #528da8;background:#edf4f8;padding:12px 16px;margin:16px 0}aside[data-callout=warning]{border-color:#c49433}aside[data-callout=danger]{border-color:#b95656}aside[data-callout=success]{border-color:#4b9870}blockquote{border-left:3px solid #e57b59;margin:16px 0;padding-left:20px}pre{background:#f4f1ec;padding:16px;white-space:pre-wrap}math[display=block]{margin:24px}a{color:#b95437}li[data-type=taskItem]{list-style:none}.thought-export-figure{margin:24px 0}.thought-export-figure[data-align=center]{margin-left:auto;margin-right:auto}.thought-export-figure[data-align=right]{margin-left:auto}.thought-export-figure>img{display:block;width:100%}.thought-export-figure figcaption{margin-top:8px;color:#686b65;text-align:center}.thought-export-image-crop{position:relative;width:100%;overflow:hidden;border-radius:8px}.thought-export-image-crop img{position:absolute;display:block}</style><body>${parsed.body.innerHTML}</body></html>`;
+  const html = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${heading.innerHTML}</title><style>${navigationExportCss}body{max-width:900px;margin:48px auto;padding:24px;font:16px/1.8 system-ui;color:#242621}img,svg{max-width:100%;height:auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:8px}aside[data-callout]{border-left:4px solid #528da8;background:#edf4f8;padding:12px 16px;margin:16px 0}aside[data-callout=warning]{border-color:#c49433}aside[data-callout=danger]{border-color:#b95656}aside[data-callout=success]{border-color:#4b9870}blockquote{border-left:3px solid #e57b59;margin:16px 0;padding-left:20px}pre{background:#f4f1ec;padding:16px;white-space:pre-wrap}math[display=block]{margin:24px}a{color:#b95437}li[data-type=taskItem]{list-style:none}.thought-export-figure{margin:24px 0}.thought-export-figure[data-align=center]{margin-left:auto;margin-right:auto}.thought-export-figure[data-align=right]{margin-left:auto}.thought-export-figure>img{display:block;width:100%}.thought-export-figure figcaption{margin-top:8px;color:#686b65;text-align:center}.thought-export-image-crop{position:relative;width:100%;overflow:hidden;border-radius:8px}.thought-export-image-crop img{position:absolute;display:block}</style><body>${parsed.body.innerHTML}</body></html>`;
   return { html, files };
 }
 
-export async function exportHtml(note: Note, editor: Editor) {
-  const { html, files } = await buildHtmlDocument(note, editor);
+export async function exportHtml(
+  note: Note,
+  editor: Editor,
+  assetUrl?: (id: string) => string,
+  navigation?: NavigationAccess,
+) {
+  const { html, files } = await buildHtmlDocument(note, editor, {
+    assetUrl,
+    navigation,
+  });
   if (Object.keys(files).length) {
     files[`${safeName(note.title)}.html`] = strToU8(html);
     download(

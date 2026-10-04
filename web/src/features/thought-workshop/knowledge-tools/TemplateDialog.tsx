@@ -5,9 +5,12 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { RichEditor } from "../RichEditor";
 import { NoteTags } from "../NoteTags";
-import type { KnowledgeBase, Note } from "../api";
+import { createNote, type KnowledgeBase, type Note } from "../api";
+import { homeTemplate } from "../document-layout/model";
 import { getDirectory } from "../knowledgeApi";
 import { thoughtKeys } from "../queryKeys";
+import { historySnapshot } from "../multitable/api";
+import { getNote } from "../api";
 import {
   applyTemplate,
   deleteTemplate,
@@ -36,23 +39,29 @@ export function TemplateDialog({
       queryFn: listTemplates,
       retry: false,
     });
+  const [builtin, setBuiltin] = useState(false);
   const [selected, setSelected] = useState<Template | null>(null),
     [draft, setDraft] = useState<{
       name: string;
       description: string;
       document: Note["document"];
       tags: string[];
+      kind?: Template["kind"];
+      multitable?: Template["multitable"];
     } | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [nameInput, setNameInput] = useState(false);
   const choose = (template: Template) => {
+    setBuiltin(false);
     setSelected(template);
     setDraft({
       name: template.name,
       description: template.description ?? "",
       document: structuredClone(template.document),
       tags: template.tags ?? [],
+      kind: template.kind,
+      multitable: template.multitable,
     });
   };
   const run = async (work: () => Promise<unknown>) => {
@@ -77,6 +86,21 @@ export function TemplateDialog({
       onCancel={close}
       onConfirm={() =>
         void run(async () => {
+          if (builtin && draft) {
+            const n = await createNote({
+              title: draft.name,
+              knowledge_base_id: project.id,
+              parent_id: null,
+              schema_version: 3,
+              document: draft.document,
+              tags: draft.tags,
+              pinned: false,
+              favorite: false,
+            });
+            created(n.id);
+            close();
+            return;
+          }
           if (!selected) throw new Error("请先选择模板");
           const latest = (await getDirectory(project.id)).knowledge_base;
           const createdNote = await applyTemplate(selected, {
@@ -103,15 +127,28 @@ export function TemplateDialog({
           <div className="thought-tools">
             <CustomSelect
               ariaLabel="选择文档模板"
-              value={selected?.id ?? ""}
+              value={builtin ? "builtin-home" : (selected?.id ?? "")}
               options={[
                 { value: "", label: "选择模板" },
+                { value: "builtin-home", label: "知识库首页（内置）" },
                 ...(templates.data ?? []).map((t) => ({
                   value: t.id,
                   label: t.name,
                 })),
               ]}
               onChange={(id) => {
+                if (id === "builtin-home") {
+                  setSelected(null);
+                  setBuiltin(true);
+                  setDraft({
+                    name: "知识库首页",
+                    description: "引导卡片、章节说明、卡片组与动态目录",
+                    document: homeTemplate(),
+                    tags: [],
+                  });
+                  return;
+                }
+
                 const t = templates.data?.find((t) => t.id === id);
                 if (t) choose(t);
               }}
@@ -122,7 +159,7 @@ export function TemplateDialog({
               </button>
             )}
           </div>
-          {selected && draft && (
+          {(selected || builtin) && draft && (
             <>
               <div className="thought-tools">
                 <input
@@ -144,19 +181,35 @@ export function TemplateDialog({
                 tags={draft.tags}
                 onChange={(tags) => setDraft({ ...draft, tags })}
               />
-              <RichEditor
-                key={selected.id}
-                document={draft.document}
-                onChange={(document) => setDraft({ ...draft, document })}
-                onReady={() => {}}
-              />
+              {draft.kind === "multitable" ? (
+                <p>
+                  多维表格快照：
+                  {draft.multitable?.tables
+                    .map(
+                      (t) =>
+                        `${t.name}（${draft.multitable?.records[t.id]?.length ?? 0} 条记录）`,
+                    )
+                    .join("、")}
+                  。从模板创建后可编辑字段和视图。
+                </p>
+              ) : (
+                <RichEditor
+                  key={selected?.id ?? "builtin-home"}
+                  libraryId={project.id}
+                  document={draft.document}
+                  onChange={(document) => setDraft({ ...draft, document })}
+                  onReady={() => {}}
+                />
+              )}
               <div className="thought-tools">
                 <button
                   className="btn"
                   disabled={busy}
                   onClick={() =>
                     void run(async () => {
-                      const updated = await updateTemplate(selected, draft);
+                      const updated = selected
+                        ? await updateTemplate(selected, draft)
+                        : await saveTemplate({ ...draft, schema_version: 3 });
                       choose(updated);
                     })
                   }
@@ -168,7 +221,8 @@ export function TemplateDialog({
                   disabled={busy}
                   onClick={() =>
                     void run(async () => {
-                      await deleteTemplate(selected);
+                      if (selected) await deleteTemplate(selected);
+                      setBuiltin(false);
                       setSelected(null);
                       setDraft(null);
                     })
@@ -190,12 +244,22 @@ export function TemplateDialog({
               void run(async () => {
                 const current = save ? await save() : note;
                 if (!current) throw new Error("文档不可用");
+                const latest =
+                  current.kind === "multitable"
+                    ? await getNote(current.id)
+                    : current;
+                const multitable =
+                  latest.kind === "multitable"
+                    ? await historySnapshot(latest.id, latest.revision)
+                    : null;
                 const template = await saveTemplate({
                   name,
                   description: "",
                   document: current.document,
                   tags: current.tags,
                   schema_version: 3,
+                  kind: latest.kind ?? "note",
+                  multitable,
                 });
                 choose(template);
               });

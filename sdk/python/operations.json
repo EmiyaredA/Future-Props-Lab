@@ -875,6 +875,18 @@
     "method": "note_history_detail",
     "resource": "thought"
   },
+  "GET /v1/thought-workshop/notes/{note_id}/multitable": {
+    "method": "get_multitable",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}/multitable/history": {
+    "method": "list_multitable_history",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}": {
+    "method": "get_multitable_history",
+    "resource": "thought"
+  },
   "GET /v1/thought-workshop/preferences/filters": {
     "method": "saved_filters",
     "resource": "thought"
@@ -1861,6 +1873,34 @@
   },
   "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore": {
     "method": "restore_note_history",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview": {
+    "method": "preview_multitable_conversion",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview": {
+    "method": "preview_multitable_csv",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore": {
+    "method": "restore_multitable_history",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/multitable/operations": {
+    "method": "apply_multitable_operations",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export": {
+    "method": "export_multitable_csv",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import": {
+    "method": "import_multitable_csv",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query": {
+    "method": "query_multitable_records",
     "resource": "thought"
   },
   "POST /v1/thought-workshop/notes/{note_id}/operations": {

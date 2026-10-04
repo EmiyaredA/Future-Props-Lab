@@ -73,7 +73,12 @@ class Directory(KnowledgeBases):
         await self.parent(project_id, body.parent_id)
         siblings = await self.siblings(project_id, body.parent_id)
         row = await Notes(self.session, self.workspace_id, self.author_id).create(
-            ThoughtNoteIn(knowledge_base_id=project_id, parent_id=body.parent_id, title=body.title),
+            ThoughtNoteIn(
+                knowledge_base_id=project_id,
+                parent_id=body.parent_id,
+                title=body.title,
+                kind=body.kind,
+            ),
             commit=False,
         )
         row.position = max((r.position for r in siblings), default=-1) + 1

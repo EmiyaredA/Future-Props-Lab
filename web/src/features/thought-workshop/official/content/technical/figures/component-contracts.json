@@ -1,0 +1,130 @@
+{
+  "sceneVersion": 2,
+  "title": "场景契约与运行状态分离",
+  "elements": [
+    {
+      "id": "editor",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "图形编辑器\n交互与内容回调",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "code"
+    },
+    {
+      "id": "scene",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "CanvasScene\n元素、连线与 sceneVersion",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "save",
+      "kind": "icon",
+      "x": 720,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "笔记保存\nrevision 与历史",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "view",
+      "kind": "icon",
+      "x": 40,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "选择与视口\n组件内部临时状态",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "read",
+      "kind": "icon",
+      "x": 380,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "只读阅读器\n受控场景解析",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "export",
+      "kind": "icon",
+      "x": 720,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "静态 SVG 导出\n确定性几何",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "editor",
+      "target": "scene",
+      "label": "产出场景",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e1",
+      "source": "editor",
+      "target": "view",
+      "label": "管理交互",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e2",
+      "source": "scene",
+      "target": "save",
+      "label": "进入正文",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e3",
+      "source": "scene",
+      "target": "read",
+      "label": "展示输入",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e4",
+      "source": "scene",
+      "target": "export",
+      "label": "导出输入",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    }
+  ]
+}

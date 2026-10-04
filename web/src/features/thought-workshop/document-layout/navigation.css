@@ -1,0 +1,201 @@
+.document-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+.document-card:hover[href],
+.document-card:focus-visible {
+  border-color: var(--accent);
+}
+.document-card > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.document-card-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.document-card strong {
+  font-size: 17px;
+  line-height: 1.5;
+}
+.document-card-summary {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.document-card-eyebrow {
+  color: var(--accent);
+  font-size: 13px;
+}
+.document-card.is-featured {
+  padding: 24px;
+  align-items: center;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.document-card.is-featured strong {
+  font-size: 22px;
+}
+.document-card.is-unavailable {
+  color: var(--muted);
+}
+.document-card-grid,
+.document-card-grid
+  > [data-node-view-content]
+  > [data-node-view-content-react] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.document-card-grid > [data-node-view-content],
+.document-card-grid > .document-block-controls {
+  grid-column: 1 / -1;
+}
+.document-card-node,
+.document-directory-node,
+.document-card-grid {
+  min-width: 0;
+  margin: 20px 0;
+}
+.document-card-grid .document-card-node {
+  margin: 0;
+}
+.document-block-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.document-block-controls input {
+  width: 180px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.document-block-controls .custom-select {
+  min-width: 140px;
+}
+.document-directory-list {
+  margin: 0;
+  padding-left: 22px;
+}
+.document-directory-list a {
+  color: var(--text);
+}
+.thought-prose .document-card {
+  text-decoration: none;
+  color: var(--text);
+}
+@media (max-width: 700px) {
+  .document-card-grid,
+  .document-card-grid
+    > [data-node-view-content]
+    > [data-node-view-content-react] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .document-card.is-featured {
+    padding: 18px;
+  }
+  .document-card.is-featured strong {
+    font-size: 20px;
+  }
+}
+
+.document-card {
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 10px;
+}
+.document-card-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.document-card-arrow {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.document-card-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.document-card.is-featured {
+  position: relative;
+  gap: 24px;
+  padding: 28px;
+  border-color: transparent;
+  border-left: 4px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
+.document-card.is-featured .document-card-summary {
+  -webkit-line-clamp: 3;
+}
+.document-card.is-featured .document-card-copy {
+  gap: 12px;
+}
+.document-card-cta {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 600;
+}
+.document-card-decoration {
+  flex: 0 0 auto;
+  color: var(--accent);
+  opacity: 0.3;
+}
+@container (max-width: 560px) {
+  .document-card-grid,
+  .document-card-grid
+    > [data-node-view-content]
+    > [data-node-view-content-react] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .document-card.is-featured {
+    padding: 20px;
+    gap: 12px;
+  }
+  .document-card-decoration {
+    display: none;
+  }
+  .document-card strong {
+    font-size: 16px;
+  }
+}

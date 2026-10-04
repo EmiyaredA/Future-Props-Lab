@@ -57,11 +57,22 @@ classDiagram
 > [!NOTE]
 > 透明度、遮罩与透明背景是三件事：前两者影响图层贡献，输出格式决定成片能否保留透明通道。需要继续修改时，同时保留原生工程。
 
+## 图层文档怎样流向帧与剪辑交接
+
+工程拥有图层身份、素材引用、局部帧区间、关键帧、遮罩和混合属性；当前选中图层及预览帧是编辑状态。projects 保存应用工程，snapshots 保留对应结构，exports 组装输出，公共 motion_document 与 motion_frames 解释确定性帧。图层修改不直接写公共渲染器的内部对象。
+
+一次滑入标题先修改属性关键帧并保存，再按输出时刻采样图层、应用遮罩与 Alpha 合成。导出成片与交接视频剪辑都需要明确输出和目标入口；成片中的一个像素不能替代原工程的可编辑属性。
+
+## 关键帧边界与透明交付如何验证
+
+检查起始、关键形附近和末尾，验证局部帧范围、重复属性定义、素材缺失与保存冲突。透明度正确还需输出格式保留 Alpha；对黑底先定位编码和通道，避免把所有图层改成透明来掩盖问题。交接失败保留来源工程，不直接修目标数据库。
+
 ## 相关阅读
 
-- [时间线与媒体渲染：从状态到帧](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
+- [时间线与媒体渲染](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
 - [视频剪辑：多轨、速度与接缝](/apps/thought-workshop/official-knowledge-bases/technical/documents/video-editor)
 - [特效制作工坊：导入导出与交付](/apps/thought-workshop/official-knowledge-bases/motion-compositor/documents/delivery)
+- [公共能力复用与应用交接](/apps/thought-workshop/official-knowledge-bases/technical/documents/app-handoffs)
 
 ## 代码入口
 

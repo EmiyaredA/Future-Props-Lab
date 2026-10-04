@@ -3,6 +3,7 @@ from sqlalchemy import select, text
 from app.apps.thought_workshop.content_exports import resolve_assets
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.models import ThoughtNote
+from app.apps.thought_workshop.multitable.content import project as project_content
 from app.apps.thought_workshop.notes import note_out
 from app.apps.thought_workshop.schemas.document import file_ids
 
@@ -34,7 +35,14 @@ async def export_snapshot(session, workspace_id, project_id):
     await resolve_assets(session, workspace_id, ids)
     value = LibraryExportSnapshot(
         knowledge_base=output.model_dump(mode="json"),
-        documents=[note_out(row).model_dump(mode="json") for row in rows],
+        documents=[
+            {
+                **note_out(row).model_dump(mode="json"),
+                "kind": "note",
+                "document": await project_content(session, workspace_id, row),
+            }
+            for row in rows
+        ],
         asset_ids=sorted(ids),
     )
     await session.rollback()

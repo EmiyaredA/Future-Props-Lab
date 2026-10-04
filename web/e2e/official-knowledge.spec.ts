@@ -1,168 +1,122 @@
-import { expect, test } from "@playwright/test";
 import { newDocument, saveNote } from "./thought-helpers";
+import { expect, test } from "@playwright/test";
+import {
+  importAndPublish,
+  legacyTarget,
+  root,
+  community,
+} from "./official-import-helpers";
 import { setResponsiveTheme } from "./responsive-capture";
 
-const officialRoot = "/apps/thought-workshop/official-knowledge-bases";
-
-test("official and personal libraries share search but keep separate identities and trash", async ({
+test("administrators explicitly import private notes then publish through the ordinary dialog", async ({
   page,
 }, info) => {
-  await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto("/apps/thought-workshop");
-  const official = page.getByRole("region", { name: "官方文档", exact: true });
-  await expect(official.getByRole("article")).toHaveCount(12);
-  await expect(official.getByText("官方 · 只读", { exact: true })).toHaveCount(
-    12,
-  );
-  await page.screenshot({ path: info.outputPath("official-library-list.png") });
-  await page.getByRole("textbox", { name: "搜索知识库" }).fill("演示");
-  await expect(official.getByRole("article")).toHaveCount(1);
-  await page.getByRole("textbox", { name: "搜索知识库" }).fill("");
-  await page.getByRole("button", { name: "创建知识库", exact: true }).click();
-  await page.getByRole("dialog").getByRole("textbox").fill("演示工坊官方文档");
-  await page.getByRole("button", { name: "确认", exact: true }).click();
+  test.setTimeout(90000);
+  await page.goto("/apps/thought-workshop/community");
+  await page
+    .getByRole("button", { name: "导入现有官方文档", exact: true })
+    .click();
+  const dialog = page.getByRole("alertdialog", { name: "导入现有官方文档" });
+  await expect(dialog).toContainText("12 个私人知识库");
+  await expect(dialog).toContainText("93 篇文章");
+  await expect(dialog).toContainText("不会自动发布");
+  await dialog.getByRole("button", { name: "导入到当前 Workspace" }).click();
   await expect(
     page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
+  ).toBeVisible({ timeout: 20000 });
+  const library = page.url().match(/knowledge-bases\/([^/?#]+)/)![1];
+  const directory = await (
+    await page.request.get(root + `/knowledge-bases/${library}/directory`)
+  ).json();
+  expect(
+    (
+      await (
+        await page.request.get(community + `/libraries/${library}/publication`)
+      ).json()
+    ).publication,
+  ).toBeNull();
   await page
-    .getByRole("textbox", { name: "搜索知识库" })
-    .fill("演示工坊官方文档");
-  await expect(official.getByRole("article")).toHaveCount(1);
-  await expect(
-    page.locator(
-      ".knowledge-library > .knowledge-cards .workshop-project-card",
-    ),
-  ).toHaveCount(1);
-  await expect(
-    page.locator(".knowledge-library > .knowledge-cards .official-badge"),
-  ).toHaveCount(0);
-  await page.getByRole("combobox", { name: "演示工坊官方文档操作" }).click();
-  await page.getByRole("option", { name: "移入回收站", exact: true }).click();
-  await page
-    .getByRole("alertdialog")
-    .getByRole("button", { name: "确认", exact: true })
+    .getByRole("button", { name: "知识库更多操作", exact: true })
     .click();
+  await page
+    .getByRole("menuitem", { name: "发布到知识社区", exact: true })
+    .click();
+  const publish = page.getByRole("alertdialog", { name: "发布到知识社区" });
+  await expect(publish.getByLabel("只读发布", { exact: true })).toBeChecked();
+  await publish.getByLabel("官方发布", { exact: true }).check();
+  await expect(publish.getByLabel("超级管理员可编辑")).toBeChecked();
   await expect(
-    page.locator(
-      ".knowledge-library > .knowledge-cards .workshop-project-card",
-    ),
-  ).toHaveCount(0);
-  await page.getByRole("button", { name: "知识库回收站", exact: true }).click();
-  await expect(official).toHaveCount(0);
-  await page.getByRole("button", { name: "恢复知识库", exact: true }).click();
+    publish.getByLabel("管理员可编辑", { exact: true }),
+  ).toBeChecked();
+  await publish.getByRole("button", { name: "全选", exact: true }).click();
+  await publish.getByRole("button", { name: "发布选定文章" }).click();
+  await expect(publish).not.toBeVisible();
+  const pub = (
+    await (
+      await page.request.get(community + `/libraries/${library}/publication`)
+    ).json()
+  ).publication;
+  expect(pub.is_official && pub.read_only).toBe(true);
+  await page.goto(
+    `/apps/thought-workshop/community/${pub.id}/documents/${directory.documents[0].id}`,
+  );
   await expect(
-    page.getByRole("button", { name: "恢复知识库", exact: true }),
-  ).toHaveCount(0);
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
+    page.getByRole("heading", {
+      name: directory.documents[0].title,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator(".official-badge")).toBeVisible();
   await expect(
-    page.locator(
-      ".knowledge-library > .knowledge-cards .workshop-project-card",
-    ),
-  ).toHaveCount(1);
-  await official.getByRole("button", { name: "进入知识库" }).click();
-  await expect(page).toHaveURL(`${officialRoot}/presentation-workshop`);
-  const libraryRequests: string[] = [];
-  page.on("request", (request) => {
-    if (request.url().includes("/v1/thought-workshop/"))
-      libraryRequests.push(request.method() + " " + request.url());
+    page.getByRole("button", { name: "编辑文档", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", {
+      name: directory.documents[0].title,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: info.outputPath("official-standard-note.png"),
   });
-  await page
-    .locator(".official-article-cards")
-    .getByRole("button", { name: "功能概览与快速开始" })
-    .click();
-  await expect(
-    page.getByRole("article", { name: "官方文档正文" }),
-  ).toContainText("制作第一份文稿");
-  await page.reload();
-  await expect(
-    page.getByRole("article", { name: "官方文档正文" }),
-  ).toBeVisible();
-  await page
-    .getByRole("textbox", { name: "搜索官方文档" })
-    .fill("Consolas 不存在的关键词");
-  await expect(page.getByText("找到 0 篇文档", { exact: true })).toBeVisible();
-  await page.getByRole("textbox", { name: "搜索官方文档" }).fill("100 页");
-  const result = page.getByRole("region", { name: "官方文档搜索结果" });
-  await result.getByRole("button", { name: /导入导出与交付/ }).click();
-  await expect(page).toHaveURL(
-    `${officialRoot}/presentation-workshop/documents/delivery`,
-  );
-  await page
-    .getByRole("navigation", { name: "文档章节" })
-    .getByRole("link", { name: "导出与验收 PPTX" })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "导出与验收 PPTX", exact: true }),
-  ).toBeInViewport();
-  await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "导出与验收 PPTX", exact: true }),
-  ).toBeInViewport();
-  await page.goBack(); // heading hash
-  await page.goBack(); // previous article
-  await expect(page).toHaveURL(
-    `${officialRoot}/presentation-workshop/documents/overview`,
-  );
-  await expect(
-    page.getByRole("button", { name: /^(新建文档|编辑首页|保存文档|导入)$/ }),
-  ).toHaveCount(0);
-  expect(libraryRequests).toEqual([]);
 });
 
-test("read-only members use the same bundled reader and responsive navigation", async ({
+test("old links resolve visible database notes and the common reader adapts to both themes", async ({
   page,
 }, info) => {
-  await page.route("**/v1/auth/me", async (route) => {
-    const response = await route.fetch();
-    const principal = await response.json();
-    principal.workspace.permission_keys = ["content.read"];
-    await route.fulfill({ response, json: principal });
-  });
-  await page.goto("/apps/thought-workshop");
-  const official = page.getByRole("region", { name: "官方文档", exact: true });
-  await expect(official.getByRole("article")).toHaveCount(12);
-  await expect(
-    page.getByRole("button", { name: "创建知识库", exact: true }),
-  ).toHaveCount(0);
-  for (const width of [1600, 390]) {
-    await page.setViewportSize({ width, height: 900 });
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth + 1,
-      ),
-    ).toBe(true);
-    await page.screenshot({
-      path: info.outputPath(`readonly-libraries-${width}.png`),
-    });
-  }
-  await page.setViewportSize({ width: 1600, height: 900 });
-  await page
-    .getByRole("textbox", { name: "搜索知识库" })
-    .fill("Future Props Lab 官方文档");
-  await official.getByRole("button", { name: "进入知识库" }).click();
-  await page
-    .locator(".official-article-cards")
-    .getByRole("button", { name: "应用总览与选用" })
-    .click();
-  await page.getByRole("link", { name: "Live2D 工坊", exact: true }).click();
-  await expect(page).toHaveURL(
-    `${officialRoot}/live2d-workshop/documents/overview`,
+  test.setTimeout(120000);
+  const { publication } = await importAndPublish(page, "technical");
+  const target = await legacyTarget(page, "technical", "scope", publication.id);
+  await page.goto(
+    "/apps/thought-workshop/official-knowledge-bases/technical/documents/scope",
   );
-  await page
-    .getByRole("navigation", { name: "官方文档目录" })
-    .getByRole("button", { name: "导入导出与交付" })
-    .click();
-  const article = page.getByRole("article", { name: "官方文档正文" });
-  await expect(article).toContainText("素材交接包不生成");
-  // Offline desktop reading means local bundled resources remain reachable;
-  // no internet service is needed to load an as-yet-unopened article.
-  await page.route("**/*", (route) => {
-    const url = new URL(route.request().url());
-    return ["127.0.0.1", "localhost"].includes(url.hostname)
-      ? route.fallback()
-      : route.abort();
+  await expect(page.locator("main")).toBeVisible();
+  await expect
+    .poll(
+      async () =>
+        page.url().includes("/community/") ||
+        (await page
+          .getByRole("link", { name: /Future Props Lab 技术文档/ })
+          .count()) > 0,
+    )
+    .toBe(true);
+  if (!page.url().includes("/community/"))
+    await page
+      .locator(
+        `a[href="/apps/thought-workshop/community/${publication.id}/documents/${target.note_id}"]`,
+      )
+      .click();
+  await expect(page).toHaveURL(
+    `/apps/thought-workshop/community/${publication.id}/documents/${target.note_id}`,
+  );
+  await expect(
+    page.getByRole("heading", { name: "项目定位与系统边界", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".thought-mermaid-preview svg")).toBeVisible({
+    timeout: 20000,
   });
+  await expect(page.locator(".diagram-viewer svg[role=img]")).toBeVisible();
   for (const width of [1600, 768, 390]) {
     await page.setViewportSize({ width, height: 900 });
     for (const theme of ["light", "dark"]) {
@@ -173,39 +127,31 @@ test("read-only members use the same bundled reader and responsive navigation", 
         ),
       ).toBe(true);
       await page.screenshot({
-        path: info.outputPath(`official-${width}-${theme}.png`),
+        path: info.outputPath(`official-reader-${width}-${theme}.png`),
       });
     }
-    if (width <= 1200) {
-      const trigger = page.getByRole("button", { name: "目录", exact: true });
-      await trigger.click();
-      await expect(
-        page.getByRole("dialog", { name: "官方知识库导航" }),
-      ).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect(trigger).toBeFocused();
-    }
   }
-  await page.getByRole("button", { name: "目录", exact: true }).click();
-  await page
-    .getByRole("navigation", { name: "官方文档目录" })
-    .getByRole("button", { name: "主要操作流程" })
-    .click();
-  await expect(article).toContainText("参数关键形");
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0);
   await page.reload();
-  await expect(article).toContainText("参数关键形");
+  await expect(
+    page.getByRole("heading", { name: "项目定位与系统边界", exact: true }),
+  ).toBeVisible();
+  await page.goto(
+    "/apps/thought-workshop/official-knowledge-bases/missing/documents/private",
+  );
+  await expect(page.getByRole("status")).toContainText("尚未导入并发布");
 });
 
-test("unsaved personal documents retain their guard before visiting official content", async ({
+test("unsaved personal notes keep their guard before navigating to published official notes", async ({
   page,
 }) => {
+  test.setTimeout(90000);
   await page.setViewportSize({ width: 1600, height: 1000 });
+  const { publication, home } = await importAndPublish(page, "general");
   await page.goto("/apps/thought-workshop");
   await newDocument(page);
-  const noteUrl = page.url();
-  const noteId = noteUrl.split("/").pop();
-  await page.route(`**/v1/thought-workshop/notes/${noteId}`, (route) =>
+  const url = page.url();
+  const id = url.split("/").pop();
+  await page.route(`**/v1/thought-workshop/notes/${id}`, (route) =>
     route.request().method() === "PUT"
       ? route.fulfill({ status: 503, json: { detail: "隔离测试保存失败" } })
       : route.continue(),
@@ -213,22 +159,21 @@ test("unsaved personal documents retain their guard before visiting official con
   await page
     .getByRole("textbox", { name: "笔记正文", exact: true })
     .fill("保留个人草稿，阅读官方指南前先保存。");
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
+  await page.getByRole("button", { name: "我的知识库", exact: true }).click();
   const guard = page.getByRole("alertdialog", { name: "仍有未保存的内容" });
   await expect(guard).toBeVisible();
   await guard.getByRole("button", { name: "继续编辑", exact: true }).click();
-  await expect(page).toHaveURL(noteUrl);
-  await page.unroute(`**/v1/thought-workshop/notes/${noteId}`);
+  await expect(page).toHaveURL(url);
+  await page.unroute(`**/v1/thought-workshop/notes/${id}`);
   await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
-  await page
-    .getByRole("region", { name: "官方文档", exact: true })
-    .getByRole("button", { name: "进入知识库" })
-    .first()
-    .click();
-  await expect(page).toHaveURL(`${officialRoot}/general`);
-  await page.goto(noteUrl);
+  await page.goto(
+    `/apps/thought-workshop/community/${publication.id}/documents/${home}`,
+  );
+  await expect(
+    page.getByRole("heading", { name: publication.title, exact: true }),
+  ).toBeVisible();
+  await page.goto(url);
   await expect(
     page.getByRole("textbox", { name: "笔记正文", exact: true }),
   ).toContainText("保留个人草稿");

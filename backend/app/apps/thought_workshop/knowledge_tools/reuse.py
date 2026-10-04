@@ -11,6 +11,17 @@ from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.history import History
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+from app.apps.thought_workshop.multitable.archive import (
+    archive_assets,
+    entity_mapping,
+    export_tables,
+    import_tables,
+    remap_embeds,
+    remap_state,
+)
+from app.apps.thought_workshop.multitable.models import DataChange
+from app.apps.thought_workshop.multitable.schemas import Snapshot
+from app.apps.thought_workshop.multitable.storage import asset_ids, journal, persist, snapshot
 from app.apps.thought_workshop.notes import Notes, note_out
 from app.apps.thought_workshop.schemas.document import attachment_nodes, file_ids, image_ids
 from app.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
@@ -51,6 +62,26 @@ class ReusableContent:
     async def validate_template(self, body, existing=None):
         await validate_targets(self.session, self.workspace_id, body.document, existing)
         ids = file_ids(body.document)
+        if body.multitable:
+            ids |= asset_ids(body.multitable)
+            targets = {
+                id
+                for t in body.multitable.tables
+                for f in t.fields
+                if f.type == "note"
+                for r in body.multitable.records[t.id]
+                for id in r.values.get(f.id, []) or []
+            }
+            await validate_targets(
+                self.session,
+                self.workspace_id,
+                {
+                    "type": "doc",
+                    "content": [
+                        {"type": "documentCard", "attrs": {"noteId": id}} for id in targets
+                    ],
+                },
+            )
         assets = await resolve_assets(self.session, self.workspace_id, ids)
         if any(assets[id].media_kind != "image" for id in image_ids(body.document)):
             raise ThoughtError("画板与图片必须引用图片素材")
@@ -143,6 +174,7 @@ class ReusableContent:
                 knowledge_base_id=body.knowledge_base_id,
                 parent_id=body.parent_id,
                 title=body.title,
+                kind=template.kind,
                 document=deepcopy(template.document),
                 tags=template.tags,
                 schema_version=3,
@@ -150,6 +182,25 @@ class ReusableContent:
             commit=False,
             importing=True,
         )
+        if template.multitable:
+            old = await snapshot(self.session, row.id)
+            data = {"template": {"state": template.multitable}}
+            mapping = entity_mapping(data)
+            refs = {
+                id: id
+                for t in template.multitable["tables"]
+                for f in t["fields"]
+                if f["type"] == "note"
+                for r in template.multitable["records"][t["id"]]
+                for id in r["values"].get(f["id"], []) or []
+            }
+            assets = {id: id for id in asset_ids(Snapshot.model_validate(template.multitable))}
+            state = remap_state(template.multitable, mapping, refs, assets)
+            await persist(self.session, row.id, old, state)
+            # The template is a new document: replace the initial empty checkpoint.
+            from_empty = Snapshot(tables=[], records={})
+            await self.session.execute(delete(DataChange).where(DataChange.note_id == row.id))
+            await journal(self.session, row, from_empty, state, self.author_id, True)
         row.position = (
             max(
                 (
@@ -240,14 +291,19 @@ class ReusableContent:
         mapping = {row.id: new_id() for row in source}
         siblings = await directory.siblings(body.knowledge_base_id, body.parent_id)
         position = max((n.position for n in siblings), default=-1) + 1
+        table_data = await export_tables(self.session, source)
+        table_mapping = entity_mapping(table_data)
         created = []
         for row in source:
+            document = remap_references(row.document, mapping)
+            remap_embeds(document, table_mapping)
             new = await Notes(self.session, self.workspace_id, self.author_id).create(
                 ThoughtNoteIn(
                     knowledge_base_id=body.knowledge_base_id,
                     parent_id=body.parent_id if row.id == id else mapping[row.parent_id],
                     title=row.title[:230] + "（副本）" if row.id == id else row.title,
-                    document=remap_references(row.document, mapping),
+                    kind=row.kind,
+                    document=document,
                     tags=list(row.tags),
                     schema_version=3,
                 ),
@@ -258,6 +314,17 @@ class ReusableContent:
             new.position = position if row.id == id else row.position
             await History(self.session).append(new, self.author_id, "create")
             created.append(new.id)
+        asset_mapping = {id: id for id in archive_assets(table_data)}
+        # Retain references to documents outside the copied subtree in this Workspace.
+        refs = dict(mapping)
+        for value in table_data.values():
+            for t in value["state"]["tables"]:
+                for f in t["fields"]:
+                    if f["type"] == "note":
+                        for r in value["state"]["records"][t["id"]]:
+                            for target in r["values"].get(f["id"], []) or []:
+                                refs.setdefault(target, target)
+        await import_tables(self.session, table_data, refs, asset_mapping, table_mapping)
         await self.session.commit()
         return DuplicateOut(
             root_id=mapping[id], note_ids=created, knowledge_base_id=body.knowledge_base_id

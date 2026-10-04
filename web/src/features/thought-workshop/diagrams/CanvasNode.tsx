@@ -1,3 +1,4 @@
+import { useDocumentAccess } from "../DocumentAccess";
 import { lazy, Suspense, useState } from "react";
 import { Node } from "@tiptap/core";
 import { closeHistory } from "@tiptap/pm/history";
@@ -14,6 +15,7 @@ const CanvasEditor = lazy(() =>
   import("./CanvasEditor").then((m) => ({ default: m.CanvasEditor })),
 );
 function CanvasView({ node, getPos, editor }: NodeViewProps) {
+  const access = useDocumentAccess();
   const [editing, setEditing] = useState(false);
   let scene;
   try {
@@ -29,7 +31,7 @@ function CanvasView({ node, getPos, editor }: NodeViewProps) {
     <NodeViewWrapper contentEditable={false} className="thought-canvas">
       <DiagramViewer
         title={scene.title || "信息图"}
-        svg={() => canvasSvgText(scene)}
+        svg={() => canvasSvgText(scene, access.assetUrl)}
         onEdit={editor.isEditable ? () => setEditing(true) : undefined}
       >
         <CanvasSvg scene={scene} />

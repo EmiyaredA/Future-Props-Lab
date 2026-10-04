@@ -9,6 +9,8 @@ from app.apps.motion_compositor.routes import router as motion_compositor_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
 from app.apps.thought_workshop.routes import conversion as thought_conversion
 from app.apps.thought_workshop.routes import router as thought_workshop_router
+from app.apps.thought_workshop.routes.community import router as community_router
+from app.apps.thought_workshop.routes.community_tables import router as community_tables_router
 from app.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from app.apps.video_editor.routes import router as video_editor_router
 from app.apps.visual_workshop.routes import router as visual_workshop_router
@@ -150,3 +152,7 @@ api_router.include_router(
 api_router.include_router(live2d_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(desktop_pet_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(creative_workshop_router, dependencies=[Depends(require_studio_auth)])
+
+# Community endpoints authenticate browser sessions and apply publication roles.
+api_router.include_router(community_router, prefix="/thought-workshop")
+api_router.include_router(community_tables_router, prefix="/thought-workshop")

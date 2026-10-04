@@ -12,7 +12,7 @@
 desktop-pet
 ```
 
-图例：上排是取得快照的方向，下排说明源工程变更不自动传播。运行卡片消费已保存桌宠配置；刷新角色需要显式操作并重新验证，而不是监听源工程可变状态。
+图例：上排是取得快照的方向，下排说明源工程变更不自动传播。运行卡片经读取箭头消费已保存桌宠配置；刷新角色需要显式操作并重新验证，而不是监听源工程可变状态。
 
 图中只有显式取得快照的路径，没有持续监听源工程的箭头。桌宠记录来源项目和版本，保存固定角色文档并复制所需源素材。这个选择换来运行可重复性：编辑源工程时不会让已经配置好的桌宠突然失效。
 
@@ -45,16 +45,31 @@ sequenceDiagram
 
 运行事件根据保存的配置触发动作或显示表现。私人文字聊天有自己的会话、权限与模型调用路径，不能把两者理解为拥有系统命令权限的常驻 Agent。
 
-本篇重点描述 Live2D 来源；其他内置角色来源有独立限制，不能把所有桌宠都当作可同步的 Live2D 项目。验证时检查默认动作、角色资源、皮肤以及桌面显示，模型聊天则另查网络与费用。
+本篇重点描述 Live2D 来源；分层资源包来源有独立限制，不能把所有桌宠都当作可同步的 Live2D 项目。验证时检查默认动作、角色资源、皮肤以及桌面显示，模型聊天则另查网络与费用。
 
 > [!NOTE]
 > “源工程已保存”与“桌宠已同步来源”是两次操作。排查角色版本时同时核对 sourceProjectId 与 sourceRevision，避免只凭相同的角色名称判断。
 
+## 保存配置、联动草稿和运动窗口分开管理
+
+桌宠项目保存角色来源、皮肤、事件与配置 revision。Live2D 来源消费固定快照，分层资源包则经过独立 ZIP 与骨架校验；两种来源不能混用同步规则。资源更新先验证新包、准备新 ID 素材，再 CAS 切换；失败仅清理本次文件，保留旧项目与私人聊天。
+
+编辑器联动通过有界展示草稿和租约覆盖运行显示，基于已授权快照验证 revision、素材与序号；退出或租约失效回到基线，不把草稿写成正式配置。locomotion 管轨迹和手势，Electron 校验窗口来源、运动代次与显示器可用区；视图移动不应直接改动画引擎内部共享状态。
+
+## 私人聊天有独立数据与结束语义
+
+聊天按账号、Workspace 和桌宠项目隔离，设置与消息流不复用模型测试会话。prepare_send 用 request_id 防重放并保存待回答消息，公共文字模型调用在准备事务之后执行，结算在独立事务记录 completed 或 interrupted。气泡和对话呈现消费同一消息，不经动作 IPC 重复发送聊天文字。
+
+## 运行与恢复的验证入口
+
+检查来源同步、包替换冲突、皮肤缺失、联动退出恢复、运动取消与可用区限制；聊天检查连续流、断开结算、重复 request_id 拒绝与账号隔离。桌宠动作成功不证明模型聊天成功，聊天记录存在也不说明资源包已更新。项目、聊天用例和私有桌面协议分别拥有这些生命周期。
+
 ## 相关阅读
 
 - [Live2D：参数绑定、网格与动作](/apps/thought-workshop/official-knowledge-bases/technical/documents/live2d-workshop)
-- [Electron 桌面：本机服务与私有边界](/apps/thought-workshop/official-knowledge-bases/technical/documents/desktop)
+- [桌面启动、更新与打包](/apps/thought-workshop/official-knowledge-bases/technical/documents/desktop)
 - [桌宠工坊：主要操作流程](/apps/thought-workshop/official-knowledge-bases/desktop-pet/documents/workflow)
+- [公共能力复用与应用交接](/apps/thought-workshop/official-knowledge-bases/technical/documents/app-handoffs)
 
 ## 代码入口
 

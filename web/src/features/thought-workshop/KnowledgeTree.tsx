@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type ReactNode,
   type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
@@ -20,9 +21,11 @@ import {
   MoreHorizontal,
   Trash2,
 } from "lucide-react";
-import type { Directory, Move } from "./knowledgeApi";
+import type { Move } from "./knowledgeApi";
 import type { NoteSummary } from "./api";
 import "./knowledge-tree.css";
+
+type TreeEntry = Pick<NoteSummary, "id" | "title" | "parent_id" | "position">;
 
 type DropMode = "before" | "into" | "after";
 
@@ -32,7 +35,7 @@ function DocumentActionMenu({
   canMoveDown,
   choose,
 }: {
-  item: NoteSummary;
+  item: TreeEntry;
   canMoveUp: boolean;
   canMoveDown: boolean;
   choose: (value: string) => void;
@@ -221,26 +224,31 @@ function DocumentActionMenu({
   );
 }
 
-export function KnowledgeTree({
+export function KnowledgeTree<T extends TreeEntry>({
   directory,
   activeId,
   open,
   action,
   move,
+  rowActions,
+  label = "知识库目录",
 }: {
-  directory: Directory;
+  directory: { documents: T[] };
   activeId?: string;
   open: (id: string) => void;
-  action: (action: string, item: NoteSummary) => void;
-  move: (body: Omit<Move, "expected_revision">) => void;
+  action?: (action: string, item: T) => void;
+  move?: (body: Omit<Move, "expected_revision">) => void;
+  rowActions?: (item: T) => ReactNode;
+  label?: string;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [dragId, setDragId] = useState<string | null>(null);
   const [drop, setDrop] = useState<{ id: string; mode: DropMode } | null>(null);
   const byParent = useMemo(() => {
-    const map = new Map<string | null, NoteSummary[]>();
+    const map = new Map<string | null, T[]>();
+    const ids = new Set(directory.documents.map((doc) => doc.id));
     for (const doc of directory.documents) {
-      const key = doc.parent_id;
+      const key = ids.has(doc.parent_id ?? "") ? doc.parent_id : null;
       const list = map.get(key) || [];
       list.push(doc);
       map.set(key, list);
@@ -250,6 +258,24 @@ export function KnowledgeTree({
     }
     return map;
   }, [directory.documents]);
+  useEffect(() => {
+    if (!activeId) return;
+    setCollapsed((old) => {
+      const next = new Set(old),
+        seen = new Set<string>();
+      let parent = directory.documents.find(
+        (item) => item.id === activeId,
+      )?.parent_id;
+      while (parent && !seen.has(parent)) {
+        seen.add(parent);
+        next.delete(parent);
+        parent = directory.documents.find(
+          (item) => item.id === parent,
+        )?.parent_id;
+      }
+      return next;
+    });
+  }, [activeId, directory.documents]);
   const descendants = (id: string) => {
     const found = new Set<string>();
     const walk = (parent: string) => {
@@ -270,8 +296,8 @@ export function KnowledgeTree({
       return next;
     });
   };
-  const applyDrop = (target: NoteSummary, mode: DropMode) => {
-    if (!dragId || dragId === target.id) return;
+  const applyDrop = (target: T, mode: DropMode) => {
+    if (!move || !dragId || dragId === target.id) return;
     if (descendants(dragId).has(target.id)) return;
     if (mode === "into") {
       move({ item_id: dragId, parent_id: target.id });
@@ -321,8 +347,9 @@ export function KnowledgeTree({
               .filter(Boolean)
               .join(" ")}
             style={{ paddingLeft: 8 + Math.min(depth, 8) * 14 }}
-            draggable
+            draggable={!!move}
             onDragStart={(e) => {
+              if (!move) return;
               e.dataTransfer.setData("text/plain", item.id);
               e.dataTransfer.effectAllowed = "move";
               setDragId(item.id);
@@ -377,29 +404,32 @@ export function KnowledgeTree({
               <FileText size={15} />
               <span>{item.title}</span>
             </button>
-            <DocumentActionMenu
-              item={item}
-              canMoveUp={items.findIndex((i) => i.id === item.id) > 0}
-              canMoveDown={
-                items.findIndex((i) => i.id === item.id) < items.length - 1
-              }
-              choose={(value) => {
-                if (value === "up" || value === "down") {
-                  const index = items.findIndex((i) => i.id === item.id);
-                  const target = value === "up" ? index - 1 : index + 2;
-                  if (
-                    (value === "up" && index === 0) ||
-                    (value === "down" && index === items.length - 1)
-                  )
-                    return;
-                  move({
-                    item_id: item.id,
-                    parent_id: parent,
-                    before_id: items[target]?.id ?? null,
-                  });
-                } else action(value, item);
-              }}
-            />
+            {rowActions?.(item)}
+            {action && move && (
+              <DocumentActionMenu
+                item={item}
+                canMoveUp={items.findIndex((i) => i.id === item.id) > 0}
+                canMoveDown={
+                  items.findIndex((i) => i.id === item.id) < items.length - 1
+                }
+                choose={(value) => {
+                  if (value === "up" || value === "down") {
+                    const index = items.findIndex((i) => i.id === item.id);
+                    const target = value === "up" ? index - 1 : index + 2;
+                    if (
+                      (value === "up" && index === 0) ||
+                      (value === "down" && index === items.length - 1)
+                    )
+                      return;
+                    move({
+                      item_id: item.id,
+                      parent_id: parent,
+                      before_id: items[target]?.id ?? null,
+                    });
+                  } else action(value, item);
+                }}
+              />
+            )}
           </div>
           {expanded && children.length > 0 && branch(item.id, depth + 1)}
         </div>
@@ -408,14 +438,14 @@ export function KnowledgeTree({
   };
   return (
     <nav
-      aria-label="知识库目录"
+      aria-label={label}
       className="knowledge-tree"
       onDragOver={(e) => {
         if (dragId) e.preventDefault();
       }}
       onDrop={(e) => {
         e.preventDefault();
-        if (dragId) move({ item_id: dragId, parent_id: null });
+        if (dragId && move) move({ item_id: dragId, parent_id: null });
         setDragId(null);
         setDrop(null);
       }}

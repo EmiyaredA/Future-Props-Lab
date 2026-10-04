@@ -1,3 +1,4 @@
+import { useDocumentAccess } from "./DocumentAccess";
 import { Node, mergeAttributes } from "@tiptap/core";
 import {
   NodeViewWrapper,
@@ -17,6 +18,7 @@ function fileSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 }
 function AttachmentCard({ node, selected }: NodeViewProps) {
+  const access = useDocumentAccess();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const { assetId, filename, byteSize } = node.attrs;
@@ -49,9 +51,7 @@ function AttachmentCard({ node, selected }: NodeViewProps) {
           setError("");
           try {
             download(
-              await fetchApiBlob(
-                `/v1/files/${encodeURIComponent(assetId)}/download`,
-              ),
+              await fetchApiBlob(access.assetUrl(String(assetId))),
               filename,
             );
           } catch (e) {

@@ -104,6 +104,9 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/galgame-workshop/projects/{project_id}/story/operations"),
         ("POST", "/v1/audio-annotation/projects/{project_id}/document/operations"),
         ("POST", "/v1/thought-workshop/notes/{note_id}/operations"),
+        ("POST", "/v1/thought-workshop/notes/{note_id}/multitable/operations"),
+        ("POST", "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import"),
+        ("POST", "/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore"),
         ("POST", "/v1/director-desk/projects"),
         ("PATCH", "/v1/director-desk/projects/{project_id}"),
         ("DELETE", "/v1/director-desk/projects/{project_id}"),
@@ -242,6 +245,13 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/thought-workshop/search"),
         ("POST", "/v1/thought-workshop/references/resolve"),
         ("GET", "/v1/thought-workshop/notes/{note_id}/backlinks"),
+        ("GET", "/v1/thought-workshop/notes/{note_id}/multitable"),
+        ("POST", "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query"),
+        ("POST", "/v1/thought-workshop/notes/{note_id}/multitable/conversion-preview"),
+        ("POST", "/v1/thought-workshop/notes/{note_id}/multitable/csv-preview"),
+        ("POST", "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export"),
+        ("GET", "/v1/thought-workshop/notes/{note_id}/multitable/history"),
+        ("GET", "/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}"),
         ("GET", "/v1/thought-workshop/templates"),
         ("GET", "/v1/thought-workshop/notes/{note_id}/copy-snapshot"),
         ("GET", "/v1/thought-workshop/notes/{note_id}/checkpoints"),
@@ -506,6 +516,65 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/llm-call-logs/{log_id}/reproduction-bundle"),
     ),
 }
+
+# Browser Session plus explicit publication role, not Workspace content permission.
+OPERATIONS["community.access"] = (
+    (
+        "GET",
+        "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable",
+    ),
+    (
+        "POST",
+        "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/tables/{table_id}/query",
+    ),
+    (
+        "POST",
+        "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/operations",
+    ),
+    (
+        "POST",
+        "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/conversion-preview",
+    ),
+    (
+        "GET",
+        "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/backlinks",
+    ),
+    ("GET", "/v1/thought-workshop/community/publications/{publication_id}/management"),
+    ("PUT", "/v1/thought-workshop/community/publications/{publication_id}/management"),
+    ("GET", "/v1/thought-workshop/community/publications"),
+    ("GET", "/v1/thought-workshop/community/libraries/{library_id}/publication"),
+    ("PUT", "/v1/thought-workshop/community/libraries/{library_id}/publication"),
+    ("GET", "/v1/thought-workshop/community/publications/{publication_id}"),
+    ("GET", "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}"),
+    ("PUT", "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}"),
+    ("GET", "/v1/thought-workshop/community/publications/{publication_id}/permissions"),
+    ("PUT", "/v1/thought-workshop/community/publications/{publication_id}/permissions"),
+    ("GET", "/v1/thought-workshop/community/publications/{publication_id}/cover"),
+    (
+        "GET",
+        "/v1/thought-workshop/community/publications/{publication_id}/assets/{asset_id}/content",
+    ),
+    (
+        "POST",
+        "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/uploads",
+    ),
+    ("GET", "/v1/thought-workshop/community/publications/{publication_id}/export-snapshot"),
+    ("GET", "/v1/thought-workshop/community/favorites"),
+    ("PUT", "/v1/thought-workshop/community/favorites/{namespace}/{resource_id}"),
+)
+
+OPERATIONS["content.read"] += (
+    ("GET", "/v1/thought-workshop/community/official-import/preview"),
+    ("GET", "/v1/thought-workshop/community/official-import/{request_id}"),
+)
+OPERATIONS["content.write"] += (("POST", "/v1/thought-workshop/community/official-import"),)
+OPERATIONS["community.access"] += (
+    ("GET", "/v1/thought-workshop/community/official-links/{library_key}"),
+)
+
+OPERATIONS["community.access"] += (
+    ("POST", "/v1/thought-workshop/community/publications/{publication_id}/references"),
+)
 
 ROUTE_PERMISSIONS = {
     operation: key for key, operations in OPERATIONS.items() for operation in operations

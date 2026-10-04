@@ -11,9 +11,8 @@ import {
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { thoughtKeys } from "../queryKeys";
-import { OFFICIAL_KNOWLEDGE_BASES, officialPath } from "../official/catalog";
-import { loadOfficialDocument } from "../official/content";
-import { officialSearchText } from "../official/figures";
+import { officialPath } from "../community/legacyReference";
+import { listPublications } from "../community/api";
 import { getNote, type KnowledgeBase } from "../api";
 import {
   globalSearch,
@@ -75,29 +74,23 @@ export function DiscoveryPanel({
     retry: false,
   });
   const official = useQuery({
-    queryKey: thoughtKeys.officialSearch("all", JSON.stringify(criteria)),
-    queryFn: async () => {
-      if (criteria.favorite || criteria.tag || criteria.knowledge_base_id)
-        return [];
-      const query = criteria.query!.trim().toLocaleLowerCase();
-      const result = await Promise.all(
-        OFFICIAL_KNOWLEDGE_BASES.flatMap((library) =>
-          library.documents.map(async (doc) => {
-            const text = criteria.title_only
-              ? ""
-              : await officialSearchText(await loadOfficialDocument(doc));
-            if (!`${doc.title}\n${text}`.toLocaleLowerCase().includes(query))
-              return null;
-            const index = text.toLocaleLowerCase().indexOf(query),
-              start = Math.max(0, index - 60);
-            return { library, doc, snippet: text.slice(start, start + 240) };
-          }),
-        ),
-      );
-      return result.filter((item) => item !== null);
-    },
+    queryKey: thoughtKeys.communityList(user, {
+      query: criteria.query,
+      official: true,
+      discovery: true,
+    }),
+    queryFn: () =>
+      criteria.tag || criteria.knowledge_base_id
+        ? Promise.resolve([])
+        : listPublications(
+            criteria.query ?? "",
+            false,
+            criteria.favorite ?? false,
+            0,
+            undefined,
+            true,
+          ),
     retry: false,
-    staleTime: Infinity,
   });
   const run = async (work: () => Promise<unknown>) => {
     setError("");
@@ -260,7 +253,7 @@ export function DiscoveryPanel({
           加载更多搜索结果
         </button>
       )}
-      <h3>官方文档 · {official.data?.length ?? 0} 篇</h3>
+      <h3>官方发布 · {official.data?.length ?? 0} 个</h3>
       {official.error && (
         <p role="alert">
           {official.error.message}
@@ -270,14 +263,16 @@ export function DiscoveryPanel({
         </p>
       )}
       <div className="thought-tools-list">
-        {official.data?.map(({ library, doc, snippet }) => (
+        {official.data?.map((publication) => (
           <button
             className="btn"
-            key={`${library.id}/${doc.id}`}
-            onClick={() => find(officialPath(library.id, doc.id))}
+            key={publication.id}
+            onClick={() =>
+              find(`/apps/thought-workshop/community/${publication.id}`)
+            }
           >
-            <strong>{doc.title}</strong> · {library.title}
-            <p>{snippet}</p>
+            <strong>{publication.title}</strong> · {publication.author}
+            <p>{publication.description}</p>
           </button>
         ))}
       </div>

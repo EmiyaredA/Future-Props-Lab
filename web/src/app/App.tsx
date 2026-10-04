@@ -1,3 +1,4 @@
+import type { KnowledgeSection } from "@features/thought-workshop/KnowledgeSections";
 import { PageErrorBoundary } from "./PageErrorBoundary";
 import { LIVE2D_WORKSHOP_MODULE } from "@features/live2d-workshop/module";
 import { DESKTOP_PET_MODULE } from "@features/desktop-pet/module";
@@ -163,10 +164,15 @@ const MotionCompositorEditorPage = lazy(() =>
   })),
 );
 
+const KnowledgeCommunityPage = lazy(() =>
+  import("@features/thought-workshop/community/KnowledgeCommunityPage").then(
+    (m) => ({ default: m.KnowledgeCommunityPage }),
+  ),
+);
 const ThoughtWorkshopPage = lazy(THOUGHT_WORKSHOP_MODULE.pages.notes);
-const OfficialKnowledgePage = lazy(() =>
-  import("@features/thought-workshop/official/OfficialKnowledgePage").then(
-    (m) => ({ default: m.OfficialKnowledgePage }),
+const LegacyOfficialPage = lazy(() =>
+  import("@features/thought-workshop/community/LegacyOfficialPage").then(
+    (m) => ({ default: m.LegacyOfficialPage }),
   ),
 );
 
@@ -349,8 +355,66 @@ export default function App() {
       </PageBoundary>
     );
 
+  const navigateKnowledgeSection = (section: KnowledgeSection) =>
+    navigate(
+      section === "private"
+        ? "thought-workshop-notes"
+        : section === "favorites"
+          ? "thought-workshop-favorites"
+          : section === "published"
+            ? "thought-workshop-published"
+            : "thought-workshop-community",
+    );
+  if (
+    [
+      "thought-workshop-community",
+      "thought-workshop-favorites",
+      "thought-workshop-published",
+    ].includes(page)
+  )
+    return (
+      <PageBoundary>
+        <KnowledgeCommunityPage
+          section={
+            page === "thought-workshop-favorites"
+              ? "favorites"
+              : page === "thought-workshop-published"
+                ? "published"
+                : "community"
+          }
+          publication={route.projectId}
+          noteId={route.documentId}
+          navigate={navigateKnowledgeSection}
+          onOpen={(id, note) =>
+            navigate("thought-workshop-community", id, note)
+          }
+          onOpenNote={(id) => navigate("thought-workshop-editor", id)}
+          onBack={() => navigate("apps")}
+          registerNavigationGuard={registerNavigationGuard}
+        />
+      </PageBoundary>
+    );
+  if (page === "thought-workshop-official") {
+    return (
+      <PageBoundary>
+        <LegacyOfficialPage
+          key={me.workspace.id}
+          libraryId={route.projectId}
+          documentId={route.documentId}
+          onOpen={(publication, document) =>
+            navigate("thought-workshop-community", publication, document)
+          }
+          onBack={() => navigate("thought-workshop-community")}
+        />
+      </PageBoundary>
+    );
+  }
   if (me.workspace.access_kind === "public_viewer") {
-    return <PublicWorkspaceShowcase />;
+    return (
+      <PublicWorkspaceShowcase
+        onOpenCommunity={() => navigate("thought-workshop-community")}
+      />
+    );
   }
 
   if (page === "presentation-workshop-projects")
@@ -483,37 +547,6 @@ export default function App() {
       </WorkshopShell>
     );
 
-  if (page === "thought-workshop-official") {
-    if (!workspaceAllows(me.workspace, "content.read"))
-      return (
-        <PageBoundary>
-          <main className="readonly-page">
-            <h1>需要内容阅读权限</h1>
-            <button className="btn" onClick={() => navigate("apps")}>
-              返回应用中心
-            </button>
-          </main>
-        </PageBoundary>
-      );
-    return (
-      <PageBoundary>
-        <OfficialKnowledgePage
-          key={me.workspace.id}
-          canCopy={workspaceAllows(me.workspace, "content.write")}
-          onOpenNote={(library, note) =>
-            navigate("thought-workshop-editor", library, note)
-          }
-          libraryId={route.projectId}
-          documentId={route.documentId}
-          onOpen={(library, document) =>
-            navigate("thought-workshop-official", library, document)
-          }
-          onBack={() => navigate("thought-workshop-notes")}
-        />
-      </PageBoundary>
-    );
-  }
-
   if (
     (!workspaceAllows(me.workspace, "content.write") &&
       hasReadOnlyRoute(page)) ||
@@ -561,6 +594,7 @@ export default function App() {
         <ThoughtWorkshopPage
           key={me.workspace.id}
           page={page}
+          onNavigateSection={navigateKnowledgeSection}
           projectId={route.projectId}
           noteId={route.documentId}
           onOpenOfficial={(library) =>

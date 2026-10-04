@@ -1,4 +1,4 @@
-# SQLite 与迁移：单机数据如何可靠演进
+# SQLite、事务与迁移
 
 升级应用时发现“迁移历史不一致”，与导入笔记时发生“内容校验失败”，需要完全不同的处理方式。前者涉及数据库结构与代码版本，后者涉及一份用户数据能否被当前业务接受。
 
@@ -49,11 +49,22 @@ stateDiagram-v2
 > [!WARNING]
 > 不要手工修改 schema_migrations、migration checksum 或真实数据库结构。这会抹掉诊断依据，也不能证明旧数据符合新 schema。
 
+## 短事务怎样支撑保存与后台执行
+
+笔记保存把正文和引用索引的更新放在同一数据库一致性边界；生成任务则先准备状态，再释放写入事务等待网络，最后开启新的短事务结算。读到 revision 后还必须在更新条件里比较，不能把先查后写误当成安全并发。
+
+磁盘文件准备不会由 SQLite 外键或回滚自动保护。导入用例先解析和准备文件，再写入记录，并为本次失败清理新文件。迁移包只负责 schema 演进，不导入运行时 app；运行数据的修复、回填和导入必须经业务规则。
+
+## 迁移与运行一致性的验收不同
+
+迁移测试使用自己创建的临时数据库验证旧状态升级、顺序、checksum 和外键；API 测试检查并发更新、引用一致和事务回滚。只看到最新表结构不能证明迁移历史合法；只看到一条写入成功不能证明第二个旧版本请求不会覆盖它。正式数据首次运行前先定稿迁移，不在热加载中一边执行一边改写 SQL。
+
 ## 相关阅读
 
-- [保存、历史与并发：防止静默覆盖](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
-- [Electron 桌面：本机服务与私有边界](/apps/thought-workshop/official-knowledge-bases/technical/documents/desktop)
-- [素材与导出：引用、快照和包有什么不同](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)
+- [编辑、保存、历史与并发](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
+- [桌面启动、更新与打包](/apps/thought-workshop/official-knowledge-bases/technical/documents/desktop)
+- [素材上传、引用与预览](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)
+- [关键设计决策与当前限制](/apps/thought-workshop/official-knowledge-bases/technical/documents/decisions)
 
 ## 代码入口
 

@@ -4,7 +4,11 @@ import type {
   PetPreviewDelivery,
   PetPreviewStatus,
 } from "./petPreview";
-import type { PetEnvironment, PetMotionRequest } from "./petMotion";
+import type {
+  PetEnvironment,
+  PetMotionRequest,
+  PetMotionReceipt,
+} from "./petMotion";
 
 export type DesktopDevelopmentState = {
   live: boolean;
@@ -49,6 +53,9 @@ export type DesktopBridge = {
   movePetFrame?: (value: PetMotionRequest) => Promise<PetEnvironment>;
   cancelPetMotion?: (generation: number) => Promise<PetEnvironment>;
   onPetEnvironment?: (callback: (value: PetEnvironment) => void) => () => void;
+  onPetMotionConfirmed?: (
+    callback: (value: PetMotionReceipt) => void,
+  ) => () => void;
   movePet?: (
     x: number,
     y: number,

@@ -12,7 +12,7 @@ import { idlePose } from "@shared/live2d/idle";
 import { evaluate, parameterValues } from "@shared/live2d/pose";
 import type { CharacterDocument } from "@shared/live2d/types";
 import type { PetDocument } from "./api";
-import type { PetGeometry } from "@platform/petMotion";
+import type { PetGeometry, PetPosePlayback } from "@platform/petMotion";
 import {
   live2dPlayback,
   type PetPlaybackMode,
@@ -23,6 +23,12 @@ export type PetRendererHandle = {
   hitTest: (x: number, y: number) => boolean;
   pointerMove?: (x: number, y: number) => void;
   geometry?: () => PetGeometry | null;
+  placementDelta?: () => { x: number; y: number };
+  placementGeometry?: () => PetGeometry | null;
+  /** Last renderer reach/contact failure; the movement owner must cancel its trajectory. */
+  motionFailure?: () => string | null;
+  motionTransition?: () => PetPosePlayback | null;
+  cancelMotionPlayback?: () => void;
 };
 
 export const PetRenderer = forwardRef<

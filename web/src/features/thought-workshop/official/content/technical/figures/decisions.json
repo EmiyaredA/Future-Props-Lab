@@ -1,0 +1,130 @@
+{
+  "sceneVersion": 2,
+  "title": "设计选择与验证依据",
+  "elements": [
+    {
+      "id": "single",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "单机与 SQLite\n部署简单、短事务",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "slice",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "功能切片\n业务规则有明确拥有者",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "code"
+    },
+    {
+      "id": "cas",
+      "kind": "icon",
+      "x": 720,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "CAS 与独立场景\n避免覆盖和运行库耦合",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "lock"
+    },
+    {
+      "id": "tasks",
+      "kind": "icon",
+      "x": 40,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "统一任务驱动\n外部提交与本地结算",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "clock"
+    },
+    {
+      "id": "assets",
+      "kind": "icon",
+      "x": 720,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "素材身份与文件\n受控引用和迁移",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "tests",
+      "kind": "icon",
+      "x": 380,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "架构及行为证据\n边界、恢复与交付",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "single",
+      "target": "tests",
+      "label": "验证迁移和并发",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e1",
+      "source": "slice",
+      "target": "tests",
+      "label": "验证依赖方向",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e2",
+      "source": "cas",
+      "target": "tests",
+      "label": "验证冲突和格式",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e3",
+      "source": "tasks",
+      "target": "tests",
+      "label": "验证中断恢复",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e4",
+      "source": "assets",
+      "target": "tests",
+      "label": "验证归属和引用",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "left",
+      "targetAnchor": "right"
+    }
+  ]
+}

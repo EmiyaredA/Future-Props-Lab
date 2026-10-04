@@ -3,25 +3,62 @@ const path = require("node:path");
 const { mkdirSync, writeFileSync } = require("node:fs");
 const assert = require("node:assert/strict");
 const { expect } = require("@playwright/test");
+const {
+  startLivePetRecording,
+  finishLivePetRecording,
+} = require("./record-live-pet.cjs");
 
 async function inspectPetMotion(studio, pet, context, projectId, directory) {
   const output = path.join(directory, "motion");
   mkdirSync(output, { recursive: true });
   const trace = [];
+  const origin = (env) => ({
+    x: env.bounds.x + (env.sceneOffset?.x ?? 0),
+    y: env.bounds.y + (env.sceneOffset?.y ?? 0),
+  });
   const initialEnvironment = await pet.evaluate(() =>
     window.futurePropsDesktop.petEnvironment(),
   );
   await pet.evaluate(() => {
     window.motionOriginalRandom = Math.random;
+    window.motionPointers = [];
+    window.addEventListener("pointerdown", (event) =>
+      window.motionPointers.push({
+        client: [event.clientX, event.clientY],
+        screen: [event.screenX, event.screenY],
+        recordingClock: window.petRecordingClock?.(),
+      }),
+    );
   });
   const environment = () =>
-    pet.evaluate(() => window.futurePropsDesktop.petEnvironment());
+    pet.evaluate(async () => {
+      const requested = window.petRecordingClock?.();
+      const env = await window.futurePropsDesktop.petEnvironment();
+      return {
+        ...env,
+        traceClock: { requested, received: window.petRecordingClock?.() },
+      };
+    });
   const geometry = () =>
     pet.evaluate(async () => {
       const { figureGeometry } =
         await import("/src/features/desktop-pet/locomotion/measure.ts");
       const object = document.querySelector(".pet-runtime foreignObject");
       return figureGeometry(object.parentElement);
+    });
+  const waist = () =>
+    pet.evaluate(async () => {
+      const requested = window.petRecordingClock?.();
+      const env = await window.futurePropsDesktop.petEnvironment();
+      const group = document.querySelector(
+        ".pet-runtime foreignObject",
+      ).parentElement;
+      const p = new DOMPoint(128, 188).matrixTransform(group.getScreenCTM());
+      return {
+        x: env.bounds.x + p.x,
+        y: env.bounds.y + p.y,
+        traceClock: { requested, received: window.petRecordingClock?.() },
+      };
     });
   const config = await studio.evaluate(
     async (id) =>
@@ -68,6 +105,14 @@ async function inspectPetMotion(studio, pet, context, projectId, directory) {
     await studio.reload();
     await studio.getByRole("button", { name: "试玩", exact: true }).waitFor();
     await pet.waitForTimeout(300);
+    if (habits.roam === "off") {
+      await expect(pet.locator(".pet-runtime")).toHaveAttribute(
+        "data-motion",
+        "idle",
+      );
+      // Drop/turn interpolation changes alpha bounds for 240 ms after the frame resets.
+      await pet.waitForTimeout(300);
+    }
   }
   async function place(side, high = false) {
     const g = await geometry();
@@ -75,12 +120,21 @@ async function inspectPetMotion(studio, pet, context, projectId, directory) {
     const result = await pet.evaluate(
       async ({ g, side, high }) => {
         const env = await window.futurePropsDesktop.petEnvironment();
+        const { unshiftGeometry } = await import("/src/platform/petMotion.ts");
+        g = unshiftGeometry(g, env.sceneOffset);
         const a = env.workArea;
         const x =
           side === "left"
             ? a.x + 5 - g.visible.x
-            : a.x + a.width - 5 - g.visible.x - g.visible.width;
-        const y = high ? a.y + 15 - g.visible.y : a.y + a.height - 5 - g.feet.y;
+            : side === "right"
+              ? a.x + a.width - 5 - g.visible.x - g.visible.width
+              : a.x + a.width / 2 - g.feet.x;
+        const y =
+          side === "top"
+            ? a.y + 5 - g.visible.y
+            : high
+              ? a.y + a.height * 0.25 - g.visible.y
+              : a.y + a.height - 5 - g.feet.y;
         return window.futurePropsDesktop.movePetFrame({
           generation: env.generation + 1,
           sequence: 1,
@@ -99,99 +153,250 @@ async function inspectPetMotion(studio, pet, context, projectId, directory) {
     );
     return result;
   }
+  await startLivePetRecording(pet);
+  pet.on("console", (message) => {
+    if (message.type() === "error")
+      trace.push({ check: "renderer-error", message: message.text() });
+  });
   try {
-    await save({ roam: "off" });
-    await place("left");
-    let g = await geometry();
-    const x = g.visible.x + g.visible.width / 2,
-      y = g.visible.y + g.visible.height * 0.55;
-    await pet.mouse.move(x, y);
-    await pet.mouse.down();
-    await expect(pet.locator(".pet-runtime")).toHaveAttribute(
-      "data-motion",
-      "held",
-    );
-    await pet.screenshot({ path: path.join(output, "held.png") });
-    await pet.mouse.move(x + 65, y - 90, { steps: 12 });
-    await pet.waitForTimeout(150);
-    const before = await environment();
-    await pet.mouse.up();
-    await expect(pet.locator(".pet-runtime")).toHaveAttribute(
-      "data-motion",
-      "idle",
-    );
-    await pet.waitForTimeout(500);
-    const released = await environment();
-    assert.deepEqual(
-      released.bounds,
-      before.bounds,
-      "Release must keep the confirmed placement",
-    );
-    trace.push({ check: "release-stays", before, after: released });
-    await studio.getByRole("button", { name: "试玩", exact: true }).click();
-    const toggle = studio.getByRole("switch", { name: /同步预览到桌宠/ });
-    await toggle.click();
-    for (const label of [
-      "拎起",
-      "左侧攀爬",
-      "右侧攀爬",
-      "向左滑翔",
-      "向右滑翔",
-    ]) {
-      await studio.getByRole("button", { name: label, exact: true }).click();
-      await expect(studio.locator(".dp-preview-details")).toContainText(
-        `姿态：${label}`,
-      );
-      await pet.waitForTimeout(250);
-      await studio.screenshot({ path: path.join(output, `demo-${label}.png`) });
-      await pet.screenshot({ path: path.join(output, `linked-${label}.png`) });
-    }
-    await toggle.click();
-    for (const side of ["left", "right"]) {
-      await save({ roam: "free", edgeClimbing: true, highGliding: false });
-      await pet.evaluate(
-        (value) => {
-          Math.random = () => value;
-        },
-        side === "left" ? 0.1 : 0.9,
-      );
-      await place(side);
+    if (!process.env.FPL_SMOKE_PET_QUICK) {
+      await save({ roam: "off" });
+      await place("left");
+      let g = await geometry();
+      const x = g.visible.x + g.visible.width / 2,
+        y = g.visible.y + g.visible.height * 0.55;
+      await pet.mouse.move(x, y);
+      await pet.mouse.down();
       await expect(pet.locator(".pet-runtime")).toHaveAttribute(
         "data-motion",
-        "climb",
-        { timeout: 11000 },
+        "held",
       );
-      const first = await environment();
-      await pet.screenshot({ path: path.join(output, `${side}-climb-1.png`) });
-      await pet.waitForTimeout(450);
-      const next = await environment();
+      await pet.screenshot({ path: path.join(output, "held.png") });
+      await pet.mouse.move(x + 65, y - 90, { steps: 12 });
+      await pet.waitForTimeout(150);
+      const before = await environment();
+      const beforeWaist = await waist();
+      await pet.mouse.up();
+      await expect(pet.locator(".pet-runtime")).toHaveAttribute(
+        "data-motion",
+        "idle",
+      );
+      await pet.waitForTimeout(500);
+      const released = await environment();
+      const afterWaist = await waist();
       assert.ok(
-        next.bounds.y < first.bounds.y,
-        "Climbing must continuously move upward",
+        Math.hypot(beforeWaist.x - afterWaist.x, beforeWaist.y - afterWaist.y) <
+          3,
+        "Release must keep the character's confirmed waist position",
       );
-      await pet.screenshot({ path: path.join(output, `${side}-climb-2.png`) });
-      trace.push({ check: `${side}-climb`, first, next });
+      trace.push({
+        check: "release-stays",
+        before,
+        after: released,
+        beforeWaist,
+        afterWaist,
+      });
+      await studio.getByRole("button", { name: "试玩", exact: true }).click();
+      const toggle = studio.getByRole("switch", { name: /同步预览到桌宠/ });
+      await toggle.click();
+      for (const label of [
+        "拎起",
+        "左侧攀爬",
+        "右侧攀爬",
+        "向左滑翔",
+        "向右滑翔",
+      ]) {
+        await studio.getByRole("button", { name: label, exact: true }).click();
+        await expect(studio.locator(".dp-preview-details")).toContainText(
+          `姿态：${label}`,
+        );
+        await pet.waitForTimeout(250);
+        await studio.screenshot({
+          path: path.join(output, `demo-${label}.png`),
+        });
+        await pet.screenshot({
+          path: path.join(output, `linked-${label}.png`),
+        });
+      }
+      await toggle.click();
+      for (const direction of ["left", "right"]) {
+        await save({ roam: "off", edgeClimbing: false, highGliding: false });
+        await place("center");
+        await pet.evaluate(
+          (value) => {
+            Math.random = () => value;
+          },
+          direction === "left" ? 0.1 : 0.9,
+        );
+        await save({ roam: "free", edgeClimbing: false, highGliding: false });
+        await expect(pet.locator(".pet-runtime")).toHaveAttribute(
+          "data-motion",
+          "walk",
+          { timeout: 11000 },
+        );
+        const first = await environment();
+        await pet.waitForTimeout(500);
+        const next = await environment();
+        assert.ok(
+          (next.bounds.x - first.bounds.x) * (direction === "left" ? -1 : 1) >
+            5,
+        );
+        assert.ok(Math.abs(next.bounds.x - first.bounds.x) < 40);
+        trace.push({ check: `walk-${direction}`, first, next });
+        await pet.screenshot({
+          path: path.join(output, `walk-${direction}.png`),
+        });
+      }
+      for (const side of ["left", "right"]) {
+        await save({ roam: "off", edgeClimbing: true, highGliding: false });
+        await pet.evaluate(
+          (value) => {
+            Math.random = () => value;
+          },
+          side === "left" ? 0.1 : 0.9,
+        );
+        await place(side, true);
+        await save({ roam: "free", edgeClimbing: true, highGliding: false });
+        await expect(pet.locator(".pet-runtime")).toHaveAttribute(
+          "data-motion",
+          "climb",
+          { timeout: 11000 },
+        );
+        const first = await environment();
+        await pet.screenshot({
+          path: path.join(output, `${side}-climb-1.png`),
+        });
+        await pet.waitForTimeout(450);
+        const next = await environment();
+        trace.push({
+          check: `${side}-climb`,
+          first,
+          next,
+          geometry: await geometry(),
+          edge: await pet
+            .locator(".pet-runtime")
+            .getAttribute("data-motion-edge"),
+        });
+        assert.ok(
+          origin(next).y < origin(first).y,
+          "Climbing must continuously move upward",
+        );
+        await pet.screenshot({
+          path: path.join(output, `${side}-climb-2.png`),
+        });
+      }
     }
-    await save({ roam: "free", edgeClimbing: true, highGliding: true });
+    if (config.whaleModel.motionRig?.version === 2) {
+      for (const side of ["left", "right", "top", "bottom"]) {
+        if (
+          process.env.FPL_SMOKE_PET_EDGE &&
+          process.env.FPL_SMOKE_PET_EDGE !== side
+        )
+          continue;
+        await save({ roam: "off", edgeClimbing: true, highGliding: true });
+        await place(side, side === "left" || side === "right");
+        await save({ roam: "free", edgeClimbing: true, highGliding: true });
+        const position = await waist();
+        const viewport = await environment();
+        await pet.mouse.move(
+          position.x - viewport.bounds.x,
+          position.y - viewport.bounds.y,
+        );
+        await pet.mouse.down();
+        await expect(pet.locator(".pet-runtime")).toHaveAttribute(
+          "data-motion",
+          "held",
+        );
+        await pet.waitForTimeout(150);
+        const heldViewport = await environment();
+        await pet.mouse.move(
+          position.x + (side === "right" ? -6 : 6) - heldViewport.bounds.x,
+          position.y +
+            (side === "bottom" ? -3 : side === "top" ? 3 : 0) -
+            heldViewport.bounds.y,
+        );
+        await pet.waitForTimeout(100);
+        const heldWaist = await waist();
+        assert.ok(
+          Math.hypot(
+            heldWaist.x - position.x - (side === "right" ? -6 : 6),
+            heldWaist.y -
+              position.y -
+              (side === "bottom" ? -3 : side === "top" ? 3 : 0),
+          ) < 2,
+          "The waist follows the cursor even when hanging limbs extend beyond the work area",
+        );
+        trace.push({
+          check: `held-${side}`,
+          environment: await environment(),
+          geometry: await geometry(),
+          waist: heldWaist,
+          pointers: await pet.evaluate(() => window.motionPointers),
+          grip: await pet
+            .locator(".pet-runtime")
+            .getAttribute("data-motion-grip"),
+        });
+        await pet.mouse.up();
+        await pet.waitForTimeout(2300);
+        trace.push({
+          check: `release-${side}`,
+          environment: await environment(),
+          geometry: await geometry(),
+          motion: await pet.locator(".pet-runtime").getAttribute("data-motion"),
+        });
+        await pet.screenshot({
+          path: path.join(output, `released-${side}.png`),
+        });
+        await expect(pet.locator(".pet-runtime")).toHaveAttribute(
+          "data-motion",
+          "climb",
+          { timeout: 5000 },
+        );
+        const before = await environment();
+        await pet.waitForTimeout(600);
+        const after = await environment();
+        const rendered = await pet.locator(".pet-runtime").evaluate((node) => ({
+          edge: node.getAttribute("data-motion-edge"),
+          facing: node.getAttribute("data-motion-facing"),
+          planes: node
+            .querySelector("g[data-pet-edges]")
+            ?.getAttribute("data-pet-edges"),
+          transform: node
+            .querySelector("g[data-pet-edges]")
+            ?.getAttribute("transform"),
+        }));
+        trace.push({ check: `placed-${side}`, before, after, rendered });
+        assert.notDeepEqual(origin(before), origin(after));
+        await pet.screenshot({ path: path.join(output, `placed-${side}.png`) });
+      }
+    }
+    if (process.env.FPL_SMOKE_PET_QUICK) return;
+    await save({ roam: "off", edgeClimbing: false, highGliding: true });
     await pet.evaluate(() => {
       Math.random = () => 0.1;
     });
-    await place("left", true);
+    await place("center", true);
+    await save({ roam: "free", edgeClimbing: false, highGliding: true });
     await expect(pet.locator(".pet-runtime")).toHaveAttribute(
       "data-motion",
       "glide",
       { timeout: 11000 },
     );
     const first = await environment();
+    const glideFacing = Number(
+      await pet.locator(".pet-runtime").getAttribute("data-motion-facing"),
+    );
     await pet.screenshot({ path: path.join(output, "glide-1.png") });
     await pet.waitForTimeout(450);
     const next = await environment();
+    trace.push({ check: "glide", first, next, facing: glideFacing });
+    assert.ok(glideFacing === 1 || glideFacing === -1);
     assert.ok(
-      next.bounds.x > first.bounds.x && next.bounds.y > first.bounds.y,
+      (origin(next).x - origin(first).x) * glideFacing > 0 &&
+        origin(next).y > origin(first).y,
       "Glide must move inward and down",
     );
     await pet.screenshot({ path: path.join(output, "glide-2.png") });
-    trace.push({ check: "glide", first, next });
     await pet.evaluate(() => window.futurePropsDesktop.openPetChat());
     const chat = context.pages().find((p) => p.url().includes("pet-chat.html"));
     await expect(pet.locator(".pet-runtime")).toHaveAttribute(
@@ -208,6 +413,7 @@ async function inspectPetMotion(studio, pet, context, projectId, directory) {
       });
     trace.push({ check: "chat-pause", stopped });
   } finally {
+    await finishLivePetRecording(pet, directory);
     await save(config.config.habits);
     await pet.evaluate(async ({ x, y }) => {
       const { figureGeometry } =
@@ -256,8 +462,7 @@ async function inspectMotionPoses(page, projectId, directory, schemeId) {
         await import("/src/features/desktop-pet/locomotion/demo.ts");
       const host = document.createElement("div");
       host.id = "motion-poses";
-      host.style.cssText =
-        "position:fixed;inset:0;z-index:99999;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(4,1fr);background:#eee9e1;color:#302c2b;padding:8px;gap:4px";
+      host.style.cssText = `position:fixed;inset:0;z-index:99999;display:grid;grid-template-columns:repeat(${Object.keys(MOTION_DEMOS).length},1fr);grid-template-rows:repeat(4,1fr);background:#eee9e1;color:#302c2b;padding:8px;gap:4px`;
       document.body.append(host);
       const ns = "http://www.w3.org/2000/svg",
         figures = [];
@@ -273,7 +478,7 @@ async function inspectMotionPoses(page, projectId, directory, schemeId) {
             : await createWhaleFigure(null, options);
         figures.push(figure);
         const svg = document.createElementNS(ns, "svg");
-        svg.setAttribute("viewBox", "-40 0 336 340");
+        svg.setAttribute("viewBox", "-100 -8 400 408");
         svg.style.cssText = "width:100%;height:calc(100% - 22px)";
         const group = document.createElementNS(ns, "g"),
           shadow = document.createElementNS(ns, "ellipse"),

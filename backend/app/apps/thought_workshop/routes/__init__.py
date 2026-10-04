@@ -46,6 +46,8 @@ from app.llm.call_logs.credentials import snapshot_from_principal
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
+from .multitable import router as multitable_router
+
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 
 
@@ -346,3 +348,5 @@ async def move_entry(
 
 
 router.include_router(knowledge_tools_router)
+
+router.include_router(multitable_router)

@@ -3,20 +3,32 @@ import type {
   PetGeometry,
   PetMotionFrame,
   PetEnvironment,
+  PetPosePlayback,
 } from "@platform/petMotion";
 import { PetLocomotion, idleMotion, type ActivitySettings } from "./controller";
+import { unshiftGeometry } from "@platform/petMotion";
 
 export function usePetLocomotion({
   enabled,
   settings,
   blocked,
   geometry,
+  placementGeometry,
+  placementDelta,
+  motionFailure,
+  motionTransition,
+  cancelPlayback,
   onEvent,
 }: {
   enabled: boolean;
   settings: ActivitySettings;
   blocked: boolean;
   geometry: () => PetGeometry | null;
+  placementGeometry?: () => PetGeometry | null;
+  placementDelta?: () => { x: number; y: number };
+  motionFailure?: () => string | null;
+  motionTransition?: () => PetPosePlayback | null;
+  cancelPlayback?: () => void;
   onEvent: (name: "roam" | "grab" | "drop") => void;
 }) {
   const [frame, setFrame] = useState<PetMotionFrame>(idleMotion);
@@ -29,8 +41,28 @@ export function usePetLocomotion({
     pending = useRef(false),
     failed = useRef(false);
   const inFlight = useRef<Promise<void> | null>(null);
-  const latest = useRef({ settings, blocked, geometry, onEvent });
-  latest.current = { settings, blocked, geometry, onEvent };
+  const latest = useRef({
+    settings,
+    blocked,
+    geometry,
+    placementGeometry,
+    placementDelta,
+    motionFailure,
+    motionTransition,
+    cancelPlayback,
+    onEvent,
+  });
+  latest.current = {
+    settings,
+    blocked,
+    geometry,
+    placementGeometry,
+    placementDelta,
+    motionFailure,
+    motionTransition,
+    cancelPlayback,
+    onEvent,
+  };
   const signature = JSON.stringify([settings, blocked]);
   const cancel = useCallback(() => {
     const value = model.current;
@@ -85,14 +117,33 @@ export function usePetLocomotion({
       last = now;
       const value = model.current;
       if (!value || pending.current || failed.current) return;
-      const body = latest.current.geometry();
-      if (!body) return;
+      const poseFailure = latest.current.motionFailure?.();
+      if (poseFailure) {
+        failed.current = true;
+        value.stop();
+        setFrame({ ...value.frame });
+        setError(
+          poseFailure.includes("unsupported")
+            ? "当前角色资源不支持自然运动，已停止自主运动，请更新角色资源"
+            : poseFailure.includes("view") ||
+                poseFailure === "needs-authored-transition"
+              ? "该动作缺少连续过渡姿势，已停止自主运动"
+              : "角色姿势无法保持支撑，已停止自主运动，请更新角色资源",
+        );
+        void cancel();
+        return;
+      }
+      const raw = latest.current.geometry();
+      if (!raw) return;
+      const body = unshiftGeometry(raw, value.environment.sceneOffset);
       setShape((previous) =>
         JSON.stringify(previous) === JSON.stringify(body) ? previous : body,
       );
-      if (!value.step(dt, body)) {
+      if (!value.step(dt, body, latest.current.motionTransition?.())) {
         setFrame((current) =>
-          current.state === "idle" ? current : { ...value.frame },
+          JSON.stringify(current) === JSON.stringify(value.frame)
+            ? current
+            : { ...value.frame },
         );
         return;
       }
@@ -108,6 +159,7 @@ export function usePetLocomotion({
         y: value.y,
         geometry: body,
         manual: value.manual,
+        grab: value.manual ? value.frame.grip : undefined,
       })
         .then((env) => {
           if (!alive || owner !== generation.current) return;
@@ -152,6 +204,7 @@ export function usePetLocomotion({
     if (!value) return;
     if (blocked && value.pressing) value.release(true);
     value.configure(settings, blocked);
+    failed.current = false;
     cancel();
     setFrame({ ...value.frame });
     // Only actual settings/pause changes cancel a trajectory.
@@ -163,6 +216,9 @@ export function usePetLocomotion({
     shape,
     error,
     press(x: number, y: number) {
+      failed.current = false;
+      setError("");
+      latest.current.cancelPlayback?.();
       cancel();
       model.current?.press(x, y);
       setFrame({ ...(model.current?.frame ?? idleMotion()) });
@@ -174,19 +230,15 @@ export function usePetLocomotion({
     release(cancelled = false) {
       const value = model.current;
       const held = value?.manual;
-      const target = value ? { x: value.x, y: value.y } : null;
+      const shift = latest.current.placementDelta?.() ?? { x: 0, y: 0 };
+      const target = value
+        ? { x: value.x + shift.x, y: value.y + shift.y }
+        : null;
       const previous = inFlight.current;
       const tap = value?.release(cancelled) ?? false;
       const interrupted = cancel();
       const owner = generation.current;
-      if (
-        held &&
-        !cancelled &&
-        target &&
-        value &&
-        (Math.abs(target.x - value.environment.bounds.x) > 0.5 ||
-          Math.abs(target.y - value.environment.bounds.y) > 0.5)
-      ) {
+      if (held && !cancelled && target && value) {
         pending.current = true;
         const operation = Promise.all([interrupted, previous])
           .then(async ([env]) => {
@@ -198,8 +250,17 @@ export function usePetLocomotion({
               !bridge?.movePetFrame
             )
               return;
-            const body = latest.current.geometry();
-            if (!body) return;
+            const neutral = latest.current.placementGeometry?.();
+            const raw = neutral ?? latest.current.geometry();
+            if (!raw) return;
+            const body = unshiftGeometry(raw, {
+              x:
+                (value.environment.sceneOffset?.x ?? 0) +
+                (neutral ? 0 : shift.x),
+              y:
+                (value.environment.sceneOffset?.y ?? 0) +
+                (neutral ? 0 : shift.y),
+            });
             const placed = await bridge.movePetFrame({
               generation: owner,
               sequence: ++sequence.current,
@@ -210,13 +271,26 @@ export function usePetLocomotion({
             });
             if (model.current !== value || owner !== generation.current) return;
             value.cancelled(placed);
+            value.placed(placed, body);
             setEnvironment(placed);
-            setFrame({ ...value.frame });
+            setFrame({ ...value.frame, placementShift: shift });
           })
-          .catch(() => {
+          .catch((cause) => {
             if (model.current !== value || owner !== generation.current) return;
             failed.current = true;
-            setError("放置失败，请关闭桌宠后重新打开");
+            value.stop();
+            setFrame({ ...value.frame });
+            const reason = cause instanceof Error ? cause.message : "";
+            setError(
+              reason.includes("当前系统无法")
+                ? "当前系统无法在该位置显示完整角色，请移回桌面范围"
+                : reason.includes("可见范围") ||
+                    reason.includes("接触边缘") ||
+                    reason.includes("几何")
+                  ? "无法确认角色的可见范围，请关闭桌宠后重新打开"
+                  : "放置失败，请关闭桌宠后重新打开",
+            );
+            console.error("Pet placement failed", cause);
           });
         inFlight.current = operation;
         void operation.finally(() => {
@@ -226,7 +300,8 @@ export function usePetLocomotion({
           }
         });
       }
-      if (model.current) setFrame({ ...model.current.frame });
+      if (model.current && (!held || cancelled))
+        setFrame({ ...model.current.frame });
       return tap;
     },
   };

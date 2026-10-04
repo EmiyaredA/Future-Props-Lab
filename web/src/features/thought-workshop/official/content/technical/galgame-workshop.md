@@ -49,11 +49,22 @@ Story 入口处理格式适配并调用纯校验。身份与角色检查确认 I
 > [!NOTE]
 > 互动作品保留“等待选择”，线性视频保留“选择后的结果”。向别人描述导出问题时，请同时提供作品版本和所选路线。
 
+## 故事编辑、路线求值和渲染之间的输入输出
+
+编辑操作以稳定角色、章节和片段 ID 修改 Story；纯校验分层验证引用、时间线、分支和表现。试玩求值拥有当前片段、变量和选择，Story 本身拥有全部路线描述。一次选择产生下一运行状态，不意味着把试玩当前位置持久化成工程入口。
+
+路线视频固定文档、所选路线与素材，转换成公共媒体输入。直接导出消费公共渲染能力，显式交接到视频编辑器使用独立公开用例。原生故事继续可编辑，线性视频只表达所选路径，不能从一个成品恢复全部交互分支。
+
+## 分支与素材的异常验证
+
+测试悬空目标、缺失角色、国际化字段、无效时间区间和未确定路线，再核对选中路线的字幕、音频与接缝。保存版本冲突保留草稿，格式兼容经正式适配入口处理；不能手改持久 JSON 或重复播放一条路线就声称所有路径有效。源码入口分别对应 story_validation、story_flow 和 story operations。
+
 ## 相关阅读
 
-- [时间线与媒体渲染：从状态到帧](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
-- [素材与导出：引用、快照和包有什么不同](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)
+- [时间线与媒体渲染](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
+- [素材上传、引用与预览](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)
 - [Galgame 工坊：导入导出与交付](/apps/thought-workshop/official-knowledge-bases/galgame-workshop/documents/delivery)
+- [公共能力复用与应用交接](/apps/thought-workshop/official-knowledge-bases/technical/documents/app-handoffs)
 
 ## 代码入口
 

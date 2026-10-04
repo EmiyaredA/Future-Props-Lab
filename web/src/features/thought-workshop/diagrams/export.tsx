@@ -10,13 +10,14 @@ const dataUrl = (blob: Blob) =>
     reader.onerror = () => reject(new Error("图片读取失败"));
     reader.readAsDataURL(blob);
   });
-export async function canvasSvgText(scene: CanvasScene) {
+export async function canvasSvgText(
+  scene: CanvasScene,
+  assetUrl = (id: string) => `/v1/files/${encodeURIComponent(id)}/content`,
+) {
   const images: Record<string, string> = {};
   await Promise.all(
     canvasAssetIds(scene).map(async (id) => {
-      images[id] = await dataUrl(
-        await fetchApiBlob(`/v1/files/${encodeURIComponent(id)}/content`),
-      );
+      images[id] = await dataUrl(await fetchApiBlob(assetUrl(id)));
     }),
   );
   return renderToStaticMarkup(<CanvasSvg scene={scene} images={images} />);

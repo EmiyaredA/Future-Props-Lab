@@ -1,4 +1,4 @@
-import type { PetGeometry } from "@platform/petMotion";
+import type { PetEdge, PetGeometry } from "@platform/petMotion";
 
 /** Sample the painted alpha at small resolution, not a full-resolution GPU readback. */
 export function figureGeometry(group: SVGGElement): PetGeometry | null {
@@ -49,6 +49,40 @@ export function figureGeometry(group: SVGGElement): PetGeometry | null {
   const anchorMatrix = group.getScreenCTM();
   if (!anchorMatrix) return null;
   // The rest sole stays stable while individual feet lift; alpha bounds still protect every limb.
-  const feet = new DOMPoint(128, 256).matrixTransform(anchorMatrix);
-  return { visible, feet: { x: feet.x, y: feet.y } };
+  const authored = group.getAttribute("data-pet-edges");
+  const planes = authored
+    ? (JSON.parse(authored) as Record<PetEdge, [number, number]>)
+    : null;
+  const feet = new DOMPoint(...(planes?.bottom ?? [128, 256])).matrixTransform(
+    anchorMatrix,
+  );
+  const edges = planes
+    ? (Object.fromEntries(
+        Object.entries(planes).map(([edge, p]) => {
+          const mapped = new DOMPoint(...p).matrixTransform(anchorMatrix);
+          const reflected =
+            anchorMatrix.a < 0 && (edge === "left" || edge === "right");
+          return [
+            reflected ? (edge === "left" ? "right" : "left") : edge,
+            { x: mapped.x, y: mapped.y },
+          ];
+        }),
+      ) as PetGeometry["edges"])
+    : undefined;
+  const supportedEdges = group
+    .getAttribute("data-pet-supported-edges")
+    ?.split(",")
+    .filter(Boolean) as PetEdge[] | undefined;
+  const authoredStride = Number(group.getAttribute("data-pet-stride"));
+  const strideLength =
+    authoredStride > 0
+      ? authoredStride * Math.hypot(anchorMatrix.a, anchorMatrix.b)
+      : undefined;
+  return {
+    visible,
+    feet: { x: feet.x, y: feet.y },
+    edges,
+    supportedEdges,
+    strideLength,
+  };
 }

@@ -1,4 +1,4 @@
-# 后台任务：提交中断与结果恢复
+# 后台任务与恢复
 
 同样显示“生成失败”，背后可能是两件事：供应商有没有接单无法确认，或者视频已经完成、只是在下载时断网。前者再次提交可能重复计费，后者应尽量取回已有结果。
 
@@ -50,11 +50,22 @@ stateDiagram-v2
 > [!WARNING]
 > 提交结果不明时，不要把旧任务改回排队状态。保留任务与错误信息，先核对供应商执行情况；重新生成应是一次明确的新操作。
 
+## 一次图片生成的数据生命周期
+
+视觉工坊生成用例先验证节点输入、素材归属和模型能力，建立应用自己的任务记录；驱动器通过任务存取钩子认领工作，再把明确输入交给供应商。记录得到供应商 ID 后可继续轮询，得到结果地址后才能进入本地结算。结果素材形成之后，页面才拥有可复用产物。
+
+任务快照、外部 ID 和本地素材分别表达意图、执行和结果。修改画布不应重放收费提交，也不应悄悄改变已提交请求。后台用任务 Workspace 组装素材，不依赖发起页面仍然打开。
+
+## 恢复和重试按阶段判断
+
+排队竞争需要条件认领；提交中断要安全失败；结果下载失败可按正式入口恢复已有结果。完成但缺地址、素材落盘异常和日志结算失败都需要独立反馈。测试这些边界，才能证明“再次点击”没有被实现成所有阶段都自动重新提交。
+
 ## 相关阅读
 
 - [供应商适配与流式推理](/apps/thought-workshop/official-knowledge-bases/technical/documents/providers)
 - [视觉创作工坊：节点图与生成任务](/apps/thought-workshop/official-knowledge-bases/technical/documents/visual-workshop)
 - [调用日志与排查](/apps/thought-workshop/official-knowledge-bases/general/documents/logs)
+- [后端功能切片与用例边界](/apps/thought-workshop/official-knowledge-bases/technical/documents/backend-design)
 
 ## 代码入口
 

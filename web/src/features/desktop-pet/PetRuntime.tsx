@@ -13,6 +13,7 @@ import { playPetTone } from "./sound";
 import { playbackDuration, type PetEvent } from "./playback";
 import { usePetLocomotion } from "./locomotion/usePetLocomotion";
 import { useLegacyRoaming } from "./locomotion/useLegacyRoaming";
+import { humanMotionUnavailable } from "./locomotion/motionAvailability";
 import { useTheme } from "@shared/ui/theme";
 import "@shared/ui/theme.css";
 import "./runtime.css";
@@ -230,20 +231,30 @@ export function PetRuntime({ projectId }: { projectId: string }) {
     window.futurePropsDesktop?.movePetFrame &&
     window.futurePropsDesktop.petEnvironment,
   );
+  const unavailableMotion = humanMotionUnavailable(
+    displayedDocument?.whaleModel,
+  );
   const movement = usePetLocomotion({
     enabled: continuous,
     settings: {
-      roam,
+      roam: unavailableMotion ? "off" : roam,
       size: habits.size,
       edgeClimbing: habits.edgeClimbing ?? true,
       highGliding: habits.highGliding ?? true,
+      dropDuration: document ? playbackDuration(document, "drop") / 1000 : 1.8,
     },
     blocked: chatActive || preview.linked,
     geometry: () => renderer.current?.geometry?.() ?? null,
+    motionFailure: () => renderer.current?.motionFailure?.() ?? null,
+    motionTransition: () => renderer.current?.motionTransition?.() ?? null,
+    cancelPlayback: () => renderer.current?.cancelMotionPlayback?.(),
+    placementGeometry: () => renderer.current?.placementGeometry?.() ?? null,
+    placementDelta: () =>
+      renderer.current?.placementDelta?.() ?? { x: 0, y: 0 },
     onEvent: trigger,
   });
   const legacy = useLegacyRoaming(
-    Boolean(document) && !continuous,
+    Boolean(document) && !continuous && !unavailableMotion,
     roam,
     pressed || chatActive || preview.linked,
     trigger,
@@ -382,6 +393,13 @@ export function PetRuntime({ projectId }: { projectId: string }) {
     <div
       className="pet-runtime"
       data-motion={movement.frame.state}
+      data-motion-edge={movement.frame.edge ?? undefined}
+      data-motion-facing={movement.frame.facing}
+      data-motion-stage={movement.frame.stage}
+      data-motion-attachment={movement.frame.attachment}
+      data-motion-grip={
+        movement.frame.grip ? JSON.stringify(movement.frame.grip) : undefined
+      }
       style={
         movement.environment
           ? ({
@@ -393,9 +411,11 @@ export function PetRuntime({ projectId }: { projectId: string }) {
                 movement.shape &&
                 movement.environment.workArea.y +
                   movement.environment.workArea.height -
-                  (movement.environment.bounds.y + movement.shape.feet.y) <
+                  (movement.environment.bounds.y +
+                    (movement.environment.sceneOffset?.y ?? 0) +
+                    movement.shape.feet.y) <
                   42
-                  ? `${movement.environment.bounds.height - movement.shape.visible.y + 6}px`
+                  ? `${movement.environment.bounds.height - movement.shape.visible.y - (movement.environment.sceneOffset?.y ?? 0) + 6}px`
                   : undefined,
             } as import("react").CSSProperties)
           : undefined
@@ -426,7 +446,12 @@ export function PetRuntime({ projectId }: { projectId: string }) {
         <div
           ref={characterHost}
           className={`pet-runtime-character${eventName === "chatThinking" ? " pet-chat-thinking" : eventName === "chatSpeaking" ? " pet-chat-speaking" : ""}`}
-          style={{ height: habits.size, width: habits.size * 0.75 }}
+          style={{
+            height: habits.size,
+            top: Math.max(4, 400 - 52 - habits.size),
+            width: habits.size * 0.75,
+            transform: `translate(calc(-50% + ${movement.environment?.sceneOffset?.x ?? 0}px), ${movement.environment?.sceneOffset?.y ?? 0}px)`,
+          }}
         >
           <DesktopPetFigure
             ref={renderer}
@@ -440,7 +465,23 @@ export function PetRuntime({ projectId }: { projectId: string }) {
             }
             playbackMode={preview.display?.draft.mode ?? "runtime"}
             dragged={dragging || movement.frame.state === "held"}
-            locomotion={movement.frame}
+            locomotion={
+              preview.display
+                ? null
+                : movement.frame.grip
+                  ? {
+                      ...movement.frame,
+                      grip: {
+                        x:
+                          movement.frame.grip.x +
+                          (movement.environment?.sceneOffset?.x ?? 0),
+                        y:
+                          movement.frame.grip.y +
+                          (movement.environment?.sceneOffset?.y ?? 0),
+                      },
+                    }
+                  : movement.frame
+            }
             motionDemo={preview.display?.draft.motionDemo}
           />
         </div>
@@ -493,6 +534,22 @@ export function PetRuntime({ projectId }: { projectId: string }) {
               }
             </button>
           ))}
+        </div>
+      )}
+      {unavailableMotion && !error && !roamError && !preview.error && (
+        <div
+          className="pet-runtime-motion-notice"
+          role="status"
+          aria-label={unavailableMotion}
+        >
+          <span>旧分件动画已暂停</span>
+          <button
+            onClick={() =>
+              void window.futurePropsDesktop?.showStudioFromPet?.()
+            }
+          >
+            打开应用
+          </button>
         </div>
       )}
       {(error || roamError || preview.error) && (

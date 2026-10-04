@@ -72,7 +72,7 @@ test("rich notes persist and archives import", async ({ page }, testInfo) => {
   expect((await imported).ok()).toBe(true);
   await expect(page.getByText("正在处理…", { exact: true })).not.toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
+  await page.getByRole("button", { name: "我的知识库", exact: true }).click();
   await expect(
     page
       .locator(".knowledge-cards .workshop-project-card")
@@ -255,7 +255,7 @@ test("composition, failed saves, real revision conflicts, and stale AI selection
   await saveNote(page);
   await expect(page.getByText("保存失败", { exact: true })).toBeVisible();
   await expect(prose).toContainText("失败后仍保留的本地正文");
-  await page.getByRole("button", { name: "所有知识库", exact: true }).click();
+  await page.getByRole("button", { name: "我的知识库", exact: true }).click();
   await expect(
     page.getByRole("alertdialog", { name: "仍有未保存的内容" }),
   ).toBeVisible();

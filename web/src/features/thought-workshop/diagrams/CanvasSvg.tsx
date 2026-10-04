@@ -1,3 +1,4 @@
+import { useDocumentAccess } from "../DocumentAccess";
 import { useId } from "react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import {
@@ -34,9 +35,8 @@ function ManagedSvgImage({
   width: number;
   height: number;
 }) {
-  const { url, error } = useApiBlobUrl(
-    `/v1/files/${encodeURIComponent(id)}/content`,
-  );
+  const access = useDocumentAccess();
+  const { url, error } = useApiBlobUrl(access.assetUrl(id));
   return url ? (
     <image
       href={url}

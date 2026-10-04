@@ -23,22 +23,66 @@ const figureSources = import.meta.glob(
   "../src/features/thought-workshop/official/content/technical/figures/*.json",
 );
 
-describe("technical principles reference library", () => {
-  it("ships twelve platform chapters and one principles chapter per application", () => {
+describe("technical documentation library", () => {
+  it("ships six ordered groups, preserves legacy IDs and covers every application", () => {
     const applications = TECHNICAL_LIBRARY.documents.filter(
-      (doc) => doc.group === "应用原理",
+      (doc) => doc.group === "各应用实现",
     );
     expect(applications.map((doc) => doc.id).sort()).toEqual(
       APPLICATION_DEFINITIONS.map((app) => app.id).sort(),
     );
-    expect(TECHNICAL_LIBRARY.documents.length - applications.length).toBe(12);
-    expect(TECHNICAL_LIBRARY.documents).toHaveLength(22);
+    expect(TECHNICAL_LIBRARY.documents.length - applications.length).toBe(21);
+    expect(TECHNICAL_LIBRARY.documents).toHaveLength(31);
     expect(new Set(TECHNICAL_LIBRARY.documents.map((doc) => doc.id)).size).toBe(
       TECHNICAL_LIBRARY.documents.length,
     );
     expect(TECHNICAL_LIBRARY.documents.map((doc) => doc.order)).toEqual(
-      Array.from({ length: 22 }, (_, index) => index),
+      Array.from({ length: 31 }, (_, index) => index),
     );
+    expect(TECHNICAL_LIBRARY.title).toBe("Future Props Lab 技术文档");
+    expect([
+      ...new Set(TECHNICAL_LIBRARY.documents.map((doc) => doc.group)),
+    ]).toEqual([
+      "系统全景与架构",
+      "组件化设计",
+      "数据模型与数据流",
+      "模型与执行机制",
+      "各应用实现",
+      "工程验证与设计取舍",
+    ]);
+    expect(TECHNICAL_LIBRARY.documents.map((doc) => doc.id)).toEqual([
+      "scope",
+      "system",
+      "modules",
+      "frontend-design",
+      "backend-design",
+      "component-contracts",
+      "app-handoffs",
+      "data-model",
+      "identity",
+      "revision",
+      "assets",
+      "sqlite",
+      "data-exchange",
+      "providers",
+      "tasks",
+      "rendering",
+      "automation",
+      "presentation-workshop",
+      "thought-workshop",
+      "visual-workshop",
+      "galgame-workshop",
+      "video-editor",
+      "motion-compositor",
+      "live2d-workshop",
+      "desktop-pet",
+      "audio-annotation",
+      "director-desk",
+      "desktop",
+      "contracts",
+      "engineering",
+      "decisions",
+    ]);
     expect(Object.keys(chapterSources)).toHaveLength(
       TECHNICAL_LIBRARY.documents.length,
     );
@@ -50,6 +94,16 @@ describe("technical principles reference library", () => {
     for (const chapter of TECHNICAL_LIBRARY.documents) {
       const markdown = await loadOfficialDocument(chapter);
       const tree = unified().use(remarkParse).parse(markdown);
+      const titles = tree.children.filter(
+        (node) => node.type === "heading" && node.depth === 1,
+      );
+      expect(titles, chapter.id).toHaveLength(1);
+      expect(markdown.split("\n")[0], chapter.id).toBe(`# ${chapter.title}`);
+      for (const ref of chapter.related) {
+        expect(markdown, chapter.id).toContain(
+          `/official-knowledge-bases/${ref.libraryId}/documents/${ref.documentId}`,
+        );
+      }
       const code = tree.children.filter((node) => node.type === "code");
       const figures = code.filter((node) => node.lang === "fpl-canvas");
       const uml = code.filter((node) => node.lang === "mermaid");

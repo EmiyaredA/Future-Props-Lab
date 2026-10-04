@@ -12,7 +12,17 @@ export type PreviewDraft = PreviewIdentity & {
   key: number;
   line: number;
   motionDemo?:
-    "held" | "climb-left" | "climb-right" | "glide-left" | "glide-right" | null;
+    | "held"
+    | "walk-left"
+    | "walk-right"
+    | "climb-left"
+    | "climb-right"
+    | "climb-top"
+    | "climb-bottom"
+    | "glide-left"
+    | "glide-right"
+    | "land"
+    | null;
 };
 export type PreviewStatus = {
   sessionId: string | null;
@@ -75,10 +85,15 @@ export function previewDraft(value: unknown): PreviewDraft {
     item.motionDemo !== null &&
     ![
       "held",
+      "walk-left",
+      "walk-right",
       "climb-left",
       "climb-right",
+      "climb-top",
+      "climb-bottom",
       "glide-left",
       "glide-right",
+      "land",
     ].includes(item.motionDemo as string)
   )
     throw new Error("预览姿态无效");

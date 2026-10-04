@@ -51,11 +51,22 @@ sequenceDiagram
 > [!TIP]
 > 排查一张生成图时，同时记录节点 ID、任务 ID 与结果素材 ID。它们分别指向意图、执行和产物，不应相互替代。
 
+## 图形编辑与生成请求各有确认点
+
+前端画布编辑节点和连线，operations 维护创作图规则，generation 组装有效模型输入，generation_runner 与公共驱动器处理执行。位置和文本属于工程，任务阶段与结果素材属于后台记录；节点被选中或播放器打开不应触发新的模型请求。
+
+一次图片生成先读取明确输入与能力，校验参考素材，再创建任务。供应商接单后得到任务身份，完成后下载并托管结果，页面关联实际结果素材。工程随后继续编辑不改变已经提交的输入，也不表示原任务需要再次收费执行。
+
+## 节点、任务和素材的独立验收
+
+检查修改节点不会自动生成、非法模型能力在提交前拒绝、submitting 中断不重提、下载失败保留已有结果依据，以及结果能授权读取并再次输入。生成节点、任务 ID 和素材 ID 都应能追到明确对象；仅在画布显示一张预览不能证明最终文件和记录一致。
+
 ## 相关阅读
 
-- [后台任务：提交中断与结果恢复](/apps/thought-workshop/official-knowledge-bases/technical/documents/tasks)
+- [后台任务与恢复](/apps/thought-workshop/official-knowledge-bases/technical/documents/tasks)
 - [供应商适配与流式推理](/apps/thought-workshop/official-knowledge-bases/technical/documents/providers)
 - [视觉创作工坊：主要操作流程](/apps/thought-workshop/official-knowledge-bases/visual-workshop/documents/workflow)
+- [前端组件与状态分工](/apps/thought-workshop/official-knowledge-bases/technical/documents/frontend-design)
 
 ## 代码入口
 

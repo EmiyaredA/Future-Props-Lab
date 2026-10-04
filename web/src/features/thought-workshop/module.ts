@@ -1,6 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
-import { officialPath } from "./official/catalog";
+import { officialPath } from "./community/legacyReference";
 
 const moduleDefinition = {
   definition: {

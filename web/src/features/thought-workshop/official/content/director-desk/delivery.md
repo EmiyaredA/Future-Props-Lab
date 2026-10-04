@@ -38,4 +38,4 @@ fpl open director PROJECT_ID
 ## 相关阅读
 
 - [保存与资源管理](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/storage)：保证工程结构和资源引用已写入。
-- [集成与 Agent/SDK 技术原理](/apps/thought-workshop/official-knowledge-bases/technical/documents/automation)：了解受控自动化入口的边界。
+- [集成与 Agent/CLI/SDK 技术文档](/apps/thought-workshop/official-knowledge-bases/technical/documents/automation)：了解受控自动化入口的边界。

@@ -33,8 +33,8 @@ export async function getLinkPreview(
 export type NoteSummary = components["schemas"]["ThoughtNoteSummary"];
 export type NoteInput = Omit<
   components["schemas"]["ThoughtNotePut"],
-  "expected_revision"
->;
+  "expected_revision" | "kind"
+> & { kind?: "note" | "multitable" };
 export type KnowledgeBase = components["schemas"]["KnowledgeBaseOut"];
 export type NoteQuery = NonNullable<
   paths["/v1/thought-workshop/notes"]["get"]["parameters"]["query"]
@@ -82,7 +82,11 @@ export const createNote = async (body: NoteInput) => {
   );
   return unwrap(
     await api.POST("/v1/thought-workshop/notes", {
-      body: { ...body, expected_knowledge_revision: project.revision },
+      body: {
+        ...body,
+        kind: body.kind ?? "note",
+        expected_knowledge_revision: project.revision,
+      },
     }),
   );
 };
@@ -90,7 +94,7 @@ export const saveNote = async (id: string, body: NoteInput, revision: number) =>
   unwrap(
     await api.PUT("/v1/thought-workshop/notes/{note_id}", {
       params: { path: { note_id: id } },
-      body: { ...body, expected_revision: revision },
+      body: { ...body, kind: body.kind ?? "note", expected_revision: revision },
     }),
   );
 export const deleteNote = async (

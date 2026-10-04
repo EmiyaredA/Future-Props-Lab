@@ -1,4 +1,4 @@
-# 系统全景：一份操作如何穿过应用
+# 系统全景与一次操作的完整路径
 
 在笔记里拖动一张图片后，画面已经变了；刷新页面却不一定能找回这次修改。要解释这个差异，需要区分三个时刻：**界面完成编辑、请求通过校验、服务器确认保存**。
 
@@ -51,11 +51,24 @@ Future Props Lab 将多个创作应用、模型管理与治理能力放在同一
 > [!TIP]
 > 排查一次修改时，分别记录“编辑前版本、保存响应、重新打开后的内容”。这三项比仅查看当前截图更能定位数据在哪一步发生变化。
 
+## 把保存路径拆成可以核对的输入输出
+
+给画板添加图片时，先通过素材入口上传字节并获得 ID，再把图片元素、位置与连线写入 CanvasScene。正文提交包含场景和 expected_revision，不包含选中状态或视口，也不把临时 Blob URL 当成图片来源。服务端从 Principal 获取当前 Workspace，路由调用 Notes，而不是自行写表。
+
+Notes 确认笔记未删除、目录归属不被正文保存改变，校验引用目标及图片后，在同一数据库事务中 CAS 更新正文、搜索文本、素材与文档引用索引；内容变化形成历史。成功响应包含新快照与 revision。浏览器以它推进已确认版本，保留在途期间新产生的输入。上传和保存是两个操作，数据库回滚也不会自动撤销先前上传。
+
+## 用三条操作识别不同执行边界
+
+普通笔记保存只需本机业务与存储；图片生成先固定模型输入，再经公共任务驱动调用外部供应商，最后将结果落盘；视频导出先核对保存版本、预检参数和素材，再用工程快照进行确定性求值。三者都有校验和明确结果，但不共用一份可变的“当前工程”。
+
+验证保存链时观察提交前版本、返回版本和重新打开的内容，并检查图片仍可授权读取。模型链另记录任务 ID 与结果素材；渲染链另记录预检指纹与输出区间。这样页面成功提示才能对应具体的持久事实。
+
 ## 相关阅读
 
-- [保存、历史与并发：防止静默覆盖](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
-- [素材与导出：引用、快照和包有什么不同](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)
-- [模块边界与路由：为什么按功能拆分](/apps/thought-workshop/official-knowledge-bases/technical/documents/modules)
+- [编辑、保存、历史与并发](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
+- [素材上传、引用与预览](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)
+- [代码组织与依赖方向](/apps/thought-workshop/official-knowledge-bases/technical/documents/modules)
+- [项目定位与系统边界](/apps/thought-workshop/official-knowledge-bases/technical/documents/scope)
 
 ## 代码入口
 

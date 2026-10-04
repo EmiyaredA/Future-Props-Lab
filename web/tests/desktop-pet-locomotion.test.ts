@@ -6,7 +6,12 @@ import {
   type HumanFrame,
 } from "../src/features/desktop-pet/humanFigure";
 
-function stage(walkInPlace: boolean, width = 165) {
+function stage(
+  walkInPlace: boolean,
+  width = 165,
+  waist = false,
+  fixedScale = false,
+) {
   const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
   const frames: HumanFrame[] = [];
   const pet = createPet(
@@ -25,6 +30,8 @@ function stage(walkInPlace: boolean, width = 165) {
       startX: width / 2,
       bounds: () => ({ W: width, H: 220, floorY: 212, S: 0.793269 }),
       figure: {
+        fixedScale,
+        pickupPoint: () => (waist ? [128, 188] : null),
         draw: (_group: unknown, _face: unknown, frame: HumanFrame) =>
           frames.push(structuredClone(frame)),
       },
@@ -36,6 +43,34 @@ function stage(walkInPlace: boolean, width = 165) {
   };
   return { pet, group, frames, tick };
 }
+
+test("joint figures keep physical proportions through walk, idle and impact instead of outer breathing squash", () => {
+  const { pet, group, tick } = stage(true, 165, false, true);
+  const scales: number[][] = [];
+  const sample = () => {
+    tick();
+    const match = group.getAttribute("transform")!.match(/scale\(([^)]+)\)/)!;
+    scales.push(match[1].split(/\s+/).map(Number));
+  };
+  for (let i = 0; i < 12; i++) {
+    pet.setLocomotion(demoMotion("walk-right", i / 30));
+    sample();
+  }
+  pet.setLocomotion(null);
+  for (let i = 0; i < 40; i++) sample();
+  pet.replaceReaction("jump", null);
+  for (let i = 0; i < 40; i++) sample();
+  expect(scales.every(([x, y]) => Math.abs(x) === 0.7933 && y === 0.7933)).toBe(
+    true,
+  );
+  const legacy = stage(true);
+  const transforms = new Set<string>();
+  for (let i = 0; i < 20; i++) {
+    legacy.tick();
+    transforms.add(legacy.group.getAttribute("transform")!.split("scale(")[1]);
+  }
+  expect(transforms.size).toBeGreaterThan(1);
+});
 
 test.each(["walk", "run"])(
   "%s keeps moving limbs inside the narrow desktop figure without shifting its anchor",
@@ -195,4 +230,77 @@ test("the public held pose keeps the grabbed point fixed while squash and swing 
       Math.abs(m.y + x * Math.sin(m.r) + y * Math.cos(m.r) - grip.y),
     ).toBeLessThan(0.2);
   }
+});
+
+test("physical direction changes retain a nonzero scale for contact coordinates", () => {
+  const { pet, group, tick } = stage(true);
+  for (const preset of [
+    "walk-left",
+    "walk-right",
+    "climb-left",
+    "climb-right",
+  ] as const) {
+    pet.setLocomotion(demoMotion(preset, 0));
+    tick();
+    const transform = group.getAttribute("transform")!;
+    const scale = Number(transform.match(/scale\((-?[\d.]+)/)?.[1]);
+    expect(Math.abs(scale)).toBeCloseTo(0.793269, 4);
+  }
+});
+
+test("waist pickup moves into the grab point continuously and release does not jump", () => {
+  const { pet, group, frames, tick } = stage(true, 165, true);
+  tick();
+  const grip = { x: 82.5, y: 110 };
+  for (let i = 0; i < 8; i++) {
+    pet.setLocomotion({ ...demoMotion("held", i / 20), grip });
+    tick();
+  }
+  expect(frames.at(-1)!.gripPoint).toEqual([128, 188]);
+  const position = () =>
+    group
+      .getAttribute("transform")!
+      .match(/-?\d+(?:\.\d+)?/g)!
+      .map(Number)
+      .slice(0, 2);
+  const before = position();
+  pet.setLocomotion(null);
+  tick();
+  const after = position();
+  expect(Math.hypot(after[0] - before[0], after[1] - before[1])).toBeLessThan(
+    6,
+  );
+  for (let i = 0; i < 8; i++) tick();
+  expect(position()[1]).toBeCloseTo(212, 1);
+});
+test("public placement offset lets the host absorb a hold without moving its waist on release", () => {
+  const { pet, group, tick } = stage(true, 165, true);
+  tick();
+  const point = () => {
+    const a = group
+      .getAttribute("transform")!
+      .match(/-?\d+(?:\.\d+)?/g)!
+      .map(Number);
+    return { x: a[0], y: a[1] + (188 - 256) * a[4] };
+  };
+  for (let i = 0; i < 12; i++) {
+    pet.setLocomotion({
+      ...demoMotion("held", i / 20),
+      grip: { x: 70, y: 105 },
+      swing: 0,
+    });
+    tick();
+  }
+  const held = point();
+  const shift = pet.placementDelta();
+  expect(pet.placementDelta()).toEqual(shift);
+  pet.setLocomotion({
+    ...demoMotion("held", 0),
+    state: "idle",
+    placementShift: shift,
+  });
+  tick();
+  const released = point();
+  expect(released.x + shift.x).toBeCloseTo(held.x, 1);
+  expect(released.y + shift.y).toBeCloseTo(held.y, 1);
 });

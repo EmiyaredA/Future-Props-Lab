@@ -13,7 +13,9 @@ from pathlib import PurePosixPath
 
 from PIL import Image, UnidentifiedImageError
 
+from .authored_motion import validate_face_source_images
 from .human_motion import JOINT_PARENTS, validate_motion_rig
+from .whale_motion import PARENTS as WHALE_PARENTS
 
 MAX_ARCHIVE = 32 * 1024 * 1024
 MAX_UNPACKED = 64 * 1024 * 1024
@@ -56,9 +58,13 @@ def _expected_paths(model: dict) -> set[str]:
     parts = model.get("parts")
     feat = model.get("feat")
     schemes = model.get("schemes")
+    rig = model.get("motionRig")
+    version_two = isinstance(rig, dict) and type(rig.get("version")) is int and rig["version"] == 2
+    # The larger candidate budget is accepted only after profile-specific full rig validation below.
+    max_parts = 128 if version_two else 80
     if (
         not isinstance(parts, list)
-        or not 1 <= len(parts) <= 80
+        or not 1 <= len(parts) <= max_parts
         or not isinstance(feat, dict)
         or not isinstance(schemes, list)
         or not 1 <= len(schemes) <= 8
@@ -100,8 +106,8 @@ def _expected_paths(model: dict) -> set[str]:
         or view[3] <= view[1]
     ):
         raise ValueError("鲸鱼娘骨架定义无效")
-    if human and (view[2] - view[0] > 512 or view[3] - view[1] > 512):
-        raise ValueError("人物桌宠画布过大")
+    if (human or version_two) and (view[2] - view[0] > 512 or view[3] - view[1] > 512):
+        raise ValueError("关节桌宠画布过大")
     sprites = feat.get("sprites")
     eyes = feat.get("eyes")
     if not isinstance(sprites, dict) or (not human and not isinstance(eyes, dict)):
@@ -122,26 +128,30 @@ def _expected_paths(model: dict) -> set[str]:
         ):
             raise ValueError("鲸鱼娘网格定义无效")
         textures.add(part["tex"])
-        if human:
+        if human or version_two:
             part_id = part.get("id")
             if (
                 not isinstance(part_id, str)
                 or not NAME.fullmatch(part_id)
                 or part_id in part_ids
                 or part.get("parent")
-                not in {
-                    "body",
-                    "neck",
-                    "head",
-                    "hair",
-                    "bangs",
-                    "coat",
-                    "armNear",
-                    "armFar",
-                    "legBack",
-                    "legFront",
-                    *(JOINT_PARENTS if model.get("motionRig") is not None else ()),
-                }
+                not in (
+                    {
+                        "body",
+                        "neck",
+                        "head",
+                        "hair",
+                        "bangs",
+                        "coat",
+                        "armNear",
+                        "armFar",
+                        "legBack",
+                        "legFront",
+                        *(JOINT_PARENTS if model.get("motionRig") is not None else ()),
+                    }
+                    if human
+                    else WHALE_PARENTS
+                )
                 or not _finite(part.get("z"))
                 or box[2] <= 0
                 or box[3] <= 0
@@ -305,6 +315,7 @@ def read_whale_package(data: bytes) -> WhalePackage:
                             and dimensions[name] != dimensions[base]
                         ):
                             raise ValueError("鲸鱼娘配色贴图尺寸不一致")
+            validate_face_source_images(model, dimensions)
             return WhalePackage(model=model, images=images)
     except (
         zipfile.BadZipFile,

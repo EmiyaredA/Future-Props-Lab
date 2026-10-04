@@ -219,7 +219,10 @@
 .dp-render-error {
   position: absolute;
   inset: auto 10px 10px;
-  color: #ffa59c;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 .dp-desktop-stage {
   background: radial-gradient(circle at 75% 20%, #455354, #1e2b30 65%, #111d24);
@@ -265,10 +268,13 @@
   bottom: 44%;
   max-width: 180px;
   padding: 10px;
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
-  background: #f6eee6;
-  color: #29211f;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-float);
   font-size: 12px;
+  overflow-wrap: anywhere;
 }
 .dp-desktop-state {
   position: absolute;
@@ -294,9 +300,6 @@
 .dp-checker-stage,
 .dp-desktop-stage {
   flex: 1 0 280px;
-}
-.dp-render-error {
-  color: var(--danger);
 }
 @media (max-width: 1200px) {
   .dp-editor-header {

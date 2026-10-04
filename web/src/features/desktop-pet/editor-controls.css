@@ -35,7 +35,7 @@
 .dp-editor .dp-primary {
   border-color: var(--accent);
   color: var(--surface);
-  background: var(--accent);
+  background: var(--accent-hover);
   font-weight: 700;
 }
 .dp-editor-header nav button[aria-pressed="true"],
@@ -211,7 +211,7 @@
   overflow-wrap: anywhere;
 }
 .dp-menu [data-state="checked"] {
-  color: var(--accent);
+  color: var(--accent-hover);
   font-weight: 650;
 }
 .dp-menu [data-highlighted] {

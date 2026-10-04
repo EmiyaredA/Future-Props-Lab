@@ -16,7 +16,7 @@ import {
 } from "@xyflow/react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
-import { uploadImage } from "../api";
+import { useDocumentAccess } from "../DocumentAccess";
 import { CanvasConnection } from "./CanvasConnection";
 import { CanvasShape } from "./CanvasSvg";
 import {
@@ -113,6 +113,7 @@ export function CanvasEditor({
   onUndo: () => void;
   onRedo: () => void;
 }) {
+  const { uploadImage } = useDocumentAccess();
   const [nodes, setNodes] = useState(() => flowNodes(scene));
   const [selectedEdges, setSelectedEdges] = useState<string[]>([]),
     [error, setError] = useState(""),

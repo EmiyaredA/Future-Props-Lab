@@ -1,4 +1,4 @@
-# 构建与契约测试：如何证明版本一致
+# 测试与交付证据
 
 画板按钮已经能点击，能否就宣布功能完成？还不能。后端可能拒绝保存，备份可能漏掉图片，Markdown 导入可能丢元素，桌面安装包也可能没有包含懒加载图形资源。
 
@@ -52,11 +52,25 @@ Agent Note 解释工程决策和验收证据，用户指南解释如何完成任
 > [!NOTE]
 > 构建成功只证明这次构建完成。需要交付离线功能时，还要检查产物包含资源，并在断网条件下实际打开相应功能。
 
+## 为三条数据流建立不同证据
+
+| 场景           | 核心验收                           | 失败分支                       |
+| -------------- | ---------------------------------- | ------------------------------ |
+| 带图片画板保存 | 版本推进、图结构和图片可重新读取   | 409、非法引用、本机草稿恢复    |
+| 图片生成       | 输入与任务固定，结果托管后可再引用 | 提交中断、缺结果地址、落盘失败 |
+| 视频输出       | 工程快照、预检指纹、时间与音画对应 | 预检过期、素材未就绪、部分输出 |
+
+三个闭环都需要正常结果，但各自的状态和恢复不同。用供应商固定事件验证任务规则，用实际解码的输出验证渲染边界；不能把“有任务记录”当作已经得到成品。
+
+## 从测试报告追到实现依据
+
+内容测试核对标题、链接、源码入口和图形；组件测试核对焦点、错误和视口；API 测试核对权限、版本和事务；浏览器测试核对导航、离线资源与个人副本。报告记录实际运行命令与失败来源，保留既有改动，不为了让全仓绿而修无关模块。契约生成链在专门文章展开，行为证据仍需独立成立。
+
 ## 相关阅读
 
-- [模块边界与路由：为什么按功能拆分](/apps/thought-workshop/official-knowledge-bases/technical/documents/modules)
+- [OpenAPI、Web 与 SDK 契约](/apps/thought-workshop/official-knowledge-bases/technical/documents/contracts)
+- [关键设计决策与当前限制](/apps/thought-workshop/official-knowledge-bases/technical/documents/decisions)
 - [思绪工坊：富文本、画板与知识库](/apps/thought-workshop/official-knowledge-bases/technical/documents/thought-workshop)
-- [Electron 桌面：本机服务与私有边界](/apps/thought-workshop/official-knowledge-bases/technical/documents/desktop)
 
 ## 代码入口
 

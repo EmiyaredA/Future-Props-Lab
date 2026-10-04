@@ -1,7 +1,9 @@
+import { useDocumentAccess } from "../DocumentAccess";
 import { useEffect, useRef } from "react";
 import {
   useAccountId,
   useWorkspaceId,
+  useWorkspacePermission,
 } from "@platform/auth/WorkspacePermissions";
 import { getReading, recordReading } from "./api";
 
@@ -11,9 +13,14 @@ export function useReadingPosition(
   revision: number | null = null,
   contentReady = true,
 ) {
+  const access = useDocumentAccess();
   const root = useRef<HTMLElement | null>(null),
     user = useAccountId(),
     workspace = useWorkspaceId();
+  const canReadWorkspace = useWorkspacePermission("content.read");
+  const local =
+    access.community ||
+    (!!resourceId?.startsWith("official/") && !canReadWorkspace);
   const latest = useRef({ title, revision });
   latest.current = { title, revision };
   const owner = useRef({ user, workspace, resourceId });
@@ -21,6 +28,7 @@ export function useReadingPosition(
   useEffect(() => {
     if (!contentReady || !resourceId || !user || !workspace || !root.current)
       return;
+    const key = local ? `fpl-reading:${user}:${resourceId}` : null;
     const element = root.current;
     let scroller: HTMLElement | null = element;
     while (
@@ -55,11 +63,21 @@ export function useReadingPosition(
       const ratio =
         target.scrollTop /
         Math.max(1, target.scrollHeight - target.clientHeight);
-      void recordReading(resourceId, latest.current.title, {
+      const position = {
         note_revision: latest.current.revision,
         paragraph: (paragraph?.textContent ?? "").slice(0, 240),
         ratio: Math.max(0, Math.min(1, ratio)),
-      }).catch(() => {});
+      };
+      if (key) {
+        try {
+          localStorage.setItem(key, JSON.stringify({ position }));
+        } catch {
+          /* Scroll restoration is optional when storage is unavailable. */
+        }
+      } else
+        void recordReading(resourceId, latest.current.title, position).catch(
+          () => {},
+        );
     };
     const scroll = () => {
       if (restoring) return;
@@ -68,7 +86,16 @@ export function useReadingPosition(
     };
     const restore = window.setTimeout(
       () =>
-        void getReading(resourceId)
+        void (
+          key
+            ? Promise.resolve().then(
+                () =>
+                  JSON.parse(localStorage.getItem(key) ?? "null") as Awaited<
+                    ReturnType<typeof getReading>
+                  >,
+              )
+            : getReading(resourceId)
+        )
           .then((reading) => {
             if (!active) return;
             if (
@@ -111,6 +138,6 @@ export function useReadingPosition(
       clearTimeout(timer);
       eventTarget.removeEventListener("scroll", scroll);
     };
-  }, [resourceId, user, workspace, contentReady]);
+  }, [resourceId, user, workspace, contentReady, local]);
   return root;
 }

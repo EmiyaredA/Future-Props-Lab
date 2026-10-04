@@ -1,0 +1,130 @@
+{
+  "sceneVersion": 2,
+  "title": "笔记保存的后端职责",
+  "elements": [
+    {
+      "id": "route",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "路由适配\n请求与错误映射",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "network"
+    },
+    {
+      "id": "principal",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "Principal / WorkspaceDep\n身份与有效权限",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "lock"
+    },
+    {
+      "id": "notes",
+      "kind": "icon",
+      "x": 720,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "Notes 功能用例\n归属、引用、CAS 与历史",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "code"
+    },
+    {
+      "id": "db",
+      "kind": "icon",
+      "x": 720,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "SQLite 短事务\n正文、索引和历史",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "assets",
+      "kind": "icon",
+      "x": 380,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "素材公共能力\n文件身份与受控存储",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "response",
+      "kind": "icon",
+      "x": 40,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "协议响应\n快照或明确问题",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "principal",
+      "target": "route",
+      "label": "提供已验证身份",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e1",
+      "source": "route",
+      "target": "notes",
+      "label": "调用所属功能",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e2",
+      "source": "notes",
+      "target": "db",
+      "label": "一致写入",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e3",
+      "source": "notes",
+      "target": "assets",
+      "label": "校验素材",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e4",
+      "source": "notes",
+      "target": "response",
+      "label": "返回结果或错误",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    }
+  ]
+}

@@ -54,11 +54,22 @@ flowchart TD
 > [!TIP]
 > 为一个编辑操作留下“前后区间 + 源内点 + 速率”四项对照。撤销后应恢复这些精确数据，而不只是看起来回到差不多的位置。
 
+## 剪辑状态怎样进入确定性渲染任务
+
+前端时间线编辑产生轨道与片段描述，timeline 用例校验并保存版本；播放头、选中片段和吸附提示留在界面。timelineSaveQueue 协调编辑提交，不能让旧响应覆盖后来拖动。公共 speed 与 timeline_document 表达源时间语义，不读取播放器内部状态作为成片依据。
+
+导出先预检 expectedRevision、素材 ready 状态、区间和 preset。指纹覆盖文档、版本与素材信息；任务创建拒绝过期预检，保存 snapshot_document 与请求参数。request_id 识别同一提交，后续编辑属于新工程状态，不自动更新既有任务快照。
+
+## 用精确时间与输出片段检查恢复
+
+检查两倍速例子的第 7 秒源位置、裁切首尾、波纹删除关联和音频接缝，再检查预检后改动被发现、素材未就绪拒绝及部分输出不当成完整视频。时间线保存成功与导出成功是两个确认点；输出失败保留原工程，先修输入和依赖，不反复覆盖时间线字段。
+
 ## 相关阅读
 
-- [时间线与媒体渲染：从状态到帧](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
-- [保存、历史与并发：防止静默覆盖](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
+- [时间线与媒体渲染](/apps/thought-workshop/official-knowledge-bases/technical/documents/rendering)
+- [编辑、保存、历史与并发](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
 - [视频剪辑工坊：主要操作流程](/apps/thought-workshop/official-knowledge-bases/video-editor/documents/workflow)
+- [导入、备份与导出](/apps/thought-workshop/official-knowledge-bases/technical/documents/data-exchange)
 
 ## 代码入口
 

@@ -1,0 +1,130 @@
+{
+  "sceneVersion": 2,
+  "title": "可编辑迁移与成品输出",
+  "elements": [
+    {
+      "id": "source",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "已保存内容快照\n版本与素材引用",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "package",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "可移植包\n清单、结构与文件",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "validate",
+      "kind": "icon",
+      "x": 720,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "正式导入校验\n路径、大小、版本与归属",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "lock"
+    },
+    {
+      "id": "target",
+      "kind": "icon",
+      "x": 40,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "新身份与引用映射\n目标知识库及素材",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "database"
+    },
+    {
+      "id": "render",
+      "kind": "icon",
+      "x": 380,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "渲染输入快照\n时间线、参数与素材",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "output",
+      "kind": "icon",
+      "x": 720,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "阅读文件或成品\nHTML、图片与视频",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "file"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "source",
+      "target": "package",
+      "label": "构造备份",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e1",
+      "source": "package",
+      "target": "validate",
+      "label": "提交包",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e2",
+      "source": "validate",
+      "target": "target",
+      "label": "校验后导入",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e3",
+      "source": "source",
+      "target": "render",
+      "label": "明确输出输入",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    },
+    {
+      "id": "e4",
+      "source": "render",
+      "target": "output",
+      "label": "求值与输出",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    }
+  ]
+}

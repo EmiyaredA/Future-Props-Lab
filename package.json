@@ -15,6 +15,8 @@
     "vendor/pi/packages/telemetry"
   ],
   "scripts": {
+    "knowledge:seed:generate": "uv run python scripts/build_official_seed.py",
+    "knowledge:seed:check": "uv run python scripts/build_official_seed.py --check",
     "build:amadeus-pi": "tsgo -p vendor/pi/packages/chord/tsconfig.build.json && tsgo -p vendor/pi/packages/telemetry/tsconfig.build.json && tsgo -p vendor/pi/packages/ai/tsconfig.build.json && tsgo -p vendor/pi/packages/agent/tsconfig.build.json",
     "config:migrate": "uv run python scripts/migrate_config.py",
     "dev:desktop": "uv run python desktop/scripts/dev.py --live",

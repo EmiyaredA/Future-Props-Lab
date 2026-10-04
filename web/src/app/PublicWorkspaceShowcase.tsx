@@ -25,7 +25,11 @@ type PublicProject = {
   updated_at: string;
   assets: PublicAsset[];
 };
-export function PublicWorkspaceShowcase() {
+export function PublicWorkspaceShowcase({
+  onOpenCommunity,
+}: {
+  onOpenCommunity?: () => void;
+}) {
   const session = useStudioSession();
   const { me } = session;
   const [projection, setProjection] =
@@ -58,6 +62,11 @@ export function PublicWorkspaceShowcase() {
           </div>
         </div>
         <div className="public-showcase-actions">
+          {onOpenCommunity && (
+            <button className="btn" onClick={onOpenCommunity}>
+              知识社区
+            </button>
+          )}
           <ThemeToggle />
           <AccountWorkspacePanel session={session} />
         </div>

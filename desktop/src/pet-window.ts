@@ -10,6 +10,8 @@ import {
   PetMotionGate,
   motionRequest,
   clampVisiblePet,
+  scenePlacement,
+  motionWindowBounds,
   type MotionGeometry,
 } from "./pet-motion";
 
@@ -39,6 +41,7 @@ export class PetWindowController {
   private geometry: MotionGeometry | null = null;
   private motionDisplayId: number | null = null;
   private motionLinked = false;
+  private sceneOffset = { x: 0, y: 0 };
 
   private environment() {
     const win = this.win;
@@ -52,6 +55,7 @@ export class PetWindowController {
       revision: this.environmentRevision,
       generation: this.motion.generation,
       bounds,
+      sceneOffset: { ...this.sceneOffset },
       displayId: display.id,
       workArea: display.workArea,
       visible: win.isVisible(),
@@ -93,6 +97,7 @@ export class PetWindowController {
     this.scope = null;
     this.motion = new PetMotionGate();
     this.geometry = null;
+    this.sceneOffset = { x: 0, y: 0 };
     this.motionDisplayId = null;
     this.environmentRevision += 1;
     if (win && !win.isDestroyed()) win.destroy();
@@ -320,15 +325,32 @@ export class PetWindowController {
       if (!this.win || this.win.isDestroyed()) return;
       this.environmentRevision += 1;
       const area = this.environment().workArea;
+      const bounds = this.win.getBounds();
+      const origin = {
+        ...bounds,
+        x: bounds.x + this.sceneOffset.x,
+        y: bounds.y + this.sceneOffset.y,
+      };
+      const placed = this.geometry
+        ? clampVisiblePet(origin, this.geometry, area)
+        : clampPetBounds(
+            origin,
+            screen.getAllDisplays().map((display) => display.workArea),
+          );
       this.win.setBounds(
-        this.geometry
-          ? clampVisiblePet(this.win.getBounds(), this.geometry, area)
-          : clampPetBounds(
-              this.win.getBounds(),
-              screen.getAllDisplays().map((display) => display.workArea),
-            ),
+        this.geometry ? motionWindowBounds(placed, this.geometry) : placed,
         false,
       );
+      const actual = this.win.getBounds();
+      this.sceneOffset = { x: 0, y: 0 };
+      try {
+        if (this.geometry)
+          this.sceneOffset = scenePlacement(placed, actual, this.geometry);
+      } catch {
+        // A display removal may leave no native window capable of showing the old
+        // placement. Reset to the host position and let the renderer remeasure.
+        this.geometry = null;
+      }
       this.alignChat();
       this.publishEnvironment();
     };
@@ -452,23 +474,42 @@ export class PetWindowController {
       const next = { ...win.getBounds(), x: request.x, y: request.y };
       const area = request.manual
         ? screen.getDisplayNearestPoint({
-            x: Math.round(next.x + request.geometry.feet.x),
+            x: Math.round(
+              next.x + (request.grab?.x ?? request.geometry.feet.x),
+            ),
             y: Math.round(
               next.y +
-                request.geometry.visible.y +
-                request.geometry.visible.height / 2,
+                (request.grab?.y ??
+                  request.geometry.visible.y +
+                    request.geometry.visible.height / 2),
             ),
           })
         : (screen.getAllDisplays().find((d) => d.id === this.motionDisplayId) ??
           screen.getDisplayMatching(win.getBounds()));
       this.motionDisplayId = area.id;
       this.geometry = request.geometry;
-      win.setBounds(
-        clampVisiblePet(next, request.geometry, area.workArea),
-        false,
-      );
+      const placed = request.grab
+        ? next
+        : clampVisiblePet(next, request.geometry, area.workArea);
+      win.setBounds(motionWindowBounds(placed, request.geometry), false);
+      const actual = win.getBounds();
+      this.sceneOffset = { x: 0, y: 0 };
+      this.sceneOffset = request.grab
+        ? { x: placed.x - actual.x, y: placed.y - actual.y }
+        : scenePlacement(placed, actual, request.geometry);
       this.alignChat();
-      return this.environment();
+      const confirmed = this.environment();
+      if (
+        this.win === win &&
+        !win.isDestroyed() &&
+        confirmed.visible &&
+        confirmed.generation === request.generation
+      )
+        win.webContents.send("desktop:pet-motion-confirmed", {
+          sequence: request.sequence,
+          environment: confirmed,
+        });
+      return confirmed;
     });
     ipcMain.handle("desktop:pet-hide", (event) => {
       if (!this.isPetSender(event)) throw new Error("拒绝非桌宠页面请求");

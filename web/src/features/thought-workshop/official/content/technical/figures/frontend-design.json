@@ -1,0 +1,130 @@
+{
+  "sceneVersion": 2,
+  "title": "画板编辑的四类前端状态",
+  "elements": [
+    {
+      "id": "page",
+      "kind": "icon",
+      "x": 40,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "业务页面\n选定笔记与权限",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "draft",
+      "kind": "icon",
+      "x": 380,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "useNoteDraft\n草稿、代次与保存版本",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "file"
+    },
+    {
+      "id": "api",
+      "kind": "icon",
+      "x": 720,
+      "y": 50,
+      "width": 230,
+      "height": 130,
+      "text": "API 客户端\n生成契约与明确错误",
+      "fill": "#fff1dd",
+      "stroke": "#365f62",
+      "icon": "network"
+    },
+    {
+      "id": "editor",
+      "kind": "icon",
+      "x": 40,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "图形编辑器\n场景变更回调",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "code"
+    },
+    {
+      "id": "view",
+      "kind": "icon",
+      "x": 380,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "临时视图\n选择、平移与缩放",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "cpu"
+    },
+    {
+      "id": "cache",
+      "kind": "icon",
+      "x": 720,
+      "y": 290,
+      "width": 230,
+      "height": 130,
+      "text": "Query 缓存\n列表及服务器快照",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "database"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "page",
+      "target": "draft",
+      "label": "装配",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e1",
+      "source": "editor",
+      "target": "draft",
+      "label": "提交内容变化",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "top",
+      "targetAnchor": "bottom"
+    },
+    {
+      "id": "e2",
+      "source": "editor",
+      "target": "view",
+      "label": "交互状态",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e3",
+      "source": "draft",
+      "target": "api",
+      "label": "保存请求",
+      "arrow": true,
+      "style": "step",
+      "sourceAnchor": "right",
+      "targetAnchor": "left"
+    },
+    {
+      "id": "e4",
+      "source": "page",
+      "target": "cache",
+      "label": "查询与失效",
+      "arrow": true,
+      "style": "straight",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
+    }
+  ]
+}

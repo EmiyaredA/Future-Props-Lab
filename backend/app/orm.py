@@ -60,6 +60,23 @@ from app.apps.thought_workshop.models import (
     ThoughtNoteAsset,
     ThoughtNoteHistory,
 )
+from app.apps.thought_workshop.multitable.models import (
+    DataAsset,
+    DataChange,
+    DataField,
+    DataRecord,
+    DataTable,
+    DataView,
+)
+from app.apps.thought_workshop.publication.models import (
+    ArticleMember,
+    CommunityFavorite,
+    CommunityUpload,
+    OfficialImportReceipt,
+    OfficialSource,
+    Publication,
+    PublishedArticle,
+)
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
     VideoEditorOperationBatch,
@@ -232,6 +249,9 @@ _ = (
 )
 
 TENANT_MODELS = (
+    Publication,
+    OfficialSource,
+    OfficialImportReceipt,
     DesktopPetChat,
     DesktopPetProject,
     Live2DProject,
@@ -355,6 +375,17 @@ def bind_workspace(session: Any, workspace_id: str) -> None:
 
 
 __all__ = [
+    "DataTable",
+    "DataField",
+    "DataView",
+    "DataRecord",
+    "DataChange",
+    "DataAsset",
+    "Publication",
+    "PublishedArticle",
+    "ArticleMember",
+    "CommunityFavorite",
+    "CommunityUpload",
     "ThoughtDocumentReference",
     "ThoughtTemplateAsset",
     "ThoughtCheckpoint",

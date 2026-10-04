@@ -1152,6 +1152,93 @@
         "title": "ApiKeyOut",
         "type": "object"
       },
+      "ArticleConfig": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "note_id": {
+            "title": "Note Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "visibility": {
+            "enum": [
+              "public",
+              "members"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note_id",
+          "title",
+          "revision",
+          "visibility",
+          "active",
+          "members"
+        ],
+        "title": "ArticleConfig",
+        "type": "object"
+      },
+      "ArticleSetting": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberInput"
+            },
+            "maxItems": 100,
+            "title": "Members",
+            "type": "array"
+          },
+          "note_id": {
+            "title": "Note Id",
+            "type": "string"
+          },
+          "visibility": {
+            "default": "public",
+            "enum": [
+              "public",
+              "members"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note_id",
+          "expected_revision"
+        ],
+        "title": "ArticleSetting",
+        "type": "object"
+      },
       "AssetImportIn": {
         "properties": {
           "assetIds": {
@@ -2208,6 +2295,76 @@
         "title": "BatchDeleteIn",
         "type": "object"
       },
+      "BatchIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "records.delete": "#/components/schemas/RecordsDelete",
+                  "records.put": "#/components/schemas/RecordsPut",
+                  "table.delete": "#/components/schemas/TableDelete",
+                  "table.put": "#/components/schemas/TablePut"
+                },
+                "propertyName": "op"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TablePut"
+                },
+                {
+                  "$ref": "#/components/schemas/TableDelete"
+                },
+                {
+                  "$ref": "#/components/schemas/RecordsPut"
+                },
+                {
+                  "$ref": "#/components/schemas/RecordsDelete"
+                }
+              ]
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "operations"
+        ],
+        "title": "BatchIn",
+        "type": "object"
+      },
+      "BatchOut": {
+        "additionalProperties": false,
+        "properties": {
+          "records": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/RecordSpec"
+              },
+              "type": "array"
+            },
+            "title": "Records",
+            "type": "object"
+          },
+          "structure": {
+            "$ref": "#/components/schemas/Structure"
+          }
+        },
+        "required": [
+          "structure"
+        ],
+        "title": "BatchOut",
+        "type": "object"
+      },
       "Body_add_skill_version_v1_integrations_skills__skill_id__versions_post": {
         "properties": {
           "expected_revision": {
@@ -3067,6 +3224,20 @@
         "title": "Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post",
         "type": "object"
       },
+      "Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post": {
+        "properties": {
+          "upload": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Upload",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload"
+        ],
+        "title": "Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post",
+        "type": "object"
+      },
       "BoneWeight": {
         "additionalProperties": false,
         "properties": {
@@ -3472,6 +3643,43 @@
           "new_password"
         ],
         "title": "ChangePasswordIn",
+        "type": "object"
+      },
+      "ChangeSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "author_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "author_id",
+          "created_at"
+        ],
+        "title": "ChangeSummary",
         "type": "object"
       },
       "CharacterBone": {
@@ -4487,6 +4695,344 @@
         "title": "CodexSourceUpdate",
         "type": "object"
       },
+      "CommunityArticle": {
+        "properties": {
+          "can_edit": {
+            "default": false,
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_manage": {
+            "default": false,
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "favorite": {
+            "title": "Favorite",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_home": {
+            "title": "Is Home",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "knowledge_base_id": {
+            "title": "Knowledge Base Id",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "permission_revision": {
+            "title": "Permission Revision",
+            "type": "integer"
+          },
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "role": {
+            "enum": [
+              "read",
+              "edit",
+              "manage"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "id",
+          "title",
+          "knowledge_base_id",
+          "parent_id",
+          "position",
+          "is_home",
+          "tags",
+          "pinned",
+          "favorite",
+          "deleted_at",
+          "revision",
+          "created_at",
+          "updated_at",
+          "excerpt",
+          "permission_revision"
+        ],
+        "title": "CommunityArticle",
+        "type": "object"
+      },
+      "CommunityDirectory": {
+        "properties": {
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/CommunityArticle"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "publication": {
+            "$ref": "#/components/schemas/PublicationOut"
+          }
+        },
+        "required": [
+          "publication",
+          "documents"
+        ],
+        "title": "CommunityDirectory",
+        "type": "object"
+      },
+      "CommunityManagement": {
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/PublicationConfig"
+          },
+          "directory": {
+            "$ref": "#/components/schemas/ThoughtDirectoryOut"
+          }
+        },
+        "required": [
+          "directory",
+          "config"
+        ],
+        "title": "CommunityManagement",
+        "type": "object"
+      },
+      "CommunityNote": {
+        "properties": {
+          "can_edit": {
+            "default": false,
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_manage": {
+            "default": false,
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "note": {
+            "$ref": "#/components/schemas/ThoughtNoteOut"
+          },
+          "permission_revision": {
+            "title": "Permission Revision",
+            "type": "integer"
+          },
+          "role": {
+            "enum": [
+              "read",
+              "edit",
+              "manage"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "note",
+          "permission_revision"
+        ],
+        "title": "CommunityNote",
+        "type": "object"
+      },
+      "CommunityNotePut": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "default": 3,
+            "enum": [
+              2,
+              3
+            ],
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "title",
+          "document"
+        ],
+        "title": "CommunityNotePut",
+        "type": "object"
+      },
+      "CommunityReferenceTarget": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "excerpt": {
+            "default": "",
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "knowledge_base_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Knowledge Base Id"
+          },
+          "publication_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publication Id"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "title": {
+            "default": "",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "available"
+        ],
+        "title": "CommunityReferenceTarget",
+        "type": "object"
+      },
+      "CommunitySnapshot": {
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/ThoughtNoteOut"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "knowledge_base": {
+            "$ref": "#/components/schemas/PublicationOut"
+          }
+        },
+        "required": [
+          "knowledge_base",
+          "documents",
+          "asset_ids"
+        ],
+        "title": "CommunitySnapshot",
+        "type": "object"
+      },
       "ConversationDetailOut": {
         "properties": {
           "actions": {
@@ -4676,6 +5222,55 @@
           "current"
         ],
         "title": "ConversationRevisionConflictOut",
+        "type": "object"
+      },
+      "ConversionIn": {
+        "additionalProperties": false,
+        "properties": {
+          "table": {
+            "$ref": "#/components/schemas/TableSpec"
+          }
+        },
+        "required": [
+          "table"
+        ],
+        "title": "ConversionIn",
+        "type": "object"
+      },
+      "ConversionOut": {
+        "additionalProperties": false,
+        "properties": {
+          "affected_records": {
+            "title": "Affected Records",
+            "type": "integer"
+          },
+          "errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "samples": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Samples",
+            "type": "array"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid",
+          "errors",
+          "affected_records"
+        ],
+        "title": "ConversionOut",
         "type": "object"
       },
       "CreativeDraftIn": {
@@ -5437,6 +6032,153 @@
           "page_size"
         ],
         "title": "CrossWorkspaceLogPage",
+        "type": "object"
+      },
+      "CsvIn": {
+        "additionalProperties": false,
+        "properties": {
+          "csv": {
+            "maxLength": 8388608,
+            "title": "Csv",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "header": {
+            "default": true,
+            "title": "Header",
+            "type": "boolean"
+          },
+          "mapping": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Mapping",
+            "type": "array"
+          },
+          "table": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TableSpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "expected_revision",
+          "csv",
+          "mapping"
+        ],
+        "title": "CsvIn",
+        "type": "object"
+      },
+      "CsvPreview": {
+        "additionalProperties": false,
+        "properties": {
+          "errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "headers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Headers",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "headers",
+          "rows",
+          "total",
+          "errors"
+        ],
+        "title": "CsvPreview",
+        "type": "object"
+      },
+      "CsvSource": {
+        "additionalProperties": false,
+        "properties": {
+          "csv": {
+            "maxLength": 8388608,
+            "title": "Csv",
+            "type": "string"
+          },
+          "header": {
+            "default": true,
+            "title": "Header",
+            "type": "boolean"
+          },
+          "mapping": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mapping"
+          },
+          "table": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TableSpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "csv"
+        ],
+        "title": "CsvSource",
         "type": "object"
       },
       "CurrentUserOut": {
@@ -6661,6 +7403,90 @@
         "title": "ExportOut",
         "type": "object"
       },
+      "FavoriteInput": {
+        "additionalProperties": false,
+        "properties": {
+          "favorite": {
+            "title": "Favorite",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "favorite"
+        ],
+        "title": "FavoriteInput",
+        "type": "object"
+      },
+      "FavoritesOut": {
+        "properties": {
+          "resource_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Resource Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "resource_ids"
+        ],
+        "title": "FavoritesOut",
+        "type": "object"
+      },
+      "FieldSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/SelectOption"
+            },
+            "maxItems": 100,
+            "title": "Options",
+            "type": "array"
+          },
+          "position": {
+            "minimum": 0.0,
+            "title": "Position",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "number",
+              "single",
+              "multi",
+              "date",
+              "checkbox",
+              "url",
+              "attachment",
+              "note"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "position"
+        ],
+        "title": "FieldSpec",
+        "type": "object"
+      },
       "FileListOut": {
         "properties": {
           "items": {
@@ -6724,6 +7550,59 @@
           "content"
         ],
         "title": "FileWriteIn",
+        "type": "object"
+      },
+      "Filter": {
+        "additionalProperties": false,
+        "properties": {
+          "field_id": {
+            "title": "Field Id",
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "ne",
+              "contains",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "empty",
+              "not_empty"
+            ],
+            "title": "Operator",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "field_id",
+          "operator"
+        ],
+        "title": "Filter",
         "type": "object"
       },
       "GalgameAnnotationImportIn": {
@@ -17057,6 +17936,15 @@
             "title": "Expected Revision",
             "type": "integer"
           },
+          "kind": {
+            "default": "note",
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "parent_id": {
             "anyOf": [
               {
@@ -17080,6 +17968,33 @@
           "expected_revision"
         ],
         "title": "KnowledgeNoteCreate",
+        "type": "object"
+      },
+      "LegacyTarget": {
+        "properties": {
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "note_id": {
+            "title": "Note Id",
+            "type": "string"
+          },
+          "publication": {
+            "$ref": "#/components/schemas/PublicationOut"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "publication",
+          "note_id",
+          "title",
+          "excerpt"
+        ],
+        "title": "LegacyTarget",
         "type": "object"
       },
       "LibraryAssetImportIn": {
@@ -18190,6 +19105,68 @@
           "tools"
         ],
         "title": "McpValidationOut",
+        "type": "object"
+      },
+      "MemberInput": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "read",
+              "edit",
+              "manage"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "role"
+        ],
+        "title": "MemberInput",
+        "type": "object"
+      },
+      "MemberOut": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "read",
+              "edit",
+              "manage"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "role",
+          "user_id",
+          "display_name"
+        ],
+        "title": "MemberOut",
         "type": "object"
       },
       "MessageIn": {
@@ -21948,6 +22925,25 @@
         "title": "ParameterKeyform",
         "type": "object"
       },
+      "PermissionInput": {
+        "additionalProperties": false,
+        "properties": {
+          "articles": {
+            "items": {
+              "$ref": "#/components/schemas/ArticleSetting"
+            },
+            "maxItems": 2000,
+            "minItems": 1,
+            "title": "Articles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "articles"
+        ],
+        "title": "PermissionInput",
+        "type": "object"
+      },
       "PermissionPolicy": {
         "properties": {
           "admin": {
@@ -23996,6 +24992,237 @@
         "title": "PublicWorkspaceProjectionOut",
         "type": "object"
       },
+      "PublicationConfig": {
+        "properties": {
+          "articles": {
+            "items": {
+              "$ref": "#/components/schemas/ArticleConfig"
+            },
+            "title": "Articles",
+            "type": "array"
+          },
+          "can_set_official": {
+            "default": false,
+            "title": "Can Set Official",
+            "type": "boolean"
+          },
+          "publication": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "publication",
+          "articles"
+        ],
+        "title": "PublicationConfig",
+        "type": "object"
+      },
+      "PublicationOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "can_manage_library": {
+            "title": "Can Manage Library",
+            "type": "boolean"
+          },
+          "can_set_official": {
+            "default": false,
+            "title": "Can Set Official",
+            "type": "boolean"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "document_count": {
+            "title": "Document Count",
+            "type": "integer"
+          },
+          "editable_platform_roles": {
+            "items": {
+              "enum": [
+                "super_admin",
+                "admin",
+                "member"
+              ],
+              "type": "string"
+            },
+            "title": "Editable Platform Roles",
+            "type": "array"
+          },
+          "favorite": {
+            "default": false,
+            "title": "Favorite",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_official": {
+            "default": false,
+            "title": "Is Official",
+            "type": "boolean"
+          },
+          "read_only": {
+            "default": false,
+            "title": "Read Only",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "author",
+          "document_count",
+          "updated_at",
+          "revision",
+          "active",
+          "can_manage_library"
+        ],
+        "title": "PublicationOut",
+        "type": "object"
+      },
+      "PublishInput": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "articles": {
+            "items": {
+              "$ref": "#/components/schemas/ArticleSetting"
+            },
+            "maxItems": 2000,
+            "title": "Articles",
+            "type": "array"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "editable_platform_roles": {
+            "items": {
+              "enum": [
+                "super_admin",
+                "admin",
+                "member"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Editable Platform Roles",
+            "type": "array"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "is_official": {
+            "default": false,
+            "title": "Is Official",
+            "type": "boolean"
+          },
+          "read_only": {
+            "default": true,
+            "title": "Read Only",
+            "type": "boolean"
+          },
+          "title": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "title",
+          "articles"
+        ],
+        "title": "PublishInput",
+        "type": "object"
+      },
+      "QueryIn": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "search": {
+            "default": "",
+            "maxLength": 240,
+            "title": "Search",
+            "type": "string"
+          },
+          "view_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View Id"
+          }
+        },
+        "title": "QueryIn",
+        "type": "object"
+      },
       "QuestionAnswerIn": {
         "additionalProperties": false,
         "properties": {
@@ -24503,6 +25730,151 @@
           "password"
         ],
         "title": "ReauthIn",
+        "type": "object"
+      },
+      "RecordPage": {
+        "additionalProperties": false,
+        "properties": {
+          "groups": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Groups",
+            "type": "object"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RecordSpec"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "items",
+          "total"
+        ],
+        "title": "RecordPage",
+        "type": "object"
+      },
+      "RecordSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0.0,
+            "title": "Position",
+            "type": "integer"
+          },
+          "values": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maxProperties": 50,
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "values"
+        ],
+        "title": "RecordSpec",
+        "type": "object"
+      },
+      "RecordsDelete": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "minItems": 1,
+            "title": "Ids",
+            "type": "array"
+          },
+          "op": {
+            "const": "records.delete",
+            "title": "Op",
+            "type": "string"
+          },
+          "table_id": {
+            "title": "Table Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "op",
+          "table_id",
+          "ids"
+        ],
+        "title": "RecordsDelete",
+        "type": "object"
+      },
+      "RecordsPut": {
+        "additionalProperties": false,
+        "properties": {
+          "op": {
+            "const": "records.put",
+            "title": "Op",
+            "type": "string"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/RecordSpec"
+            },
+            "maxItems": 5000,
+            "minItems": 1,
+            "title": "Records",
+            "type": "array"
+          },
+          "table_id": {
+            "title": "Table Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "op",
+          "table_id",
+          "records"
+        ],
+        "title": "RecordsPut",
         "type": "object"
       },
       "RedemptionOut": {
@@ -25084,6 +26456,21 @@
           "clips"
         ],
         "title": "RestoreClipStatesOperation",
+        "type": "object"
+      },
+      "RestoreIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "RestoreIn",
         "type": "object"
       },
       "RevokeApiKeyIn": {
@@ -25852,6 +27239,14 @@
             "title": "Is Home",
             "type": "boolean"
           },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "knowledge_base_id": {
             "title": "Knowledge Base Id",
             "type": "string"
@@ -26077,6 +27472,94 @@
           "page_size"
         ],
         "title": "SecurityAuditListOut",
+        "type": "object"
+      },
+      "SeedImportInput": {
+        "additionalProperties": false,
+        "properties": {
+          "package_version": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Package Version",
+            "type": "string"
+          },
+          "request_id": {
+            "pattern": "^[a-f0-9-]{36}$",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "package_version"
+        ],
+        "title": "SeedImportInput",
+        "type": "object"
+      },
+      "SeedPreview": {
+        "properties": {
+          "article_count": {
+            "title": "Article Count",
+            "type": "integer"
+          },
+          "figure_count": {
+            "title": "Figure Count",
+            "type": "integer"
+          },
+          "library_count": {
+            "title": "Library Count",
+            "type": "integer"
+          },
+          "package_version": {
+            "title": "Package Version",
+            "type": "string"
+          },
+          "titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "package_version",
+          "library_count",
+          "article_count",
+          "figure_count",
+          "titles"
+        ],
+        "title": "SeedPreview",
+        "type": "object"
+      },
+      "SelectOption": {
+        "additionalProperties": false,
+        "properties": {
+          "color": {
+            "default": "#7c89c9",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "SelectOption",
         "type": "object"
       },
       "SeparateClipOperation": {
@@ -26479,6 +27962,57 @@
         "title": "SkillVersionOut",
         "type": "object"
       },
+      "Snapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "records": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/RecordSpec"
+              },
+              "type": "array"
+            },
+            "title": "Records",
+            "type": "object"
+          },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/TableSpec"
+            },
+            "title": "Tables",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tables",
+          "records"
+        ],
+        "title": "Snapshot",
+        "type": "object"
+      },
+      "Sort": {
+        "additionalProperties": false,
+        "properties": {
+          "direction": {
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "field_id": {
+            "title": "Field Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field_id"
+        ],
+        "title": "Sort",
+        "type": "object"
+      },
       "SplitClipOperation": {
         "properties": {
           "atUs": {
@@ -26667,6 +28201,64 @@
         "title": "StorageLayoutStatusOut",
         "type": "object"
       },
+      "Structure": {
+        "additionalProperties": false,
+        "properties": {
+          "can_edit": {
+            "default": true,
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "can_manage": {
+            "default": false,
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "note_id": {
+            "title": "Note Id",
+            "type": "string"
+          },
+          "publication_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publication Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "role": {
+            "default": "edit",
+            "enum": [
+              "read",
+              "edit",
+              "manage"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/TableSpec"
+            },
+            "title": "Tables",
+            "type": "array"
+          }
+        },
+        "required": [
+          "note_id",
+          "revision",
+          "tables"
+        ],
+        "title": "Structure",
+        "type": "object"
+      },
       "SvgPreviewIn": {
         "properties": {
           "svg": {
@@ -26707,6 +28299,95 @@
           "monochrome"
         ],
         "title": "SvgPreviewOut",
+        "type": "object"
+      },
+      "TableDelete": {
+        "additionalProperties": false,
+        "properties": {
+          "op": {
+            "const": "table.delete",
+            "title": "Op",
+            "type": "string"
+          },
+          "table_id": {
+            "title": "Table Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "op",
+          "table_id"
+        ],
+        "title": "TableDelete",
+        "type": "object"
+      },
+      "TablePut": {
+        "additionalProperties": false,
+        "properties": {
+          "op": {
+            "const": "table.put",
+            "title": "Op",
+            "type": "string"
+          },
+          "table": {
+            "$ref": "#/components/schemas/TableSpec"
+          }
+        },
+        "required": [
+          "op",
+          "table"
+        ],
+        "title": "TablePut",
+        "type": "object"
+      },
+      "TableSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldSpec"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0.0,
+            "title": "Position",
+            "type": "integer"
+          },
+          "views": {
+            "items": {
+              "$ref": "#/components/schemas/ViewSpec"
+            },
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Views",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "position",
+          "fields",
+          "views"
+        ],
+        "title": "TableSpec",
         "type": "object"
       },
       "TemplateApply": {
@@ -26766,6 +28447,24 @@
             "additionalProperties": true,
             "title": "Document",
             "type": "object"
+          },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "multitable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Snapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "maxLength": 120,
@@ -26893,6 +28592,24 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "multitable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Snapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "maxLength": 120,
@@ -27135,6 +28852,24 @@
             "minimum": 0.0,
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "multitable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Snapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "maxLength": 120,
@@ -27915,6 +29650,14 @@
             "title": "Favorite",
             "type": "boolean"
           },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "knowledge_base_id": {
             "title": "Knowledge Base Id",
             "type": "string"
@@ -28036,6 +29779,14 @@
             "title": "Is Home",
             "type": "boolean"
           },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "knowledge_base_id": {
             "title": "Knowledge Base Id",
             "type": "string"
@@ -28127,6 +29878,14 @@
             "title": "Favorite",
             "type": "boolean"
           },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "knowledge_base_id": {
             "title": "Knowledge Base Id",
             "type": "string"
@@ -28213,6 +29972,14 @@
           "is_home": {
             "title": "Is Home",
             "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "note",
+              "multitable"
+            ],
+            "title": "Kind",
+            "type": "string"
           },
           "knowledge_base_id": {
             "title": "Knowledge Base Id",
@@ -31035,6 +32802,138 @@
           "model_id"
         ],
         "title": "VideoGenerationTaskCreateIn",
+        "type": "object"
+      },
+      "ViewConfig": {
+        "additionalProperties": false,
+        "properties": {
+          "column_order": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Column Order",
+            "type": "array"
+          },
+          "column_widths": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "maxProperties": 50,
+            "title": "Column Widths",
+            "type": "object"
+          },
+          "date_field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Field Id"
+          },
+          "filter_mode": {
+            "default": "all",
+            "enum": [
+              "all",
+              "any"
+            ],
+            "title": "Filter Mode",
+            "type": "string"
+          },
+          "filters": {
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            },
+            "maxItems": 30,
+            "title": "Filters",
+            "type": "array"
+          },
+          "group_field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Field Id"
+          },
+          "hidden_fields": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Hidden Fields",
+            "type": "array"
+          },
+          "sorts": {
+            "items": {
+              "$ref": "#/components/schemas/Sort"
+            },
+            "maxItems": 10,
+            "title": "Sorts",
+            "type": "array"
+          },
+          "stack_field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stack Field Id"
+          }
+        },
+        "title": "ViewConfig",
+        "type": "object"
+      },
+      "ViewSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/ViewConfig"
+          },
+          "id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0.0,
+            "title": "Position",
+            "type": "integer"
+          },
+          "type": {
+            "default": "grid",
+            "enum": [
+              "grid",
+              "kanban",
+              "calendar"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "position"
+        ],
+        "title": "ViewSpec",
         "type": "object"
       },
       "VisualAssetFolderCreateIn": {
@@ -52963,6 +54862,1454 @@
         ]
       }
     },
+    "/v1/thought-workshop/community/favorites": {
+      "get": {
+        "operationId": "favorites_v1_thought_workshop_community_favorites_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoritesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Favorites",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/favorites/{namespace}/{resource_id}": {
+      "put": {
+        "operationId": "favorite_v1_thought_workshop_community_favorites__namespace___resource_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "namespace",
+            "required": true,
+            "schema": {
+              "title": "Namespace",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "title": "Resource Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavoriteInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoritesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Favorite",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/libraries/{library_id}/publication": {
+      "get": {
+        "operationId": "config_v1_thought_workshop_community_libraries__library_id__publication_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationConfig"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Config",
+        "tags": [
+          "knowledge-community"
+        ]
+      },
+      "put": {
+        "operationId": "publish_v1_thought_workshop_community_libraries__library_id__publication_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_id",
+            "required": true,
+            "schema": {
+              "title": "Library Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationConfig"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/official-import": {
+      "post": {
+        "operationId": "import_official_v1_thought_workshop_community_official_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeedImportInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThoughtImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Official",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/official-import/preview": {
+      "get": {
+        "operationId": "import_preview_v1_thought_workshop_community_official_import_preview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeedPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Import Preview",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/official-import/{request_id}": {
+      "get": {
+        "operationId": "import_receipt_v1_thought_workshop_community_official_import__request_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThoughtImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Receipt",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/official-links/{library_key}": {
+      "get": {
+        "operationId": "legacy_link_v1_thought_workshop_community_official_links__library_key__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "library_key",
+            "required": true,
+            "schema": {
+              "title": "Library Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "document_key",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Document Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LegacyTarget"
+                  },
+                  "title": "Response Legacy Link V1 Thought Workshop Community Official Links  Library Key  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Legacy Link",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications": {
+      "get": {
+        "operationId": "listing_v1_thought_workshop_community_publications_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 240,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "official",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Official"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Mine",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "favorites",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Favorites",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 48,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PublicationOut"
+                  },
+                  "title": "Response Listing V1 Thought Workshop Community Publications Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listing",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}": {
+      "get": {
+        "operationId": "directory_v1_thought_workshop_community_publications__publication_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityDirectory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Directory",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/assets/{asset_id}/content": {
+      "get": {
+        "operationId": "asset_v1_thought_workshop_community_publications__publication_id__assets__asset_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "note_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Note Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Asset",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/cover": {
+      "get": {
+        "operationId": "cover_v1_thought_workshop_community_publications__publication_id__cover_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cover",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/export-snapshot": {
+      "get": {
+        "operationId": "export_v1_thought_workshop_community_publications__publication_id__export_snapshot_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunitySnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/management": {
+      "get": {
+        "operationId": "management_v1_thought_workshop_community_publications__publication_id__management_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityManagement"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Management",
+        "tags": [
+          "knowledge-community"
+        ]
+      },
+      "put": {
+        "operationId": "manage_v1_thought_workshop_community_publications__publication_id__management_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationConfig"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Manage",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}": {
+      "get": {
+        "operationId": "note_v1_thought_workshop_community_publications__publication_id__notes__note_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityNote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Note",
+        "tags": [
+          "knowledge-community"
+        ]
+      },
+      "put": {
+        "operationId": "save_v1_thought_workshop_community_publications__publication_id__notes__note_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommunityNotePut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityNote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/backlinks": {
+      "get": {
+        "operationId": "backlinks_v1_thought_workshop_community_publications__publication_id__notes__note_id__backlinks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 40,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CommunityArticle"
+                  },
+                  "title": "Response Backlinks V1 Thought Workshop Community Publications  Publication Id  Notes  Note Id  Backlinks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Backlinks",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable": {
+      "get": {
+        "operationId": "structure_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "parent_note_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Note Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Structure"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Structure",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/conversion-preview": {
+      "post": {
+        "operationId": "conversion_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_conversion_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "parent_note_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Note Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Conversion",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/operations": {
+      "post": {
+        "operationId": "operations_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "parent_note_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Note Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Operations",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/tables/{table_id}/query": {
+      "post": {
+        "operationId": "records_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_tables__table_id__query_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "title": "Table Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "parent_note_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Note Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Records",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/uploads": {
+      "post": {
+        "operationId": "upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThoughtAttachmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/permissions": {
+      "get": {
+        "operationId": "settings_v1_thought_workshop_community_publications__publication_id__permissions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 2000,
+              "minItems": 1,
+              "title": "Note Id",
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ArticleConfig"
+                  },
+                  "title": "Response Settings V1 Thought Workshop Community Publications  Publication Id  Permissions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Settings",
+        "tags": [
+          "knowledge-community"
+        ]
+      },
+      "put": {
+        "operationId": "permissions_v1_thought_workshop_community_publications__publication_id__permissions_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ArticleConfig"
+                  },
+                  "title": "Response Permissions V1 Thought Workshop Community Publications  Publication Id  Permissions Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Permissions",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
+    "/v1/thought-workshop/community/publications/{publication_id}/references": {
+      "post": {
+        "operationId": "references_v1_thought_workshop_community_publications__publication_id__references_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CommunityReferenceTarget"
+                  },
+                  "title": "Response References V1 Thought Workshop Community Publications  Publication Id  References Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "References",
+        "tags": [
+          "knowledge-community"
+        ]
+      }
+    },
     "/v1/thought-workshop/images": {
       "post": {
         "operationId": "upload_image_v1_thought_workshop_images_post",
@@ -54716,6 +58063,564 @@
         "summary": "Restore Note History",
         "tags": [
           "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable": {
+      "get": {
+        "operationId": "structure_v1_thought_workshop_notes__note_id__multitable_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Structure"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Structure",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/conversion-preview": {
+      "post": {
+        "operationId": "conversion_v1_thought_workshop_notes__note_id__multitable_conversion_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Conversion",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/csv-preview": {
+      "post": {
+        "operationId": "csv_preview_v1_thought_workshop_notes__note_id__multitable_csv_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvSource"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsvPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Csv Preview",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/history": {
+      "get": {
+        "operationId": "history_v1_thought_workshop_notes__note_id__multitable_history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeSummary"
+                  },
+                  "title": "Response History V1 Thought Workshop Notes  Note Id  Multitable History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "History",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}": {
+      "get": {
+        "operationId": "detail_v1_thought_workshop_notes__note_id__multitable_history__revision__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "title": "Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detail",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore": {
+      "post": {
+        "operationId": "restore_v1_thought_workshop_notes__note_id__multitable_history__revision__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "title": "Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/operations": {
+      "post": {
+        "operationId": "operations_v1_thought_workshop_notes__note_id__multitable_operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Operations",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export": {
+      "post": {
+        "operationId": "csv_export_v1_thought_workshop_notes__note_id__multitable_tables__table_id__csv_export_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "title": "Table Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Csv Export",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import": {
+      "post": {
+        "operationId": "csv_import_v1_thought_workshop_notes__note_id__multitable_tables__table_id__csv_import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "title": "Table Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CsvIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Csv Import",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query": {
+      "post": {
+        "operationId": "records_v1_thought_workshop_notes__note_id__multitable_tables__table_id__query_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "table_id",
+            "required": true,
+            "schema": {
+              "title": "Table Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Records",
+        "tags": [
+          "thought-workshop",
+          "thought-multitable"
         ]
       }
     },

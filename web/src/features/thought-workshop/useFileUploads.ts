@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Editor, JSONContent } from "@tiptap/core";
 import type { Transaction } from "@tiptap/pm/state";
 import { closeHistory } from "@tiptap/pm/history";
-import { uploadAttachment, uploadImage } from "./api";
+import { useDocumentAccess } from "./DocumentAccess";
 
 export type UploadEntry = {
   id: number;
@@ -13,6 +13,7 @@ export type UploadEntry = {
 };
 /** Positions follow every document transaction; no temporary nodes enter history or autosave. */
 export function useFileUploads(editor: Editor | null) {
+  const { uploadImage, uploadAttachment } = useDocumentAccess();
   const [entries, setEntries] = useState<UploadEntry[]>([]);
   const queue = useRef<UploadEntry[]>([]);
   const sequence = useRef(0);

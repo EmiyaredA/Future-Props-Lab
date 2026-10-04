@@ -56,11 +56,22 @@ classDiagram
 > [!TIP]
 > 验证一页文稿时同时检查三个对象：原生项目中的元素、放映中的页面、接收工具中的 PPTX 页面。它们分别暴露保存、呈现和转换问题。
 
+## 一次标题移动怎样成为可交付文稿
+
+前端编辑器产出元素几何变化，应用项目与 operations 用例验证页面、元素和素材，再按版本前提保存文稿。选择框、当前页和放映进度属于界面，页面顺序、文本 runs 与元素几何属于工程。API 返回成功版本后重新读取应得到相同标题位置；服务器快照不是编辑器的共享可变对象。
+
+PPTX 导出器消费语义结构与可读取素材，原生工程仍由项目管理保存。格式转换不自动保证目标工具字体和布局完全相同。预览失效、素材缺失、保存冲突和 PPTX 转换失败分别反馈，不能用再次导出覆盖原生保存问题。
+
+## 文稿组件的职责与验证入口
+
+projects 拥有项目归属和文稿保存，operations 拥有细粒度编辑，exports 拥有目标格式交付。测试移动前后元素 ID 不变、非法裁剪拒绝、只读请求失败及原生数据重新打开，再在接收工具核对文本可编辑性与图像布局。实际实现从项目、document schema 和导出用例追踪，完整交付方法见演示工坊使用指南。
+
 ## 相关阅读
 
-- [素材与导出：引用、快照和包有什么不同](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)
-- [保存、历史与并发：防止静默覆盖](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
+- [素材上传、引用与预览](/apps/thought-workshop/official-knowledge-bases/technical/documents/assets)
+- [编辑、保存、历史与并发](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
 - [演示工坊：导入导出与交付](/apps/thought-workshop/official-knowledge-bases/presentation-workshop/documents/delivery)
+- [导入、备份与导出](/apps/thought-workshop/official-knowledge-bases/technical/documents/data-exchange)
 
 ## 代码入口
 

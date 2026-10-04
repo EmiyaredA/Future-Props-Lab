@@ -5,19 +5,28 @@ export type OutlineHeading = {
   text: string;
   level: number;
   depth: number;
+  parent: number | null;
 };
 
 export function collectOutline(doc: ProseMirrorNode): OutlineHeading[] {
   const headings: OutlineHeading[] = [];
-  const ancestors: number[] = [];
+  const ancestors: OutlineHeading[] = [];
   doc.descendants((node, position) => {
     if (node.type.name !== "heading") return;
     const text = node.textContent.replace(/\s+/g, " ").trim();
     if (!text) return;
     const level = Math.max(1, Math.min(6, Number(node.attrs.level) || 1));
-    while (ancestors.length && ancestors.at(-1)! >= level) ancestors.pop();
-    headings.push({ position, text, level, depth: ancestors.length });
-    ancestors.push(level);
+    while (ancestors.length && ancestors.at(-1)!.level >= level)
+      ancestors.pop();
+    const heading = {
+      position,
+      text,
+      level,
+      depth: ancestors.length,
+      parent: ancestors.at(-1)?.position ?? null,
+    };
+    headings.push(heading);
+    ancestors.push(heading);
   });
   return headings;
 }

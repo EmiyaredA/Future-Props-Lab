@@ -222,6 +222,7 @@ body,
   color: var(--danger) !important;
 }
 .dp-chat-history {
+  overflow-anchor: none;
   flex: 1;
   min-height: 0;
   overflow-y: auto;

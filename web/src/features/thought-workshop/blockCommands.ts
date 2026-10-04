@@ -2,10 +2,15 @@ import type { Editor } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeRangeSelection } from "@tiptap/extension-node-range";
 import { TextSelection } from "@tiptap/pm/state";
-import { writeThoughtClipboard } from "./clipboard";
+import { writeThoughtClipboard, type ClipboardAccess } from "./clipboard";
+import { emptyCard, homeTemplate } from "./document-layout/model";
 
 export type InsertCommandKey =
   | "paragraph"
+  | "documentCard"
+  | "cardGrid"
+  | "documentDirectory"
+  | "homeTemplate"
   | "heading1"
   | "heading2"
   | "heading3"
@@ -23,6 +28,7 @@ export type InsertCommandKey =
   | "math"
   | "canvas"
   | "mermaid"
+  | "multitableView"
   | "table";
 
 export type InsertCallbacks = {
@@ -40,6 +46,41 @@ export type InsertCommand = {
 };
 
 export const INSERT_COMMANDS: InsertCommand[] = [
+  {
+    key: "multitableView",
+    label: "多维表格视图",
+    description: "引用表格、看板或日历",
+    keywords: "database multitable kanban calendar",
+    glyph: "▦",
+  },
+  {
+    key: "documentCard",
+    label: "文档卡片",
+    description: "链接文档并展示简介",
+    keywords: "document card",
+    glyph: "▤",
+  },
+  {
+    key: "cardGrid",
+    label: "卡片组",
+    description: "排列与编排文档卡片",
+    keywords: "cards grid",
+    glyph: "▦",
+  },
+  {
+    key: "documentDirectory",
+    label: "文档目录",
+    description: "随知识库更新的可见目录",
+    keywords: "directory navigation",
+    glyph: "☷",
+  },
+  {
+    key: "homeTemplate",
+    label: "知识库首页",
+    description: "插入官方同款首页模板",
+    keywords: "home template",
+    glyph: "⌂",
+  },
   {
     key: "callout",
     label: "提示块",
@@ -176,6 +217,20 @@ export const INSERT_COMMANDS: InsertCommand[] = [
 ];
 
 function contentFor(key: InsertCommandKey) {
+  if (key === "multitableView")
+    return {
+      type: "multitableView",
+      attrs: { noteId: null, tableId: null, viewId: null },
+    };
+  if (key === "documentCard") return emptyCard();
+  if (key === "cardGrid")
+    return { type: "cardGrid", content: [emptyCard(), emptyCard()] };
+  if (key === "documentDirectory")
+    return {
+      type: "documentDirectory",
+      attrs: { parentId: null, style: "list" },
+    };
+  if (key === "homeTemplate") return homeTemplate().content!;
   if (key === "paragraph") return { type: "paragraph" };
   if (key.startsWith("heading"))
     return { type: "heading", attrs: { level: Number(key.slice(-1)) } };
@@ -294,8 +349,9 @@ export function selectBlockAt(
 export async function copyBlockSelection(
   editor: Editor,
   sourceScopeId?: string,
+  access?: ClipboardAccess,
 ) {
-  await writeThoughtClipboard(editor, sourceScopeId);
+  await writeThoughtClipboard(editor, sourceScopeId, access);
 }
 
 export function deleteBlockSelection(editor: Editor) {

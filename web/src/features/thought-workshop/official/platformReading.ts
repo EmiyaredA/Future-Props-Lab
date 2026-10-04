@@ -322,7 +322,7 @@ export const PLATFORM_READING: Record<
   },
   "thought-workshop/workflow": {
     summary:
-      "从块编辑和目录整理到 UML、画板与官方图复用，逐步完成可编辑图文笔记。",
+      "完成图文笔记和多维表格，配置字段、三种视图，并在正文嵌入可编辑数据。",
     related: [
       {
         libraryId: "thought-workshop",
@@ -358,7 +358,7 @@ export const PLATFORM_READING: Record<
   },
   "thought-workshop/delivery": {
     summary:
-      "按继续编辑、文本交换或离线阅读选择格式，完成带图片与画板的导入导出。",
+      "选择 CSV、静态阅读导出或完整备份，保留多表结构、历史、附件与内部引用。",
     related: [
       {
         libraryId: "thought-workshop",

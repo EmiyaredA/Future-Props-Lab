@@ -16,6 +16,10 @@ export function KnowledgeSidebar({
   sidebarRef,
   drawer,
   close,
+  discover,
+  content,
+  sections,
+  readOnly = false,
   onBack,
   onNavigate,
   inside,
@@ -33,6 +37,10 @@ export function KnowledgeSidebar({
   sidebarRef: Ref<HTMLElement>;
   drawer: boolean;
   close: () => void;
+  discover?: () => void;
+  content?: ReactNode;
+  sections?: ReactNode;
+  readOnly?: boolean;
   onBack: () => void;
   onNavigate: (id?: string) => void;
   inside: boolean;
@@ -84,73 +92,95 @@ export function KnowledgeSidebar({
         }
         footer={<ThemeToggle />}
       >
-        {inside ? (
-          <>
-            <button
-              className="workshop-back"
-              type="button"
-              aria-label="所有知识库"
-              onClick={() => onNavigate()}
-            >
-              <span className="workshop-back-icon">
-                <ArrowLeft aria-hidden />
-              </span>
-              <span className="workshop-back-copy">
-                <strong>所有知识库</strong>
-                <small>浏览全部知识库</small>
-              </span>
-            </button>
-            <label className="knowledge-search">
-              <Search size={15} />
-              <input
-                aria-label="搜索当前知识库"
-                placeholder="搜索文档…"
-                value={query}
-                onChange={(e) => search(e.target.value)}
+        {!inside && sections}
+        {!inside && discover && (
+          <button
+            type="button"
+            className="knowledge-search btn"
+            onClick={discover}
+          >
+            <Search size={16} />
+            搜索与最近访问
+          </button>
+        )}
+        {content ??
+          (inside ? (
+            <>
+              <button
+                className="workshop-back"
+                type="button"
+                aria-label="我的知识库"
+                onClick={() => onNavigate()}
+              >
+                <span className="workshop-back-icon">
+                  <ArrowLeft aria-hidden />
+                </span>
+                <span className="workshop-back-copy">
+                  <strong>我的知识库</strong>
+                  <small>浏览全部知识库</small>
+                </span>
+              </button>
+              <label className="knowledge-search">
+                <Search size={15} />
+                <input
+                  aria-label="搜索当前知识库"
+                  placeholder="搜索文档…"
+                  value={query}
+                  onChange={(e) => search(e.target.value)}
+                />
+              </label>
+              <WorkshopNavigation
+                label="当前知识库视图"
+                items={[
+                  {
+                    id: "home",
+                    label: "首页",
+                    icon: <Home aria-hidden />,
+                    active: !browsing && !noteId,
+                    onSelect: home,
+                  },
+                  ...documentViews
+                    .filter(({ id }) => !readOnly || id !== "trash")
+                    .map(({ id, label, Icon }) => ({
+                      id,
+                      label,
+                      icon: <Icon aria-hidden />,
+                      active: browsing && view === id,
+                      onSelect: () => selectView(id),
+                    })),
+                ]}
               />
-            </label>
+              <div className="knowledge-directory-scroll">{children}</div>
+            </>
+          ) : (
             <WorkshopNavigation
-              label="当前知识库视图"
+              label="思绪工坊导航"
               items={[
-                {
-                  id: "home",
-                  label: "首页",
-                  icon: <Home aria-hidden />,
-                  active: !browsing && !noteId,
-                  onSelect: home,
-                },
-                ...documentViews.map(({ id, label, Icon }) => ({
-                  id,
-                  label,
-                  icon: <Icon aria-hidden />,
-                  active: browsing && view === id,
-                  onSelect: () => selectView(id),
-                })),
+                ...(!sections
+                  ? [
+                      {
+                        id: "all",
+                        label: "我的知识库",
+                        icon: <BookOpen aria-hidden />,
+                        active: !trash,
+                        onSelect: () => selectTrash(false),
+                      },
+                    ]
+                  : []),
+                ...(!readOnly
+                  ? [
+                      {
+                        id: "trash",
+                        label: "知识库回收站",
+                        icon: <Trash2 aria-hidden />,
+                        active: trash,
+                        onSelect: () => selectTrash(true),
+                      },
+                    ]
+                  : []),
               ]}
             />
-            <div className="knowledge-directory-scroll">{children}</div>
-          </>
-        ) : (
-          <WorkshopNavigation
-            label="思绪工坊导航"
-            items={[
-              {
-                id: "all",
-                label: "所有知识库",
-                icon: <BookOpen aria-hidden />,
-                active: !trash,
-                onSelect: () => selectTrash(false),
-              },
-              {
-                id: "trash",
-                label: "知识库回收站",
-                icon: <Trash2 aria-hidden />,
-                active: trash,
-                onSelect: () => selectTrash(true),
-              },
-            ]}
-          />
-        )}
+          ))}
       </WorkshopSidebar>
       <KnowledgeSidebarResize
         width={width}

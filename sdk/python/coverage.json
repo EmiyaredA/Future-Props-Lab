@@ -2940,6 +2940,27 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/multitable",
+    "sdk": "client.thought.get_multitable",
+    "document": "/docs.html?page=sdk-reference-thought#get-multitable",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/multitable/history",
+    "sdk": "client.thought.list_multitable_history",
+    "document": "/docs.html?page=sdk-reference-thought#list-multitable-history",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}",
+    "sdk": "client.thought.get_multitable_history",
+    "document": "/docs.html?page=sdk-reference-thought#get-multitable-history",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/thought-workshop/preferences/filters",
     "sdk": "client.thought.saved_filters",
     "document": "/docs.html?page=sdk-reference-thought#saved-filters",
@@ -3062,6 +3083,55 @@
     "http": "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore",
     "sdk": "client.thought.restore_note_history",
     "document": "/docs.html?page=sdk-reference-thought#restore-note-history",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview",
+    "sdk": "client.thought.preview_multitable_conversion",
+    "document": "/docs.html?page=sdk-reference-thought#preview-multitable-conversion",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview",
+    "sdk": "client.thought.preview_multitable_csv",
+    "document": "/docs.html?page=sdk-reference-thought#preview-multitable-csv",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore",
+    "sdk": "client.thought.restore_multitable_history",
+    "document": "/docs.html?page=sdk-reference-thought#restore-multitable-history",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/multitable/operations",
+    "sdk": "client.thought.apply_multitable_operations",
+    "document": "/docs.html?page=sdk-reference-thought#apply-multitable-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export",
+    "sdk": "client.thought.export_multitable_csv",
+    "document": "/docs.html?page=sdk-reference-thought#export-multitable-csv",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import",
+    "sdk": "client.thought.import_multitable_csv",
+    "document": "/docs.html?page=sdk-reference-thought#import-multitable-csv",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query",
+    "sdk": "client.thought.query_multitable_records",
+    "document": "/docs.html?page=sdk-reference-thought#query-multitable-records",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

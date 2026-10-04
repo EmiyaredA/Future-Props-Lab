@@ -17,12 +17,15 @@ const {
   inspectHumanPet,
   inspectHumanWalk,
 } = require("./inspect-human-pet.cjs");
+const { inspectPetUi } = require("./inspect-pet-ui.cjs");
 const { inspectCompanionChat } = require("./inspect-companion-chat.cjs");
 const { inspectPetPreview } = require("./inspect-pet-preview.cjs");
 const {
   inspectPetMotion,
   inspectMotionPoses,
 } = require("./inspect-pet-motion.cjs");
+
+const { recordPetMotion } = require("./record-pet-motion.cjs");
 
 const root = path.resolve(__dirname, "../..");
 const whaleArchive = process.argv[2] || null;
@@ -178,8 +181,10 @@ async function main() {
       }
       const selected = Math.min(1, importedModel.schemes.length - 1);
       await studio.locator(".dp-side-item").nth(selected).click();
-      await studio.getByRole("button", { name: "设为桌宠默认配色" }).click();
-      await studio.getByRole("button", { name: "保存", exact: true }).click();
+      if (importedModel.schemes.length > 1) {
+        await studio.getByRole("button", { name: "设为桌宠默认配色" }).click();
+        await studio.getByRole("button", { name: "保存", exact: true }).click();
+      }
       await studio.reload();
       await expect(
         studio.getByText(
@@ -268,21 +273,30 @@ async function main() {
       window.futurePropsDesktop.petStatus(),
     );
     assert.ok(first.projectId && first.visible);
-    if (whaleArchive && process.env.FPL_SMOKE_PET_MOTION === "1") {
-      await inspectPetMotion(
-        studio,
-        pet,
-        context,
-        first.projectId,
-        screenshotDir,
-      );
-      for (const scheme of importedModel.schemes)
+    if (whaleArchive && process.env.FPL_SMOKE_PET_MOTION) {
+      if (process.env.FPL_SMOKE_PET_MOTION === "1")
+        await inspectPetMotion(
+          studio,
+          pet,
+          context,
+          first.projectId,
+          screenshotDir,
+        );
+      for (const scheme of importedModel.schemes) {
         await inspectMotionPoses(
           studio,
           first.projectId,
           screenshotDir,
           scheme.id,
         );
+        if (process.env.FPL_SMOKE_PET_RECORD === "1")
+          await recordPetMotion(
+            studio,
+            first.projectId,
+            screenshotDir,
+            scheme.id,
+          );
+      }
     }
     await studio.evaluate(async () => {
       const csrf = document.cookie
@@ -336,6 +350,7 @@ async function main() {
       first.projectId,
       screenshotDir,
     );
+    await inspectPetUi(studio, pet, activeChat, first.projectId, screenshotDir);
     await activeChat.screenshot({
       path: path.join(screenshotDir, "chat-reply.png"),
     });
@@ -365,6 +380,8 @@ async function main() {
           .pages()
           .some((page) => page.url().includes("/pet-chat.html?id=")),
     );
+    await pet.mouse.move(150, 300, { steps: 8 });
+    await expect(pet.getByTitle("隐藏")).toBeVisible();
     const hideButton = await pet.getByTitle("隐藏").boundingBox();
     assert.ok(hideButton);
     await pet.mouse.move(

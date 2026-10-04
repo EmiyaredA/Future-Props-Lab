@@ -5,7 +5,18 @@ import {
   type RigState,
 } from "./whale-vendor/rig/rig.js";
 import type { PetMotionFrame } from "@platform/petMotion";
-import { Articulation, jointDeformers, type MotionRig } from "./locomotion/articulation";
+import { paintHumanFace } from "./humanFace";
+import {
+  Articulation,
+  jointDeformers,
+  type MotionRig,
+} from "./locomotion/articulation";
+import {
+  AuthoredPoseAnimation,
+  authoredViewBindings,
+  bindAuthoredViews,
+  posePartIds,
+} from "./locomotion/authoredPose";
 
 export type HumanScheme = {
   id: string;
@@ -220,7 +231,29 @@ export async function createHumanFigure(options: {
     legFront: { kind: "rot", parent: "body", pivot: model.pivots.legFront },
     ...(model.motionRig ? jointDeformers(model.motionRig) : {}),
   };
-  const articulation = model.motionRig ? new Articulation(model.motionRig, model.pivots.body as [number, number]) : null;
+  if (model.motionRig) {
+    deformers.neck.parent = "torso";
+    deformers.coat.parent = "torso";
+  }
+  const authoredViews = model.motionRig?.poses
+    ? authoredViewBindings(model.motionRig.poses, {
+        transitions: model.motionRig.transitions,
+      })
+    : {};
+  const authored =
+    model.motionRig?.version === 2 && model.motionRig.poses
+      ? new AuthoredPoseAnimation(model.motionRig.poses, {
+          transitions: model.motionRig.transitions,
+        })
+      : null;
+  // The first human motion packages sliced the standing arms and fitted a
+  // profile head independently. They have no coherent physical pose views.
+  // Keep their standing/sitting artwork usable without replaying that path.
+  const unsupportedMotion = model.motionRig?.version === 1;
+  const articulation =
+    model.motionRig && !authored && !unsupportedMotion
+      ? new Articulation(model.motionRig, model.pivots.body as [number, number])
+      : null;
   const loaded = new Map<string, Promise<Record<string, HTMLImageElement>>>();
   const loadScheme = (id: string) => {
     if (!loaded.has(id)) {
@@ -251,7 +284,11 @@ export async function createHumanFigure(options: {
     view: model.view,
     deformers,
     parts: [
-      ...model.parts,
+      ...bindAuthoredViews(model.parts, authoredViews).map((part) => {
+        return model.motionRig && ["torso", "body_underpaint"].includes(part.id)
+          ? { ...part, parent: "torso" }
+          : part;
+      }),
       {
         id: "face_fx",
         tex: "face_fx",
@@ -270,79 +307,51 @@ export async function createHumanFigure(options: {
   const headSpring = spring(75, 12, 18);
   let previousTime = 0;
   let mounted: SVGGElement | null = null;
-
-  function paintFace(frame: HumanFrame, blush: number) {
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
-    context.setTransform(3, 0, 0, 3, -x0 * 3, -y0 * 3);
-    const sprite = (name: string, sy = 1, dx = 0, dy = 0) => {
-      const bounds = model.feat.sprites[name];
-      if (!bounds || !images[name]) return;
-      const [x, y, right, bottom] = bounds;
-      const w = right - x;
-      const h = bottom - y;
-      context.drawImage(
-        images[name],
-        x + dx,
-        y + dy + (h * (1 - sy)) / 2,
-        w,
-        h * sy,
-      );
-    };
-    const asleep =
-      frame.mode === "sleep" ||
-      frame.face === "sleep" ||
-      frame.face === "sleepy";
-    const closed = Math.max(
-      frame.blink || 0,
-      frame.eyeClose || 0,
-      asleep ? 1 : 0,
-    );
-    const eyeName =
-      frame.face === "angry"
-        ? "angry_eyes"
-        : frame.face === "surprised"
-          ? "surprised_eyes"
-          : "eyes";
-    const openness =
-      frame.face === "thinking" || frame.face === "shy" ? 0.8 : 1;
-    if (closed > 0.8) sprite("closed_eyes");
-    else
-      sprite(
-        eyeName,
-        openness * (1 - closed),
-        clamp(frame.look[0] * 0.22, -1.5, 1.5),
-        clamp(frame.look[1] * 0.15, -1, 1),
-      );
-    sprite(
-      "brows",
-      1,
-      0,
-      frame.face === "surprised" ? -2 : frame.face === "angry" ? 1 : 0,
-    );
-    if (frame.face === "happy" || frame.face === "love" || frame.talk > 0.15)
-      sprite(
-        "happy_mouth",
-        frame.talk > 0.15 ? 0.5 + Math.abs(Math.sin(frame.t * 12)) * 0.5 : 0.8,
-      );
-    else sprite("neutral_mouth");
-    const alpha = Math.max(blush, frame.face === "shy" ? 0.8 : 0);
-    if (alpha > 0.05) {
-      const [left, top, right, bottom] = model.feat.sprites.eyes;
-      for (const x of [left + 5, right - 5]) {
-        const y = bottom + 4;
-        const glow = context.createRadialGradient(x, y, 0, x, y, 8);
-        glow.addColorStop(0, `rgba(245,115,130,${alpha * 0.4})`);
-        glow.addColorStop(1, "rgba(245,115,130,0)");
-        context.fillStyle = glow;
-        context.fillRect(x - 8, top + 8, 16, 24);
-      }
-    }
-    rig.upload("face_fx", faceCanvas);
-  }
+  let motionFailure: string | null = null;
+  let authoredPickup: number[] | null = null;
 
   return {
+    // Joint poses own breathing and impact recovery; keep physical bone/head
+    // proportions and planted contacts independent of the outer logo squash.
+    fixedScale: Boolean(authored) || unsupportedMotion,
+    getMotionFailure() {
+      return motionFailure ?? authored?.getMotionFailure() ?? null;
+    },
+    getMotionTransition() {
+      return authored?.getMotionTransition() ?? null;
+    },
+    cancelMotionPlayback() {
+      authored?.cancelMotionPlayback();
+    },
+    motionFacing(motion: PetMotionFrame, seconds?: number) {
+      return authored
+        ? authored.displayFacing(motion.facing, seconds)
+        : motion.state === "climb"
+          ? 1
+          : motion.facing;
+    },
     draw(group: SVGGElement, face: { blush?: number }, frame: HumanFrame) {
+      const mode = frame.locomotion?.state ?? frame.mode;
+      motionFailure =
+        unsupportedMotion &&
+        ["walk", "run", "climb", "glide", "air"].includes(mode)
+          ? "unsupported-motion-resource"
+          : null;
+      if (unsupportedMotion)
+        frame = {
+          ...frame,
+          mode: "idle",
+          locomotion: null,
+          gait: undefined,
+          legs: [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ],
+          low: 0,
+          swing: 0,
+          tilt: 0,
+          lean: 0,
+        };
       if (mounted !== group) {
         const object = document.createElementNS(NS, "foreignObject");
         for (const [key, value] of Object.entries({
@@ -384,21 +393,80 @@ export async function createHumanFigure(options: {
           pose.sit,
         ),
       };
-      if (articulation && pose.sit < 0.4) {
+      let profile = 0;
+      const painted = authored?.sample(frame);
+      if (painted) {
+        Object.assign(state, painted.state);
+        // A whole authored pose already contains its head/neck. Facial overlays
+        // follow that same body, rather than inheriting the standing neck spring.
+        if (!painted.pose.head) state.neck = { a: 0 };
+        state.head = { tx: 0, ty: 0 };
+        const visible = new Set(posePartIds(painted.pose));
+        state.alpha = Object.fromEntries(
+          model.parts.map((part) => [part.id, visible.has(part.id) ? 1 : 0]),
+        );
+        state.alpha.face_fx = 1;
+        group.setAttribute(
+          "data-pet-edges",
+          JSON.stringify(painted.pose.edges),
+        );
+        group.setAttribute("data-pet-supported-edges", "left,right,top,bottom");
+        if (painted.pose.stride)
+          group.setAttribute("data-pet-stride", String(painted.pose.stride));
+        else group.removeAttribute("data-pet-stride");
+      } else if (articulation && pose.sit < 0.4) {
         const natural = articulation.sample(frame);
+        profile = natural.profile;
         Object.assign(state, natural.state, {
-          alpha: { ...outfitAlpha(model.schemes.find((item) => item.id === scheme), pose.sit), ...natural.state.alpha },
+          alpha: {
+            ...outfitAlpha(
+              model.schemes.find((item) => item.id === scheme),
+              pose.sit,
+            ),
+            ...natural.state.alpha,
+          },
         });
       } else if (model.motionRig) {
+        if (model.motionRig.profileHead)
+          state.alpha[model.motionRig.profileHead.part] = 0;
         for (const limb of Object.values(model.motionRig.limbs)) {
           for (const id of limb.parts) state.alpha[id] = 0;
           if (limb.jointPart) state.alpha[limb.jointPart] = 0;
         }
+        for (const entry of Object.values(authoredViews)) {
+          for (const id of posePartIds(entry.pose)) state.alpha[id] = 0;
+        }
       }
-      paintFace(frame, face.blush || 0);
+      if (!painted) {
+        group.removeAttribute("data-pet-stride");
+        group.removeAttribute("data-pet-edges");
+        group.setAttribute(
+          "data-pet-supported-edges",
+          unsupportedMotion
+            ? ""
+            : authored
+              ? "left,right,top,bottom"
+              : "left,right",
+        );
+      }
+      paintHumanFace(
+        context,
+        faceCanvas,
+        model,
+        images,
+        frame,
+        face.blush || 0,
+        profile,
+        painted?.pose.face,
+      );
+      rig.upload("face_fx", faceCanvas);
       rig.render(state);
+      authoredPickup = painted
+        ? rig.point("torso", state, ...painted.pose.waist)
+        : null;
     },
     groupTilt(mode: string, tilt: number, lean: number) {
+      if (unsupportedMotion) return 0;
       return ["air", "drag", "held", "crouch", "land", "dizzy"].includes(mode)
         ? tilt + lean
         : lean * 0.35;
@@ -417,6 +485,11 @@ export async function createHumanFigure(options: {
         z:
           model.schemes.find((item) => item.id === scheme)?.accent ?? "#ac594b",
       };
+    },
+    pickupPoint() {
+      return authoredPickup
+        ? [...authoredPickup]
+        : (model.motionRig?.waist ?? null);
     },
     dispose() {
       disposed = true;

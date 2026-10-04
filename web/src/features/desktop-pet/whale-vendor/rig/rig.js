@@ -1,3 +1,5 @@
+import { gridMesh, validateMesh } from "./meshGeometry.js";
+
 /**
  * A small Live2D-like renderer: textured grid meshes (parts) hang from a tree of deformers.
  *
@@ -98,29 +100,10 @@ export function createRig(canvas, model) {
   const defs = model.deformers;
   // parts: rest grid, uv, index buffer; `uvBox` picks a sub-rect of the texture (atlas), default whole
   const meshes = model.parts.map((p) => {
-    const [nx, ny] = p.grid || [6, 6];
-    const [x, y, w, h] = p.box;
-    const [u0, v0, u1, v1] = p.uvBox || [0, 0, 1, 1];
-    const rest = new Float32Array((nx + 1) * (ny + 1) * 2),
-      uv = new Float32Array(rest.length);
-    let k = 0;
-    for (let j = 0; j <= ny; j++)
-      for (let i = 0; i <= nx; i++) {
-        rest[k] = x + (w * i) / nx;
-        rest[k + 1] = y + (h * j) / ny;
-        uv[k] = u0 + ((u1 - u0) * i) / nx;
-        uv[k + 1] = v0 + ((v1 - v0) * j) / ny;
-        k += 2;
-      }
-    const idx = [];
-    for (let j = 0; j < ny; j++)
-      for (let i = 0; i < nx; i++) {
-        const a = j * (nx + 1) + i,
-          b = a + 1,
-          c = a + nx + 1,
-          d = c + 1;
-        idx.push(a, b, c, b, d, c);
-      }
+    const geometry = p.mesh ? validateMesh(p.mesh) : gridMesh(p);
+    const rest = geometry.positions,
+      uv = geometry.uv,
+      idx = geometry.indices;
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
     const pos = gl.createBuffer();
@@ -135,11 +118,7 @@ export function createRig(canvas, model) {
     gl.vertexAttribPointer(loc.aUv, 2, gl.FLOAT, false, 0, 0);
     const ib = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
-    gl.bufferData(
-      gl.ELEMENT_ARRAY_BUFFER,
-      new Uint16Array(idx),
-      gl.STATIC_DRAW,
-    );
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
     gl.bindVertexArray(null);
     return {
       part: p,
@@ -148,6 +127,9 @@ export function createRig(canvas, model) {
       vao,
       pos,
       count: idx.length,
+      indexType:
+        idx instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
+      bindings: p.mesh ? geometry.skin : p.skin,
     };
   });
 
@@ -159,6 +141,7 @@ export function createRig(canvas, model) {
   };
   meshes.forEach((m) => {
     m.chain = chainOf(m.part.parent);
+    m.skin = m.bindings?.map((s) => ({ ...s, chain: chainOf(s.deformer) }));
   });
 
   /** Moves a rest point through deformer `id` and its ancestors, with this frame's states. */
@@ -221,6 +204,21 @@ export function createRig(canvas, model) {
       if (!tex || alpha <= 0.001) continue;
       for (let i = 0; i < m.rest.length; i += 2) {
         const q = applyChain(m.chain, st, m.rest[i], m.rest[i + 1]);
+        if (m.skin) {
+          const base = [...q];
+          for (const binding of m.skin) {
+            const weight = binding.weights[i / 2];
+            if (!weight) continue;
+            const moved = applyChain(
+              binding.chain,
+              st,
+              m.rest[i],
+              m.rest[i + 1],
+            );
+            q[0] += (moved[0] - base[0]) * weight;
+            q[1] += (moved[1] - base[1]) * weight;
+          }
+        }
         m.out[i] = q[0];
         m.out[i + 1] = q[1];
       }
@@ -236,7 +234,7 @@ export function createRig(canvas, model) {
       const tint = st.tint?.[p.id];
       gl.uniform4f(loc.uTint, ...(tint || [1, 1, 1, 0]));
       gl.bindVertexArray(m.vao);
-      gl.drawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_SHORT, 0);
+      gl.drawElements(gl.TRIANGLES, m.count, m.indexType, 0);
     }
     gl.bindVertexArray(null);
   }

@@ -24,6 +24,27 @@ export function createSlashCommand(callbacks: InsertCallbacks) {
           char: "/",
           startOfLine: true,
           allowedPrefixes: null,
+          floatingUi: {
+            strategy: "fixed",
+            middleware: [
+              {
+                name: "viewportClamp",
+                fn: ({ x, y, rects }) => ({
+                  x: Math.max(
+                    12,
+                    Math.min(x, window.innerWidth - rects.floating.width - 12),
+                  ),
+                  y: Math.max(
+                    12,
+                    Math.min(
+                      y,
+                      window.innerHeight - rects.floating.height - 12,
+                    ),
+                  ),
+                }),
+              },
+            ],
+          },
           items: ({ query }) => {
             const needle = query.trim().toLowerCase();
             return INSERT_COMMANDS.filter((item) =>

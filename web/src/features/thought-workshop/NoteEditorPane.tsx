@@ -1,3 +1,4 @@
+import { useDocumentAccess } from "./DocumentAccess";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Pin, Star } from "lucide-react";
 import { NoteTags } from "./NoteTags";
@@ -8,6 +9,7 @@ import type { Note } from "./api";
 import { exportHtml, exportMarkdown } from "./portability";
 import { markdownWarnings, toMarkdown } from "./markdown";
 import type { NoteEditorChrome } from "./noteEditorChrome";
+import type { DocumentChrome } from "./document-layout/useDocumentChrome";
 import { useWorkspaceId } from "@platform/auth/WorkspacePermissions";
 
 const NoteHistory = lazy(() =>
@@ -26,13 +28,18 @@ export function NoteEditorPane({
   onOpen,
   registerNavigationGuard,
   onChromeChange,
+  onNavigateHref,
+  documentChrome,
 }: {
   note: Note;
   onSaved: (note: Note) => void;
   onOpen: (id: string) => void;
   registerNavigationGuard: NavigationGuard;
   onChromeChange?: (chrome: NoteEditorChrome | null) => void;
+  onNavigateHref?: (href: string) => void;
+  documentChrome?: DocumentChrome;
 }) {
+  const access = useDocumentAccess();
   const editing = useNoteDraft(note, onSaved);
   const workspace = useWorkspaceId();
   const recoveryPending = !editing.localReady || !!editing.recovery.length;
@@ -98,11 +105,11 @@ export function NoteEditorPane({
     try {
       const saved = await save();
       if (format === "html" && editorRef.current)
-        await exportHtml(saved, editorRef.current);
+        await exportHtml(saved, editorRef.current, access.assetUrl, access);
       if (format === "markdown") {
         const warnings = markdownWarnings(saved.document as JSONContent);
         if (warnings.length) setExportWarnings(warnings);
-        else await exportMarkdown(saved);
+        else await exportMarkdown(saved, access.assetUrl, access);
       }
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "导出失败");
@@ -142,9 +149,16 @@ export function NoteEditorPane({
       openHistory: () => chromeActions.current.openHistory(),
       exportNote: (format) => chromeActions.current.exportNote(format),
       canSave: editing.state !== "saving" && editing.state !== "conflict",
-      canOpenHistory: !leaving && editing.state !== "conflict",
+      canOpenHistory:
+        access.canViewHistory && !leaving && editing.state !== "conflict",
     });
-  }, [onChromeChange, editing.state, editing.savedAt, leaving]);
+  }, [
+    onChromeChange,
+    editing.state,
+    editing.savedAt,
+    leaving,
+    access.canViewHistory,
+  ]);
   useEffect(() => {
     if (!onChromeChange) return;
     return () => onChromeChange(null);
@@ -195,17 +209,19 @@ export function NoteEditorPane({
                 >
                   查看服务端
                 </button>
-                <button
-                  className="btn"
-                  onClick={() =>
-                    void editing
-                      .duplicateLocal(row)
-                      .then((next) => onOpen(next.id))
-                      .catch((error) => setNotice(String(error)))
-                  }
-                >
-                  另存副本
-                </button>
+                {access.duplicate && (
+                  <button
+                    className="btn"
+                    onClick={() =>
+                      void editing
+                        .duplicateLocal(row)
+                        .then((next) => onOpen(next.id))
+                        .catch((error) => setNotice(String(error)))
+                    }
+                  >
+                    另存副本
+                  </button>
+                )}
                 <button
                   className="btn"
                   onClick={() => void editing.discardLocal(row)}
@@ -249,21 +265,23 @@ export function NoteEditorPane({
                   </button>
                 </>
               )}
-              <button
-                className="btn primary"
-                onClick={() =>
-                  void editing
-                    .duplicate()
-                    .then((copy) => {
-                      editing.adopt(copy);
-                      onSaved(copy);
-                      onOpen(copy.id);
-                    })
-                    .catch((e) => setNotice(e.message))
-                }
-              >
-                另存本地副本
-              </button>
+              {access.duplicate && (
+                <button
+                  className="btn primary"
+                  onClick={() =>
+                    void editing
+                      .duplicate()
+                      .then((copy) => {
+                        editing.adopt(copy);
+                        onSaved(copy);
+                        onOpen(copy.id);
+                      })
+                      .catch((e) => setNotice(e.message))
+                  }
+                >
+                  另存本地副本
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -282,8 +300,15 @@ export function NoteEditorPane({
         ) : (
           <Suspense fallback={<p>编辑器加载中…</p>}>
             <RichEditor
+              documentChrome={documentChrome}
+              libraryId={note.knowledge_base_id}
+              onNavigateHref={onNavigateHref}
               outlineTitle={editing.draft.title}
-              assetScopeId={workspace ?? undefined}
+              assetScopeId={
+                access.community
+                  ? `${access.namespace}/${note.id}`
+                  : (workspace ?? undefined)
+              }
               onBackspaceAtStart={() => {
                 const title = titleInput.current;
                 if (!title) return false;
@@ -292,38 +317,42 @@ export function NoteEditorPane({
                 return true;
               }}
               onCompositionChange={editing.setComposition}
-              readingId={note.id}
+              readingId={
+                access.community ? `${access.namespace}/${note.id}` : note.id
+              }
               readingRevision={note.revision}
               document={editing.draft.document as JSONContent}
               onChange={(document) => editing.change({ document })}
               onReady={setEditor}
               beforeContent={
                 <div className="thought-note-heading">
-                  <div className="thought-note-meta">
-                    <button
-                      className="thought-pin"
-                      aria-label="置顶"
-                      disabled={recoveryPending}
-                      title="置顶"
-                      aria-pressed={!!editing.draft.pinned}
-                      onClick={() =>
-                        editing.change({ pinned: !editing.draft.pinned })
-                      }
-                    >
-                      <Pin size={19} aria-hidden="true" />
-                    </button>
-                    <button
-                      aria-label="收藏"
-                      disabled={recoveryPending}
-                      title="收藏"
-                      aria-pressed={!!editing.draft.favorite}
-                      onClick={() =>
-                        editing.change({ favorite: !editing.draft.favorite })
-                      }
-                    >
-                      <Star size={19} aria-hidden="true" />
-                    </button>
-                  </div>
+                  {!access.community && (
+                    <div className="thought-note-meta">
+                      <button
+                        className="thought-pin"
+                        aria-label="置顶"
+                        disabled={recoveryPending}
+                        title="置顶"
+                        aria-pressed={!!editing.draft.pinned}
+                        onClick={() =>
+                          editing.change({ pinned: !editing.draft.pinned })
+                        }
+                      >
+                        <Pin size={19} aria-hidden="true" />
+                      </button>
+                      <button
+                        aria-label="收藏"
+                        disabled={recoveryPending}
+                        title="收藏"
+                        aria-pressed={!!editing.draft.favorite}
+                        onClick={() =>
+                          editing.change({ favorite: !editing.draft.favorite })
+                        }
+                      >
+                        <Star size={19} aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
                   <input
                     ref={titleInput}
                     className="thought-title-input"
@@ -359,7 +388,24 @@ export function NoteEditorPane({
       <ConfirmDialog
         open={leave}
         title="仍有未保存的内容"
-        description={editing.error || "保存成功后再离开；也可以继续编辑。"}
+        description={
+          <div>
+            {editing.error || "保存成功后再离开；也可以继续编辑。"}
+            {access.community && (
+              <button
+                className="btn"
+                onClick={() => {
+                  const proceed = continuation.current;
+                  continuation.current = null;
+                  setLeave(false);
+                  proceed?.();
+                }}
+              >
+                保留本机草稿并离开
+              </button>
+            )}
+          </div>
+        }
         confirmLabel="重试保存并离开"
         cancelLabel="继续编辑"
         pending={leaving}
@@ -378,7 +424,7 @@ export function NoteEditorPane({
         onConfirm={async () => {
           setExportWarnings(null);
           try {
-            await exportMarkdown(await save());
+            await exportMarkdown(await save(), access.assetUrl, access);
           } catch (e) {
             setNotice(e instanceof Error ? e.message : "导出失败");
           }

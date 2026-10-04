@@ -31,6 +31,7 @@ import { PackageUpdate } from "./PackageUpdate";
 import { useEditorPreview } from "./useEditorPreview";
 import { useDesktopPreviewLink } from "./useDesktopPreviewLink";
 import { reactionFor } from "./playback";
+import { humanMotionUnavailable } from "./locomotion/motionAvailability";
 import { DialogueInspector } from "./DialogueInspector";
 import "./workshop.css";
 
@@ -158,6 +159,7 @@ export function EditorPage({
   const schemes =
     (snapshot?.whaleModel?.schemes as
       { id: string; brand: string; label: string }[] | undefined) ?? [];
+  const defaultScheme = schemes.find((item) => item.id === config?.schemeId);
   const skins = config?.skins ?? [];
   const selectedSkin = skins.find((item) => item.id === skinId);
   const reaction = draft ? reactionFor(draft, eventName) : EMPTY_REACTION;
@@ -173,7 +175,7 @@ export function EditorPage({
   }, [snapshot]);
 
   const edit = (update: (value: PetConfig) => PetConfig) => {
-    if (readOnly) return;
+    if (readOnly || busy) return;
     setConfig((value) => value && update(value));
     setDirty(true);
     setConflict(false);
@@ -206,6 +208,11 @@ export function EditorPage({
       (current) => current && { ...current, revision: saved.revision },
     );
     setDirty(false);
+    try {
+      await window.futurePropsDesktop?.notifyPetResourcesChanged?.(projectId);
+    } catch {
+      setError("配置已保存，桌宠刷新失败；请重新显示桌宠。不要重复保存。");
+    }
     return saved;
   };
   const run = async (action: () => Promise<void>) => {
@@ -345,7 +352,11 @@ export function EditorPage({
           <strong title={project?.title}>{project?.title ?? "桌宠项目"}</strong>
           <small>
             {!snapshot ? "尚未加载" : dirty ? "未保存修改" : "已保存"} ·{" "}
-            {whale ? "分层角色快照" : `来源 r${project?.sourceRevision ?? "—"}`}
+            {!snapshot
+              ? "来源尚未加载"
+              : whale
+                ? "分层角色快照"
+                : `来源 r${project?.sourceRevision ?? "—"}`}
           </small>
         </div>
         <nav aria-label="桌宠编辑步骤">
@@ -403,7 +414,7 @@ export function EditorPage({
       )}
       {!draft || !config ? (
         <div className="dp-loading" role="status">
-          {error ? "桌宠工程加载失败" : "正在加载桌宠工程…"}
+          <span>{error ? "桌宠工程加载失败" : "正在加载桌宠工程…"}</span>
           {error && (
             <button
               className="dp-side-action"
@@ -504,7 +515,7 @@ export function EditorPage({
                           />
                           <button
                             onClick={addSkin}
-                            disabled={!newSkinName.trim()}
+                            disabled={busy || !newSkinName.trim()}
                             aria-label="添加皮肤"
                           >
                             <Plus size={15} />
@@ -629,7 +640,12 @@ export function EditorPage({
                       </p>
                       <button
                         className="dp-side-action"
-                        disabled={readOnly || !skinId}
+                        disabled={
+                          busy ||
+                          readOnly ||
+                          !skinId ||
+                          config.schemeId === skinId
+                        }
                         onClick={() =>
                           edit((value) => ({ ...value, schemeId: skinId }))
                         }
@@ -639,14 +655,9 @@ export function EditorPage({
                       </button>
                       <p className="dp-hint">
                         当前默认：
-                        {(() => {
-                          const scheme = schemes.find(
-                            (item) => item.id === config.schemeId,
-                          );
-                          return scheme
-                            ? `${scheme.brand} · ${scheme.label}`
-                            : "尚未设置";
-                        })()}
+                        {defaultScheme
+                          ? `${defaultScheme.brand} · ${defaultScheme.label}`
+                          : "尚未设置"}
                       </p>
                     </>
                   ) : (
@@ -660,7 +671,7 @@ export function EditorPage({
                           <label className="dp-field">
                             <span>皮肤名称</span>
                             <input
-                              disabled={readOnly}
+                              disabled={busy || readOnly}
                               maxLength={60}
                               value={selectedSkin.name}
                               onChange={(event) =>
@@ -699,7 +710,7 @@ export function EditorPage({
                           </div>
                           <button
                             className="dp-side-action"
-                            disabled={readOnly}
+                            disabled={busy || readOnly}
                             onClick={() => {
                               edit((value) => ({
                                 ...value,
@@ -725,7 +736,7 @@ export function EditorPage({
                       <div className="dp-divider" />
                       <button
                         className="dp-side-action"
-                        disabled={readOnly}
+                        disabled={busy || readOnly}
                         onClick={() =>
                           edit((value) => ({ ...value, activeSkinId: skinId }))
                         }
@@ -747,7 +758,7 @@ export function EditorPage({
                 whale={whale}
                 draft={draft}
                 config={config}
-                readOnly={readOnly}
+                readOnly={busy || readOnly}
                 selectLine={preview.selectLine}
                 editReaction={editReaction}
                 edit={edit}
@@ -770,7 +781,7 @@ export function EditorPage({
                       <button
                         key={id}
                         aria-pressed={habits.roam === id}
-                        disabled={readOnly}
+                        disabled={busy || readOnly}
                         onClick={() => editHabits({ roam: id })}
                       >
                         {label}
@@ -792,7 +803,7 @@ export function EditorPage({
                       max={300}
                       step={10}
                       value={habits.size}
-                      disabled={readOnly}
+                      disabled={busy || readOnly}
                       onChange={(event) =>
                         editHabits({ size: Number(event.target.value) })
                       }
@@ -813,7 +824,10 @@ export function EditorPage({
                         checked={habits[id]}
                         disabled={
                           readOnly ||
-                          (!whale &&
+                          ((!whale ||
+                            Boolean(
+                              humanMotionUnavailable(draft.whaleModel),
+                            )) &&
                             ["edgeClimbing", "highGliding"].includes(id))
                         }
                         onChange={(event) =>
@@ -822,8 +836,11 @@ export function EditorPage({
                       />
                       <span>
                         {label}
-                        {!whale && ["edgeClimbing", "highGliding"].includes(id)
-                          ? "（Live2D 暂不支持）"
+                        {["edgeClimbing", "highGliding"].includes(id) &&
+                        (!whale || humanMotionUnavailable(draft.whaleModel))
+                          ? !whale
+                            ? "（Live2D 暂不支持）"
+                            : "（需更新动作资源）"
                           : ""}
                       </span>
                     </label>
@@ -834,7 +851,7 @@ export function EditorPage({
                       <button
                         key={action.id}
                         aria-pressed={habits.hoverActions?.includes(action.id)}
-                        disabled={readOnly}
+                        disabled={busy || readOnly}
                         onClick={() =>
                           editHabits({
                             hoverActions: habits.hoverActions?.includes(

@@ -79,6 +79,8 @@ describe("思绪工坊文档顶部栏", () => {
       "保存",
       "历史记录",
       "导入",
+      "导出整库 HTML",
+      "复制文档 / 子树",
       "导出 HTML 离线阅读",
       "导出 Markdown",
       "重命名",
@@ -128,7 +130,8 @@ describe("思绪工坊知识库顶部栏", () => {
       screen.getAllByRole("menuitem").map((item) => item.textContent),
     ).toEqual([
       "导入",
-      "导出知识库",
+      "备份知识库",
+      "导出整库 HTML",
       "重命名",
       "修改简介",
       "更换封面",
@@ -151,7 +154,7 @@ describe("思绪工坊知识库顶部栏", () => {
     expect(trigger).toHaveFocus();
 
     await user.click(trigger);
-    await user.click(screen.getByRole("menuitem", { name: "导出知识库" }));
+    await user.click(screen.getByRole("menuitem", { name: "备份知识库" }));
     expect(onProjectAction).toHaveBeenCalledExactlyOnceWith("export");
   });
 
