@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import math
 import re
 
@@ -25,6 +26,101 @@ def _point(value: object, size: list[int]) -> bool:
     )
 
 
+def _same_cel(left: dict, right: dict) -> bool:
+    """Duration may vary, but pixels and their physical registration must agree."""
+    return all(
+        left[key] == right[key] for key in ("texture", "rect", "grip", "foot", "head")
+    ) and all(left.get(key, {}) == right.get(key, {}) for key in ("contacts", "supports"))
+
+
+def _validate_transition_branches(transition: dict, clips: dict) -> None:
+    """New authored exits cover every displayed source cel; old flat links stay compatible."""
+    if "branches" not in transition:
+        return
+    branches = transition["branches"]
+    source = clips[transition["from"]]["frames"]
+    target = clips[transition["to"]]["frames"][0]
+    if not isinstance(branches, list) or len(branches) != len(source):
+        raise ValueError("完整序列帧过渡分支必须覆盖全部来源帧")
+    seen: set[int] = set()
+    for branch in branches:
+        if (
+            not isinstance(branch, dict)
+            or not {"fromFrame", "clip"} <= set(branch)
+            or set(branch) - {"fromFrame", "clip", "range"}
+            or type(branch["fromFrame"]) is not int
+            or not 0 <= branch["fromFrame"] < len(source)
+            or branch["fromFrame"] in seen
+            or not isinstance(branch["clip"], str)
+            or branch["clip"] not in clips
+        ):
+            raise ValueError("完整序列帧过渡分支索引或引用无效")
+        clip = clips[branch["clip"]]
+        if clip["loop"] or "distancePerCycle" in clip:
+            raise ValueError("完整序列帧过渡分支必须使用独立非循环计时片段")
+        start, end = 0, len(clip["frames"])
+        if "range" in branch:
+            selected = branch["range"]
+            if (
+                not isinstance(selected, list)
+                or len(selected) != 2
+                or any(type(index) is not int for index in selected)
+                or not 0 <= selected[0] < selected[1] <= end
+                or selected[1] - selected[0] < 2
+            ):
+                raise ValueError("完整序列帧过渡分支区间必须包含至少两帧且位于片段范围内")
+            start, end = selected
+        if not _same_cel(clip["frames"][start], source[branch["fromFrame"]]) or not _same_cel(
+            clip["frames"][end - 1], target
+        ):
+            raise ValueError("完整序列帧过渡分支首尾画面与锚点登记不一致")
+        seen.add(branch["fromFrame"])
+
+
+def _validate_frame(frame: object, size: list[int], scale: float, head_length: float) -> None:
+    if (
+        not isinstance(frame, dict)
+        or not {"texture", "rect", "durationMs", "grip", "foot", "head"} <= set(frame)
+        or set(frame)
+        - {"texture", "rect", "durationMs", "grip", "foot", "head", "contacts", "supports"}
+        or not isinstance(frame["texture"], str)
+        or not _NAME.fullmatch(frame["texture"])
+        or not _number(frame["durationMs"], 60000)
+        or frame["durationMs"] <= 0
+        or not _point(frame["grip"], size)
+        or not _point(frame["foot"], size)
+        or not isinstance(frame["head"], list)
+        or len(frame["head"]) != 2
+        or not all(_point(point, size) for point in frame["head"])
+    ):
+        raise ValueError("完整序列帧图片、时长或局部锚点无效")
+    contacts = frame.get("contacts", {})
+    if (
+        not isinstance(contacts, dict)
+        or set(contacts) - {"left", "right", "top", "bottom"}
+        or not all(_point(point, size) for point in contacts.values())
+    ):
+        raise ValueError("完整序列帧四边接触锚点无效")
+    supports = frame.get("supports", {})
+    if (
+        not isinstance(supports, dict)
+        or set(supports) - {"armNear", "armFar", "legBack", "legFront"}
+        or not all(_point(point, size) for point in supports.values())
+    ):
+        raise ValueError("完整序列帧真实支点无效")
+    rect = frame["rect"]
+    if (
+        not isinstance(rect, list)
+        or len(rect) != 4
+        or any(type(n) is not int or not 0 <= n <= 4096 for n in rect)
+        or rect[2:] != size
+    ):
+        raise ValueError("完整序列帧裁切必须保持统一尺寸")
+    measured = math.dist(*frame["head"]) * scale
+    if measured <= 0 or abs(measured / head_length - 1) > 0.02 + 1e-10:
+        raise ValueError("完整序列帧头部比例超出统一标尺的百分之二")
+
+
 def validate_frame_sequences(model: dict) -> set[str]:
     """Return declared safe texture IDs; the existing package owns all file budgets."""
     if "frameSequences" not in model:
@@ -35,7 +131,7 @@ def validate_frame_sequences(model: dict) -> set[str]:
         or not {"version", "frameSize", "modelBox", "headLength", "clips", "transitions"}
         <= set(sequences)
         or set(sequences)
-        - {"version", "frameSize", "modelBox", "headLength", "clips", "transitions"}
+        - {"version", "frameSize", "modelBox", "headLength", "clips", "transitions", "cels"}
         or type(sequences["version"]) is not int
         or sequences["version"] != 1
     ):
@@ -65,7 +161,16 @@ def validate_frame_sequences(model: dict) -> set[str]:
     if not isinstance(clips, dict) or not 1 <= len(clips) <= 64 or "idle" not in clips:
         raise ValueError("完整序列帧片段数量无效")
     textures: set[str] = set()
-    total = 0
+    cels = sequences.get("cels", {})
+    if not isinstance(cels, dict) or len(cels) > 2048:
+        raise ValueError("完整序列帧原帧登记数量无效")
+    for cel_id, frame in cels.items():
+        if not isinstance(cel_id, str) or not _NAME.fullmatch(cel_id):
+            raise ValueError("完整序列帧原帧登记名称无效")
+        _validate_frame(frame, size, scale, head_length)
+        textures.add(frame["texture"])
+    total = len(cels)
+    resolved_clips = {}
     for clip_id, clip in clips.items():
         if (
             not isinstance(clip_id, str)
@@ -85,49 +190,20 @@ def validate_frame_sequences(model: dict) -> set[str]:
         total += len(clip["frames"])
         if total > 2048:
             raise ValueError("完整序列帧总帧数过大")
-        for frame in clip["frames"]:
-            if (
-                not isinstance(frame, dict)
-                or not {"texture", "rect", "durationMs", "grip", "foot", "head"} <= set(frame)
-                or set(frame)
-                - {"texture", "rect", "durationMs", "grip", "foot", "head", "contacts", "supports"}
-                or not isinstance(frame["texture"], str)
-                or not _NAME.fullmatch(frame["texture"])
-                or not _number(frame["durationMs"], 60000)
-                or frame["durationMs"] <= 0
-                or not _point(frame["grip"], size)
-                or not _point(frame["foot"], size)
-                or not isinstance(frame["head"], list)
-                or len(frame["head"]) != 2
-                or not all(_point(point, size) for point in frame["head"])
-            ):
-                raise ValueError("完整序列帧图片、时长或局部锚点无效")
-            contacts = frame.get("contacts", {})
-            if (
-                not isinstance(contacts, dict)
-                or set(contacts) - {"left", "right", "top", "bottom"}
-                or not all(_point(point, size) for point in contacts.values())
-            ):
-                raise ValueError("完整序列帧四边接触锚点无效")
-            supports = frame.get("supports", {})
-            if (
-                not isinstance(supports, dict)
-                or set(supports) - {"armNear", "armFar", "legBack", "legFront"}
-                or not all(_point(point, size) for point in supports.values())
-            ):
-                raise ValueError("完整序列帧真实支点无效")
-            rect = frame["rect"]
-            if (
-                not isinstance(rect, list)
-                or len(rect) != 4
-                or any(type(n) is not int or not 0 <= n <= 4096 for n in rect)
-                or rect[2:] != size
-            ):
-                raise ValueError("完整序列帧裁切必须保持统一尺寸")
-            measured = math.dist(*frame["head"]) * scale
-            if measured <= 0 or abs(measured / head_length - 1) > 0.02 + 1e-10:
-                raise ValueError("完整序列帧头部比例超出统一标尺的百分之二")
+        resolved = []
+        for declaration in clip["frames"]:
+            if isinstance(declaration, str):
+                if declaration not in cels:
+                    raise ValueError("完整序列帧引用了未登记的原帧")
+                frame = copy.deepcopy(cels[declaration])
+            else:
+                frame = copy.deepcopy(declaration)
+            _validate_frame(frame, size, scale, head_length)
             textures.add(frame["texture"])
+            resolved.append(frame)
+        # Validation never rewrites the raw upload or shares mutable cel objects.
+        resolved_clips[clip_id] = {**clip, "frames": resolved}
+    clips = resolved_clips
     transitions = sequences.get("transitions", [])
     if not isinstance(transitions, list) or len(transitions) > 128:
         raise ValueError("完整序列帧过渡数量无效")
@@ -136,7 +212,8 @@ def validate_frame_sequences(model: dict) -> set[str]:
     for transition in transitions:
         if (
             not isinstance(transition, dict)
-            or set(transition) != {"id", "from", "to", "clip"}
+            or not {"id", "from", "to", "clip"} <= set(transition)
+            or set(transition) - {"id", "from", "to", "clip", "branches"}
             or not isinstance(transition["id"], str)
             or not _NAME.fullmatch(transition["id"])
             or transition["id"] in ids
@@ -149,6 +226,17 @@ def validate_frame_sequences(model: dict) -> set[str]:
             raise ValueError("完整序列帧过渡引用无效")
         ids.add(transition["id"])
         pairs.add((transition["from"], transition["to"]))
+        _validate_transition_branches(transition, clips)
+    # A partial range registers a pool of unrelated bridge tails, not an
+    # ordinary playable clip. Actual interruption may still name it as source.
+    containers = {
+        branch["clip"]
+        for transition in transitions
+        for branch in transition.get("branches", [])
+        if "range" in branch and branch["range"] != [0, len(clips[branch["clip"]]["frames"])]
+    }
+    if "idle" in containers or any(transition["to"] in containers for transition in transitions):
+        raise ValueError("完整序列帧过渡容器不能作为待机或过渡目标")
     return textures
 
 
@@ -159,9 +247,15 @@ def validate_frame_sequence_images(model: dict, dimensions: dict[str, tuple[int,
         return
     for index, scheme in enumerate(model["schemes"]):
         prefix = "" if index == 0 else f"schemes/{scheme['id']}/"
-        for clip in sequences["clips"].values():
-            for frame in clip["frames"]:
-                width, height = dimensions[f"{prefix}tex/{frame['texture']}.png"]
-                x, y, w, h = frame["rect"]
-                if x + w > width or y + h > height:
-                    raise ValueError("完整序列帧裁切超出服饰图集实际范围")
+        cels = sequences.get("cels", {})
+        frames = list(cels.values())
+        frames.extend(
+            cels[frame] if isinstance(frame, str) else frame
+            for clip in sequences["clips"].values()
+            for frame in clip["frames"]
+        )
+        for frame in frames:
+            width, height = dimensions[f"{prefix}tex/{frame['texture']}.png"]
+            x, y, w, h = frame["rect"]
+            if x + w > width or y + h > height:
+                raise ValueError("完整序列帧裁切超出服饰图集实际范围")

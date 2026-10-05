@@ -25,6 +25,10 @@ export type PetRendererHandle = {
   geometry?: () => PetGeometry | null;
   placementDelta?: () => { x: number; y: number };
   placementGeometry?: () => PetGeometry | null;
+  /** Private rendered-world placement latch; token is the host cancellation generation. */
+  beginPlacementHandoff?: (token: number) => boolean;
+  commitPlacementHandoff?: (token: number) => boolean;
+  cancelPlacementHandoff?: () => void;
   /** Last renderer reach/contact failure; the movement owner must cancel its trajectory. */
   motionFailure?: () => string | null;
   motionTransition?: () => PetPosePlayback | null;

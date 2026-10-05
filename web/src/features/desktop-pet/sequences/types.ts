@@ -28,6 +28,13 @@ export type SequenceTransition = {
   from: string;
   to: string;
   clip: string;
+  /** Actual source cel chooses its own complete tail; omitted keeps the flat bridge. */
+  branches?: {
+    fromFrame: number;
+    clip: string;
+    /** Half-open absolute cel indices in a shared timed clip; omitted plays the whole clip. */
+    range?: [number, number];
+  }[];
 };
 export type FrameSequences = {
   version: 1;
@@ -35,6 +42,8 @@ export type FrameSequences = {
   modelBox: SequenceRect;
   /** Model-space cranial reference; every cel must match within 2%. */
   headLength: number;
+  /** Validated declarations, including unused cels for authorized image closure checks. */
+  cels?: Record<string, SequenceFrame>;
   clips: Record<string, SequenceClip>;
   transitions: SequenceTransition[];
 };
@@ -70,6 +79,8 @@ export type SequenceFailure = {
     | "missing-phase"
     | "anchor-conflict"
     | "missing-transition"
+    | "missing-transition-branch"
+    | "transition-container"
     | "transition-entry-mismatch"
     | "transition-exit-mismatch"
     | "missing-confirmed-travel"
@@ -84,7 +95,10 @@ export type SequenceFailure = {
 export type SequenceSample = {
   clip: string;
   requestedClip: string;
+  /** Absolute index into clips[clip].frames, including ranged transitions. */
   frameIndex: number;
+  /** Active half-open transition segment; no neighboring tail may be drawn or decoded. */
+  clipRange?: [number, number];
   frame: SequenceFrame;
   modelBox: SequenceRect;
   /** Uniform source-to-model scale; never fitted to individual cel bounds. */

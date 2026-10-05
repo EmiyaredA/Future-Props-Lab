@@ -127,6 +127,8 @@ test("valid sequences override legacy v1, but partial resources only enable thei
   );
   add(seq, "walk-left");
   add(seq, "walk-right");
+  connect(seq, "walk-left", "walk-right");
+  connect(seq, "walk-right", "walk-left");
   expect(humanMotionUnavailable(model(seq))).toBeNull();
   delete seq.clips["walk-right"].distancePerCycle;
   expect(humanMotionUnavailable(model(seq))).toContain("循环步距");

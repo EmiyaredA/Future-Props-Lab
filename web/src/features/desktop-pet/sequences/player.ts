@@ -1,3 +1,9 @@
+import {
+  sameSequenceCel as sameCel,
+  transitionBranchFailure,
+  transitionSegmentForFrame,
+  isTransitionContainer,
+} from "./transitions";
 import type {
   FrameSequences,
   SequenceClip,
@@ -17,7 +23,8 @@ type Playback = {
   offset: number;
   position: number;
   phaseOrigin: number;
-  entry: number;
+  begin: number;
+  end: number;
   transition?: string;
 };
 type SupportName = keyof NonNullable<SequenceFrame["supports"]>;
@@ -41,33 +48,13 @@ const TAU = Math.PI * 2;
 const modulo = (n: number, d: number) => ((n % d) + d) % d;
 const duration = (clip: SequenceClip) =>
   clip.frames.reduce((sum, frame) => sum + frame.durationMs, 0);
-const samePoint = (a: SequencePoint, b: SequencePoint) =>
-  a[0] === b[0] && a[1] === b[1];
-const sameAnchors = (
-  a: SequenceFrame["contacts"] | SequenceFrame["supports"],
-  b: SequenceFrame["contacts"] | SequenceFrame["supports"],
-) => {
-  const first = Object.entries(a ?? {}).sort();
-  const second = Object.entries(b ?? {}).sort();
-  return (
-    first.length === second.length &&
-    first.every(
-      ([key, point], i) =>
-        key === second[i][0] && samePoint(point, second[i][1]),
-    )
-  );
-};
-/** Conservative v1 painted identity. Metadata alone cannot prove two cels equal. */
-const sameCel = (a: SequenceFrame, b: SequenceFrame) =>
-  a.texture === b.texture &&
-  a.rect.every((value, i) => value === b.rect[i]) &&
-  samePoint(a.grip, b.grip) &&
-  samePoint(a.foot, b.foot) &&
-  a.head.every((point, i) => samePoint(point, b.head[i])) &&
-  sameAnchors(a.contacts, b.contacts) &&
-  sameAnchors(a.supports, b.supports);
 const finitePoint = (point: SequencePoint) =>
   Array.isArray(point) && point.length === 2 && point.every(Number.isFinite);
+
+export type SequencePresentationRequest =
+  | { kind: "sample" }
+  | { kind: "hold" }
+  | { kind: "reject"; reason: SequenceFailure["reason"] };
 
 /** Chooses complete source cels; no mesh, rotation, per-cel fitting or alpha blend. */
 export class SequencePlayer {
@@ -80,10 +67,56 @@ export class SequencePlayer {
   private progress: SequenceProgress | null = null;
   private support: SupportPlayback | null = null;
   private rejectedSupport: SupportPlayback | null = null;
+  private presenting = false;
 
   constructor(sequences: FrameSequences) {
     this.sequences = structuredClone(sequences);
     this.scale = sequences.modelBox[2] / sequences.frameSize[0];
+  }
+
+  /** Commit sampled state only with synchronous presentation; ordinary rejects remain rejects. */
+  present(
+    input: SequenceInput,
+    request: SequencePresentationRequest,
+    install: (sample: SequenceSample | null) => boolean,
+  ): SequenceSample | null {
+    if (this.presenting) throw new Error("完整序列帧呈现不能重入");
+    if (install.constructor.name === "AsyncFunction")
+      throw new Error("完整序列帧呈现必须返回同步安装结果");
+    // Only dynamic state is copied, never the resource/atlas description.
+    const prior = structuredClone({
+      playback: this.playback,
+      last: this.last,
+      failure: this.failure,
+      failedRequest: this.failedRequest,
+      progress: this.progress,
+      support: this.support,
+      rejectedSupport: this.rejectedSupport,
+    });
+    this.presenting = true;
+    try {
+      const sample =
+        request.kind === "hold"
+          ? this.holdMotionPlayback(input)
+          : request.kind === "reject"
+            ? this.rejectMotionPlayback(input, request.reason)
+            : this.sample(input);
+      const installed = install(sample);
+      if (typeof installed !== "boolean")
+        throw new Error("完整序列帧呈现必须返回同步安装结果");
+      return installed ? sample : null;
+    } catch (error: unknown) {
+      this.playback = prior.playback;
+      this.last = prior.last;
+      this.failure = prior.failure;
+      this.failedRequest = prior.failedRequest;
+      this.progress = prior.progress;
+      this.support = prior.support;
+      this.rejectedSupport = prior.rejectedSupport;
+      throw error;
+    } finally {
+      this.presenting = false;
+    }
   }
 
   /** End a completed physical exit; preserve the cel and its registration. */
@@ -197,38 +230,48 @@ export class SequencePlayer {
         offset: 0,
         position: 0,
         phaseOrigin: 0,
-        entry: 0,
+        begin: 0,
+        end: target.frames.length,
       };
       return null;
     }
     if (this.playback.target === input.clip) return null;
     const link = this.sequences.transitions.find(
-      (item) => item.from === this.playback?.clip && item.to === input.clip,
+      (item) => item.from === this.last?.clip && item.to === input.clip,
     );
     if (!link) return "missing-transition";
-    const invalid = this.checkClip(link.clip);
+    const branchFailure = transitionBranchFailure(this.sequences, link);
+    if (branchFailure) return branchFailure;
+    const segment = transitionSegmentForFrame(
+      this.sequences,
+      link,
+      this.last.frameIndex,
+    );
+    if (!segment) return "missing-transition-branch";
+    const selectedClip = segment.clip;
+    const invalid = this.checkClip(selectedClip);
     if (invalid) return invalid;
-    const bridge = this.sequences.clips[link.clip];
+    const bridge = this.sequences.clips[selectedClip];
     if (bridge.loop || bridge.distancePerCycle !== undefined)
       return "invalid-frame";
-    const index = bridge.frames.findIndex((frame) =>
-      sameCel(frame, this.last!.frame),
-    );
+    const index = link.branches
+      ? sameCel(bridge.frames[segment.start], this.last.frame)
+        ? segment.start
+        : -1
+      : bridge.frames.findIndex((frame) => sameCel(frame, this.last!.frame));
     if (index < 0) return "transition-entry-mismatch";
-    if (!sameCel(bridge.frames.at(-1)!, target.frames[0]))
+    if (!sameCel(bridge.frames[segment.end - 1], target.frames[0]))
       return "transition-exit-mismatch";
-    const entry = bridge.frames
-      .slice(0, index)
-      .reduce((sum, frame) => sum + frame.durationMs, 0);
     this.playback = {
-      clip: link.clip,
+      clip: selectedClip,
       target: input.clip,
       start: input.t,
       lastTime: null,
-      offset: entry,
-      position: entry,
+      offset: 0,
+      position: 0,
       phaseOrigin: 0,
-      entry,
+      begin: index,
+      end: segment.end,
       transition: link.id,
     };
     return null;
@@ -409,11 +452,40 @@ export class SequencePlayer {
     return this.retainRejectedSupport(input, result);
   }
 
+  /** Asset waits keep the already painted cel registered; no selection or clock advances. */
+  holdMotionPlayback(input: SequenceInput): SequenceSample | null {
+    if (input.supportRequired && !input.travel)
+      return this.rejectMotionPlayback(input, "missing-confirmed-travel");
+    if (
+      input.supportRequired &&
+      (!finitePoint(input.travel!) ||
+        !Number.isFinite(input.worldScale ?? 1) ||
+        (input.worldScale ?? 1) <= 0)
+    )
+      return this.rejectMotionPlayback(input, "invalid-support-motion");
+    return this.registerRetainedSupport(
+      input,
+      this.last ? structuredClone(this.last) : null,
+      this.support ?? this.rejectedSupport,
+    );
+  }
+
   private retainRejectedSupport(
     input: SequenceInput,
     result: SequenceSample | null,
   ): SequenceSample | null {
     const support = this.support ?? this.rejectedSupport;
+    const retained = this.registerRetainedSupport(input, result, support);
+    this.rejectedSupport = support;
+    if (this.support?.clip !== input.clip) this.support = null;
+    return retained;
+  }
+
+  private registerRetainedSupport(
+    input: SequenceInput,
+    result: SequenceSample | null,
+    support: SupportPlayback | null,
+  ): SequenceSample | null {
     // The host may already have acknowledged this displacement. Refusing a
     // bad new cel must still keep the last painted sole at its world point.
     if (
@@ -455,8 +527,6 @@ export class SequencePlayer {
         delete this.last.motionFailure;
       }
     }
-    this.rejectedSupport = support;
-    if (this.support?.clip !== input.clip) this.support = null;
     return result;
   }
 
@@ -470,6 +540,8 @@ export class SequencePlayer {
     const invalid = this.checkClip(input.clip);
     if (invalid) return this.reject(invalid, input.clip);
     const target = this.sequences.clips[input.clip];
+    if (isTransitionContainer(this.sequences, input.clip))
+      return this.reject("transition-container", input.clip);
     if (
       target.distancePerCycle !== undefined &&
       (input.phase === undefined || !Number.isFinite(input.phase))
@@ -489,7 +561,9 @@ export class SequencePlayer {
     )
       return this.reject("invalid-time", input.clip);
     run.lastTime = input.t;
-    const total = duration(clip);
+    const total = clip.frames
+      .slice(run.begin, run.end)
+      .reduce((sum, cel) => sum + cel.durationMs, 0);
     let position =
       clip.distancePerCycle !== undefined
         ? run.offset + (((input.phase ?? 0) - run.phaseOrigin) / TAU) * total
@@ -503,14 +577,15 @@ export class SequencePlayer {
       run.start = input.t;
       run.offset = 0;
       run.phaseOrigin = input.phase ?? 0;
-      run.entry = 0;
+      run.begin = 0;
+      run.end = target.frames.length;
       delete run.transition;
       clip = target;
       position = 0;
     } else if (run.transition) {
       this.progress = {
         id: run.transition,
-        progress: Math.max(0, (position - run.entry) / (total - run.entry)),
+        progress: Math.max(0, position / total),
       };
     } else if (!clip.loop && position < total) {
       this.progress = {
@@ -520,11 +595,14 @@ export class SequencePlayer {
     }
     run.position = clip.loop
       ? modulo(position, duration(clip))
-      : Math.min(Math.max(position, 0), duration(clip));
+      : Math.min(
+          Math.max(position, 0),
+          completedBridge ? duration(clip) : total,
+        );
     let remaining = run.position;
-    let frameIndex = 0;
+    let frameIndex = run.begin;
     while (
-      frameIndex < clip.frames.length - 1 &&
+      frameIndex < run.end - 1 &&
       remaining >= clip.frames[frameIndex].durationMs
     ) {
       remaining -= clip.frames[frameIndex].durationMs;
@@ -571,7 +649,7 @@ export class SequencePlayer {
       !Object.keys(frame.supports ?? {}).length &&
       sameCel(frame, target.frames[0]) &&
       (completedBridge ||
-        Boolean(run.transition && frameIndex === clip.frames.length - 1));
+        Boolean(run.transition && frameIndex === run.end - 1));
     if (
       input.travel &&
       (input.supportRequired || clip.distancePerCycle !== undefined) &&
@@ -623,6 +701,7 @@ export class SequencePlayer {
         supports: projectedMap(frame.supports),
       },
     };
+    if (run.transition) sample.clipRange = [run.begin, run.end];
     if (target.distancePerCycle !== undefined)
       sample.distancePerCycle = target.distancePerCycle;
     if (this.progress) sample.transition = { ...this.progress };

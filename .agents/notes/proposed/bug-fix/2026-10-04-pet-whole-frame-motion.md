@@ -41,7 +41,6 @@ Status: proposed
 
 未更新正式资源、未写持久数据库、未调用真实聊天模型、未重启正式 App。原正式包仍使用完整站姿安全降级。完整视觉验收和正式交付未完成。
 
-
 ### 完整帧比例实际绘制与最终门禁
 
 最终相关 Web 桌宠 39 文件 542 项、后端桌宠 332 项、桌面私有桥／录制 29 项、架构 48 项通过。全 Web 类型及完整构建、全仓 lint／format、契约与 SDK、LFS 指针／生产／fsck、官方导入包检查及文档保护通过。Notes 的 npm/tsx CLI 最初因沙箱禁止临时 Unix Socket 失败，改用相同校验脚本的 `node --import tsx` 运行，树／格式 159 项及归档封印均通过；第一次新提案缺 Risks 段已补齐，原失败日志保留。不是全仓全部单元或 E2E 验收。
@@ -57,3 +56,157 @@ passing-v3 降低膝位但失去后折，拒绝；带独立骨架导引的 v4（
 当前正式项目 revision 8 仍为 motionRig v1，没有 frameSequences。UI 更新、能力反馈及此前重开窗口均不代表新运动素材已应用。本轮新 atlas-v2／edit1 仍重复支撑腿；单张 opposite-passing-v2（SHA 8a30d8cb0b80c25a00f7e491ba43d63c5e6e48b59282936636e8629635b3e617）首次明确近腿摆动／远腿承重且头腰尺寸接近参考，仍只有单张候选。其邻接 contact-v1 头高增约 3.4%，拒绝。双姿势参考的 atlas-v3（SHA da157d7ff61961e950d543a41ba8bfdc6b7386f4166ed43b4b2888bd165ebd4c）局部承重交换改善，但头高比参考小约 5%，03→04 身份及整幅登记仍未连续，拒绝。所有原图未改像素，prompt、逐帧及独立报告保留在 full-frame-sequences/。
 
 [世界支撑修复](../../implemented/bug-fix/2026-10-04-pet-sequence-world-support.md)接入真实确认位移，并覆盖计时桥、失败后实际画面保留及合法离地；技术校准不证明人体自然。完整素材、三服饰、鲸鱼、所有动作和隔离 Electron 视觉仍未完成，不应用正式 CAS，不用旧运动填补。
+
+### 新短体型关键姿势与支撑身份复核
+
+短体型八帧 atlas（SHA c68fc2906d1c7aaaa8753333963f4e0dea39d1edd7f0ac002ca6d49dd9be9aef）全身/头比例 2.322–2.363 接近原站，但 01/05 与 02/06 重复支撑身份，且跨格发丝污染，拒绝。far-passing-v1（SHA b6cf9ed0aa98ef06c327053387615f35ceb8ad8da108227fc44cabc569a86c8e）近腿承重/远腿回收关系局部改善，仍缺真正前摆且左发裁切。单张带红近腿/青远腿的 contact 候选能保留裤口身份，但地面接触有 26 px 差，头高相邻参考约 +4%，不作为完整通过。
+
+诊断 colored-cycle-v1（SHA cd2adb4e2037465dbcbb33639d4c65cec8320b5f161a76ea0a109239906ae8a9）全八源帧已经主 Agent 和独立 Agent 放大检查：03–05 青腿改从同一近侧大裤口出并遮红腿，是换色而非正确远腿向前；06 的抬膝幅度与 02 不对等，02/04/05 邻格串发、03/05/06 贴裁边，拒绝。红青仅是诊断身份，不进入正式素材。拎腰 held-classic-v1（SHA a3d3545df905687033c926b81d26053f00b9e2acbb2d19a49ed8ed0b82af7263）虽然双手朝下且服饰连续，但头颈仍抬起、四肢偏长且缺悬挂重量，独立复核拒绝。完整原图/prompt/哈希/逐源帧及独立报告保留在忽略的 full-frame-sequences/，原 PNG 未做像素修补。
+
+分支契约与加载等待的迟到回执修复见[实际步相过渡 Note](../../implemented/bug-fix/2026-10-04-pet-sequence-transition-branches.md)。代码测试与构建通过仍不授予任何失败原画正式应用资格；正式资源、持久数据库和 App 仍未在本轮更新。完整自然动作、全部服饰/鲸鱼及隔离 Electron 录像继续未完成。
+
+单张 clean-contact-v1（SHA ca81983126fd5cb2d7d488aca0bea83acf506bc07b34492e256bddb2f18bb4a1）近后/远前链正确、双sole仅差1源像素、左发完整，局部静态姿势改善；同时上身/眼睛重画，头高585±5，不能直接接之前图片。near-contact-v1 与 far-load-v1 的裤口身份也正确，但头高约599/602，较此基准偏大且五官/腰位移。一次双输入定量修订仍失败：near-contact-v2（SHA83c87a026f616c38705abbc49b64d4f4d0c0ed42db4976dec77f03f6ec12d1e6）H约603、眼与金腰扣偏移、sole差12px；far-load-v2（SHAde60e05d4efa3aefbb7c69f98933533231ea91e5906f346c0f0142d245c6f20e）H约596及落脚高度局部接近，眼/腰仍重画。原图逐张放大及独立测量在对应 independent-* 报告，prompt目标不能替代实际测量。这些均不组合正式循环；本轮停止对同一偏差反复生图。
+
+### 实际隔离 Electron 三姿势录像复核
+
+`sequence-renderer-checks/electron-three-contact-v1/run-2026-10-04T09-58-58-899Z/` 使用实际 Electron 41.10.7 / Chromium 146、生产完整帧 renderer 和忽略目录内独立 profile。原视频 372 个编码帧、6.183115 秒，PTS 实测 60.0032 fps、最大间隔 18 ms、无重复 PTS；保存 62 张 10 fps 抽帧、原 Canvas 和明暗 capturePage。不是产品 main、正式账号或实际窗口移动，只是 clean/near/far 三张静态姿势每张持 400 ms 的诊断。
+
+主 Agent 与独立 Agent 都查看实际截图；独立复核全部 62 抽帧和首三次切换相邻编码帧 n23→24、47→48、71→72，并记录真实 n/PTS。共同 modelBox、drawImage 和 scale 始终一致，源 PNG 哈希不变，Canvas alpha 与不透明 RGB 完全一致，透明边 RGB 最多 1/255 舍入。眼睛、下巴、领口和腰的跳变来自原画重绘及缺中间姿势，视觉仍 FAIL。约 60 fps 采集不能代表已有自然 60 fps 动作。
+
+594±5 的头部登记仅为竖向投影尺，grip/foot 是此无位移诊断未使用的占位，不能冒充真实骨段、抓点或世界支撑通过。独立报告 `sequence-renderer-checks/independent-electron-three-contact-v1/review.md` 明确不批准正式资源。所有服饰、鲸鱼、完整动作、实际桌面交互及全套视觉验收仍未完成；本轮没有正式 CAS 或 App 重启。
+
+### 四关键相位与逐张比例校准复核
+
+新增原始 3D 作者导引使用固定正交视角、1 单位头高／2.325 单位整身、固定 0.32 大小腿骨长及可达两骨膝，明确近／远髋与四相位；最初不可达跨步与鞋底低于地面已在导引中纠正，未拉长骨长。导引只用于作者参考，不作为最终角色或动作验收。四格完整 source/edit/black-guide 候选仍有重复腿链或体型漂移，保留拒绝证据。
+
+彩色诊断 colored-character-v1（SHA d23d6c1352b8204de5959bcdda6120dbe8b70e7ef3cf7d7641d56ea52ed344f4）首次保留全部 A近前／B近承重远前passing／C远前近后／D远承重近前passing 的真实裤口身份，没有交换颜色冒充换腿；整身却约 2.54–2.56 头，腿明显偏长。short-proportion-v1（SHA c83fe480780b8e4823cb7cc8188f15e9052f95b5194310a5228e8159f59432b1）短腿局部改善，但 A 腿短 36px 而躯干长 12px，上排仍约 2.45 头且四格注册未统一，拒绝。
+
+仅改 A 的 short-a-v1（SHA 6b1c4c833108a015f1f1473a0a10954eb34375c030bb4cdad60b158f3616d4f3）实际图高 1449，不能当作请求的 1448；A 实际下颌取样后约 H266±4、2.353 头身、躯干 .628H 接近原 master .63H，可保留有限比例参考。双鞋约 4px 高差，B/C/D 虽要求锁定仍重画及移位，整周期没有通过。随后 uniform-key-v1（SHA 90c253cb09efc52488a8de80c153ac5308c9249245bebdc855a8e27beaa91c17）组内 H272–274 接近，却比 A 参考变大；A/B 体型反长，比例 2.423/2.478、下排根部位移，仍拒绝。不能用其自身平均标尺替换跨版本基准来声称通过。
+
+所有测量来自真实原生像素、RGBA 下颌取样与放大检查，颌线人工不确定性明确，不能把临时肉眼点当骨点精度。原图、prompt、SHA、原作者导引与独立复核保存于 `full-frame-sequences/walk-right-v5/` 和 `independent-walk-right-v5/`；红蓝腿仅用于诊断，不进入正式服饰。逐张完整角色校准将替代反复编辑整个四格导致其余格重新绘制的方式。真实播放器诊断可以暴露原画跳变，但不会赋予失败候选正式应用资格。
+
+共享区间及防容器裸播已独立落地，见[共享区间 Note](../../implemented/bug-fix/2026-10-04-pet-sequence-ranges.md)。前端 736 相关测试、后端 424、桌面 43、架构 48，通过；完整 lint、format、构建／类型、契约／SDK、LFS 与文档保护通过。桌面网关测试初轮受本地 listen EPERM 限制，按原测试受控重跑 43 项通过，不归为源码失败。新增 Note 后树／格式 165 项与归档 2 项通过。完整三服饰／鲸鱼自然运动、动态表情、起停与四角的正式视觉验收继续未完成；没有正式 CAS、数据库写入或 App 重启。
+
+### 四相位实际 Electron 邻接帧检查
+
+诊断 uniform-key-v1 经生产 createSequenceFigure 在独立 Electron 原生窗口播放，真实编码 383 帧、59.8558 fps、PTS 0–6.382 秒、最大间隔 33 ms、无重复 PTS。保存 64 个 10 fps 样本、全部 15 次切换相邻编码对、首周期逐帧放大及 8 张明暗 capturePage；主 Agent 和独立 Agent 均实看。源码、原 PNG、drawImage、modelBox 和 scale 冻结一致，头眼／下颌／领腰／脚底仍在切换的一帧跳变，视觉继续 FAIL。该素材只有四张每张停 400 ms 的诊断，采集 60 fps 不表示自然 60 fps 步态；最后 18 ms 尾段未完整，已记录。报告在 `.local/desktop-pet/four-edge-motion/sequence-renderer-checks/electron-uniform-four-v1/run-2026-10-04T13-45-41-537Z/review.md`，不是正式产品 main 或实际窗口轨迹验收。
+
+鲸鱼娘原 standing 真实 createWhaleFigure/WebGL 基线与新 near-contact-v1 完整原图已独立检查。新候选 far boot 悬空、脸重画、画布占比增大，拒绝；本地 MIT 动画代码不能替代角色资源授权证明。原图／局部放大／来源与 SHA 在 `full-frame-sequences/whale-baseline/`，没有正式部署新鲸鱼资源。新增采样器减少重复分配及部分镜像锚点修复见[几何采样 Note](../../implemented/bug-fix/2026-10-04-pet-geometry-sampler.md)，不将技术通过误记为视觉通过。
+
+### 单张迈步与拎起导引修订
+
+新 single-contact（SHA824d77f2…e1532）近远裤口与膝靴连接连贯，可保留单图短体型参考；H556±4 对原 A266 的固定2倍 H532 仍增4.51%，不能说跨版本一致。如果将它作为新统一作者尺度，必须明确采用新的 source 标尺，再按同一模型单位映射全部新动作，不能用逐张 bbox-fit 或逐张变更 headLength。single-passing（SHA5b1cfc8f…04c63c）蓝远膝在前而脚后折，近红承重，身份局部改善；对新556基线实际H575±4增3.42%、完整sole1374比contact1336低38源px，眼领腰重绘，仍拒绝组周期。painted鞋底和眼部颜料代理不冒充真实toe或虹膜骨点。
+
+held-classic-v2（SHA41b750b1…feead64）连续袖口／双手下垂改善，但头颈仍抬望，独立头轴约615±12，腿靴长，拒绝。原创scratch导引 v3 首轮骨链偏长且图像工具输出拦截，没有可用PNG；v4 缩短后仍有远手被头遮挡、长颈示意条错层和颌点尺度不清，均保留失败。v5 先校正真实头轴[764,624]→[825,1176]，长度555.36024；近远臂222.87076／223.41804、腿295.03814／295.63151，接近既定短骨比例，双手实际可见，短后颈先绘后被头遮挡。独立原像素／直接点链核对在 `independent-held-classic-v5-guide/`。v5只是构图导引通过，不是角色原画或动画通过；实际生成仍须重新核源尺度和全部连接。
+
+镜像接触点与采样器最终版100动态+35锚点独立真实Canvas对照通过；Web742、全lint、format、build／类型通过。该技术门禁不改变本提案未完成状态；新的完整动作、三服饰及鲸鱼仍未安装正式资源，未进行正式CAS或App重启。
+
+v5 完整角色生成仍未产出：builtin 输出阶段再次拦截，请求ID `54dd2e54-6d9f-41af-9a57-76fb561c7a76`；此前v3请求 `80bd65f2-9d6f-49b5-9efc-081c249782a6` 同样无PNG。原prompt、guide源码及failure记录保存在各自忽略目录，不把导引核对当图片成功，不用旧拎起填补，不切换未经用户指定的CLI／供应商。新拎起角色原画、全部动作和完整视觉验收仍未完成。
+
+### 八相位完整原画与新接触节奏复核
+
+v6 原图 SHA `9d28cd1aad402e3c4e334fac7af6d201ee84172411c071b8289dfacf3501b32f` 仍有承重身份不交换、体型约2.54头、跨排头眼领腰变化；v7 SHA `a5f9e3bdd01c7793d966279a08ff57a33eff4085357c7d382b5904136a7cceb6` 首次保留正确红近／蓝远裤口身份和双向换腿，但上身按两排切换、平底靴缺接触滚动，不通过。原图和各自 source 报告不改像素，红蓝只用于识别，不是正式服饰。
+
+v8 作者导引重新统一原站比例，头竖向205、头轴对角205.585为不同标尺，近可见裤口341、接触地面484；刚性靴以真实脚跟或鞋尖转动并把转后踝点送入两骨可达求解。导引的支点与骨长验证成立，不授予实际角色通过。v8 完整原图 SHA `919b7128949902ff9c8c7583df27517bd3d5b3644f0d363f808cc88c32595388` 体型改善，但B/F整靴仍悬空；v9 SHA `c22d9c99972617d8fe2667b50b0e4d154057856d85317d78e496b0cb1e1b9e88` 聚焦两处鞋尖后有17／12源像素接近地面的局部改善，仍有2–4源像素高度差、E换支撑高度不一致及头眼领腰跨排跳变。builtin 即使请求只改两处也改变了其他原格可见像素，不称原图已精确锁定。
+
+v6／v7／v8／v9均由真实隔离 Electron 生产 createSequenceFigure 播放，完整有效版本明暗各7秒、约60fps，各保存421个真实编码／rAF／抽取原帧（共842）与140次全部切换相邻卡；循环各取88个实际原帧，约12.49fps，无补帧。主 Agent 与独立 Agent都看八种相邻切换。每次source哈希、生产源码、384×512画布／modelBox及唯一scale保留并独立核对。此处baseline figure为诊断stub，grip／foot／head是未用于物理的占位，没有宿主位移、世界支持或完整App主窗口，不能写成实际桌宠所有动作已通过；原始截短录制失败另存。完整App与私有宠物的诊断后续另记，不与这个范围混淆。
+
+只读时序复核纠正此前判定边界：`SequencePlayer` 已按累计 `durationMs` 比例选确认位移相位，不要求index/8等距。v9的同一画出后鞋跟候选给出正间隔 `[15,12,13,23,14,17,16,12]`／周期约122源像素的一维可行解；96／每相位12只是旧作者导引，不是人体失败的唯一依据。鞋跟点仍有2–3源像素手测不确定性，此解没有注册或视觉通过；E两脚及远支撑相位的y不一致、F旧鞋尖与蓝支撑鞋跟要求不同位移，不能由帧时长修复，也不以换一个sole点、整体平移、拉伸或放宽1DIP掩盖。报告在 `.local/desktop-pet/walk-right-v9-timing-feasibility/`。
+
+共享完整cel登记、原始CAS引用保留与严格素材闭包另见[cel登记Note](../../implemented/architecture/2026-10-04-pet-sequence-cels.md)。对应冻结相关Web791、后端473、桌面43、架构48、完整lint／format／build／类型、契约／SDK、LFS、文档保护与Notes检查通过；官方导入包相关8项通过。通过的是契约与代码，完整新动作、三服饰／鲸鱼及正式视觉交付仍未完成，没有正式资源CAS、正式数据写入或正式App重启。
+
+### 完整隔离 App 复现与单 cel 作者失败
+
+v10 原图 SHA `01483c5413c69c72eee0ad7aef52548b3ea1918f896a95222f18e5262891b914` 的B/F接地已接近，1–2源像素不能继续判为旧版明显悬空；E蓝前靴出现脚跟低／鞋尖高的局部改善，但其heel仍高于红旧支撑约4–5源像素，上身两排登记仍切换。三位审查者分别看原图或实际编码帧；不把独立一维125源像素正时长解授予世界支点通过。v6至v10运行消费的同5个生产文件逐项SHA相同；旧combined差异只是JSON插入顺序，按路径排序得到 `44170e9b05c23f0fa01c73074c9958bb2360d5ef2c2ad59a4628311cb733ebd9`，原历史日志保留。
+
+后续真实完整App以独立 `.local/desktop-pet/full-app-sequence-check/` test-data创建隔离账号／项目，UI导入单经典诊断v8包，现有授权replace-package CAS依次v9／v10得到200、revision0→1→2、全部原config不变，授权PNG字节SHA与各原atlas一致。中央编辑器与实际privatepet各明暗7秒，12份电影共5052真实rAF／编码／抽取源帧、840切换卡；实际约60fps，没有补帧，root实际看v10 privatepet八种相邻卡及UI。录像是实际Canvas1:1采集而非OS整屏，截图／SVG屏幕CTM另存；只有idle诊断，没有物理supports或新动作能力。源87文件冻结前后相同，全部自有进程已结束。曾使用外部context HTTP请求被开发网关403拒绝，失败证据保留；后续使用已登录renderer的现有requestApi，不取私有token或绕过网关。
+
+这次完整App还复现联动失败：当前待机／无动作／无表情也被未选旧事件happy／surprised的渲染能力拒绝，开关退回false。上述12电影显示的是桌宠保存基线，不宣称草稿已同步。原诊断以option查询菜单得到空数组是工具选择器错误，后续menuitemradio实查中文可用／禁用原因，不能拿空数组当验收。完整原失败报告在 `.local/desktop-pet/full-app-sequence-check/report-before-link-fix.md`；渲染与联动问题分别处理，新版本代码及复测另记。
+
+停止反复整atlas重绘后，尝试完整单E帧、明确统一画布和模型单位。v11原图SHA `665f58628bf24d7b5197ecec3ad09bcac4edee574bd8ff3bcaca043eda16d563` 虽为1024×1536，头约539而目标412、冠上移约193像素、鞋底1377而目标1234，不能通过外框fit混入v10。v12加入原创primitive单pose尺度导引，无角色图像变换；导引头410、冠280／颌690、裤口948、floor1234，但实际SHA `b833a73bb469d033b0ca40efb3196fa0b942b2813df2c3a0831442ea2e1d0162` 头378、约2.635头身，衣裤／双腿偏长。v13完整协调比例候选SHA `3ce961ec9c8f2c6af8047b5125f7805d39d1df46798a6d68743b94ee14450d4c` 相对改善至约2.532头身，主要是头增大到436，躯干／腿绝对没有按要求缩短，裤口988／floor1339、两靴约3源像素高度差。原站约2.325头身，三候选均拒绝。
+
+三次builtin生成的完整原PNG原字节保存，exact prompt／来源／SHA在各authoring目录，独立审查实际看白底完整图、原像素脸领／腿靴及放大地面卡。透明RGB棕雾不误判为opaque背景；正确红近／蓝远身份、连续膝靴与蓝toe抬起只记录局部设计改善，不授予完整动作通过。单E小系列停止继续生成，未拼接入循环／改像素／注册虚假支点／套用按图片外框缩放。静态失败的单cel不是新可用动画版本，三服饰及鲸鱼的正常速度／转角／松手／世界支撑验收仍未完成，正式资源未更新。
+
+实际联动校验已独立修复，见[当前反应联动Note](../../implemented/bug-fix/2026-10-05-pet-preview-current-reaction.md)。hook SHA `430c18d46fe63ce746cb4aad182d6e21f1da02ba9e4113f70f506d9322500bd9` 的同原config隔离完整App明暗复测，v8／v9／v10当前idle/null联动均成功，privatepet显示临时预览；退出config／revision严格保留。当前全桌宠811项及lint／format／build／类型、契约／SDK和官方导入包8项通过。该修复不改善失败原画；后续实际短点的缺clip／支撑异常反馈另行定位，不能宣称所有交互通过。
+
+2026-10-05 作者流程独立复核重新查看VPet六格循环和结束转身，确认整cel补偿可稳定登记支点但不能消除稀疏原画造成的全身阶梯运动。报告在 .local/desktop-pet/whole-frame-authoring-path/review.md，不把VPet时长或录像重帧当作真实中间原画／1DIP物理依据。
+
+新side-rest小系列只以原master为比例与身份源，不继承单E失败版。v1原PNG SHA881e1e4a881c2f28ef9272fa30a689382a11138fc9d558539ea35905ca8f348c，实测2.456头身、弱三四分、靴底差12px，拒绝。唯一局部修订v2 SHA26096e8df23cbf2abf39ac4556e741336953a4ed61a6cc0db7a067ab4ab4dfa1，总2.310接近master2.325是实际改善，但torso约.681H／leg.629H与master.630／.694分布不一致、头注册+15–18px、靴底差15px，侧胸／侧髋仍未形成。两版完整衣料与虹膜无明显碎缝／肤色块的局部优势不能放行。原字节和独立native局部QA、提示／来源保持 .local/desktop-pet/whole-frame-authoring-path/；停止本series，未接8pose、播放器或正式包。
+
+实际App的资源错误分类及warning下手动拖动修复独立记录在[运动反馈Note](../../implemented/bug-fix/2026-10-05-pet-motion-feedback.md)。松手全rAF发现20DIP一帧跳变，尚未通过连续性，继续修交接；不得将843项代码测试或正确终点替代自然动作及全部服饰视觉验收。
+
+### 新单张姿势族与完整隔离 App 对照（2026-10-05）
+
+本节追加新证据，不撤销前述严格侧视、源注册、体型分布和旧素材失败。side-rest-v2 可以作为有限三四分静态参考；衣摆不是骨点，远侧鞋的投影高度差不单独证明悬空。所有新 PNG 原字节保留在忽略的 `.local/desktop-pet/whole-frame-authoring-path/`，生成输入、来源、SHA、原尺度局部图和独立复核各自留档，未拼接修图、补齐画布或按各图外框缩放。
+
+right-contact-v1 实际是近腿前方承重、远腿后方回收。right-opposite-support-v1 重复原承重身份，拒绝；v2 首次远腿承重但画布1145×1373，不能伪装成1374或混入统一画布包。far-passing-v1 实际是较晚前伸，不是所请求的屈膝passing；far-heel-contact-v1 画出了远脚跟与近后鞋尖的双接触，其约3源像素差不是世界支撑1DIP证明。
+
+新的 far-passing-v2 SHA `b907231b97987a976b507e9b129403ea3c2c115fd513fb9124ba2441cf95e381` 和 near-passing-v1 SHA `31b4b29063a068bf9ac8995a1fe14e29076fb685d8eb368239eeaa387998e92e` 保留对应裤口，实际形成向前膝／向后小腿的两种弯曲姿势。near-passing-v2 SHA `43607cbda9200a4e51febae3aaa07c6c4d83e558ec3355d1c93c1834938dc6d8` 小腿更紧凑；按同一袖靴口标志，膝到靴口代理从128.5±15px到95.4±15px，不能沿用此前不同标志的145px比较。鞋跟到鞋尖材料线也由约124到111px（端点±5px），鞋型／尺度风险仍待修复。上身和承重靴亦有重画，不能称仅小腿变化或精确骨长相同。主Agent及独立Agent均实看原图／放大局部；这些只是单帧局部改善，不是完整动作通过。
+
+实际完整隔离App中央编辑器和私有桌宠明暗诊断分别保留在 `full-app-sequence-check/three-key-fixed-scale/`、`five-key-fixed-scale/`、`five-key-fixed-scale-v2/`。全部原图1145×1374，共同modelBox `[0,0,220.1923076923077,264.2307692307692]`，唯一scale `0.19230769230769232`。这是固定计时idle静态对照，没有supports／distance或真实移动轨迹；520px头登记是此族显示标尺，不是原master隐藏骨长等同。实际授权PNG哈希一致，Canvas alpha max差0，PMA RGB误差低于1个8bit级别，没有称透明RGB字节完全一致。
+
+有效三key1731、五key1732、五key-v2 1059个真实rAF／编码／全部抽取PNG逐一对应；全部72／72／44次切换相邻原帧和循环原帧采样保留。三key最初四片均缺最后captureID的失败记录不覆盖。均为约60fps正常时间采集，但有等值PTS和40–61ms最大间隔，不能说每个瞬时区间持续达到30fps。录像是实际生产Canvas／DOM而非OS合成画面，Mac锁屏的原生交互验收尚缺。每张停400ms再换姿势的素材明显缺1→2／3→4／4→0过渡，腿和袖口硬跳；不是完整自然走路，不能以录像帧率替代绘制帧数、世界支点或三服饰／鲸鱼通过。
+
+这批87文件冻结前后一致，规范SHA `fa8d746e539c21c168ae2dfe51e4cc519e72f9201c58441f32f18e1da35c43cc` 使用Python Unicode路径排序的UTF8 JSON；旧插入顺序hash仍保留。全部隔离App config／revision未变、联动已释放、桌宠已关闭、自有进程退出。没有正式资源CAS或正式App重启。
+
+### 独立交互修复与当前验收边界（2026-10-05）
+
+前述正常松手20DIP瞬跳另由[最终放置交接Note](../../implemented/bug-fix/2026-10-05-pet-placement-handoff.md)处理；实际App正常同cel相邻位移最大约0.100006DIP。取消路径仍是旧0.24秒恢复，不批准新自然拎腰动画。[拒绝反应Note](../../implemented/bug-fix/2026-10-05-pet-rejected-reaction.md)在能力预检前阻止旧hop物理，44ms真实短点后的39个实际样本同cel／同宿主位置／世界root范围0。缺资源反馈和保留原cel不会填补缺少的新运动素材。
+
+[确认放弃Note](../../implemented/bug-fix/2026-10-05-pet-discard-navigation.md)只撤销已确认编辑器自身guard，真实隔离App一次离开／重开保存基线及revision不变；未绕过其他未保存保护。[包装器清理Note](../../implemented/bug-fix/2026-10-05-pet-sequence-wrapper-disposal.md)在序列2D构造失败时释放已建baseGL，7项真实构造链控制浏览器API测试证明dispose／loseContext次数，不证明正式编辑器物理GPU内存或tile警告根因。正常v1纹理闭包减少有单独原生像素证据，待初始化／decode峰值压力仍未完全排除。
+
+当前相关Web52文件891项、后端序列141项通过；完整lint／format／Web类型构建、契约及SDK535操作811schema、LFS指针／生产／fsck、官方管理员导入包、受保护文档检查通过。此前Note树格式174篇及2归档封印通过，追加后重新核验。并行官方导入包生成不等于数据库导入／发布。代码门禁不授予失败原画上线资格；完整三服饰／鲸鱼、所有新动作与四边／转角、动态表情、真实世界支点、原生交互和受控更新继续未完成。
+
+### 完整拎腰图、实际渲染与中间原画复核（2026-10-05）
+
+held-waist-v1／v2 的可见倾斜头轴约588±20px、袖臂链约365±25px，对三四分参考头523±10／袖臂289±25明显偏大；v3短臂改善到299±25，但头473.5±20偏小。三版失败保留。新v4原图SHA `d083c4dcea078e57c0e7411233836d57a0c6c50f31e049f61546bc64861b1233`、1145×1374，实际头523.87±20回到粗参考范围，袖臂301±25、双手下垂和颈肩腰衣料连续。生成仍重画其他身体区域，不能称头-only精确编辑或完整骨长相同。
+
+v4靴口到最低鞋底竖跨度约187而站姿133，不单独证明靴子加长；真实同尺度原帧同时看翻折靴口、脚背、后跟、鞋头及鞋底材料，近靴可见rear→toe弦约133对站姿128（手测±8–15，非隐藏脚长），支持脚朝下投影的解释，严格材料同比仍未确认。眼睑／紫色bbox的差别也不能直接当物理虹膜轴。只保留该完整静态构图，未批准悬挂／拖动／放下／表情或正式安装。
+
+`full-app-sequence-check/held-v4-fixed-scale/` 实际隔离完整App在编辑器与私有桌宠明暗播放两幅原始静图各400ms，同画布／同scale100/520，无held clip／contacts／supports／distance或宿主移动；契约必填grip／foot只显示参考。1060个真实rAF／编码／抽取PNG逐一对应，44组切换原帧和220个80ms原采样保留。平均约60.26–60.32fps，但有重复PTS和35–39ms最大间隔，未补帧。源PNG授权响应SHA相同、8次nativeCanvas alpha差0／PMA低于1个8bit级别、四窗screen CTM与modelBox固定。主Agent实看privatepet-dark全11边界总览及眼脸／肩腰／双靴实际2倍原帧卡。无旧碎片断缝或runtime bbox变焦；两静图整姿态直接跳切，仍没有自然进入／返回。源码87文件规范hash前后同fa8d746e…、config／revision0不变、联动结束／宠物关闭／自有进程0；不是OS合成录像或原生拖拽。
+
+新增near-heel-v1 SHA `5622b07510cdf98704960cb9197bde58c887c70b991e13e14c75d8101d9fb85a` 实际正确近前heel／远后forefoot，opaque低点1290／1274；v2 SHA `551d0beec8ca753b12b52eaa36636119d9f1884ef59788f9b8a6a295bc84d9b8` 更抬后heel但forefoot1273仍未按请求降至1290。失败显式共同source-y作者目标；三四分深度下16／17px差不独立证明3D浮脚，固定世界同材料支撑漂移1DIP是另一判定。新near-extension-v1 SHA `ee28f4d451a47029911c5dc21d25d8085d8374f163f913002fcc79323de6dc65` 实际前heel1275／后平足1274，没有请求悬30–40px，局部可作为短步初接触构图；旧支持鞋也重画／位移，不称late swing或全周期通过。三张原PNG与独立native腿鞋／脸／代理误差报告分别保留，不连续盲生相同微调请求，也不改变锚点／whole root或时长掩盖未验证原画。
+
+首张held-entry-mid-v1 SHA `9efe4a8956552dd78b6793dbf1b8bb61916de74131250ed7cc44f5a2acc0c3c7` 实际头轴560.45±20，仍是深腰折，仅略比v4直立，拒绝作为所请求中段；衣料角不是精确解剖90度。源waist坐标插值不是物理轨迹。后续改为只以站姿为参考，取消这一构图束缚；mid-v2原图SHA `3f70b7c40bd63ff0ba2b36e4c757094abec6ce06863d84dc11e7ff8d1c72b334` 的独立原像素复核确认浅腰折、头529.20±20与参考粗尺相近，袖臂306±25、两手下垂、衣料连续可有限保留；原腰约[579,813]与站姿[692,858]不同，双靴约横移−100px，原位请求没有实现，下半身投影／骨段一致仍未批准。
+
+`full-app-sequence-check/held-entry-v2-fixed-scale/` run `2026-10-04T22-03-22-301Z` 把rest／mid-v2／held-v4原字节经实际UI授权导入隔离App，四窗明暗每图400ms纯idle静态对照，唯一modelBox／100/520尺度、无physical held／transition／travel／support。1060编码原帧ID完整对应1060 rAF，44实际切换对及220个80ms原样本保存；平均60.25–60.27fps但有重复PTS1／2／1／2、最大间隔41／39／41／36ms，没有插值／补帧。12个native cel alpha差0／PMA<1；四窗同cel SHA相同、CTM／位置稳定。主Agent实看privatepet-dark全11边界及mid→held脸领2倍原帧卡，并重看三原图。仍有腰脚整图跳位和眼脸源图重绘，不能称自然进入／拎起通过。root另从summary中87个路径重新读取源码SHA，规范hash同fa8d746e…且changes[]；config／revision0不变、联动释放、桌宠关闭、自有进程0。录屏是实际production Canvas，不是OS合成或原生手势证明。
+
+世界材料复核 `independent-qa/world-material-feasibility/report.md` 保留七图的heel block／forefoot outsole同材料区域与±8源px手测边界。固定投影深度不等于近远脚必须同source-y；对同材料世界支撑必须用宿主确认位移与统一root校验。若early-heel ee28…→near-heel551…两阶段都声称延续同近heel和远forefoot双支撑，interfoot向量横向变化约147源px，任意共同平移也无法消除，误差下至少一端约11.06DIP，条件性FAIL；early-heel是否已真正承重尚未确认，不把该图像自动贴成落地相位。现支持键是armNear／armFar／legBack／legFront、每肢单点；heel→forefoot的材料变化不能靠重命名同脚丢掉旧支撑。仍缺真实roll／另一脚交接的连续原画，不修改phase时长、support名称、每图scale或自由root轨迹来掩盖素材问题。
+
+后续真实人物GL构造故障释放与明暗重开验证见[包装器清理Note追加](../../implemented/bug-fix/2026-10-05-pet-sequence-wrapper-disposal.md)。确有trusted原生loss与恢复，但不能称tile显存问题根因已消除。Mac仍锁屏；全部正式资源CAS与受控重启继续等待完整隔离视觉验收，无正式数据／schema／App更新。
+
+### 六格完整原画与新导引拒绝记录（2026-10-05）
+
+六格sheet-v1 SHA1ff6dbf51a8db83729e50c1581069eec4444b935e1dff46a02c6dac5283e4fac实际1536×1024、alpha0–254。逐格原像素放大：头208.63→229.69±7px增长约10%，后半腿部绘画链变长、腰位漂移、4→5幅度突变与5/6近重复；早格鞋底仅2–3px留白。请求尺寸不等于actual，透明下棕RGB不是不透明背景。sheet-v2 SHA566ba8d1f6b96da45655627c4384ece3f4e813d02ef7801d3a75be3fa0ed0cba头207.04–215.10±7附近且增长趋势消失，可保留局部改善；身体原像素并未锁定，腰位/腿比例/阶段缺失不解，第3格实体鞋底达到y511且无余量。两套动作均拒绝，不拆正式cels，不安装。
+
+新绘制几何导引不是角色素材。主Agent旧guide/v2把头轴旋转方向画反、肩点未随躯干旋转，独立复核已确认错误；因此使用此guide的guided-six-v1 SHA596049c74bbeb68b4c254f1949ee2fbccabb41997fe411caa4dea36e8b20cf82不集成，保留原图，不因参考图错误自动声称所有生成像素也有同样错误。重新统一clockwise convention、肩局部基及唯一scale后v3数值一致，但末头中心仍高于腰86.32px，只是entry guide；v4 SHA6581583b368c9e3aa8c24fa706da231cad40c3d0b2a5685e76c28ec519024e57头中心末格低于腰21.04px（纠正主Agent约38px预估），各常量有限几何误差<8e−14、全部原图在各512格内。内部数学一致不能证明人体/衣料/支撑自然。
+
+当前guided-six-v2 SHA1c7ab3671ebd27be35dd08cee02b0c970a566c4255f0befc0ed3e936bf5464cd使用v4与side-rest外观，实际全人物有连贯弯腰和双手下垂；最后双脚仍平地站立，尚不是自然悬挂，独立头/腰/腿/眼QA继续。不把prompt的固定waist/bones当原图测量，不做外框缩放拟合或按每图写自由root。
+
+held-grip独立推导发现旧三图代理不一致：rest/mid用可见腰扣，v4旧点[418,590]是衬衫折线，v4真扣约[438,639]±12；这些均不等于已登记同解剖腰铰点。任意点击时outer重抓ease与inner(grab−celgrip)可能相消，首whole会把waist直接移到鼠标；这是契约/真实手势测试缺口，未对本套有效素材集成复现，不能虚称新原生bug已定位。松手保留translation不自动错误，需连同outer/host final placement规定同一reference，直接清零会再次跳位。腰跟鼠标且允许暂越屏幕的用户偏好继续保留。
+
+隐藏表面释放另见[已实施Note](../../implemented/bug-fix/2026-10-05-pet-hidden-render-surface.md)。53文件904相关测试及原生17Canvas比对仅证明该资源生命周期/不改scale，不能批准上述原画。首次whole PNG加载失败缺可见错误另行修复，不以动画缺失提示替代。无正式CAS/schema/受控重启。
+
+### 本次固定抓点修复与六格新原画登记边界（2026-10-05）
+
+前述outer／inner可能抵消的推断现已在真实public core→SequenceFigure合成原图调用链复现：首个完全相同cel在非腰点按住时分别瞬移47.598／76.41 DIP，零偏差对照不跳。此结果属于受控DOM／Canvas的合成源标记坐标，不冒充新人物原画或OS手势。修复见[固定抓取锚点Note](../../implemented/bug-fix/2026-10-05-pet-held-pickup-entry.md)：Core同次抓取复制最后实际已绘P0，内层登记到固定P0，外层保留220ms缓动。14项真实生产链新测试及203项回归通过；同cel松手保留非零平移，不声称不同源腰点的完整退出已连续。原始复现与修复版本分别保留，不覆写旧失败。
+
+whole guided-six-v3 原图SHA6f6c9af45ad28a688342dccef8f5386e3776f23a565283a2f057fd15e8631307：最后两格确实改为脚尖向下、近膝放松和小腿后随，静态局部改善成立，不能继续沿用v2平底脚缺陷。首四格可见原图仍约28–30%PMA差异，不是像素锁定；轮廓多只1–2px，重画计数不自动证明骨长突变。近腿／靴口代理含8–15源px误差，不是骨点；最终远腿仍近直。头发顶到可见下巴投影受遮挡影响，不能证±2%真实头轴；前腰扣与后外套折线不是同一抓点，第五格右发仅1px实质留白。原图、提示和独立QA／登记报告全部本地保留，未装包。
+
+单项visibility修订v4 原图SHA045ae1180d86739b93584f2f6988c0fae5a9c0b6c7b44b5194dff8d0dc421618，1536×1024alpha0–254。实际六格完整／腰／头眼等尺寸对照确认：近侧shirt／waistband侧缝仍藏在袖后，2–5白斜线仍是coat hem，前扣不能接成后衣摆；明确拒绝物理抓点登记。可见PMA差异21.93–29.69%，不是局部精确编辑；轮廓多0–2px，不夸大为已证肢体成长。第五格高alpha右边余量缩为1px，最右alpha3→12，滤波安全未通过。没有填写伪造grip数组、抄导引坐标、拼贴五官或按每格外框缩放。
+
+下一原画制作需要完整被遮挡躯干／腰侧缝构造底稿、统一头轴与衣袖遮挡关系；每帧记录visible／occluded-estimate、真实源坐标及误差。格式数值稳定不消除材料对应不确定性，不再重复同visibility prompt。全部动作、三服饰与鲸鱼、30fps全动作／原生桌面交互和四边仍未通过；正式资源及正式App不应用这些候选。异步加载和顶部恢复另见[加载失败Note](../../implemented/bug-fix/2026-10-05-pet-sequence-asset-failure.md)，代码门禁与自然动作验收继续分开。
+
+### 完整原画的外层方向修复
+
+完整原帧统一尺寸后仍被鼠标追随的旧横向插值压到近零，按住又横翻。独立公开调用已复现，新的[固定显示基准决策](../../implemented/bug-fix/2026-10-05-pet-fixed-display-basis.md)仅修复该显示职责。左右动作仍需对应完整原画，新行走12格作者构造和候选均不当作可导入登记或自然视觉通过。整体新动作提案继续保持proposed，未更新正式资源。
+
+### 新行走作者导引和逐张实际原画复核
+
+12格新作者导引记录统一骨段、Near/Far遮挡、足跟/足底/脚尖材料及四阶段，26个展开阶段的构造支撑漂移为零；只表示几何导引一致，不是角色原画或世界支撑通过。新12格原PNG aa7aa85fc8dbc80252ae71dad9f2052c8e8a31c7514018c2cc5ceedaef4b0d01 实际1254×1254而非请求1536，03/04的摆腿身份与阶段不符且逐行原位登记漂移，拒绝整循环；09/11局部阶段正确仍记录。原眼间色彩代理和轮廓误差不能直接当真实虹膜/骨长。
+
+单06原PNG7497a835d7634f4689416151fe756950a9038cf4d2885d3e693f968d6521b9f3改善Near旧toe/Far新heel的相反滚动，头腰原生画布稳定，但固定近远地面轨道未证，不登记双支撑。单03原PNG587bbc2edd5edff43bf538644af4e3721bab4be2d1b1e6368786d4217c77722b可见Far链仍在后侧回收，缺少前膝轮廓，拒绝所请求前摆阶段；隐藏膝不能凭提示推断或填写坐标。
+
+改用已有完整b907231b97987a976b507e9b129403ea3c2c115fd513fb9124ba2441cf95e381前摆图作单04编辑目标，原PNG a2beeaa573bb371b92cf91ef89ec84ef01224257af16b62266b79bc7e0dac325、1145×1374、alpha0–255，真实Far小裤口到前膝、小腿及靴连续，膝适度伸展、靴更向前且仍离地。Near靴bottom约1286同前图，Far约1181、airgap约105源px；头/腰约80/600/858，无明显外框缩放。独立QA与主Agent均实际看原生腿、3倍支撑靴和同尺寸脸部对照。Near靴与脸仍重绘：固定ROI白底mean RGB差10.99/5.22每8bit级，分别1552/21584和6384/109350像素差超过20。轮廓接近不证明同材料锁定，局部姿势改善不批准全循环；不猜隐藏关节、拼贴眼睛、登记导引支点或应用正式资源。
+
+全部原图、提示、实际尺寸、哈希和独立报告保留在忽略目录whole-frame-authoring-path，对应manifest已区分拒绝与局部未登记。位图复用实现见[独立代码决策](../../implemented/bug-fix/2026-10-05-pet-sequence-bitmap-reuse.md)，它不改变艺术验收范围。新三服饰/鲸鱼全动作及四边、真实OS手拖仍未完成；Mac仍锁屏，正式更新门槛不变。

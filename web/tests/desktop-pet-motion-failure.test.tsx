@@ -88,13 +88,24 @@ test("missing transition has a distinct reason and manual regrab remains availab
   const f = fixture();
   f.fail("needs-walk-turn-view");
   await act(() => vi.advanceTimersByTimeAsync(100));
-  expect(f.hook.result.current.error).toContain("缺少连续过渡姿势");
+  expect(f.hook.result.current.error).toBe("");
+  expect(f.hook.result.current.issue).toMatchObject({
+    kind: "resource-unavailable",
+    severity: "warning",
+    code: "needs-walk-turn-view",
+  });
+  expect(f.hook.result.current.issue?.message).toContain("缺少连续转身画面");
   expect(f.move).not.toHaveBeenCalled();
   f.fail(null);
   act(() => f.hook.result.current.press(100, 120));
   await act(() => vi.advanceTimersByTimeAsync(250));
   expect(f.hook.result.current.error).toBe("");
+  expect(f.hook.result.current.issue).toBeNull();
   expect(f.hook.result.current.frame.state).toBe("held");
+  act(() => f.hook.result.current.pointer(130, 120));
+  await act(() => vi.advanceTimersByTimeAsync(100));
+  expect(f.move.mock.lastCall?.[0]).toMatchObject({ manual: true, x: 330 });
+  expect(f.hook.result.current.environment?.bounds.x).toBe(330);
   act(() => f.hook.result.current.release(true));
   await act(() => vi.advanceTimersByTimeAsync(100));
   expect(f.hook.result.current.frame.state).toBe("idle");

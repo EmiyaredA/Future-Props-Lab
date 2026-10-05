@@ -1,7 +1,13 @@
+import {
+  sameSequenceCel as sameCel,
+  transitionBranchFailure,
+  transitionSegmentForFrame,
+  isTransitionContainer,
+} from "./transitions";
 import type { PetEdge } from "@platform/petMotion";
 import type { ArticulationFrame } from "../locomotion/articulation";
 import type { MotionDemo } from "../locomotion/demo";
-import type { FrameSequences, SequenceFrame } from "./types";
+import type { FrameSequences } from "./types";
 import { readFrameSequences } from "./validation";
 
 const edges: PetEdge[] = ["left", "right", "top", "bottom"];
@@ -37,19 +43,24 @@ export function sequenceEdges(sequences: FrameSequences): PetEdge[] {
       edge === "left" || edge === "right"
         ? [edgeClip(edge, 1)]
         : [edgeClip(edge, -1), edgeClip(edge, 1)];
-    return ids.every((id) =>
-      sequences.clips[id]?.frames.every((frame) => {
-        const contact = frame.contacts?.[edge];
-        const supports = Object.entries(frame.supports ?? {});
-        if (!contact || !supports.length) return false;
-        if (edge === "top" && !supports.some(([key]) => key.startsWith("arm")))
-          return false;
-        if (edge === "bottom" && supports.length < 2) return false;
-        const axis = edge === "left" || edge === "right" ? 0 : 1;
-        return supports.every(
-          ([, point]) => Math.abs(point[axis] - contact[axis]) * scale <= 1,
-        );
-      }),
+    return ids.every(
+      (id) =>
+        !isTransitionContainer(sequences, id) &&
+        sequences.clips[id]?.frames.every((frame) => {
+          const contact = frame.contacts?.[edge];
+          const supports = Object.entries(frame.supports ?? {});
+          if (!contact || !supports.length) return false;
+          if (
+            edge === "top" &&
+            !supports.some(([key]) => key.startsWith("arm"))
+          )
+            return false;
+          if (edge === "bottom" && supports.length < 2) return false;
+          const axis = edge === "left" || edge === "right" ? 0 : 1;
+          return supports.every(
+            ([, point]) => Math.abs(point[axis] - contact[axis]) * scale <= 1,
+          );
+        }),
     );
   });
 }
@@ -76,26 +87,14 @@ export function modelSequences(model: unknown): ModelSequences {
   }
 }
 
-const sameCel = (a: SequenceFrame, b: SequenceFrame) => {
-  const anchors = (value: SequenceFrame) =>
-    ["contacts", "supports"].map((key) =>
-      Object.entries(value[key as "contacts" | "supports"] ?? {})
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([name, point]) => [name, ...point]),
-    );
-  return (
-    a.texture === b.texture &&
-    JSON.stringify([a.rect, a.grip, a.foot, a.head, anchors(a)]) ===
-      JSON.stringify([b.rect, b.grip, b.foot, b.head, anchors(b)])
-  );
-};
-
 /** Player selects a direct authored bridge; graph reachability alone is insufficient. */
 export function sequenceLinkUnavailable(
   sequences: FrameSequences,
   from: string,
   to: string,
 ): string | null {
+  if (isTransitionContainer(sequences, to))
+    return `完整序列帧过渡容器不能直接播放：${to}`;
   if (from === to) return null;
   const source = sequences.clips[from],
     target = sequences.clips[to];
@@ -103,6 +102,10 @@ export function sequenceLinkUnavailable(
   const link = sequences.transitions.find(
     (item) => item.from === from && item.to === to,
   );
+  if (link?.branches !== undefined) {
+    const failure = transitionBranchFailure(sequences, link);
+    return failure ? `完整序列帧分支无效：${from} → ${to}（${failure}）` : null;
+  }
   const bridge = link && sequences.clips[link.clip];
   if (!bridge) return `完整序列帧缺少过渡：${from} → ${to}`;
   if (bridge.loop || bridge.distancePerCycle !== undefined)
@@ -150,14 +153,33 @@ export function sequencePhysicalLinkUnavailable(
   const link = sequences.transitions.find(
     (item) => item.from === from && item.to === to,
   );
-  const ids = [...new Set([from, to, ...(link ? [link.clip] : [])])];
-  for (const id of ids) {
-    const frames = sequences.clips[id]?.frames;
+  const segments = link
+    ? (link.branches?.map((branch) =>
+        transitionSegmentForFrame(sequences, link, branch.fromFrame),
+      ) ?? [transitionSegmentForFrame(sequences, link, 0)])
+    : [];
+  const bridges = segments.flatMap((segment) =>
+    segment
+      ? [
+          {
+            id: segment.clip,
+            frames: sequences.clips[segment.clip].frames.slice(
+              segment.start,
+              segment.end,
+            ),
+          },
+        ]
+      : [],
+  );
+  const actions = [from, to].map((id) => ({
+    id,
+    frames: sequences.clips[id]?.frames,
+  }));
+  for (const { id, frames } of [...actions, ...bridges]) {
     if (!frames?.every((frame) => Object.keys(frame.supports ?? {}).length))
       return `完整序列帧缺少实际支撑点：${id}`;
   }
-  if (link) {
-    const frames = sequences.clips[link.clip].frames;
+  for (const { frames } of bridges) {
     for (let i = 1; i < frames.length; i++)
       if (
         !Object.keys(frames[i].supports!).some(

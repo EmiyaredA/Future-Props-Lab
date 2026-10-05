@@ -39,6 +39,13 @@ export function humanMotionUnavailable(model: unknown): string | null {
       sequencePhysicalLinkUnavailable(resource.sequences, clip, "idle");
     if (support) return `${support}，已暂停自主走动`;
   }
+  for (const [from, to] of [
+    ["walk-left", "walk-right"],
+    ["walk-right", "walk-left"],
+  ]) {
+    const turn = sequencePhysicalLinkUnavailable(resource.sequences, from, to);
+    if (turn) return `${turn}，已暂停自主走动`;
+  }
   return null;
 }
 

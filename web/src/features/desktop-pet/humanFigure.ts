@@ -208,14 +208,6 @@ export async function createHumanFigure(options: {
   const [x0, y0, x1, y1] = model.view;
   const width = x1 - x0;
   const height = y1 - y0;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(width * 3);
-  canvas.height = Math.round(height * 3);
-  canvas.style.cssText = "width:100%;height:100%;display:block";
-  const faceCanvas = document.createElement("canvas");
-  faceCanvas.width = canvas.width;
-  faceCanvas.height = canvas.height;
-  const context = faceCanvas.getContext("2d")!;
   const rect = (id: string) => {
     const [x, y, w, h] = model.parts.find((part) => part.id === id)!.box;
     return [x, y, x + w, y + h];
@@ -256,25 +248,49 @@ export async function createHumanFigure(options: {
     model.motionRig && !authored && !unsupportedMotion
       ? new Articulation(model.motionRig, model.pivots.body as [number, number])
       : null;
+  // The same fallback visibility set controls v1 texture reachability. Keep
+  // textures shared by preserved standing/sitting parts and all feature sprites.
+  const fallbackHiddenParts = new Set<string>();
+  if (model.motionRig) {
+    if (model.motionRig.profileHead)
+      fallbackHiddenParts.add(model.motionRig.profileHead.part);
+    for (const limb of Object.values(model.motionRig.limbs)) {
+      for (const id of limb.parts) fallbackHiddenParts.add(id);
+      if (limb.jointPart) fallbackHiddenParts.add(limb.jointPart);
+    }
+    for (const entry of Object.values(authoredViews)) {
+      for (const id of posePartIds(entry.pose)) fallbackHiddenParts.add(id);
+    }
+  }
   const loaded = new Map<string, Promise<Record<string, HTMLImageElement>>>();
+  const textureNames = [
+    ...new Set(
+      model.parts
+        .filter(
+          (part) => !unsupportedMotion || !fallbackHiddenParts.has(part.id),
+        )
+        .map((part) => part.tex),
+    ),
+  ];
   const loadScheme = (id: string) => {
     if (!loaded.has(id)) {
       const prefix = id === model.schemes[0].id ? "" : `schemes/${id}/`;
-      loaded.set(
-        id,
-        Promise.all(
-          [
-            ...model.parts.map((part) => [`tex/${part.tex}.png`, part.tex]),
-            ...Object.keys(model.feat.sprites).map((name) => [
-              `feat/${name}.png`,
-              name,
-            ]),
-          ].map(
-            async ([path, name]) =>
-              [name, await loadImage(options.asset(prefix + path))] as const,
-          ),
-        ).then((entries) => Object.fromEntries(entries)),
-      );
+      const pending = Promise.all(
+        [
+          ...textureNames.map((name) => [`tex/${name}.png`, name]),
+          ...Object.keys(model.feat.sprites).map((name) => [
+            `feat/${name}.png`,
+            name,
+          ]),
+        ].map(
+          async ([path, name]) =>
+            [name, await loadImage(options.asset(prefix + path))] as const,
+        ),
+      ).then((entries) => Object.fromEntries(entries));
+      loaded.set(id, pending);
+      void pending.catch(() => {
+        if (loaded.get(id) === pending) loaded.delete(id);
+      });
     }
     return loaded.get(id)!;
   };
@@ -282,7 +298,7 @@ export async function createHumanFigure(options: {
     model.schemes.find((item) => item.id === options.scheme)?.id ??
     model.schemes[0].id;
   let images = await loadScheme(scheme);
-  const rig = createRig(canvas, {
+  const rigModel = {
     view: model.view,
     deformers,
     parts: [
@@ -300,9 +316,31 @@ export async function createHumanFigure(options: {
         z: 8,
       },
     ],
-  });
+  };
+  const createRenderSurface = () => {
+    // A lost WebGL canvas cannot supply a fresh native context. Recreate both
+    // surfaces from the same model units and already accepted CPU images.
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(width * 3);
+    canvas.height = Math.round(height * 3);
+    canvas.style.cssText = "width:100%;height:100%;display:block";
+    const faceCanvas = document.createElement("canvas");
+    faceCanvas.width = canvas.width;
+    faceCanvas.height = canvas.height;
+    const context = faceCanvas.getContext("2d")!;
+    const rig = createRig(canvas, rigModel);
+    for (const name of textureNames) rig.upload(name, images[name]);
+    return {
+      canvas,
+      faceCanvas,
+      context,
+      rig,
+      object: null as SVGForeignObjectElement | null,
+    };
+  };
+  let surface: ReturnType<typeof createRenderSurface> | null =
+    createRenderSurface();
   let disposed = false;
-  for (const part of model.parts) rig.upload(part.tex, images[part.tex]);
   let selection = 0;
   const hairSpring = spring(55, 9, 10);
   const coatSpring = spring(80, 10, 7);
@@ -311,11 +349,26 @@ export async function createHumanFigure(options: {
   let mounted: SVGGElement | null = null;
   let motionFailure: string | null = null;
   let authoredPickup: number[] | null = null;
+  const releaseRenderSurface = () => {
+    const previous = surface;
+    if (!previous) return;
+    surface = null;
+    mounted = null;
+    try {
+      previous.rig.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    } finally {
+      previous.object?.remove();
+      previous.canvas.width = previous.canvas.height = 0;
+      previous.faceCanvas.width = previous.faceCanvas.height = 0;
+    }
+  };
 
   return {
     // Joint poses own breathing and impact recovery; keep physical bone/head
     // proportions and planted contacts independent of the outer logo squash.
     fixedScale: Boolean(authored) || unsupportedMotion,
+    // Quarantined v1 only has front standing/sitting views, never a turn view.
+    ...(unsupportedMotion ? { groupFacing: () => 1 } : {}),
     get scheme() {
       return scheme;
     },
@@ -336,6 +389,9 @@ export async function createHumanFigure(options: {
           : motion.facing;
     },
     draw(group: SVGGElement, face: { blush?: number }, frame: HumanFrame) {
+      if (disposed) return;
+      const active = (surface ??= createRenderSurface());
+      const { canvas, faceCanvas, context, rig } = active;
       const mode = frame.locomotion?.state ?? frame.mode;
       motionFailure =
         unsupportedMotion &&
@@ -358,6 +414,7 @@ export async function createHumanFigure(options: {
           lean: 0,
         };
       if (mounted !== group) {
+        active.object?.remove();
         const object = document.createElementNS(NS, "foreignObject");
         for (const [key, value] of Object.entries({
           x: x0,
@@ -368,6 +425,7 @@ export async function createHumanFigure(options: {
           object.setAttribute(key, String(value));
         object.appendChild(canvas);
         group.appendChild(object);
+        active.object = object;
         mounted = group;
       }
       const dt = clamp(frame.t - previousTime || 1 / 60, 0.001, 0.05);
@@ -432,15 +490,7 @@ export async function createHumanFigure(options: {
           },
         });
       } else if (model.motionRig) {
-        if (model.motionRig.profileHead)
-          state.alpha[model.motionRig.profileHead.part] = 0;
-        for (const limb of Object.values(model.motionRig.limbs)) {
-          for (const id of limb.parts) state.alpha[id] = 0;
-          if (limb.jointPart) state.alpha[limb.jointPart] = 0;
-        }
-        for (const entry of Object.values(authoredViews)) {
-          for (const id of posePartIds(entry.pose)) state.alpha[id] = 0;
-        }
+        for (const id of fallbackHiddenParts) state.alpha[id] = 0;
       }
       if (!painted) {
         group.removeAttribute("data-pet-stride");
@@ -476,14 +526,22 @@ export async function createHumanFigure(options: {
         ? tilt + lean
         : lean * 0.35;
     },
-    async setScheme(id: string) {
-      if (!model.schemes.some((item) => item.id === id)) return;
+    setScheme(id: string) {
+      if (!model.schemes.some((item) => item.id === id))
+        return Promise.resolve();
       const generation = ++selection;
-      const next = await loadScheme(id);
-      if (disposed || generation !== selection) return;
-      scheme = id;
-      images = next;
-      for (const part of model.parts) rig.upload(part.tex, images[part.tex]);
+      const pending = loadScheme(id).then((next) => {
+        if (disposed || generation !== selection) return;
+        scheme = id;
+        images = next;
+        if (surface)
+          for (const name of textureNames)
+            surface.rig.upload(name, images[name]);
+      });
+      // Background selection may not await this operation. Keep the returned
+      // promise rejectable for explicit callers without an unhandled rejection.
+      void pending.catch(() => {});
+      return pending;
     },
     get colors() {
       return {
@@ -496,10 +554,12 @@ export async function createHumanFigure(options: {
         ? [...authoredPickup]
         : (model.motionRig?.waist ?? null);
     },
+    releaseRenderSurface,
     dispose() {
+      if (disposed) return;
       disposed = true;
       selection++;
-      rig.gl.getExtension("WEBGL_lose_context")?.loseContext();
+      releaseRenderSurface();
     },
     anchors: {
       gaze: [145, 94],

@@ -1,7 +1,38 @@
 import type { PetEdge, PetGeometry } from "@platform/petMotion";
 
-/** Sample the painted alpha at small resolution, not a full-resolution GPU readback. */
-export function figureGeometry(group: SVGGElement): PetGeometry | null {
+/** Own one lazy alpha-readback surface per renderer, never per frame or globally. */
+export function createFigureGeometrySampler() {
+  let sample: HTMLCanvasElement | null = null;
+  let context: CanvasRenderingContext2D | null = null;
+  const getContext = () => {
+    if (!sample) {
+      sample = document.createElement("canvas");
+      sample.width = 80;
+      sample.height = 100;
+    }
+    context ??= sample.getContext("2d", { willReadFrequently: true });
+    return context;
+  };
+  return {
+    measure(group: SVGGElement) {
+      return figureGeometry(group, getContext);
+    },
+    dispose() {
+      if (sample) {
+        sample.width = 0;
+        sample.height = 0;
+      }
+      context = null;
+      sample = null;
+    },
+  };
+}
+
+/** Sample the current painted alpha, not a full-resolution GPU readback. */
+function figureGeometry(
+  group: SVGGElement,
+  getContext: () => CanvasRenderingContext2D | null,
+): PetGeometry | null {
   const canvas =
     group.querySelector<HTMLCanvasElement>(
       'canvas[data-pet-raster-active="true"]',
@@ -9,11 +40,9 @@ export function figureGeometry(group: SVGGElement): PetGeometry | null {
   const object = canvas?.closest("foreignObject");
   const matrix = object?.getScreenCTM();
   if (!canvas || !object || !matrix) return null;
-  const sample = document.createElement("canvas");
-  sample.width = 80;
-  sample.height = 100;
-  const context = sample.getContext("2d", { willReadFrequently: true });
+  const context = getContext();
   if (!context) return null;
+  context.clearRect(0, 0, 80, 100);
   context.drawImage(canvas, 0, 0, 80, 100);
   const pixels = context.getImageData(0, 0, 80, 100).data;
   let left = 80,
@@ -59,10 +88,17 @@ export function figureGeometry(group: SVGGElement): PetGeometry | null {
   const feet = new DOMPoint(...(planes?.bottom ?? [128, 256])).matrixTransform(
     anchorMatrix,
   );
+  const authoredEdge = (edge: PetEdge): PetEdge =>
+    anchorMatrix.a < 0 && (edge === "left" || edge === "right")
+      ? edge === "left"
+        ? "right"
+        : "left"
+      : edge;
   const edges = planes
     ? (Object.fromEntries(
         (["left", "right", "top", "bottom"] as PetEdge[]).map((edge) => {
-          const p = planes[edge];
+          // Iterate screen sides: partial authored planes must never overwrite fallbacks.
+          const p = planes[authoredEdge(edge)];
           if (!p)
             return [
               edge,
@@ -82,19 +118,15 @@ export function figureGeometry(group: SVGGElement): PetGeometry | null {
               },
             ];
           const mapped = new DOMPoint(...p).matrixTransform(anchorMatrix);
-          const reflected =
-            anchorMatrix.a < 0 && (edge === "left" || edge === "right");
-          return [
-            reflected ? (edge === "left" ? "right" : "left") : edge,
-            { x: mapped.x, y: mapped.y },
-          ];
+          return [edge, { x: mapped.x, y: mapped.y }];
         }),
       ) as PetGeometry["edges"])
     : undefined;
-  const supportedEdges = group
+  const authoredSupportedEdges = group
     .getAttribute("data-pet-supported-edges")
     ?.split(",")
     .filter(Boolean) as PetEdge[] | undefined;
+  const supportedEdges = authoredSupportedEdges?.map(authoredEdge);
   const authoredStride = Number(group.getAttribute("data-pet-stride"));
   const strideLength =
     authoredStride > 0

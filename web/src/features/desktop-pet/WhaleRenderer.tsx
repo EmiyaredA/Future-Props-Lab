@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useId,
@@ -10,17 +11,25 @@ import { createPet, type WhaleController } from "./whale-vendor/pet-core.js";
 import {
   createWhaleFigure,
   type WhaleFigure,
+  type LoadedWhaleFigure,
 } from "./whale-vendor/whale/figure.js";
 import type { PetDocument } from "./api";
 import type { PetRendererHandle } from "./PetRenderer";
 import { createHumanFigure, type HumanModel } from "./humanFigure";
-import { reactionFor, type PetEvent, type PetPlaybackMode } from "./playback";
+import {
+  MOTION_LABELS,
+  reactionFor,
+  reactionMotionUnavailable,
+  type PetEvent,
+  type PetPlaybackMode,
+} from "./playback";
+import { modelSequences } from "./sequences/capabilities";
 import {
   unshiftGeometry,
   type PetMotionFrame,
   type PetGeometry,
 } from "@platform/petMotion";
-import { figureGeometry } from "./locomotion/measure";
+import { createFigureGeometrySampler } from "./locomotion/measure";
 import { demoMotion, type MotionDemo } from "./locomotion/demo";
 import { readFrameSequences } from "./sequences/validation";
 import { createSequenceFigure } from "./sequences/figure";
@@ -37,28 +46,71 @@ type Props = {
   motionDemo?: MotionDemo | null;
 };
 
+type ReactionInput = {
+  key: number;
+  event: string;
+  mode: PetPlaybackMode;
+  signature: string;
+};
+
+/** UI playback keys and inspect edits are intent; runtime activity is not. */
+function explicitAssetRetry(previous: ReactionInput, current: ReactionInput) {
+  const newKey = current.key !== previous.key;
+  if (current.mode === "runtime")
+    return newKey && ["click", "pet", "grab", "drop"].includes(current.event);
+  if (current.mode === "inspect")
+    return (
+      newKey ||
+      current.event !== previous.event ||
+      current.mode !== previous.mode ||
+      current.signature !== previous.signature
+    );
+  return (
+    newKey ||
+    (current.event === previous.event &&
+      current.signature !== previous.signature)
+  );
+}
+
 function applyReaction(
   pet: WhaleController,
   name: string,
   document: PetDocument,
   mode: PetPlaybackMode,
+  retryAssetLoad?: () => void,
 ) {
-  if (name === "chatThinking") {
-    pet.act("look");
-    pet.setExpr("thinking", 2);
-    return;
+  const reaction =
+    name === "chatThinking"
+      ? { motionId: "look", expressionId: "thinking" }
+      : name === "chatSpeaking"
+        ? { motionId: "nod", expressionId: "happy" }
+        : reactionFor(document, name as PetEvent);
+  const motion = reaction.motionId ?? null;
+  const resource = modelSequences(document.whaleModel);
+  // Classification is structural, never inferred from a translated reason.
+  const rejection =
+    resource.kind === "invalid"
+      ? "invalid-motion-resource"
+      : motion && !Object.hasOwn(MOTION_LABELS, motion)
+        ? "unknown-motion-resource"
+        : reactionMotionUnavailable(document, motion)
+          ? "unsupported-motion-resource"
+          : null;
+  const hold =
+    name === "chatThinking" || name === "chatSpeaking"
+      ? false
+      : mode === "inspect" || name === "idle";
+  if (rejection)
+    pet.replaceRejectedReaction(
+      motion,
+      reaction.expressionId ?? null,
+      hold,
+      rejection,
+    );
+  else {
+    retryAssetLoad?.();
+    pet.replaceReaction(motion, reaction.expressionId ?? null, hold);
   }
-  if (name === "chatSpeaking") {
-    pet.act("nod");
-    pet.setExpr("happy", 2);
-    return;
-  }
-  const reaction = reactionFor(document, name as PetEvent);
-  pet.replaceReaction(
-    reaction.motionId ?? null,
-    reaction.expressionId ?? null,
-    mode === "inspect" || name === "idle",
-  );
 }
 
 export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
@@ -84,20 +136,55 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
     const controller = useRef<WhaleController | null>(null);
     const figure = useRef<WhaleFigure | null>(null);
     const [error, setError] = useState("");
+    const [schemeError, setSchemeError] = useState("");
+    const [assetError, setAssetError] = useState("");
+    const [geometrySampler] = useState(createFigureGeometrySampler);
+    useEffect(() => () => geometrySampler.dispose(), [geometrySampler]);
+    const schemeSelection = useRef({ generation: 0 });
     const assetMap = document.whaleAssets ?? {};
     const assetUrls = document.assetUrls;
     const reactionSignature = JSON.stringify([
       document.config.events?.[eventName as PetEvent],
       document.config.events?.idle,
     ]);
+    const previousReactionInput = useRef<ReactionInput>({
+      key: reactionKey,
+      event: eventName,
+      mode: playbackMode,
+      signature: reactionSignature,
+    });
     const resourceKey = JSON.stringify([
       document.whaleModel,
       assetMap,
       assetUrls,
     ]);
     const scheme = skinId || document.config.schemeId || "deepseek";
-    const latest = useRef({ scheme, eventName, document, playbackMode });
-    latest.current = { scheme, eventName, document, playbackMode };
+    const latest = useRef({
+      scheme,
+      eventName,
+      document,
+      playbackMode,
+      resourceKey,
+    });
+    latest.current = { scheme, eventName, document, playbackMode, resourceKey };
+    const changeScheme = useCallback((target: WhaleFigure, id: string) => {
+      const generation = ++schemeSelection.current.generation;
+      const resource = latest.current.resourceKey;
+      const isCurrent = () =>
+        generation === schemeSelection.current.generation &&
+        figure.current === target &&
+        latest.current.scheme === id &&
+        latest.current.resourceKey === resource;
+      void (async () => {
+        await target.setScheme(id, { fade: 0.35 });
+        if (isCurrent()) setSchemeError("");
+      })().catch((cause: unknown) => {
+        if (isCurrent())
+          setSchemeError(
+            cause instanceof Error ? cause.message : "桌宠换装失败",
+          );
+      });
+    }, []);
     const finishAt = useRef(Infinity);
     const movement = useRef(locomotion);
     movement.current = locomotion;
@@ -107,19 +194,43 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
     }, [motionDemo, reactionKey]);
     const measured = useRef<{
       at: number;
-      value: ReturnType<typeof figureGeometry>;
+      value: PetGeometry | null;
     }>({ at: 0, value: null });
     const neutral = useRef<PetGeometry | null>(null);
 
     useImperativeHandle(ref, () => ({
       motionFailure() {
-        return figure.current?.getMotionFailure?.() ?? null;
+        return (
+          figure.current?.getMotionFailure?.() ??
+          controller.current?.getReactionFailure?.() ??
+          null
+        );
       },
       motionTransition() {
         return figure.current?.getMotionTransition?.() ?? null;
       },
       cancelMotionPlayback() {
+        if (controller.current?.cancelPlacementHandoff?.())
+          movement.current = null;
+        measured.current = { at: 0, value: null };
         figure.current?.cancelMotionPlayback?.();
+      },
+      beginPlacementHandoff(token) {
+        const started =
+          controller.current?.beginPlacementHandoff?.(token) ?? false;
+        if (started) measured.current = { at: 0, value: null };
+        return started;
+      },
+      commitPlacementHandoff(token) {
+        const committed =
+          controller.current?.commitPlacementHandoff?.(token) ?? false;
+        if (committed) measured.current = { at: 0, value: null };
+        return committed;
+      },
+      cancelPlacementHandoff() {
+        if (controller.current?.cancelPlacementHandoff?.())
+          movement.current = null;
+        measured.current = { at: 0, value: null };
       },
       placementDelta() {
         return controller.current?.placementDelta() ?? { x: 0, y: 0 };
@@ -141,7 +252,7 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
         )
           measured.current = {
             at: performance.now(),
-            value: figureGeometry(petGroup.current),
+            value: geometrySampler.measure(petGroup.current),
           };
         const shape = measured.current.value;
         if (
@@ -187,10 +298,13 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
       let stopped = false;
       let frame = 0;
       let observer: ResizeObserver | null = null;
+      const selection = schemeSelection.current;
       const group = petGroup.current;
       neutral.current = null;
       const fx = effects.current;
       setError("");
+      setSchemeError("");
+      setAssetError("");
       void (async () => {
         const options = {
           model: document.whaleModel as Record<string, unknown>,
@@ -211,15 +325,22 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
               })
             : await createWhaleFigure(undefined, options);
         const schemes = options.model.schemes as { id: string }[];
-        const whale = sequences
-          ? createSequenceFigure({
+        let whale: WhaleFigure & Pick<LoadedWhaleFigure, "draw"> = original;
+        if (sequences) {
+          try {
+            whale = createSequenceFigure({
               base: original,
               sequences,
               scheme,
               defaultScheme: schemes[0].id,
               asset: options.asset,
-            })
-          : original;
+            });
+          } catch (cause) {
+            // Until wrapping succeeds, this initializer owns the loaded base.
+            original.dispose?.();
+            throw cause;
+          }
+        }
         if (stopped) {
           whale.dispose?.();
           return;
@@ -234,6 +355,15 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
             roam: "off",
             walkInPlace: true,
             startX: element.clientWidth / 2,
+            // AX/AY and this viewport origin are DIP. The figure's model scale
+            // is already inside its SVG transform and must not scale screen deltas.
+            viewportOrigin: () => {
+              const rect = element.getBoundingClientRect();
+              return {
+                x: window.screenX + rect.left,
+                y: window.screenY + rect.top,
+              };
+            },
             bounds: () => {
               const width = element.clientWidth;
               const height = element.clientHeight;
@@ -253,8 +383,7 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
         );
         controller.current = pet;
         const current = latest.current;
-        if (current.scheme !== scheme)
-          void whale.setScheme(current.scheme, { fade: 0.35 });
+        if (current.scheme !== scheme) changeScheme(whale, current.scheme);
         applyReaction(
           pet,
           current.eventName,
@@ -265,9 +394,13 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
           current.playbackMode === "event" && current.eventName !== "idle"
             ? performance.now() + 1800
             : Infinity;
-        observer = new ResizeObserver(() => pet.resize());
+        observer = new ResizeObserver(() => {
+          if (pet.cancelPlacementHandoff?.()) movement.current = null;
+          pet.resize();
+        });
         observer.observe(element);
         let last = performance.now();
+        let lastAssetError: string | null = null;
         const tick = (now: number) => {
           if (stopped) return;
           frame = requestAnimationFrame(tick);
@@ -311,10 +444,18 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
           }
           last = now;
           pet.render();
+          const loadError = whale.getAssetFailure?.() ?? null;
+          if (loadError !== lastAssetError) {
+            lastAssetError = loadError;
+            setAssetError(loadError ?? "");
+          }
+          // Even within the 16ms readback window the actual CTM may have
+          // changed through placement compensation or resize since the last read.
+          measured.current = { at: 0, value: null };
           if (demo.current.name && petGroup.current)
             measured.current = {
               at: now,
-              value: figureGeometry(petGroup.current),
+              value: geometrySampler.measure(petGroup.current),
             };
         };
         frame = requestAnimationFrame(tick);
@@ -324,8 +465,10 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
       });
       return () => {
         stopped = true;
+        selection.generation++;
         cancelAnimationFrame(frame);
         observer?.disconnect();
+        controller.current?.cancelPlacementHandoff?.();
         controller.current = null;
         figure.current?.dispose?.();
         figure.current = null;
@@ -340,13 +483,21 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
       };
       // The imported snapshot is immutable until its project revision changes.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resourceKey, view]);
+    }, [resourceKey, view, changeScheme]);
 
     useEffect(() => {
-      void figure.current?.setScheme(scheme, { fade: 0.35 });
-    }, [scheme]);
+      if (figure.current) changeScheme(figure.current, scheme);
+    }, [scheme, changeScheme]);
 
     useEffect(() => {
+      const input: ReactionInput = {
+        key: reactionKey,
+        event: eventName,
+        mode: playbackMode,
+        signature: reactionSignature,
+      };
+      const retry = explicitAssetRetry(previousReactionInput.current, input);
+      previousReactionInput.current = input;
       const pet = controller.current;
       if (pet) {
         const current = latest.current;
@@ -355,6 +506,7 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
           current.eventName,
           current.document,
           current.playbackMode,
+          retry ? () => figure.current?.retryAssetLoad?.() : undefined,
         );
         finishAt.current =
           current.playbackMode === "event" && current.eventName !== "idle"
@@ -390,9 +542,9 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
           <g ref={petGroup} />
           <g ref={effects} />
         </svg>
-        {error && (
+        {(error || schemeError || assetError) && (
           <span className="dp-render-error" role="alert">
-            {error}
+            {error || schemeError || assetError}
           </span>
         )}
       </div>

@@ -1,14 +1,19 @@
+import {
+  isTransitionContainer,
+  transitionSegmentForFrame,
+} from "./transitions";
 import type {
   LoadedWhaleFigure,
   WhaleFigure,
 } from "../whale-vendor/whale/figure.js";
-import { SequencePlayer } from "./player";
+import { SequencePlayer, type SequencePresentationRequest } from "./player";
 import { validateSequenceImages } from "./validation";
 import type {
   FrameSequences,
   SequenceSample,
   SequenceInput,
   SequenceFailure,
+  SequenceRect,
 } from "./types";
 import { clipForFrame, sequenceEdges } from "./capabilities";
 
@@ -45,6 +50,7 @@ export function createSequenceFigure(options: {
   let owner: SVGGElement | null = null;
   let displayed: SequenceSample | null = null;
   let failure: string | null = null;
+  let assetError: string | null = null;
   let progress: { id: string; progress: number } | null = null;
   let loading: Promise<void> | null = null;
   let revision = 0;
@@ -52,24 +58,66 @@ export function createSequenceFigure(options: {
   let lastTime: number | null = null;
   let requested: string | null = null;
   let wasPhysical = false;
+  let rejectedReaction: string | null = null;
+  let painted: {
+    image: HTMLImageElement;
+    rect: SequenceRect;
+    width: number;
+    height: number;
+    scheme: string;
+  } | null = null;
   const images = new Map<string, HTMLImageElement>();
   const keyOf = (texture: string) => `${scheme}/${texture}`;
   const supportedEdges = sequenceEdges(sequences);
 
+  function retryAssetLoad() {
+    if (disposed || !failure) return;
+    failure = null;
+    progress = null;
+    lastTime = null;
+    requested = null;
+    revision += 1;
+  }
+
   function load(clip: string) {
-    if (failure) return false;
-    const ids = new Set([clip, displayed?.clip ?? "idle"]);
-    for (const transition of sequences.transitions)
-      if (
-        transition.to === clip &&
-        transition.from === (displayed?.clip ?? "idle")
-      )
-        ids.add(transition.clip);
-    const clips = Object.fromEntries(
-      [...ids].flatMap((id) =>
-        sequences.clips[id] ? [[id, sequences.clips[id]]] : [],
-      ),
-    );
+    if (disposed || failure) return false;
+    // Pin only the actually drawn cel, the requested action and the selected tail.
+    // A shared container can contain many unrelated tails and is not a decode unit.
+    const clips: FrameSequences["clips"] = {};
+    if (sequences.clips[clip]) clips.target = sequences.clips[clip];
+    if (displayed) clips.actual = { loop: false, frames: [displayed.frame] };
+    else if (sequences.clips.idle) clips.actual = sequences.clips.idle;
+    if (
+      displayed?.transition &&
+      displayed.requestedClip === clip &&
+      displayed.clipRange
+    ) {
+      clips.bridge = {
+        loop: false,
+        frames: sequences.clips[displayed.clip].frames.slice(
+          ...displayed.clipRange,
+        ),
+      };
+    } else {
+      const transition = sequences.transitions.find(
+        (item) => item.to === clip && item.from === (displayed?.clip ?? "idle"),
+      );
+      const segment =
+        transition &&
+        transitionSegmentForFrame(
+          sequences,
+          transition,
+          displayed?.frameIndex ?? 0,
+        );
+      if (segment)
+        clips.bridge = {
+          loop: false,
+          frames: sequences.clips[segment.clip].frames.slice(
+            segment.start,
+            segment.end,
+          ),
+        };
+    }
     const textures = [
       ...new Set(
         Object.values(clips).flatMap((item) =>
@@ -107,7 +155,7 @@ export function createSequenceFigure(options: {
           height: image.naturalHeight,
         };
       }
-      validateSequenceImages({ ...sequences, clips }, dimensions);
+      validateSequenceImages({ clips }, dimensions);
       if (disposed || generation !== revision) return;
       for (const [key, image] of decoded) images.set(key, image);
       let cached = [...images.values()].reduce(
@@ -122,13 +170,16 @@ export function createSequenceFigure(options: {
         )
           continue;
         images.delete(key);
+        if (painted?.image === image) painted = null;
         cached -= image.naturalWidth * image.naturalHeight;
       }
     })()
       .catch((error: unknown) => {
-        if (!disposed && generation === revision)
+        if (!disposed && generation === revision) {
           failure =
             error instanceof Error ? error.message : "完整动作图集读取失败";
+          assetError = failure;
+        }
       })
       .finally(() => {
         loading = null;
@@ -138,6 +189,9 @@ export function createSequenceFigure(options: {
 
   return {
     fixedScale: true,
+    groupFacing() {
+      return 1;
+    },
     get scheme() {
       return scheme;
     },
@@ -152,21 +206,39 @@ export function createSequenceFigure(options: {
         ? [...displayed.anchors.grip]
         : (base.pickupPoint?.() ?? null);
     },
+    getAssetFailure() {
+      return assetError;
+    },
+    retryAssetLoad,
     getMotionFailure() {
-      return failure ?? player.getMotionFailure();
+      return (
+        failure ?? assetError ?? player.getMotionFailure() ?? rejectedReaction
+      );
     },
     getMotionTransition() {
-      return !failure && !player.getMotionFailure() && progress
+      return !failure &&
+        !player.getMotionFailure() &&
+        !rejectedReaction &&
+        progress
         ? { ...progress }
         : null;
+    },
+    rejectReactionPlayback(code) {
+      rejectedReaction = code;
+      progress = null;
+    },
+    acceptReactionPlayback() {
+      rejectedReaction = null;
+      lastTime = null;
     },
     cancelMotionPlayback() {
       player.cancelMotionPlayback();
       progress = null;
-      failure = null;
       lastTime = null;
       revision += 1;
-      requested = null;
+      // Cancellation is not an explicit resource retry. Keep the failed clip
+      // registered so the next idle draw cannot silently repeat its request.
+      if (!failure) requested = null;
       wasPhysical = false;
     },
     reset() {
@@ -184,18 +256,24 @@ export function createSequenceFigure(options: {
       return loading ?? Promise.resolve();
     },
     async setScheme(id, config) {
-      if (id === scheme) return;
+      if (id === scheme) {
+        retryAssetLoad();
+        return;
+      }
       const generation = ++revision;
-      failure = null;
       lastTime = null;
       await base.setScheme(id, config);
       if (disposed || generation !== revision) return;
       scheme = base.scheme ?? id;
+      // Do not start a fresh request for the previous failed scheme while
+      // its replacement is still loading. Accept first, then allow retry.
+      failure = null;
     },
     dispose() {
       disposed = true;
       revision += 1;
       images.clear();
+      painted = null;
       base.dispose?.();
     },
     draw(group, face, frame) {
@@ -204,11 +282,29 @@ export function createSequenceFigure(options: {
         group.replaceChildren(standing, object);
         owner = group;
       }
+      if (rejectedReaction && !frame.locomotion && !wasPhysical) {
+        // Do not request, decode or select a same-named atlas for a stage
+        // that the reaction boundary refused. T/face still advance in core.
+        lastTime = frame.t;
+        progress = null;
+        if (!displayed) {
+          object.style.display = "none";
+          base.draw(standing, face, {
+            ...frame,
+            mode: "idle",
+            locomotion: null,
+          });
+          standing
+            .querySelector("canvas")
+            ?.setAttribute("data-pet-raster-active", "true");
+        }
+        return;
+      }
       const clip = clipForFrame(frame);
       if (clip !== requested) {
         requested = clip;
         revision += 1;
-        failure = null;
+        // A mode change (including automatic idle) is not a network retry.
         progress = null;
       }
       const dt =
@@ -244,11 +340,12 @@ export function createSequenceFigure(options: {
           : motion?.state === "climb" && motion.velocity.y !== 0
             ? ([0, Math.sign(motion.velocity.y)] as [number, number])
             : undefined;
+      const grip = frame.heldPickupPoint ?? frame.gripPoint;
       const input: SequenceInput = {
         clip: initializing ? "idle" : clip,
         t: clock + dt,
         phase: frame.locomotion?.phase ?? frame.gait?.phase,
-        ...(frame.gripPoint ? { grip: frame.gripPoint } : {}),
+        ...(grip ? { grip } : {}),
         ...(supportRequired && motion?.travel
           ? {
               travel: [
@@ -266,8 +363,13 @@ export function createSequenceFigure(options: {
           : {}),
       };
 
-      let invalid: SequenceFailure["reason"] | null = null;
-      if (physical) {
+      let invalid: SequenceFailure["reason"] | null = isTransitionContainer(
+        sequences,
+        clip,
+      )
+        ? "transition-container"
+        : null;
+      if (physical && !invalid) {
         if (!motion.travel) invalid = "missing-confirmed-travel";
         else if (!sequences.clips[clip]) invalid = "missing-clip";
         else if (!stride) invalid = "missing-distance-per-cycle";
@@ -278,68 +380,118 @@ export function createSequenceFigure(options: {
         )
           invalid = "missing-support";
       }
+      const previousProgress = progress;
+      let request: SequencePresentationRequest;
+      let waitingForAssets = false;
+      if (invalid) request = { kind: "reject", reason: invalid };
+      else if (!load(clip)) {
+        waitingForAssets = true;
+        progress = failure
+          ? null
+          : { id: `sequence-assets:${scheme}:${clip}`, progress: 0 };
+        request = { kind: "hold" };
+      } else request = { kind: "sample" };
       let sample: SequenceSample | null;
-      if (invalid)
-        sample = player.rejectMotionPlayback({ ...input, clip }, invalid);
-      else {
-        if (!load(clip)) {
-          progress = failure
+      try {
+        sample = player.present(
+          invalid ? { ...input, clip } : input,
+          request,
+          (sample) => {
+            if (!sample) {
+              if (!waitingForAssets) progress = null;
+              return false;
+            }
+            if (
+              (waitingForAssets || sample.motionFailure) &&
+              displayed &&
+              sample.translation.every(
+                (value, axis) => value === displayed!.translation[axis],
+              )
+            ) {
+              if (sample.motionFailure) progress = null;
+              return false;
+            }
+            const image = images.get(keyOf(sample.frame.texture));
+            if (!image) {
+              // Never report or commit progress for an unpainted cel.
+              progress = {
+                id: `sequence-assets:${scheme}:${clip}`,
+                progress: 0,
+              };
+              return false;
+            }
+            const samePixels =
+              painted?.image === image &&
+              painted.scheme === scheme &&
+              painted.width === canvas.width &&
+              painted.height === canvas.height &&
+              painted.rect.every(
+                (value, axis) => value === sample.frame.rect[axis],
+              );
+            try {
+              if (!samePixels) {
+                // A failed clear/draw must never certify the previous bitmap as intact.
+                painted = null;
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(
+                  image,
+                  ...sample.frame.rect,
+                  0,
+                  0,
+                  canvas.width,
+                  canvas.height,
+                );
+              }
+              const [x, y, w, h] = sample.modelBox;
+              object.setAttribute("x", String(x + sample.translation[0]));
+              object.setAttribute("y", String(y + sample.translation[1]));
+              object.setAttribute("width", String(w));
+              object.setAttribute("height", String(h));
+              standing.style.display = "none";
+              object.style.display = "";
+              standing
+                .querySelector("canvas")
+                ?.setAttribute("data-pet-raster-active", "false");
+              canvas.setAttribute("data-pet-raster-active", "true");
+              group.setAttribute("data-pet-sequence", "true");
+              group.setAttribute(
+                "data-pet-edges",
+                JSON.stringify({
+                  ...sample.anchors.contacts,
+                  bottom: sample.anchors.contacts.bottom ?? sample.anchors.foot,
+                }),
+              );
+              displayed = sample;
+              if (!samePixels)
+                painted = {
+                  image,
+                  rect: [...sample.frame.rect],
+                  width: canvas.width,
+                  height: canvas.height,
+                  scheme,
+                };
+            } catch (error: unknown) {
+              // DOM failures invalidate certification too, without replacing their exception.
+              painted = null;
+              throw error;
+            }
+            // The clock commits with the installed cel, before retirement/feedback.
+            if (!waitingForAssets && !sample.motionFailure) clock += dt;
+            return true;
+          },
+        );
+      } catch (error: unknown) {
+        progress = previousProgress;
+        throw error;
+      }
+      if (!sample) return;
+      if (waitingForAssets) {
+        progress =
+          failure || sample.motionFailure
             ? null
             : { id: `sequence-assets:${scheme}:${clip}`, progress: 0 };
-          return;
-        }
-        sample = player.sample(input);
-      }
-      if (!sample) {
-        progress = null;
         return;
       }
-      if (
-        sample.motionFailure &&
-        displayed &&
-        sample.translation.every(
-          (value, axis) => value === displayed!.translation[axis],
-        )
-      ) {
-        progress = null;
-        return;
-      }
-      const image = images.get(keyOf(sample.frame.texture));
-      if (!image) {
-        // Never report or commit progress for an unpainted cel.
-        progress = { id: `sequence-assets:${scheme}:${clip}`, progress: 0 };
-        return;
-      }
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(
-        image,
-        ...sample.frame.rect,
-        0,
-        0,
-        canvas.width,
-        canvas.height,
-      );
-      const [x, y, w, h] = sample.modelBox;
-      object.setAttribute("x", String(x + sample.translation[0]));
-      object.setAttribute("y", String(y + sample.translation[1]));
-      object.setAttribute("width", String(w));
-      object.setAttribute("height", String(h));
-      standing.style.display = "none";
-      object.style.display = "";
-      standing
-        .querySelector("canvas")
-        ?.setAttribute("data-pet-raster-active", "false");
-      canvas.setAttribute("data-pet-raster-active", "true");
-      group.setAttribute("data-pet-sequence", "true");
-      group.setAttribute(
-        "data-pet-edges",
-        JSON.stringify({
-          ...sample.anchors.contacts,
-          bottom: sample.anchors.contacts.bottom ?? sample.anchors.foot,
-        }),
-      );
-      displayed = sample;
-      if (!sample.motionFailure) clock += dt;
       progress = sample.motionFailure
         ? null
         : sample.transition
@@ -356,6 +508,15 @@ export function createSequenceFigure(options: {
       ) {
         player.endMotionSupport();
         wasPhysical = false;
+      }
+      if (
+        !waitingForAssets &&
+        !failure &&
+        !sample.motionFailure &&
+        !rejectedReaction
+      ) {
+        assetError = null;
+        base.releaseRenderSurface?.();
       }
     },
   };

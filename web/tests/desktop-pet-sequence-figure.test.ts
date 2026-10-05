@@ -549,8 +549,9 @@ describe("real whole sequence Canvas figure", () => {
     expect(h.figure.getMotionTransition?.()?.progress).toBe(0);
     const count = h.drawImage.mock.calls.length;
     h.draw(0.02, "walk");
-    expect(h.drawImage).toHaveBeenCalledTimes(count + 1);
+    expect(h.drawImage).toHaveBeenCalledTimes(count);
     expect(h.figure.getMotionTransition?.()?.id).toBe("start-walk");
+    expect(h.figure.getMotionTransition?.()?.progress).toBe(0);
   });
   it("keeps confirmed phase still despite a long idle wall clock between walk draws", async () => {
     const h = setup();
@@ -598,8 +599,12 @@ describe("real whole sequence Canvas figure", () => {
     hold.resolve();
     await settle();
     h.draw(10.01, "held");
-    expect(h.drawImage.mock.calls.length).toBeGreaterThan(count);
+    expect(h.drawImage).toHaveBeenCalledTimes(count);
     expect(h.figure.getMotionFailure?.()).toBeNull();
+    expect(h.figure.getMotionTransition?.()).toEqual({
+      id: "pickup",
+      progress: 0,
+    });
   });
   it("preserves the painted frame after decode failure without exposing stale playback progress", async () => {
     const h = setup();

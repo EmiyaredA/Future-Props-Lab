@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -23,6 +24,47 @@ const state = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 const previousDesktop = window.futurePropsDesktop;
+
+test.each(["header", "parent"])(
+  "discarding an unsaved pet exits once through the %s navigation entry without saving",
+  async (entry) => {
+    let guard: ((proceed: () => void) => boolean) | null = null;
+    const commit = vi.fn();
+    const baseline = structuredClone(state.document);
+    const navigate = () => {
+      if (!guard?.(commit)) commit();
+    };
+    render(
+      <EditorPage
+        projectId="pet-1"
+        onBack={navigate}
+        registerNavigationGuard={(value) => {
+          guard = value;
+        }}
+      />,
+    );
+    await screen.findByText("形象与皮肤");
+    fireEvent.click(screen.getByRole("button", { name: "习惯" }));
+    fireEvent.click(screen.getByRole("button", { name: "常走动" }));
+    expect(screen.getByText(/未保存修改/)).toBeInTheDocument();
+    if (entry === "header")
+      fireEvent.click(screen.getByRole("button", { name: "返回桌宠项目" }));
+    else act(navigate);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "继续编辑" }));
+    expect(commit).not.toHaveBeenCalled();
+    expect(screen.getByText(/未保存修改/)).toBeInTheDocument();
+    if (entry === "header")
+      fireEvent.click(screen.getByRole("button", { name: "返回桌宠项目" }));
+    else act(navigate);
+    fireEvent.click(await screen.findByRole("button", { name: "放弃修改" }));
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(state.save).not.toHaveBeenCalled();
+    expect(state.document).toEqual(baseline);
+  },
+);
+
 afterEach(() => {
   Object.defineProperty(window, "futurePropsDesktop", {
     configurable: true,

@@ -251,6 +251,12 @@ export function PetRuntime({ projectId }: { projectId: string }) {
     motionFailure: () => renderer.current?.motionFailure?.() ?? null,
     motionTransition: () => renderer.current?.motionTransition?.() ?? null,
     cancelPlayback: () => renderer.current?.cancelMotionPlayback?.(),
+    beginPlacementHandoff: (token) =>
+      renderer.current?.beginPlacementHandoff?.(token) ?? false,
+    commitPlacementHandoff: (token) =>
+      renderer.current?.commitPlacementHandoff?.(token) ?? false,
+    cancelPlacementHandoff: () => renderer.current?.cancelPlacementHandoff?.(),
+    resourceRevision: displayedDocument?.revision,
     placementGeometry: () => renderer.current?.placementGeometry?.() ?? null,
     placementDelta: () =>
       renderer.current?.placementDelta?.() ?? { x: 0, y: 0 },
@@ -395,6 +401,8 @@ export function PetRuntime({ projectId }: { projectId: string }) {
       : ""
     : bubble;
   const statusError = error ? "桌宠加载失败" : preview.error || roamError;
+  const motionWarning =
+    movement.issue?.severity === "warning" ? movement.issue : null;
   const previewStatus = preview.linked
     ? preview.paused
       ? "聊天中，联动暂停"
@@ -402,7 +410,7 @@ export function PetRuntime({ projectId }: { projectId: string }) {
     : "";
   const statusMessages = [
     previewStatus,
-    statusError || unavailableMotion,
+    statusError || motionWarning?.message || unavailableMotion,
   ].filter((message): message is string => Boolean(message));
   return (
     <div
@@ -550,6 +558,7 @@ export function PetRuntime({ projectId }: { projectId: string }) {
         <div
           className="pet-runtime-status"
           role={statusError ? "alert" : "status"}
+          data-motion-issue={movement.issue?.code}
           aria-label={statusMessages.join("；")}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
@@ -572,7 +581,10 @@ export function PetRuntime({ projectId }: { projectId: string }) {
             aria-controls={statusDetailsId}
             onClick={() => setStatusExpanded((value) => !value)}
           >
-            {statusError ? "桌宠状态异常" : previewStatus || "部分动作不可用"}
+            {statusError
+              ? "桌宠状态异常"
+              : previewStatus ||
+                (motionWarning ? "动作资源未齐" : "部分动作不可用")}
           </button>
           {statusExpanded && (
             <div id={statusDetailsId} className="pet-runtime-status-details">

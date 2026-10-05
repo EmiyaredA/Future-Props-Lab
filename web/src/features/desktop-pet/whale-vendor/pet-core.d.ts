@@ -1,4 +1,8 @@
 export interface WhaleController {
+  /** Available only with a real DIP viewportOrigin callback and a drawn frame. */
+  beginPlacementHandoff(token: number): boolean;
+  commitPlacementHandoff(token: number): boolean;
+  cancelPlacementHandoff(): boolean;
   placementDelta(): { x: number; y: number };
   setLocomotion(
     value: import("@platform/petMotion").PetMotionFrame | null,
@@ -12,6 +16,13 @@ export interface WhaleController {
     expression: string | null,
     holdExpression?: boolean,
   ): void;
+  replaceRejectedReaction(
+    motion: string | null,
+    expression: string | null,
+    holdExpression: boolean,
+    code: string,
+  ): void;
+  getReactionFailure(): string | null;
   setExpr(name: string, seconds?: number): void;
   step(seconds: number): void;
   render(): void;

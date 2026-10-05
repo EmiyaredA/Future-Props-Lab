@@ -1278,13 +1278,17 @@ export function createPet(els, opts) {
   let roam = opts.roam ?? "free";
   let skin = opts.skin || defaultSkin();
   let hold = 0; // until T: an order from outside is in progress, free roaming waits
+  const initialGroupFacing = custom?.groupFacing?.();
   const pet = {
     x: 260,
     fy: 0,
     vx: 0,
     vy: 0,
     facing: 1,
-    faceVis: 1,
+    faceVis:
+      initialGroupFacing === 1 || initialGroupFacing === -1
+        ? initialGroupFacing
+        : 1,
     mode: "idle",
     modeT: 0,
     dur: 0,
@@ -1355,18 +1359,83 @@ export function createPet(els, opts) {
   let locomotion = null;
   let heldAnchor = null;
   let releaseOrigin = null;
+  let placementHandoff = null;
+  let placementToken = -1;
+  let rejectedReaction = null;
+  function viewportOrigin() {
+    const value = opts.viewportOrigin?.();
+    return value && Number.isFinite(value.x) && Number.isFinite(value.y)
+      ? value
+      : null;
+  }
+  function handoffLocal() {
+    const origin = viewportOrigin() || placementHandoff?.origin;
+    if (!placementHandoff || !origin) return null;
+    placementHandoff.origin = { ...origin };
+    return {
+      x: placementHandoff.world.x - origin.x,
+      y: placementHandoff.world.y - origin.y,
+    };
+  }
+  function beginPlacementHandoff(token) {
+    if (placementHandoff?.token === token) return true;
+    const origin = viewportOrigin();
+    if (
+      !Number.isSafeInteger(token) ||
+      token <= placementToken ||
+      !origin ||
+      !pet.xf
+    )
+      return false;
+    placementToken = token;
+    placementHandoff = {
+      token,
+      committed: false,
+      origin: { ...origin },
+      // The installed SVG transform rounds its DIP root to 0.1, so latch
+      // that actually drawn root rather than its unrounded simulation value.
+      world: { x: origin.x + f(pet.xf.AX), y: origin.y + f(pet.xf.AY) },
+    };
+    return true;
+  }
+  function commitPlacementHandoff(token) {
+    if (!placementHandoff || placementHandoff.token !== token) return false;
+    placementHandoff.committed = true;
+    return true;
+  }
+  function cancelPlacementHandoff() {
+    if (!placementHandoff) return false;
+    const local = handoffLocal();
+    placementHandoff = null;
+    heldAnchor = null;
+    if (local) releaseOrigin = { ...local, at: T };
+    setLocomotion(null);
+    return true;
+  }
   function setLocomotion(value) {
     const active = value && value.state !== "idle" ? value : null;
+    if (placementHandoff?.committed && active?.state !== "held") {
+      const local = handoffLocal();
+      if (local) releaseOrigin = { ...local, at: T };
+      heldAnchor = null;
+      placementHandoff = null;
+    }
     if (active?.state === "held" && !heldAnchor && active.grip && pet.xf) {
       const c = pet.xf,
         r = (c.rot * Math.PI) / 180;
       const dx = active.grip.x - c.AX,
         dy = active.grip.y - c.AY;
+      const pickup = custom?.pickupPoint?.();
       heldAnchor = {
         point: active.grip,
         x: c.ax + (dx * Math.cos(r) + dy * Math.sin(r)) / c.kx,
         y: c.ay + (-dx * Math.sin(r) + dy * Math.cos(r)) / c.ky,
-        pickup: custom?.pickupPoint?.() || null,
+        pickup:
+          Array.isArray(pickup) &&
+          pickup.length === 2 &&
+          pickup.every(Number.isFinite)
+            ? [...pickup]
+            : null,
         at: T,
       };
       heldAnchor.startX = heldAnchor.x;
@@ -1409,6 +1478,7 @@ export function createPet(els, opts) {
     maxX = () => Math.max(W / 2, W - 104 * S - 8);
 
   function resize() {
+    cancelPlacementHandoff();
     const b = opts.bounds();
     W = b.W;
     H = b.H;
@@ -1682,7 +1752,8 @@ export function createPet(els, opts) {
     let tk = 160,
       tc = 12,
       drowseT = 0;
-    const free = roam !== "off" && T > hold && !opts.dialogOpen?.();
+    const free =
+      !rejectedReaction && roam !== "off" && T > hold && !opts.dialogOpen?.();
 
     pet.blinkT -= dt;
     pet.blinkAge += dt;
@@ -1710,7 +1781,13 @@ export function createPet(els, opts) {
     switch (m) {
       case "idle": {
         lookT = track();
-        if (pointer.inside && !press && pdx * pet.facing < -50 && pm < 600) {
+        if (
+          !rejectedReaction &&
+          pointer.inside &&
+          !press &&
+          pdx * pet.facing < -50 &&
+          pm < 600
+        ) {
           pet.turnAcc += dt;
           if (pet.turnAcc > 0.9) {
             pet.facing *= -1;
@@ -2023,9 +2100,15 @@ export function createPet(els, opts) {
     pet.gap[0] = lerp(pet.gap[0], fc.gap[0], ease(8, dt));
     pet.gap[1] = lerp(pet.gap[1], fc.gap[1], ease(8, dt));
     // Physical contacts require a stable coordinate scale; articulated directional poses handle the turn.
-    pet.faceVis = locomotion
-      ? pet.facing
-      : lerp(pet.faceVis, pet.facing, ease(15, dt));
+    // Complete original views own their display basis. Legacy figures still
+    // use the original turn squash; their requested direction is unchanged.
+    const groupFacing = custom?.groupFacing?.();
+    pet.faceVis =
+      groupFacing === 1 || groupFacing === -1
+        ? groupFacing
+        : locomotion
+          ? pet.facing
+          : lerp(pet.faceVis, pet.facing, ease(15, dt));
     if (m !== "walk" && m !== "run" && !locomotion)
       pet.phase = lerp(
         pet.phase,
@@ -2161,6 +2244,9 @@ export function createPet(els, opts) {
       : (1 - pet.sq) * (1 + 0.09 * pet.stretch) * (1 + 0.016 * br);
     const ax = 128,
       ay = drag ? 36 : 256;
+    const manualRegistration = Boolean(
+      locomotion || heldAnchor || releaseOrigin || placementHandoff,
+    );
     let AX = drag ? pet.dx : pet.x,
       AY = drag ? pet.dy : pet.fy;
     if (fc.shake) AX += Math.sin(T * 60) * 1.4;
@@ -2192,6 +2278,18 @@ export function createPet(els, opts) {
       AX = lerp(releaseOrigin.x, AX, eased);
       AY = lerp(releaseOrigin.y, AY, eased);
       if (blend >= 1) releaseOrigin = null;
+    }
+    const placed = handoffLocal();
+    if (placed) {
+      AX = placed.x;
+      AY = placed.y;
+    }
+    if (rejectedReaction) {
+      if (manualRegistration) rejectedReaction.root = { x: f(AX), y: f(AY) };
+      else if (rejectedReaction.root) {
+        AX = rejectedReaction.root.x;
+        AY = rejectedReaction.root.y;
+      }
     }
     pet.xf = { AX, AY, ax, ay, kx, ky, rot };
     petG.setAttribute(
@@ -2245,6 +2343,9 @@ export function createPet(els, opts) {
         groupRot: rot,
         worldScale: S,
         gripPoint: heldAnchor ? [heldAnchor.x, heldAnchor.y] : null,
+        // Whole cels register to this stable model point; the outer group
+        // alone transfers the clicked point to pickup over the grab ease.
+        heldPickupPoint: heldAnchor?.pickup ? [...heldAnchor.pickup] : null,
         locomotion,
       });
     else petG.innerHTML = figure(face, frame);
@@ -2382,6 +2483,8 @@ export function createPet(els, opts) {
   // A new authored reaction replaces the old one, including airborne or seated poses.
   // Callers never mutate simulation state to force an editor preview through busy().
   function replaceReaction(motion, expression, holdExpression = false) {
+    rejectedReaction = null;
+    custom?.acceptReactionPlayback?.();
     setMode("idle");
     pet.fy = floorY;
     pet.vx = pet.vy = pet.speed = 0;
@@ -2395,6 +2498,21 @@ export function createPet(els, opts) {
     pet.exprUntil = holdExpression ? Infinity : T + 2;
   }
 
+  // A refused authored request never enters legacy physics. Its figure owns
+  // retained pixels; the core owns only the last actually installed root.
+  function replaceRejectedReaction(motion, expression, holdExpression, code) {
+    const root = pet.xf ? { x: f(pet.xf.AX), y: f(pet.xf.AY) } : null;
+    setMode("idle");
+    pet.fy = floorY;
+    pet.vx = pet.vy = pet.speed = 0;
+    pet.pulse = null;
+    P.length = 0;
+    rejectedReaction = { motion, code, root };
+    custom?.rejectReactionPlayback?.(code);
+    pet.expr = expression || "neutral";
+    pet.exprUntil = holdExpression ? Infinity : T + 2;
+  }
+
   resize();
   return {
     pet,
@@ -2403,11 +2521,18 @@ export function createPet(els, opts) {
     resize,
     act,
     replaceReaction,
+    replaceRejectedReaction,
+    getReactionFailure() {
+      return rejectedReaction?.code ?? null;
+    },
     placementDelta() {
       return heldAnchor && pet.xf
         ? { x: pet.xf.AX - pet.x, y: pet.xf.AY - floorY }
         : { x: 0, y: 0 };
     },
+    beginPlacementHandoff,
+    commitPlacementHandoff,
+    cancelPlacementHandoff,
     setLocomotion,
     setExpr,
     walkTo,

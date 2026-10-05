@@ -915,6 +915,9 @@ export function EditorPage({
                 className="dp-confirm"
                 onClick={() => {
                   const next = leaving;
+                  // Header navigation re-enters the parent's guard before
+                  // React commits dirty=false. This exit is already confirmed.
+                  registerNavigationGuard?.(null);
                   setDirty(false);
                   setLeaving(null);
                   next?.();

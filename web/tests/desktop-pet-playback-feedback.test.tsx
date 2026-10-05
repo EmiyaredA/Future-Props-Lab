@@ -235,7 +235,8 @@ for (const missing of [false, true])
     expect(move).not.toHaveBeenCalled();
     if (missing) {
       expect(engine.getMotionFailure()).toBe("needs-authored-transition");
-      expect(hook.result.current.error).toContain("缺少连续过渡姿势");
+      expect(hook.result.current.error).toBe("");
+      expect(hook.result.current.issue?.message).toContain("缺少连续过渡姿势");
       await act(() => vi.advanceTimersByTimeAsync(1000));
       expect(move).not.toHaveBeenCalled();
     } else {
@@ -275,6 +276,7 @@ test("desktop press publicly cancels the previous failed selection before follow
   const { hook, move, cancel } = runtime(engine);
   await act(() => vi.advanceTimersByTimeAsync(100));
   expect(engine.getMotionFailure()).toBe("transition-support-mismatch");
+  expect(hook.result.current.issue?.severity).toBe("error");
   expect(hook.result.current.error).toContain("无法保持支撑");
   act(() => {
     hook.result.current.press(450, 470);

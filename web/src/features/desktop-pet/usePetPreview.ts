@@ -7,8 +7,15 @@ import {
 } from "react";
 import type { PetPreviewDelivery, PetPreviewDraft } from "@platform/petPreview";
 import { getDocument, type PetDocument } from "./api";
-import { expressionSupported } from "./playback";
+import {
+  EXPRESSION_LABELS,
+  MOTION_LABELS,
+  reactionFor,
+  reactionExpressionUnavailable,
+  reactionMotionUnavailable,
+} from "./playback";
 import { sequenceDemoUnavailable } from "./locomotion/motionAvailability";
+import { MOTION_DEMOS } from "./locomotion/demo";
 
 export function validatePreview(
   document: PetDocument,
@@ -16,6 +23,8 @@ export function validatePreview(
 ): PetDocument {
   if (document.revision !== draft.baseRevision)
     throw new Error("项目版本已变化，请重新加载编辑器后联动");
+  if (draft.motionDemo && !Object.hasOwn(MOTION_DEMOS, draft.motionDemo))
+    throw new Error("预览运动姿态不存在");
   if (draft.motionDemo && document.sourceType !== "coopanion-whale")
     throw new Error("当前角色不支持桌面运动姿态");
   if (draft.motionDemo) {
@@ -54,14 +63,14 @@ export function validatePreview(
   for (const reaction of Object.values(config.events ?? {})) {
     if (document.sourceType === "live2d") {
       if (
-        reaction.motionId &&
+        reaction.motionId != null &&
         !document.character?.motions?.some(
           (motion) => motion.id === reaction.motionId,
         )
       )
         throw new Error("预览动作不存在");
       if (
-        reaction.expressionId &&
+        reaction.expressionId != null &&
         !document.character?.expressions?.some(
           (expression) => expression.id === reaction.expressionId,
         )
@@ -69,44 +78,37 @@ export function validatePreview(
         throw new Error("预览表情不存在");
     } else {
       if (
-        reaction.motionId &&
-        ![
-          "stand",
-          "jump",
-          "hop",
-          "look",
-          "turn",
-          "nod",
-          "shake",
-          "spin",
-          "sit",
-          "sleep",
-          "dizzy",
-          "walk",
-          "run",
-        ].includes(reaction.motionId)
+        reaction.motionId != null &&
+        !Object.hasOwn(MOTION_LABELS, reaction.motionId)
       )
         throw new Error("预览动作不存在");
       if (
-        reaction.expressionId &&
-        (![
-          "neutral",
-          "happy",
-          "wink",
-          "love",
-          "shy",
-          "surprised",
-          "angry",
-          "sad",
-          "sleepy",
-          "thinking",
-        ].includes(reaction.expressionId) ||
-          !expressionSupported(document, reaction.expressionId))
+        reaction.expressionId != null &&
+        !Object.hasOwn(EXPRESSION_LABELS, reaction.expressionId)
       )
-        throw new Error("当前角色不支持该预览表情");
+        throw new Error("预览表情不存在");
     }
   }
-  return { ...document, config };
+  const preview = { ...document, config };
+  // Known historical reactions remain draft data even after a resource update.
+  // Capabilities apply to the actual selection and, for full events, its idle return.
+  const names =
+    draft.mode === "event" && draft.eventName !== "idle" && !draft.motionDemo
+      ? [draft.eventName, "idle" as const]
+      : [draft.eventName];
+  for (const name of names) {
+    const reaction = reactionFor(preview, name);
+    const motion = draft.motionDemo
+      ? null
+      : reactionMotionUnavailable(preview, reaction.motionId);
+    if (motion) throw new Error(`当前角色不支持该预览动作：${motion}`);
+    const expression = reactionExpressionUnavailable(
+      preview,
+      reaction.expressionId,
+    );
+    if (expression) throw new Error(`当前角色不支持该预览表情：${expression}`);
+  }
+  return preview;
 }
 
 export function usePetPreview(
