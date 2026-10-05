@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import io
 import os
 from hashlib import sha256
+from pathlib import Path
+from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.models import VideoEditorTimeline
 from app.apps.video_editor.projects import VideoEditorProjects
-from app.apps.video_editor.schemas import parse_timeline_document
+from app.apps.video_editor.schemas import VideoEditorClip, parse_timeline_document
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
@@ -19,6 +22,46 @@ from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
+
+
+def _cached_frame(cache: Path) -> bytes | None:
+    return cache.read_bytes() if cache.is_file() else None
+
+
+def _render_frame(
+    cache: Path,
+    plan: RenderPlan,
+    *,
+    time_us: int,
+    width: int,
+    without_chroma_clip_id: str | None,
+) -> bytes:
+    cached = _cached_frame(cache)
+    if cached is not None:
+        return cached
+    payload = render_plan_frame(
+        plan, time_us=time_us, width=width, without_chroma_clip_id=without_chroma_clip_id
+    )
+    # Parallel requests for the same frame must not share a temporary filename.
+    temporary = cache.with_suffix(f".{uuid4().hex}.tmp")
+    try:
+        temporary.write_bytes(payload)
+        os.replace(temporary, cache)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return payload
+
+
+def _text_layer_png(clip: VideoEditorClip, font_path: Path | None) -> bytes:
+    try:
+        layer = render_text_layer(clip, font_path)
+    except (ValueError, OSError) as exc:
+        raise VideoEditorValidationError(
+            "文字图层无法渲染，请检查字体与文字长度", code="invalid_text_layer"
+        ) from exc
+    output = io.BytesIO()
+    layer.save(output, format="PNG")
+    return output.getvalue()
 
 
 class VideoEditorFrames:
@@ -68,8 +111,9 @@ class VideoEditorFrames:
             / f"frame-v{TEXT_RENDER_VERSION}-chroma2-r{revision}-t{time_us}-w{width}"
             f"-raw{comparison_key}.png"
         )
-        if cache.is_file():
-            return cache.read_bytes()
+        cached = await asyncio.to_thread(_cached_frame, cache)
+        if cached is not None:
+            return cached
         asset_ids = {
             value
             for track in document.tracks
@@ -93,7 +137,11 @@ class VideoEditorFrames:
         )
         paths = {asset.id: self.storage.path_for(asset) for asset in assets}
 
-        payload = render_plan_frame(
+        # Only validated value objects and paths cross into the worker. The
+        # request's AsyncSession remains on the event loop that owns it.
+        return await asyncio.to_thread(
+            _render_frame,
+            cache,
             RenderPlan(
                 document=document,
                 asset_paths=paths,
@@ -106,13 +154,6 @@ class VideoEditorFrames:
             width=width,
             without_chroma_clip_id=without_chroma_clip_id,
         )
-        temporary = cache.with_suffix(f".{os.getpid()}.tmp")
-        try:
-            temporary.write_bytes(payload)
-            os.replace(temporary, cache)
-        finally:
-            temporary.unlink(missing_ok=True)
-        return payload
 
     async def text_layer(self, project_id: str, *, clip_id: str, revision: int) -> bytes:
         await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
@@ -152,12 +193,4 @@ class VideoEditorFrames:
             if asset is None:
                 raise VideoEditorNotFoundError("字体素材不存在")
             font_path = self.storage.path_for(asset)
-        try:
-            layer = render_text_layer(clip, font_path)
-        except (ValueError, OSError) as exc:
-            raise VideoEditorValidationError(
-                "文字图层无法渲染，请检查字体与文字长度", code="invalid_text_layer"
-            ) from exc
-        output = io.BytesIO()
-        layer.save(output, format="PNG")
-        return output.getvalue()
+        return await asyncio.to_thread(_text_layer_png, clip, font_path)
