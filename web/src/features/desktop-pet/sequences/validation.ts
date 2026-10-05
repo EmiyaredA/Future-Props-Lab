@@ -1,4 +1,5 @@
 import { isTransitionContainer, transitionBranchFailure } from "./transitions";
+import { validDistanceStages } from "./distanceStages";
 import type {
   FrameSequences,
   SequenceClip,
@@ -203,7 +204,11 @@ export function readFrameSequences(value: unknown): FrameSequences | null {
     if (
       !safeId.test(id) ||
       !record(clip) ||
-      !exact(clip, ["frames", "loop"], ["distancePerCycle"]) ||
+      !exact(
+        clip,
+        ["frames", "loop"],
+        ["distancePerCycle", "distanceAtFrame"],
+      ) ||
       typeof clip.loop !== "boolean" ||
       !Array.isArray(clip.frames) ||
       clip.frames.length < 1 ||
@@ -220,6 +225,17 @@ export function readFrameSequences(value: unknown): FrameSequences | null {
       if (!finite(clip.distancePerCycle, 512) || clip.distancePerCycle <= 0)
         return fail("循环距离");
       parsed.distancePerCycle = clip.distancePerCycle;
+    }
+    if (Object.hasOwn(clip, "distanceAtFrame")) {
+      if (
+        !tuple(clip.distanceAtFrame, parsed.frames.length + 1, 512) ||
+        !Array.from(clip.distanceAtFrame).every((_, i) =>
+          Object.hasOwn(clip.distanceAtFrame!, i),
+        )
+      )
+        return fail("阶段累计距离");
+      parsed.distanceAtFrame = [...clip.distanceAtFrame];
+      if (!validDistanceStages(parsed)) return fail("阶段累计距离");
     }
     clips[id] = parsed;
   }

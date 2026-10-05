@@ -499,6 +499,7 @@ export function VideoEditorAssetPanel({
     return (
       <VideoEditorAssetRow
         key={asset.id}
+        projectId={projectId}
         asset={asset}
         folderId={folderId}
         arranged={arranged}

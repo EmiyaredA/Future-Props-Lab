@@ -2,7 +2,18 @@
 export type PetRect = { x: number; y: number; width: number; height: number };
 export type PetEdge = "left" | "right" | "top" | "bottom";
 /** Read-only renderer feedback. Resource time advances independently of window motion. */
-export type PetPosePlayback = { id: string; progress: number };
+export type PetMotionBudget = {
+  /** Changes on selection/cancellation and each committed distance stage. */
+  epoch: string;
+  /** Remaining authorized movement from this confirmed cumulative DIP travel. */
+  remainingDIP: number;
+  confirmedTravel: { x: number; y: number };
+};
+export type PetPosePlayback = {
+  id: string;
+  progress: number;
+  motionBudget?: PetMotionBudget;
+};
 export type PetGeometry = {
   visible: PetRect;
   feet: { x: number; y: number };

@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VideoEditorAssetPanel } from "@features/video-editor/VideoEditorAssetPanel";
+import { ApiError } from "@platform/api/errors";
+import { videoEditorQueryKeys } from "@features/video-editor/queryKeys";
 import {
   applyVideoEditorOperations,
   deleteVideoEditorAsset,
@@ -10,6 +12,7 @@ import {
   importVideoEditorAssets,
   listVideoEditorAssets,
   listVideoEditorImportSources,
+  renameVideoEditorAsset,
   uploadVideoEditorAsset,
 } from "@features/video-editor/api";
 import type { VideoEditorAsset } from "@features/video-editor/types";
@@ -24,6 +27,7 @@ vi.mock("@features/video-editor/api", () => ({
   importVideoEditorAssets: vi.fn(),
   listVideoEditorImportSources: vi.fn(),
   patchVideoEditorAsset: vi.fn(),
+  renameVideoEditorAsset: vi.fn(),
   uploadVideoEditorAsset: vi.fn(),
 }));
 
@@ -64,6 +68,7 @@ function renderPanel({
   onOrganizationChange = vi.fn(),
   onAddBatch = vi.fn(),
   onImportSubtitles = vi.fn(),
+  disabled = false,
 }: {
   assets?: VideoEditorAsset[];
   organization?: {
@@ -73,6 +78,7 @@ function renderPanel({
   onOrganizationChange?: ReturnType<typeof vi.fn>;
   onAddBatch?: ReturnType<typeof vi.fn>;
   onImportSubtitles?: ReturnType<typeof vi.fn>;
+  disabled?: boolean;
 } = {}) {
   const client = new QueryClient({
     defaultOptions: {
@@ -84,6 +90,7 @@ function renderPanel({
     <QueryClientProvider client={client}>
       <VideoEditorAssetPanel
         projectId="project-1"
+        disabled={disabled}
         assets={assets}
         organization={organization}
         onAdd={vi.fn()}
@@ -94,7 +101,13 @@ function renderPanel({
       />
     </QueryClientProvider>,
   );
-  return { ...view, onOrganizationChange, onAddBatch, onImportSubtitles };
+  return {
+    ...view,
+    client,
+    onOrganizationChange,
+    onAddBatch,
+    onImportSubtitles,
+  };
 }
 
 beforeEach(() => {
@@ -103,6 +116,123 @@ beforeEach(() => {
 });
 
 describe("video editor asset panel", () => {
+  async function openRename(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(
+      screen.getByRole("button", { name: `整理素材“${asset.displayName}”` }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "重命名" }));
+    return screen.getByRole("textbox", { name: "素材名称" });
+  }
+
+  it("renames a video with its revision and refreshes the asset query", async () => {
+    const user = userEvent.setup();
+    const { client } = renderPanel({ assets: [{ ...asset, revision: 7 }] });
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    vi.mocked(renameVideoEditorAsset).mockResolvedValue({
+      ...asset,
+      displayName: "镜头一",
+      revision: 8,
+    });
+    const input = await openRename(user);
+    expect(input).toHaveValue(asset.displayName);
+    expect(input).toHaveAttribute("maxlength", "255");
+    await user.clear(input);
+    await user.type(input, "  镜头一  {Enter}");
+    await waitFor(() =>
+      expect(renameVideoEditorAsset).toHaveBeenCalledWith(
+        "project-1",
+        asset.id,
+        7,
+        "镜头一",
+      ),
+    );
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: videoEditorQueryKeys.assets("project-1"),
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("rejects blank names and allows Escape to cancel without a request", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const input = await openRename(user);
+    await user.clear(input);
+    await user.type(input, "   {Enter}");
+    expect(screen.getByRole("button", { name: "保存名称" })).toBeDisabled();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(renameVideoEditorAsset).not.toHaveBeenCalled();
+  });
+
+  it("preserves a failed name for an explicit retry", async () => {
+    const user = userEvent.setup();
+    vi.mocked(renameVideoEditorAsset)
+      .mockRejectedValueOnce(new Error("连接失败"))
+      .mockResolvedValueOnce({ ...asset, displayName: "新镜头", revision: 1 });
+    renderPanel();
+    const input = await openRename(user);
+    await user.clear(input);
+    await user.type(input, "新镜头{Enter}");
+    expect(await screen.findByRole("alert")).toHaveTextContent("连接失败");
+    expect(input).toHaveValue("新镜头");
+    await user.click(screen.getByRole("button", { name: "保存名称" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(renameVideoEditorAsset).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps a conflict visible and requires reopening before another submission", async () => {
+    const user = userEvent.setup();
+    vi.mocked(renameVideoEditorAsset).mockRejectedValue(
+      new ApiError("版本冲突", {}, 409),
+    );
+    renderPanel();
+    const input = await openRename(user);
+    await user.clear(input);
+    await user.type(input, "新镜头{Enter}");
+    expect(await screen.findByRole("alert")).toHaveTextContent("素材已被修改");
+    expect(input).toHaveValue("新镜头");
+    expect(screen.getByRole("button", { name: "保存名称" })).toBeDisabled();
+    await user.keyboard("{Enter}");
+    expect(renameVideoEditorAsset).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "取消" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("blocks repeat submissions and closing while the name is saving", async () => {
+    const user = userEvent.setup();
+    let complete!: (value: VideoEditorAsset) => void;
+    vi.mocked(renameVideoEditorAsset).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    );
+    renderPanel();
+    const input = await openRename(user);
+    await user.clear(input);
+    await user.type(input, "新镜头{Enter}");
+    expect(screen.getByRole("button", { name: "保存中…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
+    await user.keyboard("{Escape}{Enter}");
+    expect(screen.getByRole("dialog")).toBeVisible();
+    expect(renameVideoEditorAsset).toHaveBeenCalledTimes(1);
+    complete({ ...asset, displayName: "新镜头", revision: 1 });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("disables asset organization in read-only mode", () => {
+    renderPanel({ disabled: true });
+    expect(
+      screen.getByRole("button", { name: `整理素材“${asset.displayName}”` }),
+    ).toBeDisabled();
+  });
+
   it("opens the subtitle file picker from the text menu", async () => {
     const user = userEvent.setup();
     const { onImportSubtitles } = renderPanel();

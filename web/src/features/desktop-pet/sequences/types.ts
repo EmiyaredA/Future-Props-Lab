@@ -1,4 +1,5 @@
 import type { PetEdge } from "@platform/petMotion";
+import type { PetPosePlayback } from "@platform/petMotion";
 
 /** Source-local pixels. Atlas rect origin is never added to these anchors. */
 export type SequencePoint = [number, number];
@@ -21,6 +22,8 @@ export type SequenceClip = {
   loop: boolean;
   /** Model-space distance per complete cycle; renderer scales it to DIP. */
   distancePerCycle?: number;
+  /** N+1 cumulative model distances; equal neighbors are timed stationary stages. */
+  distanceAtFrame?: number[];
 };
 /** A complete entry/exit/turn clip connecting two actual clip IDs. */
 export type SequenceTransition = {
@@ -67,7 +70,7 @@ export type SequenceInput = {
   /** Only the exact terminal airborne target cel may release departure supports. */
   releaseSupportAtExit?: boolean;
 };
-export type SequenceProgress = { id: string; progress: number };
+export type SequenceProgress = PetPosePlayback;
 export type SequenceFailure = {
   reason:
     | "missing-clip"

@@ -255,14 +255,17 @@ class VideoEditorMedia:
     ) -> VideoEditorAssetOut:
         asset, metadata = await self.asset(project_id, asset_id)
         if (
-            asset.media_kind not in {"video", "image"}
+            body.default_effects is not None
+            and asset.media_kind not in {"video", "image"}
             and body.default_effects.chroma_key is not None
         ):
             raise VideoEditorValidationError(
                 "只有视频和图片素材可以设置抠像默认效果", code="invalid_kind"
             )
-        effects_payload = body.default_effects.model_dump(mode="json", by_alias=True)
         now = utc_now()
+        changes = {"revision": body.expected_revision + 1, "updated_at": now}
+        if body.default_effects is not None:
+            changes["default_effects"] = body.default_effects.model_dump(mode="json", by_alias=True)
         result = await self.session.execute(
             update(VideoEditorAssetMetadata)
             .where(
@@ -270,11 +273,7 @@ class VideoEditorMedia:
                 VideoEditorAssetMetadata.project_id == project_id,
                 VideoEditorAssetMetadata.revision == body.expected_revision,
             )
-            .values(
-                default_effects=effects_payload,
-                revision=body.expected_revision + 1,
-                updated_at=now,
-            )
+            .values(**changes)
         )
 
         async def load_current() -> VideoEditorAssetOut:
@@ -287,6 +286,8 @@ class VideoEditorMedia:
             expected=body.expected_revision,
             load_current=load_current,
         )
+        if body.display_name is not None:
+            asset.display_name = body.display_name
         await self.session.commit()
         asset, metadata = await self.asset(project_id, asset_id)
         return self._out(project_id, asset, metadata)

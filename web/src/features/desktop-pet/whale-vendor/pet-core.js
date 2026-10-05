@@ -1273,6 +1273,7 @@ export function createPet(els, opts) {
   let W = 0,
     H = 0,
     floorY = 0,
+    cameraCenterX = null,
     S = 0.42,
     T = 0;
   let roam = opts.roam ?? "free";
@@ -1474,8 +1475,9 @@ export function createPet(els, opts) {
     bubble: [146, 0],
   };
   let A = { ...COO_ANCHORS, ...custom?.anchors };
-  const minX = () => Math.min(W / 2, 104 * S + 8),
-    maxX = () => Math.max(W / 2, W - 104 * S - 8);
+  // A central in-place camera pivot need not lie within physical body bounds.
+  const minX = () => cameraCenterX ?? Math.min(W / 2, 104 * S + 8),
+    maxX = () => cameraCenterX ?? Math.max(W / 2, W - 104 * S - 8);
 
   function resize() {
     cancelPlacementHandoff();
@@ -1484,6 +1486,8 @@ export function createPet(els, opts) {
     H = b.H;
     floorY = b.floorY;
     S = b.S;
+    cameraCenterX =
+      opts.walkInPlace && Number.isFinite(b.centerX) ? b.centerX : null;
     if (!pet.placed && W > 0) {
       pet.x = opts.startX != null ? opts.startX : W * 0.7;
       pet.placed = true;
@@ -1495,7 +1499,7 @@ export function createPet(els, opts) {
         setMode("air");
       }
     }
-    pet.x = clamp(pet.x, minX(), maxX());
+    pet.x = cameraCenterX ?? clamp(pet.x, minX(), maxX());
     if (!opts.walkInPlace) pet.target = clamp(pet.target, minX(), maxX());
     if (pet.mode !== "air" && pet.mode !== "drag") pet.fy = floorY;
   }

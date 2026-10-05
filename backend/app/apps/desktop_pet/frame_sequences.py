@@ -33,6 +33,26 @@ def _same_cel(left: dict, right: dict) -> bool:
     ) and all(left.get(key, {}) == right.get(key, {}) for key in ("contacts", "supports"))
 
 
+def _validate_distance_stages(clip: dict) -> None:
+    """Optional zero-distance recovery stages retain the original frame budgets."""
+    if "distanceAtFrame" not in clip:
+        return
+    points = clip["distanceAtFrame"]
+    stride = clip.get("distancePerCycle")
+    if (
+        clip["loop"] is not True
+        or not _number(stride, 512)
+        or stride <= 0
+        or not isinstance(points, list)
+        or len(points) != len(clip["frames"]) + 1
+        or not all(_number(n, 512) and 0 <= n <= stride for n in points)
+        or points[0] != 0
+        or points[-1] != stride
+        or any(left > right for left, right in zip(points, points[1:], strict=False))
+    ):
+        raise ValueError("完整序列帧阶段累计距离无效")
+
+
 def _validate_transition_branches(transition: dict, clips: dict) -> None:
     """New authored exits cover every displayed source cel; old flat links stay compatible."""
     if "branches" not in transition:
@@ -177,7 +197,7 @@ def validate_frame_sequences(model: dict) -> set[str]:
             or not _NAME.fullmatch(clip_id)
             or not isinstance(clip, dict)
             or not {"frames", "loop"} <= set(clip)
-            or set(clip) - {"frames", "loop", "distancePerCycle"}
+            or set(clip) - {"frames", "loop", "distancePerCycle", "distanceAtFrame"}
             or type(clip["loop"]) is not bool
             or not isinstance(clip["frames"], list)
             or not 1 <= len(clip["frames"]) <= 128
@@ -187,6 +207,7 @@ def validate_frame_sequences(model: dict) -> set[str]:
             )
         ):
             raise ValueError("完整序列帧片段定义无效")
+        _validate_distance_stages(clip)
         total += len(clip["frames"])
         if total > 2048:
             raise ValueError("完整序列帧总帧数过大")

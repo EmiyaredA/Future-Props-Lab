@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { demoMotion, type MotionDemo } from "./demo";
 import { motionPhases } from "./phases";
+import { boundedMotionTarget, remainingMotionBudget } from "./motionBudget";
 import type { PetMotionFrame, PetPosePlayback } from "@platform/petMotion";
 
 /** Same motion frames in a local work area; no desktop movement bridge is involved. */
@@ -71,6 +72,7 @@ export function useVirtualMotion(
         request = requestAnimationFrame(tick);
         return;
       }
+      const priorSeconds = seconds;
       if (!firstFrame) seconds += dt;
       const width = size * 0.75;
       const right = Math.max(4, element.clientWidth - width - 4);
@@ -109,6 +111,24 @@ export function useVirtualMotion(
           frame.facing === 1
             ? Math.min(right, (replay?.x ?? 4) + (travel * 110) / 70)
             : Math.max(4, (replay?.x ?? right) - (travel * 110) / 70);
+      }
+      const budget = playback?.transition?.motionBudget;
+      if (budget && previous) {
+        const distance = Math.hypot(x - previous.x, y - previous.y);
+        const bounded = boundedMotionTarget(
+          previous,
+          { x, y },
+          remainingMotionBudget(budget, previous),
+        );
+        const allowed = Math.hypot(
+          bounded.x - previous.x,
+          bounded.y - previous.y,
+        );
+        if (distance > 0)
+          seconds =
+            priorSeconds + ((seconds - priorSeconds) * allowed) / distance;
+        x = bounded.x;
+        y = bounded.y;
       }
       const strideLength = strideRef.current() ?? size * 0.22;
       if (previous)

@@ -1,3 +1,12 @@
+/** Private renderer viewport; centerX is an in-place camera pivot, not a movement limit. */
+export interface PetViewportBounds {
+  W: number;
+  H: number;
+  floorY: number;
+  S: number;
+  centerX?: number;
+}
+
 export interface WhaleController {
   /** Available only with a real DIP viewportOrigin callback and a drawn frame. */
   beginPlacementHandoff(token: number): boolean;

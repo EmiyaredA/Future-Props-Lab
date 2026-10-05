@@ -126,21 +126,42 @@ export const deleteVideoEditorAsset = async (
     ),
   );
 
-export const patchVideoEditorAsset = async (
+const updateVideoEditorAsset = async (
   projectId: string,
   assetId: string,
   expectedRevision: number,
-  defaultEffects: components["schemas"]["VideoEditorDefaultEffects"],
+  changes: Omit<
+    components["schemas"]["VideoEditorAssetPatchIn"],
+    "expectedRevision"
+  >,
 ) =>
   unwrap(
     await api.PATCH(
       "/v1/video-editor/projects/{project_id}/assets/{asset_id}",
       {
         params: { path: { project_id: projectId, asset_id: assetId } },
-        body: { expectedRevision, defaultEffects },
+        body: { expectedRevision, ...changes },
       },
     ),
   );
+
+export const patchVideoEditorAsset = (
+  projectId: string,
+  assetId: string,
+  expectedRevision: number,
+  defaultEffects: components["schemas"]["VideoEditorDefaultEffects"],
+) =>
+  updateVideoEditorAsset(projectId, assetId, expectedRevision, {
+    defaultEffects,
+  });
+
+export const renameVideoEditorAsset = (
+  projectId: string,
+  assetId: string,
+  expectedRevision: number,
+  displayName: string,
+) =>
+  updateVideoEditorAsset(projectId, assetId, expectedRevision, { displayName });
 
 export const createVideoEditorAssetBake = async (
   projectId: string,

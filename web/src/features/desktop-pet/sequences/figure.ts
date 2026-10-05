@@ -14,12 +14,14 @@ import type {
   SequenceInput,
   SequenceFailure,
   SequenceRect,
+  SequenceProgress,
 } from "./types";
 import { clipForFrame, sequenceEdges } from "./capabilities";
 
 const NS = "http://www.w3.org/2000/svg";
 const MAX_REQUEST_PIXELS = 16 * 1024 * 1024;
 const MAX_CACHE_PIXELS = 32 * 1024 * 1024;
+const REQUEST_BUDGET_ERROR = "完整动作图集超过解码预算";
 
 type SequenceSourceFigure = WhaleFigure & {
   draw: LoadedWhaleFigure["draw"];
@@ -51,7 +53,7 @@ export function createSequenceFigure(options: {
   let displayed: SequenceSample | null = null;
   let failure: string | null = null;
   let assetError: string | null = null;
-  let progress: { id: string; progress: number } | null = null;
+  let progress: SequenceProgress | null = null;
   let loading: Promise<void> | null = null;
   let revision = 0;
   let clock = 0;
@@ -125,6 +127,15 @@ export function createSequenceFigure(options: {
         ),
       ),
     ];
+    const cachedPixels = textures.reduce((sum, texture) => {
+      const image = images.get(keyOf(texture));
+      return sum + (image ? image.naturalWidth * image.naturalHeight : 0);
+    }, 0);
+    // Cached and freshly decoded atlases share the same request working-set limit.
+    if (cachedPixels > MAX_REQUEST_PIXELS) {
+      failure = assetError = REQUEST_BUDGET_ERROR;
+      return false;
+    }
     if (textures.every((texture) => images.has(keyOf(texture)))) return true;
     if (loading) return false;
     const generation = revision;
@@ -147,8 +158,7 @@ export function createSequenceFigure(options: {
           if (disposed || generation !== revision) return;
         }
         pixels += image.naturalWidth * image.naturalHeight;
-        if (pixels > MAX_REQUEST_PIXELS)
-          throw new Error("完整动作图集超过解码预算");
+        if (pixels > MAX_REQUEST_PIXELS) throw new Error(REQUEST_BUDGET_ERROR);
         decoded.set(key, image);
         dimensions[texture] = {
           width: image.naturalWidth,
@@ -220,7 +230,7 @@ export function createSequenceFigure(options: {
         !player.getMotionFailure() &&
         !rejectedReaction &&
         progress
-        ? { ...progress }
+        ? structuredClone(progress)
         : null;
     },
     rejectReactionPlayback(code) {

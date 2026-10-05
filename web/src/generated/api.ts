@@ -19360,7 +19360,9 @@ export interface components {
         };
         /** VideoEditorAssetPatchIn */
         VideoEditorAssetPatchIn: {
-            defaultEffects: components["schemas"]["VideoEditorDefaultEffects"];
+            defaultEffects?: components["schemas"]["VideoEditorDefaultEffects"] | null;
+            /** Displayname */
+            displayName?: string | null;
             /** Expectedrevision */
             expectedRevision: number;
         };

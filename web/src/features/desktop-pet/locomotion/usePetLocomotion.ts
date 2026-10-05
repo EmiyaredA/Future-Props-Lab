@@ -203,6 +203,7 @@ export function usePetLocomotion({
       });
     const off = bridge.onPetEnvironment?.((env) => {
       latest.current.cancelPlacementHandoff?.();
+      latest.current.cancelPlayback?.();
       acceptEnvironment(env);
       cancel();
     });
@@ -336,6 +337,7 @@ export function usePetLocomotion({
     const resourceChanged = previousResource.current !== resourceRevision;
     previousResource.current = resourceRevision;
     latest.current.cancelPlacementHandoff?.();
+    latest.current.cancelPlayback?.();
     if ((blocked || resourceChanged) && value.pressing) value.release(true);
     if (resourceChanged) value.stop();
     value.configure(settings, blocked);

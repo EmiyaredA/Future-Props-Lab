@@ -63,6 +63,12 @@
   font-size: 13px;
 }
 
+.text-input-dialog [role="alert"] {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+
 .text-input-dialog input {
   box-sizing: border-box;
   width: 100%;

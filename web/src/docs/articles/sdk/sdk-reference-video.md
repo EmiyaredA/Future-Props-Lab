@@ -438,7 +438,8 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `project_id` | path | string | 是 |
 | `asset_id` | path | string | 是 |
 | `body` | application/json | VideoEditorAssetPatchIn | 是 |
-| `body.defaultEffects` | 请求体 | VideoEditorDefaultEffects | 是 |
+| `body.defaultEffects` | 请求体 | VideoEditorDefaultEffects / null | 否 |
+| `body.displayName` | 请求体 | string / null | 否 |
 | `body.expectedRevision` | 请求体 | integer | 是 |
 
 **响应**：

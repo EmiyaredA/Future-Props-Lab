@@ -8,6 +8,7 @@ import type {
 import { motionOrigin } from "@platform/petMotion";
 import { motionPhases } from "./phases";
 import { alignEdge, horizontalEdge, nearestEdge, nextEdge } from "./edges";
+import { boundedMotionTarget, remainingMotionBudget } from "./motionBudget";
 
 export type ActivitySettings = {
   roam: "off" | "calm" | "free";
@@ -340,7 +341,17 @@ export class PetLocomotion {
         : 1;
     this.frame.attachment = this.attached.stage;
   }
-  private stepAttached(dt: number, shape: PetGeometry) {
+  private limitTarget(remaining: number) {
+    if (!Number.isFinite(remaining)) return;
+    const target = boundedMotionTarget(
+      motionOrigin(this.environment),
+      { x: this.x, y: this.y },
+      remaining,
+    );
+    this.x = target.x;
+    this.y = target.y;
+  }
+  private stepAttached(dt: number, shape: PetGeometry, remaining = Infinity) {
     const activity = this.attached!;
     const area = this.environment.workArea;
     if (!(shape.supportedEdges ?? ["left", "right"]).includes(activity.edge)) {
@@ -397,6 +408,7 @@ export class PetLocomotion {
       const blend = u * u * (3 - 2 * u);
       this.x = activity.origin.x + (aligned.x - activity.origin.x) * blend;
       this.y = activity.origin.y + (aligned.y - activity.origin.y) * blend;
+      this.limitTarget(remaining);
       this.frame.progress = u;
       if (activity.from)
         this.frame.edgeTurn = {
@@ -404,7 +416,10 @@ export class PetLocomotion {
           to: activity.edge,
           progress: u,
         };
-      if (u >= 1) {
+      if (
+        u >= 1 &&
+        Math.hypot(this.x - aligned.x, this.y - aligned.y) <= 1e-7
+      ) {
         activity.stage = "moving";
         activity.age = 0;
         activity.from = undefined;
@@ -428,6 +443,7 @@ export class PetLocomotion {
       40 * scale * ramp * ramp * (3 - 2 * ramp) * dt * activity.direction;
     if (horizontalEdge(activity.edge)) this.x += distance;
     else this.y += distance;
+    this.limitTarget(remaining);
     const box = shape.visible;
     const minX = area.x + 4 - box.x,
       maxX = area.x + area.width - 4 - box.x - box.width;
@@ -487,6 +503,24 @@ export class PetLocomotion {
     geometry: PetGeometry,
     playback?: PetPosePlayback | null,
   ) {
+    const budget = this.pressed ? undefined : playback?.motionBudget;
+    const remaining = budget
+      ? remainingMotionBudget(budget, this.travel)
+      : Infinity;
+    if (
+      !this.pressed &&
+      this.attached?.stage !== "resting" &&
+      remaining <= 1e-8
+    )
+      return false;
+    return this.advance(seconds, geometry, playback, remaining);
+  }
+  private advance(
+    seconds: number,
+    geometry: PetGeometry,
+    playback?: PetPosePlayback | null,
+    remaining = Infinity,
+  ) {
     const dt = clamp(seconds, 0, 0.05);
     this.frame.strideLength =
       geometry.strideLength ?? this.settings.size * 0.22;
@@ -525,8 +559,13 @@ export class PetLocomotion {
     // Full-view transitions own their resource duration. Keep the current
     // trajectory and activity/rest clocks still until their last cel is drawn.
     // Manual holding above continues to follow the pointer during this time.
-    if (playback && playback.progress < 1) return false;
-    if (this.attached) return this.stepAttached(dt, geometry);
+    if (
+      playback &&
+      playback.progress < 1 &&
+      !(playback.motionBudget && this.attached?.stage === "resting")
+    )
+      return false;
+    if (this.attached) return this.stepAttached(dt, geometry, remaining);
     if (this.frame.state === "idle") {
       this.wait += dt;
       if (this.wait + 0.00001 < (this.settings.roam === "free" ? 7 : 17))
@@ -553,6 +592,7 @@ export class PetLocomotion {
     const floor = area.y + area.height - 4 - geometry.feet.y;
     if (this.frame.state === "walk") {
       this.x += this.frame.facing * 60 * speed * easing * dt;
+      this.limitTarget(remaining);
       if (this.x <= minX || this.x >= maxX) {
         this.x = clamp(this.x, minX, maxX);
         if (this.settings.edgeClimbing) {
@@ -567,6 +607,7 @@ export class PetLocomotion {
     } else if (this.frame.state === "climb") {
       this.x = this.frame.edge === "left" ? minX : maxX;
       this.y += this.vertical * 40 * speed * easing * dt;
+      this.limitTarget(remaining);
       const hitTop = this.y <= top;
       const hitFloor = this.vertical > 0 && this.y >= floor;
       this.y = clamp(this.y, top, floor);

@@ -3,7 +3,7 @@ import {
   assetPreparationLabel,
   assetUnavailableReason,
 } from "./assetReadiness";
-import type { DragEvent } from "react";
+import { useState, type DragEvent } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -11,11 +11,13 @@ import {
   FolderInput,
   Image,
   Music2,
+  Pencil,
   Trash2,
   Type,
   Video,
 } from "lucide-react";
 import type { VideoEditorAsset, VideoEditorAssetOrganization } from "./types";
+import { VideoEditorAssetRenameDialog } from "./VideoEditorAssetRenameDialog";
 import {
   type CompleteAssetOrganization,
   moveAssetInOrganization,
@@ -32,6 +34,7 @@ const iconFor = (kind: string) =>
         : Type;
 
 export function VideoEditorAssetRow({
+  projectId,
   asset,
   folderId,
   arranged,
@@ -53,6 +56,7 @@ export function VideoEditorAssetRow({
   organizeType,
   timelineType,
 }: {
+  projectId: string;
   asset: VideoEditorAsset;
   folderId: string | null;
   arranged: CompleteAssetOrganization;
@@ -74,6 +78,7 @@ export function VideoEditorAssetRow({
   organizeType: string;
   timelineType: string;
 }) {
+  const [renaming, setRenaming] = useState(false);
   const Icon = iconFor(asset.mediaKind);
   const ready = canEditAsset(asset);
   const processing = ["queued", "processing"].includes(asset.processingStatus);
@@ -163,6 +168,14 @@ export function VideoEditorAssetRow({
       </div>
       {organizeOpen ? (
         <div className="ve-asset-organize-menu" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            disabled={disabled}
+            onClick={() => setRenaming(true)}
+          >
+            <Pencil aria-hidden /> 重命名
+          </button>
           <div>
             <button
               role="menuitem"
@@ -218,6 +231,14 @@ export function VideoEditorAssetRow({
             </button>
           ))}
         </div>
+      ) : null}
+      {renaming ? (
+        <VideoEditorAssetRenameDialog
+          projectId={projectId}
+          asset={asset}
+          disabled={disabled}
+          onClose={() => setRenaming(false)}
+        />
       ) : null}
     </div>
   );

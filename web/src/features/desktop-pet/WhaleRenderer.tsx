@@ -33,6 +33,7 @@ import { createFigureGeometrySampler } from "./locomotion/measure";
 import { demoMotion, type MotionDemo } from "./locomotion/demo";
 import { readFrameSequences } from "./sequences/validation";
 import { createSequenceFigure } from "./sequences/figure";
+import { petViewportBounds } from "./sequences/viewport";
 
 type Props = {
   document: PetDocument;
@@ -364,21 +365,13 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
                 y: window.screenY + rect.top,
               };
             },
-            bounds: () => {
-              const width = element.clientWidth;
-              const height = element.clientHeight;
-              const scale = Math.min(
-                1.8,
-                Math.min(width / 260, height / 320) * 1.25,
-              );
-              return {
-                W: width,
-                H: height,
-                floorY:
-                  view === "center" ? height / 2 + 128 * scale : height - 8,
-                S: scale,
-              };
-            },
+            bounds: () =>
+              petViewportBounds(
+                element.clientWidth,
+                element.clientHeight,
+                view,
+                sequences,
+              ),
           },
         );
         controller.current = pet;

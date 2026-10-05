@@ -17,7 +17,23 @@ class VideoEditorDefaultEffects(BaseModel):
 
 class VideoEditorAssetPatchIn(BaseModel):
     expected_revision: int = Field(alias="expectedRevision", ge=0)
-    default_effects: VideoEditorDefaultEffects = Field(alias="defaultEffects")
+    default_effects: VideoEditorDefaultEffects | None = Field(default=None, alias="defaultEffects")
+    display_name: str | None = Field(
+        default=None, alias="displayName", min_length=1, max_length=255
+    )
+
+    @model_validator(mode="after")
+    def validate_changes(self) -> VideoEditorAssetPatchIn:
+        for field in ("display_name", "default_effects"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError("修改字段不能为 null")
+        if self.display_name is not None:
+            self.display_name = self.display_name.strip()
+            if not self.display_name:
+                raise ValueError("素材名称不能为空")
+        if self.default_effects is None and self.display_name is None:
+            raise ValueError("至少需要提供一个修改字段")
+        return self
 
 
 class VideoEditorAssetBakeCreateIn(BaseModel):

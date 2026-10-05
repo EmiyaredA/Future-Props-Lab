@@ -492,6 +492,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `POST /v1/video-editor/projects/{project_id}/open-folder`：在运行 Studio 的电脑上打开项目目录。
 - `GET /v1/video-editor/import-sources`：列出当前 Workspace 可复制到剪辑项目的文件库、视觉工坊与 Galgame 素材。
 - `GET/POST /v1/video-editor/projects/{project_id}/assets`：读取或上传项目素材；`POST .../assets/import` 将源文件物理复制为项目快照。
+- `PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}`：携带 `expectedRevision`，更新 `displayName`（去除首尾空白后非空，最多 255 字符）和／或 `defaultEffects`；未提供的字段保持原值，显式 null 或无修改字段返回 422。名称与默认效果共用素材 revision CAS，冲突返回 409 与当前素材快照。改名不修改原始文件名、文件内容或既有片段名称；跨 Workspace 或工程的素材按不存在处理。Python SDK 使用 `client.video.patch_asset(..., body={"expectedRevision": revision, "displayName": "镜头一"})`。
 - `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry`：重试 FFprobe、540p 代理、缩略图和波形生成。
 - `POST /v1/video-editor/projects/{project_id}/audio-seams/candidates`：提交当前 `expectedRevision` 与同轨相邻、同素材的 `fromClipId`/`toClipId`，只读分析整段可用源素材的音乐接点；候选位置需容得下 B 的完整源时长。返回最多三个候选源时间、局部波形、匹配依据和建议淡化时长。分析失败或无候选均不修改时间线。首版仅支持已就绪、未循环、未与画面链接的独立音频素材，最长 30 分钟。`alignAudioSeam` 原子操作应用选定源起点和淡化，保持 B 的播放时长并整体移动同轨后续片段及其关联组。
 - `GET /v1/video-editor/projects/{project_id}/timeline`：读取微秒级 16:9 多轨时间轴。

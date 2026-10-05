@@ -31075,7 +31075,27 @@
       "VideoEditorAssetPatchIn": {
         "properties": {
           "defaultEffects": {
-            "$ref": "#/components/schemas/VideoEditorDefaultEffects"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorDefaultEffects"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "displayName": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Displayname"
           },
           "expectedRevision": {
             "minimum": 0.0,
@@ -31084,8 +31104,7 @@
           }
         },
         "required": [
-          "expectedRevision",
-          "defaultEffects"
+          "expectedRevision"
         ],
         "title": "VideoEditorAssetPatchIn",
         "type": "object"

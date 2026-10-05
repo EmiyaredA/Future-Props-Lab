@@ -4919,7 +4919,8 @@ class VideoEditorAssetOut(WireModel):
     waveform_url: str | None = Field(default=None, alias='waveformUrl')
 
 class VideoEditorAssetPatchIn(WireModel):
-    default_effects: VideoEditorDefaultEffects = Field(default=..., alias='defaultEffects')
+    default_effects: VideoEditorDefaultEffects | None = Field(default=None, alias='defaultEffects')
+    display_name: str | None = Field(default=None, alias='displayName')
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
 
 class VideoEditorAvailableAssetListOut(WireModel):

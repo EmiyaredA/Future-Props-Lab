@@ -14,6 +14,11 @@ import type {
   SequenceProgress,
   SequenceSample,
 } from "./types";
+import {
+  sampleDistanceStage,
+  validDistanceStages,
+  type DistanceStage,
+} from "./distanceStages";
 
 type Playback = {
   clip: string;
@@ -26,6 +31,8 @@ type Playback = {
   begin: number;
   end: number;
   transition?: string;
+  distanceStage?: DistanceStage;
+  owner: number;
 };
 type SupportName = keyof NonNullable<SequenceFrame["supports"]>;
 type Support = {
@@ -68,6 +75,7 @@ export class SequencePlayer {
   private support: SupportPlayback | null = null;
   private rejectedSupport: SupportPlayback | null = null;
   private presenting = false;
+  private stageGeneration = 0;
 
   constructor(sequences: FrameSequences) {
     this.sequences = structuredClone(sequences);
@@ -104,6 +112,14 @@ export class SequencePlayer {
       const installed = install(sample);
       if (typeof installed !== "boolean")
         throw new Error("完整序列帧呈现必须返回同步安装结果");
+      if (!installed && !this.failure) {
+        this.playback = prior.playback;
+        this.last = prior.last;
+        this.failedRequest = prior.failedRequest;
+        this.progress = prior.progress;
+        this.support = prior.support;
+        this.rejectedSupport = prior.rejectedSupport;
+      }
       return installed ? sample : null;
     } catch (error: unknown) {
       this.playback = prior.playback;
@@ -134,7 +150,7 @@ export class SequencePlayer {
   }
 
   getMotionTransition(): SequenceProgress | null {
-    return this.progress ? { ...this.progress } : null;
+    return this.progress ? structuredClone(this.progress) : null;
   }
 
   /** Keeps the displayed cel, rebases both clocks, and cancels stale feedback. */
@@ -143,6 +159,14 @@ export class SequencePlayer {
       this.playback.start = null;
       this.playback.lastTime = null;
       this.playback.offset = this.playback.position;
+      this.playback.owner = ++this.stageGeneration;
+      if (this.playback.distanceStage) {
+        this.playback.distanceStage = {
+          ...this.playback.distanceStage,
+          phaseOrigin: null,
+          enteredAt: null,
+        };
+      }
     }
     this.failure = null;
     this.failedRequest = null;
@@ -182,6 +206,7 @@ export class SequencePlayer {
     const clip = this.sequences.clips[id];
     if (!clip) return "missing-clip";
     if (!clip.frames.length) return "missing-frame";
+    if (!validDistanceStages(clip)) return "invalid-frame";
     if (
       clip.distancePerCycle !== undefined &&
       (!clip.loop ||
@@ -232,6 +257,7 @@ export class SequencePlayer {
         phaseOrigin: 0,
         begin: 0,
         end: target.frames.length,
+        owner: ++this.stageGeneration,
       };
       return null;
     }
@@ -273,6 +299,7 @@ export class SequencePlayer {
       begin: index,
       end: segment.end,
       transition: link.id,
+      owner: ++this.stageGeneration,
     };
     return null;
   }
@@ -599,14 +626,48 @@ export class SequencePlayer {
           Math.max(position, 0),
           completedBridge ? duration(clip) : total,
         );
-    let remaining = run.position;
     let frameIndex = run.begin;
-    while (
-      frameIndex < run.end - 1 &&
-      remaining >= clip.frames[frameIndex].durationMs
-    ) {
-      remaining -= clip.frames[frameIndex].durationMs;
-      frameIndex++;
+    let stageReference: number | undefined;
+    if (clip.distanceAtFrame && !run.transition) {
+      const stage = sampleDistanceStage(
+        clip,
+        run.distanceStage,
+        input.t,
+        input.phase!,
+      );
+      if (!stage) return this.reject("invalid-support-motion", input.clip);
+      run.distanceStage = stage.state;
+      frameIndex = stage.index;
+      stageReference = stage.referenceDistance / clip.distancePerCycle!;
+      run.position = clip.frames
+        .slice(0, frameIndex)
+        .reduce((n, cel) => n + cel.durationMs, 0);
+      const id = `sequence-stage:${run.owner}:${run.clip}:${stage.state.cycle}:${frameIndex}`;
+      this.progress = {
+        id,
+        progress: stage.progress,
+        ...(input.travel
+          ? {
+              motionBudget: {
+                epoch: id,
+                remainingDIP: stage.remaining * (input.worldScale ?? 1),
+                confirmedTravel: {
+                  x: input.travel[0] * (input.worldScale ?? 1),
+                  y: input.travel[1] * (input.worldScale ?? 1),
+                },
+              },
+            }
+          : {}),
+      };
+    } else {
+      let remaining = run.position;
+      while (
+        frameIndex < run.end - 1 &&
+        remaining >= clip.frames[frameIndex].durationMs
+      ) {
+        remaining -= clip.frames[frameIndex].durationMs;
+        frameIndex++;
+      }
     }
     const frame = clip.frames[frameIndex];
     const project = (
@@ -660,6 +721,7 @@ export class SequencePlayer {
         .slice(0, frameIndex)
         .reduce((sum, cel) => sum + cel.durationMs, 0);
       const reference =
+        stageReference ??
         Math.floor(position / duration(clip)) + frameStart / duration(clip);
       const result = this.supportTranslation(
         input,

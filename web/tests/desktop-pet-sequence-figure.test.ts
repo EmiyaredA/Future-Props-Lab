@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSequenceFigure } from "@features/desktop-pet/sequences/figure";
+import { readFrameSequences } from "@features/desktop-pet/sequences/validation";
 import type {
   FrameSequences,
   SequenceFrame,
@@ -21,6 +22,157 @@ const cel = (texture: string, index: number): SequenceFrame => ({
     [50, 50],
   ],
   supports: { legFront: [texture === "walk" ? 80 - index * 60 : 80, 190] },
+});
+
+describe("whole sequence request pixel budget", () => {
+  const budgetFixture = (shared = false) => {
+    const clips: FrameSequences["clips"] = {
+      idle: { loop: true, frames: [cel(shared ? "a" : "idle", 0)] },
+      look: { loop: true, frames: [cel("a", 0)] },
+      sit: { loop: true, frames: [cel(shared ? "a" : "b", 0)] },
+    };
+    const transitions: FrameSequences["transitions"] = [];
+    for (const [from, to] of [
+      ["idle", "look"],
+      ["look", "idle"],
+      ["idle", "sit"],
+      ["sit", "idle"],
+      ["look", "sit"],
+    ]) {
+      const id = `${from}-${to}`;
+      clips[id] = {
+        loop: false,
+        frames: [clips[from].frames[0], clips[to].frames[0]],
+      };
+      transitions.push({ id, from, to, clip: id });
+    }
+    return readFrameSequences({ ...fixture(), clips, transitions })!;
+  };
+  const runner = (h: ReturnType<typeof setup>) => {
+    let t = 0;
+    return async (mode: string) => {
+      for (let i = 0; i < 14; i++) {
+        h.draw((t += 0.025), mode);
+        await settle();
+      }
+    };
+  };
+
+  it.each([false, true])(
+    "rejects the same oversized working set with warm cache=%s and retains the actual cel",
+    async (warm) => {
+      dimensions.set("a", [3000, 3000]);
+      dimensions.set("b", [3000, 3000]);
+      const h = setup(budgetFixture());
+      const visit = runner(h);
+      await visit("idle");
+      if (warm) {
+        await visit("look");
+        await visit("idle");
+        await visit("sit");
+        await visit("idle");
+      }
+      await visit("look");
+      expect(h.figure.getMotionFailure?.()).toBeNull();
+      const original = h.latest();
+      const originalBox = h.box();
+      const paintCount = h.drawImage.mock.calls.length;
+      const baseCount = h.baseDraw.mock.calls.length;
+      await visit("sit");
+      expect(h.figure.getAssetFailure?.()).toBe("完整动作图集超过解码预算");
+      expect(h.figure.getMotionFailure?.()).toBe("完整动作图集超过解码预算");
+      expect(h.figure.getMotionTransition?.()).toBeNull();
+      expect(h.drawImage).toHaveBeenCalledTimes(paintCount);
+      expect(h.latest()).toEqual(original);
+      expect(h.box()).toEqual(originalBox);
+      expect(h.baseDraw).toHaveBeenCalledTimes(baseCount);
+      expect(requests.filter((path) => decodeKey(path) === "b")).toHaveLength(
+        1,
+      );
+      h.figure.cancelMotionPlayback?.();
+      await visit("idle");
+      expect(h.figure.getAssetFailure?.()).toBe("完整动作图集超过解码预算");
+      expect(h.drawImage).toHaveBeenCalledTimes(paintCount);
+      h.figure.retryAssetLoad?.();
+      expect(h.figure.getAssetFailure?.()).toBe("完整动作图集超过解码预算");
+      await visit("idle");
+      expect(h.figure.getAssetFailure?.()).toBeNull();
+      expect(decodeKey(h.latest()[0].src)).toBe("idle");
+      await visit("look");
+      await visit("sit");
+      expect(h.figure.getAssetFailure?.()).toBe("完整动作图集超过解码预算");
+      dimensions.set("a", [600, 200]);
+      dimensions.set("b", [600, 200]);
+      await h.figure.setScheme("maid");
+      expect(h.figure.getAssetFailure?.()).toBe("完整动作图集超过解码预算");
+      await visit("sit");
+      expect(h.figure.getAssetFailure?.()).toBeNull();
+      expect(h.latest()[0].src).toBe("/authorized/schemes/maid/tex/b.png");
+      h.figure.dispose?.();
+    },
+  );
+
+  it.each([false, true])(
+    "accepts the exact 16M working set with warm cache=%s",
+    async (warm) => {
+      dimensions.set("a", [2048, 4096]);
+      dimensions.set("b", [2048, 4096]);
+      const h = setup(budgetFixture());
+      const visit = runner(h);
+      await visit("idle");
+      if (warm) {
+        await visit("sit");
+        await visit("idle");
+      }
+      await visit("look");
+      await visit("sit");
+      expect(h.figure.getMotionFailure?.()).toBeNull();
+      expect(decodeKey(h.latest()[0].src)).toBe("b");
+      expect(requests.filter((path) => decodeKey(path) === "b")).toHaveLength(
+        1,
+      );
+      h.figure.dispose?.();
+    },
+  );
+
+  it("counts a texture shared by actual, target and bridge only once", async () => {
+    dimensions.set("a", [3000, 3000]);
+    const h = setup(budgetFixture(true));
+    const visit = runner(h);
+    await visit("idle");
+    await visit("look");
+    await visit("sit");
+    expect(h.figure.getMotionFailure?.()).toBeNull();
+    expect(requests).toEqual(["/authorized/tex/a.png"]);
+    expect(h.drawImage).toHaveBeenCalledTimes(1);
+    h.figure.dispose?.();
+  });
+
+  it("a new scheme can recover within budget; an obsolete oversized decode cannot poison it", async () => {
+    dimensions.set("a", [3000, 3000]);
+    dimensions.set("b", [3000, 3000]);
+    const h = setup(budgetFixture());
+    const visit = runner(h);
+    await visit("idle");
+    await visit("look");
+    const old = defer("b");
+    await visit("sit");
+    expect(h.figure.getMotionTransition?.()?.progress).toBe(0);
+    h.figure.cancelMotionPlayback?.();
+    await h.figure.setScheme("maid");
+    dimensions.set("a", [600, 200]);
+    dimensions.set("b", [600, 200]);
+    pending.delete("b");
+    old.resolve();
+    await settle();
+    await visit("sit");
+    expect(h.figure.getMotionFailure?.()).toBeNull();
+    expect(h.latest()[0].src).toBe("/authorized/schemes/maid/tex/b.png");
+    expect(
+      requests.filter((path) => path === "/authorized/tex/b.png"),
+    ).toHaveLength(1);
+    h.figure.dispose?.();
+  });
 });
 const fixture = (): FrameSequences => {
   const idle = cel("idle", 0),
