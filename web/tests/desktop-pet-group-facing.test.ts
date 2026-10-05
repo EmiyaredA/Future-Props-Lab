@@ -109,8 +109,16 @@ function setup(scale: number, withHeld = true, sequences = pack(withHeld)) {
     clearRect: vi.fn(),
     drawImage,
   } as unknown as CanvasRenderingContext2D;
+  // Hover now samples a separate CPU pixel; it is not a newly painted cel.
+  const pixelContext = {
+    clearRect: vi.fn(),
+    drawImage: vi.fn(),
+    getImageData: () => ({ data: new Uint8ClampedArray([0, 0, 0, 255]) }),
+  } as unknown as CanvasRenderingContext2D;
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-    (() => context) as unknown as HTMLCanvasElement["getContext"],
+    function (this: HTMLCanvasElement) {
+      return this.width === 1 ? pixelContext : context;
+    } as unknown as HTMLCanvasElement["getContext"],
   );
   const base: LoadedWhaleFigure = {
     fixedScale: true,

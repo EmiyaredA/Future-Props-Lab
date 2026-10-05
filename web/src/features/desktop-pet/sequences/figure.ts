@@ -8,6 +8,7 @@ import type {
 } from "../whale-vendor/whale/figure.js";
 import { SequencePlayer, type SequencePresentationRequest } from "./player";
 import { validateSequenceImages } from "./validation";
+import { headHitRegion } from "../interaction";
 import type {
   FrameSequences,
   SequenceSample,
@@ -53,6 +54,10 @@ export function createSequenceFigure(options: {
   let displayed: SequenceSample | null = null;
   let failure: string | null = null;
   let assetError: string | null = null;
+  let hitError: string | null = null;
+  let hitSurface: HTMLCanvasElement | null = null;
+  let hitContext: CanvasRenderingContext2D | null = null;
+  let hitFailedImage: HTMLImageElement | null = null;
   let progress: SequenceProgress | null = null;
   let loading: Promise<void> | null = null;
   let revision = 0;
@@ -73,6 +78,9 @@ export function createSequenceFigure(options: {
   const supportedEdges = sequenceEdges(sequences);
 
   function retryAssetLoad() {
+    hitError = null;
+    hitFailedImage = null;
+    if (hitSurface) hitSurface.width = 1;
     if (disposed || !failure) return;
     failure = null;
     progress = null;
@@ -181,6 +189,7 @@ export function createSequenceFigure(options: {
           continue;
         images.delete(key);
         if (painted?.image === image) painted = null;
+        if (hitFailedImage === image) hitFailedImage = null;
         cached -= image.naturalWidth * image.naturalHeight;
       }
     })()
@@ -197,8 +206,65 @@ export function createSequenceFigure(options: {
     return false;
   }
 
+  function hitTest(point: { x: number; y: number }): boolean | null {
+    if (disposed || !Number.isFinite(point.x) || !Number.isFinite(point.y))
+      return false;
+    if (!displayed) return base.hitTest?.(point) ?? null;
+    // Requested/decoded cels do not own hits until their actual paint commits.
+    if (!painted || painted.image === hitFailedImage) return false;
+    const [x, y, width, height] = displayed.modelBox;
+    const u = (point.x - x - displayed.translation[0]) / width;
+    const v = (point.y - y - displayed.translation[1]) / height;
+    if (!(u >= 0 && u < 1 && v >= 0 && v < 1)) return false;
+    const [sx, sy, sw, sh] = painted.rect;
+    try {
+      if (!hitSurface) {
+        hitSurface = document.createElement("canvas");
+        hitSurface.width = hitSurface.height = 1;
+      }
+      hitContext ??= hitSurface.getContext("2d", {
+        willReadFrequently: true,
+      });
+      if (!hitContext) throw new Error("完整序列帧点击区域不可用");
+      hitContext.clearRect(0, 0, 1, 1);
+      hitContext.drawImage(
+        painted.image,
+        sx + Math.floor(u * sw),
+        sy + Math.floor(v * sh),
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+      );
+      const hit = hitContext.getImageData(0, 0, 1, 1).data[3] > 24;
+      hitError = null;
+      hitFailedImage = null;
+      return hit;
+    } catch {
+      hitFailedImage = painted.image;
+      hitError = "完整序列帧点击区域读取失败";
+      // A tainted sampler must not poison the next successfully painted image.
+      if (hitSurface) hitSurface.width = 1;
+      return false;
+    }
+  }
+
   return {
     fixedScale: true,
+    hitTest,
+    classifyHit(point) {
+      if (disposed || !Number.isFinite(point.x) || !Number.isFinite(point.y))
+        return null;
+      if (!displayed) {
+        // A blank/loading renderer is not unsupported legacy artwork.
+        if (!owner || !standing.hasChildNodes()) return null;
+        return base.classifyHit?.(point);
+      }
+      if (!hitTest(point)) return null;
+      return headHitRegion(point, displayed.anchors.head);
+    },
     groupFacing() {
       return 1;
     },
@@ -217,7 +283,7 @@ export function createSequenceFigure(options: {
         : (base.pickupPoint?.() ?? null);
     },
     getAssetFailure() {
-      return assetError;
+      return assetError ?? hitError;
     },
     retryAssetLoad,
     getMotionFailure() {
@@ -284,6 +350,11 @@ export function createSequenceFigure(options: {
       revision += 1;
       images.clear();
       painted = null;
+      if (hitSurface) hitSurface.width = hitSurface.height = 0;
+      hitSurface = null;
+      hitContext = null;
+      hitFailedImage = null;
+      hitError = null;
       base.dispose?.();
     },
     draw(group, face, frame) {

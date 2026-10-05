@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { PetDocument } from "./api";
 import type { PetRendererHandle } from "./PetRenderer";
+import { reactionForHit } from "./interaction";
 import { DesktopPetFigure } from "./DesktopPetFigure";
 import {
   EVENT_LABELS,
@@ -222,11 +223,17 @@ export function EditorStage({
             }}
             onClick={(event) => {
               const bounds = event.currentTarget.getBoundingClientRect();
-              preview.play(
-                event.clientY < bounds.top + bounds.height * 0.48
-                  ? "pet"
-                  : "click",
+              const target = figureRef.current;
+              const reaction = reactionForHit(
+                event.detail === 0
+                  ? undefined
+                  : target
+                    ? target.classifyHit?.(event.clientX, event.clientY)
+                    : null,
+                event.clientY,
+                bounds,
               );
+              if (reaction) preview.play(reaction);
             }}
           >
             {figure}

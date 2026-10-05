@@ -1515,7 +1515,43 @@ export function createPet(els, opts) {
       y: c.AY + x * Math.sin(r) + y * Math.cos(r),
     };
   }
+  function modelHitPoint(p) {
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
+    const c = pet.xf;
+    if (
+      !c ||
+      !Number.isFinite(c.kx) ||
+      !Number.isFinite(c.ky) ||
+      !c.kx ||
+      !c.ky
+    )
+      return null;
+    // Hit the transform actually installed on SVG, without changing the
+    // unrounded physical registration used by contacts and handoffs.
+    const kx = Number(c.kx.toFixed(4)),
+      ky = Number(c.ky.toFixed(4));
+    if (!kx || !ky) return null;
+    const dx = p.x - f(c.AX),
+      dy = p.y - f(c.AY),
+      r = (f(c.rot) * Math.PI) / 180;
+    const model = {
+      x: c.ax + (dx * Math.cos(r) + dy * Math.sin(r)) / kx,
+      y: c.ay + (-dx * Math.sin(r) + dy * Math.cos(r)) / ky,
+    };
+    return Number.isFinite(model.x) && Number.isFinite(model.y) ? model : null;
+  }
+  function classifyHit(p) {
+    const model = modelHitPoint(p);
+    return model ? custom?.classifyHit?.(model) : null;
+  }
   function hitPet(p) {
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return false;
+    if (custom?.hitTest) {
+      const model = modelHitPoint(p);
+      if (!model) return false;
+      const hit = custom.hitTest(model);
+      if (hit !== null) return hit === true;
+    }
     const c = toStage(128, 128);
     return Math.hypot(p.x - c.x, p.y - c.y) < 108 * S;
   }
@@ -2542,6 +2578,7 @@ export function createPet(els, opts) {
     walkTo,
     toStage,
     hitPet,
+    classifyHit,
     busy,
     pointerDown,
     pointerMove,

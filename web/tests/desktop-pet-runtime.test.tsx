@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   refresh: null as (() => void) | null,
   revision: 1,
   legacyHuman: false,
+  hitRegion: undefined as "head" | "body" | null | undefined,
 }));
 vi.mock("../src/features/desktop-pet/usePetPreview", () => ({
   usePetPreview: () => ({
@@ -51,7 +52,10 @@ vi.mock("../src/features/desktop-pet/DesktopPetFigure", () => ({
     }: { eventName: string; document: { revision: number } },
     ref,
   ) {
-    useImperativeHandle(ref, () => ({ hitTest: () => true }));
+    useImperativeHandle(ref, () => ({
+      hitTest: () => true,
+      classifyHit: () => state.hitRegion,
+    }));
     return (
       <div data-testid="figure" data-revision={document.revision}>
         {eventName}
@@ -70,6 +74,7 @@ beforeEach(() => {
   state.refresh = null;
   state.revision = 1;
   state.legacyHuman = false;
+  state.hitRegion = undefined;
   vi.spyOn(Math, "random").mockReturnValue(0.9);
   move
     .mockReset()
@@ -111,6 +116,33 @@ async function mount() {
   fireEvent.pointerMove(view.container.firstElementChild!);
   return view;
 }
+
+test.each(["head", "body", null, undefined] as const)(
+  "short native taps use renderer classification %s rather than the host head band",
+  async (region) => {
+    state.roam = "off";
+    state.hitRegion = region;
+    const view = await mount();
+    const host = view.container.firstElementChild as HTMLElement;
+    host.setPointerCapture = vi.fn();
+    // Client Y=242 is the native held face below the previous top-48% head band.
+    for (const type of ["pointerdown", "pointerup"])
+      fireEvent(
+        host,
+        new MouseEvent(type, {
+          bubbles: true,
+          clientX: 223,
+          clientY: 242,
+          screenX: 223,
+          screenY: 242,
+        }),
+      );
+    expect(screen.getByTestId("figure").textContent).toBe(
+      region === "head" ? "pet" : region === null ? "idle" : "click",
+    );
+    view.unmount();
+  },
+);
 
 test("legacy human resource remains draggable but does not invoke old autonomous motion", async () => {
   state.legacyHuman = true;

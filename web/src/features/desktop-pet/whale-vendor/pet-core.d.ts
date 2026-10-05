@@ -1,3 +1,5 @@
+import type { PetHitRegion } from "../interaction";
+
 /** Private renderer viewport; centerX is an in-place camera pivot, not a movement limit. */
 export interface PetViewportBounds {
   W: number;
@@ -17,6 +19,7 @@ export interface WhaleController {
     value: import("@platform/petMotion").PetMotionFrame | null,
   ): void;
   hitPet(point: { x: number; y: number }): boolean;
+  classifyHit(point: { x: number; y: number }): PetHitRegion | undefined;
   pointerMove(point: { x: number; y: number }): string;
   pointerLeave(): void;
   act(name: string): boolean;

@@ -556,6 +556,10 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 私有 `WhaleFigure.groupFacing` 区分原画显示基准与请求运动方向；core 在构造和推进时仅接受确切 ±1，完整帧和已停用旧运动的版本 1 正面人物固定 +1，避免鼠标追随压窄／镜像后与拎起输入突变。左右完整帧仍由片段选择负责，缺少能力不合成原画；未声明或非法值保持旧 figure 策略。`sequences/figure.ts` 按实际 Image、裁切、原生画布尺寸与配色复用位图，当前样本、几何、抓点、时钟及错误反馈仍逐次提交；图集淘汰和最终释放解除引用，不扩大解码缓存预算。
 
+`WhaleFigure.hitTest` 是可选的模型坐标命中入口；`whale-vendor/pet-core.js` 拥有已显示根变换的逆投影，明确的 false 不再回退旧圆形，null 或未实现时保留基础角色判定。`sequences/figure.ts` 仅对已成功绘制的完整帧，按实际模型框、平移与图集原矩形在复用的 1×1 CPU 画布采样原图 alpha；待加载或失败的新帧不取得旧画面的命中所有权，读取失败拒绝命中并通过既有素材反馈显示原因。命中检查不重解码图片、不读回主渲染画布、不重建角色，也不修改原图透明度。
+
+`desktop-pet/interaction.ts` 定义私有头部／身体／未命中分类及旧入口兼容，按已绘原帧冠顶至下巴轴建立有限头部椭圆；完整帧先验证可见像素，再分类。core 复用同一已安装变换逆投影，通过公开 `classifyHit` 交给渲染器；`PetRuntime.tsx` 和 `EditorStage.tsx` 只消费分类，不读取引擎内部或调试 DOM。null 是权威未命中，只有 undefined 表示基础角色或 Live2D 未实现该分类并沿用原热区；编辑器键盘试听保留原行为，鼠标透明空白不触发事件。
+
 `sequences/player.ts` 通过同步 `present` 接口拥有采样与安装的提交边界，只快照动态播放、失败、进度和支撑状态，不逐帧复制资源描述；`figure.ts` 在 Canvas／DOM 安装成功时提交显示样本与时钟，安装异常使位图认证失效并恢复未显示的采样状态。正常等待与业务拒绝不回滚，隐藏基础表面释放在提交之后执行；原异常不被吞掉，不以自动取消、网络重试或放宽支撑校验代替恢复。
 
 `backend/app/apps/desktop_pet/part_registration.py` 与 `web/src/features/desktop-pet/partRegistration.ts` 拥有静态素材登记与包／内部网格边界：可选 `restTransform` 仅绑定经过完整版本 2 校验的运行或中间姿势刚性骨段，角度和锚点有限，不用于头部、躯干或蒙皮。`whale-vendor/rig/rig.js` 在 GPU 装配时一次旋转已登记素材的静态顶点，原 UV、物理骨段及后续动画角不变；未知 JSON `mesh` 和未支持的 `restAngle` 不能进入包。该兼容能力不替代完整序列的新动作制作；未声明时旧包保留原行为。

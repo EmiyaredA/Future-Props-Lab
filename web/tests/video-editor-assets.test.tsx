@@ -118,9 +118,8 @@ beforeEach(() => {
 describe("video editor asset panel", () => {
   async function openRename(user: ReturnType<typeof userEvent.setup>) {
     await user.click(
-      screen.getByRole("button", { name: `整理素材“${asset.displayName}”` }),
+      screen.getByRole("button", { name: `重命名素材“${asset.displayName}”` }),
     );
-    await user.click(screen.getByRole("menuitem", { name: "重命名" }));
     return screen.getByRole("textbox", { name: "素材名称" });
   }
 
@@ -134,6 +133,7 @@ describe("video editor asset panel", () => {
       revision: 8,
     });
     const input = await openRename(user);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(input).toHaveValue(asset.displayName);
     expect(input).toHaveAttribute("maxlength", "255");
     await user.clear(input);
@@ -230,6 +230,9 @@ describe("video editor asset panel", () => {
     renderPanel({ disabled: true });
     expect(
       screen.getByRole("button", { name: `整理素材“${asset.displayName}”` }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: `重命名素材“${asset.displayName}”` }),
     ).toBeDisabled();
   });
 

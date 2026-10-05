@@ -9,6 +9,7 @@ import {
 import { getChat, getDocument, type PetDocument, type PetHabits } from "./api";
 import { DesktopPetFigure } from "./DesktopPetFigure";
 import type { PetRendererHandle } from "./PetRenderer";
+import { reactionForHit } from "./interaction";
 import { usePetPreview } from "./usePetPreview";
 import { playPetTone } from "./sound";
 import { playbackDuration, type PetEvent } from "./playback";
@@ -356,11 +357,13 @@ export function PetRuntime({ projectId }: { projectId: string }) {
     if (started.moved && habits.draggable) trigger("drop");
     else {
       const bounds = characterHost.current?.getBoundingClientRect();
-      trigger(
-        bounds && event.clientY < bounds.top + bounds.height * 0.48
-          ? "pet"
-          : "click",
+      const target = renderer.current;
+      const reaction = reactionForHit(
+        target ? target.classifyHit?.(event.clientX, event.clientY) : null,
+        event.clientY,
+        bounds,
       );
+      if (reaction) trigger(reaction);
     }
   };
   const cycleSkin = () => {

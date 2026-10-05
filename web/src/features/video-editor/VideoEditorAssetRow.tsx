@@ -137,6 +137,20 @@ export function VideoEditorAssetRow({
         <div className="ve-asset-controls">
           <button
             type="button"
+            className="ve-asset-rename"
+            disabled={disabled}
+            aria-label={`重命名素材“${asset.displayName}”`}
+            title="重命名"
+            onClick={() => {
+              onCloseOrganize();
+              setRenaming(true);
+            }}
+          >
+            <Pencil aria-hidden />
+            <span>重命名</span>
+          </button>
+          <button
+            type="button"
             disabled={!ready || disabled}
             aria-label={`将“${asset.displayName}”添加到时间轴`}
             title={ready ? "添加到时间轴" : assetUnavailableReason(asset)}

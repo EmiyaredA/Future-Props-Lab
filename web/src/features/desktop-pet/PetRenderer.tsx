@@ -12,6 +12,7 @@ import { idlePose } from "@shared/live2d/idle";
 import { evaluate, parameterValues } from "@shared/live2d/pose";
 import type { CharacterDocument } from "@shared/live2d/types";
 import type { PetDocument } from "./api";
+import type { PetHitRegion } from "./interaction";
 import type { PetGeometry, PetPosePlayback } from "@platform/petMotion";
 import {
   live2dPlayback,
@@ -21,6 +22,8 @@ import {
 
 export type PetRendererHandle = {
   hitTest: (x: number, y: number) => boolean;
+  /** null is a painted miss; undefined/absent only means legacy classification is unsupported. */
+  classifyHit?: (x: number, y: number) => PetHitRegion | undefined;
   pointerMove?: (x: number, y: number) => void;
   geometry?: () => PetGeometry | null;
   placementDelta?: () => { x: number; y: number };

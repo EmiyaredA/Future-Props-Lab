@@ -276,6 +276,13 @@ export const WhaleRenderer = forwardRef<PetRendererHandle, Props>(
           controller.current?.hitPet({ x: x - bounds.left, y: y - bounds.top }),
         );
       },
+      classifyHit(x, y) {
+        const bounds = host.current?.getBoundingClientRect();
+        const pet = controller.current;
+        return bounds && pet
+          ? pet.classifyHit({ x: x - bounds.left, y: y - bounds.top })
+          : null;
+      },
       pointerMove(x, y) {
         const bounds = host.current?.getBoundingClientRect();
         if (bounds)

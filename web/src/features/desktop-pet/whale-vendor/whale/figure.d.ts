@@ -1,5 +1,6 @@
 import type { PetMotionFrame, PetPosePlayback } from "@platform/petMotion";
 import type { ArticulationFrame } from "../../locomotion/articulation";
+import type { PetHitRegion } from "../../interaction";
 export type WhaleFrame = ArticulationFrame & {
   /** Registered model-space pickup, latched for one hold; not the eased clicked point. */
   heldPickupPoint?: [number, number] | null;
@@ -29,6 +30,10 @@ export type WhaleFaceState = {
 };
 export interface WhaleFigure {
   fixedScale?: boolean;
+  /** Current painted model pixel; null delegates visible base artwork to legacy hit geometry. */
+  hitTest?(point: { x: number; y: number }): boolean | null;
+  /** Current painted head/body or authoritative miss; undefined only for unsupported base artwork. */
+  classifyHit?(point: { x: number; y: number }): PetHitRegion | undefined;
   /** Fixed painted model/world basis (only ±1); omitted keeps legacy turn squash. */
   groupFacing?(): number;
   groupTilt?(mode: string, tilt: number, lean: number): number;
