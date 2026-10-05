@@ -1,9 +1,11 @@
+import { usePreviewTransform } from "./usePreviewTransform";
+import { VideoEditorTransformBox } from "./VideoEditorTransformBox";
+import { transformAt, type TransformDraft } from "./transformModel";
 import { VideoEditorTextLayer } from "./VideoEditorTextLayer";
 import { VideoEditorSourceMonitor } from "./VideoEditorSourceMonitor";
-import {
-  paintChromaCanvas,
-  recordChromaDuplicateFrameSkip,
-} from "./chromaCanvas";
+import { syncMediaClock } from "./previewClock";
+import { VideoEditorMediaLayer } from "./VideoEditorMediaLayer";
+import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
   useEffect,
@@ -28,7 +30,6 @@ import { exactFramePath, exactFrameUrl, uploadVideoEditorAsset } from "./api";
 import {
   audioSeamGainAt,
   audioSeamFilterAt,
-  clipOpacityAt,
   clipAudioGainAt,
   clipPropertyAt,
   clipSourceTimeUs,
@@ -38,9 +39,9 @@ import {
 } from "./editorModel";
 import {
   previewMediaGeometry,
+  previewLayerStyle,
   VIDEO_EDITOR_CANVAS_HEIGHT,
   VIDEO_EDITOR_CANVAS_WIDTH,
-  type VideoProxyCrop,
 } from "./previewGeometry";
 import {
   eyelidOverlayPaths,
@@ -54,193 +55,12 @@ import type {
   VideoEditorOperation,
 } from "./types";
 
-/** Visual sync can stay tight; small frame jumps are less jarring than audio chops. */
-const PREVIEW_VIDEO_SYNC_TOLERANCE_S = 0.12;
 /**
  * Audio seeks flush the decoder buffer and sound like stutter. Preview playhead
  * is wall-clock rAF while media runs on its own clock, so under decode load they
  * drift; tolerate more before correcting, and never stack seeks.
  */
 const PREVIEW_AUDIO_SYNC_TOLERANCE_S = 0.45;
-
-function syncMediaClock(
-  node: HTMLMediaElement,
-  targetSeconds: number,
-  {
-    playing,
-    playStarted,
-    toleranceSeconds,
-  }: {
-    playing: boolean;
-    playStarted: boolean;
-    toleranceSeconds: number;
-  },
-) {
-  if (node.seeking) return;
-  const drift = Math.abs(node.currentTime - targetSeconds);
-  if (!playing || playStarted || drift > toleranceSeconds) {
-    node.currentTime = Math.max(0, targetSeconds);
-  }
-}
-
-function ProxyVideo({
-  source,
-  clip,
-  localUs,
-  playing,
-  crop,
-  chromaKey,
-}: {
-  source: string;
-  clip: VideoEditorClip;
-  localUs: number;
-  playing: boolean;
-  crop: VideoProxyCrop;
-  chromaKey?: VideoEditorClip["chromaKey"];
-}) {
-  const video = useRef<HTMLVideoElement>(null);
-  const keyedCanvas = useRef<HTMLCanvasElement>(null);
-  const wasPlayingRef = useRef(false);
-  useEffect(() => {
-    const node = video.current;
-    if (!node) return;
-    const target = clipSourceTimeUs(clip, localUs) / 1_000_000;
-    const rate = clip.playbackRate ?? 1;
-    if (node.playbackRate !== rate) node.playbackRate = rate;
-    const playStarted = playing && !wasPlayingRef.current;
-    wasPlayingRef.current = playing;
-    syncMediaClock(node, target, {
-      playing,
-      playStarted,
-      toleranceSeconds: PREVIEW_VIDEO_SYNC_TOLERANCE_S,
-    });
-  }, [clip, localUs, playing]);
-  useEffect(() => {
-    const node = video.current;
-    if (!node) return;
-    if (playing) void node.play().catch(() => undefined);
-    else node.pause();
-  }, [playing]);
-  useEffect(() => {
-    if (!chromaKey?.enabled) return;
-    const node = video.current;
-    const canvas = keyedCanvas.current;
-    if (!node || !canvas) return;
-    let cancelled = false;
-    let rafId = 0;
-    let vfcId = 0;
-    let lastMediaTime = Number.NaN;
-    const supportsVfc =
-      typeof node.requestVideoFrameCallback === "function" &&
-      typeof node.cancelVideoFrameCallback === "function";
-    const paintOnce = (mediaTime?: number) => {
-      if (!node.videoWidth || !node.videoHeight) return;
-      if (
-        mediaTime !== undefined &&
-        Number.isFinite(lastMediaTime) &&
-        mediaTime === lastMediaTime
-      ) {
-        recordChromaDuplicateFrameSkip();
-        return;
-      }
-      if (mediaTime !== undefined) lastMediaTime = mediaTime;
-      paintChromaCanvas(
-        canvas,
-        node,
-        node.videoWidth,
-        node.videoHeight,
-        chromaKey,
-      );
-    };
-    const schedule = () => {
-      if (cancelled || !playing) return;
-      if (supportsVfc) {
-        vfcId = node.requestVideoFrameCallback((_now, meta) => {
-          if (cancelled) return;
-          paintOnce(meta.mediaTime);
-          schedule();
-        });
-        return;
-      }
-      rafId = requestAnimationFrame(() => {
-        if (cancelled) return;
-        paintOnce();
-        schedule();
-      });
-    };
-    const onMediaEvent = () => {
-      lastMediaTime = Number.NaN;
-      paintOnce();
-    };
-    node.addEventListener("loadeddata", onMediaEvent);
-    node.addEventListener("seeked", onMediaEvent);
-    paintOnce();
-    schedule();
-    return () => {
-      cancelled = true;
-      if (supportsVfc) node.cancelVideoFrameCallback(vfcId);
-      else cancelAnimationFrame(rafId);
-      node.removeEventListener("loadeddata", onMediaEvent);
-      node.removeEventListener("seeked", onMediaEvent);
-    };
-  }, [chromaKey, playing, source]);
-  const placement = {
-    left: `${crop.leftPercent}%`,
-    top: `${crop.topPercent}%`,
-    width: `${crop.widthPercent}%`,
-    height: `${crop.heightPercent}%`,
-  };
-  return (
-    <>
-      <video
-        ref={video}
-        muted
-        src={source}
-        preload="auto"
-        style={{
-          ...placement,
-          visibility: chromaKey?.enabled ? "hidden" : "visible",
-        }}
-      />
-      {chromaKey?.enabled ? (
-        <canvas
-          ref={keyedCanvas}
-          className="ve-keyed-media"
-          style={placement}
-          aria-hidden
-        />
-      ) : null}
-    </>
-  );
-}
-
-function ChromaImage({
-  source,
-  chromaKey,
-}: {
-  source: string;
-  chromaKey: NonNullable<VideoEditorClip["chromaKey"]>;
-}) {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const node = new window.Image();
-    node.onload = () => {
-      if (canvas.current)
-        paintChromaCanvas(
-          canvas.current,
-          node,
-          node.naturalWidth,
-          node.naturalHeight,
-          chromaKey,
-        );
-    };
-    node.src = source;
-    return () => {
-      node.onload = null;
-    };
-  }, [source, chromaKey]);
-  return <canvas ref={canvas} className="ve-keyed-image" aria-hidden />;
-}
 
 type PreviewAudioChain = {
   id: string;
@@ -416,6 +236,8 @@ export function VideoEditorPreview({
   playing,
   setPlaying,
   selectedClipId,
+  selectedClipIds,
+  onTransformDraft,
   preciseFrame,
   onPreciseFrameChange,
   onFrameSaved,
@@ -427,7 +249,7 @@ export function VideoEditorPreview({
 }: {
   onSelectClip?: (clipId: string) => void;
   commit?: (
-    redo: VideoEditorOperation[],
+    redo: VideoEditorOperation[] | TimelineEditBuilder,
     undo?: VideoEditorOperation[],
   ) => Promise<void>;
   saving?: boolean;
@@ -440,6 +262,8 @@ export function VideoEditorPreview({
   playing: boolean;
   setPlaying: (value: boolean | ((value: boolean) => boolean)) => void;
   selectedClipId?: string;
+  selectedClipIds?: string[];
+  onTransformDraft?: (draft: TransformDraft | undefined) => void;
   preciseFrame: boolean;
   onPreciseFrameChange: (value: boolean) => void;
   onFrameSaved?: () => void | Promise<unknown>;
@@ -491,6 +315,55 @@ export function VideoEditorPreview({
       ),
     [playheadUs, timeline.document.tracks, timeline.document.transitions],
   );
+  const selectedLayer = visualLayers.find(
+    ({ clip }) =>
+      clip.id === selectedClipId &&
+      ["video", "image", "color"].includes(clip.kind) &&
+      playheadUs >= clip.timelineStartUs &&
+      playheadUs < clip.timelineStartUs + clip.durationUs,
+  );
+  const selectedGeometry = selectedLayer
+    ? previewMediaGeometry(
+        selectedLayer.clip,
+        assetMap.get(selectedLayer.clip.assetId ?? ""),
+        { width: canvasWidth, height: canvasHeight },
+      )
+    : undefined;
+  const transformGeometry =
+    selectedGeometry && selectedLayer
+      ? {
+          ...selectedGeometry,
+          flipX: selectedLayer.clip.flipX,
+          multiplier: selectedLayer.effect.scaleMultiplier,
+        }
+      : undefined;
+  const transformControl = usePreviewTransform({
+    clip: selectedLayer?.clip,
+    localUs: selectedLayer?.localUs ?? 0,
+    geometry: transformGeometry,
+    revision: timeline.revision,
+    playheadUs,
+    stageRef,
+    canvasWidth,
+    canvasHeight,
+    disabled:
+      !canWrite ||
+      saving ||
+      playing ||
+      Boolean(previewingAsset) ||
+      (selectedClipIds?.length ?? 1) > 1 ||
+      Boolean(
+        timeline.document.tracks?.find(
+          (track) => track.id === selectedLayer?.clip.trackId,
+        )?.locked,
+      ),
+    commit,
+    onDraft: onTransformDraft,
+    onStart: () => {
+      setPlaying(false);
+      setCompareEnabled(false);
+    },
+  });
   const transitionOverlay = mergeTransitionOverlay(visualLayers);
   const audioChains = useMemo(
     () => buildPreviewAudioChains(timeline),
@@ -661,7 +534,7 @@ export function VideoEditorPreview({
             aria-label="全屏预览"
             title="全屏预览"
             onClick={() => {
-              const node = stageRef.current;
+              const node = stageRef.current?.parentElement;
               if (!node) return;
               if (document.fullscreenElement) {
                 void document.exitFullscreen();
@@ -682,221 +555,174 @@ export function VideoEditorPreview({
       >
         <div
           ref={stageRef}
-          className="ve-stage"
+          className="ve-stage ve-transform-stage"
           style={{
             aspectRatio: canvasWidth / canvasHeight,
             background: timeline.document.settings?.backgroundColor ?? "#000",
           }}
         >
-          {visualLayers.map(({ clip, localUs, effect }) => {
-            const asset = assetMap.get(clip.assetId ?? "");
-            const geometry = previewMediaGeometry(clip, asset, {
-              width: canvasWidth,
-              height: canvasHeight,
-            });
-            const transform = clip.transform ?? {
-              x: 960,
-              y: 540,
-              scaleX: 1,
-              scaleY: 1,
-              rotation: 0,
-              opacity: 1,
-              anchor: "center" as const,
-              brightness: 1,
-            };
-            const x = clipPropertyAt(clip, "x", localUs, transform.x);
-            const y = clipPropertyAt(clip, "y", localUs, transform.y);
-            const scaleX =
-              clipPropertyAt(clip, "scaleX", localUs, transform.scaleX) *
-              effect.scaleMultiplier;
-            const scaleY =
-              clipPropertyAt(clip, "scaleY", localUs, transform.scaleY) *
-              effect.scaleMultiplier;
-            const rotation = clipPropertyAt(
-              clip,
-              "rotation",
-              localUs,
-              transform.rotation,
-            );
-            const brightness = clipPropertyAt(
-              clip,
-              "brightness",
-              localUs,
-              transform.brightness ?? 1,
-            );
-            const anchorTranslate =
-              transform.anchor === "bottomCenter"
-                ? "translate(-50%, -100%)"
-                : transform.anchor === "topLeft"
-                  ? "translate(0, 0)"
-                  : "translate(-50%, -50%)";
-            const filters = [
-              `brightness(${brightness})`,
-              effect.blurPx > 0 ? `blur(${effect.blurPx}px)` : null,
-            ].filter(Boolean);
-            const style = {
-              left: `${(x / canvasWidth) * 100}%`,
-              top: `${(y / canvasHeight) * 100}%`,
-              width: geometry
-                ? `${(geometry.width / canvasWidth) * 100}%`
-                : undefined,
-              height: geometry
-                ? `${(geometry.height / canvasHeight) * 100}%`
-                : undefined,
-              opacity: clipOpacityAt(clip, localUs) * effect.opacityMultiplier,
-              filter: filters.join(" "),
-              clipPath: effect.clipPath,
-              transformOrigin:
-                transform.anchor === "bottomCenter"
-                  ? "bottom center"
-                  : transform.anchor === "topLeft"
-                    ? "top left"
-                    : "center",
-              transform: `${anchorTranslate} rotate(${rotation}deg) scale(${clip.flipX ? -scaleX : scaleX}, ${scaleY})`,
-            };
-            if (clip.kind === "text")
+          <div className="ve-stage-content">
+            {visualLayers.map(({ clip, localUs, effect }) => {
+              const asset = assetMap.get(clip.assetId ?? "");
+              const geometry = previewMediaGeometry(clip, asset, {
+                width: canvasWidth,
+                height: canvasHeight,
+              });
+              const style = previewLayerStyle(
+                clip,
+                localUs,
+                effect,
+                geometry,
+                { width: canvasWidth, height: canvasHeight },
+                transformControl.draft?.clipId === clip.id
+                  ? {
+                      ...transformAt(clip, localUs),
+                      ...transformControl.draft.values,
+                    }
+                  : undefined,
+              );
+              if (clip.kind === "text")
+                return (
+                  <VideoEditorTextLayer
+                    key={clip.id}
+                    projectId={projectId}
+                    revision={timeline.revision}
+                    clip={clip}
+                    style={style}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
+                    stageRef={stageRef}
+                    playheadUs={playheadUs}
+                    selected={selectedClipId === clip.id}
+                    disabled={
+                      !canWrite ||
+                      saving ||
+                      Boolean(
+                        timeline.document.tracks?.find(
+                          (track) => track.id === clip.trackId,
+                        )?.locked,
+                      )
+                    }
+                    onSelect={onSelectClip}
+                    setPlaying={setPlaying}
+                    onDragging={setDraggingText}
+                    commit={commit}
+                  />
+                );
               return (
-                <VideoEditorTextLayer
+                <VideoEditorMediaLayer
                   key={clip.id}
-                  projectId={projectId}
-                  revision={timeline.revision}
                   clip={clip}
+                  asset={asset}
+                  geometry={geometry}
                   style={style}
-                  canvasWidth={canvasWidth}
-                  canvasHeight={canvasHeight}
-                  stageRef={stageRef}
-                  playheadUs={playheadUs}
+                  localUs={localUs}
+                  playing={playing}
                   selected={selectedClipId === clip.id}
-                  disabled={
-                    !canWrite ||
-                    saving ||
-                    Boolean(
-                      timeline.document.tracks?.find(
-                        (track) => track.id === clip.trackId,
-                      )?.locked,
-                    )
-                  }
-                  onSelect={onSelectClip}
-                  setPlaying={setPlaying}
-                  onDragging={setDraggingText}
-                  commit={commit}
                 />
               );
-            return (
+            })}
+            {transitionOverlay.opacity > 0 ? (
               <div
-                key={clip.id}
-                className={`ve-stage-layer ${selectedClipId === clip.id ? "selected" : ""}`}
-                style={style}
+                className="ve-transition-flash"
+                style={{
+                  backgroundColor: transitionOverlay.color,
+                  opacity: transitionOverlay.opacity,
+                }}
+                aria-hidden
+              />
+            ) : null}
+            {transitionOverlay.eyelidProgress !== undefined ? (
+              <svg
+                className="ve-transition-eyelids"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden="true"
               >
-                {clip.kind === "video" &&
-                asset?.proxyUrl &&
-                geometry?.proxyCrop ? (
-                  <div className="ve-stage-media-crop">
-                    <ProxyVideo
-                      source={asset.proxyUrl}
-                      clip={clip}
-                      localUs={localUs}
-                      playing={playing}
-                      crop={geometry.proxyCrop}
-                      chromaKey={clip.chromaKey}
+                <path
+                  d={eyelidOverlayPaths(transitionOverlay.eyelidProgress).upper}
+                />
+                <path
+                  d={eyelidOverlayPaths(transitionOverlay.eyelidProgress).lower}
+                />
+              </svg>
+            ) : null}
+            {preciseFrame &&
+            !playing &&
+            !draggingText &&
+            !transformControl.draft ? (
+              <img
+                className="ve-precise-frame"
+                key={preciseUrl}
+                src={preciseUrl}
+                alt="后端精确停帧"
+                style={{ visibility: "hidden" }}
+                onLoad={(event) => {
+                  event.currentTarget.style.visibility = "visible";
+                }}
+                onError={(event) => {
+                  event.currentTarget.style.visibility = "hidden";
+                }}
+              />
+            ) : null}
+            {compareActive && compareClip ? (
+              <div
+                className={`ve-chroma-compare is-${compareView}`}
+                style={
+                  { "--compare-percent": `${comparePercent}%` } as CSSProperties
+                }
+              >
+                <img
+                  src={beforeFrameUrl}
+                  alt="抠像前的节目帧"
+                  style={{ clipPath: beforeClipPath }}
+                />
+                {compareView === "split" ? (
+                  <>
+                    <span className="ve-chroma-compare-handle" aria-hidden />
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={comparePercent}
+                      aria-label="调整抠像前后对比分界线"
+                      onChange={(event) =>
+                        setComparePercent(Number(event.target.value))
+                      }
                     />
-                  </div>
-                ) : clip.kind === "video" && asset && !asset.proxyUrl ? (
-                  <span className="ve-media-pending">
-                    {asset.processingStatus === "failed"
-                      ? "视频预览处理失败，请检查素材"
-                      : "视频预览准备中，可继续剪辑"}
-                  </span>
-                ) : clip.kind === "image" &&
-                  asset &&
-                  clip.chromaKey?.enabled ? (
-                  <ChromaImage
-                    source={`/v1/files/${asset.id}/content`}
-                    chromaKey={clip.chromaKey}
-                  />
-                ) : clip.kind === "image" && asset ? (
-                  <img src={`/v1/files/${asset.id}/content`} alt="" />
-                ) : clip.kind === "color" ? (
-                  <i style={{ background: clip.color ?? "#000" }} />
+                  </>
                 ) : null}
               </div>
-            );
-          })}
-          {transitionOverlay.opacity > 0 ? (
-            <div
-              className="ve-transition-flash"
-              style={{
-                backgroundColor: transitionOverlay.color,
-                opacity: transitionOverlay.opacity,
-              }}
-              aria-hidden
-            />
-          ) : null}
-          {transitionOverlay.eyelidProgress !== undefined ? (
-            <svg
-              className="ve-transition-eyelids"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
+            ) : null}
+            <span
+              className={`ve-canvas-guides ${showCanvasGuides ? "is-visible" : ""}`}
               aria-hidden="true"
             >
-              <path
-                d={eyelidOverlayPaths(transitionOverlay.eyelidProgress).upper}
-              />
-              <path
-                d={eyelidOverlayPaths(transitionOverlay.eyelidProgress).lower}
-              />
-            </svg>
-          ) : null}
-          {preciseFrame && !playing && !draggingText ? (
-            <img
-              className="ve-precise-frame"
-              key={preciseUrl}
-              src={preciseUrl}
-              alt="后端精确停帧"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
+              <i className="ve-canvas-guides-label">
+                画布边界 · {canvasWidth} × {canvasHeight}
+              </i>
+              <i className="ve-canvas-guides-center" />
+            </span>
+            <span className="ve-safe-area" aria-hidden />
+          </div>
+          {selectedLayer && transformGeometry && (
+            <VideoEditorTransformBox
+              transform={{
+                ...transformAt(selectedLayer.clip, selectedLayer.localUs),
+                ...transformControl.draft?.values,
               }}
+              geometry={transformGeometry}
+              canvasWidth={canvasWidth}
+              canvasHeight={canvasHeight}
+              control={transformControl}
+              compareSplit={compareActive && compareView === "split"}
             />
-          ) : null}
-          {compareActive && compareClip ? (
-            <div
-              className={`ve-chroma-compare is-${compareView}`}
-              style={
-                { "--compare-percent": `${comparePercent}%` } as CSSProperties
-              }
-            >
-              <img
-                src={beforeFrameUrl}
-                alt="抠像前的节目帧"
-                style={{ clipPath: beforeClipPath }}
-              />
-              {compareView === "split" ? (
-                <>
-                  <span className="ve-chroma-compare-handle" aria-hidden />
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={comparePercent}
-                    aria-label="调整抠像前后对比分界线"
-                    onChange={(event) =>
-                      setComparePercent(Number(event.target.value))
-                    }
-                  />
-                </>
-              ) : null}
-            </div>
-          ) : null}
-          <span
-            className={`ve-canvas-guides ${showCanvasGuides ? "is-visible" : ""}`}
-            aria-hidden="true"
-          >
-            <i className="ve-canvas-guides-label">
-              画布边界 · {canvasWidth} × {canvasHeight}
-            </i>
-            <i className="ve-canvas-guides-center" />
-          </span>
-          <span className="ve-safe-area" aria-hidden />
+          )}
+          {transformControl.error && (
+            <span className="ve-transform-error" role="alert">
+              {transformControl.error}
+            </span>
+          )}
         </div>
         <div className="ve-proxy-audio" aria-hidden>
           {audioChains.map((chain) => {

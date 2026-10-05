@@ -1,7 +1,13 @@
+import { VideoEditorTransformFields } from "./VideoEditorTransformFields";
+import type { TransformDraft } from "./transformModel";
 import { VideoEditorTextInspector } from "./VideoEditorTextInspector";
 import { Diamond, Link, Link2Off, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { VideoEditorClip, VideoEditorOperation } from "./types";
+import type {
+  VideoEditorClip,
+  VideoEditorOperation,
+  VideoEditorTimeline,
+} from "./types";
 import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import { ClipSpeedControl } from "./ClipSpeedControl";
 import { VideoEditorChromaInspector } from "./VideoEditorChromaInspector";
@@ -34,6 +40,9 @@ const visualTransitionLabels: Record<string, string> = {
 
 export function VideoEditorInspector({
   clip,
+  transformDraft,
+  timeline,
+  revision,
   disabled = false,
   clips = [],
   speedRippleEnabled = true,
@@ -43,6 +52,9 @@ export function VideoEditorInspector({
   onOpenClipEdgeTransition,
 }: {
   clip?: VideoEditorClip;
+  transformDraft?: TransformDraft;
+  timeline?: VideoEditorTimeline;
+  revision?: number;
   disabled?: boolean;
   clips?: VideoEditorClip[];
   speedRippleEnabled?: boolean;
@@ -83,16 +95,6 @@ export function VideoEditorInspector({
         </div>
       </aside>
     );
-  const transform = clip.transform ?? {
-    x: 960,
-    y: 540,
-    scaleX: 1,
-    scaleY: 1,
-    rotation: 0,
-    opacity: 1,
-    anchor: "center" as const,
-    brightness: 1,
-  };
   const update = (
     patch: Record<string, unknown>,
     previous: Record<string, unknown>,
@@ -343,91 +345,17 @@ export function VideoEditorInspector({
             ) : null}
           </section>
         ) : null}
-        {clip.kind !== "audio" ? (
-          <section className="ve-inspector-section">
-            <div className="ve-section-heading">
-              <div>
-                <h3>变换</h3>
-                <p>调整位置、比例与画面表现</p>
-              </div>
-            </div>
-            <div className="ve-property-grid">
-              {(
-                [
-                  ["x", "位置 X"],
-                  ["y", "位置 Y"],
-                  ["scaleX", "水平缩放"],
-                  ["scaleY", "垂直缩放"],
-                  ["rotation", "旋转"],
-                  ["opacity", "不透明度"],
-                  ["brightness", "亮度"],
-                ] as const
-              ).map(([property, label]) => (
-                <label className="ve-property-field" key={property}>
-                  <span>{label}</span>
-                  <div className="ve-input-with-action">
-                    <input
-                      aria-label={label}
-                      type="number"
-                      step={
-                        property.startsWith("scale") ||
-                        property === "opacity" ||
-                        property === "brightness"
-                          ? 0.01
-                          : 1
-                      }
-                      defaultValue={transform[property]}
-                      onBlur={(event) => {
-                        const value = numberValue(event);
-                        if (value !== transform[property])
-                          void commit((current) => {
-                            const latest = (current.document.tracks ?? [])
-                              .flatMap((track) => track.clips ?? [])
-                              .find((item) => item.id === clip.id);
-                            if (!latest) throw new Error("找不到指定片段");
-                            const previous = latest.transform ?? transform;
-                            return {
-                              redo: [
-                                {
-                                  type: "updateClip",
-                                  clipId: clip.id,
-                                  patch: {
-                                    transform: {
-                                      ...previous,
-                                      [property]: value,
-                                    },
-                                  },
-                                },
-                              ],
-                              undo: [
-                                {
-                                  type: "updateClip",
-                                  clipId: clip.id,
-                                  patch: {
-                                    transform: latest.transform ?? null,
-                                  },
-                                },
-                              ],
-                            };
-                          });
-                      }}
-                    />
-                    <button
-                      type="button"
-                      aria-label={`为${label}添加关键帧`}
-                      title={`为${label}添加关键帧`}
-                      onClick={() =>
-                        void addKeyframe(property, transform[property])
-                      }
-                    >
-                      <Diamond aria-hidden />
-                    </button>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </section>
-        ) : null}
+        {clip.kind !== "audio" && (
+          <VideoEditorTransformFields
+            key={`transform-${clip.id}`}
+            clip={clip}
+            playheadUs={playheadUs}
+            timeline={timeline}
+            revision={revision}
+            draft={transformDraft}
+            commit={commit}
+          />
+        )}
         {clip.kind === "video" || clip.kind === "audio" ? (
           <section className="ve-inspector-section">
             <div className="ve-section-heading">

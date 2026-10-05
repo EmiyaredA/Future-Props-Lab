@@ -1,3 +1,4 @@
+import type { TransformDraft } from "./transformModel";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import { DEFAULT_EDITOR_LAYOUT } from "./editorLayout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -88,6 +89,7 @@ export function useVideoEditor(projectId: string) {
   const [speedRippleEnabled, setSpeedRippleEnabled] = useState(
     initialWorkspacePreferences.speedRippleEnabled ?? true,
   );
+  const [transformDraft, setTransformDraft] = useState<TransformDraft>();
   const [notice, setNotice] = useState("");
   const [, redrawQueue] = useState(0);
   const [clipboard, setClipboard] = useState<ClipClipboardSnapshot>();
@@ -525,6 +527,8 @@ export function useVideoEditor(projectId: string) {
     };
   }, [projectId]);
   return {
+    transformDraft,
+    setTransformDraft,
     project,
     timeline,
     assets,

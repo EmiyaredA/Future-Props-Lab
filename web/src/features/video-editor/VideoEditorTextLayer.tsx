@@ -8,6 +8,7 @@ import {
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { textLayerPath } from "./api";
 import { textPosition, textPositionOperations } from "./textModel";
+import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
 import "./video-editor-text.css";
 
@@ -41,7 +42,7 @@ export function VideoEditorTextLayer({
   setPlaying: (value: boolean) => void;
   onDragging: (value: boolean) => void;
   commit?: (
-    redo: VideoEditorOperation[],
+    redo: VideoEditorOperation[] | TimelineEditBuilder,
     undo?: VideoEditorOperation[],
   ) => Promise<void>;
 }) {

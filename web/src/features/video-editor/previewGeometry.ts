@@ -1,3 +1,7 @@
+import type { CSSProperties } from "react";
+import { clipOpacityAt } from "./editorModel";
+import type { PreviewTransitionEffect } from "./previewTransitions";
+import { anchorPoint, transformAt, type ClipTransform } from "./transformModel";
 import type { VideoEditorAsset, VideoEditorClip } from "./types";
 
 export const VIDEO_EDITOR_CANVAS_WIDTH = 1920;
@@ -109,5 +113,29 @@ export function previewMediaGeometry(
   return {
     ...fittedDimensions(clip, source, canvas),
     proxyCrop: clip.kind === "video" ? paddedVideoProxyCrop(source) : undefined,
+  };
+}
+
+export function previewLayerStyle(
+  clip: VideoEditorClip,
+  localUs: number,
+  effect: PreviewTransitionEffect,
+  geometry: PreviewMediaGeometry | undefined,
+  canvas: { width: number; height: number },
+  transform: ClipTransform = transformAt(clip, localUs),
+): CSSProperties {
+  const anchor = anchorPoint(transform.anchor);
+  return {
+    left: `${(transform.x / canvas.width) * 100}%`,
+    top: `${(transform.y / canvas.height) * 100}%`,
+    width: geometry ? `${(geometry.width / canvas.width) * 100}%` : undefined,
+    height: geometry
+      ? `${(geometry.height / canvas.height) * 100}%`
+      : undefined,
+    opacity: clipOpacityAt(clip, localUs) * effect.opacityMultiplier,
+    filter: `brightness(${transform.brightness})${effect.blurPx > 0 ? ` blur(${effect.blurPx}px)` : ""}`,
+    clipPath: effect.clipPath,
+    transformOrigin: `${anchor.x * 100}% ${anchor.y * 100}%`,
+    transform: `translate(${-anchor.x * 100}%, ${-anchor.y * 100}%) rotate(${transform.rotation}deg) scale(${transform.scaleX * effect.scaleMultiplier * (clip.kind === "text" && clip.flipX ? -1 : 1)}, ${transform.scaleY * effect.scaleMultiplier})`,
   };
 }

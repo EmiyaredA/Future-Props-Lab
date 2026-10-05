@@ -1,3 +1,4 @@
+import { VideoEditorFitActions } from "./VideoEditorFitActions";
 import { VideoEditorSaveGuard } from "./VideoEditorSaveGuard";
 import { textClipOperations, type TextPreset } from "./textModel";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
@@ -9,12 +10,10 @@ import {
   ArrowLeft,
   Film,
   Layers3,
-  Maximize,
   Maximize2,
   Plus,
   Redo2,
   Save,
-  ScanLine,
   Undo2,
   ZoomIn,
   ZoomOut,
@@ -293,17 +292,6 @@ export function VideoEditorPage({
       setSubtitleImportPending(false);
     }
   };
-  const videoClips = tracks
-    .flatMap((track) => track.clips ?? [])
-    .filter((clip) => clip.kind === "video");
-  const videosNeedingCover = videoClips.filter(
-    (clip) => clip.fitMode !== "cover",
-  );
-  const videosNeedingUnitScale = videoClips.filter((clip) => {
-    const scaleX = clip.transform?.scaleX ?? 1;
-    const scaleY = clip.transform?.scaleY ?? 1;
-    return scaleX !== 1 || scaleY !== 1;
-  });
   const fps = timeline.document.settings?.fps ?? 30;
   const addAsset = (
     asset: VideoEditorAsset,
@@ -519,64 +507,11 @@ export function VideoEditorPage({
                 ✦ Amadeus
               </button>
             )}
-            <button
-              disabled={!videosNeedingCover.length || editor.saving}
-              title="将当前工程的所有视频片段按比例铺满画布"
-              onClick={() =>
-                void editor.commit(
-                  videosNeedingCover.map((clip) => ({
-                    type: "updateClip",
-                    clipId: clip.id,
-                    patch: { fitMode: "cover" },
-                  })),
-                  videosNeedingCover.map((clip) => ({
-                    type: "updateClip",
-                    clipId: clip.id,
-                    patch: {
-                      fitMode: clip.fitMode,
-                      heightPercent: clip.heightPercent,
-                    },
-                  })),
-                )
-              }
-            >
-              <ScanLine aria-hidden /> 全部铺满
-            </button>
-            <button
-              disabled={!videosNeedingUnitScale.length || editor.saving}
-              title="将当前工程的所有视频片段缩放比例统一为 1"
-              onClick={() =>
-                void editor.commit(
-                  videosNeedingUnitScale.map((clip) => ({
-                    type: "updateClip",
-                    clipId: clip.id,
-                    patch: {
-                      transform: {
-                        ...(clip.transform ?? {
-                          x: 960,
-                          y: 540,
-                          scaleX: 1,
-                          scaleY: 1,
-                          rotation: 0,
-                          opacity: 1,
-                          anchor: "center" as const,
-                          brightness: 1,
-                        }),
-                        scaleX: 1,
-                        scaleY: 1,
-                      },
-                    },
-                  })),
-                  videosNeedingUnitScale.map((clip) => ({
-                    type: "updateClip",
-                    clipId: clip.id,
-                    patch: { transform: clip.transform },
-                  })),
-                )
-              }
-            >
-              <Maximize aria-hidden /> 全部 1 倍
-            </button>
+            <VideoEditorFitActions
+              tracks={tracks}
+              saving={editor.saving}
+              commit={editor.commit}
+            />
             <button
               disabled={!editor.canUndo || editor.saving}
               onClick={() => void editor.undo()}
@@ -660,6 +595,8 @@ export function VideoEditorPage({
             playing={editor.playing}
             setPlaying={editor.setPlaying}
             selectedClipId={editor.selectedClipId}
+            selectedClipIds={editor.selectedClipIds}
+            onTransformDraft={editor.setTransformDraft}
             preciseFrame={editor.preciseFrame}
             onPreciseFrameChange={editor.setPreciseFrame}
             onFrameSaved={() => editor.assets.refetch()}
@@ -773,6 +710,9 @@ export function VideoEditorPage({
                 speedRippleEnabled={editor.speedRippleEnabled}
                 setSpeedRippleEnabled={editor.setSpeedRippleEnabled}
                 clip={editor.selected}
+                timeline={timeline}
+                transformDraft={editor.transformDraft}
+                revision={timeline.revision}
                 disabled={
                   editor.saving ||
                   Boolean(

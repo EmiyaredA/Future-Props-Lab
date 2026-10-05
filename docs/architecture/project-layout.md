@@ -203,6 +203,14 @@ Future-Props-Lab/
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
   但只能通过 Galgame 工程素材 API 修改或删除。`capabilities/asset_store/document_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
+
+视频剪辑的节目监视器由 `VideoEditorPreview.tsx` 装配；`VideoEditorMediaLayer.tsx` 拥有代理视频和图片显示，
+`previewGeometry.ts` 共用素材适配与图层样式，`previewClock.ts` 统一媒体时钟纠偏。
+`transformModel.ts` 拥有变换几何、当前时刻求值与逐属性编辑操作，`usePreviewTransform.ts` 拥有指针手势、
+临时草稿和提交取消，`VideoEditorTransformBox.tsx` 显示固定屏幕尺寸操作手柄。
+`VideoEditorTransformFields.tsx` 将同一编辑契约接入属性检查器；草稿经编辑器显式传给预览与检查器，
+不进入持久时间线。媒体层按画布裁切，操作框独立覆盖精确帧；所有写入仍经过时间线 CAS 保存队列。
+
 - Galgame 视频导出按 `video_export_planning.py` 路线/片段/试片纯规划、`video_compiler.py`
   冻结 Story 到共享 `RenderPlan` 的编译、`video_compiler_events.py` 的绝对时间状态归约、
   `video_compiler_support.py`/`video_actor_compiler.py` 的舞台、序列帧与组合动画投影、
