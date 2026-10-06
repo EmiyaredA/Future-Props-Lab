@@ -1,3 +1,4 @@
+import { VideoEditorGapPanel } from "./VideoEditorGapPanel";
 import { VideoEditorFitActions } from "./VideoEditorFitActions";
 import { VideoEditorSaveGuard } from "./VideoEditorSaveGuard";
 import { textClipOperations, type TextPreset } from "./textModel";
@@ -39,6 +40,7 @@ import {
   clampTimelineZoom,
   fittedTimelineZoom,
   MAX_TIMELINE_ZOOM,
+  timelineScrollLeftAfterZoom,
   timelineZoomMinimum,
 } from "./timelineScale";
 import { useVideoEditor } from "./useVideoEditor";
@@ -84,6 +86,7 @@ export function VideoEditorPage({
   }>();
   const [clipEdgeFocus, setClipEdgeFocus] = useState<"in" | "out">("in");
   const workspaceLayout = useVideoEditorLayout(editor.layout, editor.setLayout);
+  const [gapPanelOpen, setGapPanelOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
   const [segmentExportClipIds, setSegmentExportClipIds] = useState<string[]>();
@@ -112,7 +115,16 @@ export function VideoEditorPage({
     contentDurationSeconds,
   );
   const setTimelineZoom = (value: number) => {
-    editor.setZoom(clampTimelineZoom(value, zoomMin));
+    const nextZoom = clampTimelineZoom(value, zoomMin);
+    editor.setTimelineScrollLeft(
+      timelineScrollLeftAfterZoom(
+        editor.timelineScrollLeft,
+        editor.playheadUs,
+        editor.zoom,
+        nextZoom,
+      ),
+    );
+    editor.setZoom(nextZoom);
   };
   useEffect(() => {
     if (!(contentViewportWidthPx > 0)) return;
@@ -856,6 +868,7 @@ export function VideoEditorPage({
           </div>
         </div>
         <VideoEditorTimeline
+          onCheckGaps={() => setGapPanelOpen(true)}
           timeline={timeline}
           assets={assets}
           audioSeam={
@@ -903,6 +916,29 @@ export function VideoEditorPage({
           onCopyClip={editor.copyClip}
           onPasteClip={editor.pasteClipboardClip}
         />
+        {gapPanelOpen ? (
+          <VideoEditorGapPanel
+            timeline={timeline}
+            assets={assets}
+            saving={editor.saving}
+            canWrite={editor.canWrite}
+            commit={editor.commit}
+            onAssetsChanged={() => void editor.assets.refetch()}
+            onClose={() => setGapPanelOpen(false)}
+            onLocate={(gap) => {
+              editor.setPlaying(false);
+              setPlayheadUs(gap.startUs);
+              editor.setTimelineScrollLeft(
+                Math.max(
+                  0,
+                  (gap.startUs / 1_000_000) * editor.zoom -
+                    contentViewportWidthPx / 3,
+                ),
+              );
+              setMobilePanel("preview");
+            }}
+          />
+        ) : null}
         {exportOpen ? (
           <VideoEditorExportDialog
             projectId={projectId}

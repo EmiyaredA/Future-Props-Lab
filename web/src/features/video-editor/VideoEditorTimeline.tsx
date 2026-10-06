@@ -7,7 +7,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { ClipboardPaste, Copy, Magnet, Scissors, Trash2 } from "lucide-react";
+import { VideoEditorTimelineTools } from "./VideoEditorTimelineTools";
 import { formatTime, newTrack, snapUs } from "./editorModel";
 import { BATCH_OPS_LIMIT } from "./batchClipPatch";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
@@ -71,7 +71,9 @@ export function VideoEditorTimeline({
   onPasteClip,
   onContentViewportWidthChange,
   audioSeam,
+  onCheckGaps,
 }: {
+  onCheckGaps?: () => void;
   draggingAsset?: VideoEditorAsset;
   timeline: Timeline;
   assets: VideoEditorAsset[];
@@ -136,9 +138,14 @@ export function VideoEditorTimeline({
   const contextMenuRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const node = scroller.current;
-    if (node && Math.abs(node.scrollLeft - scrollLeft) > 0.5)
+    if (!node) return;
+    if (Math.abs(node.scrollLeft - scrollLeft) > 0.5)
       node.scrollLeft = scrollLeft;
-  }, [scrollLeft]);
+    // Zooming out can shorten the scroll range. Publish the browser's clamped
+    // offset before the next zoom uses it as the playhead anchor.
+    if (Math.abs(node.scrollLeft - scrollLeft) > 0.5)
+      onScrollLeftChange(node.scrollLeft);
+  }, [scrollLeft, zoom, onScrollLeftChange]);
   useLayoutEffect(() => {
     const node = scroller.current;
     if (node && Math.abs(node.scrollTop - scrollTop) > 0.5)
@@ -536,43 +543,20 @@ export function VideoEditorTimeline({
   };
   return (
     <section className="ve-timeline-panel">
-      <header className="ve-timeline-tools">
-        <strong>时间轴</strong>
-        <span>{formatTime(playheadUs)}</span>
-        <button disabled={!hasSelection} onClick={splitSelected}>
-          <Scissors aria-hidden /> 分割
-        </button>
-        <button
-          disabled={!hasSelection || !onCopyClip}
-          onClick={() => copyActionClips()}
-        >
-          <Copy aria-hidden /> 复制
-        </button>
-        <button
-          disabled={!hasClipboard || !onPasteClip}
-          onClick={() => onPasteClip?.()}
-        >
-          <ClipboardPaste aria-hidden /> 粘贴
-        </button>
-        <button disabled={!hasSelection} onClick={() => deleteSelected(false)}>
-          <Trash2 aria-hidden /> 删除
-        </button>
-        <button disabled={!hasSelection} onClick={() => deleteSelected(true)}>
-          波纹删除
-        </button>
-        <button
-          className={`ve-snap-toggle${snapEnabled ? " active" : ""}`}
-          aria-pressed={snapEnabled}
-          onClick={() => setSnapEnabled(!snapEnabled)}
-          title={
-            snapEnabled
-              ? "关闭片段接缝与跨轨边吸附"
-              : "开启片段接缝与跨轨边吸附"
-          }
-        >
-          <Magnet aria-hidden /> {snapEnabled ? "吸附" : "吸附关闭"}
-        </button>
-      </header>
+      <VideoEditorTimelineTools
+        playheadUs={playheadUs}
+        hasSelection={hasSelection}
+        canCopy={Boolean(onCopyClip)}
+        canPaste={hasClipboard && Boolean(onPasteClip)}
+        snapEnabled={snapEnabled}
+        onSplit={splitSelected}
+        onCopy={() => copyActionClips()}
+        onPaste={() => onPasteClip?.()}
+        onDelete={() => deleteSelected(false)}
+        onRippleDelete={() => deleteSelected(true)}
+        onToggleSnap={() => setSnapEnabled(!snapEnabled)}
+        onCheckGaps={onCheckGaps}
+      />
       <div
         className="ve-timeline-viewport"
         style={

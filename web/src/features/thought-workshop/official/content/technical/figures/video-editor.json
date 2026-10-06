@@ -1,6 +1,6 @@
 {
   "sceneVersion": 1,
-  "title": "三个时间坐标与一段变速片段",
+  "title": "时间坐标与精确空隙处理",
   "elements": [
     {
       "id": "timeline",
@@ -56,6 +56,61 @@
       "text": "工程保存区间与速度\n渲染按映射后源时间采样",
       "fill": "#f2edf8",
       "stroke": "#365f62"
+    },
+    {
+      "id": "gap",
+      "kind": "rounded",
+      "x": 40,
+      "y": 560,
+      "width": 920,
+      "height": 90,
+      "text": "左结束 1,000,003 μs → 右开始 1,049,710 μs\n空隙 49,707 μs；30 / 60 FPS 不改变接点",
+      "fill": "#fff1dd",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "extend",
+      "kind": "rounded",
+      "x": 40,
+      "y": 740,
+      "width": 280,
+      "height": 110,
+      "text": "延长左片段及关联媒体\n后续位置保持\n检查剩余源素材",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "ripple",
+      "kind": "rounded",
+      "x": 360,
+      "y": 740,
+      "width": 280,
+      "height": 110,
+      "text": "同轨后续及关联前移\n保留未选间隔\n独立音乐字幕原位",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "freeze",
+      "kind": "rounded",
+      "x": 680,
+      "y": 740,
+      "width": 280,
+      "height": 110,
+      "text": "显式新增静音定帧\n固定左末尾源画面\n不冻结其他轨道",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "boundary",
+      "kind": "text",
+      "x": 40,
+      "y": 920,
+      "width": 920,
+      "height": 70,
+      "text": "统一规划后一次 CAS；冲突拒绝整批。定帧提帧按毫秒、图片宽度 ≤1920，填补区间保持微秒精度。",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
     }
   ],
   "edges": [
@@ -72,6 +127,27 @@
       "source": "local",
       "target": "source",
       "label": "映射速度与内点",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "gap_extend",
+      "source": "gap",
+      "target": "extend",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "gap_ripple",
+      "source": "gap",
+      "target": "ripple",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "gap_freeze",
+      "source": "gap",
+      "target": "freeze",
       "arrow": true,
       "style": "step"
     }

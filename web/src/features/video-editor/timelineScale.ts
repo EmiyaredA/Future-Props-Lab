@@ -55,3 +55,13 @@ export function clampTimelineZoom(
   if (!Number.isFinite(zoom)) return floor;
   return Math.max(floor, Math.min(MAX_TIMELINE_ZOOM, Math.round(zoom)));
 }
+
+/** Preserve the playhead's viewport position; the scroller clamps the far edge. */
+export function timelineScrollLeftAfterZoom(
+  scrollLeft: number,
+  playheadUs: number,
+  zoom: number,
+  nextZoom: number,
+) {
+  return Math.max(0, scrollLeft + (playheadUs / 1_000_000) * (nextZoom - zoom));
+}

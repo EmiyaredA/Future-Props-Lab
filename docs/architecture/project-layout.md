@@ -211,6 +211,11 @@ Future-Props-Lab/
 `VideoEditorTransformFields.tsx` 将同一编辑契约接入属性检查器；草稿经编辑器显式传给预览与检查器，
 不进入持久时间线。媒体层按画布裁切，操作框独立覆盖精确帧；所有写入仍经过时间线 CAS 保存队列。
 
+视频剪辑时间线工具栏由 `VideoEditorTimelineTools.tsx` 拥有；`timelineGaps.ts` 检测可见画面轨的内部微秒空隙，
+`gapEditPlan.ts` 规划延长与前移的关联片段最终状态，`gapFreeze.ts` 规划和准备显式定帧素材。
+`VideoEditorGapPanel.tsx` 拥有筛选、选择、定位与提交前版本复核；整批复用既有原子操作、音频转场协调、
+撤销历史与 CAS 保存队列，不改变吸附、波纹删除或变速跟随的语义，也不检测素材内部黑帧。
+
 - Galgame 视频导出按 `video_export_planning.py` 路线/片段/试片纯规划、`video_compiler.py`
   冻结 Story 到共享 `RenderPlan` 的编译、`video_compiler_events.py` 的绝对时间状态归约、
   `video_compiler_support.py`/`video_actor_compiler.py` 的舞台、序列帧与组合动画投影、

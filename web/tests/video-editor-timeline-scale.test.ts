@@ -5,6 +5,7 @@ import {
   fittedTimelineZoom,
   getTimelineRulerStepSeconds,
   MIN_TIMELINE_ZOOM,
+  timelineScrollLeftAfterZoom,
   timelineZoomMinimum,
 } from "@features/video-editor/timelineScale";
 
@@ -35,5 +36,28 @@ describe("video editor timeline scale", () => {
     expect(clampTimelineZoom(3, 4)).toBe(4);
     expect(clampTimelineZoom(999, 4)).toBe(240);
     expect(clampTimelineZoom(Number.NaN, 4)).toBe(4);
+  });
+
+  it("keeps the playhead at the same viewport coordinate across zoom changes", () => {
+    const playheadUs = 82_500_000;
+    let zoom = 68;
+    let scrollLeft = 5_000;
+    const anchor = (playheadUs / 1_000_000) * zoom - scrollLeft;
+    for (const nextZoom of [120, 119, 30, 10, 240]) {
+      scrollLeft = timelineScrollLeftAfterZoom(
+        scrollLeft,
+        playheadUs,
+        zoom,
+        nextZoom,
+      );
+      zoom = nextZoom;
+      expect((playheadUs / 1_000_000) * zoom - scrollLeft).toBeCloseTo(anchor);
+    }
+  });
+
+  it("stops at the sequence start when the playhead anchor needs negative scroll", () => {
+    expect(timelineScrollLeftAfterZoom(0, 2_000_000, 80, 10)).toBe(0);
+    expect(timelineScrollLeftAfterZoom(400, 0, 80, 120)).toBe(400);
+    expect(timelineScrollLeftAfterZoom(123, 82_500_000, 68, 68)).toBe(123);
   });
 });

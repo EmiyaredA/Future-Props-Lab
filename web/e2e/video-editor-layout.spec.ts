@@ -307,6 +307,112 @@ test("scrolls track headers and clips together and keeps editing coordinates cor
   });
 });
 
+test("anchors timeline zoom at the playhead and persists clamped scroll offsets", async ({
+  page,
+}) => {
+  await withEditor(page, async (id) => {
+    const scroller = page.locator(".ve-tracks-scroll");
+    const slider = page.getByRole("slider", { name: "时间轴缩放" });
+    const playhead = page.locator(".ve-playhead");
+    const time = page.locator(".ve-timeline-tools > span");
+    const revision = page.locator(".ve-editor-title small");
+    const originalRevision = await revision.textContent();
+    await scroller.evaluate((node) => {
+      node.scrollLeft = 2960;
+    });
+    await expect
+      .poll(() => scroller.evaluate((node) => node.scrollLeft))
+      .toBe(2960);
+    const viewport = (await scroller.boundingBox())!;
+    await page.mouse.click(viewport.x + 176 + 400, viewport.y + 10);
+    await expect(time).toHaveText("00:42.000");
+    const anchorX = (await playhead.boundingBox())!.x;
+    for (const zoom of [120, 60, 100, 30]) {
+      await slider.fill(String(zoom));
+      await expect
+        .poll(async () => Math.abs((await playhead.boundingBox())!.x - anchorX))
+        .toBeLessThanOrEqual(1);
+      await expect(time).toHaveText("00:42.000");
+    }
+    await slider.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(slider).toHaveValue("31");
+    await expect
+      .poll(async () => Math.abs((await playhead.boundingBox())!.x - anchorX))
+      .toBeLessThanOrEqual(1);
+    await expect(time).toHaveText("00:42.000");
+    await expect(revision).toHaveText(originalRevision!);
+    const preferenceKey = `future-props.video-editor.workspace:${id}`;
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key)!).timelineScrollLeft,
+          preferenceKey,
+        ),
+      )
+      .toBe(902);
+    await page.reload();
+    await expect(slider).toHaveValue("31");
+    await expect(time).toHaveText("00:42.000");
+    await expect
+      .poll(() => scroller.evaluate((node) => node.scrollLeft))
+      .toBe(902);
+
+    // Zooming out at the left edge stops at zero instead of requesting
+    // negative scroll; the playhead time still stays unchanged.
+    await scroller.evaluate((node) => {
+      node.scrollLeft = 0;
+    });
+    const ruler = (await page.locator(".ve-ruler").boundingBox())!;
+    await page.mouse.click(ruler.x + 62, ruler.y + 10);
+    await expect(time).toHaveText("00:02.000");
+    await slider.fill("10");
+    await expect
+      .poll(() => scroller.evaluate((node) => node.scrollLeft))
+      .toBe(0);
+    await expect(time).toHaveText("00:02.000");
+
+    // At the far edge the browser's actual scroll range wins. Persist that
+    // offset and use it for the next zoom without drifting back to a stale one.
+    await slider.fill("80");
+    await page.getByRole("button", { name: "跳到结尾" }).click();
+    await scroller.evaluate((node) => {
+      node.scrollLeft = node.scrollWidth;
+    });
+    await slider.fill("30");
+    await expect
+      .poll(() =>
+        scroller.evaluate((node) =>
+          Math.abs(node.scrollLeft - (node.scrollWidth - node.clientWidth)),
+        ),
+      )
+      .toBeLessThanOrEqual(1);
+    const clamped = await scroller.evaluate((node) => node.scrollLeft);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key)!).timelineScrollLeft,
+          preferenceKey,
+        ),
+      )
+      .toBe(clamped);
+    const endAnchorX = (await playhead.boundingBox())!.x;
+    await slider.fill("60");
+    await expect
+      .poll(async () =>
+        Math.abs((await playhead.boundingBox())!.x - endAnchorX),
+      )
+      .toBeLessThanOrEqual(1);
+    await page.getByRole("button", { name: "适配时间轴宽度" }).click();
+    await expect
+      .poll(() => scroller.evaluate((node) => node.scrollLeft))
+      .toBe(0);
+    expect(Number(await slider.inputValue())).toBeLessThanOrEqual(10);
+    await expect(time).toHaveText("02:00.000");
+    await expect(revision).toHaveText(originalRevision!);
+  });
+});
+
 test("drops a video after scrolling and keeps playback alive during resizing", async ({
   page,
 }) => {

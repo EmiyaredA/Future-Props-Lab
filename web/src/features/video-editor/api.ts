@@ -90,10 +90,14 @@ export const applyVideoEditorOperations = async (
     ),
   );
 
-export const listVideoEditorAssets = async (projectId: string) =>
+export const listVideoEditorAssets = async (
+  projectId: string,
+  signal?: AbortSignal,
+) =>
   unwrap(
     await api.GET("/v1/video-editor/projects/{project_id}/assets", {
       params: { path: { project_id: projectId } },
+      signal,
     }),
   );
 
@@ -211,12 +215,16 @@ export const importVideoEditorAssets = async (
     }),
   );
 
-export async function uploadVideoEditorAsset(projectId: string, file: File) {
+export async function uploadVideoEditorAsset(
+  projectId: string,
+  file: File,
+  signal?: AbortSignal,
+) {
   const form = new FormData();
   form.append("upload", file);
   return fetchApiJson<components["schemas"]["VideoEditorAssetOut"]>(
     `/v1/video-editor/projects/${encodeURIComponent(projectId)}/assets`,
-    { method: "POST", body: form },
+    { method: "POST", body: form, signal },
   );
 }
 

@@ -344,7 +344,7 @@ export const TECHNICAL_READING: Record<
   },
   "video-editor": {
     summary:
-      "用两倍速片段算出源采样位置，理解裁切、波纹编辑与渲染为何要区分三个时间坐标。",
+      "用两倍速采样与 49.707 毫秒空隙解释时间坐标、精确闭合、关联批处理和定帧边界。",
     related: [
       {
         libraryId: "technical",

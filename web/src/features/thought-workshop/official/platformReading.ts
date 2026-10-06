@@ -587,7 +587,8 @@ export const PLATFORM_READING: Record<
     ],
   },
   "video-editor/workflow": {
-    summary: "安排多轨片段、批量属性和字幕，结合代理预览与精确帧检查切点。",
+    summary:
+      "安排多轨片段和字幕，检查精确空隙并选择延长、前移或定帧，验证保存和切点。",
     related: [
       {
         libraryId: "video-editor",

@@ -41,6 +41,13 @@ type Support = {
   source: SequencePoint;
   referenceTravel: SequencePoint;
 };
+type CycleRegistration = {
+  frame: SequenceFrame;
+  reference: number;
+  phase: number;
+  travel: SequencePoint;
+  translation: SequencePoint;
+};
 type SupportPlayback = {
   clip: string;
   actualClip: string;
@@ -51,6 +58,7 @@ type SupportPlayback = {
   phase: number;
   direction: SequencePoint | null;
   points: Partial<Record<SupportName, Support>>;
+  cycleOrigins?: CycleRegistration[];
 };
 const TAU = Math.PI * 2;
 const modulo = (n: number, d: number) => ((n % d) + d) % d;
@@ -426,6 +434,58 @@ export class SequencePlayer {
       )
         return "support-conflict";
     }
+    // A repeated whole cel closes against the first confirmed cycle, rather
+    // than inheriting every small acquisition error from the previous cycle.
+    // Keep each actually sampled whole-cel origin inside the support lifetime
+    // (including a mid-cycle resume) so install rollback,
+    // cancellation, clip changes and scale changes cannot reuse stale state.
+    const cycleOrigins = sameClip ? (prior?.cycleOrigins ?? []) : [];
+    const cycleOrigin = cycleOrigins.find((origin) =>
+      sameCel(frame, origin.frame),
+    );
+    if (
+      clip.loop &&
+      clip.distancePerCycle !== undefined &&
+      cycleOrigin &&
+      direction &&
+      sameCel(frame, cycleOrigin.frame)
+    ) {
+      const cycles = reference - cycleOrigin.reference;
+      if (cycles >= 1 - 1e-8 && Math.abs(cycles - Math.round(cycles)) < 1e-8) {
+        const confirmed =
+          ((phase - cycleOrigin.phase) / TAU) * clip.distancePerCycle;
+        if (
+          Math.hypot(
+            travel[0] - cycleOrigin.travel[0] - direction[0] * confirmed,
+            travel[1] - cycleOrigin.travel[1] - direction[1] * confirmed,
+          ) *
+            scale >
+          1e-6
+        )
+          return "invalid-support-motion";
+        const advance = cycles * clip.distancePerCycle;
+        const canonical: SequencePoint = [
+          cycleOrigin.translation[0] +
+            direction[0] * advance -
+            (travel[0] - cycleOrigin.travel[0]),
+          cycleOrigin.translation[1] +
+            direction[1] * advance -
+            (travel[1] - cycleOrigin.travel[1]),
+        ];
+        // Every retained material point must still meet the existing DIP cap.
+        // Newly acquired supports are registered only after this check.
+        if (
+          offsets.some(
+            (point) =>
+              Math.hypot(point[0] - canonical[0], point[1] - canonical[1]) *
+                scale >
+              1 + 1e-8,
+          )
+        )
+          return "support-conflict";
+        translation = canonical;
+      }
+    }
     const points: SupportPlayback["points"] = {};
     for (const [name, point] of entries) {
       const source = project(point);
@@ -450,6 +510,22 @@ export class SequencePlayer {
         phase,
         direction,
         points,
+        ...(clip.loop && clip.distancePerCycle !== undefined
+          ? {
+              cycleOrigins: cycleOrigin
+                ? cycleOrigins
+                : [
+                    ...cycleOrigins,
+                    {
+                      frame: structuredClone(frame),
+                      reference,
+                      phase,
+                      travel: [...travel],
+                      translation: [...translation],
+                    },
+                  ],
+            }
+          : {}),
       },
     };
   }

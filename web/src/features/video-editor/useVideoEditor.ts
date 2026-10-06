@@ -527,6 +527,7 @@ export function useVideoEditor(projectId: string) {
     };
   }, [projectId]);
   return {
+    canWrite,
     transformDraft,
     setTransformDraft,
     project,
