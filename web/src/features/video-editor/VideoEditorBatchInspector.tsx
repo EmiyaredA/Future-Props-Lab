@@ -307,8 +307,11 @@ export function VideoEditorBatchInspector({
           </div>
           {volumeMode === "set" || volumeMode === "delta" ? (
             <label className="ve-key-field">
-              <span>{volumeMode === "set" ? "音量" : "增减量"}</span>
+              <span>
+                {volumeMode === "set" ? "音量（倍）" : "增减量（倍）"}
+              </span>
               <input
+                aria-label={volumeMode === "set" ? "音量" : "增减量"}
                 type="number"
                 min={volumeMode === "set" ? 0 : -4}
                 max={4}
@@ -324,6 +327,12 @@ export function VideoEditorBatchInspector({
                 }}
               />
             </label>
+          ) : null}
+          {volumeMode === "set" || volumeMode === "delta" ? (
+            <p className="ve-field-help">
+              音量范围 0～4 倍；1 为原始音量，0.1 为
+              10%。批量结果限制在此范围内。
+            </p>
           ) : null}
         </section>
       ) : null}

@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import { ClipSpeedControl } from "./ClipSpeedControl";
+import { ClipVolumeControl } from "./ClipVolumeControl";
 import { VideoEditorChromaInspector } from "./VideoEditorChromaInspector";
 import "./video-editor-inspector.css";
 
@@ -103,31 +104,6 @@ export function VideoEditorInspector({
       [{ type: "updateClip", clipId: clip.id, patch }],
       [{ type: "updateClip", clipId: clip.id, patch: previous }],
     );
-  const localUs = Math.max(0, playheadUs - clip.timelineStartUs);
-  const addKeyframe = (
-    property:
-      | "x"
-      | "y"
-      | "scaleX"
-      | "scaleY"
-      | "rotation"
-      | "opacity"
-      | "brightness"
-      | "volume",
-    value: number,
-  ) => {
-    const keyframe = {
-      id: crypto.randomUUID(),
-      property,
-      timeUs: Math.min(localUs, clip.durationUs),
-      value,
-      interpolation: "linear" as const,
-    };
-    return commit(
-      [{ type: "addKeyframe", clipId: clip.id, keyframe }],
-      [{ type: "removeKeyframe", clipId: clip.id, keyframeId: keyframe.id }],
-    );
-  };
   return (
     <aside className="ve-inspector">
       <header>
@@ -357,38 +333,12 @@ export function VideoEditorInspector({
           />
         )}
         {clip.kind === "video" || clip.kind === "audio" ? (
-          <section className="ve-inspector-section">
-            <div className="ve-section-heading">
-              <div>
-                <h3>音频</h3>
-                <p>控制片段音量与关键帧</p>
-              </div>
-            </div>
-            <label className="ve-key-field ve-audio-volume-field">
-              <span>音量</span>
-              <input
-                type="number"
-                min="0"
-                max="4"
-                step="0.05"
-                defaultValue={clip.volume}
-                onBlur={(event) =>
-                  numberValue(event) !== clip.volume &&
-                  void update(
-                    { volume: numberValue(event) },
-                    { volume: clip.volume },
-                  )
-                }
-              />
-              <button
-                type="button"
-                aria-label="为音量添加关键帧"
-                onClick={() => void addKeyframe("volume", clip.volume)}
-              >
-                <Diamond aria-hidden />
-              </button>
-            </label>
-          </section>
+          <ClipVolumeControl
+            key={`volume-${clip.id}`}
+            clip={clip}
+            playheadUs={playheadUs}
+            commit={commit}
+          />
         ) : null}
         {clip.kind === "audio" ? (
           <section className="ve-inspector-section">

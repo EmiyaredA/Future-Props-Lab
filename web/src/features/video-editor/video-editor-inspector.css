@@ -200,6 +200,11 @@
   outline-offset: 2px;
 }
 
+.ve-inspector input[aria-invalid="true"] {
+  border-color: #f19aa3;
+  box-shadow: 0 0 0 2px rgb(241 154 163 / 18%);
+}
+
 .ve-field-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
