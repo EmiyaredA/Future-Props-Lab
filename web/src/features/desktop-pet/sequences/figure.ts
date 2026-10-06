@@ -350,6 +350,8 @@ export function createSequenceFigure(options: {
       revision += 1;
       images.clear();
       painted = null;
+      // Release the backing store even while an obsolete decode retains this figure.
+      canvas.width = canvas.height = 0;
       if (hitSurface) hitSurface.width = hitSurface.height = 0;
       hitSurface = null;
       hitContext = null;

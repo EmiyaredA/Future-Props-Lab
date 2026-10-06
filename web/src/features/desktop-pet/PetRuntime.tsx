@@ -9,7 +9,7 @@ import {
 import { getChat, getDocument, type PetDocument, type PetHabits } from "./api";
 import { DesktopPetFigure } from "./DesktopPetFigure";
 import type { PetRendererHandle } from "./PetRenderer";
-import { reactionForHit } from "./interaction";
+import { actionTrayHit, actionTrayPath, reactionForHit } from "./interaction";
 import { usePetPreview } from "./usePetPreview";
 import { playPetTone } from "./sound";
 import { playbackDuration, type PetEvent } from "./playback";
@@ -64,6 +64,8 @@ export function PetRuntime({ projectId }: { projectId: string }) {
   const interactive = useRef(false);
   const renderer = useRef<PetRendererHandle>(null);
   const characterHost = useRef<HTMLDivElement>(null);
+  const actions = useRef<HTMLDivElement>(null);
+  const pixelContact = useRef<{ x: number; y: number } | null>(null);
   const drag = useRef<{
     x: number;
     y: number;
@@ -274,6 +276,9 @@ export function PetRuntime({ projectId }: { projectId: string }) {
   const hit = (event: PointerEvent<HTMLDivElement>) =>
     renderer.current?.hitTest(event.clientX, event.clientY) ?? false;
   const setInteractive = (value: boolean) => {
+    if (!value) {
+      pixelContact.current = null;
+    }
     if (interactive.current === value) return;
     interactive.current = value;
     setHovered(value);
@@ -308,24 +313,42 @@ export function PetRuntime({ projectId }: { projectId: string }) {
       }
       return;
     }
-    // Keep the small transparent path from the figure's feet to its buttons
-    // interactive while the tray is open. Otherwise Electron starts passing
-    // clicks through before the pointer can reach a button.
-    const character = characterHost.current?.getBoundingClientRect();
-    const actionPath =
-      interactive.current &&
-      character &&
-      Math.abs(event.clientX - (character.left + character.right) / 2) <=
-        Math.max(character.width / 2 + 12, 92) &&
-      event.clientY >= character.top - 42 &&
-      event.clientY <= window.innerHeight;
-    setInteractive(
-      hit(event) ||
-        Boolean(actionPath) ||
-        Boolean(
-          (event.target as HTMLElement).closest("button, .pet-runtime-status"),
-        ),
+    if (!actions.current) {
+      pixelContact.current = null;
+    }
+    let admitted = Boolean(
+      (event.target as HTMLElement).closest("button, .pet-runtime-status"),
     );
+    if (!admitted && hit(event)) {
+      admitted = true;
+      if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY))
+        pixelContact.current = { x: event.clientX, y: event.clientY };
+    }
+    // The displayed tray itself remains traversable, including gaps between buttons.
+    if (!admitted && interactive.current && actions.current) {
+      try {
+        const tray = actions.current.getBoundingClientRect();
+        const point = { x: event.clientX, y: event.clientY };
+        admitted = actionTrayHit(point, tray, interactive.current);
+        const contact = pixelContact.current;
+        // Only a currently opaque nearby edge pixel can bridge its contour gap.
+        if (!admitted && contact) {
+          const visible = renderer.current?.geometry?.()?.visible;
+          if (renderer.current?.hitTest(contact.x, contact.y))
+            admitted = actionTrayPath(
+              point,
+              visible,
+              tray,
+              interactive.current,
+              contact,
+            );
+        }
+      } catch {
+        // A failed renderer measurement cannot keep a transparent area interactive.
+        admitted = false;
+      }
+    }
+    setInteractive(admitted);
   };
   const onDown = (event: PointerEvent<HTMLDivElement>) => {
     if (
@@ -516,7 +539,7 @@ export function PetRuntime({ projectId }: { projectId: string }) {
         <div className="pet-runtime-bubble">{displayedBubble}</div>
       )}
       {hovered && Boolean(habits.hoverActions?.length) && (
-        <div className="pet-runtime-actions">
+        <div ref={actions} className="pet-runtime-actions">
           {habits.hoverActions?.map((id) => (
             <button
               key={id}

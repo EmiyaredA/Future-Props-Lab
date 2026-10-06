@@ -3,6 +3,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { EditorStage } from "@features/desktop-pet/EditorStage";
 import {
+  actionTrayHit,
+  actionTrayPath,
   headHitRegion,
   reactionForHit,
 } from "@features/desktop-pet/interaction";
@@ -148,4 +150,119 @@ test("finite cranial hotspot rotates with its painted axis and excludes trailing
       [100, 100],
     ]),
   ).toBe("body");
+});
+
+const visible = { x: 100, y: 100, width: 100, height: 200 };
+const below = { x: 120, y: 325, width: 60, height: 30 };
+const above = { ...below, y: 45 };
+const edgeContact = { x: 150, y: 298 };
+
+test.each([above, below])(
+  "the short action corridor respects the actual tray %j and excludes all body interior holes",
+  (tray) => {
+    const gapY = tray.y < visible.y ? 85 : 310;
+    const contact = { x: 150, y: tray.y < visible.y ? 102 : 298 };
+    expect(
+      actionTrayPath({ x: 150, y: gapY }, visible, tray, true, contact),
+    ).toBe(true);
+    expect(
+      actionTrayPath({ x: 110, y: gapY }, visible, tray, true, contact),
+    ).toBe(false);
+    expect(
+      actionTrayPath({ x: 150, y: 200 }, visible, tray, true, contact),
+    ).toBe(false);
+    expect(
+      actionTrayPath({ x: 150, y: 120 }, visible, tray, true, contact),
+    ).toBe(false);
+    expect(
+      actionTrayPath({ x: 150, y: 395 }, visible, tray, true, contact),
+    ).toBe(false);
+  },
+);
+
+test("missing, invalid, hidden, overlapping or horizontally separated geometry creates no hover corridor", () => {
+  const p = { x: 150, y: 310 };
+  expect(actionTrayPath(p, visible, below, false, edgeContact)).toBe(false);
+  expect(actionTrayPath(p, null, below, true, edgeContact)).toBe(false);
+  expect(actionTrayPath(p, visible, null, true, edgeContact)).toBe(false);
+  for (const rect of [
+    { ...visible, width: 0 },
+    { ...visible, height: -1 },
+    { ...visible, x: NaN },
+    { ...visible, y: Infinity },
+  ])
+    expect(actionTrayPath(p, rect, below, true, edgeContact)).toBe(false);
+  expect(
+    actionTrayPath({ x: NaN, y: 310 }, visible, below, true, edgeContact),
+  ).toBe(false);
+  expect(
+    actionTrayPath(p, visible, { ...below, x: 205 }, true, edgeContact),
+  ).toBe(false);
+  expect(
+    actionTrayPath(p, visible, { ...below, y: 295 }, true, edgeContact),
+  ).toBe(false);
+  expect(
+    actionTrayPath(p, visible, { ...below, y: 395 }, true, edgeContact),
+  ).toBe(false);
+  expect(
+    actionTrayPath(p, visible, { ...below, y: 394 }, true, edgeContact),
+  ).toBe(true);
+});
+
+test("changed visible geometry immediately invalidates the old gap without stored rectangles", () => {
+  const p = { x: 150, y: 310 };
+  expect(actionTrayPath(p, visible, below, true, edgeContact)).toBe(true);
+  expect(
+    actionTrayPath(p, { ...visible, height: 220 }, below, true, edgeContact),
+  ).toBe(false);
+  expect(
+    actionTrayPath(p, { ...visible, x: 300 }, below, true, edgeContact),
+  ).toBe(false);
+});
+
+test("only a confirmed pixel near the current edge authorizes its narrow inner contour gap", () => {
+  expect(actionTrayPath({ x: 150, y: 99 }, visible, above, true, null)).toBe(
+    false,
+  );
+  expect(
+    actionTrayPath({ x: 150, y: 101 }, visible, above, true, {
+      x: 150,
+      y: 103,
+    }),
+  ).toBe(true);
+  expect(
+    actionTrayPath({ x: 159, y: 101 }, visible, above, true, {
+      x: 150,
+      y: 103,
+    }),
+  ).toBe(false);
+  expect(
+    actionTrayPath({ x: 150, y: 101 }, visible, above, true, {
+      x: 150,
+      y: 109,
+    }),
+  ).toBe(false);
+  expect(
+    actionTrayPath({ x: 150, y: 120 }, visible, above, true, {
+      x: 150,
+      y: 103,
+    }),
+  ).toBe(false);
+  // Quantized geometry can slightly under-bound a real opaque contact.
+  expect(
+    actionTrayPath({ x: 150, y: 95 }, visible, above, true, { x: 150, y: 98 }),
+  ).toBe(true);
+});
+
+test("the actual displayed tray admits all button gaps and modest padding without geometry", () => {
+  expect(actionTrayHit({ x: 130, y: 335 }, below, true)).toBe(true);
+  expect(actionTrayHit({ x: 175, y: 335 }, below, true)).toBe(true);
+  expect(actionTrayHit({ x: 150, y: 317 }, below, true)).toBe(true);
+  expect(actionTrayHit({ x: 150, y: 316 }, below, true)).toBe(false);
+  expect(actionTrayHit({ x: 150, y: 335 }, below, false)).toBe(false);
+  expect(actionTrayHit({ x: 150, y: 335 }, null, true)).toBe(false);
+  expect(actionTrayHit({ x: NaN, y: 335 }, below, true)).toBe(false);
+  expect(actionTrayHit({ x: 150, y: 335 }, { ...below, width: 0 }, true)).toBe(
+    false,
+  );
 });

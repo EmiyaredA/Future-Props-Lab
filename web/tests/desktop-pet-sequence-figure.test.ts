@@ -336,6 +336,55 @@ afterEach(() => {
 });
 
 describe("real whole sequence Canvas figure", () => {
+  it.each(["resolve", "reject"] as const)(
+    "releases a painted whole canvas immediately on dispose while a late decode will %s",
+    async (completion) => {
+      const pack = fixture();
+      pack.frameSize = [1536, 1536];
+      pack.modelBox = [0, 0, 153.6, 153.6];
+      pack.headLength = 100;
+      for (const clip of Object.values(pack.clips)) {
+        for (const cel of clip.frames) {
+          const index = cel.rect[0] / 100;
+          cel.rect = [index * 1536, 0, 1536, 1536];
+          cel.head = [
+            [768, 150],
+            [768, 1150],
+          ];
+          dimensions.set(cel.texture, [3072, 1536]);
+        }
+      }
+      const h = setup(pack);
+      await h.figure.preload();
+      h.draw(0);
+      const canvas = h.group.querySelector(
+        "foreignObject canvas",
+      )! as HTMLCanvasElement;
+      expect([canvas.width, canvas.height]).toEqual([1536, 1536]);
+      expect(h.drawImage).toHaveBeenCalledTimes(1);
+      const late = defer("held");
+      h.draw(0.1, "held");
+      expect(requests).toContain("/authorized/tex/held.png");
+      const requestCount = requests.length;
+      const paintCount = h.drawImage.mock.calls.length;
+      const baseCount = h.baseDraw.mock.calls.length;
+      h.figure.dispose?.();
+      expect([canvas.width, canvas.height]).toEqual([0, 0]);
+      if (completion === "resolve") late.resolve();
+      else late.reject(new Error("late decode failed"));
+      await settle();
+      h.draw(0.2, "held");
+      h.draw(0.3);
+      expect(h.drawImage).toHaveBeenCalledTimes(paintCount);
+      expect(h.baseDraw).toHaveBeenCalledTimes(baseCount);
+      expect(requests).toHaveLength(requestCount);
+      expect(h.figure.getAssetFailure?.()).toBeNull();
+      expect([canvas.width, canvas.height]).toEqual([0, 0]);
+      expect(() => h.figure.dispose?.()).not.toThrow();
+      expect([canvas.width, canvas.height]).toEqual([0, 0]);
+      expect(h.base.dispose).toHaveBeenCalled();
+    },
+  );
   const beginWalk = async (h: ReturnType<typeof setup>) => {
     await h.figure.preload();
     h.draw(0);
