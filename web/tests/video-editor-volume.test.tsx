@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { VideoEditorInspector } from "@features/video-editor/VideoEditorInspector";
+import { VideoEditorBatchInspector } from "@features/video-editor/VideoEditorBatchInspector";
 import type { VideoEditorClip } from "@features/video-editor/types";
 
 const clip = {
@@ -37,6 +38,41 @@ function setup(current = clip, commit = vi.fn().mockResolvedValue(undefined)) {
 }
 
 describe("clip volume editing", () => {
+  it.each(["设置为固定值", "增加 / 减少"])(
+    "warns immediately and blocks invalid batch volume in %s mode",
+    async (mode) => {
+      const applyPatch = vi
+        .fn()
+        .mockResolvedValue({ applied: 1, skipped: [], truncated: false });
+      render(
+        <VideoEditorBatchInspector clips={[clip]} applyPatch={applyPatch} />,
+      );
+      fireEvent.click(screen.getByRole("radio", { name: mode }));
+      const input = screen.getByRole("spinbutton", {
+        name: mode === "设置为固定值" ? "音量" : "增减量",
+      });
+      const applyButton = screen.getByRole("button", {
+        name: "应用到 1 个片段",
+      });
+      fireEvent.change(input, { target: { value: "10" } });
+      expect(screen.getByRole("alert")).toHaveTextContent("音量倍数");
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(applyButton).toBeDisabled();
+      fireEvent.click(applyButton);
+      expect(applyPatch).not.toHaveBeenCalled();
+      fireEvent.change(input, { target: { value: "0.1" } });
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(applyButton).toBeEnabled();
+      fireEvent.click(applyButton);
+      expect(applyPatch).toHaveBeenCalledWith({
+        audio:
+          mode === "设置为固定值"
+            ? { mode: "set", volume: 0.1 }
+            : { mode: "delta", delta: 0.1 },
+      });
+      expect(await screen.findByText("已应用到 1 个片段")).toBeVisible();
+    },
+  );
   it.each(["10", "-1", "", "1e309"])(
     "rejects invalid input %j locally and can save a corrected value",
     async (value) => {

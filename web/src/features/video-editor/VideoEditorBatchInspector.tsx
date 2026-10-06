@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import type { VideoEditorClip } from "./types";
+import { volumeInputError } from "./volumeInput";
 import {
   type BatchClipPatch,
   type BatchFitMode,
@@ -58,6 +59,11 @@ export function VideoEditorBatchInspector({
   const [volumeMode, setVolumeMode] = useState<VolumeAdjustMode>("set");
   const [volumeDraft, setVolumeDraft] = useState("");
   const [volumeDirty, setVolumeDirty] = useState(false);
+  const volumeDescriptionId = useId();
+  const volumeError =
+    volumeDirty && (volumeMode === "set" || volumeMode === "delta")
+      ? volumeInputError(volumeDraft, volumeMode === "delta" ? -4 : 0)
+      : "";
   const [fitMode, setFitMode] = useState<BatchFitMode | undefined>();
   const [transformDraft, setTransformDraft] = useState<DirtyTransform>({});
   const [lockAspect, setLockAspect] = useState(true);
@@ -237,6 +243,7 @@ export function VideoEditorBatchInspector({
   };
 
   const apply = async () => {
+    if (volumeError) return;
     const patch = buildPatch();
     if (!patch) {
       setMessage("请先修改要批量应用的参数");
@@ -312,6 +319,8 @@ export function VideoEditorBatchInspector({
               </span>
               <input
                 aria-label={volumeMode === "set" ? "音量" : "增减量"}
+                aria-describedby={volumeDescriptionId}
+                aria-invalid={Boolean(volumeError)}
                 type="number"
                 min={volumeMode === "set" ? 0 : -4}
                 max={4}
@@ -329,9 +338,13 @@ export function VideoEditorBatchInspector({
             </label>
           ) : null}
           {volumeMode === "set" || volumeMode === "delta" ? (
-            <p className="ve-field-help">
-              音量范围 0～4 倍；1 为原始音量，0.1 为
-              10%。批量结果限制在此范围内。
+            <p
+              id={volumeDescriptionId}
+              className={volumeError ? "ve-field-error" : "ve-field-help"}
+              role={volumeError ? "alert" : undefined}
+            >
+              {volumeError ||
+                "音量范围 0～4 倍；1 为原始音量，0.1 为 10%。增减量范围 -4～4 倍，结果限制在 0～4 倍内。"}
             </p>
           ) : null}
         </section>
@@ -567,7 +580,7 @@ export function VideoEditorBatchInspector({
           <button
             type="button"
             className="ve-batch-apply"
-            disabled={disabled}
+            disabled={disabled || Boolean(volumeError)}
             onClick={() => void apply()}
           >
             应用到 {clips.length} 个片段
