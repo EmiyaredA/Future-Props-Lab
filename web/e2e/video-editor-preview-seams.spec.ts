@@ -48,9 +48,19 @@ test("keeps decoded frames while scrubbing continuous seams with delayed exact f
       "-f",
       "lavfi",
       "-i",
-      "color=c=red:s=320x180:r=24",
-      "-t",
-      "8",
+      "color=c=lime:s=320x180:r=24:d=1",
+      "-f",
+      "lavfi",
+      "-i",
+      "color=c=red:s=320x180:r=24:d=4",
+      "-f",
+      "lavfi",
+      "-i",
+      "color=c=blue:s=320x180:r=24:d=4",
+      "-filter_complex",
+      "[0:v][1:v][2:v]concat=n=3:v=1:a=0[v]",
+      "-map",
+      "[v]",
       "-c:v",
       "libx264",
       "-pix_fmt",
@@ -92,7 +102,7 @@ test("keeps decoded frames while scrubbing continuous seams with delayed exact f
       assetId: asset.id,
       timelineStartUs: 0,
       durationUs: 2_000_000,
-      sourceInUs: 0,
+      sourceInUs: 1_000_000,
       sourceLoop: false,
       fitMode: "cover",
       flipX: false,
@@ -105,13 +115,14 @@ test("keeps decoded frames while scrubbing continuous seams with delayed exact f
       id: "continuous-right",
       name: "连续右段",
       timelineStartUs: 2_000_000,
-      sourceInUs: 2_000_000,
+      sourceInUs: 3_000_000,
     };
     const jump = {
       ...left,
       id: "jump",
       name: "跳剪",
       timelineStartUs: 4_000_000,
+      sourceInUs: 6_000_000,
     };
     const black = {
       ...left,
@@ -211,14 +222,45 @@ test("keeps decoded frames while scrubbing continuous seams with delayed exact f
       .poll(async () =>
         video.evaluate((node) => (node as HTMLVideoElement).currentTime),
       )
-      .toBeGreaterThan(2.1);
+      .toBeGreaterThan(3.1);
     await expect(video).toHaveAttribute("data-seam-decoder", "original");
     await page.getByRole("button", { name: "暂停", exact: true }).click();
 
+    // Green is outside every trim. Sample the presented canvas throughout a
+    // real playing cut from the red trim to a non-contiguous blue trim.
+    await seek(3.8);
+    await page.getByRole("button", { name: "播放", exact: true }).click();
+    const colors = await page
+      .locator(".ve-stage canvas.ve-keyed-media")
+      .evaluate(
+        (node) =>
+          new Promise<number[][]>((resolve) => {
+            const source = node as HTMLCanvasElement;
+            const tiny = document.createElement("canvas");
+            tiny.width = tiny.height = 1;
+            const ctx = tiny.getContext("2d")!;
+            const samples: number[][] = [];
+            const start = performance.now();
+            const sample = () => {
+              ctx.drawImage(source, 0, 0, 1, 1);
+              samples.push([...ctx.getImageData(0, 0, 1, 1).data]);
+              if (performance.now() - start < 700)
+                requestAnimationFrame(sample);
+              else resolve(samples);
+            };
+            sample();
+          }),
+      );
+    expect(colors.some((color) => color[0] > 200)).toBeTruthy();
+    expect(colors.some((color) => color[2] > 200)).toBeTruthy();
+    expect(
+      colors.every((color) => color[1] < 30 && color[3] === 255),
+    ).toBeTruthy();
+    await page.getByRole("button", { name: "暂停", exact: true }).click();
     await seek(4.2);
     await expect(frame).toBeVisible();
-    await expect(video).not.toHaveAttribute("data-seam-decoder", "original");
-    expect((await sample()).red).toBeGreaterThan(200);
+    await expect(video).toHaveAttribute("data-seam-decoder", "original");
+    expect((await sample()).red).toBeLessThan(10);
     for (const seconds of [6.5, 7.5]) {
       await seek(seconds);
       await expect(frame).toBeVisible();

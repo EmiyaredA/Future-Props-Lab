@@ -1,153 +1,8 @@
 import { useEffect, useRef, type CSSProperties } from "react";
-import {
-  paintChromaCanvas,
-  recordChromaDuplicateFrameSkip,
-} from "./chromaCanvas";
-import { clipSourceTimeUs } from "./editorModel";
-import { syncMediaClock } from "./previewClock";
-import type { VideoProxyCrop, PreviewMediaGeometry } from "./previewGeometry";
+import { paintChromaCanvas } from "./chromaCanvas";
+import { VideoEditorProxyVideo } from "./VideoEditorProxyVideo";
+import type { PreviewMediaGeometry } from "./previewGeometry";
 import type { VideoEditorClip, VideoEditorAsset } from "./types";
-const PREVIEW_VIDEO_SYNC_TOLERANCE_S = 0.12;
-
-function ProxyVideo({
-  source,
-  clip,
-  localUs,
-  playing,
-  crop,
-  chromaKey,
-}: {
-  source: string;
-  clip: VideoEditorClip;
-  localUs: number;
-  playing: boolean;
-  crop: VideoProxyCrop;
-  chromaKey?: VideoEditorClip["chromaKey"];
-}) {
-  const video = useRef<HTMLVideoElement>(null);
-  const keyedCanvas = useRef<HTMLCanvasElement>(null);
-  const wasPlayingRef = useRef(false);
-  useEffect(() => {
-    const node = video.current;
-    if (!node) return;
-    const target = clipSourceTimeUs(clip, localUs) / 1_000_000;
-    const rate = clip.playbackRate ?? 1;
-    if (node.playbackRate !== rate) node.playbackRate = rate;
-    const playStarted = playing && !wasPlayingRef.current;
-    wasPlayingRef.current = playing;
-    const sync = () =>
-      syncMediaClock(node, target, {
-        playing,
-        playStarted,
-        toleranceSeconds: PREVIEW_VIDEO_SYNC_TOLERANCE_S,
-      });
-    sync();
-    node.addEventListener("loadedmetadata", sync);
-    node.addEventListener("seeked", sync);
-    return () => {
-      node.removeEventListener("loadedmetadata", sync);
-      node.removeEventListener("seeked", sync);
-    };
-  }, [clip, localUs, playing]);
-  useEffect(() => {
-    const node = video.current;
-    if (!node) return;
-    if (playing) void node.play().catch(() => undefined);
-    else node.pause();
-  }, [playing]);
-  useEffect(() => {
-    if (!chromaKey?.enabled) return;
-    const node = video.current;
-    const canvas = keyedCanvas.current;
-    if (!node || !canvas) return;
-    let cancelled = false;
-    let rafId = 0;
-    let vfcId = 0;
-    let lastMediaTime = Number.NaN;
-    const supportsVfc =
-      typeof node.requestVideoFrameCallback === "function" &&
-      typeof node.cancelVideoFrameCallback === "function";
-    const paintOnce = (mediaTime?: number) => {
-      if (!node.videoWidth || !node.videoHeight) return;
-      if (
-        mediaTime !== undefined &&
-        Number.isFinite(lastMediaTime) &&
-        mediaTime === lastMediaTime
-      ) {
-        recordChromaDuplicateFrameSkip();
-        return;
-      }
-      if (mediaTime !== undefined) lastMediaTime = mediaTime;
-      paintChromaCanvas(
-        canvas,
-        node,
-        node.videoWidth,
-        node.videoHeight,
-        chromaKey,
-      );
-    };
-    const schedule = () => {
-      if (cancelled || !playing) return;
-      if (supportsVfc) {
-        vfcId = node.requestVideoFrameCallback((_now, meta) => {
-          if (cancelled) return;
-          paintOnce(meta.mediaTime);
-          schedule();
-        });
-        return;
-      }
-      rafId = requestAnimationFrame(() => {
-        if (cancelled) return;
-        paintOnce();
-        schedule();
-      });
-    };
-    const onMediaEvent = () => {
-      lastMediaTime = Number.NaN;
-      paintOnce();
-    };
-    node.addEventListener("loadeddata", onMediaEvent);
-    node.addEventListener("seeked", onMediaEvent);
-    paintOnce();
-    schedule();
-    return () => {
-      cancelled = true;
-      if (supportsVfc) node.cancelVideoFrameCallback(vfcId);
-      else cancelAnimationFrame(rafId);
-      node.removeEventListener("loadeddata", onMediaEvent);
-      node.removeEventListener("seeked", onMediaEvent);
-    };
-  }, [chromaKey, playing, source]);
-  const placement = {
-    left: `${crop.leftPercent}%`,
-    top: `${crop.topPercent}%`,
-    width: `${crop.widthPercent}%`,
-    height: `${crop.heightPercent}%`,
-  };
-  return (
-    <>
-      <video
-        ref={video}
-        muted
-        src={source}
-        preload="auto"
-        style={{
-          ...placement,
-          visibility: chromaKey?.enabled ? "hidden" : "visible",
-        }}
-      />
-      {chromaKey?.enabled ? (
-        <canvas
-          ref={keyedCanvas}
-          className="ve-keyed-media"
-          style={placement}
-          aria-hidden
-        />
-      ) : null}
-    </>
-  );
-}
-
 function ChromaImage({
   source,
   chromaKey,
@@ -204,7 +59,7 @@ export function VideoEditorMediaLayer({
       >
         {clip.kind === "video" && asset?.proxyUrl && geometry?.proxyCrop ? (
           <div className="ve-stage-media-crop">
-            <ProxyVideo
+            <VideoEditorProxyVideo
               source={asset.proxyUrl}
               clip={clip}
               localUs={localUs}

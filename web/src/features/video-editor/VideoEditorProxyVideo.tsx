@@ -1,0 +1,172 @@
+import { useLayoutEffect, useRef } from "react";
+import {
+  paintChromaCanvas,
+  recordChromaDuplicateFrameSkip,
+} from "./chromaCanvas";
+import { clipSourceTimeUs } from "./editorModel";
+import type { VideoProxyCrop } from "./previewGeometry";
+import type { VideoEditorClip } from "./types";
+
+/** Present only positioned frames; keep the last decoded frame across cuts. */
+export function VideoEditorProxyVideo({
+  source,
+  clip,
+  localUs,
+  playing,
+  crop,
+  chromaKey,
+}: {
+  source: string;
+  clip: VideoEditorClip;
+  localUs: number;
+  playing: boolean;
+  crop: VideoProxyCrop;
+  chromaKey?: VideoEditorClip["chromaKey"];
+}) {
+  const video = useRef<HTMLVideoElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const paintedTime = useRef(Number.NaN);
+  const playRequested = useRef(false);
+  const previous = useRef<
+    | {
+        clip: VideoEditorClip;
+        source: string;
+        playing: boolean;
+      }
+    | undefined
+  >(undefined);
+  useLayoutEffect(() => {
+    const node = video.current;
+    const surface = canvas.current;
+    if (!node || !surface) return;
+    const target = clipSourceTimeUs(clip, localUs) / 1_000_000;
+    const start = clip.sourceInUs / 1_000_000;
+    const end = clipSourceTimeUs(clip, clip.durationUs) / 1_000_000;
+    const advancing = playing && localUs > 0 && localUs < clip.durationUs - 1;
+    const prior = previous.current;
+    const cut =
+      prior &&
+      (prior.source !== source ||
+        (prior.clip.id !== clip.id &&
+          (clipSourceTimeUs(prior.clip, prior.clip.durationUs) !==
+            clip.sourceInUs ||
+            (prior.clip.playbackRate ?? 1) !== (clip.playbackRate ?? 1))));
+    const exact = !advancing || !prior?.playing || Boolean(cut);
+    if (cut || prior?.clip.chromaKey !== chromaKey)
+      paintedTime.current = Number.NaN;
+    previous.current = { clip, source, playing: advancing };
+    node.playbackRate = clip.playbackRate ?? 1;
+    let cancelled = false;
+    let callback = 0;
+    let raf = 0;
+    const supportsFrames = typeof node.requestVideoFrameCallback === "function";
+    const pause = () => {
+      playRequested.current = false;
+      node.pause();
+    };
+    const positioned = () =>
+      !node.seeking &&
+      node.readyState >= 2 &&
+      node.currentTime >= start &&
+      node.currentTime < end &&
+      Math.abs(node.currentTime - target) <= (exact ? 0.000001 : 0.12);
+    const paint = (mediaTime = node.currentTime) => {
+      if (!positioned() || !node.videoWidth || !node.videoHeight) return;
+      if (Math.abs(mediaTime - target) > 0.12) return;
+      if (mediaTime === paintedTime.current) {
+        if (chromaKey?.enabled) recordChromaDuplicateFrameSkip();
+        return;
+      }
+      paintedTime.current = mediaTime;
+      if (chromaKey?.enabled) {
+        paintChromaCanvas(
+          surface,
+          node,
+          node.videoWidth,
+          node.videoHeight,
+          chromaKey,
+        );
+      } else {
+        if (surface.width !== node.videoWidth) surface.width = node.videoWidth;
+        if (surface.height !== node.videoHeight)
+          surface.height = node.videoHeight;
+        surface.getContext("2d")?.drawImage(node, 0, 0);
+      }
+    };
+    const sync = () => {
+      if (cancelled) return false;
+      const drift = Math.abs(node.currentTime - target);
+      if (node.seeking) {
+        pause();
+        return false;
+      }
+      if (
+        drift > (exact ? 0.000001 : 0.12) ||
+        node.currentTime < start ||
+        node.currentTime >= end
+      ) {
+        pause();
+        // Do not publish loadeddata from the old position after assigning a seek.
+        if (drift > 0.000001) node.currentTime = Math.max(0, target);
+        return false;
+      }
+      if (advancing && node.readyState >= 2) {
+        if (!playRequested.current) {
+          playRequested.current = true;
+          void node.play().catch(() => {
+            if (!cancelled) playRequested.current = false;
+          });
+        }
+      } else pause();
+      return positioned();
+    };
+    const tick = (_now?: number, metadata?: VideoFrameCallbackMetadata) => {
+      if (cancelled) return;
+      if (sync()) paint(metadata?.mediaTime);
+      schedule();
+    };
+    const schedule = () => {
+      if (supportsFrames) callback = node.requestVideoFrameCallback(tick);
+      else if (advancing) raf = requestAnimationFrame(tick);
+    };
+    const mediaReady = () => {
+      if (sync()) paint();
+    };
+    if (sync() && !advancing) paint();
+    schedule();
+    node.addEventListener("loadedmetadata", sync);
+    node.addEventListener("loadeddata", mediaReady);
+    node.addEventListener("seeked", mediaReady);
+    return () => {
+      cancelled = true;
+      if (supportsFrames) node.cancelVideoFrameCallback(callback);
+      else cancelAnimationFrame(raf);
+      node.removeEventListener("loadedmetadata", sync);
+      node.removeEventListener("loadeddata", mediaReady);
+      node.removeEventListener("seeked", mediaReady);
+    };
+  }, [clip, localUs, playing, source, chromaKey]);
+  const placement = {
+    left: `${crop.leftPercent}%`,
+    top: `${crop.topPercent}%`,
+    width: `${crop.widthPercent}%`,
+    height: `${crop.heightPercent}%`,
+  };
+  return (
+    <>
+      <video
+        ref={video}
+        muted
+        src={source}
+        preload="auto"
+        style={{ ...placement, visibility: "hidden" }}
+      />
+      <canvas
+        ref={canvas}
+        className="ve-keyed-media"
+        style={placement}
+        aria-hidden
+      />
+    </>
+  );
+}

@@ -240,13 +240,13 @@ describe("video editor seam preview", () => {
     expect(video.currentTime).toBeCloseTo(3.791572, 6);
   });
 
-  it("keeps separate decoders for source jumps, real gaps and simultaneous transition partners", () => {
+  it("shares the display buffer across source jumps but clears gaps and separates transition partners", () => {
     const jumped = structuredClone(timeline);
     jumped.document.tracks![0].clips![1].sourceInUs += 100_000;
     expect(previewVideoPlaybackKeys(jumped.document.tracks!, [])).toEqual(
       new Map([
         ["left", "left"],
-        ["right", "right"],
+        ["right", "left"],
       ]),
     );
     const gap = structuredClone(timeline);

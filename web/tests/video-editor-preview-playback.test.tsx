@@ -236,6 +236,13 @@ describe("video editor preview playback", () => {
     );
     const audio = container.querySelector("audio")!;
     expect(audio.currentTime).toBeCloseTo(1.99, 6);
+    expect(play).toHaveBeenCalledTimes(1);
+    const video = container.querySelector("video")!;
+    Object.defineProperty(video, "readyState", {
+      configurable: true,
+      value: 2,
+    });
+    fireEvent.seeked(video);
     expect(play).toHaveBeenCalledTimes(2);
 
     rerender(<VideoEditorPreview {...props} playheadUs={2_010_000} />);
@@ -258,12 +265,19 @@ describe("video editor preview playback", () => {
       preciseFrame: true,
       onPreciseFrameChange: vi.fn(),
     };
-    const { rerender } = render(
+    const { container, rerender } = render(
       <VideoEditorPreview {...props} playheadUs={1_000_000} />,
     );
+    const video = container.querySelector("video")!;
+    Object.defineProperty(video, "readyState", {
+      configurable: true,
+      value: 2,
+    });
+    fireEvent.seeked(video);
     expect(play).toHaveBeenCalledTimes(2);
 
     for (let frame = 1; frame <= 12; frame += 1) {
+      video.currentTime = 1 + (frame * 16_667) / 1_000_000;
       rerender(
         <VideoEditorPreview
           {...props}
@@ -544,6 +558,10 @@ describe("video editor preview playback", () => {
     Object.defineProperty(video, "videoHeight", {
       configurable: true,
       value: 1080,
+    });
+    Object.defineProperty(video, "readyState", {
+      configurable: true,
+      value: 2,
     });
     expect(requestVideoFrameCallback).toHaveBeenCalled();
     expect(container.querySelector("canvas.ve-keyed-media")).toBeTruthy();
