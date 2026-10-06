@@ -1,5 +1,5 @@
 {
-  "sceneVersion": 1,
+  "sceneVersion": 2,
   "title": "时间坐标与精确空隙处理",
   "elements": [
     {
@@ -31,7 +31,7 @@
       "y": 60,
       "width": 220,
       "height": 110,
-      "text": "素材源时间\n3 + 2 × 2 = 7s",
+      "text": "素材源时间\n3 + 2 × 2 = 7s\n按源 PTS 选择当前帧",
       "fill": "#fff1dd",
       "stroke": "#365f62"
     },
@@ -53,7 +53,7 @@
       "y": 400,
       "width": 600,
       "height": 90,
-      "text": "工程保存区间与速度\n渲染按映射后源时间采样",
+      "text": "工程保存区间与速度\n精确帧加载完成后替换已显示画面",
       "fill": "#f2edf8",
       "stroke": "#365f62"
     },
@@ -132,24 +132,33 @@
     },
     {
       "id": "gap_extend",
+      "label": "延长",
       "source": "gap",
       "target": "extend",
       "arrow": true,
-      "style": "step"
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
     },
     {
       "id": "gap_ripple",
+      "label": "前移",
       "source": "gap",
       "target": "ripple",
       "arrow": true,
-      "style": "step"
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
     },
     {
       "id": "gap_freeze",
+      "label": "定帧",
       "source": "gap",
       "target": "freeze",
       "arrow": true,
-      "style": "step"
+      "style": "step",
+      "sourceAnchor": "bottom",
+      "targetAnchor": "top"
     }
   ]
 }

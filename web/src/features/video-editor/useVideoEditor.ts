@@ -117,7 +117,7 @@ export function useVideoEditor(projectId: string) {
             error instanceof ApiError &&
               error.problem.code === "revision_conflict"
               ? "服务器版本已更新；未保存操作已暂停，请确认放弃后重新编辑。"
-              : "保存失败；未保存操作已暂停，请核对服务器状态后重新编辑。",
+              : `保存失败${error instanceof ApiError ? `：${error.message}` : ""}；未保存操作已暂停，请核对服务器状态后重新编辑。`,
           );
           void client.refetchQueries({
             queryKey: videoEditorQueryKeys.timeline(projectId),

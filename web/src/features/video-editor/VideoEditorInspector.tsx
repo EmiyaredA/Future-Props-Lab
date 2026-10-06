@@ -72,11 +72,20 @@ export function VideoEditorInspector({
   >({ in: 500_000, out: 500_000 });
   useEffect(() => {
     setTransitionDurations({
-      in: clip?.transitionIn?.durationUs ?? 500_000,
-      out: clip?.transitionOut?.durationUs ?? 500_000,
+      in: Math.min(
+        clip?.transitionIn?.durationUs ?? 500_000,
+        clip?.durationUs ?? 500_000,
+        10_000_000,
+      ),
+      out: Math.min(
+        clip?.transitionOut?.durationUs ?? 500_000,
+        clip?.durationUs ?? 500_000,
+        10_000_000,
+      ),
     });
   }, [
     clip?.id,
+    clip?.durationUs,
     clip?.transitionIn?.durationUs,
     clip?.transitionOut?.durationUs,
   ]);
@@ -352,7 +361,11 @@ export function VideoEditorInspector({
               {(["in", "out"] as const).map((edge) => {
                 const transition =
                   edge === "in" ? clip.transitionIn : clip.transitionOut;
-                const durationUs = transitionDurations[edge];
+                const durationUs = Math.min(
+                  transitionDurations[edge],
+                  clip.durationUs,
+                  10_000_000,
+                );
                 const edgeLabel = edge === "in" ? "片段头" : "片段尾";
                 return (
                   <div
@@ -481,7 +494,11 @@ export function VideoEditorInspector({
               {(["in", "out"] as const).map((edge) => {
                 const transition =
                   edge === "in" ? clip.transitionIn : clip.transitionOut;
-                const durationUs = transitionDurations[edge];
+                const durationUs = Math.min(
+                  transitionDurations[edge],
+                  clip.durationUs,
+                  10_000_000,
+                );
                 const edgeLabel = edge === "in" ? "片段头" : "片段尾";
                 const kindLabel = transition
                   ? (visualTransitionLabels[transition.kind] ?? transition.kind)

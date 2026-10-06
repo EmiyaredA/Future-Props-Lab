@@ -5,6 +5,8 @@ import { VideoEditorTextLayer } from "./VideoEditorTextLayer";
 import { VideoEditorSourceMonitor } from "./VideoEditorSourceMonitor";
 import { syncMediaClock } from "./previewClock";
 import { VideoEditorMediaLayer } from "./VideoEditorMediaLayer";
+import { VideoEditorPreciseFrame } from "./VideoEditorPreciseFrame";
+import { previewVideoPlaybackKeys } from "./previewPlayback";
 import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
@@ -315,6 +317,14 @@ export function VideoEditorPreview({
       ),
     [playheadUs, timeline.document.tracks, timeline.document.transitions],
   );
+  const videoPlaybackKeys = useMemo(
+    () =>
+      previewVideoPlaybackKeys(
+        timeline.document.tracks ?? [],
+        timeline.document.transitions ?? [],
+      ),
+    [timeline.document.tracks, timeline.document.transitions],
+  );
   const selectedLayer = visualLayers.find(
     ({ clip }) =>
       clip.id === selectedClipId &&
@@ -611,7 +621,7 @@ export function VideoEditorPreview({
                 );
               return (
                 <VideoEditorMediaLayer
-                  key={clip.id}
+                  key={videoPlaybackKeys.get(clip.id) ?? clip.id}
                   clip={clip}
                   asset={asset}
                   geometry={geometry}
@@ -651,18 +661,9 @@ export function VideoEditorPreview({
             !playing &&
             !draggingText &&
             !transformControl.draft ? (
-              <img
-                className="ve-precise-frame"
-                key={preciseUrl}
-                src={preciseUrl}
-                alt="后端精确停帧"
-                style={{ visibility: "hidden" }}
-                onLoad={(event) => {
-                  event.currentTarget.style.visibility = "visible";
-                }}
-                onError={(event) => {
-                  event.currentTarget.style.visibility = "hidden";
-                }}
+              <VideoEditorPreciseFrame
+                key={`${projectId}:${timeline.revision}`}
+                url={preciseUrl}
               />
             ) : null}
             {compareActive && compareClip ? (

@@ -13,7 +13,12 @@ import {
   listVideoEditorAssets,
   uploadVideoEditorAsset,
 } from "@features/video-editor/api";
-import { gapAsset, gapTimeline } from "./helpers/video-editor-gaps";
+import {
+  gapAsset,
+  gapClip,
+  gapTimeline,
+  gapTrack,
+} from "./helpers/video-editor-gaps";
 
 vi.mock("@platform/api/client", () => ({ fetchApiBlob: vi.fn() }));
 vi.mock("@features/video-editor/api", () => ({
@@ -36,6 +41,7 @@ describe("explicit gap freezes", () => {
       },
     ];
     left.flipX = true;
+    left.name = "长".repeat(255);
     const picture = freezeGapTemplate(left, findTimelineGaps(state)[0]);
     expect(picture).toMatchObject({
       kind: "image",
@@ -51,6 +57,8 @@ describe("explicit gap freezes", () => {
       transitionOut: null,
     });
     expect(left.keyframes).toHaveLength(1);
+    expect(picture.name.length).toBeLessThanOrEqual(255);
+    expect(picture.name).toContain("空隙修复定帧");
   });
   it("extracts a safe source frame accounting for rate, in-point and source FPS", () => {
     const state = gapTimeline();
@@ -66,6 +74,15 @@ describe("explicit gap freezes", () => {
     left.sourceLoop = true;
     left.durationUs = 4_000_000;
     expect(freezeSourcePositionMs(left, asset)).toBe(0);
+    left.sourceInUs = 1_000_000;
+    left.durationUs = 4_750_000;
+    expect(freezeSourcePositionMs(left, asset)).toBe(2483);
+    expect(
+      freezeSourcePositionMs(
+        left,
+        gapAsset({ probe: { durationUs: 4_000_000, streams: "unknown" } }),
+      ),
+    ).toBe(2466);
   });
   it("prepares a PNG asset before one atomic add/remove edit", async () => {
     const state = gapTimeline();
@@ -162,6 +179,17 @@ describe("explicit gap freezes", () => {
     expect(state.revision).toBe(4);
   });
   it("rejects locked, unknown, overlapping and >200 freeze selections", () => {
+    const many = gapTimeline([
+      gapTrack(
+        "v",
+        Array.from({ length: 202 }, (_, index) =>
+          gapClip(`color-${index}`, index * 1_000_004, { kind: "color" }),
+        ),
+      ),
+    ]);
+    expect(
+      planFreezeGaps(many, [], findTimelineGaps(many)).issues.join(),
+    ).toContain("最多处理 200");
     const state = gapTimeline();
     const gaps = findTimelineGaps(state);
     state.document.tracks![0].locked = true;

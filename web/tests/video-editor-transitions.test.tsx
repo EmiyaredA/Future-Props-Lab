@@ -37,6 +37,106 @@ const track: VideoEditorTrack = {
 };
 
 describe("VideoEditorTransitionPanel", () => {
+  it.each([125_001, 33_333, 1])(
+    "fits an eyelid seam to a %i microsecond freeze clip",
+    (durationUs) => {
+      const commit = vi.fn().mockResolvedValue(undefined);
+      const from = { ...clip("freeze", 0), durationUs };
+      const to = clip("video", durationUs);
+      render(
+        <VideoEditorTransitionPanel
+          clips={[from, to]}
+          tracks={[track]}
+          transitions={[]}
+          selectedClip={to}
+          target={{ fromClipId: from.id, toClipId: to.id }}
+          commit={commit}
+          onSelectTransition={vi.fn()}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "闭眼睁眼" }));
+      fireEvent.click(screen.getByRole("button", { name: "应用到片段之间" }));
+      expect(commit.mock.calls[0][0][0].transition.durationUs).toBe(durationUs);
+    },
+  );
+
+  it.each(["头", "尾"])("fits a clip %s transition to a short clip", (edge) => {
+    const commit = vi.fn().mockResolvedValue(undefined);
+    const short = { ...clip("freeze", 0), durationUs: 125_001 };
+    render(
+      <VideoEditorTransitionPanel
+        clips={[short]}
+        tracks={[track]}
+        transitions={[]}
+        selectedClip={short}
+        commit={commit}
+        onSelectTransition={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "闭眼睁眼" }));
+    fireEvent.click(screen.getByRole("button", { name: `应用到片段${edge}` }));
+    expect(commit.mock.calls[0][0][0].transition.durationUs).toBe(125_001);
+  });
+
+  it.each(["between", "in", "out"] as const)(
+    "bounds duration edits for a short %s transition without rounding its limit",
+    (placement) => {
+      const commit = vi.fn().mockResolvedValue(undefined);
+      const transition = {
+        kind: "eyelid" as const,
+        durationUs: 125_001,
+        direction: "left" as const,
+        easing: "linear" as const,
+      };
+      const from = {
+        ...clip("freeze", 0),
+        durationUs: 125_001,
+        ...(placement === "in" ? { transitionIn: transition } : {}),
+        ...(placement === "out" ? { transitionOut: transition } : {}),
+      };
+      render(
+        <VideoEditorTransitionPanel
+          clips={[from, clip("video", 125_001)]}
+          tracks={[track]}
+          transitions={
+            placement === "between"
+              ? [
+                  {
+                    ...transition,
+                    id: "seam",
+                    placement: "between",
+                    fromClipId: from.id,
+                    toClipId: "video",
+                  },
+                ]
+              : []
+          }
+          selectedTransitionId={placement === "between" ? "seam" : undefined}
+          selectedClip={from}
+          clipEdgeFocus={placement === "out" ? "out" : "in"}
+          commit={commit}
+          onSelectTransition={vi.fn()}
+        />,
+      );
+      const input = screen.getByRole("spinbutton");
+      expect(input).toHaveValue(0.125001);
+      expect(input).toHaveAttribute("max", "0.125001");
+      for (const [value, expected] of [
+        ["0.5", 125_001],
+        ["-1", 1],
+        ["0.1", 100_000],
+      ] as const) {
+        fireEvent.change(input, { target: { value } });
+        const operation = commit.mock.calls.at(-1)![0][0];
+        expect((operation.patch ?? operation.transition).durationUs).toBe(
+          expected,
+        );
+        const inverse = commit.mock.calls.at(-1)![1][0];
+        expect((inverse.patch ?? inverse.transition).durationUs).toBe(125_001);
+      }
+    },
+  );
+
   it("adds a seam transition between adjacent clips", () => {
     const commit = vi.fn().mockResolvedValue(undefined);
     render(

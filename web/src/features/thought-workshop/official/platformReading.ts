@@ -588,7 +588,7 @@ export const PLATFORM_READING: Record<
   },
   "video-editor/workflow": {
     summary:
-      "安排多轨片段和字幕，检查精确空隙并选择延长、前移或定帧，验证保存和切点。",
+      "安排多轨片段和字幕，核对接点预览与画面加载状态，检查精确空隙并选择延长、前移或定帧。",
     related: [
       {
         libraryId: "video-editor",

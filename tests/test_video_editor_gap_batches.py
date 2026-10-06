@@ -85,7 +85,7 @@ async def test_exact_gap_batch_cas_restore_and_short_output(fps, mode, tmp_path)
         ordered = sorted(completed["tracks"][0]["clips"], key=lambda item: item["timelineStartUs"])
         assert all(
             left["timelineStartUs"] + left["durationUs"] == right["timelineStartUs"]
-            for left, right in zip(ordered, ordered[1:])
+            for left, right in zip(ordered, ordered[1:], strict=False)
         )
         stale = await submit(redo, original["revision"])
         assert stale.status_code == 409

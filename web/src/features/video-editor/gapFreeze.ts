@@ -19,7 +19,7 @@ export function freezeGapTemplate(
   return {
     ...structuredClone(left),
     id: crypto.randomUUID(),
-    name: `${left.name} · 空隙修复定帧`,
+    name: `${left.name.slice(0, 240)} · 空隙修复定帧`,
     kind: left.kind === "video" ? "image" : left.kind,
     timelineStartUs: gap.startUs,
     durationUs: gap.durationUs,
@@ -41,12 +41,18 @@ export function freezeSourcePositionMs(
 ) {
   const duration = Number(asset.probe?.durationUs);
   const end = clipSourceTimeUs(left, left.durationUs);
-  const streams = asset.probe?.streams as
-    { codec_type?: string; avg_frame_rate?: string }[] | undefined;
-  const rate = streams?.find(
-    (stream) => stream.codec_type === "video",
+  const streams = Array.isArray(asset.probe?.streams)
+    ? (asset.probe.streams as {
+        codec_type?: unknown;
+        avg_frame_rate?: unknown;
+      }[])
+    : [];
+  const rate = streams.find(
+    (stream) => stream?.codec_type === "video",
   )?.avg_frame_rate;
-  const [numerator, denominator] = (rate ?? "30/1").split("/").map(Number);
+  const [numerator, denominator] = (typeof rate === "string" ? rate : "30/1")
+    .split("/")
+    .map(Number);
   const fps = numerator / (denominator || 1);
   const step = 1_000_000 / (Number.isFinite(fps) && fps > 0 ? fps : 30);
   const last = left.sourceLoop
@@ -54,7 +60,8 @@ export function freezeSourcePositionMs(
     : Math.min(end - 1, duration - 1);
   // The existing source-frame API seeks in milliseconds. Leave one source-frame
   // handle before the exclusive end; timeline boundaries remain exact microseconds.
-  return Math.floor(Math.max(left.sourceInUs, last - step) / 1000);
+  const first = left.sourceLoop && end > duration ? 0 : left.sourceInUs;
+  return Math.floor(Math.max(first, last - step) / 1000);
 }
 
 export function planFreezeGaps(
@@ -153,6 +160,7 @@ export async function prepareGapFreezes(
         unzipSync(new Uint8Array(await archive.arrayBuffer())),
       )[0];
       if (!png?.length) throw new Error("定帧提取未返回图片，未修改时间线");
+      check();
       const uploaded = await uploadVideoEditorAsset(
         timeline.projectId,
         new File([new Uint8Array(png)], `${picture.name}.png`, {

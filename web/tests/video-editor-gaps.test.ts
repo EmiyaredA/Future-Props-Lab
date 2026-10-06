@@ -169,6 +169,59 @@ describe.each([30, 60] as const)("precise batch planning at %i FPS", (fps) => {
 });
 
 describe("gap constraints", () => {
+  it("coordinates linked moves and audio transition removal in the same inverse batch", () => {
+    const state = gapTimeline();
+    state.document.tracks![0].clips![0].durationUs = 100_003;
+    state.document.tracks![0].clips![1].linkGroupId = "sound-group";
+    state.document.tracks!.push(
+      gapTrack(
+        "a",
+        [
+          gapClip("sound-left", 300_000, { kind: "audio" }),
+          gapClip("sound", 500_000, {
+            kind: "audio",
+            linkGroupId: "sound-group",
+          }),
+        ],
+        { kind: "audio" },
+      ),
+    );
+    state.document.transitions = [
+      {
+        id: "crossfade",
+        kind: "audio-crossfade",
+        fromClipId: "sound-left",
+        toClipId: "sound",
+        durationUs: 200_000,
+        placement: "between",
+        easing: "linear",
+        direction: "left",
+      },
+    ];
+    const invalid = planGapEdits(
+      state,
+      [],
+      [findTimelineGaps(state)[0]],
+      "ripple",
+    );
+    expect(invalid.issues.join()).toContain("起点之前");
+    state.document.tracks![1].clips![1].timelineStartUs = 1_000_000;
+    const plan = planGapEdits(
+      state,
+      [],
+      [findTimelineGaps(state)[0]],
+      "ripple",
+    );
+    expect(plan.issues).toEqual([]);
+    expect(plan.redo.at(-1)).toEqual({
+      type: "removeTransition",
+      transitionId: "crossfade",
+    });
+    expect(plan.undo.at(-1)).toEqual({
+      type: "addTransition",
+      transition: state.document.transitions[0],
+    });
+  });
   it.each([
     [gapAsset({ processingStatus: "processing" }), "尚未准备好"],
     [gapAsset({ probe: {} }), "长度未知"],

@@ -34,6 +34,14 @@ flowchart TD
 
 采样之后还有效果、转场和多轨合成。转场可能让相邻片段同时参与输出，音轨也有自己的采样与混合规则。仅验证单片段中间一帧正确，不能证明接缝和声音没有偏移。
 
+## 连续接点怎样等待正确的画面
+
+同一视频的左片段覆盖 [0, 2s)，右片段从时间线 2s、源素材 2s 开始，速率都为 1。这里没有缺失的时间区间。`previewPlayback.ts` 为两段提供同一个播放器身份，前后移动或播放经过接点时复用已解码的视频；源跳剪、不同素材或需要同时显示两段的视觉转场仍分别定位。
+
+精确停帧请求需要异步加载。`VideoEditorPreciseFrame.tsx` 保留上一张已加载的合成画面，在“画面更新中…”期间等待当前请求成功，再一次替换。快速移动播放头时，过期请求不能替换画面；加载失败显示提示。工程或保存版本变化、开始播放及实时变换草稿会退出这次保留，避免旧内容覆盖当前编辑。
+
+源时间也不一定恰好位于源帧边界。例如 24 FPS 视频的 4.591572s 落在 4.583333…s 开始的展示区间内，不能提前取 4.625s 的下一帧。共享 `video_sampling.py` 按源 PTS 选择当前帧，精确停帧与正式导出遵守同一规则。加载等待只影响监视器显示，工程区间和导出快照保持原值；真实空隙、黑色素材与转场照常参与合成。
+
 ## 编辑操作改变的是工程描述
 
 工程保留轨道、片段身份、源引用、时间区间及关联。把片段拖到更晚的位置主要改变时间线起点；缩短片段会改变可见区间；波纹删除则还要移动后续片段。关联片段、音频接缝和转场引用要一起保持有效。
@@ -91,3 +99,5 @@ flowchart TD
 3. `backend/app/capabilities/media_rendering/timeline_document.py`
 4. `web/src/features/video-editor/timelineGaps.ts`
 5. `web/src/features/video-editor/gapEditPlan.ts` 与 `gapFreeze.ts`
+6. `web/src/features/video-editor/previewPlayback.ts` 与 `VideoEditorPreciseFrame.tsx`
+7. `backend/app/capabilities/media_rendering/video_sampling.py`

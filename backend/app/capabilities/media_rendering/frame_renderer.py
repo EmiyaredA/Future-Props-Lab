@@ -11,9 +11,13 @@ from app.capabilities.media_rendering.contracts import RenderPlan
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.speed import source_time_us
 from app.capabilities.media_rendering.timeline_document import VideoEditorClip
+from app.capabilities.media_rendering.video_sampling import source_frame_time
 
 
 def _extract_video_frame(path: Path, source_us: int) -> Image.Image:
+    # Floor only the selected frame's seek timestamp, never the requested time
+    # by a nominal FPS. A rounded-up PTS would discard this frame again.
+    frame_us = int(source_frame_time(path, source_us) * 1_000_000)
     result = subprocess.run(
         [
             "ffmpeg",
@@ -21,7 +25,7 @@ def _extract_video_frame(path: Path, source_us: int) -> Image.Image:
             "-loglevel",
             "error",
             "-ss",
-            f"{source_us / 1_000_000:.6f}",
+            f"{frame_us / 1_000_000:.6f}",
             "-i",
             str(path),
             "-frames:v",

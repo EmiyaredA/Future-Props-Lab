@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import select
 import signal
@@ -27,6 +28,7 @@ from app.capabilities.media_rendering.timeline_document import (
     VideoEditorClip,
     VideoEditorTimelineDocument,
 )
+from app.capabilities.media_rendering.video_sampling import source_frame_time
 
 
 class RenderCancelled(RuntimeError):
@@ -232,15 +234,28 @@ def _decoder_video_filter(
     fps: int,
     playback_rate: float,
     *,
+    frame_time_s: float,
     preroll_us: int = _DECODER_SEEK_PREROLL_US,
 ) -> str:
-    """Build `-vf` graph: optional trim, setpts for rate, fps, rgba."""
-    _coarse_us, fine_s = _decoder_seek_plan(source_us, preroll_us=preroll_us)
+    """Resample source presentation intervals onto the requested output grid."""
+    frame_us = math.floor(frame_time_s * 1_000_000)
+    coarse_us, _ = _decoder_seek_plan(frame_us, preroll_us=preroll_us)
     parts: list[str] = []
-    if fine_s > 0:
-        parts.append(f"trim=start={fine_s:.6f}")
-    parts.append(f"setpts=(PTS-STARTPTS)/{playback_rate:.8g}")
-    parts.append(f"fps={fps}")
+    trim_s = max(0, frame_us - coarse_us) / 1_000_000
+    if trim_s > 0:
+        parts.append(f"trim=start={trim_s:.6f}")
+    # Preserve sub-frame phase before setpts; the input time base can be too
+    # coarse to distinguish a microsecond before a scene cut from the cut.
+    parts.append("settb=expr=1/1000000000")
+    # Keep the phase between the containing source frame and the requested
+    # in-point. Ceiling PTS onto the output grid holds each frame until its
+    # successor really starts, instead of showing future frames early.
+    phase_s = source_us / 1_000_000 - frame_time_s
+    parts.append(f"setpts=(PTS-STARTPTS-{phase_s:.12f}/TB)/{playback_rate:.8g}")
+    # fps needs a successor/EOF timestamp to emit its first sample. A final
+    # source frame must still be available when the in-point is near EOF.
+    parts.append("tpad=stop_mode=clone:stop_duration=1")
+    parts.append(f"fps={fps}:round=up:start_time=0")
     parts.append("format=rgba")
     return ",".join(parts)
 
@@ -261,7 +276,9 @@ class _VideoDecoder:
         self.cancel = cancel
         # Clip-local time of the last frame returned by next()/frame_at().
         self.local_us = local_us
-        seek_args = _decoder_seek_args(source_us)
+        frame_time_s = float(source_frame_time(path, source_us))
+        frame_us = math.floor(frame_time_s * 1_000_000)
+        seek_args = _decoder_seek_args(frame_us)
         command = [
             "ffmpeg",
             "-hide_banner",
@@ -270,7 +287,12 @@ class _VideoDecoder:
             *seek_args,
             "-an",
             "-vf",
-            _decoder_video_filter(source_us, fps, playback_rate),
+            _decoder_video_filter(
+                source_us,
+                fps,
+                playback_rate,
+                frame_time_s=frame_time_s,
+            ),
             "-f",
             "rawvideo",
             "-pix_fmt",

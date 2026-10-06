@@ -35,11 +35,19 @@ function ProxyVideo({
     if (node.playbackRate !== rate) node.playbackRate = rate;
     const playStarted = playing && !wasPlayingRef.current;
     wasPlayingRef.current = playing;
-    syncMediaClock(node, target, {
-      playing,
-      playStarted,
-      toleranceSeconds: PREVIEW_VIDEO_SYNC_TOLERANCE_S,
-    });
+    const sync = () =>
+      syncMediaClock(node, target, {
+        playing,
+        playStarted,
+        toleranceSeconds: PREVIEW_VIDEO_SYNC_TOLERANCE_S,
+      });
+    sync();
+    node.addEventListener("loadedmetadata", sync);
+    node.addEventListener("seeked", sync);
+    return () => {
+      node.removeEventListener("loadedmetadata", sync);
+      node.removeEventListener("seeked", sync);
+    };
   }, [clip, localUs, playing]);
   useEffect(() => {
     const node = video.current;

@@ -613,6 +613,18 @@
   height: 100%;
   object-fit: cover;
 }
+.ve-preview-frame-status {
+  position: absolute;
+  z-index: 23;
+  right: 12px;
+  bottom: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: #f1f3ff;
+  background: rgb(12 14 22 / 78%);
+  font-size: 12px;
+  pointer-events: none;
+}
 .ve-safe-area {
   position: absolute;
   z-index: 21;

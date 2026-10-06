@@ -99,8 +99,10 @@ def test_decoder_seek_args_use_trim_for_fine_position() -> None:
     # Short seeks: no coarse input -ss; fine position is trim in -vf.
     assert _decoder_seek_args(1_500_000, preroll_us=10_000_000) == ["-i"]
     assert _decoder_seek_plan(1_500_000, preroll_us=10_000_000) == (0, 1.5)
-    assert _decoder_video_filter(1_500_000, 30, 1, preroll_us=10_000_000) == (
-        "trim=start=1.500000,setpts=(PTS-STARTPTS)/1,fps=30,format=rgba"
+    assert _decoder_video_filter(1_500_000, 30, 1, frame_time_s=1.5, preroll_us=10_000_000) == (
+        "trim=start=1.500000,settb=expr=1/1000000000,"
+        "setpts=(PTS-STARTPTS-0.000000000000/TB)/1,tpad=stop_mode=clone:stop_duration=1,"
+        "fps=30:round=up:start_time=0,format=rgba"
     )
     # Long seeks: coarse input -ss then fine trim (not output -ss).
     assert _decoder_seek_args(100_000_000, preroll_us=10_000_000) == [
@@ -109,6 +111,8 @@ def test_decoder_seek_args_use_trim_for_fine_position() -> None:
         "-i",
     ]
     assert _decoder_seek_plan(100_000_000, preroll_us=10_000_000) == (90_000_000, 10.0)
-    assert _decoder_video_filter(100_000_000, 30, 1.5, preroll_us=10_000_000) == (
-        "trim=start=10.000000,setpts=(PTS-STARTPTS)/1.5,fps=30,format=rgba"
+    assert _decoder_video_filter(100_000_000, 30, 1.5, frame_time_s=100, preroll_us=10_000_000) == (
+        "trim=start=10.000000,settb=expr=1/1000000000,"
+        "setpts=(PTS-STARTPTS-0.000000000000/TB)/1.5,tpad=stop_mode=clone:stop_duration=1,"
+        "fps=30:round=up:start_time=0,format=rgba"
     )

@@ -20,6 +20,7 @@ from app.capabilities.media_rendering.contracts import RenderCaptureFrame, Rende
 from app.capabilities.media_rendering.evaluator import timeline_duration_us
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
+from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
 
@@ -108,7 +109,8 @@ class VideoEditorFrames:
         cache = (
             self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
             / "derived"
-            / f"frame-v{TEXT_RENDER_VERSION}-chroma2-r{revision}-t{time_us}-w{width}"
+            / f"frame-v{TEXT_RENDER_VERSION}-chroma2-sample{VIDEO_SAMPLING_VERSION}"
+            f"-r{revision}-t{time_us}-w{width}"
             f"-raw{comparison_key}.png"
         )
         cached = await asyncio.to_thread(_cached_frame, cache)

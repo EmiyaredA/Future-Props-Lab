@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, RefreshCw, X } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
@@ -101,7 +102,11 @@ export function VideoEditorGapPanel({
     }
     applyingRef.current = true;
     setApplying(true);
-    setMessage("");
+    setMessage(
+      mode === "freeze"
+        ? "正在准备定帧素材，完成后整批保存…"
+        : "正在处理并保存…",
+    );
     let stale = false;
     try {
       const controller = new AbortController();
@@ -157,7 +162,7 @@ export function VideoEditorGapPanel({
   };
   const summary = (targets: TimelineGap[], affected: number) =>
     `${targets.length} 处 · 累计 ${(targets.reduce((sum, gap) => sum + gap.durationUs, 0) / 1000).toFixed(3)} 毫秒 · 影响 ${affected} 个片段`;
-  return (
+  return createPortal(
     <div className="ve-gap-overlay">
       <aside className="ve-gap-panel" aria-label="空隙检查" ref={panel}>
         <header>
@@ -225,7 +230,7 @@ export function VideoEditorGapPanel({
               ? "使用左片段及关联媒体的剩余素材填齐，后续位置、音乐和字幕保持原位。素材不足时不添加替代画面，请预览源素材是否含黑帧。"
               : mode === "ripple"
                 ? "同轨后续片段及关联媒体前移，未选空隙保留原时长。独立音乐和字幕保持原位，画面与它们的对齐会改变。"
-                : "取左片段末尾源画面新增静音定帧，固定末尾变换，其他片段保持原位。不会冻结其他轨道或跳过黑帧；请预览确认。视频定帧最长边按源尺寸缩放至宽度不超过 1920，准备失败的素材保留在素材列表。"}
+                : "取左片段末尾源画面新增静音定帧，固定末尾变换，其他片段保持原位。不会冻结其他轨道或跳过黑帧；请预览确认。视频定帧按源尺寸缩放至宽度不超过 1920，准备失败的素材保留在素材列表。"}
           </p>
           <div className="ve-gap-selection">
             <button
@@ -343,6 +348,7 @@ export function VideoEditorGapPanel({
           </div>
         </footer>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }

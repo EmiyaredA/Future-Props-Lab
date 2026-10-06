@@ -13,7 +13,10 @@ export function syncMediaClock(
 ) {
   if (node.seeking) return;
   const drift = Math.abs(node.currentTime - targetSeconds);
-  if (!playing || playStarted || drift > toleranceSeconds) {
+  if (
+    drift > 0.000001 &&
+    (!playing || playStarted || drift > toleranceSeconds)
+  ) {
     node.currentTime = Math.max(0, targetSeconds);
   }
 }

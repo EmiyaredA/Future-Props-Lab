@@ -30,6 +30,33 @@ const videoClip = {
 } as VideoEditorClip;
 
 describe("VideoEditorInspector clip transitions", () => {
+  it.each(["video", "audio"] as const)(
+    "enables %s edge transitions within a short clip and follows duration changes",
+    (kind) => {
+      const commit = vi.fn().mockResolvedValue(undefined);
+      const short = {
+        ...videoClip,
+        kind,
+        durationUs: 125_001,
+        transitionOut: undefined,
+      };
+      const { rerender } = render(
+        <VideoEditorInspector clip={short} playheadUs={0} commit={commit} />,
+      );
+      fireEvent.click(screen.getAllByRole("button", { name: "启用" })[0]!);
+      expect(commit.mock.calls[0][0][0].transition.durationUs).toBe(125_001);
+      rerender(
+        <VideoEditorInspector
+          clip={{ ...short, durationUs: 33_333 }}
+          playheadUs={0}
+          commit={commit}
+        />,
+      );
+      fireEvent.click(screen.getAllByRole("button", { name: "启用" })[1]!);
+      expect(commit.mock.calls[1][0][0].transition.durationUs).toBe(33_333);
+    },
+  );
+
   it("builds queued transform edits from the preceding saved clip", () => {
     const commit = vi.fn().mockResolvedValue(undefined);
     render(

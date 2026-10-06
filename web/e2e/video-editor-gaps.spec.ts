@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import type {
   VideoEditorClip,
@@ -140,6 +140,10 @@ test("inspects precise gaps, filters batches and freezes source frames with undo
         await page.evaluate((value) => {
           document.documentElement.dataset.theme = value;
         }, theme);
+        await expect(panel).toHaveCSS(
+          "background-color",
+          theme === "light" ? "rgb(255, 253, 250)" : "rgb(26, 29, 27)",
+        );
         await panel
           .getByRole("button", { name: "处理全部显示项" })
           .scrollIntoViewIfNeeded();
@@ -228,7 +232,25 @@ test("inspects precise gaps, filters batches and freezes source frames with undo
     expect(repaired.filter((clip) => clip.id !== frozen.id)).toEqual(original);
     const png = await page.request.get(`/v1/files/${frozen.assetId}/content`);
     expect(png.ok()).toBeTruthy();
-    expect((await png.body()).subarray(1, 4).toString()).toBe("PNG");
+    const extracted = await png.body();
+    expect(extracted.subarray(1, 4).toString()).toBe("PNG");
+    const still = testInfo.outputPath("prepared-freeze.png");
+    writeFileSync(still, extracted);
+    const rgb = execFileSync("ffmpeg", [
+      "-v",
+      "error",
+      "-i",
+      still,
+      "-vf",
+      "scale=1:1",
+      "-f",
+      "rawvideo",
+      "-pix_fmt",
+      "rgb24",
+      "-",
+    ]);
+    expect(rgb[0]).toBeGreaterThan(200);
+    expect(rgb[1]).toBeLessThan(20);
     await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "撤销", exact: true }).click();
     await expect.poll(async () => clips(await timeline())).toEqual(original);
@@ -258,14 +280,16 @@ test("inspects precise gaps, filters batches and freezes source frames with undo
     ).toBeVisible();
     expect((await timeline()).document).toEqual(server.document);
   } finally {
-    const current = await (await page.request.get(base)).json();
-    expect(
-      (
-        await page.request.delete(
-          `${base}?expected_revision=${current.revision}`,
-          { headers },
-        )
-      ).ok(),
-    ).toBeTruthy();
+    // Retain the isolated fixture alongside the screenshots and source-frame
+    // output. Playwright stops its test services after the browser closes;
+    // removing a derived directory under an active frame render races teardown.
+    writeFileSync(
+      testInfo.outputPath("verification-project.json"),
+      JSON.stringify(
+        { projectId: project.id, timeline: await timeline() },
+        null,
+        2,
+      ),
+    );
   }
 });

@@ -251,6 +251,18 @@ export function VideoEditorTransitionPanel({
       currentToClip.timelineStartUs,
   );
   const canApplyBetween = audioContext ? audioBetween : visualBetween;
+  const maxBetweenDurationUs = Math.min(
+    10_000_000,
+    currentFromClip?.durationUs ?? 10_000_000,
+    currentToClip?.durationUs ?? 10_000_000,
+  );
+  const maxClipDurationUs = Math.min(
+    10_000_000,
+    selectedClip?.durationUs ?? 10_000_000,
+  );
+  const maxVisualDurationUs = selectedTransition
+    ? maxBetweenDurationUs
+    : maxClipDurationUs;
   const audioNeedsSeparation = Boolean(
     audioBetween &&
     (currentFromClip?.linkGroupId || currentToClip?.linkGroupId),
@@ -466,7 +478,7 @@ export function VideoEditorTransitionPanel({
     const next: VideoEditorTimelineTransition = {
       id: crypto.randomUUID(),
       kind: selectedDefinition.kind,
-      durationUs: audioContext ? overlapUs : defaultDurationUs,
+      durationUs: Math.min(defaultDurationUs, maxBetweenDurationUs),
       placement: "between",
       fromClipId: currentFromClip.id,
       toClipId: currentToClip.id,
@@ -489,7 +501,10 @@ export function VideoEditorTransitionPanel({
         selectedClip.kind === "audio"
           ? "audio-crossfade"
           : (selectedDefinition.kind as VideoEditorTransition["kind"]),
-      durationUs: previous?.durationUs ?? defaultDurationUs,
+      durationUs: Math.min(
+        previous?.durationUs ?? defaultDurationUs,
+        maxClipDurationUs,
+      ),
       direction: transitionDirection(selectedDefinition.kind),
       easing: previous?.easing ?? "ease-in-out",
     };
@@ -829,17 +844,21 @@ export function VideoEditorTransitionPanel({
           <input
             disabled={!activeParams || disabled}
             type="number"
-            min="0.05"
+            min={
+              audioBetweenControls
+                ? Math.min(50_000, maxAudioDurationUs) / 1_000_000
+                : 0.000001
+            }
             max={
               audioBetweenControls
-                ? (maxAudioDurationUs / 1_000_000).toFixed(2)
-                : "10"
+                ? maxAudioDurationUs / 1_000_000
+                : maxVisualDurationUs / 1_000_000
             }
             step="0.05"
             value={
               activeParams
-                ? (activeParams.durationUs / 1_000_000).toFixed(2)
-                : "0.50"
+                ? activeParams.durationUs / 1_000_000
+                : Math.min(defaultDurationUs, maxVisualDurationUs) / 1_000_000
             }
             onChange={(event) =>
               activeParams?.update({
@@ -853,7 +872,15 @@ export function VideoEditorTransitionPanel({
                         ),
                       ),
                     )
-                  : Math.round(Number(event.target.value || 0.5) * 1_000_000),
+                  : Math.min(
+                      maxVisualDurationUs,
+                      Math.max(
+                        1,
+                        Math.round(
+                          Number(event.target.value || 0.5) * 1_000_000,
+                        ),
+                      ),
+                    ),
               })
             }
           />

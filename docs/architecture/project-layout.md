@@ -196,7 +196,8 @@ Future-Props-Lab/
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `apps/video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
   后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有特效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、特效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
-  FFmpeg/Pillow 合成和取消控制。正式剪辑渲染只依赖不可变时间轴快照和原素材，
+  FFmpeg/Pillow 合成和取消控制。`video_sampling.py` 按源视频 PTS 选择包含当前时刻的画面区间，
+  精确停帧与导出共享该采样规则。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
@@ -206,6 +207,8 @@ Future-Props-Lab/
 
 视频剪辑的节目监视器由 `VideoEditorPreview.tsx` 装配；`VideoEditorMediaLayer.tsx` 拥有代理视频和图片显示，
 `previewGeometry.ts` 共用素材适配与图层样式，`previewClock.ts` 统一媒体时钟纠偏。
+`previewPlayback.ts` 为同素材、同速率且源时间连续的接缝维护播放器身份，视觉转场伙伴使用独立播放器；
+`VideoEditorPreciseFrame.tsx` 保留已解码画面直到当前请求加载完成，工程与保存版本变化时清空缓存画面。
 `transformModel.ts` 拥有变换几何、当前时刻求值与逐属性编辑操作，`usePreviewTransform.ts` 拥有指针手势、
 临时草稿和提交取消，`VideoEditorTransformBox.tsx` 显示固定屏幕尺寸操作手柄。
 `VideoEditorTransformFields.tsx` 将同一编辑契约接入属性检查器；草稿经编辑器显式传给预览与检查器，
