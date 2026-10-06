@@ -2,8 +2,31 @@ import type {
   FrameSequences,
   SequenceFailure,
   SequenceFrame,
+  SequenceSample,
   SequenceTransition,
 } from "./types";
+
+/** A painted bridge endpoint may start the destination's next transition immediately. */
+export function transitionSourceForSample(
+  sequences: FrameSequences,
+  sample: SequenceSample,
+): { clip: string; frameIndex: number } {
+  const target = sequences.clips[sample.requestedClip];
+  if (
+    sample.clipRange &&
+    sample.frameIndex === sample.clipRange[1] - 1 &&
+    target?.frames[0] &&
+    sameSequenceCel(sample.frame, target.frames[0]) &&
+    sequences.transitions.some(
+      (link) =>
+        link.to === sample.requestedClip &&
+        (link.clip === sample.clip ||
+          link.branches?.some((branch) => branch.clip === sample.clip)),
+    )
+  )
+    return { clip: sample.requestedClip, frameIndex: 0 };
+  return { clip: sample.clip, frameIndex: sample.frameIndex };
+}
 
 /** Strict painted identity: a metadata registration cannot replace an actual cel. */
 export function sameSequenceCel(a: SequenceFrame, b: SequenceFrame): boolean {

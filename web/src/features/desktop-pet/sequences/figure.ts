@@ -1,6 +1,7 @@
 import {
   isTransitionContainer,
   transitionSegmentForFrame,
+  transitionSourceForSample,
 } from "./transitions";
 import type {
   LoadedWhaleFigure,
@@ -109,15 +110,25 @@ export function createSequenceFigure(options: {
         ),
       };
     } else {
-      const transition = sequences.transitions.find(
-        (item) => item.to === clip && item.from === (displayed?.clip ?? "idle"),
-      );
+      const source = displayed
+        ? transitionSourceForSample(sequences, displayed)
+        : { clip: "idle", frameIndex: 0 };
+      const transition =
+        sequences.transitions.find(
+          (item) =>
+            item.to === clip && item.from === (displayed?.clip ?? "idle"),
+        ) ??
+        sequences.transitions.find(
+          (item) => item.to === clip && item.from === source.clip,
+        );
       const segment =
         transition &&
         transitionSegmentForFrame(
           sequences,
           transition,
-          displayed?.frameIndex ?? 0,
+          transition.from === displayed?.clip
+            ? displayed.frameIndex
+            : source.frameIndex,
         );
       if (segment)
         clips.bridge = {

@@ -192,6 +192,39 @@ describe("complete cel sequence playback", () => {
     expect(sample(player, { clip: "idle", t: 0.21 }).frame).toEqual(cel(9));
     expect(sample(player, { clip: "idle", t: 0.41 }).frame).toEqual(cel(0));
   });
+  it.each([false, true])(
+    "replays from the painted exit endpoint before its hold ends (cancel=%s)",
+    (cancel) => {
+      const player = new SequencePlayer(fixture());
+      sample(player, { clip: "walk-right", t: 0, phase: 0 });
+      sample(player, { clip: "idle", t: 0.01 });
+      const endpoint = sample(player, { clip: "idle", t: 0.32 });
+      expect(endpoint.clip).toBe("exit");
+      expect(endpoint.frame).toEqual(cel(0));
+      expect(endpoint.transition?.progress).toBeLessThan(1);
+      if (cancel) player.cancelMotionPlayback();
+      const replay = sample(player, { clip: "walk-right", t: 0.33, phase: 0 });
+      expect(replay.motionFailure).toBeUndefined();
+      expect(replay.clip).toBe("entry");
+      expect(replay.frame).toEqual(endpoint.frame);
+      expect(
+        sample(player, { clip: "walk-right", t: 0.44, phase: 0 }).frame,
+      ).toEqual(cel(8));
+      expect(
+        sample(player, { clip: "walk-right", t: 0.64, phase: 0 }).clip,
+      ).toBe("walk-right");
+    },
+  );
+  it("does not route a middle bridge cel through an unpainted destination", () => {
+    const player = new SequencePlayer(fixture());
+    sample(player, { clip: "walk-right", t: 0, phase: 0 });
+    sample(player, { clip: "idle", t: 0.01 });
+    const middle = sample(player, { clip: "idle", t: 0.22 });
+    expect(middle.frame).toEqual(cel(9));
+    const rejected = sample(player, { clip: "walk-right", t: 0.23, phase: 0 });
+    expect(rejected.frame).toEqual(middle.frame);
+    expect(rejected.motionFailure?.reason).toBe("missing-transition");
+  });
   it.each(["missing", "entry", "exit", "registration"])(
     "holds actual cel for unsafe %s transition",
     (kind) => {

@@ -3,6 +3,7 @@ import {
   transitionBranchFailure,
   transitionSegmentForFrame,
   isTransitionContainer,
+  transitionSourceForSample,
 } from "./transitions";
 import type {
   FrameSequences,
@@ -262,16 +263,21 @@ export class SequencePlayer {
       return null;
     }
     if (this.playback.target === input.clip) return null;
-    const link = this.sequences.transitions.find(
-      (item) => item.from === this.last?.clip && item.to === input.clip,
-    );
+    const source = transitionSourceForSample(this.sequences, this.last);
+    const link =
+      this.sequences.transitions.find(
+        (item) => item.from === this.last?.clip && item.to === input.clip,
+      ) ??
+      this.sequences.transitions.find(
+        (item) => item.from === source.clip && item.to === input.clip,
+      );
     if (!link) return "missing-transition";
     const branchFailure = transitionBranchFailure(this.sequences, link);
     if (branchFailure) return branchFailure;
     const segment = transitionSegmentForFrame(
       this.sequences,
       link,
-      this.last.frameIndex,
+      link.from === this.last.clip ? this.last.frameIndex : source.frameIndex,
     );
     if (!segment) return "missing-transition-branch";
     const selectedClip = segment.clip;
