@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VideoEditorPreview } from "@features/video-editor/VideoEditorPreview";
 import { VideoEditorPreciseFrame } from "@features/video-editor/VideoEditorPreciseFrame";
 import { previewVideoPlaybackKeys } from "@features/video-editor/previewPlayback";
+import { VideoEditorProxyVideo } from "@features/video-editor/VideoEditorProxyVideo";
+import * as chromaCanvas from "@features/video-editor/chromaCanvas";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
@@ -92,6 +94,118 @@ beforeEach(() => {
 });
 
 describe("video editor seam preview", () => {
+  it("publishes only the latest positioned frame and holds the display across source jumps", () => {
+    const paint = vi
+      .spyOn(chromaCanvas, "paintChromaCanvas")
+      .mockImplementation(() => {});
+    const keyed = {
+      ...left,
+      sourceInUs: 5_000_000,
+      chromaKey: {
+        enabled: true,
+        color: "#00ff00",
+        similarity: 42,
+        softness: 18,
+        despill: 30,
+      },
+    };
+    const mediaProps = {
+      source: "/proxy.mp4",
+      clip: keyed,
+      localUs: 500_000,
+      playing: true,
+      crop: {
+        leftPercent: 0,
+        topPercent: 0,
+        widthPercent: 100,
+        heightPercent: 100,
+      },
+      chromaKey: keyed.chromaKey,
+    };
+    const view = render(<VideoEditorProxyVideo {...mediaProps} />);
+    const video = view.container.querySelector("video")!;
+    const surface = view.container.querySelector("canvas")!;
+    Object.defineProperties(video, {
+      readyState: { configurable: true, value: 2 },
+      videoWidth: { configurable: true, value: 320 },
+      videoHeight: { configurable: true, value: 180 },
+    });
+    video.currentTime = 0;
+    fireEvent.loadedData(video);
+    expect(video.currentTime).toBe(5.5);
+    expect(paint).not.toHaveBeenCalled();
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    expect(video).not.toBeVisible();
+    fireEvent.seeked(video);
+    expect(paint).toHaveBeenCalledOnce();
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
+
+    Object.defineProperty(video, "seeking", {
+      configurable: true,
+      value: true,
+    });
+    const jump = { ...keyed, id: "jump", sourceInUs: 8_000_000 };
+    view.rerender(
+      <VideoEditorProxyVideo {...mediaProps} clip={jump} localUs={200_000} />,
+    );
+    view.rerender(
+      <VideoEditorProxyVideo {...mediaProps} clip={jump} localUs={400_000} />,
+    );
+    fireEvent.loadedData(video);
+    expect(paint).toHaveBeenCalledOnce();
+    expect(view.container.querySelector("canvas")).toBe(surface);
+    Object.defineProperty(video, "seeking", {
+      configurable: true,
+      value: false,
+    });
+    fireEvent.seeked(video);
+    expect(video.currentTime).toBe(8.4);
+    expect(paint).toHaveBeenCalledOnce();
+    fireEvent.seeked(video);
+    expect(paint).toHaveBeenCalledTimes(2);
+  });
+
+  it("pauses held transition tails and rejects drift beyond the trimmed source", () => {
+    const paint = vi
+      .spyOn(chromaCanvas, "paintChromaCanvas")
+      .mockImplementation(() => {});
+    const clip = { ...left, sourceInUs: 5_000_000, durationUs: 1_000_000 };
+    const mediaProps = {
+      source: "/proxy.mp4",
+      clip,
+      localUs: 999_999,
+      playing: true,
+      crop: {
+        leftPercent: 0,
+        topPercent: 0,
+        widthPercent: 100,
+        heightPercent: 100,
+      },
+      chromaKey: {
+        enabled: true,
+        color: "#00ff00",
+        similarity: 42,
+        softness: 18,
+        despill: 30,
+      },
+    };
+    const view = render(<VideoEditorProxyVideo {...mediaProps} />);
+    const video = view.container.querySelector("video")!;
+    Object.defineProperties(video, {
+      readyState: { configurable: true, value: 2 },
+      videoWidth: { configurable: true, value: 320 },
+      videoHeight: { configurable: true, value: 180 },
+    });
+    video.currentTime = 6.05; // Under the drift tolerance, but outside [5, 6).
+    fireEvent.seeked(video);
+    expect(paint).not.toHaveBeenCalled();
+    expect(video.currentTime).toBe(5.999999);
+    fireEvent.seeked(video);
+    expect(paint).toHaveBeenCalledOnce();
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+  });
+
   it("keeps the decoded program frame visible while the next request loads", () => {
     const view = render(<VideoEditorPreciseFrame url="/frame-a.png" />);
     const first = screen.getByAltText("后端精确停帧");

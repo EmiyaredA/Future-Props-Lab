@@ -72,7 +72,7 @@ export function VideoEditorProxyVideo({
       Math.abs(node.currentTime - target) <= (exact ? 0.000001 : 0.12);
     const paint = (mediaTime = node.currentTime) => {
       if (!positioned() || !node.videoWidth || !node.videoHeight) return;
-      if (Math.abs(mediaTime - target) > 0.12) return;
+      if (mediaTime >= end || Math.abs(mediaTime - target) > 0.12) return;
       if (mediaTime === paintedTime.current) {
         if (chromaKey?.enabled) recordChromaDuplicateFrameSkip();
         return;

@@ -293,7 +293,7 @@ async def test_video_editor_media_is_copied_and_proxy_metadata_is_retryable() ->
         assert upload.status_code == 200
         asset_id = upload.json()["id"]
         assert upload.json()["processingStatus"] == "queued"
-        await VideoEditorRunner().process_once()
+        await VideoEditorRunner(lane="media").process_once()
         listed = (await client.get(f"/v1/video-editor/projects/{project['id']}/assets")).json()
         asset = next(item for item in listed["items"] if item["id"] == asset_id)
         assert asset["processingStatus"] == "ready"

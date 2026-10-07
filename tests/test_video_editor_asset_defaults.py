@@ -42,7 +42,7 @@ async def test_video_editor_asset_default_effects_cas_and_bake_image() -> None:
         assert asset["revision"] == 0
         assert asset["defaultEffects"] == {"chromaKey": None}
 
-        await VideoEditorRunner().process_once()
+        await VideoEditorRunner(lane="media").process_once()
         listed = (await client.get(f"/v1/video-editor/projects/{project['id']}/assets")).json()
         asset = next(item for item in listed["items"] if item["id"] == asset["id"])
         assert asset["processingStatus"] == "ready"

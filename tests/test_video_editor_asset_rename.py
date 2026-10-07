@@ -60,7 +60,7 @@ async def test_video_rename_persists_preserves_effects_media_and_timeline(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
         base, asset = await upload_video(client, video_bytes)
-        await VideoEditorRunner().process_once()
+        await VideoEditorRunner(lane="media").process_once()
         asset = next(
             item
             for item in (await client.get(f"{base}/assets")).json()["items"]

@@ -56,6 +56,85 @@ const timeline: Timeline = {
 };
 
 describe("video editor timeline", () => {
+  it.each(["删除", "波纹删除", "删除片段"])(
+    "blocks %s before saving when the selected or linked track is locked",
+    (action) => {
+      const commit = vi.fn().mockResolvedValue(undefined);
+      const selectClip = vi.fn();
+      const onNotice = vi.fn();
+      const selected = {
+        ...timeline.document.tracks![0].clips![0],
+        linkGroupId: "linked",
+      };
+      const locked = {
+        ...timeline.document.tracks![0],
+        id: "locked",
+        name: "参考画面",
+        locked: true,
+        clips: [{ ...selected, id: "linked-peer", trackId: "locked" }],
+      };
+      const props = {
+        timeline: {
+          ...timeline,
+          document: {
+            ...timeline.document,
+            tracks: [
+              { ...timeline.document.tracks![0], clips: [selected] },
+              locked,
+            ],
+          },
+        },
+        assets: [],
+        playheadUs: 0,
+        setPlayheadUs: vi.fn(),
+        zoom: 80,
+        scrollLeft: 0,
+        onScrollLeftChange: vi.fn(),
+        selectedClipIds: [selected.id],
+        selectClip,
+        commit,
+        onDropAsset: vi.fn(),
+        onNotice,
+      };
+      const view = render(<VideoEditorTimeline {...props} />);
+      const remove = () => {
+        if (action === "删除片段") {
+          fireEvent.contextMenu(
+            view.container.querySelector('[data-clip-id="video-left"]')!,
+          );
+          fireEvent.click(screen.getByRole("menuitem", { name: action }));
+        } else fireEvent.click(screen.getByRole("button", { name: action }));
+      };
+      remove();
+      expect(commit).not.toHaveBeenCalled();
+      expect(selectClip).not.toHaveBeenCalled();
+      expect(onNotice).toHaveBeenCalledWith(
+        "「参考画面」轨道已锁定，请先解锁再删除片段",
+      );
+      view.rerender(
+        <VideoEditorTimeline
+          {...props}
+          timeline={{
+            ...props.timeline,
+            document: {
+              ...props.timeline.document,
+              tracks: [{ ...timeline.document.tracks![0], locked: true }],
+            },
+          }}
+        />,
+      );
+      remove();
+      expect(commit).not.toHaveBeenCalled();
+      expect(onNotice).toHaveBeenLastCalledWith(
+        "「V1」轨道已锁定，请先解锁再删除片段",
+      );
+      view.rerender(<VideoEditorTimeline {...props} timeline={timeline} />);
+      remove();
+      expect(commit).toHaveBeenCalledOnce();
+      expect(selectClip).toHaveBeenCalledWith(undefined);
+    },
+  );
+
   it("labels every track by type even when it has a custom name", () => {
     const kinds = ["visual", "mixed", "audio"] as const;
     render(

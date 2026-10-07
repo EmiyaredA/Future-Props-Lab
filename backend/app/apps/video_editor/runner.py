@@ -5,6 +5,7 @@ import subprocess
 import threading
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -205,18 +206,31 @@ class VideoEditorRunner(PollingTaskRunner):
         self,
         session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
         settings: Settings | None = None,
+        *,
+        lane: Literal["media", "export"] = "export",
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
+        self.lane = lane
+        self.runner_name = f"video-editor-{lane}-runner"
+
+    def _lane_filter(self):
+        return (
+            VideoEditorTask.kind == "media"
+            if self.lane == "media"
+            else VideoEditorTask.kind != "media"
+        )
 
     async def recover(self) -> None:
         async with self.session_factory() as session:
             rows = list(
                 (
                     await session.execute(
-                        select(VideoEditorTask).where(VideoEditorTask.status == "running")
+                        select(VideoEditorTask).where(
+                            VideoEditorTask.status == "running", self._lane_filter()
+                        )
                     )
                 ).scalars()
             )
@@ -232,7 +246,7 @@ class VideoEditorRunner(PollingTaskRunner):
         async with self.session_factory() as session:
             task_id = await session.scalar(
                 select(VideoEditorTask.id)
-                .where(VideoEditorTask.status == "queued")
+                .where(VideoEditorTask.status == "queued", self._lane_filter())
                 .order_by(VideoEditorTask.created_at)
                 .limit(1)
             )

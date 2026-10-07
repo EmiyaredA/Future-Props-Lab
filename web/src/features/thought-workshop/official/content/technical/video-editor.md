@@ -36,7 +36,9 @@ flowchart TD
 
 ## 连续接点怎样等待正确的画面
 
-同一视频的左片段覆盖 [0, 2s)，右片段从时间线 2s、源素材 2s 开始，速率都为 1。这里没有缺失的时间区间。`previewPlayback.ts` 为两段提供同一个播放器身份，前后移动或播放经过接点时复用已解码的视频；源跳剪、不同素材或需要同时显示两段的视觉转场仍分别定位。
+同一视频的左片段覆盖 [0, 2s)，右片段从时间线 2s、源素材 2s 开始，速率都为 1。这里没有缺失的时间区间。`previewPlayback.ts` 为相邻片段提供同一个显示缓冲身份，连续源区间复用已解码的视频并自由播放；跳剪和不同素材先重新定位，`VideoEditorProxyVideo.tsx` 等解码画面就绪后再替换画布上的有效帧。
+
+例如两段同素材的源区间分别为 [5.30s, 7.32s) 和 [8.86s, 11.54s)，它们虽然在时间线上相接，却必须从 7.32s 跳到 8.86s。播放器在 seek 完成前不能发布素材开头或旧位置的帧。源区间检查也优先于播放漂移容差：转场需要保留离场片段时，播放器停在最后有效位置，不能继续进入已裁掉的源画面。需要同时显示两段的视觉转场使用独立播放器；真实空隙移除显示缓冲。
 
 精确停帧请求需要异步加载。`VideoEditorPreciseFrame.tsx` 保留上一张已加载的合成画面，在“画面更新中…”期间等待当前请求成功，再一次替换。快速移动播放头时，过期请求不能替换画面；加载失败显示提示。工程或保存版本变化、开始播放及实时变换草稿会退出这次保留，避免旧内容覆盖当前编辑。
 
@@ -44,7 +46,11 @@ flowchart TD
 
 ## 编辑操作改变的是工程描述
 
+素材上传先创建 media 预处理任务，生成代理、缩略图或波形后再标记 ready。应用分别装配 media 与 export 两个串行后台通道：长时间 render、segment_export 或 asset_bake 不占用素材预处理的轮询器。两个通道各自恢复中断任务、持有独立数据库会话并纳入健康检查。预处理还未完成时，素材不会被当作已就绪输出；不通过重复上传或直接修改数据库跳过状态检查。
+
 工程保留轨道、片段身份、源引用、时间区间及关联。把片段拖到更晚的位置主要改变时间线起点；缩短片段会改变可见区间；波纹删除则还要移动后续片段。关联片段、音频接缝和转场引用要一起保持有效。
+
+删除先通过 `timelineSnap.ts` 的 `clipDeletionLock` 检查所选片段与关联组涉及的轨道，锁定时显示具体轨道名称，保留选择并阻止请求进入保存队列。工具栏、波纹删除与右键入口共用这项检查。后端仍校验当前快照并拒绝锁定操作；服务器并发变化等无法预判的失败仍交由保存队列暂停保护，不自动重放。
 
 后端时间线用例对操作后的文档进行校验和版本控制。公共媒体能力执行源时间映射与渲染，视频编辑器自己的项目逻辑不应成为其他应用直接导出的内部依赖。
 
@@ -99,5 +105,6 @@ flowchart TD
 3. `backend/app/capabilities/media_rendering/timeline_document.py`
 4. `web/src/features/video-editor/timelineGaps.ts`
 5. `web/src/features/video-editor/gapEditPlan.ts` 与 `gapFreeze.ts`
-6. `web/src/features/video-editor/previewPlayback.ts` 与 `VideoEditorPreciseFrame.tsx`
+6. `web/src/features/video-editor/previewPlayback.ts`、`VideoEditorProxyVideo.tsx` 与 `VideoEditorPreciseFrame.tsx`
 7. `backend/app/capabilities/media_rendering/video_sampling.py`
+8. `backend/app/apps/video_editor/runner.py` 与 `backend/app/main.py`

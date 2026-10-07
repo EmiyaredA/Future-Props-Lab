@@ -24,6 +24,20 @@ export function linkedClipIds(
   );
 }
 
+export function clipDeletionLock(
+  tracks: VideoEditorTrack[],
+  clipIds: string[],
+) {
+  const targets = linkedClipIds(
+    tracks.flatMap((track) => track.clips ?? []),
+    clipIds,
+  );
+  return tracks.find(
+    (track) =>
+      track.locked && track.clips?.some((clip) => targets.has(clip.id)),
+  );
+}
+
 export function snapClipPosition({
   candidateUs,
   durationUs,

@@ -10,10 +10,12 @@ from pathlib import Path
 import httpx
 import pytest
 from PIL import Image
+from sqlalchemy import select
 
 from app.apps.motion_compositor.models import MotionTask
 from app.apps.motion_compositor.projects import MotionNotFound, MotionProjects
 from app.apps.motion_compositor.runner import MotionExportRunner
+from app.apps.video_editor.models import VideoEditorTask
 from app.apps.video_editor.runner import VideoEditorRunner
 from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_frames import MotionFrameRenderer
@@ -168,7 +170,14 @@ async def test_motion_project_cas_isolation_and_multiformat_export() -> None:
             for track in timeline.json()["document"]["tracks"]
             for clip in track["clips"]
         )
-        await VideoEditorRunner().process_once()
+        async with SessionLocal() as session:
+            media_task_id = await session.scalar(
+                select(VideoEditorTask.id).where(
+                    VideoEditorTask.project_id == editor_id, VideoEditorTask.kind == "media"
+                )
+            )
+        assert media_task_id
+        await VideoEditorRunner(lane="media")._process(media_task_id)
         editor_assets = await client.get(f"/v1/video-editor/projects/{editor_id}/assets")
         assert editor_assets.status_code == 200, editor_assets.text
         imported = next(

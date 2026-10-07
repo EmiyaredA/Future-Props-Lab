@@ -10,6 +10,7 @@ import {
 import { VideoEditorTimelineTools } from "./VideoEditorTimelineTools";
 import { formatTime, newTrack, snapUs } from "./editorModel";
 import { BATCH_OPS_LIMIT } from "./batchClipPatch";
+import { clipDeletionLock } from "./timelineSnap";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
 import { VideoEditorTrackHeads } from "./VideoEditorTrackHeads";
 import { VideoEditorClipWaveform } from "./VideoEditorClipWaveform";
@@ -327,6 +328,14 @@ export function VideoEditorTimeline({
     clips: VideoEditorClip[] = selectedClips,
   ) => {
     if (!clips.length) return;
+    const locked = clipDeletionLock(
+      tracks,
+      clips.map((clip) => clip.id),
+    );
+    if (locked) {
+      onNotice?.(`「${locked.name}」轨道已锁定，请先解锁再删除片段`);
+      return;
+    }
     if (clips.length > BATCH_OPS_LIMIT) {
       onNotice?.(`一次最多删除 ${BATCH_OPS_LIMIT} 个片段`);
       return;

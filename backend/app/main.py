@@ -81,6 +81,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             GalgameVideoExportRunner(),
             GalgameVideoEditorHandoffRunner(),
             VideoEditorRunner(),
+            VideoEditorRunner(lane="media"),
             MotionExportRunner(),
             Live2DExportRunner(),
         )
