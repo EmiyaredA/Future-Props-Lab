@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useInfiniteQuery, useQueries } from "@tanstack/react-query";
-import { Link2, Lock, Plus, X } from "lucide-react";
+import { ChevronRight, Link2, Lock, Plus, X } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { getNodeOutput, getNodeOutputs, type VisualCanvasEdge } from "../api";
 import { visualWorkshopQueryKeys } from "../queryKeys";
@@ -15,6 +15,8 @@ export function InputReferences({
   controller: BoardController;
   nodeId: string;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const contentId = useId();
   const [open, setOpen] = useState(false);
   const [sourceId, setSourceId] = useState("");
   const [binding, setBinding] = useState<"final" | "fixed">("final");
@@ -55,7 +57,7 @@ export function InputReferences({
         ),
         queryFn: () =>
           getNodeOutput(controller.projectId, edge.source_node_id, id!),
-        enabled: !!id,
+        enabled: expanded && !!id,
       };
     }),
   });
@@ -83,157 +85,179 @@ export function InputReferences({
     <section className="board-inputs" aria-label="输入引用">
       <div className="board-output-heading">
         <h3>
-          输入素材 <small>{incoming.length}</small>
+          <button
+            type="button"
+            className="board-inputs-toggle"
+            aria-expanded={expanded}
+            aria-controls={contentId}
+            title={expanded ? "收起输入素材" : "展开输入素材"}
+            onClick={() => {
+              setExpanded(!expanded);
+              setOpen(false);
+            }}
+          >
+            <ChevronRight size={15} aria-hidden />
+            输入素材 <small>{incoming.length}</small>
+          </button>
         </h3>
-        <button onClick={() => setOpen(!open)} aria-expanded={open}>
+        <button
+          onClick={() => {
+            setExpanded(true);
+            setOpen(!open);
+          }}
+          aria-expanded={open}
+        >
           <Plus size={15} /> 引用任务输出
         </button>
       </div>
-      {incoming.map((edge, index) => {
-        const upstream = controller.nodes.find(
-          (node) => node.id === edge.source_node_id,
-        );
-        return (
-          <div className="board-input-row" key={edge.id}>
-            <div className="board-input-thumb">
-              <OutputPreview
-                kind={upstream?.kind ?? "image"}
-                assetId={boundVersions[index].data?.asset_id}
-                text={boundVersions[index].data?.text}
-                compact
-              />
+      <div id={contentId} hidden={!expanded}>
+        {expanded &&
+          incoming.map((edge, index) => {
+            const upstream = controller.nodes.find(
+              (node) => node.id === edge.source_node_id,
+            );
+            return (
+              <div className="board-input-row" key={edge.id}>
+                <div className="board-input-thumb">
+                  <OutputPreview
+                    kind={upstream?.kind ?? "image"}
+                    assetId={boundVersions[index].data?.asset_id}
+                    text={boundVersions[index].data?.text}
+                    compact
+                  />
+                </div>
+                <span>
+                  <strong>{upstream?.title ?? "节点不存在"}</strong>
+                  <small>
+                    <Link2 size={11} />
+                    {edge.binding === "fixed" ? (
+                      <>
+                        <Lock size={11} /> 固定版本 ·{" "}
+                        {boundVersions[index].data
+                          ? `v${boundVersions[index].data.version}`
+                          : "加载中"}
+                      </>
+                    ) : (
+                      `跟随最终输出 · ${upstream?.final_version ? `v${upstream.final_version}` : "等待输出"}`
+                    )}
+                  </small>
+                </span>
+                <button
+                  aria-label={`移除输入 ${upstream?.title}`}
+                  onClick={() =>
+                    controller.replaceEdges(
+                      (edges) => edges.filter((item) => item.id !== edge.id),
+                      true,
+                    )
+                  }
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            );
+          })}
+        {!incoming.length && (
+          <p className="board-muted">添加素材或文本，作为创作参考。</p>
+        )}
+        {open && (
+          <div className="board-reference-picker" aria-label="任务输出选择器">
+            <CustomSelect
+              ariaLabel="选择上游任务"
+              value={sourceId}
+              onChange={(value) => {
+                setSourceId(value);
+                setOutputId("");
+                setPurpose("reference");
+              }}
+              options={[
+                { value: "", label: "选择任务输出" },
+                ...controller.nodes
+                  .filter((node) => node.id !== nodeId)
+                  .map((node) => ({
+                    value: node.id,
+                    label: `${node.title} · ${nodeTypeNames[node.kind]}${node.final_version ? ` · v${node.final_version}` : " · 暂无输出"}`,
+                    disabled:
+                      !node.final_output_id ||
+                      !canConnectCanvasNodes(
+                        controller.nodes,
+                        controller.edges,
+                        node.id,
+                        nodeId,
+                      ),
+                  })),
+              ]}
+            />
+            <div
+              className="board-binding-modes"
+              role="group"
+              aria-label="输入绑定方式"
+            >
+              <button
+                aria-pressed={binding === "final"}
+                onClick={() => setBinding("final")}
+              >
+                跟随最终输出
+              </button>
+              <button
+                aria-pressed={binding === "fixed"}
+                onClick={() => setBinding("fixed")}
+              >
+                固定版本
+              </button>
             </div>
-            <span>
-              <strong>{upstream?.title ?? "节点不存在"}</strong>
-              <small>
-                <Link2 size={11} />
-                {edge.binding === "fixed" ? (
-                  <>
-                    <Lock size={11} /> 固定版本 ·{" "}
-                    {boundVersions[index].data
-                      ? `v${boundVersions[index].data.version}`
-                      : "加载中"}
-                  </>
-                ) : (
-                  `跟随最终输出 · ${upstream?.final_version ? `v${upstream.final_version}` : "等待输出"}`
-                )}
-              </small>
-            </span>
+            {binding === "fixed" && (
+              <CustomSelect
+                ariaLabel="固定历史版本"
+                value={outputId}
+                onChange={setOutputId}
+                options={[
+                  { value: "", label: "选择版本" },
+                  ...(
+                    history.data?.pages.flatMap((page) => page.items) ?? []
+                  ).map((item) => ({
+                    value: item.id,
+                    label: `v${item.version} · ${item.source === "generated" ? "生成" : "上传 / 保存"}${item.is_final ? " · 最终输出" : ""}`,
+                  })),
+                ]}
+              />
+            )}
+            {binding === "fixed" && history.hasNextPage && (
+              <button
+                onClick={() => void history.fetchNextPage()}
+                disabled={history.isFetchingNextPage}
+              >
+                加载更早版本
+              </button>
+            )}
+            {target.kind === "video" && source?.kind === "image" && (
+              <CustomSelect
+                ariaLabel="输入用途"
+                value={purpose}
+                onChange={(value) => setPurpose(value as typeof purpose)}
+                options={[
+                  { value: "reference", label: "参考图" },
+                  { value: "first_frame", label: "首帧" },
+                  { value: "last_frame", label: "尾帧" },
+                ]}
+              />
+            )}
+            <p className="board-muted">
+              {binding === "final"
+                ? "上游最终版本更新后，下次生成使用新版本。"
+                : "保持选定的历史版本，不随上游更新。"}
+            </p>
             <button
-              aria-label={`移除输入 ${upstream?.title}`}
-              onClick={() =>
-                controller.replaceEdges(
-                  (edges) => edges.filter((item) => item.id !== edge.id),
-                  true,
-                )
+              className="board-primary"
+              disabled={
+                !source?.final_output_id || (binding === "fixed" && !outputId)
               }
+              onClick={add}
             >
-              <X size={14} />
+              绑定输入
             </button>
           </div>
-        );
-      })}
-      {!incoming.length && (
-        <p className="board-muted">添加素材或文本，作为创作参考。</p>
-      )}
-      {open && (
-        <div className="board-reference-picker" aria-label="任务输出选择器">
-          <CustomSelect
-            ariaLabel="选择上游任务"
-            value={sourceId}
-            onChange={(value) => {
-              setSourceId(value);
-              setOutputId("");
-              setPurpose("reference");
-            }}
-            options={[
-              { value: "", label: "选择任务输出" },
-              ...controller.nodes
-                .filter((node) => node.id !== nodeId)
-                .map((node) => ({
-                  value: node.id,
-                  label: `${node.title} · ${nodeTypeNames[node.kind]}${node.final_version ? ` · v${node.final_version}` : " · 暂无输出"}`,
-                  disabled:
-                    !node.final_output_id ||
-                    !canConnectCanvasNodes(
-                      controller.nodes,
-                      controller.edges,
-                      node.id,
-                      nodeId,
-                    ),
-                })),
-            ]}
-          />
-          <div
-            className="board-binding-modes"
-            role="group"
-            aria-label="输入绑定方式"
-          >
-            <button
-              aria-pressed={binding === "final"}
-              onClick={() => setBinding("final")}
-            >
-              跟随最终输出
-            </button>
-            <button
-              aria-pressed={binding === "fixed"}
-              onClick={() => setBinding("fixed")}
-            >
-              固定版本
-            </button>
-          </div>
-          {binding === "fixed" && (
-            <CustomSelect
-              ariaLabel="固定历史版本"
-              value={outputId}
-              onChange={setOutputId}
-              options={[
-                { value: "", label: "选择版本" },
-                ...(
-                  history.data?.pages.flatMap((page) => page.items) ?? []
-                ).map((item) => ({
-                  value: item.id,
-                  label: `v${item.version} · ${item.source === "generated" ? "生成" : "上传 / 保存"}${item.is_final ? " · 最终输出" : ""}`,
-                })),
-              ]}
-            />
-          )}
-          {binding === "fixed" && history.hasNextPage && (
-            <button
-              onClick={() => void history.fetchNextPage()}
-              disabled={history.isFetchingNextPage}
-            >
-              加载更早版本
-            </button>
-          )}
-          {target.kind === "video" && source?.kind === "image" && (
-            <CustomSelect
-              ariaLabel="输入用途"
-              value={purpose}
-              onChange={(value) => setPurpose(value as typeof purpose)}
-              options={[
-                { value: "reference", label: "参考图" },
-                { value: "first_frame", label: "首帧" },
-                { value: "last_frame", label: "尾帧" },
-              ]}
-            />
-          )}
-          <p className="board-muted">
-            {binding === "final"
-              ? "上游最终版本更新后，下次生成使用新版本。"
-              : "保持选定的历史版本，不随上游更新。"}
-          </p>
-          <button
-            className="board-primary"
-            disabled={
-              !source?.final_output_id || (binding === "fixed" && !outputId)
-            }
-            onClick={add}
-          >
-            绑定输入
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

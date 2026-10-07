@@ -358,7 +358,7 @@ export function useCanvasPointerInteractions({
       setToolMode(previous);
     };
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.code !== "Space") return;
+      if (event.code !== "Space" || !toolBeforeSpace.current) return;
       event.preventDefault();
       restoreTool();
     };

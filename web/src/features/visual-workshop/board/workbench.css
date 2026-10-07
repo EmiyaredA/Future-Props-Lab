@@ -130,6 +130,26 @@
   border: 0;
   background: var(--board-soft);
 }
+.board-inputs .board-output-heading .board-inputs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.board-inputs-toggle > svg {
+  transition: transform 120ms ease;
+}
+.board-inputs-toggle[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+.board-inputs-toggle:focus-visible {
+  outline: 2px solid var(--board-accent);
+  outline-offset: 3px;
+}
 .board-inputs .board-muted {
   margin-top: 8px;
   line-height: 1.5;
@@ -247,14 +267,14 @@
   height: 30px;
 }
 .workbench-generation :is(.image-composer-prompt, .video-composer-prompt) {
-  min-height: 180px;
-  height: 180px;
+  min-height: 280px;
+  height: clamp(280px, 36vh, 420px);
   margin-top: 8px;
   flex: none;
 }
 .workbench-generation
   :is(.generation-prompt-editor, .video-composer-prompt textarea) {
-  min-height: 180px;
+  min-height: 280px;
   font-size: 13px;
   line-height: 1.7;
   padding-bottom: 20px;
@@ -262,7 +282,7 @@
 .workbench-generation
   .is-expanded
   :is(.image-composer-prompt, .video-composer-prompt) {
-  height: 340px;
+  height: clamp(420px, 60vh, 640px);
 }
 .workbench-generation .video-composer-footer {
   position: sticky;
