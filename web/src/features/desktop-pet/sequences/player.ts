@@ -66,6 +66,18 @@ const duration = (clip: SequenceClip) =>
   clip.frames.reduce((sum, frame) => sum + frame.durationMs, 0);
 const finitePoint = (point: SequencePoint) =>
   Array.isArray(point) && point.length === 2 && point.every(Number.isFinite);
+const freezePlayback = (playback: Playback) => {
+  playback.start = null;
+  playback.lastTime = null;
+  playback.offset = playback.position;
+  if (playback.distanceStage) {
+    playback.distanceStage = {
+      ...playback.distanceStage,
+      phaseOrigin: null,
+      enteredAt: null,
+    };
+  }
+};
 
 export type SequencePresentationRequest =
   | { kind: "sample" }
@@ -165,17 +177,8 @@ export class SequencePlayer {
   /** Keeps the displayed cel, rebases both clocks, and cancels stale feedback. */
   cancelMotionPlayback(): void {
     if (this.playback) {
-      this.playback.start = null;
-      this.playback.lastTime = null;
-      this.playback.offset = this.playback.position;
+      freezePlayback(this.playback);
       this.playback.owner = ++this.stageGeneration;
-      if (this.playback.distanceStage) {
-        this.playback.distanceStage = {
-          ...this.playback.distanceStage,
-          phaseOrigin: null,
-          enteredAt: null,
-        };
-      }
     }
     this.failure = null;
     this.failedRequest = null;
@@ -537,11 +540,7 @@ export class SequencePlayer {
       this.playback = prior;
       // A rejected selection freezes the actual cel; returning to the previous
       // request must not catch up its old wall clock or confirmed phase.
-      if (prior) {
-        prior.start = null;
-        prior.lastTime = null;
-        prior.offset = prior.position;
-      }
+      if (prior) freezePlayback(prior);
       result = this.retainRejectedSupport(input, result);
     }
     return result;
@@ -553,11 +552,7 @@ export class SequencePlayer {
     reason: SequenceFailure["reason"],
   ): SequenceSample | null {
     const result = this.reject(reason, input.clip);
-    if (this.playback) {
-      this.playback.start = null;
-      this.playback.lastTime = null;
-      this.playback.offset = this.playback.position;
-    }
+    if (this.playback) freezePlayback(this.playback);
     return this.retainRejectedSupport(input, result);
   }
 

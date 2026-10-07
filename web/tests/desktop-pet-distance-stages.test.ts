@@ -122,6 +122,45 @@ describe("production player stationary recovery and confirmed push", () => {
     expect(p.getMotionTransition()!.id).not.toBe(old.id);
     expect(p.getMotionFailure()).toBeNull();
   });
+  it.each(["selection", "preflight"] as const)(
+    "%s rejection freezes the staged recovery clock before returning to its original request",
+    (kind) => {
+      const p = new SequencePlayer(fixture());
+      const actual = p.sample(input(0))!;
+      if (kind === "selection") p.sample({ clip: "missing", t: 100 });
+      else
+        p.rejectMotionPlayback(
+          { ...input(100), clip: "missing" },
+          "missing-clip",
+        );
+      const resumed = p.sample(input(200))!;
+      expect(resumed.motionFailure).toBeUndefined();
+      expect(resumed.frame).toEqual(actual.frame);
+      expect(resumed.transition?.progress).toBe(0);
+      expect(p.sample(input(200.11))!.frameIndex).toBe(1);
+    },
+  );
+  it.each(["selection", "preflight"] as const)(
+    "%s rejection rebases a partly advanced staged phase before returning",
+    (kind) => {
+      const p = new SequencePlayer(fixture());
+      p.sample(input(0));
+      p.sample(input(0.11));
+      const actual = p.sample(input(0.12, 2))!;
+      const rejected = { ...input(100, 2), clip: "missing" };
+      if (kind === "selection") p.sample(rejected);
+      else p.rejectMotionPlayback(rejected, "missing-clip");
+      const resumed = p.sample({ ...input(200, 2), phase: 0 })!;
+      expect(resumed.motionFailure).toBeUndefined();
+      expect(resumed.frame).toEqual(actual.frame);
+      expect(resumed.translation).toEqual(actual.translation);
+      expect(resumed.transition?.motionBudget?.remainingDIP).toBeCloseTo(2);
+      expect(
+        p.sample({ ...input(200.01, 4), phase: Math.PI / 2 })!.frameIndex,
+      ).toBe(2);
+      expect(p.getMotionFailure()).toBeNull();
+    },
+  );
   it("never silently crosses a motion endpoint or fits a badly drawn shared contact", () => {
     const p = new SequencePlayer(fixture());
     p.sample(input(0));

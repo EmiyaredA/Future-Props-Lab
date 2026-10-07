@@ -1,4 +1,6 @@
-# 完整序列帧循环的绝对位置登记
+# Agent Note: 完整序列帧循环的绝对位置登记
+
+Status: implemented
 
 ## Problem
 
