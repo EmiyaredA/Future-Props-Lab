@@ -1,11 +1,10 @@
 import { useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Upload } from "lucide-react";
+import { Check, Eye, Upload } from "lucide-react";
 import {
   getNodeOutputs,
   getNodeOutput,
   deleteNodeOutput,
-  saveNodeOutput,
   selectNodeFinalOutput,
   uploadNodeOutput,
   type VisualCanvasDocument,
@@ -18,13 +17,16 @@ import type { BoardController } from "./boardTypes";
 export function OutputHistory({
   controller,
   nodeId,
+  preview,
+  onPreview,
 }: {
   controller: BoardController;
   nodeId: string;
+  preview?: VisualNodeOutput;
+  onPreview: (version?: VisualNodeOutput) => void;
 }) {
   const node = controller.nodes.find((node) => node.id === nodeId)!;
   const uploadInput = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<VisualNodeOutput>();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const history = useInfiniteQuery({
@@ -55,7 +57,10 @@ export function OutputHistory({
       edge?.binding === "fixed" ? edge.output_id : source?.final_output_id;
     return !edge || current !== input.output_id;
   });
-  const showing = preview ?? final.data ?? items.find((item) => item.is_final);
+  const showing =
+    (preview && preview.node_id === nodeId ? preview : undefined) ??
+    final.data ??
+    items.find((item) => item.is_final);
   const mutate = async (
     action: (revision: number) => Promise<VisualCanvasDocument>,
   ) => {
@@ -85,10 +90,20 @@ export function OutputHistory({
       <div className="board-output-heading">
         <div>
           <h2>输出预览</h2>
-          <span>
-            当前预览 {showing ? `v${showing.version}` : "—"} · 最终输出{" "}
-            {node.final_version ? `v${node.final_version}` : "未设置"}
-          </span>
+          <div
+            className="board-preview-badges"
+            aria-label={`当前预览 ${showing ? `v${showing.version}` : "—"} · 最终输出 ${node.final_version ? `v${node.final_version}` : "未设置"}`}
+          >
+            <span className="board-preview-badge">
+              <Eye size={12} />
+              正在预览 {showing ? `v${showing.version}` : "—"}
+            </span>
+            <span className="board-final-badge">
+              <Check size={12} />
+              最终输出{" "}
+              {node.final_version ? `v${node.final_version}` : "未设置"}
+            </span>
+          </div>
         </div>
         {showing && showing.id !== node.final_output_id && (
           <button
@@ -127,21 +142,7 @@ export function OutputHistory({
         <h3>
           输出版本 <small>{history.data?.pages[0].total ?? 0}</small>
         </h3>
-        {node.kind === "text" ? (
-          <button
-            className="board-primary"
-            disabled={pending}
-            onClick={() =>
-              void mutate((revision) =>
-                saveNodeOutput(controller.projectId, nodeId, revision, {
-                  text: node.text,
-                }),
-              )
-            }
-          >
-            保存文本版本
-          </button>
-        ) : (
+        {node.kind !== "text" && (
           <div>
             <button
               className="board-upload"
@@ -186,7 +187,7 @@ export function OutputHistory({
             key={item.id}
             aria-pressed={showing?.id === item.id}
             className={showing?.id === item.id ? "is-preview" : ""}
-            onClick={() => setPreview(item)}
+            onClick={() => onPreview(item)}
           >
             <div className="board-version-thumb">
               <OutputPreview
@@ -201,16 +202,7 @@ export function OutputHistory({
                 v{item.version}{" "}
                 {item.id === node.final_output_id && <em>最终输出</em>}
               </strong>
-              <small>
-                {item.source === "generated"
-                  ? "生成"
-                  : item.source === "text"
-                    ? "文本保存"
-                    : item.source === "uploaded"
-                      ? "上传"
-                      : "历史素材"}{" "}
-                · {new Date(item.created_at).toLocaleString("zh-CN")}
-              </small>
+              <small>{outputSource(item.source)}</small>
             </span>
           </button>
         ))}
@@ -223,28 +215,49 @@ export function OutputHistory({
           加载更早版本
         </button>
       )}
-      {showing && showing.id !== node.final_output_id && (
-        <button
-          disabled={pending}
-          onClick={() =>
-            void mutate(async (revision) => {
-              const updated = await deleteNodeOutput(
-                controller.projectId,
-                nodeId,
-                showing.id,
-                revision,
-              );
-              setPreview(undefined);
-              return updated;
-            })
-          }
-        >
-          删除当前历史版本
-        </button>
+      {showing && (
+        <div className="board-version-details">
+          <span>
+            {outputSource(showing.source)} ·{" "}
+            {new Date(showing.created_at).toLocaleString("zh-CN")}
+          </span>
+          {showing.id !== node.final_output_id && (
+            <>
+              <button onClick={() => onPreview(undefined)}>返回最终版本</button>
+              <button
+                disabled={pending}
+                onClick={() =>
+                  void mutate(async (revision) => {
+                    const updated = await deleteNodeOutput(
+                      controller.projectId,
+                      nodeId,
+                      showing.id,
+                      revision,
+                    );
+                    onPreview(undefined);
+                    return updated;
+                  })
+                }
+              >
+                删除当前历史版本
+              </button>
+            </>
+          )}
+        </div>
       )}
       {!history.isLoading && !items.length && (
         <p className="board-muted">生成或上传素材后，版本将在这里保留。</p>
       )}
     </section>
   );
+}
+
+function outputSource(source: VisualNodeOutput["source"]) {
+  return source === "generated"
+    ? "生成"
+    : source === "text"
+      ? "文本保存"
+      : source === "uploaded"
+        ? "上传"
+        : "历史素材";
 }

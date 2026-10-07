@@ -126,18 +126,24 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
     exact: true,
   });
   await tree.getByRole("button", { name: /小夏 · 人设图/ }).click();
-  await expect(page.getByText("当前预览 v3 · 最终输出 v3")).toBeVisible();
-  await page.screenshot({ path: resolve(screenshots, "a-workbench.png") });
+  await expect(page.getByLabel("当前预览 v3 · 最终输出 v3")).toBeVisible();
+  await page.screenshot({
+    animations: "disabled",
+    path: resolve(screenshots, "a-workbench.png"),
+  });
   await page
     .locator(".board-version-list")
     .getByRole("button")
     .filter({ hasText: /v2/ })
     .click();
-  await expect(page.getByText("当前预览 v2 · 最终输出 v3")).toBeVisible();
+  await expect(page.getByLabel("当前预览 v2 · 最终输出 v3")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "设为最终输出" }),
   ).toBeVisible();
-  await page.screenshot({ path: resolve(screenshots, "c-output-history.png") });
+  await page.screenshot({
+    animations: "disabled",
+    path: resolve(screenshots, "c-output-history.png"),
+  });
   // Previewing v2 keeps tree and persisted final at v3.
   expect(
     (await (await page.request.get(base + "/canvas")).json()).nodes[0]
@@ -148,7 +154,7 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
     .getByRole("textbox", { name: "文本内容" })
     .fill("小夏推开窗户，听见清晨的鸟鸣。");
   await page.getByRole("button", { name: "保存文本版本" }).click();
-  await expect(page.getByText("当前预览 v1 · 最终输出 v1")).toBeVisible();
+  await expect(page.getByLabel("当前预览 v1 · 最终输出 v1")).toBeVisible();
   await tree.getByRole("button", { name: /镜头 01 · 视频/ }).click();
   await page.getByRole("button", { name: "引用任务输出" }).click();
   await page.getByRole("combobox", { name: "选择上游任务" }).click();
@@ -159,7 +165,10 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
   await page.getByRole("button", { name: "固定版本", exact: true }).click();
   await page.getByRole("combobox", { name: "固定历史版本" }).click();
   await page.getByRole("option", { name: /v2 ·/ }).click();
-  await page.screenshot({ path: resolve(screenshots, "d-input-binding.png") });
+  await page.screenshot({
+    animations: "disabled",
+    path: resolve(screenshots, "d-input-binding.png"),
+  });
   await page.getByRole("button", { name: "绑定输入" }).click();
   await expect(page.getByText("固定版本 · v2")).toBeVisible();
   await expect
@@ -180,9 +189,15 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
     await expect(
       page.getByRole("heading", { name: new RegExp(status) }),
     ).toBeVisible();
-  await page.screenshot({ path: resolve(screenshots, "b-status-groups.png") });
+  await page.screenshot({
+    animations: "disabled",
+    path: resolve(screenshots, "b-status-groups.png"),
+  });
   await page.getByRole("button", { name: "深色", exact: true }).click();
-  await page.screenshot({ path: resolve(screenshots, "dark.png") });
+  await page.screenshot({
+    animations: "disabled",
+    path: resolve(screenshots, "dark.png"),
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect
     .poll(() =>
@@ -193,7 +208,10 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
     .toBeTruthy();
   await page.getByRole("button", { name: "切换项目素材面板" }).click();
   await page.getByRole("button", { name: "创作工作台", exact: true }).click();
-  await page.screenshot({ path: resolve(screenshots, "narrow.png") });
+  await page.screenshot({
+    animations: "disabled",
+    path: resolve(screenshots, "narrow.png"),
+  });
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.getByRole("button", { name: "画布", exact: true }).click();
   await expect(page.locator(`[data-node-id='${imageId}']`)).toBeVisible();
@@ -208,6 +226,7 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
 test("音视频版本可预览，重新生成展示最终输出与真实状态反馈", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/apps/visual-workshop");
   const csrf = (await page.context().cookies()).find(
     (cookie) => cookie.name === "fpl_csrf",
@@ -286,6 +305,12 @@ test("音视频版本可预览，重新生成展示最终输出与真实状态�
   });
   await tree.getByRole("button", { name: /清晨 音频/ }).click();
   await expect(page.locator(".board-large-preview audio")).toBeVisible();
+  await expect(page.locator(".audio-generate-submit")).toBeInViewport();
+  await page.getByRole("button", { name: "展开音频生成器" }).click();
+  await expect(page.locator(".audio-generation-composer")).toHaveClass(
+    /is-expanded/,
+  );
+  await page.getByRole("button", { name: "收起音频生成器" }).click();
   await expect
     .poll(() =>
       page
@@ -293,9 +318,13 @@ test("音视频版本可预览，重新生成展示最终输出与真实状态�
         .evaluate((element: HTMLAudioElement) => element.readyState),
     )
     .toBeGreaterThan(0);
-  await page.screenshot({ path: resolve(screenshots, "audio.png") });
+  await page.screenshot({
+    animations: "disabled",
+    path: resolve(screenshots, "audio.png"),
+  });
   await tree.getByRole("button", { name: /镜头 视频/ }).click();
   await expect(page.locator(".board-large-preview video")).toBeVisible();
+  await expect(page.getByRole("button", { name: "生成视频" })).toBeInViewport();
   await expect
     .poll(() =>
       page
@@ -303,7 +332,10 @@ test("音视频版本可预览，重新生成展示最终输出与真实状态�
         .evaluate((element: HTMLVideoElement) => element.readyState),
     )
     .toBeGreaterThan(0);
-  await page.screenshot({ path: resolve(screenshots, "video.png") });
+  await page.screenshot({
+    animations: "disabled",
+    path: resolve(screenshots, "video.png"),
+  });
   const imageId = canvas.nodes[0].id;
   const videoId = canvas.nodes[2].id;
   const task = (
@@ -351,11 +383,14 @@ test("音视频版本可预览，重新生成展示最终输出与真实状态�
   await page.reload();
   await page.getByRole("button", { name: "状态分组", exact: true }).click();
   await expect(page.getByText("48%", { exact: false })).toBeVisible();
-  await expect(page.getByText(/模拟供应商返回失败/)).toBeVisible();
+  await expect(page.locator(".board-card-error summary")).toHaveText(
+    "模拟供应商返回失败",
+  );
   const card = page.locator(".board-task-card").filter({ hasText: "小夏" });
-  await expect(card).toContainText("最终输出 v1");
+  await expect(card).toContainText("最终 v1");
   await expect(card.locator("img")).toBeVisible();
   await page.screenshot({
+    animations: "disabled",
     path: resolve(screenshots, "status-running-failed.png"),
   });
 });

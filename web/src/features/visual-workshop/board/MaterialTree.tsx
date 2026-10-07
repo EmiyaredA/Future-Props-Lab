@@ -1,0 +1,148 @@
+import { ChevronRight, Folder } from "lucide-react";
+import type { VisualCanvasNode, VisualMaterialCategory } from "../api";
+import { BoardMenu } from "./BoardMenu";
+import { OutputPreview } from "./OutputPreview";
+import { nodeTypeNames } from "./boardTypes";
+
+export type TreeAction = {
+  kind: "category" | "rename" | "group";
+  categoryId?: string;
+  initialValue?: string;
+};
+
+export function MaterialTree({
+  categories,
+  nodes,
+  selectedId,
+  onSelect,
+  onAction,
+}: {
+  categories: VisualMaterialCategory[];
+  nodes: VisualCanvasNode[];
+  selectedId?: string;
+  onSelect: (id: string) => void;
+  onAction: (action: TreeAction) => void;
+}) {
+  const entry = (node: VisualCanvasNode) => (
+    <button
+      key={node.id}
+      className={`board-material ${selectedId === node.id ? "is-selected" : ""}`}
+      aria-pressed={selectedId === node.id}
+      onClick={() => onSelect(node.id)}
+    >
+      <div className="board-material-thumb">
+        <OutputPreview
+          kind={node.kind}
+          assetId={node.kind !== "text" ? node.asset_id : undefined}
+          text={node.kind === "text" ? node.text : undefined}
+          compact
+        />
+      </div>
+      <span>
+        <strong title={node.title}>{node.title}</strong>
+        <small>
+          {nodeTypeNames[node.kind]} ·{" "}
+          {node.final_version ? `最终 v${node.final_version}` : "暂无输出"}
+        </small>
+      </span>
+      {node.final_version && (
+        <i className="board-material-ready" aria-label="已有最终输出" />
+      )}
+    </button>
+  );
+  const uncategorized = nodes.filter((node) => !node.category_id);
+  return (
+    <div className="board-material-tree">
+      {categories.map((category) => {
+        const entries = nodes.filter(
+          (node) => node.category_id === category.id,
+        );
+        const groups = [
+          ...new Set([
+            ...(category.groups ?? []),
+            ...entries
+              .map((node) => node.group)
+              .filter((group): group is string => !!group),
+          ]),
+        ];
+        const ungrouped = entries.filter((node) => !node.group);
+        return (
+          <div key={category.id} className="board-category-row">
+            <details open={entries.length > 0} className="board-category">
+              <summary>
+                <ChevronRight size={14} />
+                <Folder size={14} />
+                <span>{category.name}</span>
+                <small>{entries.length}</small>
+              </summary>
+              {!groups.length ? (
+                entries.map(entry)
+              ) : (
+                <>
+                  {groups.map((group) => (
+                    <details open key={group} className="board-group">
+                      <summary>
+                        <ChevronRight size={12} />
+                        {group}
+                        <small>
+                          {
+                            entries.filter((node) => node.group === group)
+                              .length
+                          }
+                        </small>
+                      </summary>
+                      {entries
+                        .filter((node) => node.group === group)
+                        .map(entry)}
+                    </details>
+                  ))}
+                  {!!ungrouped.length && (
+                    <details open className="board-group">
+                      <summary>
+                        <ChevronRight size={12} />
+                        未分组<small>{ungrouped.length}</small>
+                      </summary>
+                      {ungrouped.map(entry)}
+                    </details>
+                  )}
+                </>
+              )}
+            </details>
+            <div className="board-category-menu">
+              <BoardMenu
+                label={`管理分类 ${category.name}`}
+                items={[
+                  {
+                    label: "新建分组",
+                    onSelect: () =>
+                      onAction({ kind: "group", categoryId: category.id }),
+                  },
+                  {
+                    label: "编辑分类",
+                    onSelect: () =>
+                      onAction({
+                        kind: "rename",
+                        categoryId: category.id,
+                        initialValue: category.name,
+                      }),
+                  },
+                ]}
+              />
+            </div>
+          </div>
+        );
+      })}
+      {!!uncategorized.length && (
+        <details open className="board-category">
+          <summary>
+            <ChevronRight size={14} />
+            <Folder size={14} />
+            <span>未分类</span>
+            <small>{uncategorized.length}</small>
+          </summary>
+          {uncategorized.map(entry)}
+        </details>
+      )}
+    </div>
+  );
+}

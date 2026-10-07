@@ -91,6 +91,7 @@ export function CanvasNodeInspector({
   onTaskLinked,
   onBatchCreated,
   embedded = false,
+  generationLayout = "canvas",
   initialTab,
   upstreamNodes = [],
 }: {
@@ -105,6 +106,7 @@ export function CanvasNodeInspector({
   onTaskLinked?: (taskId: string) => void;
   onBatchCreated?: (batch: GenerationBatch) => void | Promise<void>;
   embedded?: boolean;
+  generationLayout?: "canvas" | "workbench";
   initialTab?: "content" | "generate";
   upstreamNodes?: MediaNode[];
 }) {
@@ -247,6 +249,7 @@ export function CanvasNodeInspector({
       {tab === "generate" ? (
         <GenerationDrawer
           compact
+          layout={generationLayout}
           projectId={projectId}
           canvasNodeId={node.id}
           lockedKind={node.kind}

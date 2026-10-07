@@ -2,19 +2,25 @@
 
 画布与看板使用同一项目文档、节点 ID 和输入连线。看板的项目素材树按主分类与可选分组整理，默认人设、场景和分镜，可增加自定义分类。文本、图像、音频与视频是节点类型，用途标签独立保存。
 
+## 看板展示与整理入口
+
+项目素材栏把新建和上传放在顶部，分类管理菜单提供分组与分类编辑；空分类默认收起，没有自定义分组时直接列出素材。工作台的「整理」入口编辑分类、分组和标签，节点更多菜单提供删除操作。提示词、常用参数与生成操作集中在编辑区，当前预览和最终输出以独立标记展示；横向版本条只选择预览，「设为最终输出」才更新最终版本。历史预览在同一项目页切换画布和看板后保留。
+
+状态分组按状态分配空间：待准备和可生成使用紧凑卡，生成中突出进度，已完成突出结果；失败原因可展开，点击「调整并重试」进入对应工作台。桌面编辑与结果区分别滚动，窄屏素材栏改为抽屉。所有菜单支持键盘操作，不改变输出、引用或生成规则。
+
 ## 版本与最终输出
 
 每次上传到已有节点、显式保存文本或成功生成都新增一个服务器维护的版本并成为最终输出。历史预览不修改最终输出；用户可另行选择旧版本作为最终输出。开始生成和失败不清空已有结果。版本列表分页，不靠前端轮询覆盖素材。删除历史版本不删除媒体文件；最终版本与被固定引用的版本受删除保护。
 
 普通媒体上传使用 `POST /v1/visual-workshop/projects/{project_id}/node-uploads`，multipart 字段为 `file`、`expected_revision` 和可选 `x`、`y`。文件、节点、v1 与文档 CAS 原子保存。已有节点使用 `POST .../nodes/{node_id}/output-uploads`，上传类型必须与节点一致。
 
-| 方法 | 项目内路径 | 内容 |
-| --- | --- | --- |
-| GET | `/nodes/{node_id}/outputs?page=1&page_size=20` | 分页历史（版本降序） |
-| GET | `/nodes/{node_id}/outputs/{output_id}` | 具体版本及提交输入快照 |
-| POST | `/nodes/{node_id}/outputs` | `expected_revision` 与文本 `text`，或已托管素材 `asset_id` |
-| PUT | `/nodes/{node_id}/final-output` | `expected_revision`、`output_id`；选择最终版本 |
-| DELETE | `/nodes/{node_id}/outputs/{output_id}?expected_revision=...` | 删除非最终、未被固定引用版本 |
+| 方法   | 项目内路径                                                   | 内容                                                       |
+| ------ | ------------------------------------------------------------ | ---------------------------------------------------------- |
+| GET    | `/nodes/{node_id}/outputs?page=1&page_size=20`               | 分页历史（版本降序）                                       |
+| GET    | `/nodes/{node_id}/outputs/{output_id}`                       | 具体版本及提交输入快照                                     |
+| POST   | `/nodes/{node_id}/outputs`                                   | `expected_revision` 与文本 `text`，或已托管素材 `asset_id` |
+| PUT    | `/nodes/{node_id}/final-output`                              | `expected_revision`、`output_id`；选择最终版本             |
+| DELETE | `/nodes/{node_id}/outputs/{output_id}?expected_revision=...` | 删除非最终、未被固定引用版本                               |
 
 上述路径均以 `/v1/visual-workshop/projects/{project_id}` 为前缀。写入要求当前画布 revision；冲突返回 409 与当前快照，不静默覆盖。读写使用视觉工坊固定权限并按 Principal 的 Workspace 校验；跨 Workspace 返回不存在。
 

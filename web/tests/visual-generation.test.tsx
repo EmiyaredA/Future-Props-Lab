@@ -371,6 +371,23 @@ test("creates an image task with model-linked sizes and a project reference", as
   expect(await screen.findByText(/任务已提交/)).toBeInTheDocument();
 });
 
+test.each(["canvas", "workbench"] as const)(
+  "%s layout keeps an explicit generation action without changing the canvas composer",
+  async (layout) => {
+    renderWithClient(
+      <GenerationDrawer
+        compact
+        lockedKind="image"
+        layout={layout}
+        projectId="project-1"
+        onClose={vi.fn()}
+      />,
+    );
+    const submit = await screen.findByRole("button", { name: "生成图片" });
+    expect(submit.textContent).toBe(layout === "workbench" ? "生成" : "");
+  },
+);
+
 test("uses the compact image node composer with reference, size, and seed controls", async () => {
   const user = userEvent.setup();
   renderWithClient(

@@ -4,6 +4,8 @@ import {
   ChevronDown,
   LoaderCircle,
   Music,
+  Maximize2,
+  Minimize2,
   Sparkles,
   Waves,
   X,
@@ -27,6 +29,7 @@ export function CompactAudioGenerationDrawer({
   onBeforeSubmit,
   onTaskCreated,
   onClose,
+  layout = "canvas",
   linkedAssetIds = { image: [], video: [], audio: [] },
 }: GenerationDrawerProps) {
   const audioDraft = draft as
@@ -53,6 +56,7 @@ export function CompactAudioGenerationDrawer({
     audioDraft?.reference_asset_ids ?? [],
   );
   const [notice, setNotice] = useState("");
+  const [expanded, setExpanded] = useState(false);
   const options = useQuery({
     queryKey: visualWorkshopQueryKeys.generationOptions,
     queryFn: getGenerationOptions,
@@ -145,7 +149,10 @@ export function CompactAudioGenerationDrawer({
   };
 
   return (
-    <form className="audio-generation-composer" onSubmit={submit}>
+    <form
+      className={`audio-generation-composer${expanded ? " is-expanded" : ""}`}
+      onSubmit={submit}
+    >
       <header>
         <nav role="tablist">
           <button
@@ -169,9 +176,20 @@ export function CompactAudioGenerationDrawer({
             <Waves aria-hidden /> 音效生成
           </button>
         </nav>
-        <button type="button" aria-label="折叠生成面板" onClick={onClose}>
-          <X aria-hidden />
-        </button>
+        {layout === "workbench" ? (
+          <button
+            type="button"
+            className="board-icon-button"
+            aria-label={expanded ? "收起音频生成器" : "展开音频生成器"}
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? <Minimize2 /> : <Maximize2 />}
+          </button>
+        ) : (
+          <button type="button" aria-label="折叠生成面板" onClick={onClose}>
+            <X aria-hidden />
+          </button>
+        )}
       </header>
       <div className="audio-generation-reference-stack">
         {mode === "music" ||
@@ -197,6 +215,7 @@ export function CompactAudioGenerationDrawer({
       </div>
       <div className="audio-generation-editor">
         <textarea
+          aria-label="音频提示词"
           maxLength={6000}
           value={prompt}
           placeholder={

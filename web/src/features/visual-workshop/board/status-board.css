@@ -1,0 +1,298 @@
+.board-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 0;
+  align-items: start;
+}
+.board-status-column {
+  --status-color: var(--board-muted);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--board-panel) 60%, transparent);
+  border-top: 2px solid color-mix(in srgb, var(--status-color) 45%, transparent);
+}
+.board-status-column.is-ready {
+  --status-color: #6f87a4;
+}
+.board-status-column.is-running {
+  --status-color: var(--board-accent);
+}
+.board-status-column.is-done {
+  --status-color: var(--board-success);
+}
+.board-status-column h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 12px;
+  font-size: 13px;
+}
+.board-status-column h2 > svg {
+  color: var(--status-color);
+}
+.board-status-column h2 > small {
+  margin-left: auto;
+  background: color-mix(in srgb, var(--status-color) 10%, transparent);
+  padding: 2px 7px;
+  border-radius: 5px;
+  color: var(--status-color);
+  font-size: 11px;
+}
+.board-status-list {
+  padding: 0 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.board-column-empty {
+  padding: 4px 3px 5px;
+  font-size: 11px;
+  color: var(--board-muted);
+}
+.board-task-card {
+  border: 1px solid var(--board-border);
+  border-radius: 9px;
+  background: var(--board-panel);
+  box-shadow: 0 2px 5px #00000003;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.board-task-card:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--board-accent) 40%,
+    var(--board-border)
+  );
+  box-shadow: 0 4px 12px #00000009;
+}
+.visual-project-board .board-card-open {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 9px;
+  border: 0;
+  padding: 10px 10px 7px;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  justify-content: flex-start;
+}
+.board-card-preview {
+  width: 38px;
+  height: 38px;
+  background: var(--board-stage);
+  overflow: hidden;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.board-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.board-card-identity {
+  min-width: 0;
+  flex: 1;
+}
+.board-card-identity strong {
+  font-size: 13px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.board-card-kind {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--board-muted);
+  font-size: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.board-card-body {
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.board-task-card.is-done .board-card-open {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 7px;
+  gap: 8px;
+}
+.board-task-card.is-done .board-card-preview {
+  width: 100%;
+  height: 140px;
+  border-radius: 5px;
+}
+.board-task-card.is-done .board-card-identity {
+  padding: 0 3px;
+}
+.board-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+.board-card-tags > span,
+.board-card-tags summary {
+  background: var(--board-soft);
+  border-radius: 4px;
+  padding: 2px 5px;
+  color: var(--board-muted);
+}
+.board-card-tags details div {
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 6px 0;
+  color: var(--board-muted);
+  overflow-wrap: anywhere;
+}
+.board-card-tags summary {
+  cursor: pointer;
+}
+.board-card-description {
+  color: var(--board-muted);
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.board-card-inputs {
+  font-size: 10px;
+  color: var(--board-muted);
+  border-top: 1px solid var(--board-border);
+  padding-top: 6px;
+}
+.board-card-inputs summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.board-card-inputs summary > span {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.board-card-inputs[open] summary {
+  color: var(--board-accent);
+}
+.board-card-inputs p {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.board-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--board-accent);
+}
+.board-progress > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.board-progress span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.board-progress progress {
+  width: 100%;
+  height: 5px;
+  appearance: none;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--board-soft);
+  accent-color: var(--board-accent);
+}
+.board-progress progress::-webkit-progress-bar {
+  background: var(--board-soft);
+}
+.board-progress progress::-webkit-progress-value {
+  background: var(--board-accent);
+  border-radius: 4px;
+}
+.board-progress progress::-moz-progress-bar {
+  background: var(--board-accent);
+}
+.board-task-card.has-error {
+  border-color: color-mix(in srgb, #d36453 45%, var(--board-border));
+}
+.board-card-error {
+  padding: 7px;
+  border-radius: 5px;
+  color: #c66350;
+  background: color-mix(in srgb, #d36453 8%, transparent);
+  font-size: 11px;
+}
+.board-card-error summary {
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.board-card-error p {
+  margin-top: 6px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.visual-project-board .board-card-error button {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  padding: 4px 0 0;
+  font-size: 11px;
+  font-weight: 650;
+}
+@media (max-width: 1200px) {
+  .board-status-grid {
+    gap: 10px;
+    padding: 12px;
+    grid-template-columns: repeat(4, minmax(205px, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .board-status-grid {
+    padding: 10px;
+    grid-template-columns: repeat(4, 240px);
+  }
+  .board-card-error button {
+    min-height: 36px;
+  }
+}
+/* Media without an image thumbnail use a compact identity row. */
+.board-task-card.is-done:not([data-kind="image"]) .board-card-open {
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 10px 7px;
+}
+.board-task-card.is-done:not([data-kind="image"]) .board-card-preview {
+  width: 38px;
+  height: 38px;
+}

@@ -367,6 +367,9 @@ export function CompactImageGenerationDrawer({
             ) : (
               <ArrowUp aria-hidden />
             )}
+            {controller.layout === "workbench" && (
+              <span>{isSubmitting ? "提交中" : "生成"}</span>
+            )}
           </button>
         </footer>
       </form>

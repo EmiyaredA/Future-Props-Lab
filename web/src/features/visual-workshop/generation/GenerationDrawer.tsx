@@ -6,10 +6,17 @@ import { StandardGenerationDrawer } from "@features/visual-workshop/generation/S
 import { CompactAudioGenerationDrawer } from "@features/visual-workshop/generation/CompactAudioGenerationDrawer";
 
 export function GenerationDrawer(props: GenerationDrawerProps) {
-  if (props.compact && props.lockedKind === "audio") {
-    return <CompactAudioGenerationDrawer {...props} />;
-  }
-  return <VisualGenerationDrawer {...props} />;
+  const content =
+    props.compact && props.lockedKind === "audio" ? (
+      <CompactAudioGenerationDrawer {...props} />
+    ) : (
+      <VisualGenerationDrawer {...props} />
+    );
+  return props.layout === "workbench" ? (
+    <div className="workbench-generation">{content}</div>
+  ) : (
+    content
+  );
 }
 
 function VisualGenerationDrawer(props: GenerationDrawerProps) {

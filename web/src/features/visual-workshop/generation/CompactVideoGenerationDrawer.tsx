@@ -456,6 +456,9 @@ export function CompactVideoGenerationDrawer({
             ) : (
               <ArrowUp aria-hidden />
             )}
+            {controller.layout === "workbench" && (
+              <span>{createMutation.isPending ? "提交中" : "生成"}</span>
+            )}
           </button>
         </footer>
       </form>

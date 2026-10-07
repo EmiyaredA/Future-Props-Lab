@@ -6,6 +6,7 @@ import { getNodeOutput, getNodeOutputs, type VisualCanvasEdge } from "../api";
 import { visualWorkshopQueryKeys } from "../queryKeys";
 import { canConnectCanvasNodes } from "../canvas/canvasGraph";
 import { nodeTypeNames, type BoardController } from "./boardTypes";
+import { OutputPreview } from "./OutputPreview";
 
 export function InputReferences({
   controller,
@@ -94,10 +95,18 @@ export function InputReferences({
         );
         return (
           <div className="board-input-row" key={edge.id}>
-            <Link2 size={15} />
+            <div className="board-input-thumb">
+              <OutputPreview
+                kind={upstream?.kind ?? "image"}
+                assetId={boundVersions[index].data?.asset_id}
+                text={boundVersions[index].data?.text}
+                compact
+              />
+            </div>
             <span>
               <strong>{upstream?.title ?? "节点不存在"}</strong>
               <small>
+                <Link2 size={11} />
                 {edge.binding === "fixed" ? (
                   <>
                     <Lock size={11} /> 固定版本 ·{" "}
@@ -125,7 +134,7 @@ export function InputReferences({
         );
       })}
       {!incoming.length && (
-        <p className="board-muted">引用其他节点的文本或素材作为创作输入。</p>
+        <p className="board-muted">添加素材或文本，作为创作参考。</p>
       )}
       {open && (
         <div className="board-reference-picker" aria-label="任务输出选择器">
