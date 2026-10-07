@@ -10,7 +10,28 @@ import {
 import {
   uploadMaterialNode,
   type VisualCanvasDocument,
+  type VisualCanvasNode,
 } from "@features/visual-workshop/api";
+import { batchInsertionAnchor, type CanvasPoint } from "./canvasPlacement";
+import type { NodeKind } from "./geometry";
+
+function fileKind(file: File): NodeKind | undefined {
+  if (
+    file.type.startsWith("image/") ||
+    /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(file.name)
+  )
+    return "image";
+  if (
+    file.type.startsWith("video/") ||
+    /\.(mp4|webm|mov|mkv)$/i.test(file.name)
+  )
+    return "video";
+  if (
+    file.type.startsWith("audio/") ||
+    /\.(mp3|wav|m4a|ogg|aac|flac)$/i.test(file.name)
+  )
+    return "audio";
+}
 
 export type CanvasUploadNotice = {
   tone: "pending" | "error" | "success" | "info";
@@ -22,6 +43,9 @@ export function useCanvasUpload({
   prepareCanvas,
   applyServerCanvas,
   uploadPosition,
+  getInsertionAnchor,
+  resolveNodePosition,
+  revealNodes,
   setSelectedId,
   setInspectedNodeId,
   setMediaEditorTab,
@@ -29,7 +53,10 @@ export function useCanvasUpload({
   projectId: string;
   prepareCanvas: () => Promise<number>;
   applyServerCanvas: (document: VisualCanvasDocument) => void;
-  uploadPosition: MutableRefObject<{ x: number; y: number }>;
+  uploadPosition: MutableRefObject<CanvasPoint | undefined>;
+  getInsertionAnchor: () => CanvasPoint;
+  resolveNodePosition: (kind: NodeKind, anchor: CanvasPoint) => CanvasPoint;
+  revealNodes: (nodes: VisualCanvasNode[]) => void;
   setSelectedId: (id: string | undefined) => void;
   setInspectedNodeId: (id: string | undefined) => void;
   setMediaEditorTab: (tab: "content" | "generate") => void;
@@ -41,24 +68,30 @@ export function useCanvasUpload({
   const upload = useMutation({
     mutationFn: async (files: File[]) => {
       const created: ManagedFile[] = [];
-      for (const [index, file] of files.entries()) {
-        if (
-          /^(image|audio|video)\//.test(file.type) ||
-          /\.(png|jpe?g|webp|gif|avif|svg|mp4|webm|mov|mkv|mp3|wav|m4a|ogg|aac|flac)$/i.test(
-            file.name,
-          )
-        ) {
+      const anchor = uploadPosition.current ?? getInsertionAnchor();
+      const count = files.filter((file) => fileKind(file)).length;
+      let index = 0;
+      for (const file of files) {
+        const kind = fileKind(file);
+        if (kind) {
           const revision = await prepareCanvas();
-          const updated = await uploadMaterialNode(projectId, file, revision, {
-            x: uploadPosition.current.x + index * 28,
-            y: uploadPosition.current.y + index * 28,
-          });
+          const position = resolveNodePosition(
+            kind,
+            batchInsertionAnchor(anchor, index++, count),
+          );
+          const updated = await uploadMaterialNode(
+            projectId,
+            file,
+            revision,
+            position,
+          );
           applyServerCanvas(updated);
           client.setQueryData(
             visualWorkshopQueryKeys.canvas(projectId),
             updated,
           );
           const node = updated.nodes.at(-1)!;
+          revealNodes([node]);
           setSelectedId(node.id);
           setInspectedNodeId(node.id);
           setMediaEditorTab("content");

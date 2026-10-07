@@ -305,6 +305,7 @@ export function useCanvasPointerInteractions({
   const suppressNodeClick = useRef<string | undefined>(undefined);
   const toolBeforeSpace = useRef<CanvasTool | undefined>(undefined);
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
+  const [interactionActive, setInteractionActive] = useState(false);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [actionsHiddenNodeId, setActionsHiddenNodeId] = useState<string>();
   const [selectionBox, setSelectionBox] = useState<CanvasSelectionBox>();
@@ -336,7 +337,11 @@ export function useCanvasPointerInteractions({
   useEffect(() => {
     const isEditing = (target: EventTarget | null) =>
       target instanceof Element &&
-      target.matches("input, textarea, select, [contenteditable='true']");
+      Boolean(
+        target.closest(
+          "input, textarea, select, button, [role='menu'], [contenteditable='true']",
+        ),
+      );
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code !== "Space" || isEditing(event.target)) return;
       event.preventDefault();
@@ -380,6 +385,7 @@ export function useCanvasPointerInteractions({
       return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
+    setInteractionActive(true);
     setActionsHiddenNodeId(undefined);
     closeContextMenu();
     if (shouldPan) {
@@ -444,6 +450,7 @@ export function useCanvasPointerInteractions({
   };
 
   const stopSurfaceInteraction = () => {
+    setInteractionActive(false);
     pan.current = undefined;
     marqueeSession.current = undefined;
     setSelectionBox(undefined);
@@ -464,6 +471,7 @@ export function useCanvasPointerInteractions({
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
+    setInteractionActive(true);
     setActionsHiddenNodeId(undefined);
     const ids = selectedNodeIds.includes(node.id) ? selectedNodeIds : [node.id];
     if (!selectedNodeIds.includes(node.id)) setSelectedNodeIds(ids);
@@ -525,6 +533,7 @@ export function useCanvasPointerInteractions({
     const completed = nodeDrag.current;
     if (!completed) return;
     nodeDrag.current = undefined;
+    setInteractionActive(false);
     setAlignmentGuides([]);
     if (completed.moved) {
       clearAutoSave();
@@ -542,6 +551,7 @@ export function useCanvasPointerInteractions({
   };
 
   return {
+    interactionActive,
     pan,
     toolMode,
     setToolMode,

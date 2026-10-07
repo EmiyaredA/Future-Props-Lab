@@ -279,7 +279,7 @@ test.each(["toolbar", "context", "text-button", "media-button"])(
   },
 );
 
-test("uses current zoom and offsets repeat pastes, resetting after pointer motion", async () => {
+test("uses current zoom and avoids repeat pastes, resetting the anchor after pointer motion", async () => {
   seedCanvas(initialNodes.slice(0, 1));
   window.localStorage.setItem(
     "fpl_canvas_viewport_project-1",
@@ -299,13 +299,13 @@ test("uses current zoom and offsets repeat pastes, resetting after pointer motio
       .map((node) => node.position),
   ).toEqual([
     { x: 1200, y: 800 },
-    { x: 1232, y: 832 },
+    { x: 1232, y: 1046 },
   ]);
   fireEvent.pointerMove(surface, { clientX: 750, clientY: 500 });
   fireEvent.keyDown(surface, { key: "v", ctrlKey: true });
   await waitFor(() => expect(putVisualCanvas).toHaveBeenCalledTimes(3));
   expect(vi.mocked(putVisualCanvas).mock.calls[2][1][3].position).toEqual({
-    x: 1300,
+    x: 1584,
     y: 900,
   });
   fireEvent.pointerMove(surface, { clientX: 700, clientY: 450 });
@@ -313,8 +313,8 @@ test("uses current zoom and offsets repeat pastes, resetting after pointer motio
   fireEvent.keyDown(surface, { key: "v", ctrlKey: true });
   await waitFor(() => expect(putVisualCanvas).toHaveBeenCalledTimes(4));
   expect(vi.mocked(putVisualCanvas).mock.calls[3][1][4].position).toEqual({
-    x: 1300,
-    y: 900,
+    x: 1436,
+    y: 554,
   });
 });
 

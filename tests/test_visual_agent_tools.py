@@ -217,6 +217,29 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
             ] == 2
             assert (await client.get(endpoint, params={"current_nodes": "true"})).status_code == 422
 
+            # Omitted coordinates use avoidance; explicit coordinates above are retained.
+            automatic = await tool.handler(
+                {**arguments, "node": {"id": "automatic-placeholder"}},
+                ToolExecutionContext(
+                    run_id="automatic",
+                    tool_call_id="automatic-task",
+                    scope={
+                        "workspace_id": "default",
+                        "project_id": project["id"],
+                        "image_model_id": model.id,
+                    },
+                    approved_canvas_revision=2,
+                ),
+            )
+            assert automatic.success, automatic.summary
+            placed = (
+                await client.get(f"/v1/visual-workshop/projects/{project['id']}/canvas")
+            ).json()["nodes"]
+            from app.apps.visual_workshop.node_placement import automatic_node_position
+
+            assert placed[0]["position"] == {"x": 120, "y": 160}
+            assert placed[1]["position"] == automatic_node_position(placed[:1], "image")
+
         finally:
             await client.delete(
                 f"/v1/visual-workshop/projects/{project['id']}",

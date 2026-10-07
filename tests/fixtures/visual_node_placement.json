@@ -1,0 +1,52 @@
+{
+  "sizes": {
+    "text": { "width": 300, "height": 180 },
+    "image": { "width": 320, "height": 214 },
+    "video": { "width": 320, "height": 214 },
+    "audio": { "width": 300, "height": 132 }
+  },
+  "cases": [
+    {
+      "name": "empty",
+      "nodes": [],
+      "kind": "image",
+      "anchor": { "x": 80, "y": 80 },
+      "expected": { "x": 80, "y": 80 }
+    },
+    {
+      "name": "occupied",
+      "nodes": [{ "kind": "image", "position": { "x": 0, "y": 0 } }],
+      "kind": "image",
+      "anchor": { "x": 0, "y": 0 },
+      "expected": { "x": 0, "y": 246 }
+    },
+    {
+      "name": "mixed",
+      "nodes": [{ "kind": "image", "position": { "x": 0, "y": 0 } }],
+      "kind": "audio",
+      "anchor": { "x": 20, "y": 20 },
+      "expected": { "x": 20, "y": -164 }
+    },
+    {
+      "name": "negative",
+      "nodes": [{ "kind": "text", "position": { "x": -500, "y": -400 } }],
+      "kind": "text",
+      "anchor": { "x": -500, "y": -400 },
+      "expected": { "x": -500, "y": -188 }
+    },
+    {
+      "name": "boundary",
+      "nodes": [{ "kind": "video", "position": { "x": 999680, "y": 999786 } }],
+      "kind": "image",
+      "anchor": { "x": 999990, "y": 999990 },
+      "expected": { "x": 999680, "y": 999540 }
+    },
+    {
+      "name": "oversized-anchor",
+      "nodes": [],
+      "kind": "audio",
+      "anchor": { "x": -2000000, "y": 2000000 },
+      "expected": { "x": -1000000, "y": 999868 }
+    }
+  ]
+}

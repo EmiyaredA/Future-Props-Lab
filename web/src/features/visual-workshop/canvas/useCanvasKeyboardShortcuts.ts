@@ -44,6 +44,12 @@ export function useCanvasKeyboardShortcuts({
 }: CanvasKeyboardShortcutOptions) {
   useEffect(() => {
     const handleKeys = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        (event.target instanceof Element &&
+          event.target.closest('[role="menu"], [aria-haspopup="menu"]'))
+      )
+        return;
       const editing =
         event.target instanceof Element &&
         Boolean(

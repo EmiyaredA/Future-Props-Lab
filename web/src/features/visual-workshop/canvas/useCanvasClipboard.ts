@@ -16,6 +16,7 @@ import {
   type CanvasClipboardSnapshot,
   type CanvasPoint,
 } from "./canvasClipboard";
+import { placeNodeGroup } from "./canvasPlacement";
 
 type ClipboardNotice = { tone: "success" | "error"; message: string };
 
@@ -29,6 +30,7 @@ export function useCanvasClipboard({
   commitSnapshot,
   selectPasted,
   closeContextMenu,
+  revealNodes,
 }: {
   projectId: string;
   nodesRef: RefObject<VisualCanvasNode[]>;
@@ -42,6 +44,7 @@ export function useCanvasClipboard({
   ) => void;
   selectPasted: (ids: string[]) => void;
   closeContextMenu: () => void;
+  revealNodes: (nodes: VisualCanvasNode[]) => void;
 }) {
   const clipboard = useRef<CanvasClipboardSnapshot | undefined>(undefined);
   const lastPaste = useRef<{ anchor: CanvasPoint; count: number } | undefined>(
@@ -109,6 +112,18 @@ export function useCanvasClipboard({
         x: anchor.x + count * 32,
         y: anchor.y + count * 32,
       });
+      try {
+        added.nodes = placeNodeGroup(added.nodes, nodesRef.current, {
+          x: anchor.x + count * 32,
+          y: anchor.y + count * 32,
+        });
+      } catch (error) {
+        setClipboardNotice({
+          tone: "error",
+          message: error instanceof Error ? error.message : "无法粘贴节点",
+        });
+        return;
+      }
       const error = canvasPasteError(
         { nodes: nodesRef.current, edges: edgesRef.current },
         added,
@@ -123,6 +138,7 @@ export function useCanvasClipboard({
       );
       lastPaste.current = { anchor, count };
       selectPasted(added.nodes.map((node) => node.id));
+      revealNodes(added.nodes);
       closeContextMenu();
       setClipboardNotice({
         tone: "success",
@@ -136,6 +152,7 @@ export function useCanvasClipboard({
       edgesRef,
       getPastePosition,
       nodesRef,
+      revealNodes,
       selectPasted,
     ],
   );

@@ -99,7 +99,7 @@ test("derived images retain their source, avoid occupied positions and reuse the
     ...asset,
     id: "second",
   });
-  expect(second.position).toEqual({ x: 468, y: 362 });
+  expect(second.position).toEqual({ x: 468, y: 346 });
   expect(source.asset_id).toBe("original");
   expect(() => derivedImageNode([], source.id, asset)).toThrow(
     "源节点已不存在",

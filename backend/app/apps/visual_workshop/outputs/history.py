@@ -4,6 +4,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
+from app.apps.visual_workshop.node_placement import automatic_node_position
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.apps.visual_workshop.outputs.schemas import VisualNodeOutputListOut, VisualNodeOutputOut
 from app.apps.visual_workshop.schemas.workshop import (
@@ -132,7 +133,7 @@ async def publish_generated_output(
             "id": node_id,
             "kind": asset.media_kind,
             "title": asset.display_name,
-            "position": {"x": 80 + len(nodes) * 28, "y": 80},
+            "position": automatic_node_position(nodes, asset.media_kind),
             "asset_id": None,
             "generation_task_id": task_id,
         }

@@ -43,12 +43,14 @@ import { useCanvasKeyboardShortcuts } from "@features/visual-workshop/canvas/use
 import { useCanvasClipboard } from "./useCanvasClipboard";
 
 import { derivedImageNode } from "./derivedImageNode";
+import { useCanvasSpatialActions } from "./useCanvasSpatialActions";
 
 type ContextMenuState = {
   left: number;
   top: number;
   worldX: number;
   worldY: number;
+  viewportAnchor?: boolean;
 };
 
 export function zoomViewportAt(
@@ -72,12 +74,21 @@ export function useVisualCanvasController({
 }: VisualWorkshopCanvasPageProps) {
   const client = useQueryClient();
   const surface = useRef<HTMLDivElement>(null);
+  const [surfaceElement, setSurfaceElement] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const attachSurface = useCallback((element: HTMLDivElement | null) => {
+    surface.current = element;
+    setSurfaceElement(element);
+  }, []);
   const uploadInput = useRef<HTMLInputElement>(null);
   const lastPointerClient = useRef<{ x: number; y: number } | undefined>(
     undefined,
   );
   const lastPointer = useRef({ x: 0, y: 0 });
-  const uploadPosition = useRef({ x: 0, y: 0 });
+  const uploadPosition = useRef<{ x: number; y: number } | undefined>(
+    undefined,
+  );
   const gestureViewport = useRef<Viewport | undefined>(undefined);
   const [viewport, setViewport] = useState(() => readViewport(projectId));
   const [selectedEdgeId, setSelectedEdgeId] = useState<string>();
@@ -248,9 +259,8 @@ export function useVisualCanvasController({
   );
 
   useEffect(() => {
-    if (!canvasReady) return;
-    const element = surface.current;
-    if (!element) return;
+    if (!canvasReady || !surfaceElement) return;
+    const element = surfaceElement;
     const handleWheel = (event: globalThis.WheelEvent) => {
       const gestureWheel = event.ctrlKey || event.metaKey;
       if (
@@ -329,12 +339,13 @@ export function useVisualCanvasController({
       passive: false,
     });
     return () => {
+      gestureViewport.current = undefined;
       element.removeEventListener("wheel", handleWheel);
       element.removeEventListener("gesturestart", handleGestureStart);
       element.removeEventListener("gesturechange", handleGestureChange);
       element.removeEventListener("gestureend", handleGestureEnd);
     };
-  }, [canvasReady]);
+  }, [canvasReady, surfaceElement]);
 
   const renameMutation = useMutation({
     mutationFn: () =>
@@ -375,6 +386,7 @@ export function useVisualCanvasController({
   );
   const {
     pan,
+    interactionActive,
     toolMode,
     setToolMode,
     selectedNodeIds,
@@ -415,11 +427,27 @@ export function useVisualCanvasController({
       setInspectedNodeId(nodeId);
     },
   });
+  const { getInsertionAnchor, resolveNodePosition, revealNodes, arrangeNodes } =
+    useCanvasSpatialActions({
+      surface,
+      viewport,
+      setViewport,
+      nodesRef,
+      edgesRef,
+      commitSnapshot: commitCanvasSnapshot,
+      conflictRef,
+      interactionActive,
+      selectedNodeIds,
+      setSaveMessage,
+    });
   const { upload, uploadNotice, setUploadNotice } = useCanvasUpload({
     projectId,
     prepareCanvas: prepareCanvasForAgent,
     applyServerCanvas,
     uploadPosition,
+    getInsertionAnchor,
+    resolveNodePosition,
+    revealNodes,
     setSelectedId,
     setInspectedNodeId,
     setMediaEditorTab,
@@ -449,25 +477,41 @@ export function useVisualCanvasController({
     [addEdge, canConnect, connection],
   );
   const createNode = useCallback(
-    (kind: NodeKind, position: { x: number; y: number }) => {
+    (kind: NodeKind, position?: { x: number; y: number }) => {
+      let placed;
+      try {
+        placed = resolveNodePosition(kind, position);
+      } catch (error) {
+        setSaveMessage(error instanceof Error ? error.message : "无法添加节点");
+        return;
+      }
       const count =
         nodesRef.current.filter((node) => node.kind === kind).length + 1;
       const base = {
         id: nextNodeId(kind),
         kind,
         title: `${nodeLabel(kind)}${count}`,
-        position,
+        position: placed,
       };
       const node = (
         kind === "text" ? { ...base, text: "" } : base
       ) as VisualCanvasNode;
-      replaceNodes((current) => [...current, node], true);
+      commitCanvasSnapshot([...nodesRef.current, node], edgesRef.current);
+      revealNodes([node]);
       setSelectedId(node.id);
       if (kind !== "text") setInspectedNodeId(node.id);
       setAssetsOpen(false);
       setContextMenu(undefined);
     },
-    [nodesRef, replaceNodes, setSelectedId],
+    [
+      nodesRef,
+      edgesRef,
+      commitCanvasSnapshot,
+      resolveNodePosition,
+      revealNodes,
+      setSaveMessage,
+      setSelectedId,
+    ],
   );
   const createMediaNodeFromAsset = useCallback(
     (
@@ -482,17 +526,25 @@ export function useVisualCanvasController({
         id: nextNodeId(asset.media_kind),
         kind: asset.media_kind,
         title: asset.display_name,
-        position,
+        position: resolveNodePosition(asset.media_kind, position),
         asset_id: asset.id,
       } as VisualCanvasNode;
-      replaceNodes((current) => [...current, node], true);
+      commitCanvasSnapshot([...nodesRef.current, node], edgesRef.current);
+      revealNodes([node]);
       setSelectedId(node.id);
       setInspectedNodeId(node.id);
       setMediaEditorTab("content");
       setContextMenu(undefined);
       return node;
     },
-    [replaceNodes, setSelectedId],
+    [
+      commitCanvasSnapshot,
+      nodesRef,
+      edgesRef,
+      resolveNodePosition,
+      revealNodes,
+      setSelectedId,
+    ],
   );
   const { onAssetDragOver, onAssetDrop } = useCanvasAssetDrop({
     projectId,
@@ -571,6 +623,7 @@ export function useVisualCanvasController({
       setSelectedEdgeId(undefined);
       setAssetsOpen(false);
       enqueueSave(next);
+      revealNodes([node]);
       void invalidateFileScope(client, projectId);
       await prepareCanvasForAgent();
     },
@@ -586,6 +639,7 @@ export function useVisualCanvasController({
       projectId,
       setNodes,
       setSelectedId,
+      revealNodes,
     ],
   );
   const {
@@ -617,6 +671,7 @@ export function useVisualCanvasController({
       setInspectedNodeId(undefined);
     },
     closeContextMenu: () => setContextMenu(undefined),
+    revealNodes,
   });
   const rememberPointer = (clientX: number, clientY: number) => {
     const previous = lastPointerClient.current;
@@ -725,8 +780,25 @@ export function useVisualCanvasController({
     projectId,
     onBack,
     surface,
+    attachSurface,
     uploadInput,
     pan,
+    getInsertionAnchor,
+    resolveNodePosition,
+    revealNodes,
+    arrangeNodes,
+    canArrange:
+      nodes.length >= 2 &&
+      !conflict &&
+      !interactionActive &&
+      !connection &&
+      !upload.isPending,
+    canArrangeSelected:
+      selectedNodeIds.length >= 2 &&
+      !conflict &&
+      !interactionActive &&
+      !connection &&
+      !upload.isPending,
     toolMode,
     setToolMode,
     revisionRef,

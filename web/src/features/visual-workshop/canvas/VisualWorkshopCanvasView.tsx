@@ -55,8 +55,15 @@ export function VisualWorkshopCanvasView({
     projectId,
     onBack,
     surface,
+    attachSurface,
     uploadInput,
     pan,
+    getInsertionAnchor,
+    resolveNodePosition,
+    revealNodes,
+    arrangeNodes,
+    canArrange,
+    canArrangeSelected,
     revisionRef,
     nodesRef,
     edgesRef,
@@ -165,6 +172,10 @@ export function VisualWorkshopCanvasView({
       nodes,
       selectedNodeIds,
       revisionRef,
+      nodesRef,
+      prepareCanvas: prepareCanvasForAgent,
+      resolveNodePosition,
+      revealNodes,
       client,
       setSelectedNodeIds,
       setInspectedNodeId,
@@ -242,7 +253,7 @@ export function VisualWorkshopCanvasView({
   return (
     <div className={`visual-canvas${assistantOpen ? " has-assistant" : ""}`}>
       <div
-        ref={surface}
+        ref={attachSurface}
         role="region"
         aria-label="节点画布"
         tabIndex={-1}
@@ -292,6 +303,7 @@ export function VisualWorkshopCanvasView({
             const menuWidth = 164;
             const menuHeight = 246;
             const gap = 10;
+            const anchor = getInsertionAnchor();
             setContextMenu({
               left: Math.max(
                 8,
@@ -307,8 +319,9 @@ export function VisualWorkshopCanvasView({
                   surfaceBounds.height - menuHeight - 8,
                 ),
               ),
-              worldX: (innerWidth / 2 - viewport.x) / viewport.zoom,
-              worldY: (innerHeight / 2 - viewport.y) / viewport.zoom,
+              worldX: anchor.x,
+              worldY: anchor.y,
+              viewportAnchor: true,
             });
           }}
           onToggleAssistant={() => {
@@ -331,12 +344,16 @@ export function VisualWorkshopCanvasView({
             setZoom,
             resetZoom,
             fitView,
+            canArrange,
+            onArrange: arrangeNodes,
           }}
         />
         <CanvasSelectionOverlay selectionBox={selectionBox} />
         <CanvasSelectionActions
           count={selectedNodeIds.length}
           onCopy={copySelected}
+          canArrange={canArrangeSelected}
+          onArrange={(mode) => arrangeNodes(mode, true)}
           onCompose={
             canComposeSelection
               ? () => openComposition(selectedNodeIds)
@@ -655,7 +672,9 @@ export function VisualWorkshopCanvasView({
       {contextMenu ? (
         <CanvasContextMenu
           position={contextMenu}
-          onCreate={createNode}
+          onCreate={(kind, point) =>
+            createNode(kind, contextMenu.viewportAnchor ? undefined : point)
+          }
           onFit={fitView}
           onPaste={pasteNodes}
           canPaste={canPaste}
@@ -667,7 +686,9 @@ export function VisualWorkshopCanvasView({
             setContextMenu(undefined);
           }}
           onUpload={(point) => {
-            uploadPosition.current = point;
+            uploadPosition.current = contextMenu.viewportAnchor
+              ? undefined
+              : point;
             skipMenuFocusRestore.current = true;
             uploadInput.current?.click();
           }}

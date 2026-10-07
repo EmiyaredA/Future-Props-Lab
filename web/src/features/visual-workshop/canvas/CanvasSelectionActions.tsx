@@ -1,13 +1,19 @@
 import { Copy, Grid2X2 } from "lucide-react";
+import { CanvasArrangeControls } from "./CanvasArrangeControls";
+import type { CanvasLayoutMode } from "./canvasLayout";
 
 export function CanvasSelectionActions({
   count,
   onCopy,
   onCompose,
+  canArrange,
+  onArrange,
 }: {
   count: number;
   onCopy: () => void;
   onCompose?: () => void;
+  canArrange: boolean;
+  onArrange: (mode: CanvasLayoutMode) => void;
 }) {
   if (count < 2) return null;
   return (
@@ -25,6 +31,11 @@ export function CanvasSelectionActions({
           <Grid2X2 aria-hidden /> 合成宫格
         </button>
       ) : null}
+      <CanvasArrangeControls
+        selected
+        disabled={!canArrange}
+        onArrange={onArrange}
+      />
     </div>
   );
 }

@@ -1,0 +1,60 @@
+.canvas-arrange-controls {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.canvas-arrange-controls button.canvas-arrange-default {
+  display: inline-flex;
+  gap: 5px;
+  border-radius: 10px 0 0 10px;
+  white-space: nowrap;
+}
+.canvas-arrange-controls button.canvas-arrange-trigger {
+  min-width: 28px;
+  padding: 0 5px;
+  border-radius: 0 10px 10px 0;
+}
+.canvas-arrange-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.canvas-arrange-controls button:focus-visible,
+.canvas-arrange-menu [role="menuitem"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.canvas-arrange-menu {
+  z-index: 100;
+  min-width: 170px;
+  max-width: calc(100vw - 24px);
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 20%);
+}
+.canvas-arrange-menu [role="menuitem"] {
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+.canvas-arrange-menu [data-highlighted] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+@media (max-width: 600px) {
+  .canvas-controls {
+    max-width: calc(100% - 20px);
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 20px;
+  }
+  .canvas-controls .canvas-arrange-default > span {
+    display: none;
+  }
+}

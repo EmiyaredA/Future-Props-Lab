@@ -273,10 +273,7 @@ export function ProjectBoard({
             <button
               className="board-primary"
               onClick={() =>
-                c.createNode(newKind as keyof typeof nodeTypeNames, {
-                  x: 100 + c.nodes.length * 20,
-                  y: 100,
-                })
+                c.createNode(newKind as keyof typeof nodeTypeNames)
               }
             >
               <Plus size={15} /> 新建
@@ -285,7 +282,10 @@ export function ProjectBoard({
           <button
             className="board-upload"
             disabled={c.upload.isPending}
-            onClick={() => uploadInput.current?.click()}
+            onClick={() => {
+              c.uploadPosition.current = undefined;
+              uploadInput.current?.click();
+            }}
           >
             <Upload size={14} /> 上传素材
           </button>
@@ -429,21 +429,15 @@ export function ProjectBoard({
                   />
                 </div>
                 <NodeMetadata
-                  key={selected.id}
                   node={selected}
                   categories={categories}
                   onPatch={c.patchNode}
                 />
-                <InputReferences
-                  key={selected.id}
-                  controller={c}
-                  nodeId={selected.id}
-                />
+                <InputReferences controller={c} nodeId={selected.id} />
                 {selected.kind === "text" ? (
                   <TextWorkbench controller={c} node={selected} />
                 ) : (
                   <CanvasNodeInspector
-                    key={selected.id}
                     projectId={c.projectId}
                     node={selected}
                     onClose={() => undefined}

@@ -18,6 +18,7 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.node_placement import automatic_node_position
 from app.apps.visual_workshop.schemas.workshop import (
     GenerationTaskCreateIn,
     VisualCanvasDocumentPutIn,
@@ -420,16 +421,20 @@ async def _start_generation_on_canvas(
                 )
             body = _generation_input.validate_python(task_payload)
             task = await VisualGeneration(session).prepare_create(project_id, body)
-            node = {
-                "id": str(node_payload.get("id") or f"agent-{uuid4()}"),
-                "kind": body.kind,
-                "title": str(node_payload.get("title") or "AI 生成内容")[:120],
-                "position": node_payload.get("position") or {"x": 0, "y": 0},
-                "asset_id": None,
-                "generation_task_id": task.id,
-            }
             if existing:
                 node = {**existing.model_dump(mode="json"), "generation_task_id": task.id}
+            else:
+                node = {
+                    "id": str(node_payload.get("id") or f"agent-{uuid4()}"),
+                    "kind": body.kind,
+                    "title": str(node_payload.get("title") or "AI 生成内容")[:120],
+                    "position": node_payload.get("position")
+                    or automatic_node_position(
+                        [item.model_dump(mode="json") for item in current.nodes], body.kind
+                    ),
+                    "asset_id": None,
+                    "generation_task_id": task.id,
+                }
             canvas_body = VisualCanvasDocumentPutIn(
                 expected_revision=current.revision,
                 nodes=[node if item.id == existing.id else item for item in current.nodes]

@@ -179,6 +179,75 @@ test("captures trackpad pinch zoom after the asynchronous canvas mount", async (
   expect(screen.getByRole("button", { name: "111%" })).toBeInTheDocument();
 });
 
+test("rebinds pinch zoom to each canvas surface after switching through the board", async () => {
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+
+  for (let cycle = 0; cycle < 2; cycle++) {
+    const previous = container.querySelector<HTMLElement>(
+      ".visual-canvas-surface",
+    )!;
+    await user.click(screen.getByRole("button", { name: "看板" }));
+    const detachedPinch = new WheelEvent("wheel", {
+      cancelable: true,
+      ctrlKey: true,
+      deltaY: -10,
+    });
+    fireEvent(previous, detachedPinch);
+    expect(detachedPinch.defaultPrevented).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "画布" }));
+    const surface = container.querySelector<HTMLElement>(
+      ".visual-canvas-surface",
+    )!;
+    expect(surface).not.toBe(previous);
+    const pinch = new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      clientX: 400,
+      clientY: 300,
+      ctrlKey: true,
+      deltaY: -10,
+    });
+    fireEvent(surface, pinch);
+    expect(pinch.defaultPrevented).toBe(true);
+    expect(
+      screen.getByRole("button", { name: cycle === 0 ? "111%" : "122%" }),
+    ).toBeInTheDocument();
+  }
+});
+
+test("handles native pinch gestures when the project initially opens in board mode", async () => {
+  window.localStorage.setItem("visual-project-view:project-1", "board");
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "画布" }));
+  const surface = container.querySelector<HTMLElement>(
+    ".visual-canvas-surface",
+  )!;
+  const start = new Event("gesturestart", { cancelable: true });
+  fireEvent(surface, start);
+  expect(start.defaultPrevented).toBe(true);
+  for (const scale of [1.2, 1.5]) {
+    const change = Object.assign(
+      new Event("gesturechange", { cancelable: true }),
+      { scale, clientX: 400, clientY: 300 },
+    );
+    fireEvent(surface, change);
+    expect(change.defaultPrevented).toBe(true);
+  }
+  expect(screen.getByRole("button", { name: "150%" })).toBeInTheDocument();
+  expect(
+    container.querySelector<HTMLElement>(".visual-canvas-world")?.style
+      .transform,
+  ).toContain("translate(-200px, -150px)");
+  const end = new Event("gestureend", { cancelable: true });
+  fireEvent(surface, end);
+  expect(end.defaultPrevented).toBe(true);
+});
+
 test("keeps ordinary panel scrolling but captures panel pinch zoom", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",

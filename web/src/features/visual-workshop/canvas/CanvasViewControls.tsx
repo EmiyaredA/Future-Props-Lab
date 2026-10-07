@@ -2,6 +2,8 @@ import type { Dispatch, SetStateAction } from "react";
 import { Focus, Hand, Minus, MousePointer2, Plus } from "lucide-react";
 import type { Viewport } from "@features/visual-workshop/canvas/geometry";
 import type { CanvasTool } from "@features/visual-workshop/canvas/useCanvasPointerInteractions";
+import { CanvasArrangeControls } from "./CanvasArrangeControls";
+import type { CanvasLayoutMode } from "./canvasLayout";
 
 type CanvasViewControlsProps = {
   assetsOpen: boolean;
@@ -11,6 +13,8 @@ type CanvasViewControlsProps = {
   setZoom: (zoom: number) => void;
   resetZoom: () => void;
   fitView: () => void;
+  canArrange: boolean;
+  onArrange: (mode: CanvasLayoutMode) => void;
 };
 
 export function CanvasViewControls({
@@ -21,6 +25,8 @@ export function CanvasViewControls({
   setZoom,
   resetZoom,
   fitView,
+  canArrange,
+  onArrange,
 }: CanvasViewControlsProps) {
   return (
     <div
@@ -65,6 +71,8 @@ export function CanvasViewControls({
       <button aria-label="适配视图" title="适配视图" onClick={() => fitView()}>
         <Focus aria-hidden />
       </button>
+      <i aria-hidden />
+      <CanvasArrangeControls disabled={!canArrange} onArrange={onArrange} />
     </div>
   );
 }

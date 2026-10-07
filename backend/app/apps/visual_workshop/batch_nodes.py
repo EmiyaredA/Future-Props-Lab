@@ -6,6 +6,11 @@ from sqlalchemy import update
 
 from app.apps.visual_workshop.generation_common import GenerationError
 from app.apps.visual_workshop.models import VisualCanvasDocument, VisualGenerationTask
+from app.apps.visual_workshop.node_placement import (
+    NODE_SIZE,
+    PLACEMENT_GAP,
+    automatic_node_position,
+)
 from app.runtime.time import utc_now
 
 
@@ -34,7 +39,8 @@ async def attach_grid_nodes(
         .values(canvas_node_id=node_id)
     )
     side = 2 if grid_size == 4 else 3
-    width, height, gap = 320, 214, 24
+    width, height = NODE_SIZE["image"]["width"], NODE_SIZE["image"]["height"]
+    gap = PLACEMENT_GAP
     for index, task_id in enumerate(task_ids[1:], start=1):
         col, line = index % side, index // side
         child_id = f"image-{uuid4()}"
@@ -51,10 +57,14 @@ async def attach_grid_nodes(
                 "tags": root.get("tags", []),
                 "kind": "image",
                 "title": f"{root.get('title') or '图片'} {index + 1}",
-                "position": {
-                    "x": float(root.get("position", {}).get("x", 0)) + col * (width + gap),
-                    "y": float(root.get("position", {}).get("y", 0)) + line * (height + gap),
-                },
+                "position": automatic_node_position(
+                    nodes,
+                    "image",
+                    {
+                        "x": float(root.get("position", {}).get("x", 0)) + col * (width + gap),
+                        "y": float(root.get("position", {}).get("y", 0)) + line * (height + gap),
+                    },
+                ),
                 "asset_id": None,
                 "generation_task_id": task_id,
                 "generation_batch_id": batch_id,

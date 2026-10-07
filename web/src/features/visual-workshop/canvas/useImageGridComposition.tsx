@@ -5,6 +5,7 @@ import {
   useState,
   type Dispatch,
   type MutableRefObject,
+  type RefObject,
   type SetStateAction,
 } from "react";
 import { useQuery, type QueryClient } from "@tanstack/react-query";
@@ -13,9 +14,18 @@ import {
   getGenerationBatch,
   type ImageCompositionInput,
   type VisualCanvasNode,
+  type VisualCanvasDocument,
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { ImageGridCompositionDialog } from "@features/visual-workshop/canvas/ImageGridCompositionDialog";
+import { canvasBounds, type CanvasPoint } from "./canvasPlacement";
+import type { NodeKind } from "./geometry";
+
+function resultAnchor(nodes: VisualCanvasNode[], ids: string[]) {
+  const source = nodes.filter((node) => ids.includes(node.id));
+  const bounds = canvasBounds(source);
+  return { x: bounds.x + bounds.width + 48, y: bounds.y };
+}
 
 type ImageNode = Extract<VisualCanvasNode, { kind: "image" }>;
 
@@ -24,6 +34,10 @@ export function useImageGridComposition({
   nodes,
   selectedNodeIds,
   revisionRef,
+  nodesRef,
+  prepareCanvas,
+  resolveNodePosition,
+  revealNodes,
   client,
   setSelectedNodeIds,
   setInspectedNodeId,
@@ -33,6 +47,10 @@ export function useImageGridComposition({
   nodes: VisualCanvasNode[];
   selectedNodeIds: string[];
   revisionRef: MutableRefObject<number>;
+  nodesRef: RefObject<VisualCanvasNode[]>;
+  prepareCanvas: () => Promise<number>;
+  resolveNodePosition: (kind: NodeKind, anchor: CanvasPoint) => CanvasPoint;
+  revealNodes: (nodes: VisualCanvasNode[]) => void;
   client: QueryClient;
   setSelectedNodeIds: Dispatch<SetStateAction<string[]>>;
   setInspectedNodeId: (id: string | undefined) => void;
@@ -55,17 +73,7 @@ export function useImageGridComposition({
     [setAssetsOpen, setInspectedNodeId],
   );
   const compositionResultPosition = useMemo(() => {
-    const source = compositionOpen
-      ?.map((id) => nodes.find((node) => node.id === id))
-      .filter((node): node is VisualCanvasNode => Boolean(node));
-    const right = Math.max(
-      ...(source ?? []).map((node) => node.position.x + 320),
-      0,
-    );
-    return {
-      x: right + 48,
-      y: Math.min(...(source ?? []).map((node) => node.position.y), 0),
-    };
+    return resultAnchor(nodes, compositionOpen ?? []);
   }, [compositionOpen, nodes]);
   const activeBatch = useQuery({
     queryKey: visualWorkshopQueryKeys.generationBatch(activeBatchId),
@@ -130,20 +138,18 @@ export function useImageGridComposition({
           resultPosition={compositionResultPosition}
           onClose={() => setCompositionOpen(undefined)}
           onSubmit={async (body: ImageCompositionInput) => {
-            const source = body.items
-              .map((item) => nodes.find((node) => node.id === item.node_id))
-              .filter((node): node is VisualCanvasNode => Boolean(node));
-            const right = Math.max(
-              ...source.map((node) => node.position.x + 320),
-              0,
+            const revision = await prepareCanvas();
+            const position = resolveNodePosition(
+              "image",
+              resultAnchor(
+                nodesRef.current,
+                body.items.map((item) => item.node_id),
+              ),
             );
             const batch = await createImageComposition(projectId, {
               ...body,
-              result_position: {
-                x: right + 48,
-                y: Math.min(...source.map((node) => node.position.y), 0),
-              },
-              expected_canvas_revision: revisionRef.current,
+              result_position: position,
+              expected_canvas_revision: revision,
             });
             setActiveBatchId(batch.id);
             setCompositionOpen(undefined);
@@ -152,6 +158,14 @@ export function useImageGridComposition({
             await client.invalidateQueries({
               queryKey: visualWorkshopQueryKeys.canvas(projectId),
             });
+            const canvas = client.getQueryData<VisualCanvasDocument>(
+              visualWorkshopQueryKeys.canvas(projectId),
+            );
+            revealNodes(
+              canvas?.nodes.filter(
+                (node) => node.id === batch.generation_node_id,
+              ) ?? [],
+            );
           }}
         />
       ) : null}

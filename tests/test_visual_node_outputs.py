@@ -257,6 +257,113 @@ async def test_generation_publish_is_idempotent_and_preserves_latest_user_edits(
 
 
 @pytest.mark.asyncio
+async def test_background_nodes_avoid_latest_canvas_and_duplicate_completion_does_not_move_them():
+    from app.apps.visual_workshop.node_placement import NODE_SIZE
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = await create_project(client)
+        assets = [await upload(client, project) for _ in range(2)]
+        original = node("original", "text")
+        original["position"] = {"x": 80, "y": 80}
+        canvas = await save_canvas(client, project, [original])
+        async with SessionLocal() as session:
+            first = await publish_generated_output(session, project, None, assets[0], "auto:1")
+            await session.commit()
+            second = await publish_generated_output(session, project, None, assets[1], "auto:2")
+            await session.commit()
+            current = await session.get(VisualCanvasDocument, project)
+            snapshot = deepcopy(current.nodes)
+            revision = current.revision
+            assert first != second and len(snapshot) == 3
+            assert snapshot[0]["position"] == canvas["nodes"][0]["position"]
+            for index, a in enumerate(snapshot):
+                for b in snapshot[index + 1 :]:
+                    assert not (
+                        a["position"]["x"] < b["position"]["x"] + NODE_SIZE[b["kind"]]["width"] + 32
+                        and a["position"]["x"] + NODE_SIZE[a["kind"]]["width"] + 32
+                        > b["position"]["x"]
+                        and a["position"]["y"]
+                        < b["position"]["y"] + NODE_SIZE[b["kind"]]["height"] + 32
+                        and a["position"]["y"] + NODE_SIZE[a["kind"]]["height"] + 32
+                        > b["position"]["y"]
+                    )
+            assert (
+                await publish_generated_output(session, project, None, assets[0], "auto:1") == first
+            )
+            await session.commit()
+            assert current.nodes == snapshot and current.revision == revision
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("grid_size", [4, 9])
+async def test_generated_grid_placeholders_avoid_existing_cards_and_preserve_task_binding(
+    grid_size,
+):
+    from app.apps.visual_workshop.batch_nodes import attach_grid_nodes
+    from app.apps.visual_workshop.generation import VisualGeneration
+    from app.apps.visual_workshop.models import VisualGenerationTask
+    from app.apps.visual_workshop.node_placement import automatic_node_position
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = await create_project(client)
+        originals = [node("root"), node("blocker")]
+        originals[1]["position"] = {"x": 352, "y": 0}
+        canvas = await save_canvas(client, project, originals)
+        async with SessionLocal() as session:
+            tasks = [
+                VisualGenerationTask(
+                    id=str(uuid4()),
+                    project_id=project,
+                    provider_kind="senseaudio_image",
+                    generation_kind="image",
+                    provider_name="test",
+                    model_slug="test",
+                )
+                for _ in range(grid_size)
+            ]
+            session.add_all(tasks)
+            await session.flush()
+            await attach_grid_nodes(
+                VisualGeneration(session),
+                project_id=project,
+                node_id="root",
+                expected_revision=canvas["revision"],
+                batch_id="grid",
+                task_ids=[task.id for task in tasks],
+                grid_size=grid_size,
+            )
+            await session.commit()
+            updated = await session.get(VisualCanvasDocument, project)
+            assert len(updated.nodes) == grid_size + 1
+            assert [item["position"] for item in updated.nodes[:2]] == [
+                item["position"] for item in originals
+            ]
+            for index, item in enumerate(updated.nodes):
+                # A free position is returned unchanged when checked against every other card.
+                others = updated.nodes[:index] + updated.nodes[index + 1 :]
+                assert (
+                    automatic_node_position(others, item["kind"], item["position"])
+                    == item["position"]
+                )
+            for task in tasks:
+                await session.refresh(task)
+                assert (
+                    next(item for item in updated.nodes if item["id"] == task.canvas_node_id)[
+                        "generation_task_id"
+                    ]
+                    == task.id
+                )
+        removed = await client.delete(
+            f"/v1/visual-workshop/projects/{project}", params={"expected_revision": 0}
+        )
+        assert removed.status_code == 200, removed.text
+
+
+@pytest.mark.asyncio
 async def test_outputs_workspace_scope_and_wrong_node_fixed_reference():
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
