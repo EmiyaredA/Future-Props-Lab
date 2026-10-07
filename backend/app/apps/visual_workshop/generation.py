@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from sqlalchemy import func, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.batch_nodes import attach_grid_nodes
@@ -15,6 +15,8 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.outputs.history import OutputError
+from app.apps.visual_workshop.outputs.references import resolve_references
 from app.apps.visual_workshop.schemas.generation import (
     GenerationBatchListOut,
     GenerationBatchOut,
@@ -42,6 +44,7 @@ from app.llm.models import (
     ModelProvider,
 )
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
+from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
 from app.runtime.config import Settings, get_settings
 from app.runtime.task_admission import TaskAdmission
 from app.runtime.time import iso_utc, utc_now
@@ -108,6 +111,7 @@ class VisualGeneration:
                     ModelProvider.kind.in_(
                         (
                             "senseaudio_image",
+                            "volcengine_image",
                             "senseaudio_video",
                             "senseaudio_music",
                             "senseaudio_sfx",
@@ -125,7 +129,7 @@ class VisualGeneration:
                     provider_name=provider.name,
                     kind=(
                         "image"
-                        if provider.kind == "senseaudio_image"
+                        if provider.kind in {"senseaudio_image", "volcengine_image"}
                         else "video"
                         if provider.kind == "senseaudio_video"
                         else "audio"
@@ -133,7 +137,14 @@ class VisualGeneration:
                     slug=model.slug,
                     label=model.label or model.slug,
                     description=model.description,
-                    sizes=list(IMAGE_MODEL_SIZES.get(model.slug, ())),
+                    sizes=list(
+                        SEEDREAM_SIZES
+                        if provider.kind == "volcengine_image"
+                        else IMAGE_MODEL_SIZES.get(model.slug, ())
+                    ),
+                    max_reference_images=14 if provider.kind == "volcengine_image" else 1,
+                    supports_seed=provider.kind != "volcengine_image",
+                    max_prompt_length=6000 if model.slug == "senseaudio-image-2.0-260319" else 2000,
                 )
                 for model, provider in rows
             ]
@@ -160,12 +171,19 @@ class VisualGeneration:
             provider is None
             or not provider.enabled
             or not model.enabled
-            or provider.kind != expected_provider_kind
+            or provider.kind
+            not in (
+                {"senseaudio_image", "volcengine_image"}
+                if kind == "image"
+                else {expected_provider_kind}
+            )
             or capability not in list(model.capabilities or [])
         ):
             raise GenerationError("当前生成模型不可用", code="model_unavailable", status=409)
         if not provider.api_key_ciphertext:
             raise GenerationError("供应商尚未配置 API Key", code="missing_api_key", status=409)
+        if provider.kind == "volcengine_image" and model.slug != SEEDREAM_MODEL:
+            raise GenerationError("当前方舟图片适配仅支持 Seedream 4.5", code="unsupported_model")
         return model, provider
 
     async def _reference_asset(
@@ -222,7 +240,7 @@ class VisualGeneration:
             if node.get("kind") != kind:
                 raise GenerationError("画布节点类型与生成任务不匹配", code="canvas_kind_mismatch")
             node["generation_task_id"] = task_id
-            node["asset_id"] = None
+            # Preserve the chosen final output while a new run is active.
             break
         else:
             raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
@@ -240,100 +258,19 @@ class VisualGeneration:
                 "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
             )
 
-    async def _resolve_canvas_references(
-        self, project_id: str, body: GenerationTaskCreateIn
-    ) -> tuple[GenerationTaskCreateIn, dict[str, str]]:
-        if body.canvas_node_id is None or body.expected_canvas_revision is None:
-            return body, {}
-        canvas = await self.session.get(VisualCanvasDocument, project_id)
-        if canvas is None:
-            raise GenerationError("项目画布不存在", code="canvas_not_found", status=404)
-        if canvas.revision != body.expected_canvas_revision:
-            raise GenerationError(
-                "画布已变化，请刷新后重试",
-                code="canvas_revision_conflict",
-                status=409,
-            )
-        nodes = {str(node.get("id")): node for node in (canvas.nodes or [])}
-        target = nodes.get(body.canvas_node_id)
-        if target is None:
-            raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
-        if target.get("kind") != body.kind:
-            raise GenerationError("画布节点类型与生成任务不匹配", code="canvas_kind_mismatch")
-
-        incoming = [
-            edge
-            for edge in (canvas.edges or [])
-            if edge.get("target_node_id") == body.canvas_node_id
-        ]
-        if not incoming:
-            return body, {}
-        linked: dict[str, list[str]] = {"image": [], "video": [], "audio": []}
-        reference_titles: dict[str, str] = {}
-        for edge in incoming:
-            source = nodes.get(str(edge.get("source_node_id")))
-            if source is None:
-                raise GenerationError("上游节点不存在", code="invalid_canvas_edge")
-            source_kind = str(source.get("kind") or "")
-            asset_id = str(source.get("asset_id") or "")
-            if source_kind not in linked:
-                raise GenerationError("上游节点类型不支持素材引用", code="invalid_canvas_edge")
-            if not asset_id:
-                raise GenerationError(
-                    f"上游节点“{source.get('title') or source.get('id')}”正在等待素材",
-                    code="upstream_asset_pending",
-                    status=409,
-                )
-            linked[source_kind].append(asset_id)
-            reference_titles.setdefault(
-                asset_id, str(source.get("title") or source.get("id") or "素材")
-            )
-        payload = body.model_dump(mode="json")
-        if isinstance(body, ImageGenerationTaskCreateIn):
-            if linked["video"] or linked["audio"]:
-                raise GenerationError("图片节点只能引用上游图片", code="canvas_kind_mismatch")
-            references = list(
-                dict.fromkeys(
-                    [
-                        *linked["image"],
-                        *([body.reference_asset_id] if body.reference_asset_id else []),
-                    ]
-                )
-            )
-            if len(references) > 1:
-                raise GenerationError(
-                    "当前图片模型最多接收一个参考图片", code="too_many_references"
-                )
-            payload["reference_asset_id"] = references[0] if references else None
-            return ImageGenerationTaskCreateIn.model_validate(payload), reference_titles
-        if isinstance(body, AudioGenerationTaskCreateIn):
-            if linked["image"] or linked["video"]:
-                raise GenerationError("音频节点只能引用上游音频", code="canvas_kind_mismatch")
-            if body.mode == "sfx":
-                raise GenerationError("音效生成不接收上游素材", code="canvas_kind_mismatch")
-            payload["reference_asset_ids"] = list(
-                dict.fromkeys([*body.reference_asset_ids, *linked["audio"]])
-            )
-            return AudioGenerationTaskCreateIn.model_validate(payload), reference_titles
-        payload.update(
-            {
-                "mode": "reference",
-                "first_frame_asset_id": None,
-                "last_frame_asset_id": None,
-                "reference_asset_ids": list(
-                    dict.fromkeys([*body.reference_asset_ids, *linked["image"]])
-                ),
-                "video_asset_ids": list(dict.fromkeys([*body.video_asset_ids, *linked["video"]])),
-                "audio_asset_ids": list(dict.fromkeys([*body.audio_asset_ids, *linked["audio"]])),
-            }
-        )
-        return VideoGenerationTaskCreateIn.model_validate(payload), reference_titles
+    async def _resolve_canvas_references(self, project_id, body):
+        try:
+            return await resolve_references(self.session, project_id, body)
+        except OutputError as exc:
+            raise GenerationError(str(exc), code=exc.code, status=exc.status) from None
 
     async def prepare_create(
         self, project_id: str, body: GenerationTaskCreateIn
     ) -> VisualGenerationTask:
         await self._project(project_id)
-        body, reference_titles = await self._resolve_canvas_references(project_id, body)
+        body, reference_titles, input_snapshot = await self._resolve_canvas_references(
+            project_id, body
+        )
         model, provider = await self._model(
             body.model_id,
             body.kind,
@@ -343,9 +280,14 @@ class VisualGeneration:
             mode="json",
             exclude={"canvas_node_id", "expected_canvas_revision"},
         )
+        payload["input_snapshot"] = input_snapshot
         reference_assets: dict[str, VisualAsset] = {}
         if isinstance(body, ImageGenerationTaskCreateIn):
-            sizes = IMAGE_MODEL_SIZES.get(model.slug)
+            sizes = (
+                SEEDREAM_SIZES
+                if provider.kind == "volcengine_image"
+                else IMAGE_MODEL_SIZES.get(model.slug)
+            )
             if not sizes or body.size not in sizes:
                 raise GenerationError("当前模型不支持所选图片尺寸", code="unsupported_size")
             prompt_limit = 6000 if model.slug == "senseaudio-image-2.0-260319" else 2000
@@ -354,10 +296,35 @@ class VisualGeneration:
                     f"当前模型提示词最多支持 {prompt_limit} 个字符",
                     code="prompt_too_long",
                 )
-            if body.reference_asset_id:
-                reference_assets[body.reference_asset_id] = await self._reference_asset(
-                    project_id, body.reference_asset_id, "image"
+            reference_ids = list(
+                dict.fromkeys(
+                    [
+                        *body.reference_asset_ids,
+                        *([body.reference_asset_id] if body.reference_asset_id else []),
+                    ]
                 )
+            )
+            if len(reference_ids) > (14 if provider.kind == "volcengine_image" else 1):
+                raise GenerationError(
+                    "当前图片模型不支持所选参考图数量", code="too_many_references"
+                )
+            if provider.kind == "volcengine_image" and body.seed is not None:
+                raise GenerationError(
+                    "Seedream 4.5 不支持指定随机种子", code="unsupported_parameter"
+                )
+            for reference_id in reference_ids:
+                reference_assets[reference_id] = await self._reference_asset(
+                    project_id, reference_id, "image"
+                )
+                if provider.kind == "volcengine_image" and reference_assets[
+                    reference_id
+                ].mime_type not in {"image/png", "image/jpeg", "image/webp"}:
+                    raise GenerationError(
+                        "Seedream 4.5 参考图仅支持 PNG、JPEG、WebP",
+                        code="unsupported_reference_format",
+                    )
+            payload["reference_asset_ids"] = reference_ids
+            payload["reference_asset_id"] = reference_ids[0] if len(reference_ids) == 1 else None
         elif isinstance(body, VideoGenerationTaskCreateIn):
             image_ids = [
                 item
@@ -392,7 +359,7 @@ class VisualGeneration:
                 if asset_id in reference_assets
             }
         row = VisualGenerationTask(
-            workspace_id=str(self.session.info.get("workspace_id", "default")),
+            workspace_id=(await self._project(project_id)).workspace_id,
             project_id=project_id,
             provider_id=provider.id,
             model_id=model.id,
@@ -440,8 +407,12 @@ class VisualGeneration:
         await self._project(project_id)
         if body.grid_size not in (4, 9):
             raise GenerationError("宫格数量必须为 4 或 9", code="invalid_grid_size")
-        model, _provider = await self._model(body.model_id, "image")
-        sizes = IMAGE_MODEL_SIZES.get(model.slug)
+        model, provider = await self._model(body.model_id, "image")
+        sizes = (
+            SEEDREAM_SIZES
+            if provider.kind == "volcengine_image"
+            else IMAGE_MODEL_SIZES.get(model.slug)
+        )
         if not sizes or body.size not in sizes:
             raise GenerationError("当前模型不支持所选图片尺寸", code="unsupported_size")
         prompt_limit = 6000 if model.slug == "senseaudio-image-2.0-260319" else 2000
@@ -449,7 +420,7 @@ class VisualGeneration:
             raise GenerationError(
                 f"当前模型提示词最多支持 {prompt_limit} 个字符", code="prompt_too_long"
             )
-        resolved_body, _ = await self._resolve_canvas_references(
+        resolved_body, _, input_snapshot = await self._resolve_canvas_references(
             project_id,
             ImageGenerationTaskCreateIn(
                 kind="image",
@@ -458,11 +429,13 @@ class VisualGeneration:
                 size=body.size,
                 seed=body.seed,
                 reference_asset_id=body.reference_asset_id,
+                reference_asset_ids=body.reference_asset_ids,
                 canvas_node_id=body.canvas_node_id,
                 expected_canvas_revision=body.expected_canvas_revision,
             ),
         )
         resolved_reference_id = resolved_body.reference_asset_id
+        resolved_reference_ids = resolved_body.reference_asset_ids
         if resolved_reference_id:
             await self._reference_asset(project_id, resolved_reference_id, "image")
         batch_id = str(uuid4())
@@ -471,28 +444,24 @@ class VisualGeneration:
             task_body = ImageGenerationTaskCreateIn(
                 kind="image",
                 model_id=body.model_id,
-                prompt=body.prompt,
+                prompt=resolved_body.prompt,
                 size=body.size,
                 seed=body.seed + index if body.seed is not None else None,
                 reference_asset_id=resolved_reference_id,
-                canvas_node_id=(
-                    body.canvas_node_id if index == 0 and body.grid_output == "nodes" else None
-                ),
-                expected_canvas_revision=(
-                    body.expected_canvas_revision
-                    if index == 0 and body.grid_output == "nodes"
-                    else None
-                ),
+                reference_asset_ids=resolved_reference_ids,
+                canvas_node_id=None,
+                expected_canvas_revision=None,
             )
             row = await self.prepare_create(project_id, task_body)
             payload = dict(row.request_payload or {})
+            payload["input_snapshot"] = input_snapshot
             payload["generation_batch_id"] = batch_id
             payload["generation_batch_index"] = index
             row.request_payload = payload
             task_ids.append(row.id)
         batch = VisualGenerationBatch(
             id=batch_id,
-            workspace_id=str(self.session.info.get("workspace_id", "default")),
+            workspace_id=(await self._project(project_id)).workspace_id,
             project_id=project_id,
             grid_size=body.grid_size,
             grid_output=body.grid_output,
@@ -567,7 +536,7 @@ class VisualGeneration:
                     )
                 node["generation_batch_id"] = batch_id
                 node["generation_task_id"] = None
-                node["asset_id"] = None
+                # Preserve the chosen final output while a new run is active.
                 break
         else:
             raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
@@ -597,11 +566,38 @@ class VisualGeneration:
         return generation_batch_out(row)
 
     async def list_batches(
-        self, project_id: str | None = None, page: int = 1, page_size: int = 50
+        self,
+        project_id: str | None = None,
+        page: int = 1,
+        page_size: int = 50,
+        current_nodes: bool = False,
     ) -> GenerationBatchListOut:
         conditions = []
         if project_id:
             conditions.append(VisualGenerationBatch.project_id == project_id)
+        if current_nodes:
+            if not project_id:
+                raise GenerationError("节点状态查询必须指定项目")
+            await self._project(project_id)
+            canvas = await self.session.get(VisualCanvasDocument, project_id)
+            nodes = canvas.nodes if canvas else []
+            conditions.append(
+                or_(
+                    VisualGenerationBatch.id.in_(
+                        [
+                            node.get("generation_batch_id")
+                            for node in nodes
+                            if node.get("generation_batch_id")
+                        ]
+                    ),
+                    and_(
+                        VisualGenerationBatch.generation_node_id.in_(
+                            [node["id"] for node in nodes]
+                        ),
+                        VisualGenerationBatch.status.in_(["queued", "processing"]),
+                    ),
+                )
+            )
         total = await self.session.scalar(
             select(func.count(VisualGenerationBatch.id)).where(*conditions)
         )
@@ -627,10 +623,32 @@ class VisualGeneration:
         status: str | None,
         page: int,
         page_size: int,
+        current_nodes: bool = False,
     ) -> GenerationTaskListOut:
         conditions = []
         if project_id:
             conditions.append(VisualGenerationTask.project_id == project_id)
+        if current_nodes:
+            if not project_id:
+                raise GenerationError("节点状态查询必须指定项目")
+            await self._project(project_id)
+            canvas = await self.session.get(VisualCanvasDocument, project_id)
+            nodes = canvas.nodes if canvas else []
+            conditions.append(
+                or_(
+                    VisualGenerationTask.id.in_(
+                        [
+                            node.get("generation_task_id")
+                            for node in nodes
+                            if node.get("generation_task_id")
+                        ]
+                    ),
+                    and_(
+                        VisualGenerationTask.canvas_node_id.in_([node["id"] for node in nodes]),
+                        VisualGenerationTask.status.in_(ACTIVE_TASK_STATUSES),
+                    ),
+                )
+            )
         if canvas_node_id:
             conditions.append(VisualGenerationTask.canvas_node_id == canvas_node_id)
         if kind:

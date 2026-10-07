@@ -45,8 +45,10 @@ import { useImageGridComposition } from "@features/visual-workshop/canvas/useIma
 import "@features/visual-workshop/visual-workshop.css";
 export function VisualWorkshopCanvasView({
   controller,
+  onBoard,
 }: {
   controller: ReturnType<typeof useVisualCanvasController>;
+  onBoard?: () => void;
 }) {
   const {
     client,
@@ -260,6 +262,7 @@ export function VisualWorkshopCanvasView({
         }}
       >
         <CanvasScreenChrome
+          onBoard={onBoard}
           projectTitle={projectQuery.data.title}
           title={title}
           editingTitle={editingTitle}

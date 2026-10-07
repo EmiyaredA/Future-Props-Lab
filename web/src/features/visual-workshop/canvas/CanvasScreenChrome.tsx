@@ -23,6 +23,7 @@ function openCurrentPageInNewWindow() {
 }
 
 type CanvasScreenChromeProps = {
+  onBoard?: () => void;
   projectTitle: string;
   title: string;
   editingTitle: boolean;
@@ -42,6 +43,7 @@ type CanvasScreenChromeProps = {
 };
 
 export function CanvasScreenChrome({
+  onBoard,
   projectTitle,
   title,
   editingTitle,
@@ -104,6 +106,20 @@ export function CanvasScreenChrome({
           </span>
         </div>
         <div className="canvas-top-actions">
+          {onBoard && (
+            <div
+              className="visual-project-view-toggle"
+              role="group"
+              aria-label="项目视图"
+            >
+              <button className="active" aria-pressed="true">
+                画布
+              </button>
+              <button aria-pressed="false" onClick={onBoard}>
+                看板
+              </button>
+            </div>
+          )}
           {window.futurePropsDesktop?.openAmadeus && (
             <button
               type="button"

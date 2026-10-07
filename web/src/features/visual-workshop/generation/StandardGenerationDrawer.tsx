@@ -65,7 +65,7 @@ export function StandardGenerationDrawer({
       <header>
         <div>
           <strong>AI 生成</strong>
-          <small>由 SenseAudio 异步生成，完成后自动进入素材库</small>
+          <small>生成完成后自动保存输出版本</small>
         </div>
         <button aria-label="关闭 AI 生成" onClick={onClose}>
           <X aria-hidden />
@@ -141,22 +141,27 @@ export function StandardGenerationDrawer({
                   }))}
                 />
               </label>
-              <label>
-                <span>种子（可选）</span>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="随机"
-                  value={seed}
-                  onChange={(event) => setSeed(event.target.value)}
-                />
-              </label>
+              {selectedModel?.supports_seed !== false && (
+                <label>
+                  <span>种子（可选）</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="随机"
+                    value={seed}
+                    onChange={(event) => setSeed(event.target.value)}
+                  />
+                </label>
+              )}
             </div>
             <ProjectMediaPicker
               projectId={projectId}
               label="参考图片（可选）"
+              multiple={(selectedModel?.max_reference_images ?? 1) > 1}
+              max={selectedModel?.max_reference_images ?? 1}
               value={imageReference}
               onChange={setImageReference}
+              onReorder={controller.reorderImages}
               onFilesLoaded={rememberPromptFiles}
             />
           </>

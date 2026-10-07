@@ -18,6 +18,7 @@ class ImageGenerationTaskCreateIn(BaseModel):
     size: str = Field(default="1024x1024", max_length=32)
     seed: int | None = Field(default=None, ge=0)
     reference_asset_id: str | None = None
+    reference_asset_ids: list[str] = Field(default_factory=list, max_length=14)
     canvas_node_id: str | None = Field(default=None, min_length=1, max_length=64)
     expected_canvas_revision: int | None = Field(default=None, ge=0)
 
@@ -31,6 +32,8 @@ class ImageGenerationTaskCreateIn(BaseModel):
 
     @model_validator(mode="after")
     def canvas_link_is_complete(self) -> ImageGenerationTaskCreateIn:
+        if len(self.reference_asset_ids) != len(set(self.reference_asset_ids)):
+            raise ValueError("参考图片不能重复")
         if (self.canvas_node_id is None) != (self.expected_canvas_revision is None):
             raise ValueError("画布节点和画布版本必须同时提供")
         return self

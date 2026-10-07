@@ -510,6 +510,16 @@ class Body_upload_image_v1_thought_workshop_images_post(WireModel):
 class Body_upload_library_file_v1_director_desk_library_files_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
+class Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    file: str = Field(default=..., alias='file')
+    x: float = Field(default=0, alias='x')
+    y: float = Field(default=0, alias='y')
+
+class Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    file: str = Field(default=..., alias='file')
+
 class Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post(WireModel):
     category: Literal['character', 'scene', 'cg', 'bgm', 'ambient', 'sfx', 'voice', 'video', 'font', 'other'] | None = Field(default=None, alias='category')
     upload: str = Field(default=..., alias='upload')
@@ -2557,10 +2567,14 @@ class GenerationModelOptionOut(WireModel):
     id: str = Field(default=..., alias='id')
     kind: Literal['image', 'video', 'audio'] = Field(default=..., alias='kind')
     label: str = Field(default=..., alias='label')
+    max_prompt_length: int | None = Field(default=2000, alias='max_prompt_length')
+    max_reference_images: int = Field(default=1, alias='max_reference_images')
     provider_id: str = Field(default=..., alias='provider_id')
     provider_name: str = Field(default=..., alias='provider_name')
+    reference_mime_types: list[str] | None = Field(default=None, alias='reference_mime_types')
     sizes: list[str] | None = Field(default=None, alias='sizes')
     slug: str = Field(default=..., alias='slug')
+    supports_seed: bool | None = Field(default=True, alias='supports_seed')
 
 class GenerationOptionsOut(WireModel):
     models: list[GenerationModelOptionOut] = Field(default=..., alias='models')
@@ -2582,7 +2596,7 @@ class GenerationTaskOut(WireModel):
     progress: int = Field(default=..., alias='progress')
     project_id: str = Field(default=..., alias='project_id')
     provider_id: str | None = Field(default=..., alias='provider_id')
-    provider_kind: Literal['senseaudio_image', 'senseaudio_video', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['volcengine_image', 'senseaudio_image', 'senseaudio_video', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     provider_task_id: str | None = Field(default=..., alias='provider_task_id')
     request_payload: dict[str, Any] = Field(default=..., alias='request_payload')
@@ -2629,6 +2643,7 @@ class ImageGenerationBatchCreateIn(WireModel):
     model_id: str = Field(default=..., alias='model_id')
     prompt: str = Field(default=..., alias='prompt', min_length=1, max_length=6000)
     reference_asset_id: str | None = Field(default=None, alias='reference_asset_id')
+    reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=14)
     seed: int | None = Field(default=None, alias='seed')
     size: str = Field(default='1024x1024', alias='size', max_length=32)
 
@@ -2639,6 +2654,7 @@ class ImageGenerationTaskCreateIn(WireModel):
     model_id: str = Field(default=..., alias='model_id')
     prompt: str = Field(default=..., alias='prompt', min_length=1, max_length=6000)
     reference_asset_id: str | None = Field(default=None, alias='reference_asset_id')
+    reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=14)
     seed: int | None = Field(default=None, alias='seed')
     size: str = Field(default='1024x1024', alias='size', max_length=32)
 
@@ -3174,7 +3190,7 @@ class ModelTestGenerationTaskOut(WireModel):
     model_slug: str = Field(default=..., alias='model_slug')
     progress: int = Field(default=..., alias='progress')
     provider_id: str | None = Field(default=..., alias='provider_id')
-    provider_kind: Literal['senseaudio_image', 'senseaudio_video'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['senseaudio_image', 'volcengine_image', 'senseaudio_video'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     request_payload: dict[str, Any] = Field(default=..., alias='request_payload')
     result_available: bool = Field(default=..., alias='result_available')
@@ -3838,7 +3854,7 @@ class ProviderIn(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
-    kind: Literal['openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_id: str | None = Field(default=None, alias='supplier_id')
 
@@ -3852,7 +3868,7 @@ class ProviderOut(WireModel):
     enabled: bool = Field(default=..., alias='enabled')
     has_api_key: bool = Field(default=..., alias='has_api_key', repr=False)
     id: str = Field(default=..., alias='id')
-    kind: Literal['openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     managed_fields: list[str] | None = Field(default=None, alias='managed_fields')
     models: list[ModelEntryOut] = Field(default=..., alias='models')
     name: str = Field(default=..., alias='name')
@@ -4003,7 +4019,7 @@ class RealtimeVoiceModelOut(WireModel):
     output_sample_rate: int = Field(default=..., alias='output_sample_rate')
     playback: RealtimeVoicePlaybackOut = Field(default=..., alias='playback')
     provider_id: str = Field(default=..., alias='provider_id')
-    provider_kind: Literal['openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     slug: str = Field(default=..., alias='slug')
     supports_interruption: bool = Field(default=..., alias='supports_interruption')
@@ -4536,7 +4552,7 @@ class TemplateProvider_Input(WireModel):
     clear_api_key: bool = Field(default=False, alias='clear_api_key', repr=False)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -4547,7 +4563,7 @@ class TemplateProvider_Output(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -5369,14 +5385,21 @@ class VisualCanvasAudioGenerationDraft(WireModel):
 
 class VisualCanvasAudioNode(WireModel):
     asset_id: str | None = Field(default=None, alias='asset_id')
+    category_id: str | None = Field(default=None, alias='category_id')
+    final_output_id: str | None = Field(default=None, alias='final_output_id')
+    final_version: int | None = Field(default=None, alias='final_version')
     generation_draft: VisualCanvasAudioGenerationDraft | None = Field(default=None, alias='generation_draft')
     generation_task_id: str | None = Field(default=None, alias='generation_task_id')
+    group: str | None = Field(default=None, alias='group')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     kind: Literal['audio'] = Field(default=..., alias='kind')
+    output_sequence: int | None = Field(default=None, alias='output_sequence')
     position: VisualCanvasPosition = Field(default=..., alias='position')
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=20)
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class VisualCanvasDocumentOut(WireModel):
+    categories: list[VisualMaterialCategory] | None = Field(default=None, alias='categories')
     edges: list[VisualCanvasEdge] = Field(default=..., alias='edges')
     nodes: list[VisualCanvasTextNode | VisualCanvasImageNode | VisualCanvasVideoNode | VisualCanvasAudioNode] = Field(default=..., alias='nodes')
     project_id: str = Field(default=..., alias='project_id')
@@ -5384,12 +5407,16 @@ class VisualCanvasDocumentOut(WireModel):
     updated_at: str = Field(default=..., alias='updated_at')
 
 class VisualCanvasDocumentPutIn(WireModel):
+    categories: list[VisualMaterialCategory] | None = Field(default=None, alias='categories')
     edges: list[VisualCanvasEdge] | None = Field(default=None, alias='edges', max_length=1000)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     nodes: list[VisualCanvasTextNode | VisualCanvasImageNode | VisualCanvasVideoNode | VisualCanvasAudioNode] | None = Field(default=None, alias='nodes', max_length=500)
 
 class VisualCanvasEdge(WireModel):
+    binding: Literal['final', 'fixed'] = Field(default='final', alias='binding')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    output_id: str | None = Field(default=None, alias='output_id')
+    purpose: Literal['reference', 'context', 'first_frame', 'last_frame'] = Field(default='reference', alias='purpose')
     source_node_id: str = Field(default=..., alias='source_node_id', min_length=1, max_length=64)
     target_node_id: str = Field(default=..., alias='target_node_id', min_length=1, max_length=64)
 
@@ -5401,17 +5428,24 @@ class VisualCanvasImageGenerationDraft(WireModel):
     prompt: str = Field(default='', alias='prompt', max_length=6000)
     prompt_reference_names: dict[str, str] | None = Field(default=None, alias='prompt_reference_names')
     reference_asset_id: str | None = Field(default=None, alias='reference_asset_id')
+    reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=14)
     seed: int | None = Field(default=None, alias='seed')
     size: str = Field(default='1024x1024', alias='size', min_length=1, max_length=32)
 
 class VisualCanvasImageNode(WireModel):
     asset_id: str | None = Field(default=None, alias='asset_id')
+    category_id: str | None = Field(default=None, alias='category_id')
+    final_output_id: str | None = Field(default=None, alias='final_output_id')
+    final_version: int | None = Field(default=None, alias='final_version')
     generation_batch_id: str | None = Field(default=None, alias='generation_batch_id')
     generation_draft: VisualCanvasImageGenerationDraft | None = Field(default=None, alias='generation_draft')
     generation_task_id: str | None = Field(default=None, alias='generation_task_id')
+    group: str | None = Field(default=None, alias='group')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     kind: Literal['image'] = Field(default=..., alias='kind')
+    output_sequence: int | None = Field(default=None, alias='output_sequence')
     position: VisualCanvasPosition = Field(default=..., alias='position')
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=20)
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class VisualCanvasPosition(WireModel):
@@ -5419,9 +5453,15 @@ class VisualCanvasPosition(WireModel):
     y: float = Field(default=..., alias='y', ge=-1000000.0, le=1000000.0)
 
 class VisualCanvasTextNode(WireModel):
+    category_id: str | None = Field(default=None, alias='category_id')
+    final_output_id: str | None = Field(default=None, alias='final_output_id')
+    final_version: int | None = Field(default=None, alias='final_version')
+    group: str | None = Field(default=None, alias='group')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     kind: Literal['text'] = Field(default=..., alias='kind')
+    output_sequence: int | None = Field(default=None, alias='output_sequence')
     position: VisualCanvasPosition = Field(default=..., alias='position')
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=20)
     text: str = Field(default='', alias='text', max_length=20000)
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
@@ -5443,11 +5483,17 @@ class VisualCanvasVideoGenerationDraft(WireModel):
 
 class VisualCanvasVideoNode(WireModel):
     asset_id: str | None = Field(default=None, alias='asset_id')
+    category_id: str | None = Field(default=None, alias='category_id')
+    final_output_id: str | None = Field(default=None, alias='final_output_id')
+    final_version: int | None = Field(default=None, alias='final_version')
     generation_draft: VisualCanvasVideoGenerationDraft | None = Field(default=None, alias='generation_draft')
     generation_task_id: str | None = Field(default=None, alias='generation_task_id')
+    group: str | None = Field(default=None, alias='group')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     kind: Literal['video'] = Field(default=..., alias='kind')
+    output_sequence: int | None = Field(default=None, alias='output_sequence')
     position: VisualCanvasPosition = Field(default=..., alias='position')
+    tags: list[str] | None = Field(default=None, alias='tags', max_length=20)
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class VisualEntityOperation(WireModel):
@@ -5457,6 +5503,37 @@ class VisualEntityOperation(WireModel):
     index: int | None = Field(default=None, alias='index')
     parent_id: str | None = Field(default=None, alias='parent_id')
     value: dict[str, Any] | None = Field(default=None, alias='value')
+
+class VisualMaterialCategory(WireModel):
+    groups: list[str] | None = Field(default=None, alias='groups', max_length=100)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+
+class VisualNodeFinalOutputIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    output_id: str = Field(default=..., alias='output_id')
+
+class VisualNodeOutputCreateIn(WireModel):
+    asset_id: str | None = Field(default=None, alias='asset_id')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    text: str | None = Field(default=None, alias='text')
+
+class VisualNodeOutputListOut(WireModel):
+    items: list[VisualNodeOutputOut] = Field(default=..., alias='items')
+    total: int = Field(default=..., alias='total')
+
+class VisualNodeOutputOut(WireModel):
+    asset_id: str | None = Field(default=..., alias='asset_id')
+    created_at: str = Field(default=..., alias='created_at')
+    generation_task_id: str | None = Field(default=..., alias='generation_task_id')
+    id: str = Field(default=..., alias='id')
+    input_snapshot: list[dict[str, Any]] = Field(default=..., alias='input_snapshot')
+    is_final: bool = Field(default=..., alias='is_final')
+    kind: Literal['text', 'image', 'video', 'audio'] = Field(default=..., alias='kind')
+    node_id: str = Field(default=..., alias='node_id')
+    source: Literal['generated', 'uploaded', 'text', 'legacy'] = Field(default=..., alias='source')
+    text: str | None = Field(default=..., alias='text')
+    version: int = Field(default=..., alias='version')
 
 class VisualOperationsIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -5669,6 +5746,8 @@ Body_upload_file_v1_files_post.model_rebuild()
 Body_upload_generation_assets_v1_model_test_generation_assets_post.model_rebuild()
 Body_upload_image_v1_thought_workshop_images_post.model_rebuild()
 Body_upload_library_file_v1_director_desk_library_files_post.model_rebuild()
+Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post.model_rebuild()
+Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post.model_rebuild()
 Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post.model_rebuild()
 Body_upload_project_file_v1_director_desk_projects__project_id__files_post.model_rebuild()
 Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post.model_rebuild()
@@ -6367,6 +6446,11 @@ VisualCanvasTextNode.model_rebuild()
 VisualCanvasVideoGenerationDraft.model_rebuild()
 VisualCanvasVideoNode.model_rebuild()
 VisualEntityOperation.model_rebuild()
+VisualMaterialCategory.model_rebuild()
+VisualNodeFinalOutputIn.model_rebuild()
+VisualNodeOutputCreateIn.model_rebuild()
+VisualNodeOutputListOut.model_rebuild()
+VisualNodeOutputOut.model_rebuild()
 VisualOperationsIn.model_rebuild()
 VisualProjectSnapshotImportOut.model_rebuild()
 VisualWorkshopProjectCreateIn.model_rebuild()

@@ -3013,6 +3013,56 @@
         "title": "Body_upload_library_file_v1_director_desk_library_files_post",
         "type": "object"
       },
+      "Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "x": {
+            "default": 0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "file",
+          "expected_revision"
+        ],
+        "title": "Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post",
+        "type": "object"
+      },
+      "Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "expected_revision"
+        ],
+        "title": "Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post",
+        "type": "object"
+      },
       "Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post": {
         "properties": {
           "category": {
@@ -16603,6 +16653,23 @@
             "title": "Label",
             "type": "string"
           },
+          "max_prompt_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 2000,
+            "title": "Max Prompt Length"
+          },
+          "max_reference_images": {
+            "default": 1,
+            "title": "Max Reference Images",
+            "type": "integer"
+          },
           "provider_id": {
             "title": "Provider Id",
             "type": "string"
@@ -16610,6 +16677,13 @@
           "provider_name": {
             "title": "Provider Name",
             "type": "string"
+          },
+          "reference_mime_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reference Mime Types",
+            "type": "array"
           },
           "sizes": {
             "items": {
@@ -16621,6 +16695,18 @@
           "slug": {
             "title": "Slug",
             "type": "string"
+          },
+          "supports_seed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": true,
+            "title": "Supports Seed"
           }
         },
         "required": [
@@ -16764,6 +16850,7 @@
           },
           "provider_kind": {
             "enum": [
+              "volcengine_image",
               "senseaudio_image",
               "senseaudio_video",
               "senseaudio_music",
@@ -17090,6 +17177,14 @@
             ],
             "title": "Reference Asset Id"
           },
+          "reference_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 14,
+            "title": "Reference Asset Ids",
+            "type": "array"
+          },
           "seed": {
             "anyOf": [
               {
@@ -17169,6 +17264,14 @@
               }
             ],
             "title": "Reference Asset Id"
+          },
+          "reference_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 14,
+            "title": "Reference Asset Ids",
+            "type": "array"
           },
           "seed": {
             "anyOf": [
@@ -20430,6 +20533,7 @@
           "provider_kind": {
             "enum": [
               "senseaudio_image",
+              "volcengine_image",
               "senseaudio_video"
             ],
             "title": "Provider Kind",
@@ -24704,6 +24808,7 @@
           },
           "kind": {
             "enum": [
+              "volcengine_image",
               "openai",
               "anthropic",
               "senseaudio_image",
@@ -24784,6 +24889,7 @@
           },
           "kind": {
             "enum": [
+              "volcengine_image",
               "openai",
               "anthropic",
               "senseaudio_image",
@@ -25631,6 +25737,7 @@
           },
           "provider_kind": {
             "enum": [
+              "volcengine_image",
               "openai",
               "anthropic",
               "senseaudio_image",
@@ -28758,6 +28865,7 @@
           },
           "kind": {
             "enum": [
+              "volcengine_image",
               "openai",
               "anthropic",
               "senseaudio_image",
@@ -28835,6 +28943,7 @@
           },
           "kind": {
             "enum": [
+              "volcengine_image",
               "openai",
               "anthropic",
               "senseaudio_image",
@@ -34262,6 +34371,39 @@
             ],
             "title": "Asset Id"
           },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "final_output_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Output Id"
+          },
+          "final_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Version"
+          },
           "generation_draft": {
             "anyOf": [
               {
@@ -34283,6 +34425,18 @@
             ],
             "title": "Generation Task Id"
           },
+          "group": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
           "id": {
             "maxLength": 64,
             "minLength": 1,
@@ -34294,8 +34448,28 @@
             "title": "Kind",
             "type": "string"
           },
+          "output_sequence": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Sequence"
+          },
           "position": {
             "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Tags",
+            "type": "array"
           },
           "title": {
             "maxLength": 120,
@@ -34315,6 +34489,13 @@
       },
       "VisualCanvasDocumentOut": {
         "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/VisualMaterialCategory"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
           "edges": {
             "items": {
               "$ref": "#/components/schemas/VisualCanvasEdge"
@@ -34376,6 +34557,21 @@
       },
       "VisualCanvasDocumentPutIn": {
         "properties": {
+          "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VisualMaterialCategory"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Categories"
+          },
           "edges": {
             "items": {
               "$ref": "#/components/schemas/VisualCanvasEdge"
@@ -34428,10 +34624,41 @@
       },
       "VisualCanvasEdge": {
         "properties": {
+          "binding": {
+            "default": "final",
+            "enum": [
+              "final",
+              "fixed"
+            ],
+            "title": "Binding",
+            "type": "string"
+          },
           "id": {
             "maxLength": 64,
             "minLength": 1,
             "title": "Id",
+            "type": "string"
+          },
+          "output_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Id"
+          },
+          "purpose": {
+            "default": "reference",
+            "enum": [
+              "reference",
+              "context",
+              "first_frame",
+              "last_frame"
+            ],
+            "title": "Purpose",
             "type": "string"
           },
           "source_node_id": {
@@ -34531,6 +34758,14 @@
             ],
             "title": "Reference Asset Id"
           },
+          "reference_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 14,
+            "title": "Reference Asset Ids",
+            "type": "array"
+          },
           "seed": {
             "anyOf": [
               {
@@ -34567,6 +34802,39 @@
             ],
             "title": "Asset Id"
           },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "final_output_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Output Id"
+          },
+          "final_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Version"
+          },
           "generation_batch_id": {
             "anyOf": [
               {
@@ -34599,6 +34867,18 @@
             ],
             "title": "Generation Task Id"
           },
+          "group": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
           "id": {
             "maxLength": 64,
             "minLength": 1,
@@ -34610,8 +34890,28 @@
             "title": "Kind",
             "type": "string"
           },
+          "output_sequence": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Sequence"
+          },
           "position": {
             "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Tags",
+            "type": "array"
           },
           "title": {
             "maxLength": 120,
@@ -34653,6 +34953,51 @@
       },
       "VisualCanvasTextNode": {
         "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "final_output_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Output Id"
+          },
+          "final_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Version"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
           "id": {
             "maxLength": 64,
             "minLength": 1,
@@ -34664,8 +35009,28 @@
             "title": "Kind",
             "type": "string"
           },
+          "output_sequence": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Sequence"
+          },
           "position": {
             "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Tags",
+            "type": "array"
           },
           "text": {
             "default": "",
@@ -34829,6 +35194,39 @@
             ],
             "title": "Asset Id"
           },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "final_output_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Output Id"
+          },
+          "final_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Version"
+          },
           "generation_draft": {
             "anyOf": [
               {
@@ -34850,6 +35248,18 @@
             ],
             "title": "Generation Task Id"
           },
+          "group": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
           "id": {
             "maxLength": 64,
             "minLength": 1,
@@ -34861,8 +35271,28 @@
             "title": "Kind",
             "type": "string"
           },
+          "output_sequence": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Sequence"
+          },
           "position": {
             "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Tags",
+            "type": "array"
           },
           "title": {
             "maxLength": 120,
@@ -34945,6 +35375,213 @@
           "entity"
         ],
         "title": "VisualEntityOperation",
+        "type": "object"
+      },
+      "VisualMaterialCategory": {
+        "properties": {
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Groups",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "VisualMaterialCategory",
+        "type": "object"
+      },
+      "VisualNodeFinalOutputIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "output_id": {
+            "title": "Output Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "output_id"
+        ],
+        "title": "VisualNodeFinalOutputIn",
+        "type": "object"
+      },
+      "VisualNodeOutputCreateIn": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "VisualNodeOutputCreateIn",
+        "type": "object"
+      },
+      "VisualNodeOutputListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VisualNodeOutputOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "VisualNodeOutputListOut",
+        "type": "object"
+      },
+      "VisualNodeOutputOut": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "generation_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Task Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Input Snapshot",
+            "type": "array"
+          },
+          "is_final": {
+            "title": "Is Final",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "generated",
+              "uploaded",
+              "text",
+              "legacy"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "node_id",
+          "version",
+          "kind",
+          "asset_id",
+          "text",
+          "source",
+          "generation_task_id",
+          "input_snapshot",
+          "is_final",
+          "created_at"
+        ],
+        "title": "VisualNodeOutputOut",
         "type": "object"
       },
       "VisualOperationsIn": {
@@ -61382,6 +62019,16 @@
               "title": "Page Size",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "current_nodes",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Current Nodes",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -61621,6 +62268,16 @@
               "minimum": 1,
               "title": "Page Size",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current_nodes",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Current Nodes",
+              "type": "boolean"
             }
           }
         ],
@@ -62962,6 +63619,441 @@
         "summary": "Create Image Composition",
         "tags": [
           "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/node-uploads": {
+      "post": {
+        "operationId": "upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualCanvasDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Material Node",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output": {
+      "put": {
+        "operationId": "set_node_final_output_v1_visual_workshop_projects__project_id__nodes__node_id__final_output_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualNodeFinalOutputIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualCanvasDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Node Final Output",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads": {
+      "post": {
+        "operationId": "upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualCanvasDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Node Output",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs": {
+      "get": {
+        "operationId": "list_node_outputs_v1_visual_workshop_projects__project_id__nodes__node_id__outputs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualNodeOutputListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Node Outputs",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "add_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualNodeOutputCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualCanvasDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Node Output",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}": {
+      "delete": {
+        "operationId": "delete_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs__output_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "output_id",
+            "required": true,
+            "schema": {
+              "title": "Output Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualCanvasDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Node Output",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs__output_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "output_id",
+            "required": true,
+            "schema": {
+              "title": "Output Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualNodeOutputOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Node Output",
+        "tags": [
+          "visual-workshop"
         ]
       }
     },

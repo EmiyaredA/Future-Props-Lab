@@ -128,6 +128,7 @@ class VisualCanvasImageGenerationDraft(BaseModel):
     grid_size: Literal[1, 4, 9] | None = None
     grid_output: Literal["nodes", "composite"] | None = None
     reference_asset_id: str | None = None
+    reference_asset_ids: list[str] = Field(default_factory=list, max_length=14)
     prompt_reference_names: dict[str, str] = Field(default_factory=dict, max_length=16)
 
     @field_validator("prompt_reference_names")
@@ -198,6 +199,12 @@ class VisualCanvasNodeBase(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     title: str = Field(min_length=1, max_length=120)
     position: VisualCanvasPosition
+    category_id: str | None = None
+    group: str | None = Field(default=None, max_length=120)
+    tags: list[str] = Field(default_factory=list, max_length=20)
+    output_sequence: int | None = Field(default=None, ge=0)
+    final_output_id: str | None = None
+    final_version: int | None = None
 
     @field_validator("id", "title")
     @classmethod
@@ -245,6 +252,15 @@ class VisualCanvasEdge(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     source_node_id: str = Field(min_length=1, max_length=64)
     target_node_id: str = Field(min_length=1, max_length=64)
+    binding: Literal["final", "fixed"] = "final"
+    output_id: str | None = None
+    purpose: Literal["reference", "context", "first_frame", "last_frame"] = "reference"
+
+    @model_validator(mode="after")
+    def binding_is_complete(self) -> VisualCanvasEdge:
+        if (self.binding == "fixed") != (self.output_id is not None):
+            raise ValueError("固定引用必须指定输出版本，跟随引用不能指定版本")
+        return self
 
     @field_validator("id", "source_node_id", "target_node_id")
     @classmethod
@@ -274,14 +290,18 @@ def _validate_canvas_edges(nodes: list[VisualCanvasNode], edges: list[VisualCanv
         if pair in pairs:
             raise ValueError("相同节点之间不能重复连线")
         pairs.add(pair)
-        if source.kind == "text" or target.kind == "text":
-            raise ValueError("文本节点不支持素材连线")
-        if target.kind == "image" and source.kind != "image":
+        if target.kind == "text" and source.kind != "text":
+            raise ValueError("文本节点只能接收文本上下文")
+        if target.kind == "image" and source.kind not in {"image", "text"}:
             raise ValueError("图片节点只能接收图片素材")
         if target.kind == "audio":
-            if source.kind != "audio":
+            if source.kind not in {"audio", "text"}:
                 raise ValueError("音频节点只能接收音频素材")
-            if target.generation_draft and target.generation_draft.mode == "sfx":
+            if (
+                source.kind != "text"
+                and target.generation_draft
+                and target.generation_draft.mode == "sfx"
+            ):
                 raise ValueError("音效生成不接收上游素材")
         outgoing[source.id].append(target.id)
 
@@ -301,10 +321,33 @@ def _validate_canvas_edges(nodes: list[VisualCanvasNode], edges: list[VisualCanv
         visit(node_id)
 
 
+class VisualMaterialCategory(BaseModel):
+    id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=120)
+    groups: list[str] = Field(default_factory=list, max_length=100)
+
+    @field_validator("groups")
+    @classmethod
+    def valid_groups(cls, groups: list[str]) -> list[str]:
+        if any(not group.strip() or len(group) > 120 for group in groups) or len(groups) != len(
+            set(groups)
+        ):
+            raise ValueError("分组名称必须为 1–120 个字符且不能重复")
+        return groups
+
+
+def default_material_categories() -> list[VisualMaterialCategory]:
+    return [
+        VisualMaterialCategory(id=key, name=name)
+        for key, name in (("character", "人设"), ("scene", "场景"), ("storyboard", "分镜"))
+    ]
+
+
 class VisualCanvasDocumentPutIn(BaseModel):
     expected_revision: int = Field(ge=0)
     nodes: list[VisualCanvasNode] = Field(default_factory=list, max_length=500)
     edges: list[VisualCanvasEdge] = Field(default_factory=list, max_length=1000)
+    categories: list[VisualMaterialCategory] | None = Field(default=None, max_length=100)
 
     @field_validator("nodes")
     @classmethod
@@ -317,6 +360,12 @@ class VisualCanvasDocumentPutIn(BaseModel):
     @model_validator(mode="after")
     def graph_is_valid(self) -> VisualCanvasDocumentPutIn:
         _validate_canvas_edges(self.nodes, self.edges)
+        if self.categories is not None:
+            ids = [category.id for category in self.categories]
+            if len(ids) != len(set(ids)):
+                raise ValueError("分类 ID 不能重复")
+            if any(node.category_id and node.category_id not in ids for node in self.nodes):
+                raise ValueError("节点分类不存在")
         return self
 
 
@@ -326,6 +375,7 @@ class VisualCanvasDocumentOut(BaseModel):
     edges: list[VisualCanvasEdge]
     revision: int
     updated_at: str
+    categories: list[VisualMaterialCategory] = Field(default_factory=default_material_categories)
 
 
 VisualAssistantMessageStatus = Literal["pending", "completed", "error", "cancelled"]
@@ -511,6 +561,12 @@ class GenerationModelOptionOut(BaseModel):
     label: str
     description: str
     sizes: list[str] = Field(default_factory=list)
+    max_reference_images: int = 1
+    supports_seed: bool | None = True
+    max_prompt_length: int | None = 2000
+    reference_mime_types: list[str] = Field(
+        default_factory=lambda: ["image/jpeg", "image/png", "image/webp"]
+    )
 
 
 class GenerationOptionsOut(BaseModel):
@@ -523,6 +579,7 @@ class GenerationTaskOut(BaseModel):
     provider_id: str | None
     model_id: str | None
     provider_kind: Literal[
+        "volcengine_image",
         "senseaudio_image",
         "senseaudio_video",
         "senseaudio_music",

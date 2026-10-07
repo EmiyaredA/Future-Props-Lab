@@ -95,15 +95,20 @@ async def list_generation_tasks(
     | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
+    current_nodes: bool = False,
 ) -> GenerationTaskListOut:
-    return await VisualGeneration(session).list(
-        project_id=project_id,
-        canvas_node_id=canvas_node_id,
-        kind=kind,
-        status=status,
-        page=page,
-        page_size=page_size,
-    )
+    try:
+        return await VisualGeneration(session).list(
+            project_id=project_id,
+            canvas_node_id=canvas_node_id,
+            kind=kind,
+            status=status,
+            page=page,
+            page_size=page_size,
+            current_nodes=current_nodes,
+        )
+    except GenerationError as exc:
+        raise _generation_error(exc) from None
 
 
 @router.get("/generation-tasks/{task_id}", response_model=GenerationTaskOut)
@@ -139,8 +144,14 @@ async def list_generation_batches(
     project_id: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
+    current_nodes: bool = False,
 ) -> GenerationBatchListOut:
-    return await VisualGeneration(session).list_batches(project_id, page, page_size)
+    try:
+        return await VisualGeneration(session).list_batches(
+            project_id, page, page_size, current_nodes
+        )
+    except GenerationError as exc:
+        raise _generation_error(exc) from None
 
 
 @router.post(

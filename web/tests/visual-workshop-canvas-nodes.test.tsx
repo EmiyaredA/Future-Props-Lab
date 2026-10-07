@@ -1,10 +1,10 @@
 import { beforeEach, vi } from "vitest";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { uploadManagedFile } from "@features/files/api";
 import {
   createGenerationTask,
   putVisualCanvas,
+  uploadMaterialNode,
 } from "@features/visual-workshop/api";
 import {
   primeCanvasMocks,
@@ -57,6 +57,7 @@ vi.mock("@features/visual-workshop/api", async () => {
     patchVisualAssistantConversation: vi.fn(),
     patchVisualWorkshopProject: vi.fn(),
     putVisualCanvas: vi.fn(),
+    uploadMaterialNode: vi.fn(),
     resolveVisualAssistantApproval: vi.fn(),
     streamVisualAssistant: vi.fn(),
   };
@@ -319,22 +320,25 @@ test("create menu opens to the right of the add button", async () => {
 });
 
 test("context menu upload creates a media node at the click point", async () => {
-  vi.mocked(uploadManagedFile).mockResolvedValue({
-    id: "asset-upload",
-    project_id: "project-1",
-    folder_id: null,
-    original_filename: "shot.png",
-    display_name: "shot",
-    media_kind: "image",
-    mime_type: "image/png",
-    byte_size: 4,
-    revision: 0,
-    created_at: "2026-08-03T08:00:00Z",
-    updated_at: "2026-08-03T08:00:00Z",
-    source: "project",
-    is_reference: false,
-    reference_id: null,
-  });
+  vi.mocked(uploadMaterialNode).mockImplementation(
+    async (_projectId, _file, revision, position) => ({
+      project_id: "project-1",
+      nodes: [
+        {
+          id: "uploaded-node",
+          kind: "image",
+          title: "shot",
+          position,
+          asset_id: "asset-upload",
+          final_version: 1,
+          final_output_id: "output-1",
+        },
+      ],
+      edges: [],
+      revision: revision + 1,
+      updated_at: "2026-08-03T08:00:00Z",
+    }),
+  );
   const user = userEvent.setup();
   const { container } = renderCanvas();
   expect(await screen.findByText("未命名项目")).toBeInTheDocument();
@@ -378,22 +382,17 @@ test("context menu upload creates a media node at the click point", async () => 
   ).toHaveTextContent(/正在上传|已上传并添加到画布/);
 
   await waitFor(() =>
-    expect(uploadManagedFile).toHaveBeenCalledWith(file, "project-1"),
+    expect(uploadMaterialNode).toHaveBeenCalledWith(
+      file ? "project-1" : "",
+      file,
+      0,
+      { x: 260, y: 220 },
+    ),
   );
   await waitFor(() =>
-    expect(putVisualCanvas).toHaveBeenCalledWith(
-      "project-1",
-      expect.arrayContaining([
-        expect.objectContaining({
-          kind: "image",
-          asset_id: "asset-upload",
-          title: "shot",
-          position: { x: 260, y: 220 },
-        }),
-      ]),
-      expect.any(Number),
-      [],
-    ),
+    expect(
+      container.querySelector('[data-node-id="uploaded-node"]'),
+    ).toBeInTheDocument(),
   );
   expect(
     await screen.findByRole("status", { name: "上传状态" }),
@@ -401,7 +400,7 @@ test("context menu upload creates a media node at the click point", async () => 
 });
 
 test("context menu upload surfaces API failures", async () => {
-  vi.mocked(uploadManagedFile).mockRejectedValueOnce(new Error("磁盘已满"));
+  vi.mocked(uploadMaterialNode).mockRejectedValueOnce(new Error("磁盘已满"));
   const user = userEvent.setup();
   const { container } = renderCanvas();
   expect(await screen.findByText("未命名项目")).toBeInTheDocument();

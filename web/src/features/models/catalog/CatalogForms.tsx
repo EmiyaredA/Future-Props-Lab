@@ -170,6 +170,7 @@ export function ModelForm({
   const defaults: Partial<
     Record<CatalogProvider["kind"], ModelInput["capabilities"]>
   > = {
+    volcengine_image: ["image_generation"],
     senseaudio_image: ["image_generation"],
     senseaudio_video: ["video_generation"],
     senseaudio_asr: ["speech_recognition"],
@@ -245,9 +246,19 @@ export function ModelForm({
           maxLength={160}
           disabled={!editable("slug")}
           onChange={(event) => setSlug(event.target.value)}
-          placeholder="原样发送给服务端的模型 ID"
+          placeholder={
+            selectedProvider?.kind === "volcengine_image"
+              ? "doubao-seedream-4-5-251128"
+              : "原样发送给服务端的模型 ID"
+          }
         />
       </label>
+      {selectedProvider?.kind === "volcengine_image" && (
+        <small>
+          当前支持 Seedream 4.5（doubao-seedream-4-5-251128），最多 14
+          张原生参考图。
+        </small>
+      )}
       <label>
         <span>显示名称</span>
         <input

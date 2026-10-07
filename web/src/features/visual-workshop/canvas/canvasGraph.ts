@@ -133,11 +133,17 @@ export function canConnectCanvasNodes(
   if (sourceNodeId === targetNodeId) return false;
   const source = nodes.find((node) => node.id === sourceNodeId);
   const target = nodes.find((node) => node.id === targetNodeId);
-  if (!source || !target || source.kind === "text" || target.kind === "text")
+  if (!source || !target) return false;
+  if (target.kind === "text" && source.kind !== "text") return false;
+  if (target.kind === "image" && !["image", "text"].includes(source.kind))
     return false;
-  if (target.kind === "image" && source.kind !== "image") return false;
-  if (target.kind === "audio" && source.kind !== "audio") return false;
-  if (target.kind === "audio" && target.generation_draft?.mode === "sfx")
+  if (target.kind === "audio" && !["audio", "text"].includes(source.kind))
+    return false;
+  if (
+    source.kind !== "text" &&
+    target.kind === "audio" &&
+    target.generation_draft?.mode === "sfx"
+  )
     return false;
   if (
     edges.some(

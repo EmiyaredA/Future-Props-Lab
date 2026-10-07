@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 async def create_composition(
     service: VisualGeneration, project_id: str, body: ImageCompositionCreateIn
 ) -> GenerationBatchOut:
-    await service._project(project_id)
+    project = await service._project(project_id)
     canvas = await service.session.get(VisualCanvasDocument, project_id)
     if canvas is None:
         raise GenerationError("项目画布不存在", code="canvas_not_found", status=404)
@@ -26,7 +26,7 @@ async def create_composition(
             "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
         )
     nodes = {str(node.get("id")): node for node in (canvas.nodes or [])}
-    source_items: list[dict[str, str]] = []
+    source_items: list[dict] = []
     for item in body.items:
         node = nodes.get(item.node_id)
         if node is None:
@@ -39,7 +39,15 @@ async def create_composition(
             )
         await service._reference_asset(project_id, item.asset_id, "image")
         source_items.append(
-            {"node_id": item.node_id, "asset_id": item.asset_id, "caption": item.caption}
+            {
+                "node_id": item.node_id,
+                "asset_id": item.asset_id,
+                "caption": item.caption,
+                "binding": "fixed",
+                "purpose": "reference",
+                "output_id": node.get("final_output_id"),
+                "version": node.get("final_version"),
+            }
         )
     batch_id = str(uuid4())
     result_node_id = f"image-{uuid4()}"
@@ -71,7 +79,7 @@ async def create_composition(
         )
     batch = VisualGenerationBatch(
         id=batch_id,
-        workspace_id=str(service.session.info.get("workspace_id", "default")),
+        workspace_id=project.workspace_id,
         project_id=project_id,
         batch_kind="composition",
         grid_size=body.grid_size,

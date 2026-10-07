@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy import delete
 
 from app.apps.visual_workshop.models import VisualGenerationTask, VisualWorkshopProject
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import (
     VisualAsset,
 )
@@ -306,6 +307,7 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
                 delete(VisualGenerationTask).where(VisualGenerationTask.provider_id == provider.id)
             )
             if project_ids:
+                await session.execute(delete(VisualNodeOutput))
                 await session.execute(
                     delete(VisualAsset).where(VisualAsset.project_id.in_(project_ids))
                 )

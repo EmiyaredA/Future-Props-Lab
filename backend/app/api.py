@@ -16,6 +16,7 @@ from app.apps.video_editor.routes import router as video_editor_router
 from app.apps.visual_workshop.routes import router as visual_workshop_router
 from app.apps.visual_workshop.routes.assistant import router as visual_assistant_router
 from app.apps.visual_workshop.routes.generation import router as visual_generation_router
+from app.apps.visual_workshop.routes.outputs import router as visual_outputs_router
 from app.capabilities.asset_store.routes import image_crop, video_frames
 from app.console.amadeus.actions import register_video_executor
 from app.console.routes.account_management import router as management_router
@@ -105,6 +106,9 @@ api_router.include_router(
 )
 api_router.include_router(
     visual_workshop_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    visual_outputs_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 api_router.include_router(
     visual_assistant_router, dependencies=[Depends(require_studio_auth), ModelCapacity]

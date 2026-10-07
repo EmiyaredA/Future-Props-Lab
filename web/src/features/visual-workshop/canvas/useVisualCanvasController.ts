@@ -131,6 +131,7 @@ export function useVisualCanvasController({
     undo,
     redo,
     prepareCanvasForAgent,
+    applyServerCanvas,
     replaceNodes,
     patchNode,
     replaceEdges,
@@ -220,7 +221,6 @@ export function useVisualCanvasController({
           ? ({
               ...node,
               generation_task_id: taskId,
-              asset_id: null,
             } as VisualCanvasNode)
           : node,
       );
@@ -417,8 +417,9 @@ export function useVisualCanvasController({
   });
   const { upload, uploadNotice, setUploadNotice } = useCanvasUpload({
     projectId,
+    prepareCanvas: prepareCanvasForAgent,
+    applyServerCanvas,
     uploadPosition,
-    replaceNodes,
     setSelectedId,
     setInspectedNodeId,
     setMediaEditorTab,
@@ -502,6 +503,16 @@ export function useVisualCanvasController({
   const removeNodes = useCallback(
     (ids: string[]) => {
       const removing = new Set(ids);
+      if (
+        edgesRef.current.some(
+          (edge) =>
+            removing.has(edge.source_node_id) &&
+            !removing.has(edge.target_node_id),
+        )
+      ) {
+        setSaveMessage("请先解除下游输入引用，再删除节点。");
+        return;
+      }
       const removedEdgeIds = edgesRef.current
         .filter(
           (edge) =>
@@ -529,7 +540,13 @@ export function useVisualCanvasController({
       );
       setSelectedEdgeId(undefined);
     },
-    [edgesRef, nodesRef, commitCanvasSnapshot, setSelectedNodeIds],
+    [
+      edgesRef,
+      nodesRef,
+      commitCanvasSnapshot,
+      setSelectedNodeIds,
+      setSaveMessage,
+    ],
   );
   const removeNode = useCallback(
     (id: string) => removeNodes([id]),
@@ -772,6 +789,7 @@ export function useVisualCanvasController({
     undo,
     redo,
     prepareCanvasForAgent,
+    applyServerCanvas,
     replaceNodes,
     replaceEdges,
     addEdge,

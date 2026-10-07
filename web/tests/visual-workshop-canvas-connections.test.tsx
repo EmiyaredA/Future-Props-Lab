@@ -202,7 +202,7 @@ test("selects a connection line and removes it with Delete", async () => {
   );
 });
 
-test("cleans references when deleting a node removes its edges", async () => {
+test("requires unlinking before deleting a referenced node", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
     edges: [
@@ -242,6 +242,18 @@ test("cleans references when deleting a node removes its edges", async () => {
   const { container } = renderCanvas();
   const user = userEvent.setup();
   expect(await screen.findByText("来源图片")).toBeInTheDocument();
+  await user.click(screen.getByText("来源图片"));
+  await user.click(screen.getByRole("button", { name: "删除节点" }));
+  expect(container.querySelector('[data-node-id="source"]')).not.toBeNull();
+  await user.click(
+    screen.getByRole("button", { name: "连线：来源图片 → 目标视频" }),
+  );
+  fireEvent.keyDown(window, { key: "Delete" });
+  await waitFor(() =>
+    expect(
+      container.querySelector('[aria-label="连线：来源图片 → 目标视频"]'),
+    ).toBeNull(),
+  );
   await user.click(screen.getByText("来源图片"));
   await user.click(screen.getByRole("button", { name: "删除节点" }));
   await waitFor(() => expect(putVisualCanvas).toHaveBeenCalled());

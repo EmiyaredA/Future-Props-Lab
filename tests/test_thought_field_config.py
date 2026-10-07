@@ -288,7 +288,9 @@ def test_field_config_migration_preserves_existing_values(tmp_path):
             'INSERT INTO thought_data_records(id,table_id,position,"values") '
             "VALUES ('r','t',0,'{\"f\":\"2026-10-04\"}')"
         )
-        db.executescript(MIGRATIONS[-1].sql)
+        db.executescript(
+            next(m.sql for m in MIGRATIONS if m.migration_id == "0085_thought_field_config")
+        )
         assert db.execute("SELECT config FROM thought_data_fields WHERE id='f'").fetchone() == (
             "{}",
         )

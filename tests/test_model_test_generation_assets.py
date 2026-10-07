@@ -8,6 +8,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import VisualAsset
 from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
 from app.llm.playground.generation_assets import GenerationAssetError, ModelTestGenerationAssets
@@ -195,6 +196,7 @@ async def test_legacy_backfill_is_idempotent_skips_active_tasks_and_keeps_public
                 ModelTestGenerationTask.id.in_((terminal_id, active_id))
             )
         )
+        await session.execute(delete(VisualNodeOutput))
         await session.execute(delete(VisualAsset).where(VisualAsset.id == original_id))
         await session.commit()
     private_path.unlink(missing_ok=True)

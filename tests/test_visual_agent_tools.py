@@ -181,6 +181,42 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
             )
             assert stale.success is False
             assert stale.error_code == "canvas_conflict"
+            reused = await tool.handler(
+                arguments,
+                ToolExecutionContext(
+                    run_id="reuse",
+                    tool_call_id="reuse-task",
+                    scope={
+                        "workspace_id": "default",
+                        "project_id": project["id"],
+                        "image_model_id": model.id,
+                    },
+                    approved_canvas_revision=1,
+                ),
+            )
+            assert reused.success, reused.summary
+            current = (
+                await client.get(f"/v1/visual-workshop/projects/{project['id']}/canvas")
+            ).json()
+            assert current["revision"] == 2 and len(current["nodes"]) == 1
+            assert current["nodes"][0]["id"] == "generated-image-1"
+            assert current["nodes"][0]["position"] == {"x": 120, "y": 160}
+            assert current["nodes"][0]["generation_task_id"] != task_id
+            endpoint = "/v1/visual-workshop/generation-tasks"
+            query = {"project_id": project["id"], "current_nodes": "true"}
+            assert (await client.get(endpoint, params=query)).json()["total"] == 2
+            async with SessionLocal() as session:
+                old_task = await session.get(VisualGenerationTask, task_id)
+                old_task.status = "failed"
+                await session.commit()
+            current_tasks = (await client.get(endpoint, params=query)).json()
+            assert current_tasks["total"] == 1
+            assert current_tasks["items"][0]["id"] == current["nodes"][0]["generation_task_id"]
+            assert (await client.get(endpoint, params={"project_id": project["id"]})).json()[
+                "total"
+            ] == 2
+            assert (await client.get(endpoint, params={"current_nodes": "true"})).status_code == 422
+
         finally:
             await client.delete(
                 f"/v1/visual-workshop/projects/{project['id']}",

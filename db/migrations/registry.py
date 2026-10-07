@@ -87,6 +87,8 @@ from db.migrations.versions import (
     r0083_thought_multitable,
     r0084_unified_official_publications,
     r0085_thought_field_config,
+    r0086_visual_node_outputs,
+    r0087_volcengine_images,
 )
 
 
@@ -382,5 +384,13 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0085_thought_field_config.MIGRATION_ID, r0085_thought_field_config.SQL),)
+
+MIGRATIONS += (Migration(r0086_visual_node_outputs.MIGRATION_ID, r0086_visual_node_outputs.SQL),)
+
+MIGRATIONS += (
+    Migration(
+        r0087_volcengine_images.MIGRATION_ID, r0087_volcengine_images.SQL, foreign_keys_off=True
+    ),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

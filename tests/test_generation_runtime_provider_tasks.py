@@ -16,7 +16,7 @@ def test_shared_generation_error_conversion_hides_temporary_urls() -> None:
         safe_generation_error(TemporaryMediaError("https://temp.example/private.mp4"))
         == "参考素材临时上传失败，请重新生成"
     )
-    assert safe_generation_error(httpx.ReadTimeout("timeout")) == "SenseAudio 请求超时"
+    assert safe_generation_error(httpx.ReadTimeout("timeout")) == "供应商请求超时"
     assert safe_generation_error(RuntimeError("secret")) == "任务处理失败（RuntimeError）"
 
 

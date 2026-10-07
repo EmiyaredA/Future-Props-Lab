@@ -14,10 +14,17 @@ export type VisualWorkshopProjectKind =
 export type VisualWorkshopProjectStatus = VisualWorkshopProject["status"];
 export type VisualProjectSnapshotImport =
   components["schemas"]["VisualProjectSnapshotImportOut"];
-export type VisualCanvasDocument =
-  components["schemas"]["VisualCanvasDocumentOut"];
-export type VisualCanvasNode = VisualCanvasDocument["nodes"][number];
-export type VisualCanvasEdge = VisualCanvasDocument["edges"][number];
+type CanvasDocumentContract = components["schemas"]["VisualCanvasDocumentOut"];
+export type VisualCanvasDocument = Omit<CanvasDocumentContract, "edges"> & {
+  edges: VisualCanvasEdge[];
+};
+export type VisualCanvasNode = CanvasDocumentContract["nodes"][number];
+type CanvasEdgeContract = CanvasDocumentContract["edges"][number];
+export type VisualCanvasEdge = Omit<CanvasEdgeContract, "binding" | "purpose"> &
+  Partial<Pick<CanvasEdgeContract, "binding" | "purpose">>;
+export type VisualNodeOutput = components["schemas"]["VisualNodeOutputOut"];
+export type VisualMaterialCategory =
+  components["schemas"]["VisualMaterialCategory"];
 export type VisualCanvasImageGenerationDraft =
   components["schemas"]["VisualCanvasImageGenerationDraft"];
 export type VisualCanvasVideoGenerationDraft =
@@ -149,7 +156,9 @@ export function openVisualWorkshopProjectFolder(projectId: string) {
   );
 }
 
-export async function getVisualCanvas(projectId: string) {
+export async function getVisualCanvas(
+  projectId: string,
+): Promise<VisualCanvasDocument> {
   return unwrap(
     await api.GET("/v1/visual-workshop/projects/{project_id}/canvas", {
       params: { path: { project_id: projectId } },
@@ -172,12 +181,89 @@ export async function putVisualCanvas(
   nodes: VisualCanvasNode[],
   expectedRevision: number,
   edges: VisualCanvasEdge[] = [],
-) {
+  categories?: VisualMaterialCategory[],
+): Promise<VisualCanvasDocument> {
   return unwrap(
     await api.PUT("/v1/visual-workshop/projects/{project_id}/canvas", {
       params: { path: { project_id: projectId } },
-      body: { nodes, edges, expected_revision: expectedRevision },
+      body: {
+        nodes,
+        edges: edges.map((edge) => ({
+          ...edge,
+          binding: edge.binding ?? "final",
+          purpose: edge.purpose ?? "reference",
+        })),
+        expected_revision: expectedRevision,
+        categories,
+      },
     }),
+  );
+}
+
+export async function getNodeOutputs(
+  projectId: string,
+  nodeId: string,
+  page = 1,
+) {
+  return unwrap(
+    await api.GET(
+      "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs",
+      {
+        params: {
+          path: { project_id: projectId, node_id: nodeId },
+          query: { page, page_size: 20 },
+        },
+      },
+    ),
+  );
+}
+
+export async function saveNodeOutput(
+  projectId: string,
+  nodeId: string,
+  expectedRevision: number,
+  value: { text?: string; asset_id?: string },
+) {
+  return unwrap(
+    await api.POST(
+      "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs",
+      {
+        params: { path: { project_id: projectId, node_id: nodeId } },
+        body: { expected_revision: expectedRevision, ...value },
+      },
+    ),
+  );
+}
+
+export async function selectNodeFinalOutput(
+  projectId: string,
+  nodeId: string,
+  outputId: string,
+  expectedRevision: number,
+) {
+  return unwrap(
+    await api.PUT(
+      "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output",
+      {
+        params: { path: { project_id: projectId, node_id: nodeId } },
+        body: { expected_revision: expectedRevision, output_id: outputId },
+      },
+    ),
+  );
+}
+
+export function uploadNodeOutput(
+  projectId: string,
+  nodeId: string,
+  file: File,
+  expectedRevision: number,
+) {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("expected_revision", String(expectedRevision));
+  return fetchApiJson<VisualCanvasDocument>(
+    `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/output-uploads`,
+    { method: "POST", body },
   );
 }
 
@@ -241,10 +327,21 @@ export async function retryImageComposition(batchId: string) {
   );
 }
 
-export async function getGenerationBatches(projectId?: string) {
+export async function getGenerationBatches(
+  projectId?: string,
+  page = 1,
+  currentNodes = false,
+) {
   return unwrap(
     await api.GET("/v1/visual-workshop/generation-batches", {
-      params: { query: { project_id: projectId, page: 1, page_size: 50 } },
+      params: {
+        query: {
+          project_id: projectId,
+          page,
+          page_size: 50,
+          current_nodes: currentNodes,
+        },
+      },
     }),
   );
 }
@@ -257,6 +354,7 @@ export async function getGenerationTasks(
     status?: GenerationTaskStatus;
     page?: number;
     pageSize?: number;
+    currentNodes?: boolean;
   } = {},
 ) {
   return unwrap(
@@ -265,6 +363,7 @@ export async function getGenerationTasks(
         query: {
           project_id: filters.projectId,
           canvas_node_id: filters.canvasNodeId,
+          current_nodes: filters.currentNodes,
           kind: filters.kind,
           status: filters.status,
           page: filters.page ?? 1,
@@ -431,5 +530,57 @@ export async function resolveVisualAssistantApproval(
         body: { decision, canvas_revision: canvasRevision },
       },
     ),
+  );
+}
+
+export async function getNodeOutput(
+  projectId: string,
+  nodeId: string,
+  outputId: string,
+) {
+  return unwrap(
+    await api.GET(
+      "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}",
+      {
+        params: {
+          path: { project_id: projectId, node_id: nodeId, output_id: outputId },
+        },
+      },
+    ),
+  );
+}
+export async function deleteNodeOutput(
+  projectId: string,
+  nodeId: string,
+  outputId: string,
+  revision: number,
+) {
+  return unwrap(
+    await api.DELETE(
+      "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}",
+      {
+        params: {
+          path: { project_id: projectId, node_id: nodeId, output_id: outputId },
+          query: { expected_revision: revision },
+        },
+      },
+    ),
+  );
+}
+
+export async function uploadMaterialNode(
+  projectId: string,
+  file: File,
+  revision: number,
+  position: { x: number; y: number },
+) {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("expected_revision", String(revision));
+  form.append("x", String(position.x));
+  form.append("y", String(position.y));
+  return fetchApiJson<VisualCanvasDocument>(
+    `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}/node-uploads`,
+    { method: "POST", body: form },
   );
 }

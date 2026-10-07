@@ -177,18 +177,22 @@ export function CanvasNodeInspector({
       task.data.result_asset_id &&
       task.data.result_asset_id !== node.asset_id
     ) {
-      onPatch({ asset_id: task.data.result_asset_id }, true);
+      void client.invalidateQueries({
+        queryKey: visualWorkshopQueryKeys.canvas(projectId),
+      });
     }
-  }, [node.asset_id, onPatch, task.data]);
+  }, [client, projectId, task.data, node.asset_id]);
   useEffect(() => {
     if (
       batch.data?.status === "completed" &&
       batch.data.result_asset_id &&
       batch.data.result_asset_id !== node.asset_id
     ) {
-      onPatch({ asset_id: batch.data.result_asset_id }, true);
+      void client.invalidateQueries({
+        queryKey: visualWorkshopQueryKeys.canvas(projectId),
+      });
     }
-  }, [batch.data, node.asset_id, onPatch]);
+  }, [batch.data, client, projectId, node.asset_id]);
 
   const Icon = mediaIcon(node.kind);
   const isAttachedComposer = embedded && tab === "generate";
@@ -264,10 +268,7 @@ export function CanvasNodeInspector({
               onTaskLinked(created.id);
               return;
             }
-            return onPatch(
-              { generation_task_id: created.id, asset_id: null },
-              true,
-            );
+            return onPatch({ generation_task_id: created.id }, true);
           }}
           onBatchCreated={onBatchCreated}
         />

@@ -20,6 +20,7 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.models import (
@@ -105,6 +106,7 @@ async def _cleanup(provider_id: str, project_id: str) -> None:
         await session.execute(
             delete(VisualGenerationTask).where(VisualGenerationTask.provider_id == provider_id)
         )
+        await session.execute(delete(VisualNodeOutput))
         await session.execute(delete(VisualAsset).where(VisualAsset.project_id == project_id))
         await session.execute(
             delete(VisualWorkshopProject).where(VisualWorkshopProject.id == project_id)

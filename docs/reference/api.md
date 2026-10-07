@@ -1,5 +1,9 @@
 # API 参考
 
+## 视觉创作工坊节点输出
+
+项目看板与画布共用节点和输入引用；输出历史、上传版本、文本版本、最终版本 CAS 与有序多图协议见 [视觉项目看板 API](visual-project-board.md)。新增接口使用 `/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` 等项目内路径，按当前 Workspace 和视觉工坊权限校验。
+
 ## 创意工坊
 
 `/v1/creative-workshop` 只在同一部署内共享。已登录用户凭 `content.read` 浏览公开创作；

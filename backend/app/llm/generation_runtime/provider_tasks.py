@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 
+from app.llm.generation_runtime.driver import ImmediateGenerationResult
 from app.llm.generation_runtime.media import GenerationMaterializationError
 from app.llm.providers import (
     create_image_task,
@@ -21,6 +22,7 @@ from app.llm.providers._senseaudio import (
     sanitize_provider_message,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError, upload_temporary_media
+from app.llm.providers.volcengine_image import generate_image
 from app.runtime.outbound_urls import require_safe_provider_base_url
 
 MAX_PROVIDER_CONTENT_BYTES = 64 * 1024 * 1024
@@ -33,7 +35,7 @@ def safe_generation_error(exc: Exception) -> str:
     if isinstance(exc, (GenerationMaterializationError, SenseAudioProviderError, ValueError)):
         return sanitize_provider_message(str(exc))
     if isinstance(exc, httpx.TimeoutException):
-        return "SenseAudio 请求超时"
+        return "供应商请求超时"
     return f"任务处理失败（{type(exc).__name__}）"
 
 
@@ -50,11 +52,22 @@ async def submit_generation_task(
     model_slug: str,
     payload: dict[str, Any],
     image_reference: str | None = None,
+    image_references: list[str] | None = None,
     video_content: list[dict[str, object]] | None = None,
     audio_reference_urls: list[str] | None = None,
-) -> str:
+) -> str | ImmediateGenerationResult:
     """Submit a normalized image, video, music, or sound-effect task."""
     base_url = require_safe_provider_base_url(base_url)
+    if provider_kind == "volcengine_image":
+        return ImmediateGenerationResult(
+            await generate_image(
+                base_url=base_url,
+                api_key=api_key,
+                model=model_slug,
+                payload=payload,
+                references=image_references or ([image_reference] if image_reference else []),
+            )
+        )
     if provider_kind == "senseaudio_image":
         return await create_image_task(
             base_url=base_url,

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectCreateIn,
     VisualWorkshopProjectListOut,
@@ -147,6 +148,9 @@ class VisualWorkshopProjects:
             workspace_id=self.workspace_id,
             legacy_paths=legacy_paths,
         ):
+            await self.session.execute(
+                delete(VisualNodeOutput).where(VisualNodeOutput.project_id == project_id)
+            )
             await delete_revisioned_project(
                 self.session,
                 VisualWorkshopProject,

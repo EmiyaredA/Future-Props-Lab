@@ -2,6 +2,7 @@ from app.llm.generation_runtime.driver import (
     GenerationTaskContext,
     GenerationTaskDriver,
     GenerationTaskStore,
+    ImmediateGenerationResult,
 )
 from app.llm.generation_runtime.media import (
     GenerationMaterializationError,
@@ -23,6 +24,7 @@ __all__ = [
     "GenerationTaskContext",
     "GenerationTaskDriver",
     "GenerationTaskStore",
+    "ImmediateGenerationResult",
     "assert_public_https",
     "download_generated_media",
     "generated_type",

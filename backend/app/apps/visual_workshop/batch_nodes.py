@@ -5,7 +5,7 @@ from uuid import uuid4
 from sqlalchemy import update
 
 from app.apps.visual_workshop.generation_common import GenerationError
-from app.apps.visual_workshop.models import VisualCanvasDocument
+from app.apps.visual_workshop.models import VisualCanvasDocument, VisualGenerationTask
 from app.runtime.time import utc_now
 
 
@@ -28,14 +28,27 @@ async def attach_grid_nodes(
         raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
     root["generation_batch_id"] = batch_id
     root["generation_task_id"] = task_ids[0]
-    root["asset_id"] = None
+    await service.session.execute(
+        update(VisualGenerationTask)
+        .where(VisualGenerationTask.id == task_ids[0])
+        .values(canvas_node_id=node_id)
+    )
     side = 2 if grid_size == 4 else 3
     width, height, gap = 320, 214, 24
     for index, task_id in enumerate(task_ids[1:], start=1):
         col, line = index % side, index // side
+        child_id = f"image-{uuid4()}"
+        await service.session.execute(
+            update(VisualGenerationTask)
+            .where(VisualGenerationTask.id == task_id)
+            .values(canvas_node_id=child_id)
+        )
         nodes.append(
             {
-                "id": f"image-{uuid4()}",
+                "id": child_id,
+                "category_id": root.get("category_id"),
+                "group": root.get("group"),
+                "tags": root.get("tags", []),
                 "kind": "image",
                 "title": f"{root.get('title') or '图片'} {index + 1}",
                 "position": {

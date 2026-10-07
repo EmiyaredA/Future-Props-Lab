@@ -8,6 +8,7 @@ from app.llm.schemas.model_supplier import ModelSupplierOut
 from app.runtime.outbound_urls import normalize_provider_base_url, normalize_provider_websocket_url
 
 ProviderKind = Literal[
+    "volcengine_image",
     "openai",
     "anthropic",
     "senseaudio_image",

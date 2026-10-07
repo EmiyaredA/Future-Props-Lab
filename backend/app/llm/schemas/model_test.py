@@ -217,7 +217,7 @@ class ModelTestGenerationTaskOut(BaseModel):
     id: str
     provider_id: str | None
     model_id: str | None
-    provider_kind: Literal["senseaudio_image", "senseaudio_video"]
+    provider_kind: Literal["senseaudio_image", "volcengine_image", "senseaudio_video"]
     kind: Literal["image", "video"]
     provider_name: str
     model_slug: str

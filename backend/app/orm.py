@@ -94,6 +94,7 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
@@ -226,6 +227,7 @@ _ = (
     VisualAssistantMessage,
     VisualAssistantMessageAsset,
     VisualCanvasDocument,
+    VisualNodeOutput,
     GalgameAssetMetadata,
     GalgameAssetSettings,
     GalgameProjectAssetReference,

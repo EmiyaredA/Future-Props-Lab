@@ -67,7 +67,11 @@ export function cloneCanvasSelection(
   const edges = copy.edges.map((edge) => ({
     ...edge,
     id: `edge-${crypto.randomUUID()}`,
-    source_node_id: ids.get(edge.source_node_id)!,
+    // A fixed version retains its owner; the copy continues referencing that exact output.
+    source_node_id:
+      edge.binding === "fixed"
+        ? edge.source_node_id
+        : ids.get(edge.source_node_id)!,
     target_node_id: ids.get(edge.target_node_id)!,
   }));
   return { nodes, edges };

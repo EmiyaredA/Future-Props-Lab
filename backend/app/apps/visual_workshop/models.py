@@ -51,6 +51,7 @@ class VisualCanvasDocument(Base):
     )
     nodes: Mapped[list[dict]] = mapped_column(JSON, default=list)
     edges: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    categories: Mapped[list[dict]] = mapped_column(JSON, default=list)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 

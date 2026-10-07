@@ -63,6 +63,34 @@ class Visual:
         'Apply Canvas Operations. POST /v1/visual-workshop/projects/{project_id}/canvas/operations'
         return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/canvas/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VisualCanvasDocumentOut)
 
+    def upload_material_node(self, *, project_id: str, body: models.Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post | dict, files: dict | list | None = None) -> models.VisualCanvasDocumentOut:
+        'Upload Material Node. POST /v1/visual-workshop/projects/{project_id}/node-uploads'
+        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/node-uploads', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.VisualCanvasDocumentOut)
+
+    def set_node_final_output(self, *, project_id: str, node_id: str, body: models.VisualNodeFinalOutputIn | dict) -> models.VisualCanvasDocumentOut:
+        'Set Node Final Output. PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output'
+        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='application/json', response_type=models.VisualCanvasDocumentOut)
+
+    def upload_node_output(self, *, project_id: str, node_id: str, body: models.Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post | dict, files: dict | list | None = None) -> models.VisualCanvasDocumentOut:
+        'Upload Node Output. POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads'
+        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.VisualCanvasDocumentOut)
+
+    def list_node_outputs(self, *, project_id: str, node_id: str, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.VisualNodeOutputListOut:
+        'List Node Outputs. GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.VisualNodeOutputListOut)
+
+    def add_node_output(self, *, project_id: str, node_id: str, body: models.VisualNodeOutputCreateIn | dict) -> models.VisualCanvasDocumentOut:
+        'Add Node Output. POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs'
+        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='application/json', response_type=models.VisualCanvasDocumentOut)
+
+    def delete_node_output(self, *, project_id: str, node_id: str, output_id: str, expected_revision: int) -> models.VisualCanvasDocumentOut:
+        'Delete Node Output. DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}'
+        return self._client._call('DELETE', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id), ('output_id', 'path', output_id), ('expected_revision', 'query', expected_revision)], response_type=models.VisualCanvasDocumentOut)
+
+    def get_node_output(self, *, project_id: str, node_id: str, output_id: str) -> models.VisualNodeOutputOut:
+        'Get Node Output. GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id), ('output_id', 'path', output_id)], response_type=models.VisualNodeOutputOut)
+
     def reveal_project_folder(self, *, project_id: str) -> models.ProjectFolderOpenOut:
         'Reveal Project Folder. POST /v1/visual-workshop/projects/{project_id}/open-folder'
         return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/open-folder', parameters=[('project_id', 'path', project_id)], response_type=models.ProjectFolderOpenOut)
@@ -126,6 +154,34 @@ class AsyncVisual:
     async def apply_canvas_operations(self, *, project_id: str, body: models.VisualOperationsIn | dict) -> models.VisualCanvasDocumentOut:
         'Apply Canvas Operations. POST /v1/visual-workshop/projects/{project_id}/canvas/operations'
         return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/canvas/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VisualCanvasDocumentOut)
+
+    async def upload_material_node(self, *, project_id: str, body: models.Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post | dict, files: dict | list | None = None) -> models.VisualCanvasDocumentOut:
+        'Upload Material Node. POST /v1/visual-workshop/projects/{project_id}/node-uploads'
+        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/node-uploads', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.VisualCanvasDocumentOut)
+
+    async def set_node_final_output(self, *, project_id: str, node_id: str, body: models.VisualNodeFinalOutputIn | dict) -> models.VisualCanvasDocumentOut:
+        'Set Node Final Output. PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output'
+        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='application/json', response_type=models.VisualCanvasDocumentOut)
+
+    async def upload_node_output(self, *, project_id: str, node_id: str, body: models.Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post | dict, files: dict | list | None = None) -> models.VisualCanvasDocumentOut:
+        'Upload Node Output. POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads'
+        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.VisualCanvasDocumentOut)
+
+    async def list_node_outputs(self, *, project_id: str, node_id: str, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.VisualNodeOutputListOut:
+        'List Node Outputs. GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.VisualNodeOutputListOut)
+
+    async def add_node_output(self, *, project_id: str, node_id: str, body: models.VisualNodeOutputCreateIn | dict) -> models.VisualCanvasDocumentOut:
+        'Add Node Output. POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs'
+        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='application/json', response_type=models.VisualCanvasDocumentOut)
+
+    async def delete_node_output(self, *, project_id: str, node_id: str, output_id: str, expected_revision: int) -> models.VisualCanvasDocumentOut:
+        'Delete Node Output. DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}'
+        return await self._client._call('DELETE', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id), ('output_id', 'path', output_id), ('expected_revision', 'query', expected_revision)], response_type=models.VisualCanvasDocumentOut)
+
+    async def get_node_output(self, *, project_id: str, node_id: str, output_id: str) -> models.VisualNodeOutputOut:
+        'Get Node Output. GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id), ('output_id', 'path', output_id)], response_type=models.VisualNodeOutputOut)
 
     async def reveal_project_folder(self, *, project_id: str) -> models.ProjectFolderOpenOut:
         'Reveal Project Folder. POST /v1/visual-workshop/projects/{project_id}/open-folder'

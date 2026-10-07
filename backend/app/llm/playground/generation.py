@@ -17,6 +17,7 @@ from app.llm.playground.generation_assets import (
     ModelTestGenerationAssets,
 )
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
+from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
 from app.llm.schemas.model_test import (
     ModelTestGenerationCreateIn,
     ModelTestGenerationOptionListOut,
@@ -85,7 +86,12 @@ class ModelTestGeneration:
             provider is None
             or not provider.enabled
             or not model.enabled
-            or provider.kind != expected_provider_kind
+            or provider.kind
+            not in (
+                {expected_provider_kind, "volcengine_image"}
+                if kind == "image"
+                else {expected_provider_kind}
+            )
         ):
             raise ModelTestGenerationError(
                 "当前生成模型不可用", code="model_unavailable", status=409
@@ -93,6 +99,10 @@ class ModelTestGeneration:
         if not provider.api_key_ciphertext:
             raise ModelTestGenerationError(
                 "供应商尚未配置 API Key", code="missing_api_key", status=409
+            )
+        if provider.kind == "volcengine_image" and model.slug != SEEDREAM_MODEL:
+            raise ModelTestGenerationError(
+                "当前方舟图片适配仅支持 Seedream 4.5", code="unsupported_model"
             )
         return model, provider
 
@@ -104,7 +114,9 @@ class ModelTestGeneration:
                 .where(
                     ModelProvider.enabled.is_(True),
                     ModelEntry.enabled.is_(True),
-                    ModelProvider.kind.in_(("senseaudio_image", "senseaudio_video")),
+                    ModelProvider.kind.in_(
+                        ("senseaudio_image", "volcengine_image", "senseaudio_video")
+                    ),
                 )
                 .order_by(ModelProvider.sort_order, ModelEntry.sort_order)
             )
@@ -115,11 +127,17 @@ class ModelTestGeneration:
                     id=model.id,
                     provider_id=provider.id,
                     provider_name=provider.name,
-                    kind="image" if provider.kind == "senseaudio_image" else "video",
+                    kind="image"
+                    if provider.kind in {"senseaudio_image", "volcengine_image"}
+                    else "video",
                     slug=model.slug,
                     label=model.label or model.slug,
                     description=model.description,
-                    sizes=list(IMAGE_MODEL_SIZES.get(model.slug, ())),
+                    sizes=list(
+                        SEEDREAM_SIZES
+                        if provider.kind == "volcengine_image"
+                        else IMAGE_MODEL_SIZES.get(model.slug, ())
+                    ),
                 )
                 for model, provider in rows
             ]
@@ -135,7 +153,15 @@ class ModelTestGeneration:
         model, provider = await self._model(body.model_id, body.kind)
         payload = body.model_dump(mode="json")
         if isinstance(body, ModelTestImageGenerationIn):
-            sizes = IMAGE_MODEL_SIZES.get(model.slug)
+            if provider.kind == "volcengine_image" and body.seed is not None:
+                raise ModelTestGenerationError(
+                    "Seedream 4.5 不支持指定随机种子", code="unsupported_parameter"
+                )
+            sizes = (
+                SEEDREAM_SIZES
+                if provider.kind == "volcengine_image"
+                else IMAGE_MODEL_SIZES.get(model.slug)
+            )
             if not sizes or body.size not in sizes:
                 raise ModelTestGenerationError(
                     "当前模型不支持所选图片尺寸", code="unsupported_size"

@@ -1,0 +1,109 @@
+"""Validated file staging followed by one short output/CAS transaction."""
+
+from app.apps.visual_workshop.canvas import VisualCanvasDocuments
+from app.apps.visual_workshop.outputs.history import NodeOutputs, OutputError
+from app.apps.visual_workshop.outputs.schemas import VisualNodeOutputCreateIn
+from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
+from app.capabilities.asset_store import IncomingFile
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.policy import ALLOWED_FILES
+from app.runtime.config import Settings
+from app.runtime.ids import new_id
+from app.runtime.revisions import RevisionConflictError
+
+
+async def upload_version(
+    outputs: NodeOutputs,
+    settings: Settings,
+    project_id: str,
+    node_id: str,
+    upload: IncomingFile,
+    expected_revision: int,
+):
+    canvas, node = await outputs.document(project_id, node_id)
+    if node["kind"] == "text":
+        raise OutputError("文本节点请使用保存版本")
+    if canvas.revision != expected_revision:
+        await outputs.claim(canvas, expected_revision)
+    extensions = {
+        extension for extension, (kind, _) in ALLOWED_FILES.items() if kind == node["kind"]
+    }
+    library = AssetLibrary(outputs.session, settings)
+    asset = None
+    try:
+        asset = await library.store_upload(
+            upload,
+            workspace_id=outputs.workspace_id,
+            visual_project_id=project_id,
+            allowed_extensions=extensions,
+            commit=False,
+        )
+        await outputs.add(
+            project_id,
+            node_id,
+            VisualNodeOutputCreateIn(expected_revision=expected_revision, asset_id=asset.id),
+        )
+    except Exception:
+        path = library.storage.path_for(asset) if asset else None
+        await outputs.session.rollback()
+        if path:
+            path.unlink(missing_ok=True)
+        raise
+
+
+async def upload_material(
+    session,
+    settings: Settings,
+    workspace_id: str,
+    project_id: str,
+    upload: IncomingFile,
+    expected_revision: int,
+    *,
+    x: float = 0,
+    y: float = 0,
+):
+    documents = VisualCanvasDocuments(session)
+    current = await documents.get(project_id)
+    if current.revision != expected_revision:
+        raise RevisionConflictError(
+            expected_revision, current.revision, current.model_dump(mode="json")
+        )
+    library = AssetLibrary(session, settings)
+    asset = None
+    try:
+        asset = await library.store_upload(
+            upload,
+            workspace_id=workspace_id,
+            visual_project_id=project_id,
+            allowed_extensions={
+                extension
+                for extension, (kind, _) in ALLOWED_FILES.items()
+                if kind in {"image", "audio", "video"}
+            },
+            commit=False,
+        )
+        result = await documents.replace(
+            project_id,
+            VisualCanvasDocumentPutIn(
+                expected_revision=expected_revision,
+                nodes=[
+                    *current.nodes,
+                    {
+                        "id": new_id(),
+                        "kind": asset.media_kind,
+                        "title": asset.display_name,
+                        "position": {"x": x, "y": y},
+                        "asset_id": asset.id,
+                    },
+                ],
+                edges=current.edges,
+            ),
+        )
+        await session.commit()
+        return result
+    except Exception:
+        path = library.storage.path_for(asset) if asset else None
+        await session.rollback()
+        if path:
+            path.unlink(missing_ok=True)
+        raise

@@ -580,3 +580,9 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 桌宠编辑器的 `editor-layout.css` 拥有三栏、1200px 以下的列表／预览／属性切换与舞台布局；`editor-controls.css` 拥有字段、自绘滑块、按钮及基于主题变量的 Radix 单选菜单；`workshop.css` 拥有项目列表状态与项目弹窗。紧凑面板只改变 CSS 可见性，不重建舞台或保存 UI 状态。`SkinUpload.tsx` 提供有名称、可键盘触发的 PNG 上传适配，文件继续走原业务用例。`useChatHistoryScroll.ts` 管理阅读位置、历史前插补偿和距底部 48px 内的新回复跟随，聊天请求与分页状态仍归 `ChatWindow.tsx`。`web/e2e/desktop-pet-ui.spec.ts` 覆盖六个编辑步骤、项目弹窗、明暗主题与菜单边界，默认使用合成数据包，可通过环境变量显式提供本地角色包作目视验收。
 `desktop/scripts/inspect-pet-ui.cjs` 随隔离桌宠烟测检查菜单、主题、悬停操作、聊天阅读位置及临时读取失败后的恢复，截图输出沿用烟测的显式目标目录。
+
+## 视觉项目看板与输出历史
+
+`backend/app/apps/visual_workshop/outputs/` 拥有节点输出 ORM、历史分页、最终版本 CAS、输入解析与提交快照、上传事务及快照重映射；`routes/outputs.py` 只负责协议适配。`canvas.py` 保留节点身份、分类与连线整体 CAS，兼容旧素材写入并统一登记版本。`generation_runner.py` 在落盘后短事务中幂等归档输出。`web/src/features/visual-workshop/board/` 拥有项目素材树、创作工作台、状态分组、历史预览与输入选择；画布控制器统一持有草稿、选择与视口。
+
+`backend/app/llm/providers/volcengine_image.py` 拥有方舟 Seedream 4.5 原生图片数组协议。共享 `generation_runtime/driver.py` 接收同步图片结果并持久化下载地址，提交中断禁止重提。迁移 `r0086_visual_node_outputs` 回填明确关联的历史，`r0087_volcengine_images` 扩展供应商枚举，保留旧模型凭证与任务数据。

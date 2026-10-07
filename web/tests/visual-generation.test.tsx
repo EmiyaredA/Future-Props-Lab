@@ -215,6 +215,9 @@ beforeEach(() => {
         provider_id: "provider-image",
         provider_name: "SenseAudio 图片生成",
         kind: "image",
+        max_reference_images: 1,
+        supports_seed: true,
+        max_prompt_length: 6000,
         slug: "senseaudio-image-2.0-260319",
         label: "SenseAudio Image 2.0",
         description: "高清图片生成",
@@ -225,6 +228,9 @@ beforeEach(() => {
         provider_id: "provider-video",
         provider_name: "SenseAudio 视频生成",
         kind: "video",
+        max_reference_images: 1,
+        supports_seed: true,
+        max_prompt_length: 6000,
         slug: "doubao-seedance-2-0-260128",
         label: "Doubao Seedance 2.0",
         description: "视频生成",
@@ -358,7 +364,8 @@ test("creates an image task with model-linked sizes and a project reference", as
       prompt: "[参考图.png] 电影感的未来城市",
       size: "1024x1024",
       seed: null,
-      reference_asset_id: "asset-1",
+      reference_asset_id: null,
+      reference_asset_ids: ["asset-1"],
     }),
   );
   expect(await screen.findByText(/任务已提交/)).toBeInTheDocument();
@@ -440,7 +447,8 @@ test("uses the compact image node composer with reference, size, and seed contro
     prompt: "[参考图.png] 电影感的未来城市",
     size: "1536x864",
     seed: 42,
-    reference_asset_id: "asset-1",
+    reference_asset_id: null,
+    reference_asset_ids: ["asset-1"],
   });
   expect(await screen.findByText(/已提交 3 个生成任务/)).toBeInTheDocument();
 });
@@ -528,6 +536,7 @@ test("does not resolve prompt references from unselected project files", async (
       size: "1024x1024",
       seed: null,
       reference_asset_id: null,
+      reference_asset_ids: [],
     }),
   );
 });
@@ -879,6 +888,9 @@ test("retains music references while sound-effect mode disables them", async () 
         provider_id: "provider-audio",
         provider_name: "SenseAudio 音频生成",
         kind: "audio",
+        max_reference_images: 1,
+        supports_seed: true,
+        max_prompt_length: 6000,
         slug: "music-generation",
         label: "Music Generation",
         description: "音乐生成",
@@ -889,6 +901,9 @@ test("retains music references while sound-effect mode disables them", async () 
         provider_id: "provider-audio",
         provider_name: "SenseAudio 音频生成",
         kind: "audio",
+        max_reference_images: 1,
+        supports_seed: true,
+        max_prompt_length: 6000,
         slug: "sfx-generation",
         label: "SFX Generation",
         description: "音效生成",

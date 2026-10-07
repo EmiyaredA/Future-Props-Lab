@@ -1,6 +1,10 @@
 import type { ProviderInput } from "@features/models/api";
 
 export const providerMetadata = {
+  volcengine_image: {
+    label: "火山方舟图片",
+    optionLabel: "火山方舟 · Seedream 原生多图",
+  },
   openai: { label: "OpenAI 兼容", optionLabel: "OpenAI 兼容" },
   anthropic: { label: "Anthropic", optionLabel: "Anthropic" },
   senseaudio_image: {

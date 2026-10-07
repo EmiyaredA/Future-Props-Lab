@@ -7,6 +7,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
@@ -19,6 +20,7 @@ PNG = b"\x89PNG\r\n\x1a\nfolder-archive"
 
 async def _reset_library() -> None:
     async with SessionLocal() as session:
+        await session.execute(delete(VisualNodeOutput))
         await session.execute(delete(VisualAsset))
         await session.execute(delete(VisualAssetFolder))
         await session.commit()

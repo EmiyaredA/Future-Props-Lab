@@ -11,9 +11,9 @@ class Generation:
     def __init__(self, client):
         self._client = client
 
-    def list_generation_batches(self, *, project_id: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.GenerationBatchListOut:
+    def list_generation_batches(self, *, project_id: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, current_nodes: bool | Unset = UNSET) -> models.GenerationBatchListOut:
         'List Generation Batches. GET /v1/visual-workshop/generation-batches'
-        return self._client._call('GET', '/v1/visual-workshop/generation-batches', parameters=[('project_id', 'query', project_id), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.GenerationBatchListOut)
+        return self._client._call('GET', '/v1/visual-workshop/generation-batches', parameters=[('project_id', 'query', project_id), ('page', 'query', page), ('page_size', 'query', page_size), ('current_nodes', 'query', current_nodes)], response_type=models.GenerationBatchListOut)
 
     def get_generation_batch(self, *, batch_id: str) -> models.GenerationBatchOut:
         'Get Generation Batch. GET /v1/visual-workshop/generation-batches/{batch_id}'
@@ -27,9 +27,9 @@ class Generation:
         'Generation Options. GET /v1/visual-workshop/generation-options'
         return self._client._call('GET', '/v1/visual-workshop/generation-options', parameters=[], response_type=models.GenerationOptionsOut)
 
-    def list_generation_tasks(self, *, project_id: str | None | Unset = UNSET, canvas_node_id: str | None | Unset = UNSET, kind: Literal['image', 'video', 'audio'] | None | Unset = UNSET, status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed'] | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.GenerationTaskListOut:
+    def list_generation_tasks(self, *, project_id: str | None | Unset = UNSET, canvas_node_id: str | None | Unset = UNSET, kind: Literal['image', 'video', 'audio'] | None | Unset = UNSET, status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed'] | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, current_nodes: bool | Unset = UNSET) -> models.GenerationTaskListOut:
         'List Generation Tasks. GET /v1/visual-workshop/generation-tasks'
-        return self._client._call('GET', '/v1/visual-workshop/generation-tasks', parameters=[('project_id', 'query', project_id), ('canvas_node_id', 'query', canvas_node_id), ('kind', 'query', kind), ('status', 'query', status), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.GenerationTaskListOut)
+        return self._client._call('GET', '/v1/visual-workshop/generation-tasks', parameters=[('project_id', 'query', project_id), ('canvas_node_id', 'query', canvas_node_id), ('kind', 'query', kind), ('status', 'query', status), ('page', 'query', page), ('page_size', 'query', page_size), ('current_nodes', 'query', current_nodes)], response_type=models.GenerationTaskListOut)
 
     def get_generation_task(self, *, task_id: str) -> models.GenerationTaskOut:
         'Get Generation Task. GET /v1/visual-workshop/generation-tasks/{task_id}'
@@ -55,9 +55,9 @@ class AsyncGeneration:
     def __init__(self, client):
         self._client = client
 
-    async def list_generation_batches(self, *, project_id: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.GenerationBatchListOut:
+    async def list_generation_batches(self, *, project_id: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, current_nodes: bool | Unset = UNSET) -> models.GenerationBatchListOut:
         'List Generation Batches. GET /v1/visual-workshop/generation-batches'
-        return await self._client._call('GET', '/v1/visual-workshop/generation-batches', parameters=[('project_id', 'query', project_id), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.GenerationBatchListOut)
+        return await self._client._call('GET', '/v1/visual-workshop/generation-batches', parameters=[('project_id', 'query', project_id), ('page', 'query', page), ('page_size', 'query', page_size), ('current_nodes', 'query', current_nodes)], response_type=models.GenerationBatchListOut)
 
     async def get_generation_batch(self, *, batch_id: str) -> models.GenerationBatchOut:
         'Get Generation Batch. GET /v1/visual-workshop/generation-batches/{batch_id}'
@@ -71,9 +71,9 @@ class AsyncGeneration:
         'Generation Options. GET /v1/visual-workshop/generation-options'
         return await self._client._call('GET', '/v1/visual-workshop/generation-options', parameters=[], response_type=models.GenerationOptionsOut)
 
-    async def list_generation_tasks(self, *, project_id: str | None | Unset = UNSET, canvas_node_id: str | None | Unset = UNSET, kind: Literal['image', 'video', 'audio'] | None | Unset = UNSET, status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed'] | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.GenerationTaskListOut:
+    async def list_generation_tasks(self, *, project_id: str | None | Unset = UNSET, canvas_node_id: str | None | Unset = UNSET, kind: Literal['image', 'video', 'audio'] | None | Unset = UNSET, status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed'] | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, current_nodes: bool | Unset = UNSET) -> models.GenerationTaskListOut:
         'List Generation Tasks. GET /v1/visual-workshop/generation-tasks'
-        return await self._client._call('GET', '/v1/visual-workshop/generation-tasks', parameters=[('project_id', 'query', project_id), ('canvas_node_id', 'query', canvas_node_id), ('kind', 'query', kind), ('status', 'query', status), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.GenerationTaskListOut)
+        return await self._client._call('GET', '/v1/visual-workshop/generation-tasks', parameters=[('project_id', 'query', project_id), ('canvas_node_id', 'query', canvas_node_id), ('kind', 'query', kind), ('status', 'query', status), ('page', 'query', page), ('page_size', 'query', page_size), ('current_nodes', 'query', current_nodes)], response_type=models.GenerationTaskListOut)
 
     async def get_generation_task(self, *, task_id: str) -> models.GenerationTaskOut:
         'Get Generation Task. GET /v1/visual-workshop/generation-tasks/{task_id}'

@@ -44,6 +44,7 @@ class ImageGenerationBatchCreateIn(BaseModel):
     size: str = Field(default="1024x1024", max_length=32)
     seed: int | None = Field(default=None, ge=0)
     reference_asset_id: str | None = None
+    reference_asset_ids: list[str] = Field(default_factory=list, max_length=14)
     grid_size: Literal[4, 9]
     grid_output: Literal["nodes", "composite"] = "nodes"
     canvas_node_id: str | None = Field(default=None, min_length=1, max_length=64)

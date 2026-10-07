@@ -37,8 +37,13 @@ class ProviderTaskStatus(Protocol):
     error_message: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class ImmediateGenerationResult:
+    result_url: str
+
+
 TerminalHook = Callable[[AsyncSession, Any], None]
-SubmitHook = Callable[[GenerationTaskContext], Awaitable[str]]
+SubmitHook = Callable[[GenerationTaskContext], Awaitable[str | ImmediateGenerationResult]]
 PollHook = Callable[[GenerationTaskContext], Awaitable[ProviderTaskStatus]]
 MaterializeHook = Callable[[str, str], Awaitable[None]]
 ErrorMapper = Callable[[Exception], str]
@@ -260,6 +265,10 @@ class GenerationTaskDriver:
                 return
             if task.status == "queued":
                 provider_task_id = await self.submit(task)
+                if isinstance(provider_task_id, ImmediateGenerationResult):
+                    await self.store.mark_materializing(task.task_id, provider_task_id.result_url)
+                    await self.materialize(task.task_id, provider_task_id.result_url)
+                    return
                 await self.store.mark_submitted(task.task_id, provider_task_id)
                 return
             if not task.provider_task_id:

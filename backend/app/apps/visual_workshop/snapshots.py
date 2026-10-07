@@ -13,11 +13,13 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.outputs.snapshots import export_outputs, import_outputs
 from app.apps.visual_workshop.projects import project_out
 from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentPutIn,
     VisualProjectSnapshotImportOut,
     VisualWorkshopProjectCreateIn,
+    default_material_categories,
 )
 from app.capabilities.asset_store import (
     AssetStorage,
@@ -243,6 +245,8 @@ def _remap_canvas(
         if node.get("asset_id") is not None:
             node["asset_id"] = mapped_asset(node["asset_id"], f"canvas.nodes[{index}].asset_id")
         node["generation_task_id"] = None
+        if node["kind"] == "image":
+            node["generation_batch_id"] = None
         draft = node.get("generation_draft")
         if not isinstance(draft, dict):
             continue
@@ -321,7 +325,21 @@ class VisualWorkshopProjectSnapshots:
             )
         ).all()
         nodes = deepcopy(canvas.nodes or [])
+        node_ids = {node["id"] for node in nodes}
+        outputs = [
+            output
+            for output in await export_outputs(self.session, project_id)
+            if output["node_id"] in node_ids
+        ]
         used_ids = _canvas_asset_ids(nodes)
+        for output in outputs:
+            if output.get("asset_id"):
+                used_ids.add(output["asset_id"])
+            used_ids.update(
+                reference["asset_id"]
+                for reference in output["input_snapshot"]
+                if reference.get("asset_id")
+            )
         generated_output_ids = set(
             (
                 await self.session.execute(
@@ -359,6 +377,18 @@ class VisualWorkshopProjectSnapshots:
                 )
             )
             sources.append(SnapshotAssetSource(asset.id, self.storage.path_for(asset)))
+        # History remains a valid project-owned reference after a library tree entry is removed.
+        history_assets = await self.session.scalars(
+            select(VisualAsset).where(
+                VisualAsset.workspace_id == self.workspace_id, VisualAsset.id.in_(used_ids - seen)
+            )
+        )
+        for asset in history_assets:
+            seen.add(asset.id)
+            asset_records.append(
+                _asset_record(asset, folder_id=None, display_name=asset.display_name)
+            )
+            sources.append(SnapshotAssetSource(asset.id, self.storage.path_for(asset)))
         model_ids = {
             str(draft["model_id"])
             for node in nodes
@@ -369,7 +399,13 @@ class VisualWorkshopProjectSnapshots:
         payload = {
             "schema_version": 1,
             "project": {"title": project.title, "kind": project.kind, "status": project.status},
-            "canvas": {"nodes": nodes, "edges": deepcopy(canvas.edges or [])},
+            "canvas": {
+                "nodes": nodes,
+                "edges": deepcopy(canvas.edges or []),
+                "categories": canvas.categories
+                or [item.model_dump(mode="json") for item in default_material_categories()],
+            },
+            "outputs": outputs,
             "folders": [
                 {"id": row.id, "parent_id": row.parent_id, "name": row.name} for row in folders
             ],
@@ -430,6 +466,12 @@ class VisualWorkshopProjectSnapshots:
                 kind=create.kind,
                 status=status,
             )
+            outputs = import_outputs(
+                payload.get("outputs", []), nodes, edges, asset_ids, project.id
+            )
+            asset_kinds = {asset_ids[item["id"]]: item["media_kind"] for item in assets}
+            if any(row.asset_id and asset_kinds[row.asset_id] != row.kind for row in outputs):
+                raise ProjectSnapshotError("历史版本与素材类型不匹配")
             self.session.add(project)
             await self.session.flush()
             async with importing_project_layout(
@@ -476,8 +518,18 @@ class VisualWorkshopProjectSnapshots:
                         ),
                         expected_size=item["byte_size"],
                     )
+                await self.session.flush()
+                self.session.add_all(outputs)
                 self.session.add(
-                    VisualCanvasDocument(project_id=project.id, nodes=nodes, edges=edges)
+                    VisualCanvasDocument(
+                        project_id=project.id,
+                        nodes=nodes,
+                        edges=edges,
+                        categories=[
+                            item.model_dump(mode="json")
+                            for item in (canvas.categories or default_material_categories())
+                        ],
+                    )
                 )
             await self.session.refresh(project)
             return VisualProjectSnapshotImportOut(project=project_out(project), warnings=warnings)

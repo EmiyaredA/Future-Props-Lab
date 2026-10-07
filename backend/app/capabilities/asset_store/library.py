@@ -56,6 +56,7 @@ class AssetLibrary:
         motion_compositor_project_id: str | None = None,
         folder_id: str | None = None,
         allowed_extensions: set[str] | None = None,
+        commit: bool = True,
     ) -> VisualAsset:
         filename = Path(filename_override or upload.filename or "").name
         extension = Path(filename).suffix.lower()
@@ -135,8 +136,11 @@ class AssetLibrary:
                 byte_size=size,
             )
             self.session.add(row)
-            await self.session.commit()
-            await self.session.refresh(row)
+            if commit:
+                await self.session.commit()
+                await self.session.refresh(row)
+            else:
+                await self.session.flush()
             return row
         except Exception:
             temp_path.unlink(missing_ok=True)

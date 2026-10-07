@@ -186,6 +186,19 @@ class InferenceRunner(PollingTaskRunner):
             model_slug=task.model_slug,
             payload=payload,
             image_reference=image_reference,
+            image_references=[
+                await image_url(identity)
+                for identity in dict.fromkeys(
+                    [
+                        *payload.get("reference_asset_ids", []),
+                        *(
+                            [payload["reference_asset_id"]]
+                            if payload.get("reference_asset_id")
+                            else []
+                        ),
+                    ]
+                )
+            ],
             video_content=content,
             audio_reference_urls=audio_urls,
         )

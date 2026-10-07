@@ -1,6 +1,7 @@
 import { beforeEach, vi } from "vitest";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { cloneCanvasSelection } from "@features/visual-workshop/canvas/canvasClipboard";
 import { ApiError } from "@platform/api/client";
 import {
   createGenerationTask,
@@ -433,4 +434,31 @@ test("rejects an oversized group without changing the canvas or history", async 
   expect(container.querySelectorAll(".canvas-node")).toHaveLength(251);
   fireEvent.keyDown(surface, { key: "z", ctrlKey: true });
   expect(putVisualCanvas).not.toHaveBeenCalled();
+});
+
+test("copied fixed bindings retain the original output owner", () => {
+  const copied = cloneCanvasSelection(
+    {
+      nodes: initialNodes.slice(0, 2),
+      edges: [
+        {
+          id: "fixed",
+          source_node_id: "image",
+          target_node_id: "video",
+          binding: "fixed",
+          output_id: "image-v2",
+          purpose: "reference",
+        },
+      ],
+      origin: { x: 100, y: 100 },
+    },
+    { x: 1000, y: 1000 },
+  );
+  expect(copied.edges[0]).toMatchObject({
+    source_node_id: "image",
+    target_node_id: copied.nodes[1].id,
+    binding: "fixed",
+    output_id: "image-v2",
+  });
+  expect(copied.nodes[0].id).not.toBe("image");
 });

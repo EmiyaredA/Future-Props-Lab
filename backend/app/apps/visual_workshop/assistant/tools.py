@@ -412,6 +412,12 @@ async def _start_generation_on_canvas(
                 retryable=True,
             )
         try:
+            existing_id = task_payload.get("canvas_node_id") or node_payload.get("id")
+            existing = next((node for node in current.nodes if node.id == existing_id), None)
+            if existing:
+                task_payload.update(
+                    canvas_node_id=existing.id, expected_canvas_revision=current.revision
+                )
             body = _generation_input.validate_python(task_payload)
             task = await VisualGeneration(session).prepare_create(project_id, body)
             node = {
@@ -422,12 +428,17 @@ async def _start_generation_on_canvas(
                 "asset_id": None,
                 "generation_task_id": task.id,
             }
+            if existing:
+                node = {**existing.model_dump(mode="json"), "generation_task_id": task.id}
             canvas_body = VisualCanvasDocumentPutIn(
                 expected_revision=current.revision,
-                nodes=[*current.nodes, node],
+                nodes=[node if item.id == existing.id else item for item in current.nodes]
+                if existing
+                else [*current.nodes, node],
                 edges=current.edges,
             )
             updated = await documents.replace(project_id, canvas_body)
+            task.canvas_node_id = node["id"]
             if admission:
                 await admission(session, [task.id])
             await session.commit()
@@ -464,7 +475,7 @@ async def _start_generation_on_canvas(
         context.tool_call_id,
         "start_generation_on_canvas",
         True,
-        f"已创建 {body.kind} 生成任务 {task.id} 和画布占位节点 {node['id']}。",
+        f"已为画布节点 {node['id']} 创建 {body.kind} 生成记录 {task.id}。",
         data,
     )
 
@@ -566,7 +577,7 @@ def visual_agent_tools(
         ),
         _tool(
             "start_generation_on_canvas",
-            "创建图片或视频生成任务，并同时添加画布占位节点",
+            "为图片或视频节点创建生成记录；指定已有节点 ID 时沿用该节点，否则添加占位节点",
             {
                 "type": "object",
                 "properties": {"task": object_schema, "node": object_schema},

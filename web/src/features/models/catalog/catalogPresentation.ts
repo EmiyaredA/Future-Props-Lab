@@ -70,7 +70,8 @@ export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
     model.capabilities.includes("chat")
   )
     return "chat";
-  if (provider.kind === "senseaudio_image") return "image";
+  if (["senseaudio_image", "volcengine_image"].includes(provider.kind))
+    return "image";
   if (provider.kind === "senseaudio_video") return "video";
   if (
     ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(

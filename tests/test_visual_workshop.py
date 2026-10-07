@@ -10,6 +10,7 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
@@ -182,6 +183,7 @@ async def test_file_management_upload_folders_and_project_references() -> None:
         await session.execute(delete(VisualProjectAssetReference))
         await session.execute(delete(ThoughtKnowledgeBase))
         await session.execute(delete(ThoughtNote))
+        await session.execute(delete(VisualNodeOutput))
         await session.execute(delete(VisualAsset))
         await session.execute(delete(VisualAssetFolder))
         await session.execute(delete(VisualWorkshopProject))
@@ -302,6 +304,16 @@ async def test_file_management_upload_folders_and_project_references() -> None:
             params={"expected_revision": reference["revision"]},
         )
         assert removed.status_code == 200
+        deleted = await client.delete(
+            f"/v1/files/{asset['id']}", params={"expected_revision": asset["revision"]}
+        )
+        assert deleted.status_code == 409
+        # Output history owns its media after a project-library reference is removed.
+        cleared = await client.put(
+            f"/v1/visual-workshop/projects/{project['id']}/canvas",
+            json={"expected_revision": canvas.json()["revision"], "nodes": [], "edges": []},
+        )
+        assert cleared.status_code == 200, cleared.text
         deleted = await client.delete(
             f"/v1/files/{asset['id']}", params={"expected_revision": asset["revision"]}
         )

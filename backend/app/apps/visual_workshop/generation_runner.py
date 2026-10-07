@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.apps.visual_workshop.generation import ACTIVE_TASK_STATUSES
 from app.apps.visual_workshop.models import (
-    VisualCanvasDocument,
     VisualGenerationBatch,
     VisualGenerationTask,
 )
+from app.apps.visual_workshop.outputs.history import publish_generated_output
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.capabilities.media_rendering.image_grid import render_image_grid
@@ -22,6 +22,7 @@ from app.llm.generation_runtime import (
     GenerationTaskContext,
     GenerationTaskDriver,
     GenerationTaskStore,
+    ImmediateGenerationResult,
     assert_public_https,
     download_generated_media,
     generated_type,
@@ -147,31 +148,6 @@ class VisualGenerationRunner(PollingTaskRunner):
                     await session.commit()
                     return
                 if batch.grid_output == "nodes":
-                    task_assets = {task.id: task.result_asset_id for task in tasks}
-                    canvas_row = await session.get(VisualCanvasDocument, batch.project_id)
-                    if canvas_row is not None:
-                        nodes = [dict(node) for node in (canvas_row.nodes or [])]
-                        changed = False
-                        for node in nodes:
-                            if node.get("generation_batch_id") != batch.id:
-                                continue
-                            asset_id = task_assets.get(node.get("generation_task_id"))
-                            if asset_id and node.get("asset_id") != asset_id:
-                                node["asset_id"] = asset_id
-                                changed = True
-                        if changed:
-                            await session.execute(
-                                update(VisualCanvasDocument)
-                                .where(
-                                    VisualCanvasDocument.project_id == batch.project_id,
-                                    VisualCanvasDocument.revision == canvas_row.revision,
-                                )
-                                .values(
-                                    nodes=nodes,
-                                    revision=canvas_row.revision + 1,
-                                    updated_at=utc_now(),
-                                )
-                            )
                     batch.status = "completed"
                     batch.completed_at = batch.updated_at
                     await session.commit()
@@ -194,6 +170,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 source_items = list(batch.source_items or [])
                 asset_ids = [str(item.get("asset_id") or "") for item in source_items]
                 captions = [str(item.get("caption") or "") for item in source_items]
+                input_snapshot = source_items
             else:
                 tasks = list(
                     await session.scalars(
@@ -208,6 +185,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                     return
                 asset_ids = [str(task.result_asset_id) for task in ordered if task is not None]
                 captions = [""] * len(asset_ids)
+                input_snapshot = ordered[0].request_payload.get("input_snapshot", [])
             assets = [await session.get(VisualAsset, asset_id) for asset_id in asset_ids]
             if any(asset is None for asset in assets):
                 return
@@ -230,29 +208,14 @@ class VisualGenerationRunner(PollingTaskRunner):
                 batch = await session.get(VisualGenerationBatch, batch_id)
                 if batch is None or batch.result_asset_id:
                     return
-                if generation_node_id:
-                    canvas_row = await session.get(VisualCanvasDocument, project_id)
-                    if canvas_row is not None:
-                        nodes = [dict(node) for node in (canvas_row.nodes or [])]
-                        for node in nodes:
-                            if (
-                                node.get("id") == generation_node_id
-                                and node.get("generation_batch_id") == batch_id
-                            ):
-                                node["asset_id"] = existing.id
-                                break
-                        await session.execute(
-                            update(VisualCanvasDocument)
-                            .where(
-                                VisualCanvasDocument.project_id == project_id,
-                                VisualCanvasDocument.revision == canvas_row.revision,
-                            )
-                            .values(
-                                nodes=nodes,
-                                revision=canvas_row.revision + 1,
-                                updated_at=utc_now(),
-                            )
-                        )
+                await publish_generated_output(
+                    session,
+                    project_id,
+                    generation_node_id,
+                    existing.id,
+                    f"batch:{batch_id}",
+                    input_snapshot=input_snapshot,
+                )
                 batch.result_asset_id = existing.id
                 batch.status = "completed"
                 batch.completed_count = batch.grid_size
@@ -298,29 +261,14 @@ class VisualGenerationRunner(PollingTaskRunner):
                     )
                     session.add(asset)
                     await session.flush()
-                if generation_node_id:
-                    canvas_row = await session.get(VisualCanvasDocument, project_id)
-                    if canvas_row is not None:
-                        nodes = [dict(node) for node in (canvas_row.nodes or [])]
-                        for node in nodes:
-                            if (
-                                node.get("id") == generation_node_id
-                                and node.get("generation_batch_id") == batch_id
-                            ):
-                                node["asset_id"] = asset.id
-                                break
-                        await session.execute(
-                            update(VisualCanvasDocument)
-                            .where(
-                                VisualCanvasDocument.project_id == project_id,
-                                VisualCanvasDocument.revision == canvas_row.revision,
-                            )
-                            .values(
-                                nodes=nodes,
-                                revision=canvas_row.revision + 1,
-                                updated_at=utc_now(),
-                            )
-                        )
+                await publish_generated_output(
+                    session,
+                    project_id,
+                    generation_node_id,
+                    asset.id,
+                    f"batch:{batch_id}",
+                    input_snapshot=input_snapshot,
+                )
                 batch.result_asset_id = asset.id
                 batch.status = "completed"
                 batch.completed_count = batch.grid_size
@@ -343,7 +291,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                     batch.revision += 1
                     await session.commit()
 
-    async def _submit_context(self, task: GenerationTaskContext) -> str:
+    async def _submit_context(self, task: GenerationTaskContext) -> str | ImmediateGenerationResult:
         return await self._submit(
             provider_kind=task.provider_kind,
             base_url=task.base_url,
@@ -407,7 +355,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         model_slug: str,
         payload: dict,
         workspace_id: str,
-    ) -> str:
+    ) -> str | ImmediateGenerationResult:
         reference_filenames = payload.get("reference_filenames")
         if not isinstance(reference_filenames, dict):
             reference_filenames = {}
@@ -434,7 +382,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 payload=payload,
                 audio_reference_urls=reference_urls,
             )
-        if provider_kind == "senseaudio_image":
+        if provider_kind in {"senseaudio_image", "volcengine_image"}:
             reference_id = payload.get("reference_asset_id")
             reference = (
                 await self._asset_data_uri(str(reference_id), workspace_id)
@@ -448,6 +396,10 @@ class VisualGenerationRunner(PollingTaskRunner):
                 model_slug=model_slug,
                 payload=payload,
                 image_reference=reference,
+                image_references=[
+                    await self._asset_data_uri(str(asset_id), workspace_id)
+                    for asset_id in payload.get("reference_asset_ids", [])
+                ],
             )
 
         content: list[dict[str, object]] = []
@@ -535,7 +487,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         storage_key = uuid4().hex
         async with self.session_factory() as session:
             task = await self._load_task(session, task_id)
-            if task is None:
+            if task is None or task.result_asset_id:
                 return
             project_id = task.project_id
             workspace_id = task.workspace_id
@@ -549,8 +501,13 @@ class VisualGenerationRunner(PollingTaskRunner):
             size, media_kind, mime_type, extension = await self._download(result_url, temp_path)
             os.replace(temp_path, final_path)
             async with self.session_factory() as session:
+                await session.execute(
+                    update(VisualGenerationTask)
+                    .where(VisualGenerationTask.id == task_id)
+                    .values(revision=VisualGenerationTask.revision)
+                )
                 task = await self._load_task(session, task_id)
-                if task is None:
+                if task is None or task.result_asset_id:
                     final_path.unlink(missing_ok=True)
                     return
                 if media_kind != task.generation_kind:
@@ -570,6 +527,16 @@ class VisualGenerationRunner(PollingTaskRunner):
                 )
                 session.add(asset)
                 await session.flush()
+                output_node_id = await publish_generated_output(
+                    session,
+                    project_id,
+                    task.canvas_node_id,
+                    asset.id,
+                    f"task:{task.id}",
+                    task.id,
+                    task.request_payload.get("input_snapshot", []),
+                )
+                task.canvas_node_id = output_node_id or task.canvas_node_id
                 task.result_asset_id = asset.id
                 task.status = "completed"
                 task.progress = 100

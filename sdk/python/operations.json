@@ -187,6 +187,10 @@
     "method": "delete_conversation",
     "resource": "visual_assistant"
   },
+  "DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}": {
+    "method": "delete_node_output",
+    "resource": "visual"
+  },
   "GET /health": {
     "method": "health",
     "resource": "system"
@@ -1018,6 +1022,14 @@
   "GET /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
     "method": "get_conversation",
     "resource": "visual_assistant"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs": {
+    "method": "list_node_outputs",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}": {
+    "method": "get_node_output",
+    "resource": "visual"
   },
   "GET /v1/visual-workshop/projects/{project_id}/snapshot": {
     "method": "export_project_snapshot",
@@ -2047,6 +2059,18 @@
     "method": "create_image_composition",
     "resource": "generation"
   },
+  "POST /v1/visual-workshop/projects/{project_id}/node-uploads": {
+    "method": "upload_material_node",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads": {
+    "method": "upload_node_output",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs": {
+    "method": "add_node_output",
+    "resource": "visual"
+  },
   "POST /v1/visual-workshop/projects/{project_id}/open-folder": {
     "method": "reveal_project_folder",
     "resource": "visual"
@@ -2137,6 +2161,10 @@
   },
   "PUT /v1/visual-workshop/projects/{project_id}/canvas": {
     "method": "put_canvas",
+    "resource": "visual"
+  },
+  "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output": {
+    "method": "set_node_final_output",
     "resource": "visual"
   }
 }

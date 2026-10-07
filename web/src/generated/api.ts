@@ -7411,6 +7411,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/node-uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Material Node */
+        post: operations["upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Node Final Output */
+        put: operations["set_node_final_output_v1_visual_workshop_projects__project_id__nodes__node_id__final_output_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Node Output */
+        post: operations["upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Node Outputs */
+        get: operations["list_node_outputs_v1_visual_workshop_projects__project_id__nodes__node_id__outputs_get"];
+        put?: never;
+        /** Add Node Output */
+        post: operations["add_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Node Output */
+        get: operations["get_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs__output_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Node Output */
+        delete: operations["delete_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs__output_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/open-folder": {
         parameters: {
             query?: never;
@@ -8526,6 +8613,30 @@ export interface components {
         Body_upload_library_file_v1_director_desk_library_files_post: {
             /** Upload */
             upload: string;
+        };
+        /** Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post */
+        Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** File */
+            file: string;
+            /**
+             * X
+             * @default 0
+             */
+            x: number;
+            /**
+             * Y
+             * @default 0
+             */
+            y: number;
+        };
+        /** Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post */
+        Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** File */
+            file: string;
         };
         /** Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post */
         Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post: {
@@ -13684,14 +13795,31 @@ export interface components {
             kind: "image" | "video" | "audio";
             /** Label */
             label: string;
+            /**
+             * Max Prompt Length
+             * @default 2000
+             */
+            max_prompt_length: number | null;
+            /**
+             * Max Reference Images
+             * @default 1
+             */
+            max_reference_images: number;
             /** Provider Id */
             provider_id: string;
             /** Provider Name */
             provider_name: string;
+            /** Reference Mime Types */
+            reference_mime_types?: string[];
             /** Sizes */
             sizes?: string[];
             /** Slug */
             slug: string;
+            /**
+             * Supports Seed
+             * @default true
+             */
+            supports_seed: boolean | null;
         };
         /** GenerationOptionsOut */
         GenerationOptionsOut: {
@@ -13738,7 +13866,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "senseaudio_image" | "senseaudio_video" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "volcengine_image" | "senseaudio_image" | "senseaudio_video" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Provider Task Id */
@@ -13847,6 +13975,8 @@ export interface components {
             prompt: string;
             /** Reference Asset Id */
             reference_asset_id?: string | null;
+            /** Reference Asset Ids */
+            reference_asset_ids?: string[];
             /** Seed */
             seed?: number | null;
             /**
@@ -13872,6 +14002,8 @@ export interface components {
             prompt: string;
             /** Reference Asset Id */
             reference_asset_id?: string | null;
+            /** Reference Asset Ids */
+            reference_asset_ids?: string[];
             /** Seed */
             seed?: number | null;
             /**
@@ -15102,7 +15234,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "senseaudio_image" | "senseaudio_video";
+            provider_kind: "senseaudio_image" | "volcengine_image" | "senseaudio_video";
             /** Provider Name */
             provider_name: string;
             /** Request Payload */
@@ -16758,7 +16890,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
             /** Supplier Id */
@@ -16786,7 +16918,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Managed Fields */
             managed_fields?: string[];
             /** Models */
@@ -17152,7 +17284,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -18414,7 +18546,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -18450,7 +18582,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -20505,9 +20637,17 @@ export interface components {
         VisualCanvasAudioNode: {
             /** Asset Id */
             asset_id?: string | null;
+            /** Category Id */
+            category_id?: string | null;
+            /** Final Output Id */
+            final_output_id?: string | null;
+            /** Final Version */
+            final_version?: number | null;
             generation_draft?: components["schemas"]["VisualCanvasAudioGenerationDraft"] | null;
             /** Generation Task Id */
             generation_task_id?: string | null;
+            /** Group */
+            group?: string | null;
             /** Id */
             id: string;
             /**
@@ -20515,12 +20655,18 @@ export interface components {
              * @enum {string}
              */
             kind: "audio";
+            /** Output Sequence */
+            output_sequence?: number | null;
             position: components["schemas"]["VisualCanvasPosition"];
+            /** Tags */
+            tags?: string[];
             /** Title */
             title: string;
         };
         /** VisualCanvasDocumentOut */
         VisualCanvasDocumentOut: {
+            /** Categories */
+            categories?: components["schemas"]["VisualMaterialCategory"][];
             /** Edges */
             edges: components["schemas"]["VisualCanvasEdge"][];
             /** Nodes */
@@ -20534,6 +20680,8 @@ export interface components {
         };
         /** VisualCanvasDocumentPutIn */
         VisualCanvasDocumentPutIn: {
+            /** Categories */
+            categories?: components["schemas"]["VisualMaterialCategory"][] | null;
             /** Edges */
             edges?: components["schemas"]["VisualCanvasEdge"][];
             /** Expected Revision */
@@ -20543,8 +20691,22 @@ export interface components {
         };
         /** VisualCanvasEdge */
         VisualCanvasEdge: {
+            /**
+             * Binding
+             * @default final
+             * @enum {string}
+             */
+            binding: "final" | "fixed";
             /** Id */
             id: string;
+            /** Output Id */
+            output_id?: string | null;
+            /**
+             * Purpose
+             * @default reference
+             * @enum {string}
+             */
+            purpose: "reference" | "context" | "first_frame" | "last_frame";
             /** Source Node Id */
             source_node_id: string;
             /** Target Node Id */
@@ -20574,6 +20736,8 @@ export interface components {
             };
             /** Reference Asset Id */
             reference_asset_id?: string | null;
+            /** Reference Asset Ids */
+            reference_asset_ids?: string[];
             /** Seed */
             seed?: number | null;
             /**
@@ -20586,11 +20750,19 @@ export interface components {
         VisualCanvasImageNode: {
             /** Asset Id */
             asset_id?: string | null;
+            /** Category Id */
+            category_id?: string | null;
+            /** Final Output Id */
+            final_output_id?: string | null;
+            /** Final Version */
+            final_version?: number | null;
             /** Generation Batch Id */
             generation_batch_id?: string | null;
             generation_draft?: components["schemas"]["VisualCanvasImageGenerationDraft"] | null;
             /** Generation Task Id */
             generation_task_id?: string | null;
+            /** Group */
+            group?: string | null;
             /** Id */
             id: string;
             /**
@@ -20598,7 +20770,11 @@ export interface components {
              * @enum {string}
              */
             kind: "image";
+            /** Output Sequence */
+            output_sequence?: number | null;
             position: components["schemas"]["VisualCanvasPosition"];
+            /** Tags */
+            tags?: string[];
             /** Title */
             title: string;
         };
@@ -20611,6 +20787,14 @@ export interface components {
         };
         /** VisualCanvasTextNode */
         VisualCanvasTextNode: {
+            /** Category Id */
+            category_id?: string | null;
+            /** Final Output Id */
+            final_output_id?: string | null;
+            /** Final Version */
+            final_version?: number | null;
+            /** Group */
+            group?: string | null;
             /** Id */
             id: string;
             /**
@@ -20618,7 +20802,11 @@ export interface components {
              * @enum {string}
              */
             kind: "text";
+            /** Output Sequence */
+            output_sequence?: number | null;
             position: components["schemas"]["VisualCanvasPosition"];
+            /** Tags */
+            tags?: string[];
             /**
              * Text
              * @default
@@ -20688,9 +20876,17 @@ export interface components {
         VisualCanvasVideoNode: {
             /** Asset Id */
             asset_id?: string | null;
+            /** Category Id */
+            category_id?: string | null;
+            /** Final Output Id */
+            final_output_id?: string | null;
+            /** Final Version */
+            final_version?: number | null;
             generation_draft?: components["schemas"]["VisualCanvasVideoGenerationDraft"] | null;
             /** Generation Task Id */
             generation_task_id?: string | null;
+            /** Group */
+            group?: string | null;
             /** Id */
             id: string;
             /**
@@ -20698,7 +20894,11 @@ export interface components {
              * @enum {string}
              */
             kind: "video";
+            /** Output Sequence */
+            output_sequence?: number | null;
             position: components["schemas"]["VisualCanvasPosition"];
+            /** Tags */
+            tags?: string[];
             /** Title */
             title: string;
         };
@@ -20724,6 +20924,71 @@ export interface components {
             value?: {
                 [key: string]: unknown;
             };
+        };
+        /** VisualMaterialCategory */
+        VisualMaterialCategory: {
+            /** Groups */
+            groups?: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** VisualNodeFinalOutputIn */
+        VisualNodeFinalOutputIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Output Id */
+            output_id: string;
+        };
+        /** VisualNodeOutputCreateIn */
+        VisualNodeOutputCreateIn: {
+            /** Asset Id */
+            asset_id?: string | null;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Text */
+            text?: string | null;
+        };
+        /** VisualNodeOutputListOut */
+        VisualNodeOutputListOut: {
+            /** Items */
+            items: components["schemas"]["VisualNodeOutputOut"][];
+            /** Total */
+            total: number;
+        };
+        /** VisualNodeOutputOut */
+        VisualNodeOutputOut: {
+            /** Asset Id */
+            asset_id: string | null;
+            /** Created At */
+            created_at: string;
+            /** Generation Task Id */
+            generation_task_id: string | null;
+            /** Id */
+            id: string;
+            /** Input Snapshot */
+            input_snapshot: {
+                [key: string]: unknown;
+            }[];
+            /** Is Final */
+            is_final: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "image" | "video" | "audio";
+            /** Node Id */
+            node_id: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "generated" | "uploaded" | "text" | "legacy";
+            /** Text */
+            text: string | null;
+            /** Version */
+            version: number;
         };
         /** VisualOperationsIn */
         VisualOperationsIn: {
@@ -38038,6 +38303,7 @@ export interface operations {
                 project_id?: string | null;
                 page?: number;
                 page_size?: number;
+                current_nodes?: boolean;
             };
             header?: never;
             path?: never;
@@ -38156,6 +38422,7 @@ export interface operations {
                 status?: ("queued" | "submitting" | "pending" | "processing" | "completed" | "failed") | null;
                 page?: number;
                 page_size?: number;
+                current_nodes?: boolean;
             };
             header?: never;
             path?: never;
@@ -39038,6 +39305,252 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GenerationBatchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualCanvasDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_node_final_output_v1_visual_workshop_projects__project_id__nodes__node_id__final_output_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualNodeFinalOutputIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualCanvasDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualCanvasDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_node_outputs_v1_visual_workshop_projects__project_id__nodes__node_id__outputs_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualNodeOutputListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualNodeOutputCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualCanvasDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs__output_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+                output_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualNodeOutputOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs__output_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+                output_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualCanvasDocumentOut"];
                 };
             };
             /** @description Validation Error */

@@ -8,15 +8,19 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.outputs.history import register_output
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentOut,
     VisualCanvasDocumentPutIn,
     VisualCanvasNode,
+    default_material_categories,
 )
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
+from app.runtime.ids import new_id
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 
@@ -35,6 +39,7 @@ def canvas_out(row: VisualCanvasDocument) -> VisualCanvasDocumentOut:
         edges=row.edges or [],
         revision=row.revision,
         updated_at=iso_utc(row.updated_at),
+        categories=row.categories or default_material_categories(),
     )
 
 
@@ -65,6 +70,9 @@ class VisualCanvasDocuments:
             if node.kind != "text" and node.asset_id is not None:
                 expected.append((node.asset_id, node.kind))
             if node.kind == "image" and node.generation_draft:
+                expected.extend(
+                    (asset_id, "image") for asset_id in node.generation_draft.reference_asset_ids
+                )
                 if node.generation_draft.reference_asset_id:
                     expected.append((node.generation_draft.reference_asset_id, "image"))
             if node.kind == "video" and node.generation_draft:
@@ -119,6 +127,8 @@ class VisualCanvasDocuments:
             draft = node.get("generation_draft") or {}
             if node.get("kind") == "image" and draft.get("reference_asset_id"):
                 existing_asset_ids.add(draft["reference_asset_id"])
+            if node.get("kind") == "image":
+                existing_asset_ids.update(draft.get("reference_asset_ids") or [])
             if node.get("kind") == "video":
                 existing_asset_ids.update(
                     asset_id
@@ -179,6 +189,48 @@ class VisualCanvasDocuments:
         row = await self._row(project_id)
         await self._validate_assets(project_id, body.nodes, row.nodes or [])
         await self._validate_tasks(project_id, body.nodes)
+        old = {node["id"]: node for node in row.nodes or []}
+        removed = set(old) - {node.id for node in body.nodes}
+        if any(
+            edge.get("source_node_id") in removed and edge.get("target_node_id") not in removed
+            for edge in row.edges or []
+        ):
+            raise VisualCanvasError(
+                "请先解除下游输入引用，再删除节点", code="node_in_use", status=409
+            )
+        for edge in body.edges:
+            if edge.binding == "fixed":
+                output = await self.session.get(VisualNodeOutput, edge.output_id)
+                if (
+                    output is None
+                    or output.project_id != project_id
+                    or output.node_id != edge.source_node_id
+                ):
+                    raise VisualCanvasError(
+                        "输入版本不属于上游节点", code="invalid_output_reference"
+                    )
+        categories = (
+            [category.model_dump(mode="json") for category in body.categories]
+            if body.categories is not None
+            else row.categories
+        )
+        known_categories = {
+            item["id"]: item
+            for item in (
+                categories
+                or [category.model_dump(mode="json") for category in default_material_categories()]
+            )
+        }
+        for node in body.nodes:
+            if node.category_id and node.category_id not in known_categories:
+                raise VisualCanvasError("节点分类不存在")
+            if node.group and (
+                not node.category_id
+                or node.group not in known_categories[node.category_id]["groups"]
+            ):
+                raise VisualCanvasError("节点分组不存在")
+            if node.id in old and node.kind != old[node.id]["kind"]:
+                raise VisualCanvasError("已有节点不能改变媒体类型")
         now = utc_now()
         result = await self.session.execute(
             update(VisualCanvasDocument)
@@ -187,8 +239,8 @@ class VisualCanvasDocuments:
                 VisualCanvasDocument.revision == body.expected_revision,
             )
             .values(
-                nodes=[node.model_dump(mode="json") for node in body.nodes],
                 edges=[edge.model_dump(mode="json") for edge in body.edges],
+                categories=categories,
                 revision=body.expected_revision + 1,
                 updated_at=now,
             )
@@ -200,6 +252,46 @@ class VisualCanvasDocuments:
                 body.expected_revision,
                 current.revision,
                 current.model_dump(mode="json"),
+            )
+        nodes = [node.model_dump(mode="json") for node in body.nodes]
+        for node in nodes:
+            previous = old.get(node["id"], {})
+            # Output selection is server-owned. Canvas saves cannot forge version
+            # identifiers or replace a chosen history item through a stale patch.
+            node["output_sequence"] = previous.get("output_sequence", 0)
+            node["final_output_id"] = previous.get("final_output_id")
+            node["final_version"] = previous.get("final_version")
+            if (
+                node["kind"] != "text"
+                and node.get("asset_id")
+                and node.get("asset_id") != previous.get("asset_id")
+            ):
+                await register_output(
+                    self.session,
+                    project_id,
+                    node,
+                    source="uploaded",
+                    source_key=new_id(),
+                    asset_id=node["asset_id"],
+                )
+            elif (
+                node["kind"] != "text"
+                and not node.get("asset_id")
+                and previous.get("final_output_id")
+            ):
+                node["asset_id"] = previous.get("asset_id")
+        await self.session.execute(
+            update(VisualCanvasDocument)
+            .where(VisualCanvasDocument.project_id == project_id)
+            .values(nodes=nodes)
+        )
+        if removed:
+            from sqlalchemy import delete
+
+            await self.session.execute(
+                delete(VisualNodeOutput).where(
+                    VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id.in_(removed)
+                )
             )
         return await self.get(project_id)
 

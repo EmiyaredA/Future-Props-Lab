@@ -26,6 +26,7 @@ export function useCanvasPersistence(
   const conflictRef = useRef(false);
   const saveFailureRef = useRef("");
   const saveQueue = useRef(Promise.resolve());
+  const pendingSaves = useRef(0);
   const autoSave = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const historyPast = useRef<CanvasSnapshot[]>([]);
   const historyFuture = useRef<CanvasSnapshot[]>([]);
@@ -38,10 +39,15 @@ export function useCanvasPersistence(
   const [saveMessage, setSaveMessage] = useState("");
   const [conflict, setConflict] = useState<VisualCanvasDocument>();
 
-  useEffect(() => {
-    if (!loaded) return;
+  const applyServerCanvas = useCallback((loaded: VisualCanvasDocument) => {
     const externalRevision =
       initialized.current && loaded.revision !== revisionRef.current;
+    if (externalRevision && (autoSave.current || pendingSaves.current > 0)) {
+      conflictRef.current = true;
+      setConflict(loaded);
+      setSaveState("conflict");
+      return;
+    }
     nodesRef.current = loaded.nodes;
     edgesRef.current = loaded.edges;
     revisionRef.current = loaded.revision;
@@ -52,7 +58,10 @@ export function useCanvasPersistence(
       historyFuture.current = [];
     }
     initialized.current = true;
-  }, [loaded]);
+  }, []);
+  useEffect(() => {
+    if (loaded) applyServerCanvas(loaded);
+  }, [loaded, applyServerCanvas]);
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
@@ -70,8 +79,12 @@ export function useCanvasPersistence(
     (snapshot: VisualCanvasNode[], edgeSnapshot = edgesRef.current) => {
       const nodeCopy = structuredClone(snapshot);
       const edgeCopy = structuredClone(edgeSnapshot);
+      pendingSaves.current += 1;
       saveQueue.current = saveQueue.current.then(async () => {
-        if (conflictRef.current) return;
+        if (conflictRef.current) {
+          pendingSaves.current -= 1;
+          return;
+        }
         setSaveState("saving");
         setSaveMessage("");
         saveFailureRef.current = "";
@@ -83,6 +96,10 @@ export function useCanvasPersistence(
             edgeCopy,
           );
           revisionRef.current = updated.revision;
+          if (JSON.stringify(nodesRef.current) === JSON.stringify(nodeCopy)) {
+            nodesRef.current = updated.nodes;
+            setNodes(updated.nodes);
+          }
           setSaveState("saved");
         } catch (error) {
           if (error instanceof ApiError && error.status === 409) {
@@ -100,6 +117,8 @@ export function useCanvasPersistence(
             error instanceof Error ? error.message : "画布保存失败";
           saveFailureRef.current = message;
           setSaveMessage(message);
+        } finally {
+          pendingSaves.current -= 1;
         }
       });
     },
@@ -278,6 +297,7 @@ export function useCanvasPersistence(
     undo,
     redo,
     prepareCanvasForAgent,
+    applyServerCanvas,
     replaceNodes,
     patchNode,
     replaceEdges,

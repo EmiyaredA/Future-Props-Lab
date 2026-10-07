@@ -65,14 +65,24 @@ export function CompactImageGenerationDrawer({
           <div className="image-composer-tools">
             <ProjectMediaPicker
               projectId={projectId}
+              multiple={(selectedModel?.max_reference_images ?? 1) > 1}
+              max={selectedModel?.max_reference_images ?? 1}
               label="参考图片（可选）"
               minimal={!composerExpanded}
               uploadLast
               value={imageReference}
               linkedValue={linkedAssetIds.image}
+              onReorder={
+                linkedAssetIds.image.length
+                  ? undefined
+                  : controller.reorderImages
+              }
               onChange={(value) => {
                 setImageReference(value);
-                persistDraft({ reference_asset_id: value[0] ?? null }, true);
+                persistDraft(
+                  { reference_asset_id: null, reference_asset_ids: value },
+                  true,
+                );
               }}
               onFilesLoaded={rememberPromptFiles}
               onInvalidSelection={invalidSelection}
@@ -238,29 +248,31 @@ export function CompactImageGenerationDrawer({
                   })}
                 </div>
               </fieldset>
-              <label className="image-seed-control">
-                <span>种子（可选）</span>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="随机"
-                  value={seed}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setSeed(value);
-                    const parsed = Number(value);
-                    persistDraft({
-                      seed:
-                        value !== "" &&
-                        Number.isSafeInteger(parsed) &&
-                        parsed >= 0
-                          ? parsed
-                          : null,
-                    });
-                  }}
-                  onBlur={() => persistDraft({}, true)}
-                />
-              </label>
+              {selectedModel?.supports_seed !== false && (
+                <label className="image-seed-control">
+                  <span>种子（可选）</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="随机"
+                    value={seed}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setSeed(value);
+                      const parsed = Number(value);
+                      persistDraft({
+                        seed:
+                          value !== "" &&
+                          Number.isSafeInteger(parsed) &&
+                          parsed >= 0
+                            ? parsed
+                            : null,
+                      });
+                    }}
+                    onBlur={() => persistDraft({}, true)}
+                  />
+                </label>
+              )}
             </div>
           </details>
           <details className="image-composer-count">

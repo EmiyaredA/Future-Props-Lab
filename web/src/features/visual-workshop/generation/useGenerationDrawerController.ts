@@ -91,7 +91,11 @@ export function useGenerationDrawerController({
     imageDraft?.grid_output ?? "nodes",
   );
   const [imageReference, setImageReference] = useState<string[]>(
-    imageDraft?.reference_asset_id ? [imageDraft.reference_asset_id] : [],
+    imageDraft?.reference_asset_ids?.length
+      ? imageDraft.reference_asset_ids
+      : imageDraft?.reference_asset_id
+        ? [imageDraft.reference_asset_id]
+        : [],
   );
   const [videoMode, setVideoMode] = useState<VideoMode>(
     videoDraft?.mode ?? "text",
@@ -155,7 +159,7 @@ export function useGenerationDrawerController({
       linkedAssetIds.audio,
     );
     if (kind === "image")
-      return uniqueAssetIds(linkedAssetIds.image, imageReference);
+      return orderedReferenceIds(imageReference, linkedAssetIds.image);
     if (videoMode === "image") return uniqueAssetIds(linked, firstFrame);
     if (videoMode === "frames")
       return uniqueAssetIds(linked, firstFrame, lastFrame);
@@ -249,7 +253,8 @@ export function useGenerationDrawerController({
             image_count: imageCount,
             grid_size: gridSize,
             grid_output: gridOutput,
-            reference_asset_id: imageReference[0] ?? null,
+            reference_asset_id: null,
+            reference_asset_ids: imageReference,
             prompt_reference_names: promptReferenceNames,
             ...changes,
           } as VisualCanvasImageGenerationDraft,
@@ -269,18 +274,15 @@ export function useGenerationDrawerController({
           generate_audio: generateAudio,
           first_frame_asset_id: firstFrame[0] ?? null,
           last_frame_asset_id: lastFrame[0] ?? null,
-          reference_asset_ids: orderedReferenceIds(
-            references,
-            linkedAssetIds.image,
-          ),
-          audio_asset_ids: orderedReferenceIds(
-            audioReferences,
-            linkedAssetIds.audio,
-          ),
-          video_asset_ids: orderedReferenceIds(
-            videoReferences,
-            linkedAssetIds.video,
-          ),
+          reference_asset_ids: canvasNodeId
+            ? references
+            : orderedReferenceIds(references, linkedAssetIds.image),
+          audio_asset_ids: canvasNodeId
+            ? audioReferences
+            : orderedReferenceIds(audioReferences, linkedAssetIds.audio),
+          video_asset_ids: canvasNodeId
+            ? videoReferences
+            : orderedReferenceIds(videoReferences, linkedAssetIds.video),
           prompt_reference_names: promptReferenceNames,
           ...changes,
         } as VisualCanvasVideoGenerationDraft,
@@ -301,6 +303,7 @@ export function useGenerationDrawerController({
       linkedAssetIds.video,
       linkedAssetIds.audio,
       lockedKind,
+      canvasNodeId,
       modelId,
       onDraftChange,
       prompt,
@@ -316,7 +319,10 @@ export function useGenerationDrawerController({
     ],
   );
   const reorderImages = (next: string[]) => {
-    const previous = orderedReferenceIds(references, linkedAssetIds.image);
+    const previous = orderedReferenceIds(
+      kind === "image" ? imageReference : references,
+      linkedAssetIds.image,
+    );
     if (
       next.length !== previous.length ||
       new Set(next).size !== previous.length ||
@@ -324,15 +330,18 @@ export function useGenerationDrawerController({
     )
       return;
     const nextPrompt = reorderPictureReferences(prompt, previous, next);
-    setReferences(next);
+    if (kind === "image") setImageReference(next);
+    else setReferences(next);
     setPrompt(nextPrompt);
     persistDraft({ reference_asset_ids: next, prompt: nextPrompt }, true);
   };
   useEffect(() => {
     if (lockedKind === "image") {
-      const next = imageDraft?.reference_asset_id
-        ? [imageDraft.reference_asset_id]
-        : [];
+      const next = imageDraft?.reference_asset_ids?.length
+        ? imageDraft.reference_asset_ids
+        : imageDraft?.reference_asset_id
+          ? [imageDraft.reference_asset_id]
+          : [];
       setImageReference((current) =>
         sameAssetIds(current, next) ? current : next,
       );
@@ -369,6 +378,7 @@ export function useGenerationDrawerController({
     );
   }, [
     imageDraft?.reference_asset_id,
+    imageDraft?.reference_asset_ids,
     lockedKind,
     videoDraft?.audio_asset_ids,
     videoDraft?.first_frame_asset_id,
@@ -461,17 +471,24 @@ export function useGenerationDrawerController({
     }) => {
       const tasks = [];
       for (let index = 0; index < count; index += 1) {
-        tasks.push(
-          await createGenerationTask(
-            projectId,
-            index === 0 ? body : (followupBody ?? body),
-          ),
-        );
+        let next = index === 0 ? body : (followupBody ?? body);
+        if (index > 0 && canvasNodeId && onBeforeSubmit) {
+          const revision = await onBeforeSubmit();
+          next = {
+            ...next,
+            canvas_node_id: canvasNodeId,
+            expected_canvas_revision:
+              typeof revision === "number" ? revision : undefined,
+          };
+        }
+        const task = await createGenerationTask(projectId, next);
+        tasks.push(task);
+        if (index < count - 1) await onTaskCreated?.(task);
       }
       return tasks;
     },
     onSuccess: async (tasks) => {
-      const task = tasks[0];
+      const task = tasks.at(-1);
       if (!task) return;
       try {
         await onTaskCreated?.(task);
@@ -482,7 +499,7 @@ export function useGenerationDrawerController({
       setNotice(
         tasks.length === 1
           ? `任务已提交（${task.id.slice(0, 8)}），可在“生成任务”页查看进度。`
-          : `已提交 ${tasks.length} 个生成任务，第一个结果将自动绑定当前节点。`,
+          : `已提交 ${tasks.length} 个生成任务，生成结果将保存为节点输出版本。`,
       );
       void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
     },
@@ -495,6 +512,7 @@ export function useGenerationDrawerController({
   >({
     mutationFn: createGenerationBatch.bind(null, projectId),
     onSuccess: async (batch) => {
+      void client.invalidateQueries({ queryKey: visualKeys.generationBatches });
       try {
         await onBatchCreated?.(batch);
       } catch (error) {
@@ -516,7 +534,7 @@ export function useGenerationDrawerController({
     event.preventDefault();
     setNotice("");
     if (!modelId) {
-      setNotice("请先在模型服务中启用对应的 SenseAudio 供应商和模型。");
+      setNotice("请先在模型中心启用相应的图片或视频模型。");
       return;
     }
     if ((kind === "image" || videoMode === "text") && !prompt.trim()) {
@@ -531,6 +549,38 @@ export function useGenerationDrawerController({
       videoReferences.length === 0
     ) {
       setNotice("参考音频需要搭配至少一张图片或一个视频。");
+      return;
+    }
+    if (
+      kind === "image" &&
+      imageReference.length > (selectedModel?.max_reference_images ?? 1)
+    ) {
+      setNotice(
+        `当前模型最多支持 ${selectedModel?.max_reference_images ?? 1} 张参考图，请减少输入或选择支持多图的模型。`,
+      );
+      return;
+    }
+    if (
+      kind === "image" &&
+      imageReference.some(
+        (id) =>
+          promptFiles[id] &&
+          selectedModel?.reference_mime_types?.length &&
+          !selectedModel.reference_mime_types.includes(
+            promptFiles[id].mime_type,
+          ),
+      )
+    ) {
+      setNotice("当前模型不支持所选参考图片格式，请按模型支持的格式重新上传。");
+      return;
+    }
+    if (
+      kind === "image" &&
+      prompt.length > (selectedModel?.max_prompt_length ?? 2000)
+    ) {
+      setNotice(
+        `当前模型提示词最多支持 ${selectedModel?.max_prompt_length ?? 2000} 个字符。`,
+      );
       return;
     }
     try {
@@ -549,8 +599,12 @@ export function useGenerationDrawerController({
             model_id: modelId,
             prompt,
             size,
-            seed: seed === "" ? null : Number(seed),
-            reference_asset_id: imageReference[0] ?? null,
+            seed:
+              selectedModel?.supports_seed === false || seed === ""
+                ? null
+                : Number(seed),
+            reference_asset_id: null,
+            reference_asset_ids: imageReference,
             grid_size: gridSize,
             grid_output: gridOutput,
             ...canvasLink,
@@ -562,8 +616,12 @@ export function useGenerationDrawerController({
           model_id: modelId,
           prompt,
           size,
-          seed: seed === "" ? null : Number(seed),
-          reference_asset_id: imageReference[0] ?? null,
+          seed:
+            selectedModel?.supports_seed === false || seed === ""
+              ? null
+              : Number(seed),
+          reference_asset_id: null,
+          reference_asset_ids: imageReference,
         } satisfies GenerationTaskInput;
         createMutation.mutate({
           body: { ...body, ...canvasLink },
@@ -590,15 +648,21 @@ export function useGenerationDrawerController({
           videoMode === "frames" ? (lastFrame[0] ?? null) : null,
         reference_asset_ids:
           videoMode === "reference"
-            ? orderedReferenceIds(references, linkedAssetIds.image)
+            ? canvasNodeId
+              ? references
+              : orderedReferenceIds(references, linkedAssetIds.image)
             : [],
         audio_asset_ids:
           videoMode === "reference"
-            ? orderedReferenceIds(audioReferences, linkedAssetIds.audio)
+            ? canvasNodeId
+              ? audioReferences
+              : orderedReferenceIds(audioReferences, linkedAssetIds.audio)
             : [],
         video_asset_ids:
           videoMode === "reference"
-            ? orderedReferenceIds(videoReferences, linkedAssetIds.video)
+            ? canvasNodeId
+              ? videoReferences
+              : orderedReferenceIds(videoReferences, linkedAssetIds.video)
             : [],
       } satisfies GenerationTaskInput;
       createMutation.mutate({ body: { ...body, ...canvasLink } });

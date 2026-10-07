@@ -368,6 +368,7 @@ async def test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members() 
             "grid_output": None,
             "grid_size": None,
             "reference_asset_id": None,
+            "reference_asset_ids": [],
             "prompt_reference_names": {},
         }
 

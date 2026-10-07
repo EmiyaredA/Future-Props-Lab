@@ -16,6 +16,7 @@ from app.llm.generation_runtime import (
     GenerationTaskContext,
     GenerationTaskDriver,
     GenerationTaskStore,
+    ImmediateGenerationResult,
     assert_public_https,
     download_generated_media,
     generated_type,
@@ -94,8 +95,8 @@ class ModelTestGenerationRunner(PollingTaskRunner):
     async def _process_task(self, task_id: str) -> None:
         await self.task_driver.process(task_id)
 
-    async def _submit_context(self, task: GenerationTaskContext) -> str:
-        if task.provider_kind == "senseaudio_image":
+    async def _submit_context(self, task: GenerationTaskContext) -> str | ImmediateGenerationResult:
+        if task.provider_kind in {"senseaudio_image", "volcengine_image"}:
             return await submit_generation_task(
                 provider_kind=task.provider_kind,
                 base_url=task.base_url,
