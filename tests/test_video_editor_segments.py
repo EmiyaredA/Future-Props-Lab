@@ -3,19 +3,26 @@ from __future__ import annotations
 import io
 import json
 import subprocess
+from copy import deepcopy
 from pathlib import Path
 from zipfile import ZipFile
 
 import httpx
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 
-from app.apps.video_editor import segment_files
+from app.apps.video_editor import segment_files, segment_runner
 from app.apps.video_editor.models import VideoEditorTask
 from app.apps.video_editor.runner import VideoEditorRunner
 from app.apps.video_editor.segment_files import download_segments, segment_filename
+from app.apps.visual_workshop.models import VisualCanvasDocument
+from app.apps.visual_workshop.outputs import register_imported_output
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.apps.visual_workshop.outputs.references import resolve_references
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
+from app.deps import workspace_from_principal
+from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
@@ -115,6 +122,8 @@ async def test_segment_export_roundtrip(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
         root, body = await prepare(client, video)
+        previous_nodes = []
+        previous_revision = 0
         if target_mode == "new":
             body["target"] = {"newProjectTitle": "新画布"}
         elif target_mode == "existing":
@@ -124,6 +133,14 @@ async def test_segment_export_roundtrip(
                 )
             ).json()
             body["target"] = {"projectId": canvas["id"]}
+            previous = await client.post(
+                f"/v1/visual-workshop/projects/{canvas['id']}/node-uploads",
+                data={"expected_revision": 0, "x": 120, "y": 240},
+                files={"file": ("existing.mp4", video, "video/mp4")},
+            )
+            assert previous.status_code == 200, previous.text
+            previous_nodes = previous.json()["nodes"]
+            previous_revision = previous.json()["revision"]
         before = (await client.get("/v1/visual-workshop/projects")).json()
         created = await client.post(f"{root}/segment-exports", json=body)
         assert created.status_code == 200, created.text
@@ -155,7 +172,102 @@ async def test_segment_export_roundtrip(
             canvas = (
                 await client.get(f"/v1/visual-workshop/projects/{detail['targetProjectId']}/canvas")
             ).json()
-            assert len(canvas["nodes"]) == 2
+            assert canvas["revision"] == previous_revision + 1
+            assert canvas["nodes"][: len(previous_nodes)] == previous_nodes
+            assert len(canvas["nodes"]) == len(previous_nodes) + 2
+            for segment, node in zip(
+                detail["segments"], canvas["nodes"][len(previous_nodes) :], strict=True
+            ):
+                assert node["id"] == segment["nodeId"]
+                assert node["asset_id"] == segment["assetId"]
+                assert node["final_version"] == node["output_sequence"] == 1
+                history = (
+                    await client.get(
+                        f"/v1/visual-workshop/projects/{detail['targetProjectId']}"
+                        f"/nodes/{node['id']}/outputs"
+                    )
+                ).json()
+                assert history["total"] == 1
+                output = history["items"][0]
+                assert output["id"] == node["final_output_id"]
+                assert output["version"] == 1 and output["is_final"]
+                assert output["source"] == "uploaded"
+                assert output["asset_id"] == segment["assetId"]
+            # Reprocessing a completed task and resubmitting its request cannot
+            # create extra nodes, versions or advance the canvas revision.
+            await VideoEditorRunner()._process(task["id"])
+            assert (await client.post(f"{root}/segment-exports", json=body)).json() == completed
+            assert (
+                await client.get(f"/v1/visual-workshop/projects/{detail['targetProjectId']}/canvas")
+            ).json() == canvas
+            async with SessionLocal() as session:
+                await session.execute(
+                    update(VisualCanvasDocument)
+                    .where(VisualCanvasDocument.project_id == detail["targetProjectId"])
+                    .values(revision=VisualCanvasDocument.revision)
+                )
+                for node in canvas["nodes"][len(previous_nodes) :]:
+                    await register_imported_output(
+                        session,
+                        detail["targetProjectId"],
+                        node,
+                        asset_id=node["asset_id"],
+                        source_key=f"segment:{task['id']}:{node['id']}",
+                    )
+                assert (
+                    len(
+                        list(
+                            await session.scalars(
+                                select(VisualNodeOutput).where(
+                                    VisualNodeOutput.project_id == detail["targetProjectId"]
+                                )
+                            )
+                        )
+                    )
+                    == len(previous_nodes) + 2
+                )
+                await session.commit()
+            source = canvas["nodes"][len(previous_nodes)]
+            linked = await client.put(
+                f"/v1/visual-workshop/projects/{detail['targetProjectId']}/canvas",
+                json={
+                    "expected_revision": canvas["revision"],
+                    "nodes": [
+                        *canvas["nodes"],
+                        {
+                            "id": "reference-target",
+                            "kind": "video",
+                            "title": "下游视频",
+                            "position": {"x": 0, "y": 500},
+                        },
+                    ],
+                    "edges": [
+                        {
+                            "id": "follow-import",
+                            "source_node_id": source["id"],
+                            "target_node_id": "reference-target",
+                            "binding": "final",
+                        }
+                    ],
+                },
+            )
+            assert linked.status_code == 200, linked.text
+            async with SessionLocal() as session:
+                resolved, _, inputs = await resolve_references(
+                    session,
+                    detail["targetProjectId"],
+                    VideoGenerationTaskCreateIn(
+                        kind="video",
+                        model_id="unused-model",
+                        prompt="测试引用",
+                        mode="text",
+                        canvas_node_id="reference-target",
+                        expected_canvas_revision=linked.json()["revision"],
+                    ),
+                )
+                assert resolved.video_asset_ids == [source["asset_id"]]
+                assert inputs[0]["output_id"] == source["final_output_id"]
+                assert inputs[0]["version"] == 1
         data = []
         for segment in detail["segments"]:
             response = await client.get(f"/v1/files/{segment['assetId']}/download")
@@ -239,14 +351,37 @@ async def test_segment_validation_cancel_and_canvas_conflict(video: bytes) -> No
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("failure", ["copy", "cancel"])
+@pytest.mark.parametrize(
+    ("failure", "target_mode"),
+    [
+        (failure, target_mode)
+        for failure in ("copy", "cancel", "register")
+        for target_mode in ("none", "new", "existing")
+        if failure != "register" or target_mode != "none"
+    ],
+)
 async def test_staged_files_are_cleaned_without_partial_outputs(
-    video: bytes, monkeypatch: pytest.MonkeyPatch, failure: str
+    video: bytes, monkeypatch: pytest.MonkeyPatch, failure: str, target_mode: str
 ) -> None:
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
         root, body = await prepare(client, video)
+        projects_before = (await client.get("/v1/visual-workshop/projects")).json()
+        canvas_before = None
+        if target_mode == "new":
+            body["target"] = {"newProjectTitle": "回滚画布"}
+        elif target_mode == "existing":
+            project = (
+                await client.post(
+                    "/v1/visual-workshop/projects", json={"title": "回滚画布", "kind": "canvas"}
+                )
+            ).json()
+            body["target"] = {"projectId": project["id"]}
+            canvas_before = (
+                await client.get(f"/v1/visual-workshop/projects/{project['id']}/canvas")
+            ).json()
+            projects_before = (await client.get("/v1/visual-workshop/projects")).json()
         created = (await client.post(f"{root}/segment-exports", json=body)).json()
         staged_paths = []
         original = AssetLibrary.stage_local_copy
@@ -263,10 +398,28 @@ async def test_staged_files_are_cleaned_without_partial_outputs(
             return result
 
         monkeypatch.setattr(AssetLibrary, "stage_local_copy", stage)
+        registered = []
+
+        async def register(*args, **kwargs):
+            if registered:
+                raise RuntimeError("simulated output registration failure")
+            await register_imported_output(*args, **kwargs)
+            registered.append(kwargs["asset_id"])
+
+        if failure == "register":
+            monkeypatch.setattr(segment_runner, "register_imported_output", register)
         await VideoEditorRunner()._process(created["id"])
         task = (await client.get(f"{root}/segment-exports/{created['id']}")).json()
-        assert task["status"] == ("failed" if failure == "copy" else "cancelled"), task
+        assert task["status"] == ("cancelled" if failure == "cancel" else "failed"), task
         assert staged_paths and all(not path.exists() for path in staged_paths)
+        assert (await client.get("/v1/visual-workshop/projects")).json() == projects_before
+        if canvas_before:
+            assert (
+                await client.get(f"/v1/visual-workshop/projects/{project['id']}/canvas")
+            ).json() == canvas_before
+        if failure == "register":
+            assert len(registered) == 1
+            assert "registration failure" in task["error"]
         async with SessionLocal() as session:
             assets = list(
                 await session.scalars(
@@ -276,6 +429,84 @@ async def test_staged_files_are_cleaned_without_partial_outputs(
                 )
             )
             assert len(assets) == 1
+            for asset_id in registered:
+                assert await session.get(VisualAsset, asset_id) is None
+                assert (
+                    await session.scalar(
+                        select(VisualNodeOutput.id).where(VisualNodeOutput.asset_id == asset_id)
+                    )
+                ) is None
+
+
+@pytest.mark.asyncio
+async def test_legacy_segment_outputs_can_be_backfilled_through_api(video: bytes) -> None:
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        root, body = await prepare(client, video)
+        body["target"] = {"newProjectTitle": "旧分段画布"}
+        created = (await client.post(f"{root}/segment-exports", json=body)).json()
+        await VideoEditorRunner()._process(created["id"])
+        completed = (await client.get(f"{root}/segment-exports/{created['id']}")).json()
+        project_id = completed["resultDetail"]["targetProjectId"]
+        canvas_url = f"/v1/visual-workshop/projects/{project_id}/canvas"
+        # Storage fixture in the isolated test database reproduces the old import
+        # shape; all repairs below go through the existing business API.
+        async with SessionLocal() as session:
+            canvas = await session.get(VisualCanvasDocument, project_id)
+            nodes = deepcopy(canvas.nodes)
+            for node in nodes:
+                for field in ("final_output_id", "final_version", "output_sequence"):
+                    node.pop(field, None)
+            canvas.nodes = nodes
+            await session.execute(
+                delete(VisualNodeOutput).where(VisualNodeOutput.project_id == project_id)
+            )
+            await session.commit()
+        before = (await client.get(canvas_url)).json()
+        revision = before["revision"]
+        for node in before["nodes"]:
+            output_url = f"/v1/visual-workshop/projects/{project_id}/nodes/{node['id']}/outputs"
+            assert (await client.get(output_url)).json()["total"] == 0
+            app.dependency_overrides[workspace_from_principal] = lambda: "other-workspace"
+            try:
+                assert (await client.get(output_url)).status_code == 404
+                assert (
+                    await client.post(
+                        output_url,
+                        json={"asset_id": node["asset_id"], "expected_revision": revision},
+                    )
+                ).status_code == 404
+            finally:
+                app.dependency_overrides.pop(workspace_from_principal, None)
+            stale = await client.post(
+                output_url,
+                json={"asset_id": node["asset_id"], "expected_revision": revision - 1},
+            )
+            assert stale.status_code == 409
+            assert (await client.get(output_url)).json()["total"] == 0
+            repaired = await client.post(
+                output_url, json={"asset_id": node["asset_id"], "expected_revision": revision}
+            )
+            assert repaired.status_code == 200, repaired.text
+            revision = repaired.json()["revision"]
+            saved = next(item for item in repaired.json()["nodes"] if item["id"] == node["id"])
+            assert saved["asset_id"] == node["asset_id"]
+            assert saved["final_version"] == saved["output_sequence"] == 1
+            output = (await client.get(output_url)).json()["items"][0]
+            assert output["asset_id"] == node["asset_id"]
+            assert output["id"] == saved["final_output_id"]
+            assert output["is_final"]
+        final = (await client.get(canvas_url)).json()
+        # A second repair pass only inspects candidates that have no history/final.
+        for node in final["nodes"]:
+            history = (
+                await client.get(
+                    f"/v1/visual-workshop/projects/{project_id}/nodes/{node['id']}/outputs"
+                )
+            ).json()
+            assert node["final_output_id"] and history["total"] == 1
+        assert (await client.get(canvas_url)).json() == final
 
 
 def test_segment_filenames_are_portable() -> None:

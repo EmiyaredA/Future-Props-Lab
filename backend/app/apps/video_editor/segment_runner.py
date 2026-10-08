@@ -20,6 +20,7 @@ from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.outputs import register_imported_output
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import (
@@ -369,6 +370,18 @@ class VideoEditorSegmentTaskRunner:
                         session, target_payload, target_project_id, workspace_id, detail
                     )
                 nodes = [dict(node) for node in (canvas.nodes or [])] if canvas else []
+                if canvas:
+                    expected_revision = canvas.revision
+                    result = await session.execute(
+                        update(VisualCanvasDocument)
+                        .where(
+                            VisualCanvasDocument.project_id == target_project_id,
+                            VisualCanvasDocument.revision == expected_revision,
+                        )
+                        .values(revision=expected_revision + 1, updated_at=utc_now())
+                    )
+                    if result.rowcount != 1:
+                        raise RuntimeError("目标工作坊画布已变化，请重新提交")
                 results = []
                 session.add_all([asset for asset, *_ in staged_assets])
                 await session.flush()
@@ -385,16 +398,22 @@ class VideoEditorSegmentTaskRunner:
                             )
                         )
                         node_id = f"segment-{task_id[:8]}-{index + 1}"
-                        nodes.append(
-                            {
-                                "id": node_id,
-                                "kind": "video",
-                                "title": str(config["name"]),
-                                "position": {"x": index * 540, "y": 0},
-                                "asset_id": asset.id,
-                                "generation_task_id": None,
-                            }
+                        node = {
+                            "id": node_id,
+                            "kind": "video",
+                            "title": str(config["name"]),
+                            "position": {"x": index * 540, "y": 0},
+                            "asset_id": asset.id,
+                            "generation_task_id": None,
+                        }
+                        await register_imported_output(
+                            session,
+                            target_project_id,
+                            node,
+                            asset_id=asset.id,
+                            source_key=f"segment:{task_id}:{node_id}",
                         )
+                        nodes.append(node)
                     else:
                         session.add(
                             VideoEditorAssetMetadata(
@@ -429,21 +448,11 @@ class VideoEditorSegmentTaskRunner:
                         }
                     )
                 if canvas:
-                    expected_revision = canvas.revision
-                    result = await session.execute(
+                    await session.execute(
                         update(VisualCanvasDocument)
-                        .where(
-                            VisualCanvasDocument.project_id == target_project_id,
-                            VisualCanvasDocument.revision == expected_revision,
-                        )
-                        .values(
-                            nodes=nodes,
-                            revision=expected_revision + 1,
-                            updated_at=utc_now(),
-                        )
+                        .where(VisualCanvasDocument.project_id == target_project_id)
+                        .values(nodes=nodes)
                     )
-                    if result.rowcount != 1:
-                        raise RuntimeError("目标工作坊画布已变化，请重新提交")
                 detail.update(
                     {
                         "targetProjectId": target_project_id,
