@@ -139,6 +139,287 @@ async function main() {
         .getAttribute("aria-pressed"),
       "false",
     );
+    const disposable = await apiJson(
+      assistant,
+      "/v1/amadeus/conversations",
+      "POST",
+    );
+    const deleteTitle =
+      "删除确认位置验收：" + "长对话标题与本地会话文件".repeat(5);
+    await apiJson(
+      assistant,
+      `/v1/amadeus/conversations/${disposable.id}`,
+      "PATCH",
+      { expected_revision: disposable.revision, title: deleteTitle },
+    );
+    await assistant.reload();
+    for (const theme of ["light", "dark"]) {
+      await assistant.evaluate((value) => {
+        document.documentElement.dataset.theme = value;
+      }, theme);
+      for (const width of [400, 900]) {
+        await assistant.setViewportSize({ width, height: 700 });
+        if (width === 400)
+          await assistant.getByRole("button", { name: "历史对话" }).click();
+        const trigger = assistant.getByRole("button", {
+          name: `删除对话「${deleteTitle}」`,
+        });
+        const row = assistant
+          .locator(".amadeus-history-row")
+          .filter({ has: trigger });
+        const actions = row.locator(".amadeus-history-actions");
+        const historyToggle = assistant.getByRole("button", {
+          name: "历史对话",
+        });
+        await historyToggle.focus();
+        await assistant.locator(".amadeus-brand").hover();
+        assert.equal(
+          await actions.evaluate(
+            (element) => getComputedStyle(element).opacity,
+          ),
+          "0",
+        );
+        assert.equal(
+          await actions.evaluate(
+            (element) => getComputedStyle(element).pointerEvents,
+          ),
+          "none",
+        );
+        const restingBounds = await row.boundingBox();
+        const title = row.locator(".amadeus-history-title");
+        const restingPadding = await title.evaluate((element) =>
+          parseFloat(getComputedStyle(element).paddingRight),
+        );
+        if (
+          theme === "light" &&
+          width === 900 &&
+          process.env.FPL_AMADEUS_HISTORY_SCREENSHOT
+        )
+          await assistant.screenshot({
+            path: `${process.env.FPL_AMADEUS_HISTORY_SCREENSHOT}-rest.png`,
+          });
+        await title.focus();
+        assert.equal(
+          await actions.evaluate(
+            (element) => getComputedStyle(element).opacity,
+          ),
+          "1",
+        );
+        await assistant.keyboard.press("Tab");
+        assert.ok(
+          await row
+            .getByRole("button", { name: `重命名对话「${deleteTitle}」` })
+            .evaluate((element) => element === document.activeElement),
+        );
+        await assistant.keyboard.press("Tab");
+        assert.ok(
+          await trigger.evaluate(
+            (element) => element === document.activeElement,
+          ),
+        );
+        await historyToggle.focus();
+        assert.equal(
+          await actions.evaluate(
+            (element) => getComputedStyle(element).opacity,
+          ),
+          "0",
+        );
+        await row.hover();
+        await until(
+          () =>
+            actions.evaluate(
+              (element) => getComputedStyle(element).opacity === "1",
+            ),
+          5000,
+        );
+        assert.deepEqual(await row.boundingBox(), restingBounds);
+        assert.ok(
+          (await title.evaluate((element) =>
+            parseFloat(getComputedStyle(element).paddingRight),
+          )) > restingPadding,
+        );
+        if (
+          theme === "light" &&
+          width === 900 &&
+          process.env.FPL_AMADEUS_HISTORY_SCREENSHOT
+        )
+          await assistant.screenshot({
+            path: `${process.env.FPL_AMADEUS_HISTORY_SCREENSHOT}-hover.png`,
+          });
+        await trigger.click();
+        const confirmation = assistant.getByRole("alertdialog");
+        await confirmation.waitFor();
+        const bounds = await confirmation.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+            centerX: rect.x + rect.width / 2,
+            centerY: rect.y + rect.height / 2,
+            width: innerWidth,
+            height: innerHeight,
+            overflow: element.scrollWidth > element.clientWidth,
+            inRail: Boolean(element.closest(".amadeus-side-rail")),
+            background: getComputedStyle(element).backgroundColor,
+          };
+        });
+        assert.ok(Math.abs(bounds.centerX - bounds.width / 2) < 1);
+        assert.ok(Math.abs(bounds.centerY - bounds.height / 2) < 1);
+        assert.ok(bounds.left >= 0 && bounds.right <= bounds.width);
+        assert.ok(bounds.top >= 0 && bounds.bottom <= bounds.height);
+        assert.equal(bounds.overflow, false);
+        assert.equal(bounds.inRail, false);
+        assert.equal(
+          bounds.background,
+          theme === "dark" ? "rgb(26, 29, 27)" : "rgb(255, 253, 250)",
+        );
+        await assistant.keyboard.press("Tab");
+        assert.ok(
+          await confirmation.evaluate((element) =>
+            element.contains(document.activeElement),
+          ),
+        );
+        if (
+          theme === "light" &&
+          width === 900 &&
+          process.env.FPL_AMADEUS_DELETE_SCREENSHOT
+        )
+          await assistant.screenshot({
+            path: process.env.FPL_AMADEUS_DELETE_SCREENSHOT,
+          });
+        await assistant.keyboard.press("Escape");
+        await confirmation.waitFor({ state: "detached" });
+        assert.ok(
+          await trigger.evaluate(
+            (element) => element === document.activeElement,
+          ),
+        );
+        assert.ok(
+          (await apiJson(assistant, "/v1/amadeus/conversations")).items.some(
+            (item) => item.id === disposable.id,
+          ),
+        );
+        await assistant
+          .getByRole("button", { name: `重命名对话「${deleteTitle}」` })
+          .click();
+        const nameInput = assistant.getByRole("textbox", { name: "对话名称" });
+        await nameInput.waitFor();
+        assert.ok(
+          await nameInput.evaluate(
+            (element) => element === document.activeElement,
+          ),
+        );
+        const editBounds = await nameInput.evaluate((element) => {
+          const row = element.closest(".amadeus-history-row");
+          const rect = row.getBoundingClientRect();
+          return {
+            id: row.dataset.conversationId,
+            height: rect.height,
+            overflow: row.scrollWidth > row.clientWidth,
+          };
+        });
+        assert.equal(editBounds.id, disposable.id);
+        assert.equal(editBounds.height, restingBounds.height);
+        assert.equal(editBounds.overflow, false);
+        for (const control of [
+          nameInput,
+          assistant.getByRole("button", { name: "保存对话名称" }),
+          assistant.getByRole("button", { name: "取消重命名" }),
+        ]) {
+          await control.focus();
+          const focusClearance = await control.evaluate((element) => {
+            const row = element.closest(".amadeus-history-row");
+            const rowRect = row.getBoundingClientRect();
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            const outset = element.matches(":focus-visible")
+              ? Math.max(
+                  0,
+                  parseFloat(style.outlineWidth) +
+                    parseFloat(style.outlineOffset),
+                )
+              : 0;
+            const others = [...row.querySelectorAll("input, button")].filter(
+              (other) => other !== element,
+            );
+            return {
+              contained:
+                rect.left - outset >= rowRect.left &&
+                rect.right + outset <= rowRect.right,
+              separated: others.every((other) => {
+                const otherRect = other.getBoundingClientRect();
+                return (
+                  rect.right + outset < otherRect.left ||
+                  rect.left - outset > otherRect.right
+                );
+              }),
+            };
+          });
+          assert.ok(focusClearance.contained, "rename focus stays in its row");
+          assert.ok(focusClearance.separated, "rename controls never overlap");
+        }
+        await nameInput.focus();
+        assert.equal(
+          await assistant.locator(".amadeus-history-dialog").count(),
+          0,
+        );
+        await nameInput.fill("行内重命名验收");
+        if (
+          theme === "light" &&
+          width === 900 &&
+          process.env.FPL_AMADEUS_RENAME_SCREENSHOT
+        )
+          await assistant.screenshot({
+            path: process.env.FPL_AMADEUS_RENAME_SCREENSHOT,
+          });
+        await nameInput.press("Escape");
+        await nameInput.waitFor({ state: "detached" });
+        assert.equal(
+          (
+            await apiJson(
+              assistant,
+              `/v1/amadeus/conversations/${disposable.id}`,
+            )
+          ).conversation.title,
+          deleteTitle,
+        );
+      }
+    }
+    await assistant.evaluate(() => {
+      document.documentElement.dataset.theme = "light";
+    });
+    await assistant.setViewportSize({ width: initialWidth, height: 700 });
+    await assistant
+      .getByRole("button", { name: `重命名对话「${deleteTitle}」` })
+      .focus();
+    await assistant
+      .getByRole("button", { name: `重命名对话「${deleteTitle}」` })
+      .click();
+    const nameInput = assistant.getByRole("textbox", { name: "对话名称" });
+    await nameInput.fill("行内保存测试");
+    await nameInput.press("Enter");
+    await nameInput.waitFor({ state: "detached" });
+    assert.equal(
+      (await apiJson(assistant, `/v1/amadeus/conversations/${disposable.id}`))
+        .conversation.title,
+      "行内保存测试",
+    );
+    await assistant
+      .getByRole("button", { name: "删除对话「行内保存测试」" })
+      .click();
+    await assistant
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "删除", exact: true })
+      .click();
+    await assistant.getByRole("alertdialog").waitFor({ state: "detached" });
+    assert.equal(
+      (await apiJson(assistant, "/v1/amadeus/conversations")).items.some(
+        (item) => item.id === disposable.id,
+      ),
+      false,
+    );
     await assistant.getByRole("button", { name: "展开数字人" }).click();
     await assistant
       .getByRole("complementary", { name: "红莉栖数字人舞台" })
@@ -625,6 +906,7 @@ async function main() {
       .getByText(/修订计划：先核对画布/)
       .first()
       .waitFor();
+    await assistant.getByRole("button", { name: "执行计划" }).waitFor();
     assert.equal(
       await assistant.getByRole("button", { name: "执行计划" }).count(),
       1,
@@ -686,6 +968,7 @@ async function main() {
     await assistant.getByRole("button", { name: "批准并执行" }).click();
     await assistant
       .getByText("已新增视频生成草稿，并确认当前项目状态。")
+      .first()
       .waitFor();
     const finalCanvas = await apiJson(assistant, canvasUrl);
     assert.equal(finalCanvas.revision, 1);
@@ -727,7 +1010,7 @@ async function main() {
       finalCanvas.nodes,
     );
     console.log(
-      "PASS Amadeus layout, safe control picking, and isolated Plan → Agent video workflow",
+      "PASS Amadeus layout, inline rename, centered deletion confirmation, safe control picking, and isolated Plan → Agent video workflow",
     );
   } catch (error) {
     console.error(output.slice(-2000));

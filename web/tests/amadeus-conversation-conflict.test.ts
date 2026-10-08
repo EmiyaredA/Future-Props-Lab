@@ -9,7 +9,7 @@ vi.mock("@platform/api/client", async (load) => ({
 }));
 
 describe("Amadeus conversation conflict", () => {
-  it("retains the rename dialog and loads the current revision without resubmitting", async () => {
+  it("retains the rename editor and loads the current revision without resubmitting", async () => {
     const item = { id: "one", title: "旧标题", revision: 1 } as Conversation;
     const current = { ...item, title: "其他窗口的标题", revision: 2 };
     vi.mocked(fetchApiJson).mockRejectedValueOnce(

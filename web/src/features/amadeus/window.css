@@ -171,29 +171,63 @@ button {
 .amadeus-history-row.active {
   background: #f5e4d8;
 }
-.amadeus-history-dialog {
-  background: #fff;
-  border: 1px solid #edd4c5;
-  border-radius: 10px;
-  padding: 10px;
+/* The standalone Amadeus entry does not load the Studio button styles. */
+.confirm-dialog .btn {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+.confirm-dialog .btn:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.confirm-dialog .btn.danger {
+  border-color: transparent;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.confirm-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.confirm-dialog button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.confirm-dialog .confirm-dialog-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+}
+.confirm-dialog .confirm-dialog-close:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.confirm-dialog .eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+.confirm-dialog-copy h2 {
+  overflow-wrap: anywhere;
+}
+.confirm-dialog-description p {
+  margin: 0;
+}
+.confirm-dialog-description [role="alert"] {
   margin-top: 10px;
-  font-size: 12px;
-}
-.amadeus-history-dialog input {
-  width: 100%;
-  margin: 8px 0;
-  border: 1px solid #ead7cb;
-  border-radius: 7px;
-  padding: 7px;
-}
-.amadeus-history-dialog p {
-  color: #887a70;
-  line-height: 1.5;
-}
-.amadeus-history-dialog div {
-  display: flex;
-  justify-content: flex-end;
-  gap: 5px;
+  color: var(--danger);
 }
 .amadeus-history-title {
   flex: 1;

@@ -105,9 +105,99 @@
   overscroll-behavior: contain;
 }
 
-.amadeus-history-row > button:not(.amadeus-history-title) {
+.amadeus-history-row {
+  position: relative;
+  min-height: 34px;
+}
+
+.amadeus-history .amadeus-history-title {
+  display: block;
+  text-align: left;
+}
+
+.amadeus-history-row:hover,
+.amadeus-history-row:focus-within {
+  background: var(--amadeus-accent-soft);
+}
+
+.amadeus-history-actions {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  display: flex;
+  gap: 2px;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.amadeus-history-actions > button {
   flex: none;
-  padding: 5px 2px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.amadeus-history-row:hover .amadeus-history-actions,
+.amadeus-history-row:focus-within .amadeus-history-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.amadeus-history-row:hover .amadeus-history-title,
+.amadeus-history-row:focus-within .amadeus-history-title {
+  padding-right: 66px;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .amadeus-history-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .amadeus-history-row .amadeus-history-title {
+    padding-right: 66px;
+  }
+}
+
+.amadeus-history-rename {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 28px 28px;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  padding: 3px;
+}
+
+.amadeus-history-rename input {
+  min-width: 0;
+  width: 100%;
+  height: 28px;
+  padding: 4px 6px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 6px;
+  background: var(--amadeus-surface-raised);
+  color: var(--amadeus-ink);
+  font-size: 12px;
+}
+
+.amadeus-history .amadeus-history-rename button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.amadeus-history-rename input:focus-visible,
+.amadeus-history-rename button:focus-visible {
+  outline-offset: 0;
+}
+
+.amadeus-history-rename [role="alert"] {
+  grid-column: 1 / -1;
+  padding: 4px;
+  color: var(--danger);
+  overflow-wrap: anywhere;
 }
 
 .amadeus-files-overlay {

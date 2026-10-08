@@ -914,8 +914,8 @@ export function useAmadeusController(session: AccountSessionContext) {
       item.workspaceId === session.me.workspace.id,
   );
   const groups = useMemo(
-    () => groupConversations(conversations, search),
-    [conversations, search],
+    () => groupConversations(conversations, search, renameItem?.id),
+    [conversations, search, renameItem?.id],
   );
 
   return {

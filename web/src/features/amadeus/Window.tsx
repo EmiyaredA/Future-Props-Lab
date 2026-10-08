@@ -15,11 +15,15 @@ import {
   ChevronUp,
   PanelRightOpen,
   PanelRightClose,
+  MoreHorizontal,
+  Trash2,
+  Check,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useId, useRef, useState } from "react";
 import type { AccountSessionContext } from "@features/accounts";
 import { fetchApiJson } from "@platform/api/client";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { avatarStateLabels } from "./protocol";
 import { AmadeusAvatar } from "./Avatar";
 import { ActivityFeed, ExecutionInspector } from "./ActivityFeed";
@@ -36,6 +40,10 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     () => window.innerWidth >= 1120,
   );
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const historyListRef = useRef<HTMLDivElement>(null);
   const wasWide = useRef(window.innerWidth >= 700);
   useEffect(() => {
     const onResize = () => {
@@ -124,6 +132,48 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
   } = useAmadeusController(session);
   const display = detail ? buildDisplayTimeline(detail, runs) : null;
   const hasExecution = !!display?.tools.length;
+  const renameId = renameItem?.id;
+  useEffect(() => {
+    if (!renameId) return;
+    renameInputRef.current?.focus();
+    renameInputRef.current?.select();
+  }, [renameId]);
+  const focusHistoryTitle = (id: string) => {
+    const row = Array.from(
+      historyListRef.current?.querySelectorAll<HTMLElement>(
+        ".amadeus-history-row",
+      ) ?? [],
+    ).find((item) => item.dataset.conversationId === id);
+    const target =
+      row?.querySelector<HTMLButtonElement>(".amadeus-history-title") ??
+      historyListRef.current?.parentElement?.querySelector<HTMLInputElement>(
+        ".amadeus-search input",
+      );
+    target?.focus();
+  };
+  const cancelRename = () => {
+    if (!renameItem || renaming) return;
+    const id = renameItem.id;
+    setRenameItem(null);
+    requestAnimationFrame(() => focusHistoryTitle(id));
+  };
+  const saveRename = async () => {
+    if (!renameItem || renaming || !renameTitle.trim()) return;
+    const id = renameItem.id;
+    setRenaming(true);
+    setError("");
+    try {
+      await rename(renameItem, renameTitle.trim());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setRenaming(false);
+      requestAnimationFrame(() => {
+        if (renameInputRef.current) renameInputRef.current.focus();
+        else focusHistoryTitle(id);
+      });
+    }
+  };
   return (
     <div className="amadeus-window">
       <header className="amadeus-header">
@@ -285,7 +335,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                   placeholder="搜索本地对话"
                 />
               </label>
-              <div className="amadeus-history-list">
+              <div className="amadeus-history-list" ref={historyListRef}>
                 {groups.map((group) => (
                   <section key={group.name}>
                     <h3>{group.name}</h3>
@@ -293,67 +343,112 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                       <div
                         className={`amadeus-history-row ${detail?.conversation.id === item.id ? "active" : ""}`}
                         key={item.id}
+                        data-conversation-id={item.id}
                       >
-                        <button
-                          className="amadeus-history-title"
-                          onClick={() => void open(item.id)}
-                        >
-                          {item.title}
-                        </button>
-                        <button
-                          title="重命名"
-                          onClick={() => {
-                            setRenameItem(item);
-                            setRenameTitle(item.title);
-                          }}
-                        >
-                          ⋯
-                        </button>
-                        <button
-                          title={busy ? "请先停止当前任务" : "删除"}
-                          disabled={busy}
-                          onClick={() => setDeleteItem(item)}
-                        >
-                          ×
-                        </button>
+                        {renameItem?.id === item.id ? (
+                          <form
+                            className="amadeus-history-rename"
+                            aria-label={`重命名对话「${item.title}」`}
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              void saveRename();
+                            }}
+                          >
+                            <input
+                              ref={renameInputRef}
+                              aria-label="对话名称"
+                              aria-describedby={
+                                error
+                                  ? `${historyRegionId}-rename-error`
+                                  : undefined
+                              }
+                              value={renameTitle}
+                              maxLength={120}
+                              disabled={renaming}
+                              onChange={(event) =>
+                                setRenameTitle(event.target.value)
+                              }
+                              onKeyDown={(event) => {
+                                if (
+                                  event.nativeEvent.isComposing ||
+                                  event.keyCode === 229
+                                ) {
+                                  if (event.key === "Enter")
+                                    event.preventDefault();
+                                  return;
+                                }
+                                if (event.key === "Escape") {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  cancelRename();
+                                }
+                              }}
+                            />
+                            <button
+                              type="submit"
+                              aria-label="保存对话名称"
+                              title={renaming ? "正在保存" : "保存"}
+                              disabled={renaming || !renameTitle.trim()}
+                            >
+                              <Check size={15} aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="取消重命名"
+                              title="取消"
+                              disabled={renaming}
+                              onClick={cancelRename}
+                            >
+                              <X size={15} aria-hidden />
+                            </button>
+                            {error && (
+                              <small
+                                id={`${historyRegionId}-rename-error`}
+                                role="alert"
+                              >
+                                {error}
+                              </small>
+                            )}
+                          </form>
+                        ) : (
+                          <>
+                            <button
+                              className="amadeus-history-title"
+                              onClick={() => void open(item.id)}
+                            >
+                              {item.title}
+                            </button>
+                            <div className="amadeus-history-actions">
+                              <button
+                                title="重命名"
+                                aria-label={`重命名对话「${item.title}」`}
+                                disabled={renaming}
+                                onClick={() => {
+                                  setError("");
+                                  setRenameItem(item);
+                                  setRenameTitle(item.title);
+                                }}
+                              >
+                                <MoreHorizontal size={15} aria-hidden />
+                              </button>
+                              <button
+                                title={busy ? "请先停止当前任务" : "删除"}
+                                aria-label={`删除对话「${item.title}」`}
+                                disabled={busy || renaming}
+                                onClick={() => {
+                                  setError("");
+                                  setDeleteItem(item);
+                                }}
+                              >
+                                <Trash2 size={14} aria-hidden />
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </section>
                 ))}
-                {renameItem && (
-                  <form
-                    className="amadeus-history-dialog"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void rename(renameItem, renameTitle);
-                    }}
-                  >
-                    <strong>重命名对话</strong>
-                    <input
-                      autoFocus
-                      value={renameTitle}
-                      onChange={(event) => setRenameTitle(event.target.value)}
-                    />
-                    <div>
-                      <button type="button" onClick={() => setRenameItem(null)}>
-                        取消
-                      </button>
-                      <button type="submit">保存</button>
-                    </div>
-                  </form>
-                )}
-                {deleteItem && (
-                  <div className="amadeus-history-dialog">
-                    <strong>删除「{deleteItem.title}」？</strong>
-                    <p>这会同时删除本地消息与会话文件。</p>
-                    <div>
-                      <button onClick={() => setDeleteItem(null)}>取消</button>
-                      <button onClick={() => void remove(deleteItem)}>
-                        删除
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </section>
@@ -668,6 +763,32 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           </aside>
         )}
       </div>
+      <ConfirmDialog
+        open={deleteItem !== null}
+        title={`删除「${deleteItem?.title ?? ""}」？`}
+        description={
+          <>
+            <p>这会同时删除本地消息与会话文件，删除后无法恢复。</p>
+            {error && <p role="alert">{error}</p>}
+          </>
+        }
+        confirmLabel="删除"
+        pending={deleting}
+        confirmDisabled={busy}
+        onCancel={() => setDeleteItem(null)}
+        onConfirm={async () => {
+          if (!deleteItem || deleting || busy) return;
+          setDeleting(true);
+          setError("");
+          try {
+            await remove(deleteItem);
+          } catch (cause) {
+            setError(cause instanceof Error ? cause.message : String(cause));
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
       {previewReference && (
         <div
           className="amadeus-reference-backdrop"

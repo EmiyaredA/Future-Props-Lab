@@ -201,7 +201,6 @@
 }
 
 .amadeus-search,
-.amadeus-history-dialog,
 .amadeus-ref,
 .amadeus-steps,
 .amadeus-composer {
@@ -378,7 +377,6 @@ html[data-theme="dark"] #root {
 }
 
 :root[data-theme="dark"] .amadeus-search,
-:root[data-theme="dark"] .amadeus-history-dialog,
 :root[data-theme="dark"] .amadeus-ref,
 :root[data-theme="dark"] .amadeus-reference-detail,
 :root[data-theme="dark"] .amadeus-steps,
@@ -428,14 +426,8 @@ html[data-theme="dark"] #root {
 :root[data-theme="dark"] .amadeus-reference-detail p,
 :root[data-theme="dark"] .amadeus-message.user,
 :root[data-theme="dark"] .amadeus-composer textarea,
-:root[data-theme="dark"] .amadeus-search input,
-:root[data-theme="dark"] .amadeus-history-dialog input {
+:root[data-theme="dark"] .amadeus-search input {
   color: var(--amadeus-ink);
-}
-
-:root[data-theme="dark"] .amadeus-history-dialog input {
-  background: var(--amadeus-bg);
-  border-color: var(--amadeus-line);
 }
 
 :root[data-theme="dark"] .amadeus-welcome button:hover,
