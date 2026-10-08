@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>人物替换 · 制作监督</title>
+    <style>
+      /* BOARD_CSS */
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">↔</span>
+        <div>
+          <strong>FUTURE PROPS LAB</strong
+          ><span>人物与场景替换 · 制作监督</span>
+        </div>
+      </div>
+      <div class="actions">
+        <span id="dirty" role="status">暂无未导出意见</span
+        ><button id="theme" type="button">切换深色</button
+        ><button id="export" class="primary" type="button">
+          导出 review 意见
+        </button>
+      </div>
+    </header>
+    <main>
+      <section class="intro">
+        <p class="eyebrow" id="demo"></p>
+        <h1 id="title"></h1>
+        <p id="snapshot" class="muted"></p>
+        <p class="muted">
+          本页是制作快照。导出的意见需由 Agent 合并后才会更新制作记录。
+        </p>
+      </section>
+      <section class="metrics" id="metrics" aria-label="制作进度"></section>
+      <section class="panel">
+        <h2>制作总览</h2>
+        <div
+          class="progress-scroll"
+          tabindex="0"
+          aria-label="镜头进度表，可横向滚动"
+        >
+          <table class="progress-table">
+            <thead>
+              <tr>
+                <th>镜头</th>
+                <th>制作阶段</th>
+                <th>Agent review</th>
+                <th>用户 review</th>
+                <th>下一步</th>
+              </tr>
+            </thead>
+            <tbody id="progress"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="section-heading">
+          <h2>用户质量关口</h2>
+          <span class="muted">方案 → 代表镜头 → 成片</span>
+        </div>
+        <div class="gates" id="gates"></div>
+      </section>
+      <section class="planning">
+        <div class="panel">
+          <h2>替换范围与统一参考</h2>
+          <div id="references"></div>
+        </div>
+        <div class="panel">
+          <h2>下一步与阻塞</h2>
+          <div id="next"></div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="section-heading">
+          <h2>镜头工作台</h2>
+          <span id="count" class="muted"></span>
+        </div>
+        <div class="filters" role="group" aria-label="筛选镜头">
+          <button data-filter="all" aria-pressed="true">全部</button
+          ><button data-filter="review" aria-pressed="false">
+            待用户 review</button
+          ><button data-filter="repair" aria-pressed="false">需返修</button
+          ><button data-filter="stale" aria-pressed="false">待复查</button>
+        </div>
+        <div class="workspace">
+          <nav id="shots" aria-label="镜头列表"></nav>
+          <article id="detail" aria-live="polite"></article>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>成片验收</h2>
+        <div id="final"></div>
+      </section>
+      <p id="message" class="message" role="status"></p>
+    </main>
+    <footer>所有结论对应具体候选与参考快照 · 任务完成不等于验收通过</footer>
+    <script id="board-data" type="application/json">
+      <!-- BOARD_DATA -->
+    </script>
+    <script>
+      /* BOARD_JS */
+    </script>
+  </body>
+</html>

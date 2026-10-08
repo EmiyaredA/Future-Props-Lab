@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "record_id": "new-production",
+  "revision": 0,
+  "title": "人物与场景替换",
+  "updated_at": "未初始化",
+  "demo": false,
+  "project_id": null,
+  "phase": "方案与参考准备",
+  "brief": { "preserve": [], "replace": [] },
+  "source": {
+    "media": null,
+    "audio_policy": "保留原声，实际导出后检查音画关系"
+  },
+  "characters": [],
+  "scenes": [],
+  "shots": [],
+  "gates": {
+    "scheme": {
+      "decision": "pending",
+      "subject_hash": null,
+      "note": "",
+      "at": ""
+    },
+    "representative": {
+      "decision": "pending",
+      "subject_hash": null,
+      "note": "",
+      "at": ""
+    },
+    "final": {
+      "decision": "pending",
+      "subject_hash": null,
+      "note": "",
+      "at": ""
+    }
+  },
+  "final": {
+    "candidate": null,
+    "required_checks": ["technical", "static", "dynamic", "audio"],
+    "summary": "尚未进入成片验收",
+    "issues": []
+  },
+  "blockers": [],
+  "next_steps": ["盘点已有项目与素材，建立替换方案"],
+  "app_nodes": {}
+}

@@ -39,6 +39,7 @@ python3 scripts/validate_skills.py
 | `skills/visual-workshop/visual-canvas-editing` | `visual-canvas-editing` |
 | `skills/visual-workshop/visual-project-assets` | `visual-project-assets` |
 | `skills/visual-workshop/visual-generation-tasks` | `visual-generation-tasks` |
+| `skills/visual-workshop/visual-character-replacement` | `visual-character-replacement` |
 | `skills/galgame-workshop/galgame-story-editing` | `galgame-story-editing` |
 | `skills/galgame-workshop/galgame-project-assets` | `galgame-project-assets` |
 | `skills/galgame-workshop/galgame-transcription-asr` | `galgame-transcription-asr` |

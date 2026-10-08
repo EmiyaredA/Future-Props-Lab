@@ -50,6 +50,7 @@ cp -R skills/visual-workshop/visual-canvas-editing ~/.cursor/skills/visual-canva
 | 视觉：画布编辑 | `skills/visual-workshop/visual-canvas-editing/SKILL.md` |
 | 视觉：项目素材引用 | `skills/visual-workshop/visual-project-assets/SKILL.md` |
 | 视觉：生成任务 | `skills/visual-workshop/visual-generation-tasks/SKILL.md` |
+| 视觉：人物与场景替换、监督看板与返修 | `skills/visual-workshop/visual-character-replacement/SKILL.md` |
 | Galgame：剧本 | `skills/galgame-workshop/galgame-story-editing/SKILL.md` |
 | Galgame：素材 | `skills/galgame-workshop/galgame-project-assets/SKILL.md` |
 | Galgame：ASR/转录 | `skills/galgame-workshop/galgame-transcription-asr/SKILL.md` |

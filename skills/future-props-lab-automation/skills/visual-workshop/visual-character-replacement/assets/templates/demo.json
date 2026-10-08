@@ -1,0 +1,429 @@
+{
+  "schema_version": 1,
+  "record_id": "demo-replacement",
+  "revision": 0,
+  "title": "人物替换 · 制作监督示例",
+  "updated_at": "演示快照",
+  "demo": true,
+  "project_id": null,
+  "phase": "代表镜头 review",
+  "brief": {
+    "preserve": [
+      "原片构图、动作顺序、镜头运动与剪辑节奏",
+      "多人接触关系与道具持握",
+      "整条原声音轨"
+    ],
+    "replace": [
+      "角色 A → 黑发白外套角色",
+      "角色 B → 红发深色外套角色",
+      "场景可选替换；本示例沿用原空间"
+    ]
+  },
+  "source": {
+    "media": null,
+    "audio_policy": "保留原声，实际导出后检查音画关系"
+  },
+  "characters": [
+    {
+      "id": "A",
+      "name": "角色 A",
+      "mapping": "原片主角 → 黑发白外套人物",
+      "references": []
+    },
+    {
+      "id": "B",
+      "name": "角色 B",
+      "mapping": "原片搭档 → 红发深色外套人物",
+      "references": []
+    }
+  ],
+  "scenes": [
+    {
+      "id": "studio",
+      "name": "演出空间",
+      "description": "保留搭肩、站位与道具所需空间；允许替换背景外观",
+      "references": []
+    }
+  ],
+  "shots": [
+    {
+      "id": "S001",
+      "title": "单人近景",
+      "type": "person",
+      "source_range": [0, 4.2],
+      "character_ids": ["A"],
+      "scene_id": "studio",
+      "stage": "起始画面",
+      "execution_status": "not_started",
+      "representative": false,
+      "requirements": [
+        "保持原片构图与表演关系",
+        "候选变化后重新检查身份与动作"
+      ],
+      "references": [
+        {
+          "role": "identity",
+          "description": "仅使用在场目标人物的必要身份参考",
+          "media": null
+        },
+        {
+          "role": "space",
+          "description": "保持人物站位、比例和接触面",
+          "media": null
+        },
+        {
+          "role": "action",
+          "description": "沿用原片动作顺序与机位",
+          "media": null
+        },
+        {
+          "role": "timing",
+          "description": "对齐源镜头内部动作时刻",
+          "media": null
+        }
+      ],
+      "segments": [],
+      "source_media": null,
+      "candidates": [
+        {
+          "id": "s001-still-v1",
+          "label": "起始画面 v1",
+          "stage": "still",
+          "node_id": null,
+          "task_id": null,
+          "asset_id": null,
+          "output_id": null,
+          "media": null,
+          "input_snapshot": {
+            "description": "演示参考快照；无真实生成任务"
+          },
+          "checks": [
+            {
+              "dimension": "technical",
+              "verdict": "pass",
+              "subject_hash": "2bed69fb1abb0544630f37c1b808c9521940d97670ed6e903911025b6438742b",
+              "note": "演示结论：展示记录格式，不代表真实验收。",
+              "evidence": [
+                {
+                  "kind": "probe",
+                  "time": 0,
+                  "text": "演示证据：文件检查 / 关键画面记录"
+                }
+              ]
+            },
+            {
+              "dimension": "static",
+              "verdict": "pass",
+              "subject_hash": "2bed69fb1abb0544630f37c1b808c9521940d97670ed6e903911025b6438742b",
+              "note": "演示结论：展示记录格式，不代表真实验收。",
+              "evidence": [
+                {
+                  "kind": "frame",
+                  "time": 0,
+                  "text": "演示证据：文件检查 / 关键画面记录"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "selected_candidate_id": "s001-still-v1",
+      "required_checks": ["technical", "static"],
+      "decisions": [],
+      "adopted": null,
+      "repairs": [],
+      "next_step": "制作动态候选"
+    },
+    {
+      "id": "S017",
+      "title": "双人搭肩",
+      "type": "interaction",
+      "source_range": [35.53, 38.91],
+      "character_ids": ["A", "B"],
+      "scene_id": "studio",
+      "stage": "动态候选 v2",
+      "execution_status": "not_started",
+      "representative": true,
+      "requirements": [
+        "保持原片构图与表演关系",
+        "候选变化后重新检查身份与动作"
+      ],
+      "references": [
+        {
+          "role": "identity",
+          "description": "仅使用在场目标人物的必要身份参考",
+          "media": null
+        },
+        {
+          "role": "space",
+          "description": "保持人物站位、比例和接触面",
+          "media": null
+        },
+        {
+          "role": "action",
+          "description": "沿用原片动作顺序与机位",
+          "media": null
+        },
+        {
+          "role": "timing",
+          "description": "对齐源镜头内部动作时刻",
+          "media": null
+        }
+      ],
+      "segments": [],
+      "source_media": null,
+      "candidates": [
+        {
+          "id": "s017-motion-v1",
+          "label": "动态候选 v1",
+          "stage": "motion",
+          "node_id": null,
+          "task_id": null,
+          "asset_id": null,
+          "output_id": null,
+          "media": null,
+          "input_snapshot": {
+            "description": "演示参考快照；无真实生成任务"
+          },
+          "checks": [
+            {
+              "dimension": "technical",
+              "verdict": "pass",
+              "subject_hash": "e84b28c7c83d809b6477bf28ededf1209c553b8f5d6912f8a41c48709d61a82e",
+              "note": "演示结论：展示记录格式，不代表真实验收。",
+              "evidence": [
+                {
+                  "kind": "probe",
+                  "time": 0,
+                  "text": "演示证据：文件检查 / 关键画面记录"
+                }
+              ]
+            },
+            {
+              "dimension": "static",
+              "verdict": "pass",
+              "subject_hash": "e84b28c7c83d809b6477bf28ededf1209c553b8f5d6912f8a41c48709d61a82e",
+              "note": "演示结论：展示记录格式，不代表真实验收。",
+              "evidence": [
+                {
+                  "kind": "frame",
+                  "time": 0,
+                  "text": "演示证据：文件检查 / 关键画面记录"
+                }
+              ]
+            },
+            {
+              "dimension": "dynamic",
+              "verdict": "insufficient",
+              "subject_hash": "e84b28c7c83d809b6477bf28ededf1209c553b8f5d6912f8a41c48709d61a82e",
+              "note": "演示：动作区间尚未完整检查。",
+              "evidence": [
+                {
+                  "kind": "playback",
+                  "time": 1.2,
+                  "end": 1.8,
+                  "text": "演示证据：搭肩接触关系变化"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s017-motion-v2",
+          "label": "动态候选 v2",
+          "stage": "motion",
+          "node_id": null,
+          "task_id": null,
+          "asset_id": null,
+          "output_id": null,
+          "media": null,
+          "input_snapshot": {
+            "description": "演示参考快照；无真实生成任务"
+          },
+          "checks": [
+            {
+              "dimension": "technical",
+              "verdict": "pass",
+              "subject_hash": "9921a808f405aaa306c2b7384a5c35b5abbb6d3b71e3bdcb75e609eb0d78396d",
+              "note": "演示结论：展示记录格式，不代表真实验收。",
+              "evidence": [
+                {
+                  "kind": "probe",
+                  "time": 0,
+                  "text": "演示证据：文件检查 / 关键画面记录"
+                }
+              ]
+            },
+            {
+              "dimension": "static",
+              "verdict": "pass",
+              "subject_hash": "9921a808f405aaa306c2b7384a5c35b5abbb6d3b71e3bdcb75e609eb0d78396d",
+              "note": "演示结论：展示记录格式，不代表真实验收。",
+              "evidence": [
+                {
+                  "kind": "frame",
+                  "time": 0,
+                  "text": "演示证据：文件检查 / 关键画面记录"
+                }
+              ]
+            },
+            {
+              "dimension": "dynamic",
+              "verdict": "fail",
+              "subject_hash": "9921a808f405aaa306c2b7384a5c35b5abbb6d3b71e3bdcb75e609eb0d78396d",
+              "note": "演示问题：1.2–1.8s 手离开肩部。",
+              "evidence": [
+                {
+                  "kind": "playback",
+                  "time": 1.2,
+                  "end": 1.8,
+                  "text": "演示证据：搭肩接触关系变化"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "selected_candidate_id": "s017-motion-v2",
+      "required_checks": ["technical", "static", "dynamic"],
+      "decisions": [],
+      "adopted": null,
+      "repairs": [
+        {
+          "from_candidate_id": "s017-motion-v1",
+          "to_candidate_id": "s017-motion-v2",
+          "range": [1.2, 1.8],
+          "problem": "演示：转头过程中搭肩接触不稳定",
+          "cause": "起始接触关系与运动约束没有保持一致",
+          "change": "明确肩部接触持续，保留其余已通过的构图与身份",
+          "comparison": "演示：v2 仍有接触变化，需再次返修；身份未见新增问题。"
+        }
+      ],
+      "next_step": "修正接触关系，再对照新旧候选"
+    },
+    {
+      "id": "S018",
+      "title": "重复头像与图形",
+      "type": "graphic",
+      "source_range": [38.91, 40.24],
+      "character_ids": [],
+      "scene_id": "studio",
+      "stage": "素材替换",
+      "execution_status": "not_started",
+      "representative": false,
+      "requirements": [
+        "保持原片构图与表演关系",
+        "候选变化后重新检查身份与动作"
+      ],
+      "references": [
+        {
+          "role": "identity",
+          "description": "仅使用在场目标人物的必要身份参考",
+          "media": null
+        },
+        {
+          "role": "space",
+          "description": "保持人物站位、比例和接触面",
+          "media": null
+        },
+        {
+          "role": "action",
+          "description": "沿用原片动作顺序与机位",
+          "media": null
+        },
+        {
+          "role": "timing",
+          "description": "对齐源镜头内部动作时刻",
+          "media": null
+        }
+      ],
+      "segments": [],
+      "source_media": null,
+      "candidates": [
+        {
+          "id": "s018-graphic-v1",
+          "label": "图形素材 v1",
+          "stage": "graphic",
+          "node_id": null,
+          "task_id": null,
+          "asset_id": null,
+          "output_id": null,
+          "media": null,
+          "input_snapshot": {
+            "description": "演示参考快照；无真实生成任务"
+          },
+          "checks": [
+            {
+              "dimension": "technical",
+              "verdict": "pass",
+              "subject_hash": "c486a82491af901b143de639e3d1e3ffd19da1e2b16029929f6e591560c75d68",
+              "note": "演示结论：展示记录格式，不代表真实验收。",
+              "evidence": [
+                {
+                  "kind": "probe",
+                  "time": 0,
+                  "text": "演示证据：文件检查 / 关键画面记录"
+                }
+              ]
+            },
+            {
+              "dimension": "static",
+              "verdict": "pass",
+              "subject_hash": "c486a82491af901b143de639e3d1e3ffd19da1e2b16029929f6e591560c75d68",
+              "note": "演示结论：展示记录格式，不代表真实验收。",
+              "evidence": [
+                {
+                  "kind": "frame",
+                  "time": 0,
+                  "text": "演示证据：文件检查 / 关键画面记录"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "selected_candidate_id": "s018-graphic-v1",
+      "required_checks": ["technical", "static"],
+      "decisions": [],
+      "adopted": null,
+      "repairs": [],
+      "next_step": "纳入整片节奏检查"
+    }
+  ],
+  "gates": {
+    "scheme": {
+      "decision": "pending",
+      "subject_hash": null,
+      "note": "",
+      "at": ""
+    },
+    "representative": {
+      "decision": "pending",
+      "subject_hash": null,
+      "note": "",
+      "at": ""
+    },
+    "final": {
+      "decision": "pending",
+      "subject_hash": null,
+      "note": "",
+      "at": ""
+    }
+  },
+  "final": {
+    "candidate": null,
+    "required_checks": ["technical", "static", "dynamic", "audio"],
+    "summary": "尚未进入成片验收",
+    "issues": []
+  },
+  "blockers": [
+    "演示未提供真实源片和生成结果；动态与声音不能据此验收",
+    "当前 Agent 未开放输出版本操作时，需在 App 界面选择并记录实际版本"
+  ],
+  "next_steps": [
+    "确认替换方案与角色参考",
+    "集中检查 S017 接触关系，再确认代表镜头",
+    "其他镜头在既有授权与上层额度内推进"
+  ],
+  "app_nodes": {}
+}
