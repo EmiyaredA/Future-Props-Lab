@@ -180,18 +180,39 @@ export function useCanvasPersistence(
   }, [applyHistorySnapshot]);
 
   const prepareCanvasForAgent = useCallback(async () => {
-    if (autoSave.current) {
-      clearTimeout(autoSave.current);
-      autoSave.current = undefined;
-      enqueueSave(nodesRef.current);
+    // Include saves scheduled while an earlier request is still in flight.
+    for (;;) {
+      if (autoSave.current) {
+        clearTimeout(autoSave.current);
+        autoSave.current = undefined;
+        enqueueSave(nodesRef.current);
+      }
+      const queued = saveQueue.current;
+      await queued;
+      if (queued === saveQueue.current && !autoSave.current) break;
     }
-    await saveQueue.current;
     if (conflictRef.current)
       throw new Error("画布存在保存冲突，请先选择要使用的版本");
     if (saveFailureRef.current)
       throw new Error(`画布尚未保存：${saveFailureRef.current}`);
     return revisionRef.current;
   }, [enqueueSave]);
+
+  const scheduleSave = useCallback(
+    (immediate: boolean) => {
+      if (autoSave.current) clearTimeout(autoSave.current);
+      autoSave.current = undefined;
+      if (immediate) enqueueSave(nodesRef.current, edgesRef.current);
+      else {
+        if (!conflictRef.current) setSaveState("saving");
+        autoSave.current = setTimeout(() => {
+          autoSave.current = undefined;
+          enqueueSave(nodesRef.current, edgesRef.current);
+        }, 650);
+      }
+    },
+    [enqueueSave],
+  );
 
   const replaceNodes = useCallback(
     (
@@ -201,31 +222,22 @@ export function useCanvasPersistence(
       immediate = false,
       trackHistory = true,
     ) => {
-      setNodes((current) => {
-        const next = typeof updater === "function" ? updater(current) : updater;
-        if (next === current) {
-          if (immediate) {
-            if (autoSave.current) clearTimeout(autoSave.current);
-            autoSave.current = undefined;
-            enqueueSave(current);
-          }
-          return current;
-        }
-        if (trackHistory) {
-          recordHistory({ nodes: current, edges: edgesRef.current });
-        }
-        nodesRef.current = next;
-        if (autoSave.current) clearTimeout(autoSave.current);
-        if (immediate) enqueueSave(next);
-        else
-          autoSave.current = setTimeout(
-            () => enqueueSave(nodesRef.current),
-            650,
-          );
-        return next;
-      });
+      const current = nodesRef.current;
+      const next = typeof updater === "function" ? updater(current) : updater;
+      if (next === current) {
+        if (immediate) scheduleSave(true);
+        return;
+      }
+      if (trackHistory) {
+        recordHistory({ nodes: current, edges: edgesRef.current });
+      }
+      // Publish and queue the snapshot before returning to the submit handler.
+      // React may defer or replay a state updater, so it cannot own save effects.
+      nodesRef.current = next;
+      setNodes(next);
+      scheduleSave(immediate);
     },
-    [edgesRef, enqueueSave, recordHistory],
+    [recordHistory, scheduleSave],
   );
   const patchNode = useCallback(
     (nodeId: string, patch: Partial<VisualCanvasNode>, immediate = false) => {
@@ -255,23 +267,20 @@ export function useCanvasPersistence(
       immediate = false,
       trackHistory = true,
     ) => {
-      setEdges((current) => {
-        const next = typeof updater === "function" ? updater(current) : updater;
-        if (trackHistory) {
-          recordHistory({ nodes: nodesRef.current, edges: current });
-        }
-        edgesRef.current = next;
-        if (autoSave.current) clearTimeout(autoSave.current);
-        if (immediate) enqueueSave(nodesRef.current, next);
-        else
-          autoSave.current = setTimeout(
-            () => enqueueSave(nodesRef.current, edgesRef.current),
-            650,
-          );
-        return next;
-      });
+      const current = edgesRef.current;
+      const next = typeof updater === "function" ? updater(current) : updater;
+      if (next === current) {
+        if (immediate) scheduleSave(true);
+        return;
+      }
+      if (trackHistory) {
+        recordHistory({ nodes: nodesRef.current, edges: current });
+      }
+      edgesRef.current = next;
+      setEdges(next);
+      scheduleSave(immediate);
     },
-    [enqueueSave, recordHistory],
+    [recordHistory, scheduleSave],
   );
 
   return {
