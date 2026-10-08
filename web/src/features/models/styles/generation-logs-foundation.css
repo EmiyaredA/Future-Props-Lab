@@ -503,7 +503,7 @@
   padding: 7px 10px;
 }
 
-.conversation-list > button {
+.conversation-list .conversation-select {
   min-height: 66px;
   padding: 9px 10px;
   border: 1px solid transparent;

@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import type { ModelTestConversation } from "@features/models/api";
+import type { ModelTestConversationSummary } from "@features/models/api";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 
 export function ModelTestDialogs({
@@ -7,6 +7,7 @@ export function ModelTestDialogs({
   attachment,
   deleteTarget,
   deleting,
+  deleteError,
   onCloseError,
   onCloseAttachment,
   onCancelDelete,
@@ -14,8 +15,9 @@ export function ModelTestDialogs({
 }: {
   error: string | null;
   attachment: { url: string; name: string } | null;
-  deleteTarget: ModelTestConversation | null;
+  deleteTarget: ModelTestConversationSummary | null;
   deleting: boolean;
+  deleteError: string;
   onCloseError: () => void;
   onCloseAttachment: () => void;
   onCancelDelete: () => void;
@@ -106,9 +108,16 @@ export function ModelTestDialogs({
         open={Boolean(deleteTarget)}
         title="删除测试对话"
         description={
-          deleteTarget
-            ? `对话「${deleteTarget.title}」及其中的全部消息将被永久删除。`
-            : ""
+          <>
+            {deleteTarget
+              ? `对话「${deleteTarget.title}」及其中的全部消息将被永久删除。`
+              : ""}
+            {deleteError && (
+              <p role="alert" className="danger-text">
+                {deleteError}
+              </p>
+            )}
+          </>
         }
         confirmLabel="删除对话"
         pending={deleting}

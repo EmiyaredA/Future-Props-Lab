@@ -15,6 +15,7 @@ import {
   uploadModelTestAttachments,
   type ModelStreamEvent,
   type ModelTestConversation,
+  type ModelTestConversationSummary,
   type ModelTestMessage,
 } from "@features/models/api";
 import type { SelectOption } from "@shared/ui/CustomSelect";
@@ -83,7 +84,7 @@ export function ModelTestPage({
     name: string;
   } | null>(null);
   const [conversationToDelete, setConversationToDelete] =
-    useState<ModelTestConversation | null>(null);
+    useState<ModelTestConversationSummary | null>(null);
   const [deletingConversation, setDeletingConversation] = useState(false);
   const [uploadingAttachments, setUploadingAttachments] = useState(false);
   const [removingAttachmentId, setRemovingAttachmentId] = useState<
@@ -255,7 +256,13 @@ export function ModelTestPage({
   };
 
   const remove = async () => {
-    if (!conversationToDelete || streamingId) return;
+    if (
+      !conversationToDelete ||
+      streamingId ||
+      uploadingAttachments ||
+      deletingConversation
+    )
+      return;
     setDeletingConversation(true);
     try {
       await deleteModelTestConversation(
@@ -263,8 +270,17 @@ export function ModelTestPage({
         conversationToDelete.revision,
       );
       setConversationToDelete(null);
-      setActiveId(null);
-      autoCreated.current = false;
+      queryClient.setQueryData<
+        Awaited<ReturnType<typeof getModelTestConversations>>
+      >(modelQueryKeys.conversations, (current) => ({
+        items: (current?.items ?? []).filter(
+          (item) => item.id !== conversationToDelete.id,
+        ),
+      }));
+      if (activeId === conversationToDelete.id) {
+        setActiveId(null);
+        autoCreated.current = false;
+      }
       await conversationsQuery.refetch();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -550,6 +566,10 @@ export function ModelTestPage({
             setActiveId(id);
             setMobilePanel(null);
           }}
+          onDelete={(item) => {
+            setError("");
+            setConversationToDelete(item);
+          }}
           onClose={() => setMobilePanel(null)}
         />
 
@@ -582,7 +602,10 @@ export function ModelTestPage({
                   className="chat-delete-button"
                   aria-label="删除当前对话"
                   disabled={Boolean(streamingId) || uploadingAttachments}
-                  onClick={() => setConversationToDelete(conversation)}
+                  onClick={() => {
+                    setError("");
+                    setConversationToDelete(conversation);
+                  }}
                 >
                   <Trash2 aria-hidden />
                 </button>
@@ -776,6 +799,7 @@ export function ModelTestPage({
         attachment={attachmentPreview}
         deleteTarget={conversationToDelete}
         deleting={deletingConversation}
+        deleteError={error}
         onCloseError={() => setErrorDetail(null)}
         onCloseAttachment={() => setAttachmentPreview(null)}
         onCancelDelete={() => setConversationToDelete(null)}

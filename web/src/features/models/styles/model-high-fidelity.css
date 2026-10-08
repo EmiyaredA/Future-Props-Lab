@@ -613,7 +613,7 @@
   .mc-provider-card,
   .switch,
   .model-test-mode-tabs button,
-  .conversation-list > button {
+  .conversation-list .conversation-select {
     transition: none;
   }
 }

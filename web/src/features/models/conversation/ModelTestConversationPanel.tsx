@@ -1,5 +1,5 @@
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
-import { MessageSquareText, Plus, Search } from "lucide-react";
+import { MessageSquareText, Plus, Search, Trash2 } from "lucide-react";
 import type { ModelTestConversationSummary } from "@features/models/api";
 
 function formatConversationTime(value: string) {
@@ -24,6 +24,7 @@ export function ModelTestConversationPanel({
   onSearch,
   onCreate,
   onSelect,
+  onDelete,
   onClose,
 }: {
   open: boolean;
@@ -35,6 +36,7 @@ export function ModelTestConversationPanel({
   onSearch: (value: string) => void;
   onCreate: () => void;
   onSelect: (id: string) => void;
+  onDelete: (item: ModelTestConversationSummary) => void;
   onClose: () => void;
 }) {
   const drawer = useDrawerFocus(onClose, open);
@@ -76,22 +78,36 @@ export function ModelTestConversationPanel({
       </div>
       <div className="conversation-list">
         {filtered.map((item) => (
-          <button
-            className={item.id === activeId ? "active" : ""}
+          <div
+            className={`conversation-row${item.id === activeId ? " active" : ""}`}
             key={item.id}
-            onClick={() => onSelect(item.id)}
           >
-            <span className="conversation-item-icon">
-              <MessageSquareText aria-hidden />
-            </span>
-            <span>
-              <strong>{item.title}</strong>
-              <small>
-                <span>{item.model_slug || "未选择模型"}</span>
-                <time>{formatConversationTime(item.updated_at)}</time>
-              </small>
-            </span>
-          </button>
+            <button
+              className="conversation-select"
+              onClick={() => onSelect(item.id)}
+            >
+              <span className="conversation-item-icon">
+                <MessageSquareText aria-hidden />
+              </span>
+              <span>
+                <strong>{item.title}</strong>
+                <small>
+                  <span>{item.model_slug || "未选择模型"}</span>
+                  <time>{formatConversationTime(item.updated_at)}</time>
+                </small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="conversation-row-delete"
+              aria-label={`删除对话「${item.title}」`}
+              title={disabled ? "请先等待当前操作完成" : "删除对话"}
+              disabled={disabled}
+              onClick={() => onDelete(item)}
+            >
+              <Trash2 aria-hidden />
+            </button>
+          </div>
         ))}
         {!filtered.length && normalized ? (
           <p className="conversation-empty">没有匹配的对话</p>
