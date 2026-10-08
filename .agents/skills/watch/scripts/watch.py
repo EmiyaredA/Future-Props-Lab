@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """/watch entry point: download video, extract frames, parse transcript.
 
-Prints a markdown report to stdout listing frame paths + transcript. Claude
-then Reads each frame path to see the video.
+Prints a markdown report to stdout listing frame paths and transcript.
+The caller views frame images with the capabilities available in its host.
 """
 from __future__ import annotations
 
@@ -380,7 +380,7 @@ def main() -> int:
         print(f"Frames live at: `{work / 'frames'}`")
         print()
         print(
-            "**Read each frame path below with the Read tool to view the image.** "
+            "**View each frame image below using your host's image-viewing or multimodal capability.** "
             "Frames are in chronological order; `t=MM:SS` is the absolute timestamp in the source video."
         )
         print()

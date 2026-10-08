@@ -191,7 +191,7 @@ def _post_whisper(endpoint: str, api_key: str, model: str, audio_path: Path) -> 
         # Groq sits behind Cloudflare — the default `Python-urllib/3.x` UA
         # trips WAF rule 1010 (403) before auth even runs. Any non-default
         # UA clears it; we identify honestly.
-        "User-Agent": "watch-skill/1.0 (+claude-code; python-urllib)",
+        "User-Agent": "watch-skill/1.0 (python-urllib)",
     }
 
     context = ssl.create_default_context()

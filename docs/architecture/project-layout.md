@@ -27,7 +27,7 @@ Mermaid 共用阅读器及 SVG/PNG 导出。运行期选择和视口不进入正
 
 ```text
 Future-Props-Lab/
-├── .agents/skills/    # 仓库级 Codex Agent Skills；watch 为固定上游版本的视频分析 Skill
+├── .agents/skills/    # 仓库级 Codex Agent Skills；watch 为基于固定上游版本的通用视频分析 Skill
 ├── .agents/notes/     # 工程决策 Note；按 lifecycle/class 分类，不承载产品文档中心正文
 ├── .agents/agent-note-templates/ # proposed/implemented/rejected Note 模板
 ├── .github/workflows/ # 冻结依赖的 Python/Web 质量检查与 Chromium E2E
@@ -526,7 +526,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
 - `sdk/python/src/future_props_lab/canvas_example.py`：独立的笔记信息图 SDK 示例，通过正式 API 创建与导出可编辑画板；不参与既有六工坊文档生成，契约回归由 `tests/test_thought_canvas.py` 覆盖。
 - `skills/future-props-lab-automation/`：官方自动化 Agent Skill 包（根 `SKILL.md` 名 `future-props-lab-automation`）。叶子 skill 目录名必须等于 frontmatter `name`，可单独或组合安装；每个叶子内联「前置」与最小 `fpl` 示例。校验：`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。只指导通过 `fpl`/SDK 操作产品，不修改本仓库源码；见该处 `README.md`。
-- `.agents/skills/watch/`：仓库级第三方视频分析 Agent Skill，包含上游脚本、许可证与固定提交来源记录；仅供 Codex 在本仓库发现，不参与 Future Props Lab 产品构建。应用内 Skills 通过正式 ZIP 导入 API 单独管理。
+- `.agents/skills/watch/`：仓库级第三方视频分析 Agent Skill，包含中文通用指南、基于固定上游的通用脚本、许可证与固定提交来源记录；仅供 Codex 在本仓库发现，不参与 Future Props Lab 产品构建。应用内 Skills 通过正式 ZIP 导入 API 单独管理。
 - `backend/app/capabilities/asset_store/image_crop.py` 与 `capabilities/asset_store/schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存；HTTP 适配在 `capabilities/asset_store/routes/image_crop.py`。
 
 ### Live2D 工坊
