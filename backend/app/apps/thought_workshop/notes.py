@@ -6,6 +6,7 @@ from sqlalchemy import Text, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.thought_workshop.errors import ThoughtError
+from app.apps.thought_workshop.external_sync import ensure_can_purge
 from app.apps.thought_workshop.history import CONTENT_FIELDS, History
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.knowledge_tools.references import index_references, validate_targets
@@ -356,6 +357,7 @@ class Notes:
             ThoughtNote.revision == expected,
         )
         if action == "purge":
+            await ensure_can_purge(self.session, self.workspace_id, note_id)
             result = await self.session.execute(delete(ThoughtNote).where(*predicate))
             if result.rowcount != 1:
                 await self.conflict(note_id, expected)

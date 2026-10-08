@@ -8,6 +8,11 @@ from app.runtime.orm_base import Base
 
 
 async def protect_document_references(session: AsyncSession, asset_ids: list[str]) -> None:
+    sync_assets = Base.metadata.tables.get("thought_sync_assets")
+    if sync_assets is not None and await session.scalar(
+        select(sync_assets.c.task_id).where(sync_assets.c.asset_id.in_(asset_ids)).limit(1)
+    ):
+        raise AssetError("文件正在被文章同步快照使用", code="asset_in_use", status=409)
     presentation_refs = Base.metadata.tables.get("presentation_asset_references")
     if presentation_refs is not None and await session.scalar(
         select(presentation_refs.c.project_id)

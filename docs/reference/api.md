@@ -1,5 +1,39 @@
 # API 参考
 
+## 外部连接与文章同步
+
+连接接口位于 `/v1/integrations/external-connections`：`GET` 列表、`POST` 创建，
+`PATCH /{connection_id}` 带 `expected_revision` 更新；`POST /{connection_id}/check` 只检查鉴权，
+`POST /{connection_id}/target-check` 接收 `{url}`，返回目标标题、正文文字预览、版本、指纹与编辑权限。
+仅接受飞书 HTTPS `/docx/` 链接；服务器始终访问固定飞书 API 域名。App Secret 加密保存且不返回；
+更新留空保留已有凭据。
+
+文章接口以 `/v1/thought-workshop/notes/{note_id}/external-sync` 为前缀：
+
+| 操作 | 请求与结果 |
+| --- | --- |
+| `GET` | 绑定和最近 15 次任务；本地正文 revision 与同步状态独立 |
+| `PUT /binding` | `connection_id`、`url`、`expected_revision`；新绑定 revision 为 0 |
+| `DELETE /binding` | 查询参数 `expected_revision`；204，保留远端文档 |
+| `POST /preview` | `expected_revision`、`binding_revision`；返回冻结快照的 `preview_id`、双方正文、警告和阻断位置 |
+| `POST /tasks` | `preview_id`、UUID `operation_id`、`confirm_replace: true`；202；重复同一操作返回已有任务 |
+| `GET /tasks/{task_id}` | 状态、文章版本、时间、消息和步骤状态；不返回凭据或素材 token |
+| `POST /tasks/{task_id}/reconcile` | 默认读取远端，仅当无未确认步骤且与最后核验快照完全一致才继续；`acknowledge_partial: true` 人工结束并保留现场 |
+
+全部接口要求当前 Workspace 的 `configuration.manage`，跨空间 ID 返回 404；桌面 Agent 通道默认拒绝。
+绑定与连接使用 CAS，缺少 revision 返回 422，冲突返回 409。预览后文章、绑定、连接或目标变化要求重新预览。
+首版支持常用文本格式、链接、列表、引用、代码、图片与普通表格；特殊内容阻断且不创建可提交预览。
+预览一小时后释放。任务状态为 `queued`、`running`、`succeeded`、`conflict`、`needs_review`、`failed`；
+同一目标最多一个未结束任务。步骤先持久化请求标识，远端写入经读取核验后确认，再执行下一步。
+
+任务先追加新正文，再创建图片素材关联并核验，最后移除旧正文。网络、文件操作不占数据库写事务。
+检测额外改动或不确定结果暂停；进程重启只将运行任务转为 `needs_review`，不自动重放写入。
+`document_revision_id`、`client_token` 的请求字段与返回映射已按[飞书官方 SDK](https://github.com/larksuite/oapi-sdk-python/tree/v2_main/lark_oapi/api/docx/v1/model)核对，
+未将其视为远端 CAS 或跨请求原子替换保证；真实服务去重及版本语义仍须用专用测试文档验收。
+普通备份与复制不会携带有效绑定，避免新副本误写旧目标。
+运行中或需要核对的任务阻止永久删除文章，返回 `409 external_sync_unresolved`；回收站仍可使用，
+需先恢复文章并处理任务，避免丢失可见恢复入口。
+
 ## 视觉创作工坊节点输出
 
 项目看板与画布共用节点和输入引用；输出历史、上传版本、文本版本、最终版本 CAS 与有序多图协议见 [视觉项目看板 API](visual-project-board.md)。新增接口使用 `/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` 等项目内路径，按当前 Workspace 和视觉工坊权限校验。

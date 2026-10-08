@@ -3,7 +3,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
-import { IntegrationCenterPage } from "@features/integrations/IntegrationCenterPage";
+import {
+  IntegrationCenterPage,
+  type IntegrationKind,
+} from "@features/integrations/IntegrationCenterPage";
 import {
   getMcpServers,
   getSkills,
@@ -73,7 +76,7 @@ function renderPage(
 }
 
 function StatefulIntegrationCenter() {
-  const [kind, setKind] = useState<"tool-apis" | "mcp" | "skills">("tool-apis");
+  const [kind, setKind] = useState<IntegrationKind>("tool-apis");
   return <IntegrationCenterPage kind={kind} canManage onKindChange={setKind} />;
 }
 

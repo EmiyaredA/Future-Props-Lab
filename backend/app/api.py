@@ -11,6 +11,7 @@ from app.apps.thought_workshop.routes import conversion as thought_conversion
 from app.apps.thought_workshop.routes import router as thought_workshop_router
 from app.apps.thought_workshop.routes.community import router as community_router
 from app.apps.thought_workshop.routes.community_tables import router as community_tables_router
+from app.apps.thought_workshop.routes.external_sync import router as article_sync_router
 from app.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from app.apps.video_editor.routes import router as video_editor_router
 from app.apps.visual_workshop.routes import router as visual_workshop_router
@@ -35,6 +36,7 @@ from app.console.routes.workspaces import router as workspaces_router
 from app.demo_runtime.routes import call_router as demo_call_router
 from app.demo_runtime.routes import router as demo_runtime_router
 from app.deps import require_studio_auth
+from app.integrations.external.routes import router as external_connections_router
 from app.integrations.routes import router as integrations_router
 from app.llm.routes.model_capacity import ModelCapacity
 from app.llm.routes.model_inference import router as model_inference_router
@@ -55,6 +57,8 @@ from app.tool_navigation.routes import router as tool_navigation_router
 register_video_executor(apply_assistant_timeline_batch)
 
 api_router = APIRouter(prefix="/v1")
+api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(article_sync_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(
     amadeus_router, dependencies=[Depends(require_desktop), Depends(require_amadeus_session)]
 )

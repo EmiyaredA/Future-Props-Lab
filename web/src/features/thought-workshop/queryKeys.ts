@@ -1,4 +1,6 @@
 export const thoughtKeys = {
+  externalSync: (id: string) =>
+    ["thought-workshop", "external-sync", id] as const,
   officialImport: (user: string, workspace: string) =>
     [...thoughtKeys.community(user), "official-import", workspace] as const,
   officialLink: (user: string, library: string, document: string) =>

@@ -48,7 +48,7 @@ Future-Props-Lab/
 │   ├── apps/          # 已垂直切片的产品 App（含 live2d_workshop / desktop_pet）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具目录状态与桌面 Codex 模型源配置；自有 models/schemas/routes
-│   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
+│   ├── integrations/ # Workspace 工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
 │   └── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
@@ -175,6 +175,15 @@ Future-Props-Lab/
 - `integrations/` 拥有独立于工具导航的 Workspace 集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
+- `integrations/external/` 管理 Workspace 外部连接、加密应用凭据与飞书鉴权；`contracts.py` 和
+  `blocks.py` 接收明确的文档内容与图片素材，`feishu_verification.py` 核验远端块结果，
+  不读取思绪工坊 ORM。只接受飞书 `/docx/` 目标。
+  `apps/thought_workshop/external_sync/` 拥有文章绑定、内容导出快照、持久任务和步骤核验；
+  `console/governance/external_sync_access.py` 为执行器提供当前操作者权限检查。
+  `features/integrations/external/` 提供集成中心配置，`features/thought-workshop/external-sync/`
+  提供文章同步侧栏和移动弹层；共享 `shared/ui/FeishuMark.tsx` 从 `web/public/providers/` 读取本地品牌标识。
+  迁移 `r0088_external_article_sync` 追加五张表；全局唯一目标绑定和
+  活跃任务索引确保单目标串行。恢复仅将运行任务标记待核对，不自动重放外部写入。
 - `console/creative_workshop/` 拥有同一部署内共享的创作目录。草稿按作者和当前 Workspace 隔离；
   公开版本和方案包引用跨 Workspace 只读，不能经集成中心直接读取其他 Workspace 的配置。
   安装记录属于目标 Workspace，安装事务只复制已公开的允许字段和 Skill 文件；凭据留空，

@@ -47,6 +47,7 @@ import { KnowledgeCover } from "./KnowledgeCover";
 import { KnowledgeDocumentResults } from "./KnowledgeDocumentResults";
 import { DeleteDocumentDialog } from "./DeleteDocumentDialog";
 import { KnowledgeTopbar } from "./KnowledgeTopbar";
+import { ArticleSyncPanel } from "./external-sync/ArticleSyncPanel";
 import { DiscoveryPanel } from "./knowledge-tools/DiscoveryPanel";
 import { TemplateDialog } from "./knowledge-tools/TemplateDialog";
 import { CopyDialog } from "./knowledge-tools/CopyDialog";
@@ -96,6 +97,8 @@ export function ThoughtWorkshopPage({
 }) {
   const documentUI = useDocumentChrome();
   const canPublish = useWorkspacePermission("workspace.manage");
+  const canSync = useWorkspacePermission("configuration.manage");
+  const [syncOpen, setSyncOpen] = useState(false);
   const [publishing, setPublishing] = useState(false),
     [reading, setReading] = useState(false);
   const client = useQueryClient();
@@ -499,6 +502,19 @@ export function ThoughtWorkshopPage({
           />
         )}
         <KnowledgeTopbar
+          onExternalSync={
+            canSync && noteId && note.data?.kind === "note"
+              ? () => {
+                  void (
+                    noteChrome ? noteChrome.save() : Promise.resolve(note.data)
+                  )
+                    .then(() => setSyncOpen(true))
+                    .catch((e) =>
+                      setNotice(e instanceof Error ? e.message : "保存失败"),
+                    );
+                }
+              : undefined
+          }
           documentToolsRef={documentUI.toolsRef}
           homeMode={!!project && !noteId && !browsing}
           noteMode={noteMode}
@@ -552,6 +568,14 @@ export function ThoughtWorkshopPage({
             project ? projectAction(value, project) : undefined
           }
         />
+        {syncOpen && canSync && note.data && (
+          <ArticleSyncPanel
+            key={note.data.id}
+            note={note.data}
+            save={noteChrome?.save}
+            close={() => setSyncOpen(false)}
+          />
+        )}
         {errors && (
           <div role="alert" className="thought-error">
             {errors}

@@ -4,14 +4,17 @@ import { useState } from "react";
 import { McpPanel } from "@features/integrations/McpPanel";
 import { SkillPanel } from "@features/integrations/SkillPanel";
 import { ToolApiPanel } from "@features/integrations/ToolApiPanel";
+import { ExternalConnectionsPanel } from "./external/ExternalConnectionsPanel";
 import "@features/integrations/integrations-foundation.css";
 import "@features/integrations/integrations-components.css";
 
-export type IntegrationKind = "tool-apis" | "mcp" | "skills";
+export type IntegrationKind =
+  "tool-apis" | "mcp" | "skills" | "external-connections";
 const INTEGRATION_TABS = [
   ["tool-apis", "工具 API"],
   ["mcp", "MCP"],
   ["skills", "Skill"],
+  ["external-connections", "外部连接"],
 ] as const;
 
 export function IntegrationCenterPage({
@@ -36,7 +39,7 @@ export function IntegrationCenterPage({
       <section className="page integrations-page">
         <header className="integrations-header">
           <h1>集成中心</h1>
-          <p>统一管理工具 API、MCP 服务与 Skill</p>
+          <p>统一管理工具 API、MCP 服务、Skill 与外部连接</p>
         </header>
         <div className="integration-tabs" role="tablist" aria-label="集成类型">
           {INTEGRATION_TABS.map(([value, label], index) => (
@@ -117,6 +120,15 @@ export function IntegrationCenterPage({
               onStatusChange={setSkillStatus}
             />
           ) : null}
+        </div>
+        <div
+          id="integration-panel-external-connections"
+          role="tabpanel"
+          hidden={kind !== "external-connections"}
+        >
+          {kind === "external-connections" && (
+            <ExternalConnectionsPanel canManage={canManage} />
+          )}
         </div>
       </section>
     </IntegrationInteractions>

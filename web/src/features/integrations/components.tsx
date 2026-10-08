@@ -2,6 +2,7 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useIntegrationInteraction } from "./interaction";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { X } from "lucide-react";
 
 export function IntegrationModal({
   title,
@@ -11,6 +12,8 @@ export function IntegrationModal({
   protect = false,
   pending = false,
   resetKey,
+  className = "",
+  headerIcon,
 }: {
   title: string;
   onClose: () => void;
@@ -19,6 +22,8 @@ export function IntegrationModal({
   protect?: boolean;
   pending?: boolean;
   resetKey?: number;
+  className?: string;
+  headerIcon?: ReactNode;
 }) {
   const { register } = useIntegrationInteraction();
   const [dirty, setDirty] = useState(false);
@@ -156,13 +161,16 @@ export function IntegrationModal({
           )
             setDirty(true);
         }}
-        className={`integration-modal${wide ? " wide" : ""}`}
+        className={`integration-modal${wide ? " wide" : ""} ${className}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
       >
         <header>
-          <h2 id={titleId}>{title}</h2>
+          <div className="integration-modal-heading">
+            {headerIcon}
+            <h2 id={titleId}>{title}</h2>
+          </div>
           <button
             ref={closeButton}
             type="button"
@@ -171,7 +179,7 @@ export function IntegrationModal({
             disabled={pending}
             onClick={requestClose}
           >
-            ×
+            <X size={18} aria-hidden />
           </button>
         </header>
         <fieldset disabled={pending} style={{ display: "contents" }}>

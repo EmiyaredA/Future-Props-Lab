@@ -72,6 +72,17 @@
       "stroke": "#365f62"
     },
     {
+      "id": "external-sync",
+      "kind": "rounded",
+      "x": 740,
+      "y": 560,
+      "width": 260,
+      "height": 130,
+      "text": "外部同步任务\n冻结快照 / 步骤核验\n连接只接收导出内容与素材",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
       "id": "multitable",
       "kind": "rounded",
       "x": 380,
@@ -121,6 +132,14 @@
       "source": "note",
       "target": "multitable",
       "label": "正文嵌入 ID / 双重授权",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "save-external-sync",
+      "source": "save",
+      "target": "external-sync",
+      "label": "管理员确认 / 手动单向",
       "arrow": true,
       "style": "step"
     },

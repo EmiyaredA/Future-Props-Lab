@@ -45,6 +45,12 @@ from app.apps.presentation_workshop.models import (
     PresentationAssetReference,
     PresentationProject,
 )
+from app.apps.thought_workshop.external_sync.models import (
+    ArticleSyncAsset,  # noqa: F401 — register child metadata
+    ArticleSyncBinding,
+    ArticleSyncStep,  # noqa: F401 — register child metadata
+    ArticleSyncTask,
+)
 from app.apps.thought_workshop.knowledge_tools.models import (
     ThoughtCheckpoint,
     ThoughtDocumentReference,
@@ -126,6 +132,7 @@ from app.console.models import (
     WorkspaceInvitation,
     WorkspaceMembership,
 )
+from app.integrations.external.models import ExternalConnection
 from app.integrations.models import (
     IntegrationCheck,
     McpDiscoveredTool,
@@ -251,6 +258,9 @@ _ = (
 )
 
 TENANT_MODELS = (
+    ExternalConnection,
+    ArticleSyncBinding,
+    ArticleSyncTask,
     Publication,
     OfficialSource,
     OfficialImportReceipt,

@@ -194,6 +194,20 @@ class ApiKeyOut(WireModel):
     revoked_at: datetime | None = Field(default=..., alias='revoked_at')
     scopes: list[str] = Field(default=..., alias='scopes')
 
+class ArticleBindingInput(WireModel):
+    connection_id: str = Field(default=..., alias='connection_id')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    url: str = Field(default=..., alias='url', max_length=2048)
+
+class ArticleBindingOut(WireModel):
+    connection_id: str = Field(default=..., alias='connection_id')
+    id: str = Field(default=..., alias='id')
+    last_note_revision: int | None = Field(default=..., alias='last_note_revision')
+    last_synced_at: str | None = Field(default=..., alias='last_synced_at')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    url: str = Field(default=..., alias='url')
+
 class ArticleConfig(WireModel):
     active: bool = Field(default=..., alias='active')
     members: list[MemberOut] = Field(default=..., alias='members')
@@ -202,12 +216,53 @@ class ArticleConfig(WireModel):
     title: str = Field(default=..., alias='title')
     visibility: Literal['public', 'members'] = Field(default=..., alias='visibility')
 
+class ArticlePreviewInput(WireModel):
+    binding_revision: int = Field(default=..., alias='binding_revision', ge=0.0)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+
 class ArticleSetting(WireModel):
     active: bool = Field(default=True, alias='active')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     members: list[MemberInput] | None = Field(default=None, alias='members', max_length=100)
     note_id: str = Field(default=..., alias='note_id')
     visibility: Literal['public', 'members'] = Field(default='public', alias='visibility')
+
+class ArticleSyncPreview(WireModel):
+    blockers: list[str] = Field(default=..., alias='blockers')
+    first_sync: bool = Field(default=..., alias='first_sync')
+    local_text: str = Field(default=..., alias='local_text')
+    note_revision: int = Field(default=..., alias='note_revision')
+    preview_id: str | None = Field(default=..., alias='preview_id')
+    remote_changed: bool = Field(default=..., alias='remote_changed')
+    remote_text: str = Field(default=..., alias='remote_text')
+    target_title: str = Field(default=..., alias='target_title')
+    warnings: list[str] = Field(default=..., alias='warnings')
+
+class ArticleSyncReconcile(WireModel):
+    acknowledge_partial: bool = Field(default=False, alias='acknowledge_partial')
+
+class ArticleSyncReconcileOut(WireModel):
+    can_resume: bool = Field(default=..., alias='can_resume')
+    remote_text: str = Field(default=..., alias='remote_text')
+    task: ArticleSyncTaskOut = Field(default=..., alias='task')
+
+class ArticleSyncState(WireModel):
+    binding: ArticleBindingOut | None = Field(default=..., alias='binding')
+    tasks: list[ArticleSyncTaskOut] = Field(default=..., alias='tasks')
+
+class ArticleSyncSubmit(WireModel):
+    confirm_replace: bool = Field(default=..., alias='confirm_replace')
+    operation_id: str = Field(default=..., alias='operation_id')
+    preview_id: str = Field(default=..., alias='preview_id')
+
+class ArticleSyncTaskOut(WireModel):
+    created_at: str = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    message: str = Field(default=..., alias='message')
+    note_revision: int = Field(default=..., alias='note_revision')
+    status: Literal['preview', 'queued', 'running', 'succeeded', 'conflict', 'needs_review', 'failed'] = Field(default=..., alias='status')
+    steps: list[dict[str, Any]] | None = Field(default=None, alias='steps')
+    updated_at: str = Field(default=..., alias='updated_at')
 
 class AssetImportIn(WireModel):
     asset_ids: list[str] = Field(default=..., alias='assetIds', min_length=1, max_length=100)
@@ -1220,6 +1275,48 @@ class ExportOut(WireModel):
     outputs: dict[str, str] = Field(default=..., alias='outputs')
     progress: int = Field(default=..., alias='progress')
     status: Literal['queued', 'running', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
+
+class ExternalConnectionInput(WireModel):
+    app_id: str = Field(default=..., alias='app_id', min_length=1, max_length=120)
+    app_secret: str = Field(default='', alias='app_secret', repr=False, max_length=8192)
+    enabled: bool = Field(default=True, alias='enabled')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    provider: Literal['feishu'] = Field(default='feishu', alias='provider')
+
+class ExternalConnectionList(WireModel):
+    items: list[ExternalConnectionOut] = Field(default=..., alias='items')
+
+class ExternalConnectionOut(WireModel):
+    app_id: str = Field(default=..., alias='app_id')
+    enabled: bool = Field(default=..., alias='enabled')
+    has_secret: bool = Field(default=..., alias='has_secret', repr=False)
+    id: str = Field(default=..., alias='id')
+    last_checked_at: str | None = Field(default=..., alias='last_checked_at')
+    name: str = Field(default=..., alias='name')
+    provider: Literal['feishu'] = Field(default=..., alias='provider')
+    revision: int = Field(default=..., alias='revision')
+    status: str = Field(default=..., alias='status')
+    status_message: str = Field(default=..., alias='status_message')
+
+class ExternalConnectionUpdate(WireModel):
+    app_id: str = Field(default=..., alias='app_id', min_length=1, max_length=120)
+    app_secret: str = Field(default='', alias='app_secret', repr=False, max_length=8192)
+    enabled: bool = Field(default=True, alias='enabled')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    provider: Literal['feishu'] = Field(default='feishu', alias='provider')
+
+class ExternalTargetInput(WireModel):
+    url: str = Field(default=..., alias='url', max_length=2048)
+
+class ExternalTargetOut(WireModel):
+    can_write: bool = Field(default=..., alias='can_write')
+    document_id: str = Field(default=..., alias='document_id')
+    fingerprint: str = Field(default=..., alias='fingerprint')
+    revision: int = Field(default=..., alias='revision')
+    text: str = Field(default=..., alias='text')
+    title: str = Field(default=..., alias='title')
+    url: str = Field(default=..., alias='url')
 
 class FavoriteInput(WireModel):
     favorite: bool = Field(default=..., alias='favorite')
@@ -5684,8 +5781,17 @@ AnnotationSplitOperation.model_rebuild()
 ApiKeyCreateIn.model_rebuild()
 ApiKeyCreatedOut.model_rebuild()
 ApiKeyOut.model_rebuild()
+ArticleBindingInput.model_rebuild()
+ArticleBindingOut.model_rebuild()
 ArticleConfig.model_rebuild()
+ArticlePreviewInput.model_rebuild()
 ArticleSetting.model_rebuild()
+ArticleSyncPreview.model_rebuild()
+ArticleSyncReconcile.model_rebuild()
+ArticleSyncReconcileOut.model_rebuild()
+ArticleSyncState.model_rebuild()
+ArticleSyncSubmit.model_rebuild()
+ArticleSyncTaskOut.model_rebuild()
 AssetImportIn.model_rebuild()
 AssetListOut.model_rebuild()
 AssetOut.model_rebuild()
@@ -5854,6 +5960,12 @@ DuplicateSnapshot.model_rebuild()
 ExportCreateIn.model_rebuild()
 ExportListOut.model_rebuild()
 ExportOut.model_rebuild()
+ExternalConnectionInput.model_rebuild()
+ExternalConnectionList.model_rebuild()
+ExternalConnectionOut.model_rebuild()
+ExternalConnectionUpdate.model_rebuild()
+ExternalTargetInput.model_rebuild()
+ExternalTargetOut.model_rebuild()
 FavoriteInput.model_rebuild()
 FavoritesOut.model_rebuild()
 FieldConfig.model_rebuild()

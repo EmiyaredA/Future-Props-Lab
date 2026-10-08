@@ -3078,6 +3078,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/integrations/external-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Connections */
+        get: operations["list_connections_v1_integrations_external_connections_get"];
+        put?: never;
+        /** Create Connection */
+        post: operations["create_connection_v1_integrations_external_connections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/external-connections/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Connection */
+        patch: operations["update_connection_v1_integrations_external_connections__connection_id__patch"];
+        trace?: never;
+    };
+    "/v1/integrations/external-connections/{connection_id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Connection */
+        post: operations["check_connection_v1_integrations_external_connections__connection_id__check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/external-connections/{connection_id}/target-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Target */
+        post: operations["check_target_v1_integrations_external_connections__connection_id__target_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/integrations/mcp": {
         parameters: {
             query?: never;
@@ -6063,6 +6132,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/thought-workshop/notes/{note_id}/external-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** State */
+        get: operations["state_v1_thought_workshop_notes__note_id__external_sync_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/external-sync/binding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Bind */
+        put: operations["bind_v1_thought_workshop_notes__note_id__external_sync_binding_put"];
+        post?: never;
+        /** Unbind */
+        delete: operations["unbind_v1_thought_workshop_notes__note_id__external_sync_binding_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/external-sync/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview */
+        post: operations["preview_v1_thought_workshop_notes__note_id__external_sync_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/external-sync/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit */
+        post: operations["submit_v1_thought_workshop_notes__note_id__external_sync_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Task */
+        get: operations["task_v1_thought_workshop_notes__note_id__external_sync_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reconcile */
+        post: operations["reconcile_v1_thought_workshop_notes__note_id__external_sync_tasks__task_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/thought-workshop/notes/{note_id}/history": {
         parameters: {
             query?: never;
@@ -7964,6 +8136,32 @@ export interface components {
             /** Scopes */
             scopes: string[];
         };
+        /** ArticleBindingInput */
+        ArticleBindingInput: {
+            /** Connection Id */
+            connection_id: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Url */
+            url: string;
+        };
+        /** ArticleBindingOut */
+        ArticleBindingOut: {
+            /** Connection Id */
+            connection_id: string;
+            /** Id */
+            id: string;
+            /** Last Note Revision */
+            last_note_revision: number | null;
+            /** Last Synced At */
+            last_synced_at: string | null;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+        };
         /** ArticleConfig */
         ArticleConfig: {
             /** Active */
@@ -7981,6 +8179,13 @@ export interface components {
              * @enum {string}
              */
             visibility: "public" | "members";
+        };
+        /** ArticlePreviewInput */
+        ArticlePreviewInput: {
+            /** Binding Revision */
+            binding_revision: number;
+            /** Expected Revision */
+            expected_revision: number;
         };
         /** ArticleSetting */
         ArticleSetting: {
@@ -8001,6 +8206,83 @@ export interface components {
              * @enum {string}
              */
             visibility: "public" | "members";
+        };
+        /** ArticleSyncPreview */
+        ArticleSyncPreview: {
+            /** Blockers */
+            blockers: string[];
+            /** First Sync */
+            first_sync: boolean;
+            /** Local Text */
+            local_text: string;
+            /** Note Revision */
+            note_revision: number;
+            /** Preview Id */
+            preview_id: string | null;
+            /** Remote Changed */
+            remote_changed: boolean;
+            /** Remote Text */
+            remote_text: string;
+            /** Target Title */
+            target_title: string;
+            /** Warnings */
+            warnings: string[];
+        };
+        /** ArticleSyncReconcile */
+        ArticleSyncReconcile: {
+            /**
+             * Acknowledge Partial
+             * @default false
+             */
+            acknowledge_partial: boolean;
+        };
+        /** ArticleSyncReconcileOut */
+        ArticleSyncReconcileOut: {
+            /** Can Resume */
+            can_resume: boolean;
+            /** Remote Text */
+            remote_text: string;
+            task: components["schemas"]["ArticleSyncTaskOut"];
+        };
+        /** ArticleSyncState */
+        ArticleSyncState: {
+            binding: components["schemas"]["ArticleBindingOut"] | null;
+            /** Tasks */
+            tasks: components["schemas"]["ArticleSyncTaskOut"][];
+        };
+        /** ArticleSyncSubmit */
+        ArticleSyncSubmit: {
+            /** Confirm Replace */
+            confirm_replace: boolean;
+            /**
+             * Operation Id
+             * Format: uuid
+             */
+            operation_id: string;
+            /** Preview Id */
+            preview_id: string;
+        };
+        /** ArticleSyncTaskOut */
+        ArticleSyncTaskOut: {
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Message */
+            message: string;
+            /** Note Revision */
+            note_revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "preview" | "queued" | "running" | "succeeded" | "conflict" | "needs_review" | "failed";
+            /** Steps */
+            steps?: {
+                [key: string]: unknown;
+            }[];
+            /** Updated At */
+            updated_at: string;
         };
         /** AssetImportIn */
         AssetImportIn: {
@@ -10286,6 +10568,107 @@ export interface components {
              * @enum {string}
              */
             status: "queued" | "running" | "completed" | "failed" | "cancelled";
+        };
+        /** ExternalConnectionInput */
+        ExternalConnectionInput: {
+            /** App Id */
+            app_id: string;
+            /**
+             * App Secret
+             * @default
+             */
+            app_secret: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Provider
+             * @default feishu
+             * @constant
+             */
+            provider: "feishu";
+        };
+        /** ExternalConnectionList */
+        ExternalConnectionList: {
+            /** Items */
+            items: components["schemas"]["ExternalConnectionOut"][];
+        };
+        /** ExternalConnectionOut */
+        ExternalConnectionOut: {
+            /** App Id */
+            app_id: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Has Secret */
+            has_secret: boolean;
+            /** Id */
+            id: string;
+            /** Last Checked At */
+            last_checked_at: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Provider
+             * @constant
+             */
+            provider: "feishu";
+            /** Revision */
+            revision: number;
+            /** Status */
+            status: string;
+            /** Status Message */
+            status_message: string;
+        };
+        /** ExternalConnectionUpdate */
+        ExternalConnectionUpdate: {
+            /** App Id */
+            app_id: string;
+            /**
+             * App Secret
+             * @default
+             */
+            app_secret: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Name */
+            name: string;
+            /**
+             * Provider
+             * @default feishu
+             * @constant
+             */
+            provider: "feishu";
+        };
+        /** ExternalTargetInput */
+        ExternalTargetInput: {
+            /** Url */
+            url: string;
+        };
+        /** ExternalTargetOut */
+        ExternalTargetOut: {
+            /** Can Write */
+            can_write: boolean;
+            /** Document Id */
+            document_id: string;
+            /** Fingerprint */
+            fingerprint: string;
+            /** Revision */
+            revision: number;
+            /** Text */
+            text: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
         };
         /** FavoriteInput */
         FavoriteInput: {
@@ -28561,6 +28944,160 @@ export interface operations {
             };
         };
     };
+    list_connections_v1_integrations_external_connections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalConnectionList"];
+                };
+            };
+        };
+    };
+    create_connection_v1_integrations_external_connections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalConnectionInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalConnectionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_connection_v1_integrations_external_connections__connection_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalConnectionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalConnectionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_connection_v1_integrations_external_connections__connection_id__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalConnectionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_target_v1_integrations_external_connections__connection_id__target_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalTargetInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalTargetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     mcp_servers_v1_integrations_mcp_get: {
         parameters: {
             query?: never;
@@ -36061,6 +36598,241 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    state_v1_thought_workshop_notes__note_id__external_sync_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleSyncState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_v1_thought_workshop_notes__note_id__external_sync_binding_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArticleBindingInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleBindingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unbind_v1_thought_workshop_notes__note_id__external_sync_binding_delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_v1_thought_workshop_notes__note_id__external_sync_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArticlePreviewInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleSyncPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_v1_thought_workshop_notes__note_id__external_sync_tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArticleSyncSubmit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleSyncTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    task_v1_thought_workshop_notes__note_id__external_sync_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleSyncTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_v1_thought_workshop_notes__note_id__external_sync_tasks__task_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArticleSyncReconcile"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleSyncReconcileOut"];
                 };
             };
             /** @description Validation Error */

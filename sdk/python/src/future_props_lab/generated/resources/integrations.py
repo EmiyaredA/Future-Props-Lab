@@ -11,6 +11,26 @@ class Integrations:
     def __init__(self, client):
         self._client = client
 
+    def list_connections(self) -> models.ExternalConnectionList:
+        'List Connections. GET /v1/integrations/external-connections'
+        return self._client._call('GET', '/v1/integrations/external-connections', parameters=[], response_type=models.ExternalConnectionList)
+
+    def create_connection(self, *, body: models.ExternalConnectionInput | dict) -> models.ExternalConnectionOut:
+        'Create Connection. POST /v1/integrations/external-connections'
+        return self._client._call('POST', '/v1/integrations/external-connections', parameters=[], body=body, media_type='application/json', response_type=models.ExternalConnectionOut)
+
+    def update_connection(self, *, connection_id: str, body: models.ExternalConnectionUpdate | dict) -> models.ExternalConnectionOut:
+        'Update Connection. PATCH /v1/integrations/external-connections/{connection_id}'
+        return self._client._call('PATCH', '/v1/integrations/external-connections/{connection_id}', parameters=[('connection_id', 'path', connection_id)], body=body, media_type='application/json', response_type=models.ExternalConnectionOut)
+
+    def check_connection(self, *, connection_id: str) -> models.ExternalConnectionOut:
+        'Check Connection. POST /v1/integrations/external-connections/{connection_id}/check'
+        return self._client._call('POST', '/v1/integrations/external-connections/{connection_id}/check', parameters=[('connection_id', 'path', connection_id)], response_type=models.ExternalConnectionOut)
+
+    def check_target(self, *, connection_id: str, body: models.ExternalTargetInput | dict) -> models.ExternalTargetOut:
+        'Check Target. POST /v1/integrations/external-connections/{connection_id}/target-check'
+        return self._client._call('POST', '/v1/integrations/external-connections/{connection_id}/target-check', parameters=[('connection_id', 'path', connection_id)], body=body, media_type='application/json', response_type=models.ExternalTargetOut)
+
     def mcp_servers(self) -> models.McpCatalogOut:
         'Mcp Servers. GET /v1/integrations/mcp'
         return self._client._call('GET', '/v1/integrations/mcp', parameters=[], response_type=models.McpCatalogOut)
@@ -102,6 +122,26 @@ class Integrations:
 class AsyncIntegrations:
     def __init__(self, client):
         self._client = client
+
+    async def list_connections(self) -> models.ExternalConnectionList:
+        'List Connections. GET /v1/integrations/external-connections'
+        return await self._client._call('GET', '/v1/integrations/external-connections', parameters=[], response_type=models.ExternalConnectionList)
+
+    async def create_connection(self, *, body: models.ExternalConnectionInput | dict) -> models.ExternalConnectionOut:
+        'Create Connection. POST /v1/integrations/external-connections'
+        return await self._client._call('POST', '/v1/integrations/external-connections', parameters=[], body=body, media_type='application/json', response_type=models.ExternalConnectionOut)
+
+    async def update_connection(self, *, connection_id: str, body: models.ExternalConnectionUpdate | dict) -> models.ExternalConnectionOut:
+        'Update Connection. PATCH /v1/integrations/external-connections/{connection_id}'
+        return await self._client._call('PATCH', '/v1/integrations/external-connections/{connection_id}', parameters=[('connection_id', 'path', connection_id)], body=body, media_type='application/json', response_type=models.ExternalConnectionOut)
+
+    async def check_connection(self, *, connection_id: str) -> models.ExternalConnectionOut:
+        'Check Connection. POST /v1/integrations/external-connections/{connection_id}/check'
+        return await self._client._call('POST', '/v1/integrations/external-connections/{connection_id}/check', parameters=[('connection_id', 'path', connection_id)], response_type=models.ExternalConnectionOut)
+
+    async def check_target(self, *, connection_id: str, body: models.ExternalTargetInput | dict) -> models.ExternalTargetOut:
+        'Check Target. POST /v1/integrations/external-connections/{connection_id}/target-check'
+        return await self._client._call('POST', '/v1/integrations/external-connections/{connection_id}/target-check', parameters=[('connection_id', 'path', connection_id)], body=body, media_type='application/json', response_type=models.ExternalTargetOut)
 
     async def mcp_servers(self) -> models.McpCatalogOut:
         'Mcp Servers. GET /v1/integrations/mcp'

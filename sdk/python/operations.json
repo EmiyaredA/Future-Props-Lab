@@ -155,6 +155,10 @@
     "method": "delete_checkpoint",
     "resource": "thought"
   },
+  "DELETE /v1/thought-workshop/notes/{note_id}/external-sync/binding": {
+    "method": "unbind",
+    "resource": "thought"
+  },
   "DELETE /v1/thought-workshop/preferences/filters/{filter_id}": {
     "method": "delete_filter",
     "resource": "thought"
@@ -519,6 +523,10 @@
     "method": "get_story_migration_status",
     "resource": "galgame"
   },
+  "GET /v1/integrations/external-connections": {
+    "method": "list_connections",
+    "resource": "integrations"
+  },
   "GET /v1/integrations/mcp": {
     "method": "mcp_servers",
     "resource": "integrations"
@@ -871,6 +879,14 @@
     "method": "export_note_content",
     "resource": "thought"
   },
+  "GET /v1/thought-workshop/notes/{note_id}/external-sync": {
+    "method": "state",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}": {
+    "method": "task",
+    "resource": "thought"
+  },
   "GET /v1/thought-workshop/notes/{note_id}/history": {
     "method": "note_history",
     "resource": "thought"
@@ -1110,6 +1126,10 @@
   "PATCH /v1/galgame-workshop/projects/{project_id}/story/stage-expression": {
     "method": "patch_story_stage_expression",
     "resource": "galgame"
+  },
+  "PATCH /v1/integrations/external-connections/{connection_id}": {
+    "method": "update_connection",
+    "resource": "integrations"
   },
   "PATCH /v1/integrations/mcp/{integration_id}": {
     "method": "update_mcp",
@@ -1595,6 +1615,18 @@
     "method": "run_story_migrations",
     "resource": "galgame"
   },
+  "POST /v1/integrations/external-connections": {
+    "method": "create_connection",
+    "resource": "integrations"
+  },
+  "POST /v1/integrations/external-connections/{connection_id}/check": {
+    "method": "check_connection",
+    "resource": "integrations"
+  },
+  "POST /v1/integrations/external-connections/{connection_id}/target-check": {
+    "method": "check_target",
+    "resource": "integrations"
+  },
   "POST /v1/integrations/mcp": {
     "method": "create_mcp",
     "resource": "integrations"
@@ -1883,6 +1915,18 @@
     "method": "duplicate_document",
     "resource": "thought"
   },
+  "POST /v1/thought-workshop/notes/{note_id}/external-sync/preview": {
+    "method": "preview",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks": {
+    "method": "submit",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile": {
+    "method": "reconcile",
+    "resource": "thought"
+  },
   "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore": {
     "method": "restore_note_history",
     "resource": "thought"
@@ -2145,6 +2189,10 @@
   },
   "PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}": {
     "method": "rename_checkpoint",
+    "resource": "thought"
+  },
+  "PUT /v1/thought-workshop/notes/{note_id}/external-sync/binding": {
+    "method": "bind",
     "resource": "thought"
   },
   "PUT /v1/thought-workshop/preferences/filters/{filter_id}": {

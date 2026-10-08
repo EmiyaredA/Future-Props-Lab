@@ -368,9 +368,15 @@ def test_integration_manifest_registers_exact_existing_operations():
         f"{method.upper()} {path}"
         for path, methods in specification["paths"].items()
         if path.startswith("/v1/integrations/")
+        and not path.startswith("/v1/integrations/external-connections")
         for method in methods
         if method in {"get", "post", "patch", "delete", "put"}
     }
     registered = {item for item in MANIFEST["operations"] if "/v1/integrations/" in item}
     assert registered == expected
     assert not allows_agent("POST", "/v1/integrations/install-command")
+    for path, methods in specification["paths"].items():
+        if path.startswith("/v1/integrations/external-connections") or "/external-sync" in path:
+            for method in methods:
+                if method in {"get", "post", "patch", "delete", "put"}:
+                    assert not allows_agent(method.upper(), path)

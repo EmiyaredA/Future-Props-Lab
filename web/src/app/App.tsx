@@ -875,7 +875,9 @@ export default function App() {
                 ? "mcp"
                 : page === "integrations-skills"
                   ? "skills"
-                  : "tool-apis"
+                  : page === "integrations-external-connections"
+                    ? "external-connections"
+                    : "tool-apis"
             }
             onKindChange={(kind) =>
               navigate(
@@ -883,7 +885,9 @@ export default function App() {
                   ? "integrations-mcp"
                   : kind === "skills"
                     ? "integrations-skills"
-                    : "integrations-tool-apis",
+                    : kind === "external-connections"
+                      ? "integrations-external-connections"
+                      : "integrations-tool-apis",
               )
             }
           />

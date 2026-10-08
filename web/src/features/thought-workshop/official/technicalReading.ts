@@ -279,7 +279,7 @@ export const TECHNICAL_READING: Record<
   },
   "thought-workshop": {
     summary:
-      "解释一张可编辑画板如何成为笔记节点，并随搜索、历史、复制和导出流转。",
+      "解释画板与笔记的保存、历史和导出，以及飞书同步的快照、步骤核验和中断恢复。",
     related: [
       {
         libraryId: "technical",

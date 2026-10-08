@@ -135,6 +135,34 @@ class Thought:
         'Export Note Content. GET /v1/thought-workshop/notes/{note_id}/export'
         return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/export', parameters=[('note_id', 'path', note_id), ('expected_revision', 'query', expected_revision), ('format', 'query', format)], response_type=Any)
 
+    def state(self, *, note_id: str) -> models.ArticleSyncState:
+        'State. GET /v1/thought-workshop/notes/{note_id}/external-sync'
+        return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/external-sync', parameters=[('note_id', 'path', note_id)], response_type=models.ArticleSyncState)
+
+    def unbind(self, *, note_id: str, expected_revision: int) -> Any:
+        'Unbind. DELETE /v1/thought-workshop/notes/{note_id}/external-sync/binding'
+        return self._client._call('DELETE', '/v1/thought-workshop/notes/{note_id}/external-sync/binding', parameters=[('note_id', 'path', note_id), ('expected_revision', 'query', expected_revision)], response_type=Any)
+
+    def bind(self, *, note_id: str, body: models.ArticleBindingInput | dict) -> models.ArticleBindingOut:
+        'Bind. PUT /v1/thought-workshop/notes/{note_id}/external-sync/binding'
+        return self._client._call('PUT', '/v1/thought-workshop/notes/{note_id}/external-sync/binding', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ArticleBindingOut)
+
+    def preview(self, *, note_id: str, body: models.ArticlePreviewInput | dict) -> models.ArticleSyncPreview:
+        'Preview. POST /v1/thought-workshop/notes/{note_id}/external-sync/preview'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/external-sync/preview', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ArticleSyncPreview)
+
+    def submit(self, *, note_id: str, body: models.ArticleSyncSubmit | dict) -> models.ArticleSyncTaskOut:
+        'Submit. POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/external-sync/tasks', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ArticleSyncTaskOut)
+
+    def task(self, *, note_id: str, task_id: str) -> models.ArticleSyncTaskOut:
+        'Task. GET /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}'
+        return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}', parameters=[('note_id', 'path', note_id), ('task_id', 'path', task_id)], response_type=models.ArticleSyncTaskOut)
+
+    def reconcile(self, *, note_id: str, task_id: str, body: models.ArticleSyncReconcile | dict) -> models.ArticleSyncReconcileOut:
+        'Reconcile. POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile'
+        return self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile', parameters=[('note_id', 'path', note_id), ('task_id', 'path', task_id)], body=body, media_type='application/json', response_type=models.ArticleSyncReconcileOut)
+
     def note_history(self, *, note_id: str, cursor: str | None | Unset = UNSET, limit: int | Unset = UNSET) -> models.ThoughtHistoryList:
         'Note History. GET /v1/thought-workshop/notes/{note_id}/history'
         return self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/history', parameters=[('note_id', 'path', note_id), ('cursor', 'query', cursor), ('limit', 'query', limit)], response_type=models.ThoughtHistoryList)
@@ -378,6 +406,34 @@ class AsyncThought:
     async def export_note_content(self, *, note_id: str, expected_revision: int, format: Literal['md', 'html'] | Unset = UNSET) -> AsyncDownload:
         'Export Note Content. GET /v1/thought-workshop/notes/{note_id}/export'
         return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/export', parameters=[('note_id', 'path', note_id), ('expected_revision', 'query', expected_revision), ('format', 'query', format)], response_type=Any)
+
+    async def state(self, *, note_id: str) -> models.ArticleSyncState:
+        'State. GET /v1/thought-workshop/notes/{note_id}/external-sync'
+        return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/external-sync', parameters=[('note_id', 'path', note_id)], response_type=models.ArticleSyncState)
+
+    async def unbind(self, *, note_id: str, expected_revision: int) -> Any:
+        'Unbind. DELETE /v1/thought-workshop/notes/{note_id}/external-sync/binding'
+        return await self._client._call('DELETE', '/v1/thought-workshop/notes/{note_id}/external-sync/binding', parameters=[('note_id', 'path', note_id), ('expected_revision', 'query', expected_revision)], response_type=Any)
+
+    async def bind(self, *, note_id: str, body: models.ArticleBindingInput | dict) -> models.ArticleBindingOut:
+        'Bind. PUT /v1/thought-workshop/notes/{note_id}/external-sync/binding'
+        return await self._client._call('PUT', '/v1/thought-workshop/notes/{note_id}/external-sync/binding', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ArticleBindingOut)
+
+    async def preview(self, *, note_id: str, body: models.ArticlePreviewInput | dict) -> models.ArticleSyncPreview:
+        'Preview. POST /v1/thought-workshop/notes/{note_id}/external-sync/preview'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/external-sync/preview', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ArticleSyncPreview)
+
+    async def submit(self, *, note_id: str, body: models.ArticleSyncSubmit | dict) -> models.ArticleSyncTaskOut:
+        'Submit. POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/external-sync/tasks', parameters=[('note_id', 'path', note_id)], body=body, media_type='application/json', response_type=models.ArticleSyncTaskOut)
+
+    async def task(self, *, note_id: str, task_id: str) -> models.ArticleSyncTaskOut:
+        'Task. GET /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}'
+        return await self._client._call('GET', '/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}', parameters=[('note_id', 'path', note_id), ('task_id', 'path', task_id)], response_type=models.ArticleSyncTaskOut)
+
+    async def reconcile(self, *, note_id: str, task_id: str, body: models.ArticleSyncReconcile | dict) -> models.ArticleSyncReconcileOut:
+        'Reconcile. POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile'
+        return await self._client._call('POST', '/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile', parameters=[('note_id', 'path', note_id), ('task_id', 'path', task_id)], body=body, media_type='application/json', response_type=models.ArticleSyncReconcileOut)
 
     async def note_history(self, *, note_id: str, cursor: str | None | Unset = UNSET, limit: int | Unset = UNSET) -> models.ThoughtHistoryList:
         'Note History. GET /v1/thought-workshop/notes/{note_id}/history'

@@ -21,6 +21,7 @@ export type StudioPage =
   | "integrations-tool-apis"
   | "integrations-mcp"
   | "integrations-skills"
+  | "integrations-external-connections"
   | "video-frame-exporter"
   | "codex-model-source"
   | "model-test"
@@ -194,6 +195,8 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
     return { page: "integrations-mcp" };
   if (pathname.startsWith("/integrations/skills"))
     return { page: "integrations-skills" };
+  if (pathname.startsWith("/integrations/external-connections"))
+    return { page: "integrations-external-connections" };
   if (pathname.startsWith("/integrations"))
     return { page: "integrations-tool-apis" };
   if (pathname.startsWith("/tools/video-frame-exporter"))
@@ -253,6 +256,7 @@ export function pathFor(
     "integrations-tool-apis": "/integrations/tool-apis",
     "integrations-mcp": "/integrations/mcp",
     "integrations-skills": "/integrations/skills",
+    "integrations-external-connections": "/integrations/external-connections",
     "video-frame-exporter": "/tools/video-frame-exporter",
     "codex-model-source": "/tools/codex-model-source",
     "model-test": "/model-test",

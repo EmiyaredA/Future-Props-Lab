@@ -583,6 +583,21 @@ OPERATIONS["community.access"] += (
     ("POST", "/v1/thought-workshop/community/publications/{publication_id}/references"),
 )
 
+OPERATIONS["configuration.manage"] += (
+    ("GET", "/v1/integrations/external-connections"),
+    ("POST", "/v1/integrations/external-connections"),
+    ("PATCH", "/v1/integrations/external-connections/{connection_id}"),
+    ("POST", "/v1/integrations/external-connections/{connection_id}/check"),
+    ("POST", "/v1/integrations/external-connections/{connection_id}/target-check"),
+    ("GET", "/v1/thought-workshop/notes/{note_id}/external-sync"),
+    ("PUT", "/v1/thought-workshop/notes/{note_id}/external-sync/binding"),
+    ("DELETE", "/v1/thought-workshop/notes/{note_id}/external-sync/binding"),
+    ("POST", "/v1/thought-workshop/notes/{note_id}/external-sync/preview"),
+    ("POST", "/v1/thought-workshop/notes/{note_id}/external-sync/tasks"),
+    ("GET", "/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}"),
+    ("POST", "/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile"),
+)
+
 ROUTE_PERMISSIONS = {
     operation: key for key, operations in OPERATIONS.items() for operation in operations
 }

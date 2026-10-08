@@ -113,7 +113,7 @@ export const PLATFORM_READING: Record<
   },
   "general/integrations": {
     summary:
-      "分别配置工具 API、MCP 与 Skill，验证后在当前对话中选择需要的能力。",
+      "配置工具 API、MCP、Skill 和飞书外部连接，分别验证对话能力与文章同步授权。",
     related: [
       {
         libraryId: "general",
@@ -358,7 +358,7 @@ export const PLATFORM_READING: Record<
   },
   "thought-workshop/delivery": {
     summary:
-      "选择 CSV、静态阅读导出或完整备份，保留多表结构、历史、附件与内部引用。",
+      "绑定飞书文档并手动同步文章，或选择 CSV、阅读导出和完整备份交付资料。",
     related: [
       {
         libraryId: "thought-workshop",

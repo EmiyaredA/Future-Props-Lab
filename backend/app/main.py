@@ -18,6 +18,7 @@ from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExpo
 from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.apps.live2d_workshop.runner import Live2DExportRunner
 from app.apps.motion_compositor.runner import MotionExportRunner
+from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
 from app.apps.video_editor.runner import VideoEditorRunner
 from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
 from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
@@ -29,6 +30,7 @@ from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_stag
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
+from app.console.governance.external_sync_access import external_sync_actor_allowed
 from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
 from app.console.governance.runtime_quotas import recover_admissions
@@ -71,6 +73,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await recover_interrupted_amadeus_runs()
     supervisor = RunnerSupervisor(
         (
+            ArticleSyncRunner(external_sync_actor_allowed),
             ModelTemplateSyncRunner(),
             VisualGenerationRunner(),
             ModelTestGenerationRunner(),

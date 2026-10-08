@@ -139,6 +139,7 @@ export function KnowledgeTopbar({
   reading,
   canPublish,
   onToggleReading,
+  onExternalSync,
   busy,
   projectTitle,
   libraryTitle,
@@ -164,6 +165,7 @@ export function KnowledgeTopbar({
   canPublish?: boolean;
   reading?: boolean;
   onToggleReading?: () => void;
+  onExternalSync?: () => void;
   busy: boolean;
   projectTitle?: string;
   libraryTitle?: string;
@@ -281,6 +283,11 @@ export function KnowledgeTopbar({
         ) : null}
       </div>
       <div className="knowledge-top-actions">
+        {noteMode && onExternalSync && (
+          <button className="btn" onClick={onExternalSync}>
+            同步到…
+          </button>
+        )}
         <div className="knowledge-document-tools" ref={documentToolsRef} />
         {window.futurePropsDesktop?.openAmadeus && (
           <button
