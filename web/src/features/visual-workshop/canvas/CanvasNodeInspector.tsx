@@ -252,6 +252,7 @@ export function CanvasNodeInspector({
           layout={generationLayout}
           projectId={projectId}
           canvasNodeId={node.id}
+          excludedAssetIds={node.asset_id ? [node.asset_id] : []}
           lockedKind={node.kind}
           draft={node.generation_draft}
           linkedAssetIds={linkedReferences.assetIds}

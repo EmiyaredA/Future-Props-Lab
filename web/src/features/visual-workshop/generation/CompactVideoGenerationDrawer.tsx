@@ -101,6 +101,7 @@ export function CompactVideoGenerationDrawer({
   const referenceDrop = useProjectReferenceDrop({
     projectId,
     files: controller.availableReferenceFiles,
+    excludedAssetIds: controller.excludedAssetIds,
     selections: [
       {
         kind: "image",
@@ -198,6 +199,7 @@ export function CompactVideoGenerationDrawer({
               {videoMode === "image" ||
               (firstFrame.length > 0 && videoMode !== "frames") ? (
                 <ProjectMediaPicker
+                  excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="起始画面"
                   minimal
@@ -218,6 +220,7 @@ export function CompactVideoGenerationDrawer({
               {videoMode === "frames" ? (
                 <>
                   <ProjectMediaPicker
+                    excludedAssetIds={controller.excludedAssetIds}
                     projectId={projectId}
                     label="首帧"
                     minimal
@@ -234,6 +237,7 @@ export function CompactVideoGenerationDrawer({
                     onInvalidSelection={invalidSelection}
                   />
                   <ProjectMediaPicker
+                    excludedAssetIds={controller.excludedAssetIds}
                     projectId={projectId}
                     label="尾帧（可选）"
                     minimal
@@ -253,6 +257,7 @@ export function CompactVideoGenerationDrawer({
               ) : null}
               {lastFrame.length > 0 && videoMode !== "frames" ? (
                 <ProjectMediaPicker
+                  excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="尾帧"
                   minimal
@@ -276,6 +281,7 @@ export function CompactVideoGenerationDrawer({
                   references.length ||
                   linkedAssetIds.image.length ? (
                     <ProjectMediaPicker
+                      excludedAssetIds={controller.excludedAssetIds}
                       projectId={projectId}
                       label="参考图片"
                       onReorder={reorderImages}
@@ -295,6 +301,7 @@ export function CompactVideoGenerationDrawer({
                   videoReferences.length ||
                   linkedAssetIds.video.length ? (
                     <ProjectMediaPicker
+                      excludedAssetIds={controller.excludedAssetIds}
                       projectId={projectId}
                       label="参考视频"
                       kind="video"
@@ -314,6 +321,7 @@ export function CompactVideoGenerationDrawer({
                   audioReferences.length ||
                   linkedAssetIds.audio.length ? (
                     <ProjectMediaPicker
+                      excludedAssetIds={controller.excludedAssetIds}
                       projectId={projectId}
                       label="参考音频"
                       kind="audio"
@@ -332,11 +340,6 @@ export function CompactVideoGenerationDrawer({
                 </>
               ) : null}
             </div>
-          ) : null}
-          {referenceDrop.notice ? (
-            <small className="generation-picker-state" role="status">
-              {referenceDrop.notice}
-            </small>
           ) : null}
           <div className="video-composer-prompt">
             <GenerationPromptEditor

@@ -261,21 +261,44 @@
   font-size: 11px;
   font-weight: 500;
 }
-.visual-project-board .board-material {
-  width: 100%;
-  text-align: left;
-  justify-content: flex-start;
+.board-material-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   border: 1px solid transparent;
-  background: transparent;
-  padding: 6px;
-  gap: 8px;
   margin: 2px 0;
   border-radius: 7px;
 }
-.visual-project-board .board-material.is-selected {
+.board-material-row:hover,
+.board-material-row:focus-within {
+  background: var(--board-soft);
+}
+.visual-project-board .board-material {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  justify-content: flex-start;
+  border: 0;
+  background: transparent;
+  padding: 6px;
+  gap: 8px;
+  border-radius: 7px;
+}
+.board-material-row.is-selected {
   border-color: color-mix(in srgb, var(--board-accent) 40%, transparent);
   background: var(--board-accent-soft);
   box-shadow: inset 3px 0 var(--board-accent);
+}
+.board-material-row > .board-icon-button {
+  margin-right: 4px;
+  border: 1px solid var(--board-border);
+  background: var(--board-soft);
+}
+.board-material-row.is-selected > .board-icon-button,
+.board-material-row > .board-icon-button[aria-expanded="true"] {
+  color: var(--board-accent);
+  border-color: var(--board-accent);
+  background: var(--board-panel);
 }
 .board-material-thumb {
   width: 34px;
@@ -395,6 +418,9 @@
   color: var(--text, #302d28);
 }
 .board-action-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font: inherit;
   font-size: 12px;
   min-height: 36px;
@@ -408,6 +434,10 @@
 }
 .board-action-menu button:hover {
   background: var(--surface-hover, #f8f5ef);
+}
+.board-action-menu button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .board-action-menu .is-danger {
   color: var(--danger, #cd5743);

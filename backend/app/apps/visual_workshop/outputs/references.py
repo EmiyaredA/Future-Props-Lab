@@ -102,4 +102,15 @@ async def resolve_references(session: AsyncSession, project_id: str, body):
             for field in ("reference_asset_ids", "video_asset_ids", "audio_asset_ids")
         ):
             payload["mode"] = "reference"
+    own_asset_id = target.get("asset_id")
+    reference_ids = [
+        *payload.get("reference_asset_ids", []),
+        *payload.get("video_asset_ids", []),
+        *payload.get("audio_asset_ids", []),
+        payload.get("reference_asset_id"),
+        payload.get("first_frame_asset_id"),
+        payload.get("last_frame_asset_id"),
+    ]
+    if own_asset_id and own_asset_id in reference_ids:
+        raise OutputError("素材不能引用自身", code="self_asset_reference")
     return type(body).model_validate(payload), titles, snapshot

@@ -31,6 +31,7 @@ export function CompactAudioGenerationDrawer({
   onClose,
   layout = "canvas",
   linkedAssetIds = { image: [], video: [], audio: [] },
+  excludedAssetIds = [],
 }: GenerationDrawerProps) {
   const audioDraft = draft as
     VisualCanvasAudioGenerationDraft | null | undefined;
@@ -198,6 +199,7 @@ export function CompactAudioGenerationDrawer({
           <div className="audio-generation-references">
             <strong>参考音频</strong>
             <ProjectMediaPicker
+              excludedAssetIds={excludedAssetIds}
               projectId={projectId}
               label="参考音频"
               kind="audio"

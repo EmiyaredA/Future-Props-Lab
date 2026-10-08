@@ -8,12 +8,18 @@ export function NodeMetadata({
   node,
   categories,
   onPatch,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   node: VisualCanvasNode;
   categories: VisualMaterialCategory[];
   onPatch: BoardController["patchNode"];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = controlledOpen ?? localOpen;
+  const setOpen = onOpenChange ?? setLocalOpen;
   const category = categories.find(
     (category) => category.id === node.category_id,
   );

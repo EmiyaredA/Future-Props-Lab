@@ -30,6 +30,7 @@ export type GenerationDrawerProps = {
   compact?: boolean;
   layout?: "canvas" | "workbench";
   canvasNodeId?: string;
+  excludedAssetIds?: string[];
   linkedAssetIds?: LinkedReferenceAssetIds;
   linkedReferenceNames?: LinkedReferenceNames;
 };

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import httpx
@@ -16,6 +17,48 @@ from app.main import app
 from app.runtime.db import SessionLocal
 
 PNG = b"\x89PNG\r\n\x1a\noutput-version"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["image", "video", "audio"])
+async def test_generation_rejects_own_media_reference(kind):
+    from app.apps.visual_workshop.outputs.references import resolve_references
+    from app.llm.schemas.generation_tasks import (
+        AudioGenerationTaskCreateIn,
+        ImageGenerationTaskCreateIn,
+        VideoGenerationTaskCreateIn,
+    )
+
+    shapes = {
+        "image": (ImageGenerationTaskCreateIn, {"reference_asset_ids": ["own"]}),
+        "video": (VideoGenerationTaskCreateIn, {"mode": "reference", "video_asset_ids": ["own"]}),
+        "audio": (AudioGenerationTaskCreateIn, {"mode": "music", "reference_asset_ids": ["own"]}),
+    }
+    shape, references = shapes[kind]
+    canvas = VisualCanvasDocument(
+        project_id="project",
+        revision=2,
+        nodes=[node("target", kind, "own")],
+        edges=[],
+    )
+    session = AsyncMock()
+    session.get.return_value = canvas
+    body = shape(
+        kind=kind,
+        model_id="model",
+        prompt="生成",
+        canvas_node_id="target",
+        expected_canvas_revision=2,
+        **references,
+    )
+    with pytest.raises(OutputError) as error:
+        await resolve_references(session, "project", body)
+    assert error.value.code == "self_asset_reference"
+    assert error.value.status == 422
+    # Other files still work, including later edits using a distinct reference.
+    canvas.nodes[0]["asset_id"] = "other"
+    resolved, _, _ = await resolve_references(session, "project", body)
+    assert resolved == body
 
 
 async def create_project(client):

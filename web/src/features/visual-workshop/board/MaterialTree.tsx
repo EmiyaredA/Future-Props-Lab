@@ -3,6 +3,10 @@ import type { VisualCanvasNode, VisualMaterialCategory } from "../api";
 import { BoardMenu } from "./BoardMenu";
 import { OutputPreview } from "./OutputPreview";
 import { nodeTypeNames } from "./boardTypes";
+import {
+  NodeManagementMenu,
+  type NodeManagementAction,
+} from "./NodeManagementMenu";
 import { setCanvasAssetDragData } from "../canvas/canvasAssetDrag";
 
 export type TreeAction = {
@@ -17,6 +21,8 @@ export function MaterialTree({
   selectedId,
   onSelect,
   onAction,
+  onNodeAction,
+  downloading,
   projectId,
 }: {
   categories: VisualMaterialCategory[];
@@ -24,54 +30,67 @@ export function MaterialTree({
   selectedId?: string;
   onSelect: (id: string) => void;
   onAction: (action: TreeAction) => void;
+  onNodeAction?: (action: NodeManagementAction, node: VisualCanvasNode) => void;
+  downloading?: boolean;
   projectId?: string;
 }) {
   const entry = (node: VisualCanvasNode) => (
-    <button
+    <div
       key={node.id}
-      className={`board-material ${selectedId === node.id ? "is-selected" : ""}`}
-      aria-pressed={selectedId === node.id}
-      draggable={Boolean(projectId && node.kind !== "text" && node.asset_id)}
-      title={
-        node.kind !== "text" && node.asset_id
-          ? "可拖入生成器参考素材框"
-          : undefined
-      }
-      onDragStart={(event) => {
-        if (!projectId || node.kind === "text" || !node.asset_id) {
-          event.preventDefault();
-          return;
-        }
-        event.stopPropagation();
-        setCanvasAssetDragData(event.dataTransfer, {
-          assetId: node.asset_id,
-          mediaKind: node.kind,
-          displayName: node.title,
-          importMode: "none",
-          sourceProjectId: projectId,
-        });
-      }}
-      onClick={() => onSelect(node.id)}
+      className={`board-material-row ${selectedId === node.id ? "is-selected" : ""}`}
     >
-      <div className="board-material-thumb">
-        <OutputPreview
-          kind={node.kind}
-          assetId={node.kind !== "text" ? node.asset_id : undefined}
-          text={node.kind === "text" ? node.text : undefined}
-          compact
+      <button
+        className="board-material"
+        aria-pressed={selectedId === node.id}
+        draggable={Boolean(projectId && node.kind !== "text" && node.asset_id)}
+        title={
+          node.kind !== "text" && node.asset_id
+            ? "可拖入生成器参考素材框"
+            : undefined
+        }
+        onDragStart={(event) => {
+          if (!projectId || node.kind === "text" || !node.asset_id) {
+            event.preventDefault();
+            return;
+          }
+          event.stopPropagation();
+          setCanvasAssetDragData(event.dataTransfer, {
+            assetId: node.asset_id,
+            mediaKind: node.kind,
+            displayName: node.title,
+            importMode: "none",
+            sourceProjectId: projectId,
+          });
+        }}
+        onClick={() => onSelect(node.id)}
+      >
+        <div className="board-material-thumb">
+          <OutputPreview
+            kind={node.kind}
+            assetId={node.kind !== "text" ? node.asset_id : undefined}
+            text={node.kind === "text" ? node.text : undefined}
+            compact
+          />
+        </div>
+        <span>
+          <strong title={node.title}>{node.title}</strong>
+          <small>
+            {nodeTypeNames[node.kind]} ·{" "}
+            {node.final_version ? `最终 v${node.final_version}` : "暂无输出"}
+          </small>
+        </span>
+        {node.final_version && (
+          <i className="board-material-ready" aria-label="已有最终输出" />
+        )}
+      </button>
+      {onNodeAction && (
+        <NodeManagementMenu
+          node={node}
+          onAction={onNodeAction}
+          downloading={downloading}
         />
-      </div>
-      <span>
-        <strong title={node.title}>{node.title}</strong>
-        <small>
-          {nodeTypeNames[node.kind]} ·{" "}
-          {node.final_version ? `最终 v${node.final_version}` : "暂无输出"}
-        </small>
-      </span>
-      {node.final_version && (
-        <i className="board-material-ready" aria-label="已有最终输出" />
       )}
-    </button>
+    </div>
   );
   const uncategorized = nodes.filter((node) => !node.category_id);
   return (

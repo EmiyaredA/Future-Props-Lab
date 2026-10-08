@@ -64,6 +64,7 @@ export function CompactImageGenerationDrawer({
         <div className="image-composer-body">
           <div className="image-composer-tools">
             <ProjectMediaPicker
+              excludedAssetIds={controller.excludedAssetIds}
               projectId={projectId}
               multiple={(selectedModel?.max_reference_images ?? 1) > 1}
               max={selectedModel?.max_reference_images ?? 1}

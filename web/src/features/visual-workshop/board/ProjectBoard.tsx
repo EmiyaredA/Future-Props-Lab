@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { CanvasNodeInspector } from "../canvas/CanvasNodeInspector";
 import { CanvasAssetsDrawer } from "../canvas/CanvasAssetsDrawer";
@@ -31,9 +32,14 @@ import { BoardMenu } from "./BoardMenu";
 import { MaterialTree, type TreeAction } from "./MaterialTree";
 import { TextWorkbench } from "./TextWorkbench";
 import { NodeMetadata } from "./NodeMetadata";
+import {
+  NodeManagementMenu,
+  type NodeManagementAction,
+} from "./NodeManagementMenu";
 import { StatusBoard } from "./StatusBoard";
+import { downloadNodeOutput } from "./downloadNodeOutput";
 import { statusIcons, statusKeys, typeIcons } from "./boardPresentation";
-import type { VisualNodeOutput } from "../api";
+import type { VisualCanvasNode, VisualNodeOutput } from "../api";
 import "./project-board.css";
 import "./workbench.css";
 import "./status-board.css";
@@ -52,6 +58,12 @@ export function ProjectBoard({
   const [tab, setTab] = useState<"workbench" | "status">("workbench");
   const [search, setSearch] = useState("");
   const [action, setAction] = useState<TreeAction>();
+  const [nodeAction, setNodeAction] = useState<{
+    kind: "rename" | "delete";
+    nodeId: string;
+  }>();
+  const [metadataNodeId, setMetadataNodeId] = useState<string>();
+  const [downloading, setDownloading] = useState(false);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState("");
   const uploadInput = useRef<HTMLInputElement>(null);
@@ -158,6 +170,25 @@ export function ProjectBoard({
     c.setSelectedNodeIds([id]);
     if (window.innerWidth <= 600) setSidebarOpen(false);
   };
+  const manageNode = (kind: NodeManagementAction, node: VisualCanvasNode) => {
+    if (kind === "download") {
+      if (downloading) return;
+      setDownloading(true);
+      setNotice("");
+      void downloadNodeOutput(node)
+        .catch((error: unknown) =>
+          setNotice(error instanceof Error ? error.message : "下载失败"),
+        )
+        .finally(() => setDownloading(false));
+    } else if (kind === "organize") {
+      select(node.id);
+      setTab("workbench");
+      setMetadataNodeId(node.id);
+    } else {
+      setNodeAction({ kind, nodeId: node.id });
+    }
+  };
+  const managedNode = c.nodes.find((node) => node.id === nodeAction?.nodeId);
   const saveCategories = async (next: VisualMaterialCategory[]) => {
     setPending(true);
     setNotice("");
@@ -308,6 +339,8 @@ export function ProjectBoard({
             selectedId={selected?.id}
             onSelect={select}
             onAction={setAction}
+            onNodeAction={manageNode}
+            downloading={downloading}
           />
           <div className="board-material-footer">
             <button onClick={() => c.setAssetsOpen(true)}>
@@ -409,15 +442,10 @@ export function ProjectBoard({
                       <SelectedStatusIcon size={12} />
                       {selectedStatus}
                     </span>
-                    <BoardMenu
-                      label="节点更多操作"
-                      items={[
-                        {
-                          label: "删除节点",
-                          danger: true,
-                          onSelect: () => c.removeNode(selected.id),
-                        },
-                      ]}
+                    <NodeManagementMenu
+                      node={selected}
+                      onAction={manageNode}
+                      downloading={downloading}
                     />
                   </div>
                   <input
@@ -433,6 +461,10 @@ export function ProjectBoard({
                   node={selected}
                   categories={categories}
                   onPatch={c.patchNode}
+                  open={metadataNodeId === selected.id}
+                  onOpenChange={(open) =>
+                    setMetadataNodeId(open ? selected.id : undefined)
+                  }
                 />
                 <InputReferences controller={c} nodeId={selected.id} />
                 {selected.kind === "text" ? (
@@ -490,6 +522,29 @@ export function ProjectBoard({
           open
         />
       )}
+      <TextInputDialog
+        open={nodeAction?.kind === "rename" && !!managedNode}
+        title="重命名节点"
+        label="节点名称"
+        initialValue={managedNode?.title}
+        maxLength={120}
+        onCancel={() => setNodeAction(undefined)}
+        onConfirm={(title) => {
+          if (managedNode) c.patchNode(managedNode.id, { title }, true);
+          setNodeAction(undefined);
+        }}
+      />
+      <ConfirmDialog
+        open={nodeAction?.kind === "delete" && !!managedNode}
+        title="删除节点"
+        description={`确认删除「${managedNode?.title ?? ""}」？这会移除该节点及其输入连线，项目素材中的原文件仍会保留。若它被下游节点引用，请先解除引用。`}
+        confirmLabel="删除节点"
+        onCancel={() => setNodeAction(undefined)}
+        onConfirm={() => {
+          if (managedNode) c.removeNode(managedNode.id);
+          setNodeAction(undefined);
+        }}
+      />
       <TextInputDialog
         open={!!action}
         title={

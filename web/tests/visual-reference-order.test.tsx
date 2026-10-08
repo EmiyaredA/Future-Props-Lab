@@ -190,7 +190,12 @@ test("drags a connected image to the first position without changing links or op
   const reaction = screen
     .getByRole("button", { name: "reaction.png" })
     .closest(".generation-media-card")!;
-  const dataTransfer = { setData: vi.fn(), effectAllowed: "", dropEffect: "" };
+  const dataTransfer = {
+    types: ["text/plain"],
+    setData: vi.fn(),
+    effectAllowed: "",
+    dropEffect: "",
+  };
   fireEvent.dragStart(roof, { dataTransfer });
   fireEvent.dragOver(reaction, { dataTransfer });
   fireEvent.drop(reaction, { dataTransfer });

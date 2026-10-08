@@ -20,13 +20,14 @@ export function useProjectReferenceDrop({
   projectId,
   files,
   selections,
+  excludedAssetIds = [],
 }: {
   projectId: string;
   files: ManagedFile[];
   selections: ReferenceSelection[];
+  excludedAssetIds?: string[];
 }) {
   const [active, setActive] = useState(false);
-  const [notice, setNotice] = useState("");
   const onDragOver = (event: DragEvent<HTMLElement>) => {
     if (!isCanvasAssetDrag(event.dataTransfer)) return;
     event.preventDefault();
@@ -41,15 +42,11 @@ export function useProjectReferenceDrop({
     event.stopPropagation();
     setActive(false);
     const payload = readCanvasAssetDragData(event.dataTransfer);
-    if (!payload) {
-      setNotice("无法读取拖入的素材，请重新拖动。");
-      return;
-    }
+    if (!payload || excludedAssetIds.includes(payload.assetId)) return;
     const selection = selections.find(
       (item) => item.kind === payload.mediaKind,
     );
     if (!selection || selection.disabled) {
-      setNotice("当前参考框不支持此素材，请拖入对应类型的可用参考框。");
       return;
     }
     const file = files.find(
@@ -61,9 +58,6 @@ export function useProjectReferenceDrop({
       (payload.sourceProjectId && payload.sourceProjectId !== projectId) ||
       !file
     ) {
-      setNotice(
-        "素材尚未加载、已失效或不属于本项目，请先从素材选择菜单导入或重新选择。",
-      );
       return;
     }
     const occupied = new Set([
@@ -71,7 +65,6 @@ export function useProjectReferenceDrop({
       ...(selection.linkedValue ?? []),
     ]);
     if (occupied.has(file.id)) {
-      setNotice("此素材已在参考框中。");
       return;
     }
     if (
@@ -79,19 +72,14 @@ export function useProjectReferenceDrop({
         ? occupied.size >= selection.max
         : (selection.linkedValue?.length ?? 0) > 0
     ) {
-      setNotice(
-        `当前参考框最多支持 ${selection.max} 个素材，请先移除已有参考。`,
-      );
       return;
     }
     selection.onChange(
       selection.multiple ? [...new Set(selection.value), file.id] : [file.id],
     );
-    setNotice(`已添加参考素材：${file.display_name}`);
   };
   return {
     active,
-    notice,
     handlers: {
       onDragOver,
       onDrop,

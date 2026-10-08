@@ -1,4 +1,11 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
 
@@ -7,7 +14,13 @@ export function BoardMenu({
   items,
 }: {
   label: string;
-  items: { label: string; onSelect: () => void; danger?: boolean }[];
+  items: {
+    label: string;
+    onSelect: () => void;
+    danger?: boolean;
+    icon?: ReactNode;
+    disabled?: boolean;
+  }[];
 }) {
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -28,7 +41,9 @@ export function BoardMenu({
       ),
       left: Math.max(8, Math.min(rect.right - 184, window.innerWidth - 192)),
     });
-    menu.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    menu.current
+      ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
+      ?.focus();
   }, [open, items.length]);
   useEffect(() => {
     if (!open) return;
@@ -55,6 +70,7 @@ export function BoardMenu({
         ref={trigger}
         className="board-icon-button"
         aria-label={label}
+        title={label}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -101,7 +117,7 @@ export function BoardMenu({
               }
               const buttons = [
                 ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
-                  "button",
+                  "button:not(:disabled)",
                 ),
               ];
               const index = buttons.indexOf(
@@ -127,12 +143,14 @@ export function BoardMenu({
               <button
                 key={item.label}
                 role="menuitem"
+                disabled={item.disabled}
                 className={item.danger ? "is-danger" : ""}
                 onClick={() => {
                   close();
                   item.onSelect();
                 }}
               >
+                {item.icon}
                 {item.label}
               </button>
             ))}

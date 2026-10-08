@@ -141,6 +141,7 @@ export function ProjectMediaPicker({
   showLabel = false,
   uploadLast = false,
   disabled = false,
+  excludedAssetIds = [],
   onChange,
   onReorder,
   onFilesLoaded,
@@ -157,6 +158,7 @@ export function ProjectMediaPicker({
   showLabel?: boolean;
   uploadLast?: boolean;
   disabled?: boolean;
+  excludedAssetIds?: string[];
   onChange: (value: string[]) => void;
   onReorder?: (value: string[]) => void;
   onFilesLoaded?: (files: ManagedFile[]) => void;
@@ -242,12 +244,16 @@ export function ProjectMediaPicker({
     if (!selectionReady) return;
     onFilesLoaded?.(files);
     const available = new Set(files.map((file) => file.id));
-    const valid = value.filter((assetId) => available.has(assetId));
+    const valid = value.filter(
+      (assetId) =>
+        available.has(assetId) && !excludedAssetIds.includes(assetId),
+    );
     if (valid.length === value.length) return;
     onChange(valid);
-    onInvalidSelection?.();
+    if (value.some((id) => !available.has(id))) onInvalidSelection?.();
   }, [
     files,
+    excludedAssetIds,
     onChange,
     onFilesLoaded,
     onInvalidSelection,
@@ -290,6 +296,7 @@ export function ProjectMediaPicker({
   const referenceDrop = useProjectReferenceDrop({
     projectId,
     files,
+    excludedAssetIds,
     selections: [
       {
         kind,
@@ -303,13 +310,14 @@ export function ProjectMediaPicker({
     ],
   });
   const visibleFiles = useMemo(() => {
-    if (!minimal) return files;
+    if (!minimal)
+      return files.filter((file) => !excludedAssetIds.includes(file.id));
     const byId = new Map(files.map((file) => [file.id, file]));
     return combinedValue.flatMap((id) => {
       const file = byId.get(id);
       return file ? [file] : [];
     });
-  }, [combinedValue, files, minimal]);
+  }, [combinedValue, files, minimal, excludedAssetIds]);
   const UploadIcon =
     kind === "video" ? Video : kind === "audio" ? Music : Image;
 
@@ -645,11 +653,6 @@ export function ProjectMediaPicker({
           已选 {combinedValue.length}/{max}
         </small>
       ) : null}
-      {referenceDrop.notice ? (
-        <small className="generation-picker-state" role="status">
-          {referenceDrop.notice}
-        </small>
-      ) : null}
       {onReorder ? (
         <span className="sr-only" role="status">
           {orderNotice}
@@ -676,6 +679,7 @@ export function ProjectMediaPicker({
               mode={dialogMode}
               projectId={projectId}
               kind={kind}
+              excludedAssetIds={excludedAssetIds}
               initialValue={
                 dialogMode === "project"
                   ? manualIds.filter((id) => !linkedSet.has(id))

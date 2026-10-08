@@ -155,6 +155,7 @@ export function StandardGenerationDrawer({
               )}
             </div>
             <ProjectMediaPicker
+              excludedAssetIds={controller.excludedAssetIds}
               projectId={projectId}
               label="参考图片（可选）"
               multiple={(selectedModel?.max_reference_images ?? 1) > 1}
@@ -233,6 +234,7 @@ export function StandardGenerationDrawer({
             </fieldset>
             {videoMode === "image" ? (
               <ProjectMediaPicker
+                excludedAssetIds={controller.excludedAssetIds}
                 projectId={projectId}
                 label="起始画面（必选）"
                 value={firstFrame}
@@ -243,6 +245,7 @@ export function StandardGenerationDrawer({
             {videoMode === "frames" ? (
               <>
                 <ProjectMediaPicker
+                  excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="首帧（必选）"
                   value={firstFrame}
@@ -250,6 +253,7 @@ export function StandardGenerationDrawer({
                   onFilesLoaded={rememberPromptFiles}
                 />
                 <ProjectMediaPicker
+                  excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="尾帧（可选）"
                   value={lastFrame}
@@ -261,6 +265,7 @@ export function StandardGenerationDrawer({
             {videoMode === "reference" ? (
               <>
                 <ProjectMediaPicker
+                  excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="参考图片"
                   value={references}
@@ -270,6 +275,7 @@ export function StandardGenerationDrawer({
                   onFilesLoaded={rememberPromptFiles}
                 />
                 <ProjectMediaPicker
+                  excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="参考视频"
                   kind="video"
@@ -280,6 +286,7 @@ export function StandardGenerationDrawer({
                   onFilesLoaded={rememberPromptFiles}
                 />
                 <ProjectMediaPicker
+                  excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="参考音频"
                   kind="audio"

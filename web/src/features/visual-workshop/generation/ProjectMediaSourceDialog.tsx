@@ -39,6 +39,7 @@ export function ProjectMediaSourceDialog({
   initialValue,
   multiple,
   limit,
+  excludedAssetIds = [],
   onClose,
   onConfirm,
 }: {
@@ -48,6 +49,7 @@ export function ProjectMediaSourceDialog({
   initialValue: string[];
   multiple: boolean;
   limit: number;
+  excludedAssetIds?: string[];
   onClose: () => void;
   onConfirm: (ids: string[], files: ManagedFile[]) => void;
 }) {
@@ -57,7 +59,11 @@ export function ProjectMediaSourceDialog({
   const [crossScope, setCrossScope] = useState<CrossScope>("project");
   const [sourceProjectId, setSourceProjectId] = useState("");
   const [selected, setSelected] = useState<string[]>(
-    mode === "project" ? initialValue.slice(0, limit) : [],
+    mode === "project"
+      ? initialValue
+          .filter((id) => !excludedAssetIds.includes(id))
+          .slice(0, limit)
+      : [],
   );
   const projects = useQuery({
     queryKey: visualWorkshopQueryKeys.projectsForMediaSource,
@@ -134,13 +140,14 @@ export function ProjectMediaSourceDialog({
     return [...unique.values()]
       .filter(
         (file) =>
-          !normalized ||
-          file.display_name.toLocaleLowerCase("zh-CN").includes(normalized),
+          !excludedAssetIds.includes(file.id) &&
+          (!normalized ||
+            file.display_name.toLocaleLowerCase("zh-CN").includes(normalized)),
       )
       .sort((left, right) =>
         left.display_name.localeCompare(right.display_name, "zh-CN"),
       );
-  }, [fileQueries, query]);
+  }, [fileQueries, query, excludedAssetIds]);
   const loading =
     !sourceReady ||
     folders.isLoading ||

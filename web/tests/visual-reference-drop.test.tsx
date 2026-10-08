@@ -209,7 +209,9 @@ test("board media drag adds typed references anywhere in the bar, saves and subm
   );
   expect(select).not.toHaveBeenCalled();
   fireEvent.drop(bar, { dataTransfer });
-  expect(screen.getByText("此素材已在参考框中。")).toBeVisible();
+  expect(
+    screen.queryByText(/此素材已在参考框|已添加参考素材/),
+  ).not.toBeInTheDocument();
   for (const kind of ["video", "audio"] as const)
     fireEvent.drop(bar, { dataTransfer: transfer(`${kind}-asset`, kind) });
   expect(
@@ -229,6 +231,36 @@ test("board media drag adds typed references anywhere in the bar, saves and subm
   );
 });
 
+test("self references cannot be dragged or picked and old self selections are removed silently", async () => {
+  const change = vi.fn();
+  const invalid = vi.fn();
+  mount(
+    <ProjectMediaPicker
+      projectId="project"
+      label="自己的参考"
+      value={["image-asset"]}
+      excludedAssetIds={["image-asset"]}
+      minimal
+      onChange={change}
+      onInvalidSelection={invalid}
+    />,
+  );
+  await waitFor(() => expect(change).toHaveBeenCalledWith([]));
+  change.mockClear();
+  fireEvent.drop(screen.getByRole("group", { name: "自己的参考" }), {
+    dataTransfer: transfer(),
+  });
+  expect(change).not.toHaveBeenCalled();
+  expect(invalid).not.toHaveBeenCalled();
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "上传自己的参考" }));
+  await userEvent.click(screen.getByRole("menuitem", { name: /本项目素材/ }));
+  await screen.findByText("当前来源暂无可用素材");
+  expect(
+    screen.queryByRole("option", { name: "image素材" }),
+  ).not.toBeInTheDocument();
+});
+
 test("picker rejects full, incompatible, missing, foreign and malformed references without changing draft", async () => {
   const change = vi.fn();
   mount(
@@ -245,11 +277,8 @@ test("picker rejects full, incompatible, missing, foreign and malformed referenc
   await screen.findByRole("button", { name: "image素材" });
   const picker = screen.getByRole("group", { name: "参考" });
   fireEvent.drop(picker, { dataTransfer: transfer() });
-  expect(screen.getByText(/最多支持 1 个素材/)).toBeVisible();
   fireEvent.drop(picker, { dataTransfer: transfer("video-asset", "video") });
-  expect(screen.getByText(/当前参考框不支持此素材/)).toBeVisible();
   fireEvent.drop(picker, { dataTransfer: transfer("missing") });
-  expect(screen.getByText(/素材尚未加载/)).toBeVisible();
   const foreign = transfer();
   setCanvasAssetDragData(foreign, {
     assetId: "image-asset",
@@ -259,10 +288,8 @@ test("picker rejects full, incompatible, missing, foreign and malformed referenc
     sourceProjectId: "other",
   });
   fireEvent.drop(picker, { dataTransfer: foreign });
-  expect(screen.getByText(/不属于本项目/)).toBeVisible();
   foreign.setData(CANVAS_ASSET_DRAG_MIME, "null");
   fireEvent.drop(picker, { dataTransfer: foreign });
-  expect(screen.getByText(/无法读取拖入/)).toBeVisible();
   expect(change).not.toHaveBeenCalled();
 });
 

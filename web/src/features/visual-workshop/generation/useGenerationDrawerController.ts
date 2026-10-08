@@ -63,6 +63,7 @@ export function useGenerationDrawerController({
   onClose,
   linkedAssetIds = { image: [], video: [], audio: [] },
   linkedReferenceNames = {},
+  excludedAssetIds = [],
 }: GenerationDrawerProps) {
   const client = useQueryClient();
   const imageDraft =
@@ -675,6 +676,7 @@ export function useGenerationDrawerController({
 
   return {
     availableReferenceFiles: Object.values(promptFiles),
+    excludedAssetIds,
     projectId,
     onClose,
     linkedAssetIds,

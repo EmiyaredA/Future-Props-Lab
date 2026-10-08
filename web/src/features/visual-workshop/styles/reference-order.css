@@ -1,4 +1,5 @@
 .generation-image-options.has-reference-order {
+  align-items: start;
   max-height: 82px;
   padding-bottom: 4px;
 }
