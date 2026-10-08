@@ -10,6 +10,7 @@ from app.apps.visual_workshop.models import (
 )
 from app.apps.visual_workshop.outputs.history import register_output
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.apps.visual_workshop.prompt_versions import preserve_legacy_prompt_versions
 from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentOut,
     VisualCanvasDocumentPutIn,
@@ -187,6 +188,7 @@ class VisualCanvasDocuments:
         body: VisualCanvasDocumentPutIn,
     ) -> VisualCanvasDocumentOut:
         row = await self._row(project_id)
+        preserve_legacy_prompt_versions(body.nodes, row.nodes or [])
         await self._validate_assets(project_id, body.nodes, row.nodes or [])
         await self._validate_tasks(project_id, body.nodes)
         old = {node["id"]: node for node in row.nodes or []}

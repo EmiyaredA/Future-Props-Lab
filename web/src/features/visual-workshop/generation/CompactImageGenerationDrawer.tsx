@@ -13,6 +13,7 @@ import {
   imageRatioIconStyle,
 } from "@features/visual-workshop/generation/options";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
+import { PromptVersionControls } from "./PromptVersionControls";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
 
@@ -105,16 +106,16 @@ export function CompactImageGenerationDrawer({
             </button>
           </div>
           <div className="video-composer-prompt image-composer-prompt">
+            {controller.promptVersions && (
+              <PromptVersionControls versions={controller.promptVersions} />
+            )}
             <GenerationPromptEditor
               value={prompt}
               assets={promptAssets}
               label="图片提示词"
               placeholder="描述你想生成的画面…"
               canvasHistoryShortcuts
-              onChange={(value) => {
-                setPrompt(value);
-                persistDraft({ prompt: value });
-              }}
+              onChange={setPrompt}
               onBlur={() => persistDraft({}, true)}
             />
           </div>

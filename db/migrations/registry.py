@@ -90,6 +90,7 @@ from db.migrations.versions import (
     r0086_visual_node_outputs,
     r0087_volcengine_images,
     r0088_external_article_sync,
+    r0089_visual_prompt_versions,
 )
 
 
@@ -396,6 +397,10 @@ MIGRATIONS += (
 
 MIGRATIONS += (
     Migration(r0088_external_article_sync.MIGRATION_ID, r0088_external_article_sync.SQL),
+)
+
+MIGRATIONS += (
+    Migration(r0089_visual_prompt_versions.MIGRATION_ID, r0089_visual_prompt_versions.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

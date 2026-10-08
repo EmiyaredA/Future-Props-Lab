@@ -16,6 +16,7 @@ import {
   type VideoMode,
 } from "@features/visual-workshop/generation/options";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
+import { PromptVersionControls } from "./PromptVersionControls";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
 import { useProjectReferenceDrop } from "./useProjectReferenceDrop";
@@ -342,16 +343,16 @@ export function CompactVideoGenerationDrawer({
             </div>
           ) : null}
           <div className="video-composer-prompt">
+            {controller.promptVersions && (
+              <PromptVersionControls versions={controller.promptVersions} />
+            )}
             <GenerationPromptEditor
               value={prompt}
               assets={promptAssets}
               label="视频提示词"
               placeholder="描述您的修改或生成需求…"
               canvasHistoryShortcuts
-              onChange={(value) => {
-                setPrompt(value);
-                persistDraft({ prompt: value });
-              }}
+              onChange={setPrompt}
               onBlur={() => persistDraft({}, true)}
             />
           </div>

@@ -34,9 +34,11 @@
 运行中或需要核对的任务阻止永久删除文章，返回 `409 external_sync_unresolved`；回收站仍可使用，
 需先恢复文章并处理任务，避免丢失可见恢复入口。
 
-## 视觉创作工坊节点输出
+## 视觉创作工坊提示词与节点输出
 
 项目看板与画布共用节点和输入引用；输出历史、上传版本、文本版本、最终版本 CAS 与有序多图协议见 [视觉项目看板 API](visual-project-board.md)。新增接口使用 `/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` 等项目内路径，按当前 Workspace 和视觉工坊权限校验。
+
+图像、视频与音频节点的生成草稿支持 `prompt_versions`（最多 20 项 `{id, name, prompt}`）及 `active_prompt_version_id`，原 `prompt` 与当前版本文字一致。沿用画布整体 CAS 和操作批次接口，无独立版本端点；版本切换仅改变文字，旧客户端省略版本字段时保留已有集合并更新当前版本。完整校验与兼容规则见同一参考文档。
 
 ## 创意工坊
 

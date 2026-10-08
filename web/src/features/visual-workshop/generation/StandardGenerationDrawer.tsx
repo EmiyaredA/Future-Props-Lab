@@ -1,6 +1,7 @@
 import { Image, LoaderCircle, Sparkles, Video, X } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
+import { PromptVersionControls } from "./PromptVersionControls";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
 
@@ -115,7 +116,11 @@ export function StandardGenerationDrawer({
           ) : null}
         </label>
         <div className="generation-form-prompt">
-          <span>提示词</span>
+          {controller.promptVersions ? (
+            <PromptVersionControls versions={controller.promptVersions} />
+          ) : (
+            <span>提示词</span>
+          )}
           <GenerationPromptEditor
             value={prompt}
             assets={promptAssets}
@@ -124,6 +129,7 @@ export function StandardGenerationDrawer({
               kind === "image" ? "描述要生成的画面…" : "描述镜头、动作和氛围…"
             }
             onChange={setPrompt}
+            onBlur={() => controller.persistDraft({}, true)}
           />
         </div>
         {kind === "image" ? (

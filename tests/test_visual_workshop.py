@@ -645,7 +645,11 @@ async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_a
         )
         assert saved.status_code == 200, saved.text
         assert saved.json()["nodes"][0]["generation_draft"]["image_count"] == 3
-        assert saved.json()["nodes"][1]["generation_draft"] == nodes[1]["generation_draft"]
+        assert saved.json()["nodes"][1]["generation_draft"] == {
+            **nodes[1]["generation_draft"],
+            "prompt_versions": [{"id": "v1", "name": "v1", "prompt": "镜头缓慢推进"}],
+            "active_prompt_version_id": "v1",
+        }
 
         structured_nodes = saved.json()["nodes"]
         duplicate = [dict(node) for node in structured_nodes]
@@ -740,6 +744,9 @@ async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_a
                 "prompt": "删除参考图后仍可保存其他修改",
             },
         }
+        # Simulate a legacy client updating only the single prompt field.
+        stale_nodes[1]["generation_draft"].pop("prompt_versions", None)
+        stale_nodes[1]["generation_draft"].pop("active_prompt_version_id", None)
         stale_saved = await client.put(
             f"/v1/visual-workshop/projects/{project['id']}/canvas",
             json={"expected_revision": 1, "nodes": stale_nodes},

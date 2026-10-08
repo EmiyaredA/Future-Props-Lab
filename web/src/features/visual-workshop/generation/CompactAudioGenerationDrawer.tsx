@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -20,6 +20,11 @@ import {
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { apiErrorMessage } from "@platform/api/errors";
 import type { GenerationDrawerProps } from "./generationDrawerTypes";
+import {
+  usePromptVersions,
+  type PromptVersionState,
+} from "./usePromptVersions";
+import { PromptVersionControls } from "./PromptVersionControls";
 
 export function CompactAudioGenerationDrawer({
   projectId,
@@ -40,7 +45,13 @@ export function CompactAudioGenerationDrawer({
     audioDraft?.mode ?? "music",
   );
   const [modelId, setModelId] = useState(audioDraft?.model_id ?? "");
-  const [prompt, setPrompt] = useState(audioDraft?.prompt ?? "");
+  const savePrompt = useRef<
+    (next: PromptVersionState, immediate: boolean) => void
+  >(() => {});
+  const promptVersions = usePromptVersions(audioDraft, (next, immediate) =>
+    savePrompt.current(next, immediate),
+  );
+  const { prompt, edit: setPrompt } = promptVersions;
   const [theme, setTheme] = useState(audioDraft?.theme ?? "");
   const [style, setStyle] = useState(audioDraft?.style ?? "");
   const [duration, setDuration] = useState(audioDraft?.duration ?? 15);
@@ -82,12 +93,16 @@ export function CompactAudioGenerationDrawer({
     if (models.some((model) => model.id === modelId)) return;
     setModelId(models[0]?.id ?? "");
   }, [modelId, models]);
-  const saveDraft = (immediate = false, nextMode = mode) => {
+  const saveDraft = (
+    immediate = false,
+    nextMode = mode,
+    changes: Partial<VisualCanvasAudioGenerationDraft> = {},
+  ) => {
     onDraftChange?.(
       {
         model_id: modelId || null,
         mode: nextMode,
-        prompt,
+        ...promptVersions.read(),
         theme,
         style,
         duration,
@@ -95,10 +110,12 @@ export function CompactAudioGenerationDrawer({
         prompt_influence: influence,
         output_format: format,
         reference_asset_ids: references,
+        ...changes,
       },
       immediate,
     );
   };
+  savePrompt.current = (next, immediate) => saveDraft(immediate, mode, next);
   const create = useMutation({
     mutationFn: async (body: GenerationTaskInput) =>
       createGenerationTask(projectId, body),
@@ -114,6 +131,7 @@ export function CompactAudioGenerationDrawer({
   });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    const prompt = promptVersions.read().prompt;
     if (!modelId) {
       setNotice("请先配置并启用对应的音频生成供应商。");
       return;
@@ -216,6 +234,7 @@ export function CompactAudioGenerationDrawer({
         ) : null}
       </div>
       <div className="audio-generation-editor">
+        {onDraftChange && <PromptVersionControls versions={promptVersions} />}
         <textarea
           aria-label="音频提示词"
           maxLength={6000}
@@ -226,7 +245,7 @@ export function CompactAudioGenerationDrawer({
               : "描述需要的音效，例如：雨夜中远处驶过的列车…"
           }
           onChange={(event) => setPrompt(event.target.value)}
-          onBlur={() => saveDraft()}
+          onBlur={() => saveDraft(true)}
         />
         {mode === "music" ? (
           <div className="audio-generation-meta">

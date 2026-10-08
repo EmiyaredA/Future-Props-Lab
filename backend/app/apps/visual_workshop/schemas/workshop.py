@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.apps.visual_workshop.schemas.prompts import VisualPromptDraft
 from app.capabilities.asset_store.schemas.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
@@ -119,9 +120,8 @@ class VisualCanvasPosition(BaseModel):
     y: float = Field(ge=-1_000_000, le=1_000_000)
 
 
-class VisualCanvasImageGenerationDraft(BaseModel):
+class VisualCanvasImageGenerationDraft(VisualPromptDraft):
     model_id: str | None = None
-    prompt: str = Field(default="", max_length=6000)
     size: str = Field(default="1024x1024", min_length=1, max_length=32)
     seed: int | None = Field(default=None, ge=0)
     image_count: int = Field(default=1, ge=1, le=4)
@@ -137,9 +137,8 @@ class VisualCanvasImageGenerationDraft(BaseModel):
         return _clean_prompt_reference_names(value)
 
 
-class VisualCanvasVideoGenerationDraft(BaseModel):
+class VisualCanvasVideoGenerationDraft(VisualPromptDraft):
     model_id: str | None = None
-    prompt: str = Field(default="", max_length=6000)
     mode: Literal["text", "image", "frames", "reference"] = "text"
     duration: int = Field(default=5, ge=2, le=15)
     resolution: Literal["480p", "720p", "1080p"] = "720p"
@@ -175,10 +174,9 @@ class VisualCanvasVideoGenerationDraft(BaseModel):
         return self
 
 
-class VisualCanvasAudioGenerationDraft(BaseModel):
+class VisualCanvasAudioGenerationDraft(VisualPromptDraft):
     model_id: str | None = None
     mode: Literal["music", "sfx"] = "music"
-    prompt: str = Field(default="", max_length=6000)
     theme: str = Field(default="", max_length=500)
     style: str = Field(default="", max_length=500)
     duration: int | None = Field(default=None, ge=1, le=600)

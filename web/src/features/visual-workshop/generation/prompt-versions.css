@@ -1,0 +1,69 @@
+.prompt-version-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.prompt-version-controls > .custom-select {
+  flex: 1 1 100px;
+  min-width: 0;
+  max-width: 200px;
+}
+
+.prompt-version-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.prompt-version-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.prompt-version-actions button:hover:not(:disabled) {
+  color: var(--text-strong);
+  border-color: var(--accent);
+}
+
+.prompt-version-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.prompt-version-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.video-composer-prompt:has(> .prompt-version-controls) {
+  flex-direction: column;
+}
+
+.video-composer-prompt > .prompt-version-controls {
+  flex: 0 0 auto;
+}
+
+.audio-generation-editor:has(> .prompt-version-controls) {
+  grid-template-rows: auto minmax(120px, 1fr) auto;
+}
+
+.audio-generation-editor > .prompt-version-controls {
+  margin: 0 12px;
+}

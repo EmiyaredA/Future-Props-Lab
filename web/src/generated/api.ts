@@ -20972,6 +20972,8 @@ export interface components {
         };
         /** VisualCanvasAudioGenerationDraft */
         VisualCanvasAudioGenerationDraft: {
+            /** Active Prompt Version Id */
+            active_prompt_version_id?: string | null;
             /** Duration */
             duration?: number | null;
             /**
@@ -20998,6 +21000,8 @@ export interface components {
              * @default 0.5
              */
             prompt_influence: number;
+            /** Prompt Versions */
+            prompt_versions?: components["schemas"]["VisualPromptVersion"][];
             /** Reference Asset Ids */
             reference_asset_ids?: string[];
             /**
@@ -21097,6 +21101,8 @@ export interface components {
         };
         /** VisualCanvasImageGenerationDraft */
         VisualCanvasImageGenerationDraft: {
+            /** Active Prompt Version Id */
+            active_prompt_version_id?: string | null;
             /** Grid Output */
             grid_output?: ("nodes" | "composite") | null;
             /** Grid Size */
@@ -21117,6 +21123,8 @@ export interface components {
             prompt_reference_names?: {
                 [key: string]: string;
             };
+            /** Prompt Versions */
+            prompt_versions?: components["schemas"]["VisualPromptVersion"][];
             /** Reference Asset Id */
             reference_asset_id?: string | null;
             /** Reference Asset Ids */
@@ -21200,6 +21208,8 @@ export interface components {
         };
         /** VisualCanvasVideoGenerationDraft */
         VisualCanvasVideoGenerationDraft: {
+            /** Active Prompt Version Id */
+            active_prompt_version_id?: string | null;
             /** Audio Asset Ids */
             audio_asset_ids?: string[];
             /**
@@ -21233,6 +21243,8 @@ export interface components {
             prompt_reference_names?: {
                 [key: string]: string;
             };
+            /** Prompt Versions */
+            prompt_versions?: components["schemas"]["VisualPromptVersion"][];
             /**
              * Ratio
              * @default 16:9
@@ -21387,6 +21399,18 @@ export interface components {
             project: components["schemas"]["VisualWorkshopProjectOut"];
             /** Warnings */
             warnings?: components["schemas"]["ProjectSnapshotImportWarning"][];
+        };
+        /** VisualPromptVersion */
+        VisualPromptVersion: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
         };
         /** VisualWorkshopProjectCreateIn */
         VisualWorkshopProjectCreateIn: {

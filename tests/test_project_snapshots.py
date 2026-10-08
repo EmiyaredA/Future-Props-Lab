@@ -362,6 +362,8 @@ async def test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members() 
         assert copied_canvas["nodes"][0]["generation_draft"] == {
             "model_id": None,
             "prompt": "keep this prompt",
+            "prompt_versions": [{"id": "v1", "name": "v1", "prompt": "keep this prompt"}],
+            "active_prompt_version_id": "v1",
             "size": "1024x1024",
             "seed": None,
             "image_count": 1,

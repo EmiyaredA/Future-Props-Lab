@@ -91,10 +91,10 @@ beforeEach(() => {
   });
 });
 
-function mount() {
+function mount(draftInitial = initial) {
   const saved = vi.fn();
   function Harness() {
-    const [draft, setDraft] = useState(initial);
+    const [draft, setDraft] = useState(draftInitial);
     return (
       <GenerationDrawer
         compact
@@ -209,4 +209,28 @@ test("drags a connected image to the first position without changing links or op
     true,
   );
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+test("reorders asset mentions in every prompt variant, including inactive variants", async () => {
+  const { saved } = mount({
+    ...initial,
+    prompt_versions: [
+      { id: "one", name: "v1", prompt: initial.prompt },
+      {
+        id: "two",
+        name: "v2",
+        prompt: "<Picture 3> character, <Picture 1> pose; <Video 1> motion",
+      },
+    ],
+    active_prompt_version_id: "one",
+  });
+  await userEvent.click(
+    await screen.findByRole("button", { name: "前移 roof.png" }),
+  );
+  const next = saved.mock.lastCall![0];
+  expect(next.prompt_versions[0].prompt).toBe(next.prompt);
+  expect(next.prompt_versions[1].prompt).toBe(
+    "<Picture 3> character, <Picture 2> pose; <Video 1> motion",
+  );
+  expect(next.active_prompt_version_id).toBe("one");
 });

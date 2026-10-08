@@ -19,6 +19,10 @@ import {
 } from "@features/visual-workshop/api";
 import { apiErrorMessage } from "@platform/api/errors";
 import {
+  usePromptVersions,
+  type PromptVersionState,
+} from "./usePromptVersions";
+import {
   imageSizeChoices,
   type GenerationKind,
   type VideoMode,
@@ -78,9 +82,14 @@ export function useGenerationDrawerController({
   const [modelId, setModelId] = useState(
     imageDraft?.model_id ?? videoDraft?.model_id ?? "",
   );
-  const [prompt, setPrompt] = useState(
-    imageDraft?.prompt ?? videoDraft?.prompt ?? "",
+  const savePrompt = useRef<
+    (next: PromptVersionState, immediate: boolean) => void
+  >(() => {});
+  const promptVersions = usePromptVersions(
+    imageDraft ?? videoDraft,
+    (next, immediate) => savePrompt.current(next, immediate),
   );
+  const { prompt, edit: setPrompt, read: readPrompt } = promptVersions;
   const [size, setSize] = useState(imageDraft?.size ?? "1024x1024");
   const [seed, setSeed] = useState(
     imageDraft?.seed == null ? "" : String(imageDraft.seed),
@@ -234,10 +243,6 @@ export function useGenerationDrawerController({
   const selectedImageSize =
     availableImageSizes.find((option) => option.value === size) ??
     availableImageSizes[0];
-  const draftPrompt = imageDraft?.prompt ?? videoDraft?.prompt ?? "";
-  useEffect(() => {
-    setPrompt((current) => (current === draftPrompt ? current : draftPrompt));
-  }, [draftPrompt]);
   const persistDraft = useCallback(
     (changes: Record<string, unknown> = {}, immediate = false) => {
       if (!lockedKind || !onDraftChange) return;
@@ -246,7 +251,7 @@ export function useGenerationDrawerController({
         onDraftChange(
           {
             model_id: modelId || null,
-            prompt,
+            ...readPrompt(),
             size,
             seed:
               seed !== "" && Number.isSafeInteger(parsedSeed) && parsedSeed >= 0
@@ -267,7 +272,7 @@ export function useGenerationDrawerController({
       onDraftChange(
         {
           model_id: modelId || null,
-          prompt,
+          ...readPrompt(),
           mode: videoMode,
           duration,
           resolution,
@@ -308,7 +313,7 @@ export function useGenerationDrawerController({
       canvasNodeId,
       modelId,
       onDraftChange,
-      prompt,
+      readPrompt,
       promptReferenceNames,
       ratio,
       references,
@@ -320,6 +325,7 @@ export function useGenerationDrawerController({
       watermark,
     ],
   );
+  savePrompt.current = (next, immediate) => persistDraft(next, immediate);
   const reorderImages = (next: string[]) => {
     const previous = orderedReferenceIds(
       kind === "image" ? imageReference : references,
@@ -331,11 +337,25 @@ export function useGenerationDrawerController({
       next.some((id) => !previous.includes(id))
     )
       return;
-    const nextPrompt = reorderPictureReferences(prompt, previous, next);
     if (kind === "image") setImageReference(next);
     else setReferences(next);
-    setPrompt(nextPrompt);
-    persistDraft({ reference_asset_ids: next, prompt: nextPrompt }, true);
+    promptVersions.update(
+      (current) => ({
+        ...current,
+        prompt: reorderPictureReferences(current.prompt, previous, next),
+        prompt_versions: current.prompt_versions.map((version) => ({
+          ...version,
+          prompt: reorderPictureReferences(
+            version.prompt ?? "",
+            previous,
+            next,
+          ),
+        })),
+      }),
+      true,
+      false,
+    );
+    persistDraft({ reference_asset_ids: next }, true);
   };
   useEffect(() => {
     if (lockedKind === "image") {
@@ -534,6 +554,7 @@ export function useGenerationDrawerController({
   });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    const prompt = readPrompt().prompt;
     setNotice("");
     if (!modelId) {
       setNotice("请先在模型中心启用相应的图片或视频模型。");
@@ -675,6 +696,7 @@ export function useGenerationDrawerController({
   };
 
   return {
+    promptVersions: lockedKind && onDraftChange ? promptVersions : undefined,
     availableReferenceFiles: Object.values(promptFiles),
     excludedAssetIds,
     projectId,

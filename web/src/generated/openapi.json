@@ -34813,6 +34813,19 @@
       },
       "VisualCanvasAudioGenerationDraft": {
         "properties": {
+          "active_prompt_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Prompt Version Id"
+          },
           "duration": {
             "anyOf": [
               {
@@ -34867,6 +34880,15 @@
             "minimum": 0.0,
             "title": "Prompt Influence",
             "type": "number"
+          },
+          "prompt_versions": {
+            "items": {
+              "$ref": "#/components/schemas/VisualPromptVersion"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Prompt Versions",
+            "type": "array"
           },
           "reference_asset_ids": {
             "items": {
@@ -35223,6 +35245,19 @@
       },
       "VisualCanvasImageGenerationDraft": {
         "properties": {
+          "active_prompt_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Prompt Version Id"
+          },
           "grid_output": {
             "anyOf": [
               {
@@ -35285,6 +35320,15 @@
             "maxProperties": 16,
             "title": "Prompt Reference Names",
             "type": "object"
+          },
+          "prompt_versions": {
+            "items": {
+              "$ref": "#/components/schemas/VisualPromptVersion"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Prompt Versions",
+            "type": "array"
           },
           "reference_asset_id": {
             "anyOf": [
@@ -35595,6 +35639,19 @@
       },
       "VisualCanvasVideoGenerationDraft": {
         "properties": {
+          "active_prompt_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Prompt Version Id"
+          },
           "audio_asset_ids": {
             "items": {
               "type": "string"
@@ -35672,6 +35729,15 @@
             "maxProperties": 16,
             "title": "Prompt Reference Names",
             "type": "object"
+          },
+          "prompt_versions": {
+            "items": {
+              "$ref": "#/components/schemas/VisualPromptVersion"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Prompt Versions",
+            "type": "array"
           },
           "ratio": {
             "default": "16:9",
@@ -36172,6 +36238,34 @@
           "project"
         ],
         "title": "VisualProjectSnapshotImportOut",
+        "type": "object"
+      },
+      "VisualPromptVersion": {
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "prompt": {
+            "default": "",
+            "maxLength": 6000,
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "VisualPromptVersion",
         "type": "object"
       },
       "VisualWorkshopProjectCreateIn": {
