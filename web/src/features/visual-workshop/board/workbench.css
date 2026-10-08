@@ -243,6 +243,129 @@
 .workbench-generation .video-node-composer-form {
   height: auto;
 }
+.workbench-generation .canvas-generation-drawer.video-node-composer {
+  border: 1px solid var(--board-border);
+  border-radius: 12px;
+  background: var(--board-panel);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--board-text) 3%, transparent);
+}
+.workbench-generation .video-composer-header {
+  min-height: 60px;
+  padding: 12px 14px;
+  align-items: center;
+  gap: 8px;
+}
+.workbench-generation .video-composer-header nav {
+  flex: 1;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 9px;
+  background: var(--board-soft);
+}
+.workbench-generation .video-composer-header nav button {
+  flex: 1;
+  min-height: 32px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--board-muted);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.workbench-generation
+  .video-composer-header
+  nav
+  button:hover:not(:disabled):not(.active) {
+  background: var(--board-panel);
+  color: var(--board-text);
+}
+.workbench-generation .video-composer-header nav button.active {
+  border-color: color-mix(in srgb, var(--board-accent) 22%, transparent);
+  background: var(--board-panel);
+  color: var(--board-accent);
+  font-weight: 600;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--board-text) 6%, transparent);
+}
+.workbench-generation .video-composer-header .video-composer-close {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--board-muted);
+}
+.workbench-generation .video-composer-reference {
+  min-height: 0;
+  margin: 0;
+  padding: 0 0 14px;
+  gap: 12px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  scrollbar-width: thin;
+}
+.workbench-generation .video-composer-reference .generation-image-picker {
+  flex-shrink: 0;
+}
+.workbench-generation
+  .video-composer-reference
+  .generation-image-picker
+  + .generation-image-picker {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+.workbench-generation .video-composer-reference legend {
+  margin-bottom: 7px;
+  padding: 0;
+  color: var(--board-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+.workbench-generation .video-composer-reference .generation-media-upload {
+  border-color: var(--board-border);
+  background: var(--board-soft);
+  color: var(--board-muted);
+}
+.workbench-generation
+  .video-composer-reference
+  .generation-media-upload:hover:not(:disabled) {
+  border-color: var(--board-accent);
+  background: var(--board-accent-soft);
+  color: var(--board-accent);
+}
+.workbench-generation .video-node-composer .video-composer-body {
+  padding: 0 14px;
+  border-radius: 0;
+}
+.workbench-generation .video-node-composer .video-composer-body:focus-within {
+  box-shadow: none;
+}
+.workbench-generation .video-node-composer .video-composer-prompt {
+  margin-top: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--board-border);
+}
+.workbench-generation .video-composer-prompt:focus-within {
+  border-top-color: var(--board-accent);
+}
+.workbench-generation .video-composer-prompt .generation-prompt-editor {
+  color: var(--board-text);
+}
+.workbench-generation
+  .video-composer-prompt
+  .generation-prompt-editor[data-empty="true"]::before {
+  color: var(--board-muted);
+}
+.workbench-generation .video-node-composer .video-composer-footer {
+  padding: 12px 14px;
+  border-radius: 0 0 12px 12px;
+}
+.workbench-generation .video-composer-submit {
+  box-shadow: none;
+}
 .workbench-generation :is(.image-composer-body, .video-composer-body) {
   margin: 0;
   padding: 12px;
@@ -588,6 +711,19 @@
   }
 }
 @media (max-width: 600px) {
+  .workbench-generation .video-composer-header {
+    padding: 10px;
+  }
+  .workbench-generation .video-composer-header nav button {
+    padding: 0 5px;
+    font-size: 10px;
+  }
+  .workbench-generation .video-node-composer .video-composer-body {
+    padding-inline: 10px;
+  }
+  .workbench-generation .video-node-composer .video-composer-footer {
+    padding: 10px;
+  }
   .board-workbench {
     padding: 10px;
     gap: 12px;

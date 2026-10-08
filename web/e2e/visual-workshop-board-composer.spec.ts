@@ -61,7 +61,43 @@ for (const theme of ["light", "dark"] as const) {
       const prompt = page.getByRole("textbox", { name: "视频提示词" });
       await expect(prompt).toBeVisible();
       expect((await prompt.boundingBox())!.height).toBeGreaterThanOrEqual(280);
+      await page.getByRole("button", { name: "全能参考", exact: true }).click();
+      const references = page.getByRole("group", { name: "固定参考素材" });
+      for (const label of ["参考图片", "参考视频", "参考音频"]) {
+        await expect(
+          references.locator("legend", { hasText: label }),
+        ).toBeVisible();
+      }
+      const composer = page.getByRole("complementary", {
+        name: "节点 AI 生成",
+      });
+      const composerBounds = (await composer.boundingBox())!;
+      expect(composerBounds.x).toBeGreaterThanOrEqual(0);
+      expect(composerBounds.x + composerBounds.width).toBeLessThanOrEqual(
+        width,
+      );
+      const imageTrigger = references.getByRole("button", {
+        name: "上传参考图片",
+      });
+      await imageTrigger.focus();
+      await page.keyboard.press("Enter");
+      await expect(
+        page.getByRole("menu", { name: "参考图片来源" }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(imageTrigger).toBeFocused();
+      await page.locator(".board-node-type").click();
       await page.screenshot({ path: info.outputPath("board-composer.png") });
+      await page.getByRole("button", { name: "首尾帧", exact: true }).click();
+      await expect(
+        references.locator("legend", { hasText: "首帧" }),
+      ).toBeVisible();
+      await expect(
+        references.locator("legend", { hasText: "尾帧（可选）" }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: info.outputPath("board-composer-frames.png"),
+      });
       await toggle.focus();
       await page.keyboard.press("Enter");
       await expect(toggle).toHaveAttribute("aria-expanded", "true");

@@ -176,6 +176,12 @@
   opacity: 0.58;
 }
 
+.is-reference-dragover {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-soft));
+}
+
 .generation-image-picker.is-disabled button {
   cursor: not-allowed;
 }

@@ -18,6 +18,7 @@ import {
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
+import { useProjectReferenceDrop } from "./useProjectReferenceDrop";
 
 export function CompactVideoGenerationDrawer({
   controller,
@@ -85,6 +86,51 @@ export function CompactVideoGenerationDrawer({
     linkedAssetIds.audio.length > 0;
   const showReferenceBar =
     videoMode !== "text" || hasFrameReferences || hasOmniReferences;
+  const changeImages = (value: string[]) => {
+    setReferences(value);
+    persistDraft({ reference_asset_ids: value }, true);
+  };
+  const changeVideos = (value: string[]) => {
+    setVideoReferences(value);
+    persistDraft({ video_asset_ids: value }, true);
+  };
+  const changeAudio = (value: string[]) => {
+    setAudioReferences(value);
+    persistDraft({ audio_asset_ids: value }, true);
+  };
+  const referenceDrop = useProjectReferenceDrop({
+    projectId,
+    files: controller.availableReferenceFiles,
+    selections: [
+      {
+        kind: "image",
+        value: references,
+        linkedValue: linkedAssetIds.image,
+        multiple: true,
+        max: 9,
+        disabled: videoMode !== "reference",
+        onChange: changeImages,
+      },
+      {
+        kind: "video",
+        value: videoReferences,
+        linkedValue: linkedAssetIds.video,
+        multiple: true,
+        max: 3,
+        disabled: videoMode !== "reference",
+        onChange: changeVideos,
+      },
+      {
+        kind: "audio",
+        value: audioReferences,
+        linkedValue: linkedAssetIds.audio,
+        multiple: true,
+        max: 3,
+        disabled: videoMode !== "reference",
+        onChange: changeAudio,
+      },
+    ],
+  });
   return (
     <aside
       className={`canvas-generation-drawer is-compact video-node-composer${composerExpanded ? " is-expanded" : ""}`}
@@ -134,7 +180,18 @@ export function CompactVideoGenerationDrawer({
         <div className="video-composer-body">
           {showReferenceBar ? (
             <div
-              className="video-composer-reference"
+              className={`video-composer-reference${referenceDrop.active ? " is-reference-dragover" : ""}`}
+              {...referenceDrop.handlers}
+              onDragOverCapture={
+                videoMode === "reference"
+                  ? referenceDrop.handlers.onDragOver
+                  : undefined
+              }
+              onDropCapture={
+                videoMode === "reference"
+                  ? referenceDrop.handlers.onDrop
+                  : undefined
+              }
               role="group"
               aria-label="固定参考素材"
             >
@@ -144,6 +201,7 @@ export function CompactVideoGenerationDrawer({
                   projectId={projectId}
                   label="起始画面"
                   minimal
+                  showLabel={controller.layout === "workbench"}
                   value={firstFrame}
                   disabled={videoMode !== "image"}
                   onChange={(value) => {
@@ -163,6 +221,7 @@ export function CompactVideoGenerationDrawer({
                     projectId={projectId}
                     label="首帧"
                     minimal
+                    showLabel={controller.layout === "workbench"}
                     value={firstFrame}
                     onChange={(value) => {
                       setFirstFrame(value);
@@ -178,6 +237,7 @@ export function CompactVideoGenerationDrawer({
                     projectId={projectId}
                     label="尾帧（可选）"
                     minimal
+                    showLabel={controller.layout === "workbench"}
                     value={lastFrame}
                     onChange={(value) => {
                       setLastFrame(value);
@@ -196,6 +256,7 @@ export function CompactVideoGenerationDrawer({
                   projectId={projectId}
                   label="尾帧"
                   minimal
+                  showLabel={controller.layout === "workbench"}
                   value={lastFrame}
                   disabled
                   onChange={(value) => {
@@ -219,15 +280,13 @@ export function CompactVideoGenerationDrawer({
                       label="参考图片"
                       onReorder={reorderImages}
                       minimal
+                      showLabel={controller.layout === "workbench"}
                       value={references}
                       linkedValue={linkedAssetIds.image}
                       multiple
                       max={9}
                       disabled={videoMode !== "reference"}
-                      onChange={(value) => {
-                        setReferences(value);
-                        persistDraft({ reference_asset_ids: value }, true);
-                      }}
+                      onChange={changeImages}
                       onFilesLoaded={rememberPromptFiles}
                       onInvalidSelection={invalidSelection}
                     />
@@ -240,15 +299,13 @@ export function CompactVideoGenerationDrawer({
                       label="参考视频"
                       kind="video"
                       minimal
+                      showLabel={controller.layout === "workbench"}
                       value={videoReferences}
                       linkedValue={linkedAssetIds.video}
                       multiple
                       max={3}
                       disabled={videoMode !== "reference"}
-                      onChange={(value) => {
-                        setVideoReferences(value);
-                        persistDraft({ video_asset_ids: value }, true);
-                      }}
+                      onChange={changeVideos}
                       onFilesLoaded={rememberPromptFiles}
                       onInvalidSelection={invalidSelection}
                     />
@@ -261,15 +318,13 @@ export function CompactVideoGenerationDrawer({
                       label="参考音频"
                       kind="audio"
                       minimal
+                      showLabel={controller.layout === "workbench"}
                       value={audioReferences}
                       linkedValue={linkedAssetIds.audio}
                       multiple
                       max={3}
                       disabled={videoMode !== "reference"}
-                      onChange={(value) => {
-                        setAudioReferences(value);
-                        persistDraft({ audio_asset_ids: value }, true);
-                      }}
+                      onChange={changeAudio}
                       onFilesLoaded={rememberPromptFiles}
                       onInvalidSelection={invalidSelection}
                     />
@@ -277,6 +332,11 @@ export function CompactVideoGenerationDrawer({
                 </>
               ) : null}
             </div>
+          ) : null}
+          {referenceDrop.notice ? (
+            <small className="generation-picker-state" role="status">
+              {referenceDrop.notice}
+            </small>
           ) : null}
           <div className="video-composer-prompt">
             <GenerationPromptEditor

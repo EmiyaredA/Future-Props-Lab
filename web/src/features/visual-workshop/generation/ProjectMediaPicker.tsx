@@ -37,6 +37,7 @@ import {
   moveReference,
   orderedReferenceIds,
 } from "@features/visual-workshop/generation/referenceOrder";
+import { useProjectReferenceDrop } from "./useProjectReferenceDrop";
 
 function uploadErrorMessage(error: unknown) {
   return apiErrorMessage(error, "上传失败，请稍后重试。");
@@ -137,6 +138,7 @@ export function ProjectMediaPicker({
   multiple = false,
   max = 1,
   minimal = false,
+  showLabel = false,
   uploadLast = false,
   disabled = false,
   onChange,
@@ -152,6 +154,7 @@ export function ProjectMediaPicker({
   multiple?: boolean;
   max?: number;
   minimal?: boolean;
+  showLabel?: boolean;
   uploadLast?: boolean;
   disabled?: boolean;
   onChange: (value: string[]) => void;
@@ -283,6 +286,21 @@ export function ProjectMediaPicker({
       });
       onChange(next);
     },
+  });
+  const referenceDrop = useProjectReferenceDrop({
+    projectId,
+    files,
+    selections: [
+      {
+        kind,
+        value,
+        linkedValue,
+        multiple,
+        max,
+        disabled: disabled || upload.isPending,
+        onChange,
+      },
+    ],
   });
   const visibleFiles = useMemo(() => {
     if (!minimal) return files;
@@ -434,11 +452,14 @@ export function ProjectMediaPicker({
 
   return (
     <fieldset
-      className={`generation-image-picker${minimal ? " is-minimal" : ""}${disabled ? " is-disabled" : ""}`}
+      className={`generation-image-picker${minimal ? " is-minimal" : ""}${disabled ? " is-disabled" : ""}${referenceDrop.active ? " is-reference-dragover" : ""}`}
+      {...referenceDrop.handlers}
       disabled={disabled}
       aria-disabled={disabled}
     >
-      <legend className={minimal ? "sr-only" : undefined}>{label}</legend>
+      <legend className={minimal && !showLabel ? "sr-only" : undefined}>
+        {label}
+      </legend>
       <input
         ref={uploadInput}
         hidden
@@ -622,6 +643,11 @@ export function ProjectMediaPicker({
       {multiple && !minimal ? (
         <small>
           已选 {combinedValue.length}/{max}
+        </small>
+      ) : null}
+      {referenceDrop.notice ? (
+        <small className="generation-picker-state" role="status">
+          {referenceDrop.notice}
         </small>
       ) : null}
       {onReorder ? (

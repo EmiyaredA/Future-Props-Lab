@@ -3,6 +3,7 @@ import type { VisualCanvasNode, VisualMaterialCategory } from "../api";
 import { BoardMenu } from "./BoardMenu";
 import { OutputPreview } from "./OutputPreview";
 import { nodeTypeNames } from "./boardTypes";
+import { setCanvasAssetDragData } from "../canvas/canvasAssetDrag";
 
 export type TreeAction = {
   kind: "category" | "rename" | "group";
@@ -16,18 +17,40 @@ export function MaterialTree({
   selectedId,
   onSelect,
   onAction,
+  projectId,
 }: {
   categories: VisualMaterialCategory[];
   nodes: VisualCanvasNode[];
   selectedId?: string;
   onSelect: (id: string) => void;
   onAction: (action: TreeAction) => void;
+  projectId?: string;
 }) {
   const entry = (node: VisualCanvasNode) => (
     <button
       key={node.id}
       className={`board-material ${selectedId === node.id ? "is-selected" : ""}`}
       aria-pressed={selectedId === node.id}
+      draggable={Boolean(projectId && node.kind !== "text" && node.asset_id)}
+      title={
+        node.kind !== "text" && node.asset_id
+          ? "可拖入生成器参考素材框"
+          : undefined
+      }
+      onDragStart={(event) => {
+        if (!projectId || node.kind === "text" || !node.asset_id) {
+          event.preventDefault();
+          return;
+        }
+        event.stopPropagation();
+        setCanvasAssetDragData(event.dataTransfer, {
+          assetId: node.asset_id,
+          mediaKind: node.kind,
+          displayName: node.title,
+          importMode: "none",
+          sourceProjectId: projectId,
+        });
+      }}
       onClick={() => onSelect(node.id)}
     >
       <div className="board-material-thumb">

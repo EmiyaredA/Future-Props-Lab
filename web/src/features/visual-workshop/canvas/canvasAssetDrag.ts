@@ -34,7 +34,8 @@ export function readCanvasAssetDragData(
   const raw = dataTransfer.getData(CANVAS_ASSET_DRAG_MIME);
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as Partial<CanvasAssetDragPayload>;
+    const parsed = JSON.parse(raw) as Partial<CanvasAssetDragPayload> | null;
+    if (!parsed || typeof parsed !== "object") return null;
     const mediaKind = String(parsed.mediaKind ?? "");
     if (
       typeof parsed.assetId !== "string" ||

@@ -302,6 +302,7 @@ export function ProjectBoard({
             }}
           />
           <MaterialTree
+            projectId={c.projectId}
             categories={categories}
             nodes={filtered}
             selectedId={selected?.id}

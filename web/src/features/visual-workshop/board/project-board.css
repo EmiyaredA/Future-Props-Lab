@@ -43,6 +43,14 @@
   opacity: 0.45;
   cursor: default;
 }
+
+.visual-project-board .board-material[draggable="true"] {
+  cursor: grab;
+}
+
+.visual-project-board .board-material[draggable="true"]:active {
+  cursor: grabbing;
+}
 .visual-project-board :is(button, input, textarea, summary):focus-visible,
 .board-action-menu button:focus-visible {
   outline: 2px solid var(--board-accent, #e36643);

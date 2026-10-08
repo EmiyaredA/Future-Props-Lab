@@ -674,6 +674,7 @@ export function useGenerationDrawerController({
   };
 
   return {
+    availableReferenceFiles: Object.values(promptFiles),
     projectId,
     onClose,
     linkedAssetIds,
