@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "research-001",
+  "title": "新的调研项目",
+  "mode": "product",
+  "stage": "scoping",
+  "updated_at": "2026-10-08T00:00:00+08:00",
+  "brief": "填写目标、受众、范围、预算和交付物，并更新项目 ID 与时间。",
+  "questions": [],
+  "sources": [],
+  "evidence": [],
+  "claims": [],
+  "checkpoints": [],
+  "storage": {
+    "status": "local",
+    "knowledge_base_id": null,
+    "home_note_id": null,
+    "ledger_note_id": null,
+    "report_note_id": null,
+    "last_confirmed_at": null
+  }
+}

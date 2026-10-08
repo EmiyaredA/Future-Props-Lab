@@ -1,0 +1,755 @@
+[
+  {
+    "id": "sources",
+    "name": "参考资料",
+    "position": 0,
+    "fields": [
+      {
+        "id": "sources_title",
+        "name": "资料标题",
+        "type": "text",
+        "position": 0,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_sid",
+        "name": "来源 ID",
+        "type": "text",
+        "position": 1,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_kind",
+        "name": "类型",
+        "type": "single",
+        "position": 2,
+        "options": [
+          {
+            "id": "official",
+            "label": "官方文档",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "paper",
+            "label": "论文",
+            "color": "#238653"
+          },
+          {
+            "id": "code",
+            "label": "代码",
+            "color": "#a86616"
+          },
+          {
+            "id": "experience",
+            "label": "使用体验",
+            "color": "#7d766c"
+          },
+          {
+            "id": "experiment",
+            "label": "实验记录",
+            "color": "#d96342"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "sources_url",
+        "name": "原文链接",
+        "type": "url",
+        "position": 3,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_version",
+        "name": "版本",
+        "type": "text",
+        "position": 4,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_status",
+        "name": "读取状态",
+        "type": "single",
+        "position": 5,
+        "options": [
+          {
+            "id": "inspected",
+            "label": "已读取",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "metadata_only",
+            "label": "待阅读",
+            "color": "#238653"
+          },
+          {
+            "id": "inaccessible",
+            "label": "访问受限",
+            "color": "#a86616"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "sources_summary",
+        "name": "关键摘要",
+        "type": "text",
+        "position": 6,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_locator",
+        "name": "原文位置",
+        "type": "text",
+        "position": 7,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_eids",
+        "name": "证据 ID",
+        "type": "text",
+        "position": 8,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_date",
+        "name": "读取时间",
+        "type": "date",
+        "position": 9,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_notes",
+        "name": "摘录笔记",
+        "type": "note",
+        "position": 10,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "sources_files",
+        "name": "附件",
+        "type": "attachment",
+        "position": 11,
+        "options": [],
+        "config": {}
+      }
+    ],
+    "views": [
+      {
+        "id": "sources_all",
+        "name": "全部记录",
+        "type": "grid",
+        "position": 0,
+        "config": {}
+      },
+      {
+        "id": "sources_unread",
+        "name": "未读与受限",
+        "type": "grid",
+        "position": 1,
+        "config": {
+          "filters": [
+            {
+              "field_id": "sources_status",
+              "operator": "ne",
+              "value": "inspected"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "comparison",
+    "name": "方案对比",
+    "position": 1,
+    "fields": [
+      {
+        "id": "comparison_name",
+        "name": "方案",
+        "type": "text",
+        "position": 0,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "comparison_dimension",
+        "name": "比较维度",
+        "type": "text",
+        "position": 1,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "comparison_critical",
+        "name": "关键维度",
+        "type": "checkbox",
+        "position": 2,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "comparison_result",
+        "name": "比较结果",
+        "type": "text",
+        "position": 3,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "comparison_basis",
+        "name": "验证依据",
+        "type": "single",
+        "position": 4,
+        "options": [
+          {
+            "id": "documented",
+            "label": "文档说明",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "observed",
+            "label": "已实测",
+            "color": "#238653"
+          },
+          {
+            "id": "author_reported",
+            "label": "作者报告",
+            "color": "#a86616"
+          },
+          {
+            "id": "reproduced",
+            "label": "已复现",
+            "color": "#7d766c"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "comparison_conditions",
+        "name": "适用条件",
+        "type": "text",
+        "position": 5,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "comparison_sources",
+        "name": "来源 ID",
+        "type": "text",
+        "position": 6,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "comparison_limits",
+        "name": "限制",
+        "type": "text",
+        "position": 7,
+        "options": [],
+        "config": {}
+      }
+    ],
+    "views": [
+      {
+        "id": "comparison_all",
+        "name": "全部记录",
+        "type": "grid",
+        "position": 0,
+        "config": {}
+      },
+      {
+        "id": "comparison_key",
+        "name": "关键维度",
+        "type": "grid",
+        "position": 1,
+        "config": {
+          "filters": [
+            {
+              "field_id": "comparison_critical",
+              "operator": "eq",
+              "value": true
+            }
+          ],
+          "group_field_id": "comparison_name",
+          "hidden_fields": [
+            "comparison_critical"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "validation",
+    "name": "验证记录",
+    "position": 2,
+    "fields": [
+      {
+        "id": "validation_name",
+        "name": "验证项",
+        "type": "text",
+        "position": 0,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "validation_status",
+        "name": "状态",
+        "type": "single",
+        "position": 1,
+        "options": [
+          {
+            "id": "planned",
+            "label": "待执行",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "running",
+            "label": "验证中",
+            "color": "#238653"
+          },
+          {
+            "id": "passed",
+            "label": "通过",
+            "color": "#a86616"
+          },
+          {
+            "id": "failed",
+            "label": "未通过",
+            "color": "#7d766c"
+          },
+          {
+            "id": "blocked",
+            "label": "受阻",
+            "color": "#d96342"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "validation_method",
+        "name": "验证方法",
+        "type": "text",
+        "position": 2,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "validation_expected",
+        "name": "预期结果",
+        "type": "text",
+        "position": 3,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "validation_actual",
+        "name": "实际结果",
+        "type": "text",
+        "position": 4,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "validation_conditions",
+        "name": "环境与条件",
+        "type": "text",
+        "position": 5,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "validation_eids",
+        "name": "证据 ID",
+        "type": "text",
+        "position": 6,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "validation_next",
+        "name": "下一步",
+        "type": "text",
+        "position": 7,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "validation_notes",
+        "name": "实验笔记",
+        "type": "note",
+        "position": 8,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "validation_files",
+        "name": "产物",
+        "type": "attachment",
+        "position": 9,
+        "options": [],
+        "config": {}
+      }
+    ],
+    "views": [
+      {
+        "id": "validation_all",
+        "name": "全部记录",
+        "type": "grid",
+        "position": 0,
+        "config": {}
+      },
+      {
+        "id": "validation_board",
+        "name": "状态看板",
+        "type": "kanban",
+        "position": 1,
+        "config": {
+          "stack_field_id": "validation_status"
+        }
+      }
+    ]
+  },
+  {
+    "id": "questions",
+    "name": "待办问题",
+    "position": 3,
+    "fields": [
+      {
+        "id": "questions_text",
+        "name": "问题",
+        "type": "text",
+        "position": 0,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "questions_qid",
+        "name": "问题 ID",
+        "type": "text",
+        "position": 1,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "questions_priority",
+        "name": "优先级",
+        "type": "single",
+        "position": 2,
+        "options": [
+          {
+            "id": "critical",
+            "label": "关键",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "supporting",
+            "label": "补充",
+            "color": "#238653"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "questions_status",
+        "name": "状态",
+        "type": "single",
+        "position": 3,
+        "options": [
+          {
+            "id": "open",
+            "label": "待回答",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "answered",
+            "label": "已回答",
+            "color": "#238653"
+          },
+          {
+            "id": "disputed",
+            "label": "存在争议",
+            "color": "#a86616"
+          },
+          {
+            "id": "blocked",
+            "label": "受阻",
+            "color": "#7d766c"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "questions_claims",
+        "name": "结论 ID",
+        "type": "text",
+        "position": 4,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "questions_next",
+        "name": "下一步",
+        "type": "text",
+        "position": 5,
+        "options": [],
+        "config": {}
+      }
+    ],
+    "views": [
+      {
+        "id": "questions_all",
+        "name": "全部记录",
+        "type": "grid",
+        "position": 0,
+        "config": {}
+      },
+      {
+        "id": "questions_board",
+        "name": "状态看板",
+        "type": "kanban",
+        "position": 1,
+        "config": {
+          "stack_field_id": "questions_status"
+        }
+      }
+    ]
+  },
+  {
+    "id": "evidence",
+    "name": "证据摘录",
+    "position": 4,
+    "fields": [
+      {
+        "id": "evidence_summary",
+        "name": "证据摘要",
+        "type": "text",
+        "position": 0,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "evidence_eid",
+        "name": "证据 ID",
+        "type": "text",
+        "position": 1,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "evidence_source",
+        "name": "来源 ID",
+        "type": "text",
+        "position": 2,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "evidence_locator",
+        "name": "原文位置",
+        "type": "text",
+        "position": 3,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "evidence_basis",
+        "name": "依据类型",
+        "type": "single",
+        "position": 4,
+        "options": [
+          {
+            "id": "documented",
+            "label": "文档说明",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "observed",
+            "label": "已实测",
+            "color": "#238653"
+          },
+          {
+            "id": "author_reported",
+            "label": "作者报告",
+            "color": "#a86616"
+          },
+          {
+            "id": "reproduced",
+            "label": "已复现",
+            "color": "#7d766c"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "evidence_conditions",
+        "name": "适用条件",
+        "type": "text",
+        "position": 5,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "evidence_questions",
+        "name": "问题 ID",
+        "type": "text",
+        "position": 6,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "evidence_notes",
+        "name": "详细笔记",
+        "type": "note",
+        "position": 7,
+        "options": [],
+        "config": {}
+      }
+    ],
+    "views": [
+      {
+        "id": "evidence_all",
+        "name": "全部记录",
+        "type": "grid",
+        "position": 0,
+        "config": {}
+      }
+    ]
+  },
+  {
+    "id": "claims",
+    "name": "结论核对",
+    "position": 5,
+    "fields": [
+      {
+        "id": "claims_text",
+        "name": "结论",
+        "type": "text",
+        "position": 0,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "claims_cid",
+        "name": "结论 ID",
+        "type": "text",
+        "position": 1,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "claims_kind",
+        "name": "性质",
+        "type": "single",
+        "position": 2,
+        "options": [
+          {
+            "id": "fact",
+            "label": "事实",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "inference",
+            "label": "推断",
+            "color": "#238653"
+          },
+          {
+            "id": "recommendation",
+            "label": "建议",
+            "color": "#a86616"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "claims_status",
+        "name": "状态",
+        "type": "single",
+        "position": 3,
+        "options": [
+          {
+            "id": "verified",
+            "label": "已核对",
+            "color": "#4f56a4"
+          },
+          {
+            "id": "provisional",
+            "label": "有条件",
+            "color": "#238653"
+          },
+          {
+            "id": "disputed",
+            "label": "存在争议",
+            "color": "#a86616"
+          }
+        ],
+        "config": {}
+      },
+      {
+        "id": "claims_eids",
+        "name": "支持证据 ID",
+        "type": "text",
+        "position": 4,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "claims_counter",
+        "name": "反证 ID",
+        "type": "text",
+        "position": 5,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "claims_limits",
+        "name": "限制",
+        "type": "text",
+        "position": 6,
+        "options": [],
+        "config": {}
+      },
+      {
+        "id": "claims_questions",
+        "name": "问题 ID",
+        "type": "text",
+        "position": 7,
+        "options": [],
+        "config": {}
+      }
+    ],
+    "views": [
+      {
+        "id": "claims_all",
+        "name": "全部记录",
+        "type": "grid",
+        "position": 0,
+        "config": {}
+      },
+      {
+        "id": "claims_pending",
+        "name": "有条件与争议",
+        "type": "grid",
+        "position": 1,
+        "config": {
+          "filters": [
+            {
+              "field_id": "claims_status",
+              "operator": "ne",
+              "value": "verified"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

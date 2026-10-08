@@ -527,6 +527,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 - `sdk/python/src/future_props_lab/canvas_example.py`：独立的笔记信息图 SDK 示例，通过正式 API 创建与导出可编辑画板；不参与既有六工坊文档生成，契约回归由 `tests/test_thought_canvas.py` 覆盖。
 - `skills/future-props-lab-automation/`：官方自动化 Agent Skill 包（根 `SKILL.md` 名 `future-props-lab-automation`）。叶子 skill 目录名必须等于 frontmatter `name`，可单独或组合安装；每个叶子内联「前置」与最小 `fpl` 示例。校验：`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。只指导通过 `fpl`/SDK 操作产品，不修改本仓库源码；见该处 `README.md`。
 - `.agents/skills/watch/`：仓库级第三方视频分析 Agent Skill，包含中文通用指南、基于固定上游的通用脚本、许可证与固定提交来源记录；仅供 Codex 在本仓库发现，不参与 Future Props Lab 产品构建。应用内 Skills 通过正式 ZIP 导入 API 单独管理。
+- `skills/future-props-lab-automation/skills/thought-workshop/research-to-document/`：产品使用与技术／论文调研 Skill；普通父笔记直接承载报告，子文档用已有多维表格组织资料、比较与验证，正文引用精简嵌入视图。`references/` 拥有记录与存档契约，`assets/` 提供两类成文模板、恢复快照与原生 TableSpec，`scripts/check_project.py` 只读校验引用与状态。正式存档复用思绪工坊 CLI/SDK，不增加专用调研页面、应用内 AI 写作入口或后台调研服务；原型、截图与打包验收产物位于 `.local/research-workbench-preview/`。
 - `skills/future-props-lab-automation/skills/visual-workshop/visual-character-replacement/`：人物与可选场景替换制作流程；`references/` 拥有镜头规划、review、记录与 App 适配说明，`assets/templates/` 拥有同源的 JSON、六类文本监督模板和 HTML 对照页，`scripts/` 拥有标准库本地记录校验、版本绑定、反馈合并及渲染。工具不调用 App 或模型，正式同步仍经授权 API；ZIP、演示媒体与验收产物只在 `.local/` 下生成。
 - `backend/app/capabilities/asset_store/image_crop.py` 与 `capabilities/asset_store/schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存；HTTP 适配在 `capabilities/asset_store/routes/image_crop.py`。
 

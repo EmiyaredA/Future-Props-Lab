@@ -35,6 +35,7 @@ python3 scripts/validate_skills.py
 | `skills/presentation-workshop/presentation-pptx-export` | `presentation-pptx-export` |
 | `skills/thought-workshop/thought-knowledge-library` | `thought-knowledge-library` |
 | `skills/thought-workshop/thought-note-editing` | `thought-note-editing` |
+| `skills/thought-workshop/research-to-document` | `research-to-document` |
 | `skills/thought-workshop/thought-writing-assistant` | `thought-writing-assistant` |
 | `skills/visual-workshop/visual-canvas-editing` | `visual-canvas-editing` |
 | `skills/visual-workshop/visual-project-assets` | `visual-project-assets` |

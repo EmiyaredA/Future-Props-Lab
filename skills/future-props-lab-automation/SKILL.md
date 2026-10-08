@@ -46,6 +46,7 @@ cp -R skills/visual-workshop/visual-canvas-editing ~/.cursor/skills/visual-canva
 | 演示：导出 PPTX | `skills/presentation-workshop/presentation-pptx-export/SKILL.md` |
 | 思绪：知识库/目录树 | `skills/thought-workshop/thought-knowledge-library/SKILL.md` |
 | 思绪：笔记正文/导出/历史 | `skills/thought-workshop/thought-note-editing/SKILL.md` |
+| 产品使用、技术方案／论文调研，证据台账与报告存档 | `skills/thought-workshop/research-to-document/SKILL.md` |
 | 思绪：AI 写作流 | `skills/thought-workshop/thought-writing-assistant/SKILL.md` |
 | 视觉：画布编辑 | `skills/visual-workshop/visual-canvas-editing/SKILL.md` |
 | 视觉：项目素材引用 | `skills/visual-workshop/visual-project-assets/SKILL.md` |
