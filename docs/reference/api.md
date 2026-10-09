@@ -5,7 +5,7 @@
 连接接口位于 `/v1/integrations/external-connections`：`GET` 列表、`POST` 创建，
 `PATCH /{connection_id}` 带 `expected_revision` 更新；`POST /{connection_id}/check` 只检查鉴权，
 `POST /{connection_id}/target-check` 接收 `{url}`，返回目标标题、正文文字预览、版本、指纹与编辑权限。
-仅接受飞书 HTTPS `/docx/` 链接；服务器始终访问固定飞书 API 域名。App Secret 加密保存且不返回；
+接受飞书 HTTPS `/docx/` 链接，以及知识库 `/wiki/` 节点链接。知识库链接经飞书开放接口解析为 docx 文档标识；服务器始终访问固定飞书 API 域名，不请求用户粘贴的主机。App Secret 加密保存且不返回；
 更新留空保留已有凭据。
 
 文章接口以 `/v1/thought-workshop/notes/{note_id}/external-sync` 为前缀：

@@ -1,6 +1,13 @@
 import type { Field } from "./api";
 import { display } from "./model";
 
+export type People = Record<string, string>;
+
+export function personText(value: unknown, people: People = {}) {
+  const ids = Array.isArray(value) ? value : value ? [value] : [];
+  return ids.map((id) => people[String(id)] ?? "已离开").join("、");
+}
+
 export const dateFormats = [
   "YYYY-MM-DD",
   "YYYY/MM/DD",
@@ -11,8 +18,13 @@ export const dateFormats = [
 ] as const;
 
 /** Presentation only: editing, clipboard and CSV continue using canonical values. */
-export function formatFieldValue(field: Field, value: unknown): string {
+export function formatFieldValue(
+  field: Field,
+  value: unknown,
+  people: People = {},
+): string {
   if (value == null || value === "") return "";
+  if (field.type === "person") return personText(value, people);
   const config = field.config ?? {};
   if (field.type === "date" && typeof value === "string") {
     const [year, month, day] = value.split("-");

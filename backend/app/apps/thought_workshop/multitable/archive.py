@@ -157,6 +157,8 @@ def remap_state(state, mapping, notes, assets):
         t["id"] = mapping[old_id]
         for f in t["fields"]:
             f["id"] = mapping[f["id"]]
+        for group in t.get("groups", []):
+            group["field_ids"] = [mapping[field_id] for field_id in group["field_ids"]]
         for v in t["views"]:
             v["id"] = mapping[v["id"]]
             c = v["config"]
@@ -167,7 +169,7 @@ def remap_state(state, mapping, notes, assets):
             c["column_widths"] = {
                 mapping[id]: width for id, width in c.get("column_widths", {}).items()
             }
-            for rule in c.get("filters", []) + c.get("sorts", []):
+            for rule in c.get("filters", []) + c.get("sorts", []) + c.get("color_rules", []):
                 field = next(f for f in t["fields"] if f["id"] == mapping[rule["field_id"]])
                 if "value" in rule and field["type"] in {"note", "attachment"}:
                     targets = notes if field["type"] == "note" else assets

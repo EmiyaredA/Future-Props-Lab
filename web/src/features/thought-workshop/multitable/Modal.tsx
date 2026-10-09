@@ -12,12 +12,14 @@ export function Modal({
   children,
   variant = "modal",
   anchor,
+  className,
 }: {
   title: string;
   close: () => void;
   children: ReactNode;
   variant?: "modal" | "drawer" | "field";
   anchor?: HTMLElement;
+  className?: string;
 }) {
   const returnFocus = useRef(document.activeElement as HTMLElement | null);
   const [placement, setPlacement] = useState<CSSProperties>();
@@ -63,7 +65,14 @@ export function Modal({
           className={`multitable-overlay${variant === "field" ? " is-field-overlay" : ""}`}
         />
         <Dialog.Content
-          className={`multitable-dialog${variant === "drawer" ? " is-drawer" : variant === "field" ? " is-field-editor" : ""}`}
+          className={[
+            "multitable-dialog",
+            variant === "drawer" ? "is-drawer" : "",
+            variant === "field" ? "is-field-editor" : "",
+            className ?? "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
           style={placement}
           aria-describedby={undefined}
           onCloseAutoFocus={(event) => {

@@ -207,7 +207,7 @@ async def test_templates_checkpoints_and_version_seven_backup_roundtrip():
         payload = (await c.get(ROOT + "/backup")).content
         with zipfile.ZipFile(io.BytesIO(payload)) as archive:
             manifest = json.loads(archive.read("manifest.json"))
-        assert manifest["version"] == 8 and manifest["templates"] and manifest["checkpoints"]
+        assert manifest["version"] == 9 and manifest["templates"] and manifest["checkpoints"]
         imported = await c.post(
             ROOT + "/imports", files={"upload": ("backup.zip", payload, "application/zip")}
         )

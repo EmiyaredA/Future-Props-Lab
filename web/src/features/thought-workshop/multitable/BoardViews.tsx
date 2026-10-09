@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { RecordRow, Table, View } from "./api";
 import { formatFieldValue } from "./formatting";
+import { rowFill } from "./colorRules";
+import type { People } from "./formatting";
 
 export function KanbanView({
   table,
@@ -9,6 +11,7 @@ export function KanbanView({
   readOnly,
   move,
   open,
+  people = {},
 }: {
   table: Table;
   view: View;
@@ -16,6 +19,7 @@ export function KanbanView({
   readOnly: boolean;
   move: (row: RecordRow, field: string, value: string) => void;
   open: (row: RecordRow) => void;
+  people?: People;
 }) {
   const [drop, setDrop] = useState<string | null>(null);
   const field = table.fields.find((f) => f.id === view.config?.stack_field_id);
@@ -58,30 +62,43 @@ export function KanbanView({
               {o.label}
               <small>{items.length}</small>
             </h3>
-            {items.map((r) => (
-              <button
-                key={r.id}
-                className="multitable-card"
-                draggable={!readOnly}
-                onDragStart={(e) =>
-                  e.dataTransfer.setData("application/fpl-record", r.id)
-                }
-                onClick={() => open(r)}
-              >
-                <strong>
-                  {formatFieldValue(primary, r.values[primary.id]) ||
-                    "未命名记录"}
-                </strong>
-                {table.fields
-                  .filter((f) => f.id !== primary.id && f.id !== field.id)
-                  .slice(0, 3)
-                  .map((f) => (
-                    <span key={f.id}>
-                      {f.name}：{formatFieldValue(f, r.values[f.id]) || "—"}
-                    </span>
-                  ))}
-              </button>
-            ))}
+            {items.map((r) => {
+              const fill = rowFill(view, table.fields, r);
+              return (
+                <button
+                  key={r.id}
+                  className="multitable-card"
+                  draggable={!readOnly}
+                  style={
+                    fill
+                      ? ({
+                          "--row-fill": fill,
+                          background:
+                            "color-mix(in srgb, var(--row-fill) 32%, transparent)",
+                        } as CSSProperties)
+                      : undefined
+                  }
+                  onDragStart={(e) =>
+                    e.dataTransfer.setData("application/fpl-record", r.id)
+                  }
+                  onClick={() => open(r)}
+                >
+                  <strong>
+                    {formatFieldValue(primary, r.values[primary.id], people) ||
+                      "未命名记录"}
+                  </strong>
+                  {table.fields
+                    .filter((f) => f.id !== primary.id && f.id !== field.id)
+                    .slice(0, 3)
+                    .map((f) => (
+                      <span key={f.id}>
+                        {f.name}：
+                        {formatFieldValue(f, r.values[f.id], people) || "—"}
+                      </span>
+                    ))}
+                </button>
+              );
+            })}
           </section>
         );
       })}
@@ -97,6 +114,7 @@ export function CalendarView({
   move,
   open,
   add,
+  people = {},
 }: {
   table: Table;
   view: View;
@@ -105,6 +123,7 @@ export function CalendarView({
   move: (row: RecordRow, field: string, value: string) => void;
   open: (row: RecordRow) => void;
   add: (values: RecordRow["values"]) => void;
+  people?: People;
 }) {
   const [dropDate, setDropDate] = useState<string | null>(null);
   const [month, setMonth] = useState(() => {
@@ -197,7 +216,7 @@ export function CalendarView({
                     }
                     onClick={() => open(r)}
                   >
-                    {formatFieldValue(primary, r.values[primary.id]) ||
+                    {formatFieldValue(primary, r.values[primary.id], people) ||
                       "未命名记录"}
                   </button>
                 ))}
@@ -213,7 +232,8 @@ export function CalendarView({
           .filter((r) => !r.values[field.id])
           .map((r) => (
             <button className="btn" key={r.id} onClick={() => open(r)}>
-              {formatFieldValue(primary, r.values[primary.id]) || "未命名记录"}
+              {formatFieldValue(primary, r.values[primary.id], people) ||
+                "未命名记录"}
             </button>
           ))}
       </details>

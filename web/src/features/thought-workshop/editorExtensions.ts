@@ -22,6 +22,11 @@ import {
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
 import { TableKit } from "@tiptap/extension-table";
+import {
+  TABLE_COLUMN_MIN_WIDTH,
+  DocumentTableView,
+  documentTableColumnResize,
+} from "./tableColumnResize";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
 import {
   Details,
@@ -57,7 +62,14 @@ export function editorExtensions(
     BackgroundColor,
     Highlight.configure({ multicolor: true }),
     TextAlign.configure({ types: ["heading", "paragraph"] }),
-    TableKit.configure({ table: { resizable: true } }),
+    documentTableColumnResize,
+    TableKit.configure({
+      table: {
+        resizable: false,
+        cellMinWidth: TABLE_COLUMN_MIN_WIDTH,
+        View: DocumentTableView,
+      },
+    }),
     TaskList,
     TaskItem.configure({ nested: true }),
     Details.configure({ persist: true }),

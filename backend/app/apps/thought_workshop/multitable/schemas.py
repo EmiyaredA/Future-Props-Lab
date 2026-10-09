@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, model_serializer
 
 FieldType = Literal[
-    "text", "number", "single", "multi", "date", "checkbox", "url", "attachment", "note"
+    "text", "number", "single", "multi", "date", "checkbox", "url", "attachment", "note", "person"
 ]
 CellValue = str | float | bool | list[str] | None
 
@@ -30,6 +30,8 @@ class FieldConfig(Contract):
     date_format: DateFormat | None = None
     decimal_places: StrictInt | None = Field(default=None, ge=0, le=8)
     use_grouping: StrictBool | None = None
+    allow_multiple: StrictBool | None = None
+    default_user_ids: list[str] | None = Field(default=None, max_length=50)
 
     @model_serializer(mode="wrap")
     def compact(self, handler):
@@ -56,6 +58,14 @@ class Sort(Contract):
     direction: Literal["asc", "desc"] = "asc"
 
 
+class ColorRule(Contract):
+    id: str = Field(min_length=1, max_length=36, pattern=r"^[a-zA-Z0-9_-]+$")
+    field_id: str
+    operator: Literal["eq", "ne", "contains", "gt", "gte", "lt", "lte", "empty", "not_empty"]
+    value: CellValue = None
+    color: str = Field(default="#7c89c9", pattern=r"^#[0-9a-fA-F]{6}$")
+
+
 class ViewConfig(Contract):
     filters: list[Filter] = Field(default_factory=list, max_length=30)
     filter_mode: Literal["all", "any"] = "all"
@@ -66,6 +76,13 @@ class ViewConfig(Contract):
     column_widths: dict[str, int] = Field(default_factory=dict, max_length=50)
     stack_field_id: str | None = None
     date_field_id: str | None = None
+    color_rules: list[ColorRule] = Field(default_factory=list, max_length=20)
+
+
+class FieldGroup(Contract):
+    id: str = Field(min_length=1, max_length=36, pattern=r"^[a-zA-Z0-9_-]+$")
+    name: str = Field(min_length=1, max_length=120)
+    field_ids: list[str] = Field(min_length=1, max_length=50)
 
 
 class ViewSpec(Contract):
@@ -88,6 +105,7 @@ class TableSpec(Contract):
     position: int = Field(ge=0)
     fields: list[FieldSpec] = Field(min_length=1, max_length=50)
     views: list[ViewSpec] = Field(min_length=1, max_length=30)
+    groups: list[FieldGroup] = Field(default_factory=list, max_length=20)
 
 
 class Structure(Contract):
@@ -112,6 +130,7 @@ class RecordPage(Contract):
     items: list[RecordSpec]
     total: int
     groups: dict[str, int] = Field(default_factory=dict)
+    people: dict[str, str] = Field(default_factory=dict)
 
 
 class TablePut(Contract):

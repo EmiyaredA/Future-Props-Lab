@@ -13,6 +13,8 @@ import {
   ViewTabs,
 } from "@features/thought-workshop/multitable/Navigation";
 import { TableToolbar } from "@features/thought-workshop/multitable/Toolbar";
+import { FieldSettings } from "@features/thought-workshop/multitable/Settings";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ColumnResize } from "@features/thought-workshop/multitable/ColumnResize";
 import { FieldValue } from "@features/thought-workshop/multitable/FieldValue";
 import { ViewSettings } from "@features/thought-workshop/multitable/ViewSettings";
@@ -133,8 +135,17 @@ it("keeps menu permissions and embedded controls consistent", async () => {
   ).not.toBeInTheDocument();
   await user.click(screen.getByRole("menuitem", { name: "导出当前筛选结果" }));
   expect(action).toHaveBeenCalledWith("export-view");
-  rerender(<TableToolbar {...props} embedded canEdit workspace={false} />);
+  rerender(
+    <TableToolbar
+      {...props}
+      embedded
+      canEdit
+      workspace={false}
+      chooseView={vi.fn()}
+    />,
+  );
   expect(screen.getByRole("button", { name: "新增记录" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "更换视图" })).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "字段" }),
   ).not.toBeInTheDocument();
@@ -187,6 +198,7 @@ it("retains one view draft across configuration sections and blocks failed saves
       close={close}
     />,
   );
+  await user.click(screen.getByRole("radio", { name: "任一满足" }));
   await user.click(screen.getByRole("button", { name: "增加筛选" }));
   await user.type(screen.getByRole("textbox", { name: "筛选 1 值" }), "目标");
   await user.click(screen.getByRole("tab", { name: "基本" }));
@@ -204,6 +216,7 @@ it("retains one view draft across configuration sections and blocks failed saves
     expect.objectContaining({
       name: "重点资料",
       config: expect.objectContaining({
+        filter_mode: "any",
         filters: [expect.objectContaining({ value: "目标" })],
       }),
     }),
@@ -240,4 +253,90 @@ it("preserves option colors as data and restores focus after closing a detail dr
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "打开详情" })).toHaveFocus(),
   );
+});
+it("opens fill rules, shows option swatches, departed people and field groups", async () => {
+  const user = userEvent.setup(),
+    table = newTable(0),
+    settings = vi.fn(),
+    save = vi.fn().mockResolvedValue(undefined);
+  render(
+    <TableToolbar
+      table={table}
+      view={table.views[0]}
+      embedded={false}
+      canEdit
+      workspace
+      canDeleteTable
+      search=""
+      setSearch={vi.fn()}
+      add={vi.fn()}
+      full={false}
+      fields={vi.fn()}
+      settings={settings}
+      action={vi.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "填色" }));
+  expect(settings).toHaveBeenCalledWith("colors");
+  render(
+    <CustomSelect
+      ariaLabel="优先级"
+      value="high"
+      options={[
+        { value: "low", label: "低", swatch: "#7c89c9" },
+        { value: "high", label: "高", swatch: "#E59B3D" },
+      ]}
+      onChange={vi.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("combobox", { name: "优先级" }));
+  expect(
+    screen.getByRole("option", { name: "高" }).querySelector("i"),
+  ).toHaveStyle({ background: "#E59B3D" });
+  const person = {
+    ...table.fields[0],
+    id: "person",
+    name: "记录人",
+    type: "person" as const,
+    position: 4,
+  };
+  render(<FieldValue field={person} value="left-user" people={{}} />);
+  expect(screen.getByText("已离开")).toBeInTheDocument();
+  render(
+    <FieldSettings
+      table={table}
+      viewId={table.views[0].id}
+      save={save}
+      preview={vi.fn()}
+      close={vi.fn()}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "状态字段操作" }));
+  await user.click(screen.getByRole("menuitem", { name: "创建编组" }));
+  await user.clear(screen.getByRole("textbox", { name: "编组名称" }));
+  await user.type(screen.getByRole("textbox", { name: "编组名称" }), "进度");
+  await user.click(screen.getByRole("button", { name: "创建" }));
+  await user.click(screen.getByRole("button", { name: "确认保存字段" }));
+  expect(save).toHaveBeenCalledWith(
+    expect.objectContaining({
+      groups: [expect.objectContaining({ name: "进度" })],
+    }),
+    expect.anything(),
+  );
+  render(
+    <ViewSettings
+      table={table}
+      view={table.views[0]}
+      initialSection="colors"
+      save={vi.fn()}
+      close={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole("dialog", { name: "设置填色条件" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "添加条件" }));
+  expect(
+    screen.getByRole("combobox", { name: "填色 1 字段" }),
+  ).toBeInTheDocument();
 });

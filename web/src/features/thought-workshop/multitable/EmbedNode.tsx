@@ -13,6 +13,7 @@ import { thoughtKeys } from "../queryKeys";
 import { tableStructure } from "./api";
 import { Modal } from "./Modal";
 import "./multitable.css";
+import "./embed.css";
 const TableEditor = lazy(() =>
   import("./TableEditor").then((m) => ({ default: m.TableEditor })),
 );
@@ -41,11 +42,6 @@ function EmbedView({ node, editor, updateAttributes }: NodeViewProps) {
   });
   return (
     <NodeViewWrapper className="multitable-embed" contentEditable={false}>
-      {editor.isEditable && (
-        <button className="btn" onClick={() => setChoose(true)}>
-          选择多维表格视图
-        </button>
-      )}
       {node.attrs.noteId && node.attrs.tableId && node.attrs.viewId ? (
         <Suspense fallback={<p>正在加载表格视图…</p>}>
           <TableEditor
@@ -57,10 +53,18 @@ function EmbedView({ node, editor, updateAttributes }: NodeViewProps) {
               tableId: node.attrs.tableId,
               viewId: node.attrs.viewId,
             }}
+            onChooseView={editor.isEditable ? () => setChoose(true) : undefined}
           />
         </Suspense>
       ) : (
-        <p>选择一个多维表格文档及其视图。</p>
+        <>
+          {editor.isEditable && (
+            <button className="btn" onClick={() => setChoose(true)}>
+              选择多维表格视图
+            </button>
+          )}
+          <p>选择一个多维表格文档及其视图。</p>
+        </>
       )}
       {choose && (
         <Modal title="插入多维表格视图" close={() => setChoose(false)}>

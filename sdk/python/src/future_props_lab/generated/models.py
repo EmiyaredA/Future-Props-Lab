@@ -829,6 +829,13 @@ class CodexSourceUpdate(WireModel):
     model: str = Field(default='', alias='model')
     source: str = Field(default=..., alias='source')
 
+class ColorRule(WireModel):
+    color: str = Field(default='#7c89c9', alias='color')
+    field_id: str = Field(default=..., alias='field_id')
+    id: str = Field(default=..., alias='id', min_length=1, max_length=36)
+    operator: Literal['eq', 'ne', 'contains', 'gt', 'gte', 'lt', 'lte', 'empty', 'not_empty'] = Field(default=..., alias='operator')
+    value: str | float | bool | list[str] | None = Field(default=None, alias='value')
+
 class CommunityArticle(WireModel):
     can_edit: bool = Field(default=False, alias='can_edit')
     can_manage: bool = Field(default=False, alias='can_manage')
@@ -1325,9 +1332,16 @@ class FavoritesOut(WireModel):
     resource_ids: list[str] = Field(default=..., alias='resource_ids')
 
 class FieldConfig(WireModel):
+    allow_multiple: bool | None = Field(default=None, alias='allow_multiple')
     date_format: Literal['YYYY-MM-DD', 'YYYY/MM/DD', 'YYYY.MM.DD', 'YYYY年M月D日', 'DD/MM/YYYY', 'MM/DD/YYYY'] | None = Field(default=None, alias='date_format')
     decimal_places: int | None = Field(default=None, alias='decimal_places')
+    default_user_ids: list[str] | None = Field(default=None, alias='default_user_ids')
     use_grouping: bool | None = Field(default=None, alias='use_grouping')
+
+class FieldGroup(WireModel):
+    field_ids: list[str] = Field(default=..., alias='field_ids', min_length=1, max_length=50)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=36)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
 
 class FieldSpec(WireModel):
     config: FieldConfig | None = Field(default=None, alias='config')
@@ -1335,7 +1349,7 @@ class FieldSpec(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     options: list[SelectOption] | None = Field(default=None, alias='options', max_length=100)
     position: int = Field(default=..., alias='position', ge=0.0)
-    type: Literal['text', 'number', 'single', 'multi', 'date', 'checkbox', 'url', 'attachment', 'note'] = Field(default=..., alias='type')
+    type: Literal['text', 'number', 'single', 'multi', 'date', 'checkbox', 'url', 'attachment', 'note', 'person'] = Field(default=..., alias='type')
 
 class FileListOut(WireModel):
     items: list[FileOut] = Field(default=..., alias='items')
@@ -4147,6 +4161,7 @@ class ReauthIn(WireModel):
 class RecordPage(WireModel):
     groups: dict[str, int] | None = Field(default=None, alias='groups')
     items: list[RecordSpec] = Field(default=..., alias='items')
+    people: dict[str, str] | None = Field(default=None, alias='people')
     revision: int = Field(default=..., alias='revision')
     total: int = Field(default=..., alias='total')
 
@@ -4610,6 +4625,7 @@ class TablePut(WireModel):
 
 class TableSpec(WireModel):
     fields: list[FieldSpec] = Field(default=..., alias='fields', min_length=1, max_length=50)
+    groups: list[FieldGroup] | None = Field(default=None, alias='groups', max_length=20)
     id: str = Field(default=..., alias='id', min_length=1, max_length=36)
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     position: int = Field(default=..., alias='position', ge=0.0)
@@ -5291,6 +5307,7 @@ class VideoGenerationTaskCreateIn(WireModel):
     watermark: bool = Field(default=True, alias='watermark')
 
 class ViewConfig(WireModel):
+    color_rules: list[ColorRule] | None = Field(default=None, alias='color_rules', max_length=20)
     column_order: list[str] | None = Field(default=None, alias='column_order', max_length=50)
     column_widths: dict[str, int] | None = Field(default=None, alias='column_widths')
     date_field_id: str | None = Field(default=None, alias='date_field_id')
@@ -5912,6 +5929,7 @@ ClipIdOperation.model_rebuild()
 CodexSourceRestore.model_rebuild()
 CodexSourceState.model_rebuild()
 CodexSourceUpdate.model_rebuild()
+ColorRule.model_rebuild()
 CommunityArticle.model_rebuild()
 CommunityDirectory.model_rebuild()
 CommunityManagement.model_rebuild()
@@ -5994,6 +6012,7 @@ ExternalTargetOut.model_rebuild()
 FavoriteInput.model_rebuild()
 FavoritesOut.model_rebuild()
 FieldConfig.model_rebuild()
+FieldGroup.model_rebuild()
 FieldSpec.model_rebuild()
 FileListOut.model_rebuild()
 FileOut.model_rebuild()

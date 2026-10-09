@@ -17,6 +17,7 @@ class DataTable(Base):
     note_id: Mapped[str] = mapped_column(ForeignKey("thought_notes.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(120))
     position: Mapped[int] = mapped_column(Integer)
+    groups: Mapped[list] = mapped_column(JSON, default=list)
 
 
 class DataField(Base):

@@ -32,6 +32,7 @@ export const thoughtKeys = {
       : ([...thoughtKeys.all, "multitable-records", context, note] as const),
   multitableChoices: (context: string, query: string) =>
     [...thoughtKeys.all, "multitable-choices", context, query] as const,
+  workspaceMembers: () => [...thoughtKeys.all, "workspace-members"] as const,
   multitableHistory: (context: string, note: string, offset: number) =>
     [...thoughtKeys.all, "multitable-history", context, note, offset] as const,
   multitableSnapshot: (

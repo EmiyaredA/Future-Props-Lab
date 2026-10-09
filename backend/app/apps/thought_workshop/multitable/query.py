@@ -5,9 +5,34 @@ import json
 from sqlalchemy import String, and_, case, cast, exists, func, or_, select
 
 from app.apps.thought_workshop.errors import ThoughtError
+from app.console.models import User, WorkspaceMembership
 
 from .models import DataRecord
 from .schemas import RecordPage, RecordSpec
+
+
+def person_ids(value):
+    if isinstance(value, str):
+        return {value}
+    if isinstance(value, list):
+        return {item for item in value if isinstance(item, str)}
+    return set()
+
+
+async def active_members(session, workspace_id, ids):
+    if not ids:
+        return {}
+    rows = await session.execute(
+        select(User.id, User.display_name, User.username)
+        .join(WorkspaceMembership, WorkspaceMembership.user_id == User.id)
+        .where(
+            WorkspaceMembership.workspace_id == workspace_id,
+            WorkspaceMembership.status == "active",
+            User.status == "active",
+            User.id.in_(ids),
+        )
+    )
+    return {user_id: (name or "").strip() or username for user_id, name, username in rows}
 
 
 def statement(table, query):
@@ -50,11 +75,11 @@ def statement(table, query):
                 arg = next((o.label for o in fields[f.field_id].options if o.id == arg), arg)
             if isinstance(arg, list):
                 arg = json.dumps(arg, ensure_ascii=False, separators=(",", ":"))
-            if f.operator == "contains" and fields[f.field_id].type in {
-                "multi",
-                "note",
-                "attachment",
-            }:
+            person = fields[f.field_id]
+            if f.operator == "contains" and (
+                person.type in {"multi", "note", "attachment"}
+                or (person.type == "person" and person.config.allow_multiple)
+            ):
                 members = func.json_each(DataRecord.values, '$."' + f.field_id + '"').table_valued(
                     "value"
                 )
@@ -88,7 +113,7 @@ def statement(table, query):
     return select(DataRecord).where(*predicates).order_by(*order), predicates, config
 
 
-async def records(session, table, query, revision):
+async def records(session, table, query, revision, workspace_id=None):
     stmt, predicates, config = statement(table, query)
     total = await session.scalar(select(func.count()).select_from(DataRecord).where(*predicates))
     rows = list(await session.scalars(stmt.offset(query.offset).limit(query.limit)))
@@ -103,9 +128,18 @@ async def records(session, table, query, revision):
                 select(group, func.count()).where(*predicates).group_by(group)
             )
         }
+    items = [RecordSpec.model_validate(r) for r in rows]
+    referenced = set()
+    for field in table.fields:
+        if field.type != "person":
+            continue
+        for item in items:
+            referenced |= person_ids(item.values.get(field.id))
+    people = await active_members(session, workspace_id, referenced) if workspace_id else {}
     return RecordPage(
         revision=revision,
-        items=[RecordSpec.model_validate(r) for r in rows],
+        items=items,
         total=total or 0,
         groups=groups,
+        people=people,
     )

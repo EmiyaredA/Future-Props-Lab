@@ -32,6 +32,7 @@ export function ColumnResize({
       onPointerDown={(event) => {
         if (event.button !== 0) return;
         event.preventDefault();
+        event.stopPropagation();
         drag.current = { x: event.clientX, width, current: width };
         event.currentTarget.setPointerCapture(event.pointerId);
         event.currentTarget.focus();

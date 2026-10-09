@@ -107,6 +107,14 @@
   min-height: 1.25em;
 }
 
+.custom-select-swatch {
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+
 .custom-select-menu button:hover:not(:disabled),
 .custom-select-menu button.selected {
   background: var(--surface-hover);

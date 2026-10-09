@@ -1,0 +1,364 @@
+.multitable-dialog.is-view-settings {
+  width: min(640px, calc(100vw - 32px));
+  padding: 20px 20px 16px;
+  border-radius: 14px;
+}
+
+.multitable-dialog.is-view-settings > h2 {
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+
+.multitable-dialog.is-view-settings .multitable-settings-tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+  padding: 3px;
+  border: 0;
+  border-bottom: 0;
+  border-radius: 11px;
+  background: var(--surface-soft);
+  scrollbar-width: none;
+}
+
+.multitable-dialog.is-view-settings .multitable-settings-tabs > button {
+  display: inline-flex;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.multitable-dialog.is-view-settings .multitable-settings-tabs > button:hover {
+  color: var(--text);
+}
+
+.multitable-dialog.is-view-settings
+  .multitable-settings-tabs
+  > button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.multitable-dialog.is-view-settings > .multitable-close {
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.multitable-dialog.is-view-settings > .multitable-close:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.multitable-dialog.is-view-settings .multitable-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+}
+
+.multitable-dialog.is-view-settings .multitable-settings-section[hidden] {
+  display: none;
+}
+
+.multitable-view-lead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.multitable-view-lead > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.multitable-view-lead h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.multitable-view-lead p,
+.multitable-view-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.multitable-view-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.multitable-choice {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.multitable-choice > button {
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.multitable-choice > button:hover {
+  color: var(--text);
+}
+
+.multitable-choice > button[aria-checked="true"] {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.multitable-dialog.is-view-settings .multitable-settings-section > label,
+.multitable-view-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.multitable-dialog.is-view-settings
+  .multitable-settings-section
+  > label
+  > input:not([type="checkbox"]) {
+  flex: none;
+  width: 100%;
+  min-height: 36px;
+  border-radius: 9px;
+}
+
+.multitable-view-field .custom-select,
+.multitable-dialog.is-view-settings
+  .multitable-settings-section
+  > label
+  .custom-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.multitable-view-field > .multitable-choice {
+  display: flex;
+  width: 100%;
+}
+
+.multitable-view-field > .multitable-choice > button {
+  flex: 1;
+}
+
+.multitable-rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.multitable-dialog.is-view-settings .multitable-setting-rule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-soft) 42%, var(--surface));
+}
+
+.multitable-dialog.is-view-settings .multitable-setting-rule > .custom-select,
+.multitable-dialog.is-view-settings .multitable-setting-rule > input,
+.multitable-dialog.is-view-settings
+  .multitable-setting-rule
+  > .custom-date-input {
+  flex: 1 1 132px;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.multitable-dialog.is-view-settings .multitable-setting-rule > input {
+  min-height: 36px;
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.multitable-dialog.is-view-settings .multitable-setting-rule > fieldset {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.multitable-dialog.is-view-settings .multitable-setting-rule fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.multitable-rule-remove {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  color: var(--faint);
+}
+
+.multitable-rule-remove:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.multitable-view-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.multitable-view-add:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.multitable-column-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.multitable-column-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 6px 4px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.multitable-column-row:last-child {
+  border-bottom: 0;
+}
+
+.multitable-column-row.is-hidden {
+  background: color-mix(in srgb, var(--surface-soft) 70%, var(--surface));
+}
+
+.multitable-column-row > label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.multitable-column-row.is-hidden > label span {
+  color: var(--faint);
+}
+
+.multitable-column-row > label span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multitable-column-moves {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.multitable-column-moves .multitable-icon-button {
+  width: 28px;
+  height: 28px;
+}
+
+.multitable-dialog.is-view-settings > [role="alert"] {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--danger-soft);
+}
+
+.multitable-dialog.is-view-settings > .multitable-actions {
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .multitable-view-lead {
+    flex-direction: column;
+  }
+
+  .multitable-dialog.is-view-settings .multitable-setting-rule .custom-select {
+    max-width: none;
+  }
+}

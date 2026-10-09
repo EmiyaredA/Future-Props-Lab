@@ -5056,6 +5056,73 @@
         "title": "CodexSourceUpdate",
         "type": "object"
       },
+      "ColorRule": {
+        "additionalProperties": false,
+        "properties": {
+          "color": {
+            "default": "#7c89c9",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "field_id": {
+            "title": "Field Id",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "eq",
+              "ne",
+              "contains",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "empty",
+              "not_empty"
+            ],
+            "title": "Operator",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "field_id",
+          "operator"
+        ],
+        "title": "ColorRule",
+        "type": "object"
+      },
       "CommunityArticle": {
         "properties": {
           "can_edit": {
@@ -8025,6 +8092,17 @@
       "FieldConfig": {
         "additionalProperties": false,
         "properties": {
+          "allow_multiple": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Multiple"
+          },
           "date_format": {
             "anyOf": [
               {
@@ -8057,6 +8135,21 @@
             ],
             "title": "Decimal Places"
           },
+          "default_user_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default User Ids"
+          },
           "use_grouping": {
             "anyOf": [
               {
@@ -8070,6 +8163,40 @@
           }
         },
         "title": "FieldConfig",
+        "type": "object"
+      },
+      "FieldGroup": {
+        "additionalProperties": false,
+        "properties": {
+          "field_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Field Ids",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "field_ids"
+        ],
+        "title": "FieldGroup",
         "type": "object"
       },
       "FieldSpec": {
@@ -8114,7 +8241,8 @@
               "checkbox",
               "url",
               "attachment",
-              "note"
+              "note",
+              "person"
             ],
             "title": "Type",
             "type": "string"
@@ -26448,6 +26576,13 @@
             "title": "Items",
             "type": "array"
           },
+          "people": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "People",
+            "type": "object"
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -29122,6 +29257,14 @@
             "maxItems": 50,
             "minItems": 1,
             "title": "Fields",
+            "type": "array"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/FieldGroup"
+            },
+            "maxItems": 20,
+            "title": "Groups",
             "type": "array"
           },
           "id": {
@@ -33600,6 +33743,14 @@
       "ViewConfig": {
         "additionalProperties": false,
         "properties": {
+          "color_rules": {
+            "items": {
+              "$ref": "#/components/schemas/ColorRule"
+            },
+            "maxItems": 20,
+            "title": "Color Rules",
+            "type": "array"
+          },
           "column_order": {
             "items": {
               "type": "string"

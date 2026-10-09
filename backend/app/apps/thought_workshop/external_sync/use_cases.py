@@ -11,7 +11,7 @@ from app.apps.thought_workshop.models import ThoughtKnowledgeBase
 from app.apps.thought_workshop.notes import Notes
 from app.integrations.external.blocks import feishu_tree
 from app.integrations.external.catalog import ExternalConnections
-from app.integrations.external.contracts import ExternalError, document_target
+from app.integrations.external.contracts import ExternalError
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 
@@ -123,7 +123,9 @@ class ArticleSync:
             await self.idle(current.target_key)
         note_revision = note.revision
         current_id = current.id if current else None
-        document_id, url = document_target(body.url)
+        document_id, url = await ExternalConnections(
+            self.session, self.workspace_id, self.transport
+        ).resolve_document(body.connection_id, body.url)
         target_key = "feishu:" + document_id
         await self.idle(target_key)
         connection_revision = (

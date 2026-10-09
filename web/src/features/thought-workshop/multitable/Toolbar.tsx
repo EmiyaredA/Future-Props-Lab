@@ -3,6 +3,7 @@ import {
   Download,
   Filter,
   Group,
+  PaintBucket,
   History,
   ListFilter,
   Plus,
@@ -14,7 +15,8 @@ import {
 import { KnowledgeActionMenu, type TopbarAction } from "../KnowledgeActionMenu";
 import type { Table, View } from "./api";
 
-export type ViewSection = "basic" | "filters" | "sorts" | "group" | "columns";
+export type ViewSection =
+  "basic" | "filters" | "sorts" | "group" | "columns" | "colors";
 export type TableAction =
   | "history"
   | "import"
@@ -36,6 +38,7 @@ export function TableToolbar({
   fields,
   settings,
   action,
+  chooseView,
 }: {
   table: Table;
   view: View;
@@ -50,6 +53,7 @@ export function TableToolbar({
   fields: () => void;
   settings: (section: ViewSection) => void;
   action: (action: TableAction) => void;
+  chooseView?: () => void;
 }) {
   const groups: TopbarAction[][] = [];
   if (workspace && !embedded) {
@@ -85,9 +89,20 @@ export function TableToolbar({
   return (
     <div className="multitable-toolbar">
       {embedded ? (
-        <strong className="multitable-embedded-title">
-          {table.name} · {view.name}
-        </strong>
+        <div className="multitable-embed-identity">
+          <strong className="multitable-embedded-title">
+            {table.name} · {view.name}
+          </strong>
+          {chooseView && (
+            <button
+              type="button"
+              className="multitable-embed-switch"
+              onClick={chooseView}
+            >
+              更换视图
+            </button>
+          )}
+        </div>
       ) : (
         canEdit && (
           <div className="multitable-configuration-tools">
@@ -115,6 +130,17 @@ export function TableToolbar({
               排序
               {config?.sorts?.length ? (
                 <small>{config.sorts.length}</small>
+              ) : null}
+            </button>
+            <button
+              aria-label="填色"
+              className={config?.color_rules?.length ? "is-active" : undefined}
+              onClick={() => settings("colors")}
+            >
+              <PaintBucket size={16} />
+              填色
+              {config?.color_rules?.length ? (
+                <small>{config.color_rules.length}</small>
               ) : null}
             </button>
             <button

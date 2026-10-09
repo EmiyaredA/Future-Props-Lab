@@ -62,7 +62,8 @@
   font-size: clamp(27px, 2.8vw, 38px);
 }
 .thought-shell .knowledge-home-reading .thought-prose {
-  padding: 16px 0 60px;
+  min-height: 0;
+  padding: 4px 0 20px;
 }
 .thought-shell .thought-prose {
   padding-top: 16px;

@@ -54,6 +54,7 @@ async def snapshot(session, note_id, *, include_records=True):
                 position=t.position,
                 fields=[FieldSpec.model_validate(f) for f in fields if f.table_id == t.id],
                 views=[ViewSpec.model_validate(v) for v in views if v.table_id == t.id],
+                groups=t.groups or [],
             )
             for t in tables
         ],
@@ -94,7 +95,13 @@ async def persist(session, note_id, before, after):
         if previous != t:
             # A spec owns its complete fields and views; records remain independent.
             await session.merge(
-                DataTable(id=t.id, note_id=note_id, name=t.name, position=t.position)
+                DataTable(
+                    id=t.id,
+                    note_id=note_id,
+                    name=t.name,
+                    position=t.position,
+                    groups=[g.model_dump(mode="json") for g in t.groups],
+                )
             )
             await session.flush()
             await session.execute(delete(DataField).where(DataField.table_id == t.id))

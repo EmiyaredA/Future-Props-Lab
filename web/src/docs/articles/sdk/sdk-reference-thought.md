@@ -12,6 +12,7 @@
 | [trash_knowledge_base](#trash-knowledge-base) | `DELETE /v1/thought-workshop/knowledge-bases/{project_id}` |
 | [delete_note](#delete-note) | `DELETE /v1/thought-workshop/notes/{note_id}` |
 | [delete_checkpoint](#delete-checkpoint) | `DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}` |
+| [unbind](#unbind) | `DELETE /v1/thought-workshop/notes/{note_id}/external-sync/binding` |
 | [delete_filter](#delete-filter) | `DELETE /v1/thought-workshop/preferences/filters/{filter_id}` |
 | [delete_template](#delete-template) | `DELETE /v1/thought-workshop/templates/{template_id}` |
 | [backup](#backup) | `GET /v1/thought-workshop/backup` |
@@ -27,6 +28,8 @@
 | [checkpoints](#checkpoints) | `GET /v1/thought-workshop/notes/{note_id}/checkpoints` |
 | [copy_snapshot](#copy-snapshot) | `GET /v1/thought-workshop/notes/{note_id}/copy-snapshot` |
 | [export_note_content](#export-note-content) | `GET /v1/thought-workshop/notes/{note_id}/export` |
+| [state](#state) | `GET /v1/thought-workshop/notes/{note_id}/external-sync` |
+| [task](#task) | `GET /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}` |
 | [note_history](#note-history) | `GET /v1/thought-workshop/notes/{note_id}/history` |
 | [note_history_detail](#note-history-detail) | `GET /v1/thought-workshop/notes/{note_id}/history/{history_id}` |
 | [get_multitable](#get-multitable) | `GET /v1/thought-workshop/notes/{note_id}/multitable` |
@@ -49,6 +52,9 @@
 | [assistant](#assistant) | `POST /v1/thought-workshop/notes/{note_id}/assistant` |
 | [create_checkpoint](#create-checkpoint) | `POST /v1/thought-workshop/notes/{note_id}/checkpoints` |
 | [duplicate_document](#duplicate-document) | `POST /v1/thought-workshop/notes/{note_id}/duplicate` |
+| [preview](#preview) | `POST /v1/thought-workshop/notes/{note_id}/external-sync/preview` |
+| [submit](#submit) | `POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks` |
+| [reconcile](#reconcile) | `POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile` |
 | [restore_note_history](#restore-note-history) | `POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore` |
 | [preview_multitable_conversion](#preview-multitable-conversion) | `POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview` |
 | [preview_multitable_csv](#preview-multitable-csv) | `POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview` |
@@ -67,6 +73,7 @@
 | [update_knowledge_base](#update-knowledge-base) | `PUT /v1/thought-workshop/knowledge-bases/{project_id}` |
 | [put_note](#put-note) | `PUT /v1/thought-workshop/notes/{note_id}` |
 | [rename_checkpoint](#rename-checkpoint) | `PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}` |
+| [bind](#bind) | `PUT /v1/thought-workshop/notes/{note_id}/external-sync/binding` |
 | [put_filter](#put-filter) | `PUT /v1/thought-workshop/preferences/filters/{filter_id}` |
 | [put_template](#put-template) | `PUT /v1/thought-workshop/templates/{template_id}` |
 
@@ -127,6 +134,26 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `note_id` | path | string | 是 |
 | `checkpoint_id` | path | string | 是 |
+| `expected_revision` | query | integer | 是 |
+
+**响应**：
+- `204` · 无内容或由接口声明的文件响应。
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## unbind {#unbind}
+
+`client.thought.unbind(...)`
+
+**接口**：`DELETE /v1/thought-workshop/notes/{note_id}/external-sync/binding`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
 | `expected_revision` | query | integer | 是 |
 
 **响应**：
@@ -430,6 +457,45 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/octet-stream` · `string`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## state {#state}
+
+`client.thought.state(...)`
+
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/external-sync`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ArticleSyncState`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## task {#task}
+
+`client.thought.task(...)`
+
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `task_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ArticleSyncTaskOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -915,6 +981,73 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## preview {#preview}
+
+`client.thought.preview(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/preview`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `body` | application/json | ArticlePreviewInput | 是 |
+| `body.binding_revision` | 请求体 | integer | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `ArticleSyncPreview`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## submit {#submit}
+
+`client.thought.submit(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `body` | application/json | ArticleSyncSubmit | 是 |
+| `body.confirm_replace` | 请求体 | boolean | 是 |
+| `body.operation_id` | 请求体 | string | 是 |
+| `body.preview_id` | 请求体 | string | 是 |
+
+**响应**：
+- `202` · `application/json` · `ArticleSyncTaskOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## reconcile {#reconcile}
+
+`client.thought.reconcile(...)`
+
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `task_id` | path | string | 是 |
+| `body` | application/json | ArticleSyncReconcile | 是 |
+| `body.acknowledge_partial` | 请求体 | boolean | 否 |
+
+**响应**：
+- `200` · `application/json` · `ArticleSyncReconcileOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## restore_note_history {#restore-note-history}
 
 `client.thought.restore_note_history(...)`
@@ -1335,6 +1468,29 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `CheckpointOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## bind {#bind}
+
+`client.thought.bind(...)`
+
+**接口**：`PUT /v1/thought-workshop/notes/{note_id}/external-sync/binding`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `note_id` | path | string | 是 |
+| `body` | application/json | ArticleBindingInput | 是 |
+| `body.connection_id` | 请求体 | string | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.url` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ArticleBindingOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

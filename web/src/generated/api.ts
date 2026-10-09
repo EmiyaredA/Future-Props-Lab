@@ -9585,6 +9585,25 @@ export interface components {
             /** Source */
             source: string;
         };
+        /** ColorRule */
+        ColorRule: {
+            /**
+             * Color
+             * @default #7c89c9
+             */
+            color: string;
+            /** Field Id */
+            field_id: string;
+            /** Id */
+            id: string;
+            /**
+             * Operator
+             * @enum {string}
+             */
+            operator: "eq" | "ne" | "contains" | "gt" | "gte" | "lt" | "lte" | "empty" | "not_empty";
+            /** Value */
+            value?: string | number | boolean | string[] | null;
+        };
         /** CommunityArticle */
         CommunityArticle: {
             /**
@@ -10733,12 +10752,25 @@ export interface components {
         };
         /** FieldConfig */
         FieldConfig: {
+            /** Allow Multiple */
+            allow_multiple?: boolean | null;
             /** Date Format */
             date_format?: ("YYYY-MM-DD" | "YYYY/MM/DD" | "YYYY.MM.DD" | "YYYY年M月D日" | "DD/MM/YYYY" | "MM/DD/YYYY") | null;
             /** Decimal Places */
             decimal_places?: number | null;
+            /** Default User Ids */
+            default_user_ids?: string[] | null;
             /** Use Grouping */
             use_grouping?: boolean | null;
+        };
+        /** FieldGroup */
+        FieldGroup: {
+            /** Field Ids */
+            field_ids: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** FieldSpec */
         FieldSpec: {
@@ -10755,7 +10787,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "text" | "number" | "single" | "multi" | "date" | "checkbox" | "url" | "attachment" | "note";
+            type: "text" | "number" | "single" | "multi" | "date" | "checkbox" | "url" | "attachment" | "note" | "person";
         };
         /** FileListOut */
         FileListOut: {
@@ -17768,6 +17800,10 @@ export interface components {
             };
             /** Items */
             items: components["schemas"]["RecordSpec"][];
+            /** People */
+            people?: {
+                [key: string]: string;
+            };
             /** Revision */
             revision: number;
             /** Total */
@@ -18849,6 +18885,8 @@ export interface components {
         TableSpec: {
             /** Fields */
             fields: components["schemas"]["FieldSpec"][];
+            /** Groups */
+            groups?: components["schemas"]["FieldGroup"][];
             /** Id */
             id: string;
             /** Name */
@@ -20629,6 +20667,8 @@ export interface components {
         };
         /** ViewConfig */
         ViewConfig: {
+            /** Color Rules */
+            color_rules?: components["schemas"]["ColorRule"][];
             /** Column Order */
             column_order?: string[];
             /** Column Widths */

@@ -84,7 +84,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   await saved(page);
   await page.getByRole("button", { name: "字段", exact: true }).click();
   await page.getByRole("button", { name: /新增字段/ }).click();
-  await page.getByLabel("字段 5 名称", { exact: true }).fill("预算");
+  await page.getByLabel("字段名称", { exact: true }).fill("预算");
   await choose(page, "预算类型", "数字");
   await page.getByRole("button", { name: "确认保存字段", exact: true }).click();
   await saved(page);
@@ -139,7 +139,10 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   ]) {
     await page.getByRole("button", { name: "新建视图", exact: true }).click();
     await page.getByLabel("视图名称", { exact: true }).fill(name);
-    await choose(page, "视图类型", type);
+    await page
+      .getByRole("radiogroup", { name: "视图类型", exact: true })
+      .getByRole("radio", { name: type, exact: true })
+      .click();
     await choose(page, fieldLabel, field);
     await page.getByRole("button", { name: "保存视图", exact: true }).click();
     await saved(page);
@@ -297,7 +300,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   ).body();
   const files = unzipSync(archive);
   const manifest = JSON.parse(strFromU8(files["manifest.json"]));
-  expect(manifest.version).toBe(8);
+  expect(manifest.version).toBe(9);
   expect(manifest.multitables[noteId].state.tables).toHaveLength(2);
   expect(manifest.multitables[noteId].history.length).toBeGreaterThan(3);
   const imported = await page.request.post(root + "/imports", {

@@ -391,8 +391,10 @@ export function ArticleSyncPanel({
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
+                    const resolved = target?.url;
+                    if (!resolved) return;
                     void action(async () => {
-                      await bindArticle(note.id, connection, url, 0);
+                      await bindArticle(note.id, connection, resolved, 0);
                       setTarget(null);
                     });
                   }}
@@ -403,7 +405,10 @@ export function ArticleSyncPanel({
                     </span>
                     <div>
                       <h3>绑定一个专用文档</h3>
-                      <p>选择连接，粘贴已有飞书文档的链接。</p>
+                      <p>
+                        选择连接，粘贴飞书新版文档链接。知识库中的文档可直接粘贴
+                        /wiki/ 链接。
+                      </p>
                     </div>
                   </div>
                   <label>
@@ -445,7 +450,7 @@ export function ArticleSyncPanel({
                         setUrl(e.target.value);
                         setTarget(null);
                       }}
-                      placeholder="https://你的企业.feishu.cn/docx/…"
+                      placeholder="https://你的企业.feishu.cn/docx/… 或 /wiki/…"
                     />
                   </label>
                   <button
@@ -453,9 +458,14 @@ export function ArticleSyncPanel({
                     type="button"
                     disabled={pending || !connection || !url}
                     onClick={() =>
-                      void action(async () =>
-                        setTarget(await checkExternalTarget(connection, url)),
-                      )
+                      void action(async () => {
+                        const checked = await checkExternalTarget(
+                          connection,
+                          url,
+                        );
+                        setTarget(checked);
+                        setUrl(checked.url);
+                      })
                     }
                   >
                     检查目标

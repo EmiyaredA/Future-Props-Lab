@@ -177,7 +177,7 @@ Future-Props-Lab/
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
 - `integrations/external/` 管理 Workspace 外部连接、加密应用凭据与飞书鉴权；`contracts.py` 和
   `blocks.py` 接收明确的文档内容与图片素材，`feishu_verification.py` 核验远端块结果，
-  不读取思绪工坊 ORM。只接受飞书 `/docx/` 目标。
+  不读取思绪工坊 ORM。`/docx/` 链接直接作为文档标识；知识库 `/wiki/` 链接只提取节点标识，经飞书开放接口解析为 docx 后再读写。服务器不请求用户粘贴的主机。
   `apps/thought_workshop/external_sync/` 拥有文章绑定、内容导出快照、持久任务和步骤核验；
   `console/governance/external_sync_access.py` 为执行器提供当前操作者权限检查。
   `features/integrations/external/` 提供集成中心配置，`features/thought-workshop/external-sync/`
@@ -380,9 +380,9 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 
 ## 思绪工坊
 
-后端 `multitable/` 拥有多维表格的独立 ORM、类型化契约、字段转换、受控 SQLite 查询、原子批次、CSV、差量历史及 version 7 备份重映射；`content.py` 投影当前数据用于静态导出。`routes/multitable.py` 适配 Workspace API；`publication/tables.py` 在独立会话分别校验父文章与目标表格授权，`routes/community_tables.py` 与社区路由一起装配，避免继承普通 Workspace 权限。文档根 `ThoughtNote.kind` 默认 note，子实体通过已验证根继承 Workspace 与生命周期。
+后端 `multitable/` 拥有多维表格的独立 ORM、类型化契约、字段转换、受控 SQLite 查询、原子批次、CSV、差量历史及 version 9 备份重映射；人员、填色条件和字段编组写在现有表、字段与视图 JSON 中。`content.py` 投影当前数据用于静态导出。`routes/multitable.py` 适配 Workspace API；`publication/tables.py` 在独立会话分别校验父文章与目标表格授权，`routes/community_tables.py` 与社区路由一起装配，避免继承普通 Workspace 权限。文档根 `ThoughtNote.kind` 默认 note，子实体通过已验证根继承 Workspace 与生命周期。
 
-Web `features/thought-workshop/multitable/` 拥有 TanStack Table/Virtual 网格、看板、月历、字段/视图配置、记录编辑、CSV、历史、嵌入节点和静态内容导出；所有缓存键继续由现有 `queryKeys.ts` 维护。`useTableDocument.ts` 合并连续编辑、串行提交并保存按账号/访问上下文/文档/标签页隔离的 IndexedDB 待保存操作；`saveLane.ts` 协调当前页面的提交顺序，服务器 CAS 判定跨标签页冲突。当前表、视图、滚动位置与侧栏折叠是个人阅读状态，视图配置是共享文档数据。`Navigation.tsx` 拥有容器响应式数据表导航和视图标签，`Toolbar.tsx` 通过回调提供配置与记录操作；`ColumnResize.tsx` 只在拖动结束提交列宽，`FieldValue.tsx` 显示主题安全标签。`ViewSettings.tsx` 保存一份跨页签草稿；`FieldForm.tsx`／`FieldEditor.tsx` 共用类型配置并拥有表头浮层，`field-settings.css` 拥有对应布局；`formatting.ts`／`fieldChanges.ts` 分别拥有展示投影与草稿合并；`grid.css` 拥有网格和单元格呈现，`multitable.css` 拥有导航、其他视图与弹层样式。
+Web `features/thought-workshop/multitable/` 拥有 TanStack Table/Virtual 网格、看板、月历、字段/视图配置、记录编辑、CSV、历史、嵌入节点和静态内容导出；所有缓存键继续由现有 `queryKeys.ts` 维护。`useTableDocument.ts` 合并连续编辑、串行提交并保存按账号/访问上下文/文档/标签页隔离的 IndexedDB 待保存操作；`saveLane.ts` 协调当前页面的提交顺序，服务器 CAS 判定跨标签页冲突。当前表、视图、滚动位置与侧栏折叠是个人阅读状态，视图配置是共享文档数据。`Navigation.tsx` 拥有容器响应式数据表导航和视图标签，`Toolbar.tsx` 通过回调提供配置与记录操作；`ColumnResize.tsx` 只在拖动结束提交列宽，嵌入网格在目标可编辑时用同一提交写回源视图，未保存过的列宽按嵌入宽度分配。`FieldValue.tsx` 显示主题安全标签。`PersonField.tsx` 选择当前空间成员，`ColorRuleEditor.tsx` 与 `colorRules.ts` 编辑并套用填色条件，`FieldCatalog.tsx` 管理字段列表和编组，`columnBands.ts` 计算表头编组跨度。`ViewSettings.tsx` 保存一份跨页签草稿；`FieldForm.tsx`／`FieldEditor.tsx` 共用类型配置并拥有表头浮层，`field-settings.css` 拥有对应布局；`formatting.ts`／`fieldChanges.ts` 分别拥有展示投影与草稿合并；`grid.css` 拥有网格和单元格呈现，`embed.css` 拥有笔记内嵌入块的排版，`multitable.css` 拥有导航、其他视图与弹层样式。
 
 `publication/` 拥有同部署知识社区的发布、目录过滤、逐篇授权、收藏和素材访问；`routes/community.py` 仅做浏览器 Session 协议适配。发布记录直接保存源 Workspace，成员授权仅作用于已发布文章。`Community` 为每次操作创建独立会话，授权后显式绑定源空间调用 `Notes`；写入采用短事务串行化权限检查、撤回与正文 CAS。`lifecycle.py` 在源回收站事务内关闭文章或整库，恢复不自动重新发布。迁移 `0082_thought_publications` 只建发布表，不复制正文、不自动公开现有内容。
 

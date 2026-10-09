@@ -39,6 +39,9 @@ class FakeFeishu:
         self.writes = []
         self.token_requests = 0
         self.writable = True
+        self.wiki_type = "docx"
+        self.wiki_tokens: list[str] = []
+        self.hosts: set[str] = set()
         self.fail_token = False
         self.timeout_after_append = False
         self.edit_after_append = False
@@ -54,6 +57,24 @@ class FakeFeishu:
 
     def handle(self, request):
         path = request.url.path
+        self.hosts.add(request.url.host)
+        if path.endswith("/get_node"):
+            self.wiki_tokens.append(request.url.params.get("token", ""))
+            if self.wiki_type == "denied":
+                return httpx.Response(400, json={"code": 131006, "msg": "provider secret"})
+            return httpx.Response(
+                200,
+                json={
+                    "code": 0,
+                    "data": {
+                        "node": {
+                            "obj_type": self.wiki_type,
+                            "obj_token": self.id,
+                            "title": "飞书原标题",
+                        }
+                    },
+                },
+            )
         if path.endswith("/tenant_access_token/internal"):
             self.token_requests += 1
             if self.fail_token:
@@ -439,7 +460,8 @@ def test_content_projection_blockers_inline_and_style_warnings():
     [
         "http://demo.feishu.cn/docx/a",
         "https://evil.com/docx/a",
-        "https://demo.feishu.cn/wiki/a",
+        "https://demo.feishu.cn/docs/a",
+        "https://demo.feishu.cn/wiki/a/extra",
         "https://demo.feishu.cn.evil.com/docx/a",
         "https://user@demo.feishu.cn/docx/a",
         "https://demo.feishu.cn:8443/docx/a",
@@ -450,6 +472,23 @@ def test_content_projection_blockers_inline_and_style_warnings():
 def test_target_url_is_identifier_not_outbound_destination(url):
     with pytest.raises(ExternalError):
         document_target(url)
+
+
+def test_wiki_and_docx_links_keep_only_the_document_identifier():
+    wiki = document_target(
+        "https://my.feishu.cn/wiki/YdxcwJ8tolY8qPkOa3Pctfqknnc?create_from=create_doc_to_wiki&from=wiki"
+    )
+    assert (wiki.kind, wiki.token, wiki.url) == (
+        "wiki",
+        "YdxcwJ8tolY8qPkOa3Pctfqknnc",
+        "https://my.feishu.cn/wiki/YdxcwJ8tolY8qPkOa3Pctfqknnc",
+    )
+    docx = document_target("https://demo.feishu.cn/docx/abc/")
+    assert (docx.kind, docx.token, docx.url) == (
+        "docx",
+        "abc",
+        "https://demo.feishu.cn/docx/abc",
+    )
 
 
 @pytest.mark.asyncio
@@ -651,7 +690,56 @@ async def test_invalid_link_returns_validation_error_without_network(client, rem
         json={"url": "https://evil.test/docx/abc"},
     )
     assert result.status_code == 422, result.text
+    assert "知识库中的 /wiki/ 节点" in result.json()["detail"]
     assert remote.token_requests == requests
+
+
+@pytest.mark.asyncio
+async def test_wiki_link_resolves_to_docx_and_binds_that_document(client, remote):
+    conn, _, prefix, binding = await setup_article(client, remote)
+    wiki = (
+        "https://my.feishu.cn/wiki/YdxcwJ8tolY8qPkOa3Pctfqknnc"
+        "?create_from=create_doc_to_wiki&from=wiki"
+    )
+    checked = await client.post(
+        f"/v1/integrations/external-connections/{conn['id']}/target-check", json={"url": wiki}
+    )
+    assert checked.status_code == 200, checked.text
+    assert checked.json()["document_id"] == remote.id
+    assert checked.json()["url"] == f"https://my.feishu.cn/docx/{remote.id}"
+    assert checked.json()["can_write"] is True
+    assert remote.hosts == {"open.feishu.cn"}
+    assert remote.wiki_tokens == ["YdxcwJ8tolY8qPkOa3Pctfqknnc"]
+    assert (
+        await client.delete(prefix + "/binding", params={"expected_revision": binding["revision"]})
+    ).status_code == 204
+    rebound = await client.put(
+        prefix + "/binding",
+        json={"connection_id": conn["id"], "url": wiki, "expected_revision": 0},
+    )
+    assert rebound.status_code == 200, rebound.text
+    assert rebound.json()["url"] == f"https://my.feishu.cn/docx/{remote.id}"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("wiki_type", ["sheet", "denied"])
+async def test_wiki_link_rejects_non_docx_nodes_without_leaking_provider_text(
+    client, remote, wiki_type
+):
+    conn, _, _, _ = await setup_article(client, remote)
+    remote.wiki_type = wiki_type
+    result = await client.post(
+        f"/v1/integrations/external-connections/{conn['id']}/target-check",
+        json={"url": "https://my.feishu.cn/wiki/YdxcwJ8tolY8qPkOa3Pctfqknnc"},
+    )
+    if wiki_type == "sheet":
+        assert result.status_code == 422, result.text
+        assert "不是新版文档" in result.json()["detail"]
+    else:
+        assert result.status_code == 502, result.text
+        assert "131006" in result.json()["detail"]
+    assert "provider secret" not in result.text
+    assert "never-return-me" not in result.text
 
 
 @pytest.mark.asyncio

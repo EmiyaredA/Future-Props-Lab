@@ -19,6 +19,8 @@ export function needsFieldPreview(base: Table, draft: Table) {
     return (
       !next ||
       next.type !== old.type ||
+      Boolean(old.config?.allow_multiple) !==
+        Boolean(next.config?.allow_multiple) ||
       (old.options ?? []).some(
         (o) => !(next.options ?? []).some((n) => n.id === o.id),
       )
@@ -73,10 +75,25 @@ export function mergeFieldChanges(
     .map((f) => changed.get(f.id) ?? f);
   for (const field of changed.values())
     if (!fields.some((f) => f.id === field.id)) fields.push(field);
+  const groupsChanged =
+    JSON.stringify(base.groups ?? []) !== JSON.stringify(draft.groups ?? []);
+  if (
+    groupsChanged &&
+    JSON.stringify(latest.groups ?? []) !== JSON.stringify(base.groups ?? [])
+  )
+    throw new Error("字段编组已被其他操作修改，请重新核对");
+  const live = new Set(fields.map((field) => field.id));
+  const groups = (groupsChanged ? draft.groups : latest.groups) ?? [];
   return {
     ...latest,
     name: base.name === draft.name ? latest.name : draft.name,
     fields: fields.sort((a, b) => a.position - b.position),
     views: removed.size ? draft.views : latest.views,
+    groups: groups
+      .map((group) => ({
+        ...group,
+        field_ids: group.field_ids.filter((id) => live.has(id)),
+      }))
+      .filter((group) => group.field_ids.length > 0),
   };
 }

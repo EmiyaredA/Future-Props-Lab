@@ -13,6 +13,8 @@ import {
 import type { Field, RecordRow, Scope } from "./api";
 import { display, parseCell } from "./model";
 import { FieldValue } from "./FieldValue";
+import { PersonChoices } from "./PersonField";
+import type { People } from "./formatting";
 import { Modal } from "./Modal";
 
 type Value = RecordRow["values"][string];
@@ -32,12 +34,14 @@ export function CellEditor({
   readOnly,
   scope,
   noteId,
+  people = {},
 }: {
   field: Field;
   value: Value | undefined;
   change: (v: Value) => void;
   readOnly: boolean;
   scope: Scope;
+  people?: People;
   noteId: string;
 }) {
   const access = useDocumentAccess(),
@@ -139,8 +143,19 @@ export function CellEditor({
           {value}
         </a>
       );
-    return <FieldValue field={field} value={value} />;
+    return <FieldValue field={field} value={value} people={people} />;
   }
+  if (field.type === "person")
+    return (
+      <PersonChoices
+        label={field.name}
+        multiple={!!field.config?.allow_multiple}
+        value={value}
+        people={people}
+        editable={!scope.publication}
+        onChange={change}
+      />
+    );
   if (field.type === "checkbox")
     return (
       <input
@@ -155,7 +170,7 @@ export function CellEditor({
       <CustomSelect
         ariaLabel={field.name}
         className="multitable-choice"
-        leadingIcon={<FieldValue field={field} value={value} />}
+        leadingIcon={<FieldValue field={field} value={value} people={people} />}
         showChevron={false}
         value={typeof value === "string" ? value : ""}
         options={[
@@ -163,6 +178,7 @@ export function CellEditor({
           ...(field.options ?? []).map((o) => ({
             value: o.id,
             label: o.label,
+            swatch: o.color,
           })),
         ]}
         onChange={(v) => change(v || null)}
@@ -194,7 +210,7 @@ export function CellEditor({
         ) : field.type === "attachment" ? (
           `${Array.isArray(value) ? value.length : 0} 个附件`
         ) : (
-          <FieldValue field={field} value={value} />
+          <FieldValue field={field} value={value} people={people} />
         )}
       </button>
       {edit && (

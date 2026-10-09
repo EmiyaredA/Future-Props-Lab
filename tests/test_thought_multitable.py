@@ -210,7 +210,7 @@ async def test_backup_template_and_copy_remap_all_entities_and_history():
         backup = await c.get(ROOT + "/backup", params={"knowledge_base_id": p["id"]})
         with zipfile.ZipFile(io.BytesIO(backup.content)) as z:
             manifest = json.loads(z.read("manifest.json"))
-        assert manifest["version"] == 8 and note["id"] in manifest["multitables"]
+        assert manifest["version"] == 9 and note["id"] in manifest["multitables"]
         imported = await c.post(
             ROOT + "/imports", files={"upload": ("backup.zip", backup.content, "application/zip")}
         )

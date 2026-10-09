@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
 import type { Field, Table } from "./api";
 import type { components } from "@generated/api";
-import { cleanConfig, uid } from "./model";
 import { Modal } from "./Modal";
 import { FieldForm } from "./FieldForm";
+import { FieldCatalog } from "./FieldCatalog";
 import { needsFieldPreview } from "./fieldChanges";
+import "./field-catalog.css";
 
 export function FieldSettings({
   table,
+  viewId,
   save,
   preview,
   close,
 }: {
   table: Table;
+  viewId?: string;
   save: (table: Table, base: Table) => Promise<void>;
   preview: (
     table: Table,
@@ -28,48 +31,19 @@ export function FieldSettings({
   const [conversion, setConversion] = useState<
     components["schemas"]["ConversionOut"] | null
   >(null);
+  const [selected, setSelected] = useState(draft.fields[0]?.id ?? "");
   useEffect(() => setConversion(null), [draft]);
+  useEffect(() => {
+    if (!draft.fields.some((field) => field.id === selected))
+      setSelected(draft.fields[0]?.id ?? "");
+  }, [draft.fields, selected]);
   const update = (field: Field) =>
     setDraft({
       ...draft,
-      fields: draft.fields.map((f) => (f.id === field.id ? field : f)),
+      fields: draft.fields.map((item) => (item.id === field.id ? field : item)),
     });
-  const remove = (field: Field) => {
-    const ids = new Set(
-      draft.fields.filter((f) => f.id !== field.id).map((f) => f.id),
-    );
-    if (
-      draft.views.some(
-        (v) =>
-          v.config?.stack_field_id === field.id ||
-          v.config?.date_field_id === field.id,
-      )
-    ) {
-      setError("请先更改使用该字段的看板或日历配置");
-      return;
-    }
-    setDraft({
-      ...draft,
-      fields: draft.fields
-        .filter((f) => f.id !== field.id)
-        .map((f, i) => ({ ...f, position: i })),
-      views: draft.views.map((v) => ({
-        ...v,
-        config: cleanConfig(v.config ?? { filter_mode: "all" }, ids),
-      })),
-    });
-    setDeleted(true);
-  };
-  const reorder = (index: number, delta: number) => {
-    const fields = [...draft.fields],
-      next = index + delta;
-    if (index === 0 || next <= 0 || next >= fields.length) return;
-    [fields[index], fields[next]] = [fields[next], fields[index]];
-    setDraft({
-      ...draft,
-      fields: fields.map((f, i) => ({ ...f, position: i })),
-    });
-  };
+  const current =
+    draft.fields.find((field) => field.id === selected) ?? draft.fields[0];
   return (
     <Modal title="字段设置" close={close}>
       <label>
@@ -83,62 +57,24 @@ export function FieldSettings({
       </label>
       <p>类型转换会先校验所有记录。删除字段及其值后，可在表格历史中恢复。</p>
       {error && <p role="alert">{error}</p>}
-      {draft.fields.map((f, i) => (
-        <section className="multitable-field-setting" key={f.id}>
-          <div>
-            <button
-              className="btn"
-              disabled={i <= 1}
-              onClick={() => reorder(i, -1)}
-              aria-label={`上移 ${f.name}`}
-            >
-              ↑
-            </button>
-            <button
-              className="btn"
-              disabled={i === 0 || i === draft.fields.length - 1}
-              onClick={() => reorder(i, 1)}
-              aria-label={`下移 ${f.name}`}
-            >
-              ↓
-            </button>
-            <button
-              className="btn"
-              disabled={i === 0}
-              onClick={() => remove(f)}
-            >
-              删除
-            </button>
-          </div>
+      <div className="multitable-field-workspace">
+        <FieldCatalog
+          table={draft}
+          viewId={viewId}
+          selectedId={current?.id ?? ""}
+          onSelect={setSelected}
+          onChange={setDraft}
+          onError={setError}
+          onRemoved={() => setDeleted(true)}
+        />
+        {current && (
           <FieldForm
-            field={f}
-            primary={i === 0}
-            nameLabel={`字段 ${i + 1} 名称`}
+            field={current}
+            primary={current.position === 0}
             change={update}
           />
-        </section>
-      ))}
-      <button
-        className="btn"
-        disabled={draft.fields.length >= 50}
-        onClick={() =>
-          setDraft({
-            ...draft,
-            fields: [
-              ...draft.fields,
-              {
-                id: uid(),
-                name: "新字段",
-                type: "text",
-                position: draft.fields.length,
-                options: [],
-              },
-            ],
-          })
-        }
-      >
-        新增字段（{draft.fields.length}/50）
-      </button>
+        )}
+      </div>
       {deleted && (
         <p className="multitable-warning">
           将删除选中的字段及所有记录中的对应值。确认后保存。

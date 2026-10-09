@@ -1,0 +1,102 @@
+.multitable-field-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.multitable-catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.multitable-catalog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.multitable-catalog-group,
+.multitable-catalog-row,
+.multitable-catalog-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.multitable-catalog-row {
+  position: relative;
+  min-width: 0;
+}
+
+.multitable-catalog-row > button:first-child {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.multitable-catalog-row.is-selected > button:first-child,
+.multitable-catalog-row > button:first-child:hover {
+  background: var(--surface-hover);
+}
+
+.multitable-catalog-row > button:first-child span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multitable-catalog-menu {
+  position: absolute;
+  z-index: 5;
+  top: 32px;
+  right: 0;
+  min-width: 148px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+.multitable-catalog-menu button {
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.multitable-catalog-menu button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.multitable-catalog-name,
+.multitable-catalog-group {
+  padding: 0 4px 4px;
+}
+
+.multitable-catalog-name input,
+.multitable-catalog-group input,
+.multitable-catalog > input {
+  width: 100%;
+  min-width: 0;
+}

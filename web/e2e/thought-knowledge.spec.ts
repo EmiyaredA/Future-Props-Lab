@@ -595,3 +595,91 @@ test("other workshop shells retain their own navigation and theme controls", asy
     await expect(page).toHaveURL(/\/apps$/);
   }
 });
+
+test("empty knowledge home stacks the title, intro, and directory", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/apps/thought-workshop");
+  await page.getByRole("button", { name: "创建知识库", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "创建知识库", exact: true });
+  await dialog.getByRole("textbox").fill("首页排版");
+  await dialog.getByRole("button", { name: "确认", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "编辑首页", exact: true }),
+  ).toBeVisible();
+  await newDocument(page);
+  await page.getByRole("button", { name: "首页", exact: true }).click();
+  const title = page.getByRole("heading", { name: "首页排版", exact: true });
+  const hint = page.locator(".knowledge-home-empty");
+  const directory = page
+    .locator(".thought-subpages")
+    .getByRole("navigation", { name: "知识库目录" });
+  await expect(title).toBeVisible();
+  await expect(hint).toBeVisible();
+  await expect(directory).toBeVisible();
+  const titleBox = (await title.boundingBox())!;
+  const hintBox = (await hint.boundingBox())!;
+  const directoryBox = (await directory.boundingBox())!;
+  expect(hintBox.y).toBeGreaterThan(titleBox.y + titleBox.height - 2);
+  expect(hintBox.y - (titleBox.y + titleBox.height)).toBeLessThan(40);
+  expect(directoryBox.y).toBeGreaterThan(hintBox.y + hintBox.height - 2);
+  expect(directoryBox.y - (hintBox.y + hintBox.height)).toBeLessThan(88);
+  expect(Math.abs(hintBox.x - titleBox.x)).toBeLessThan(8);
+  expect(Math.abs(directoryBox.x - titleBox.x)).toBeLessThan(8);
+  await expect(
+    page.locator(".knowledge-home-reading.is-empty .thought-editor-canvas"),
+  ).toBeHidden();
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("knowledge-home-stack.png"),
+  });
+
+  const projectId = new URL(page.url()).pathname.split("/").pop()!;
+  const library = await (
+    await page.request.get(`/v1/thought-workshop/knowledge-bases/${projectId}`)
+  ).json();
+  const home = await (
+    await page.request.get(`/v1/thought-workshop/notes/${library.home_note_id}`)
+  ).json();
+  const csrf = (await page.context().cookies()).find(
+    (cookie) => cookie.name === "fpl_csrf",
+  )!.value;
+  const saved = await page.request.put(
+    `/v1/thought-workshop/notes/${library.home_note_id}`,
+    {
+      headers: { "X-CSRF-Token": csrf, Origin: new URL(page.url()).origin },
+      data: {
+        title: home.title,
+        document: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "一句放在标题下面的介绍。" }],
+            },
+          ],
+        },
+        schema_version: home.schema_version,
+        tags: home.tags,
+        favorite: home.favorite,
+        pinned: home.pinned,
+        knowledge_base_id: home.knowledge_base_id,
+        folder_id: home.folder_id,
+        expected_revision: home.revision,
+      },
+    },
+  );
+  expect(saved.ok(), await saved.text()).toBeTruthy();
+  await page.reload();
+  const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
+  await expect(prose).toContainText("一句放在标题下面的介绍。");
+  const proseBox = (await prose.boundingBox())!;
+  const followed = (await directory.boundingBox())!;
+  expect(proseBox.height).toBeLessThan(160);
+  expect(followed.y - (proseBox.y + proseBox.height)).toBeLessThan(80);
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("knowledge-home-with-intro.png"),
+  });
+});

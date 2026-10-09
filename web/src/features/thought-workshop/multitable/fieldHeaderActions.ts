@@ -99,6 +99,12 @@ export function deleteFieldDraft(table: Table, field: Field): Table {
   );
   return {
     ...table,
+    groups: (table.groups ?? [])
+      .map((group) => ({
+        ...group,
+        field_ids: group.field_ids.filter((id) => ids.has(id)),
+      }))
+      .filter((group) => group.field_ids.length > 0),
     fields: table.fields
       .filter((item) => item.id !== field.id)
       .sort((a, b) => a.position - b.position)

@@ -1806,6 +1806,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/integrations/external-connections",
+    "sdk": "client.integrations.list_connections",
+    "document": "/docs.html?page=sdk-reference-integrations#list-connections",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/integrations/mcp",
     "sdk": "client.integrations.mcp_servers",
     "document": "/docs.html?page=sdk-reference-integrations#mcp-servers",
@@ -1855,6 +1862,27 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/integrations/skills/{skill_id}/versions/{version}/files",
+    "sdk": "client.integrations.skill_version_files",
+    "document": "/docs.html?page=sdk-reference-integrations#skill-version-files",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/skills/{skill_id}/versions/{version}/files/content",
+    "sdk": "client.integrations.skill_version_file_content",
+    "document": "/docs.html?page=sdk-reference-integrations#skill-version-file-content",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/skills/{skill_id}/versions/{version}/files/media",
+    "sdk": "client.integrations.skill_version_file_media",
+    "document": "/docs.html?page=sdk-reference-integrations#skill-version-file-media",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md",
     "sdk": "client.integrations.skill_version_markdown",
     "document": "/docs.html?page=sdk-reference-integrations#skill-version-markdown",
@@ -1876,6 +1904,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "PATCH /v1/integrations/external-connections/{connection_id}",
+    "sdk": "client.integrations.update_connection",
+    "document": "/docs.html?page=sdk-reference-integrations#update-connection",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PATCH /v1/integrations/mcp/{integration_id}",
     "sdk": "client.integrations.update_mcp",
     "document": "/docs.html?page=sdk-reference-integrations#update-mcp",
@@ -1893,6 +1928,27 @@
     "http": "PATCH /v1/integrations/tool-apis/{integration_id}",
     "sdk": "client.integrations.update_tool_api",
     "document": "/docs.html?page=sdk-reference-integrations#update-tool-api",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/external-connections",
+    "sdk": "client.integrations.create_connection",
+    "document": "/docs.html?page=sdk-reference-integrations#create-connection",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/external-connections/{connection_id}/check",
+    "sdk": "client.integrations.check_connection",
+    "document": "/docs.html?page=sdk-reference-integrations#check-connection",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/external-connections/{connection_id}/target-check",
+    "sdk": "client.integrations.check_target",
+    "document": "/docs.html?page=sdk-reference-integrations#check-target",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -2821,6 +2877,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/thought-workshop/notes/{note_id}/external-sync/binding",
+    "sdk": "client.thought.unbind",
+    "document": "/docs.html?page=sdk-reference-thought#unbind",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/thought-workshop/preferences/filters/{filter_id}",
     "sdk": "client.thought.delete_filter",
     "document": "/docs.html?page=sdk-reference-thought#delete-filter",
@@ -2922,6 +2985,20 @@
     "http": "GET /v1/thought-workshop/notes/{note_id}/export",
     "sdk": "client.thought.export_note_content",
     "document": "/docs.html?page=sdk-reference-thought#export-note-content",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/external-sync",
+    "sdk": "client.thought.state",
+    "document": "/docs.html?page=sdk-reference-thought#state",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}",
+    "sdk": "client.thought.task",
+    "document": "/docs.html?page=sdk-reference-thought#task",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3080,6 +3157,27 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/external-sync/preview",
+    "sdk": "client.thought.preview",
+    "document": "/docs.html?page=sdk-reference-thought#preview",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks",
+    "sdk": "client.thought.submit",
+    "document": "/docs.html?page=sdk-reference-thought#submit",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile",
+    "sdk": "client.thought.reconcile",
+    "document": "/docs.html?page=sdk-reference-thought#reconcile",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore",
     "sdk": "client.thought.restore_note_history",
     "document": "/docs.html?page=sdk-reference-thought#restore-note-history",
@@ -3202,6 +3300,13 @@
     "http": "PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}",
     "sdk": "client.thought.rename_checkpoint",
     "document": "/docs.html?page=sdk-reference-thought#rename-checkpoint",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/thought-workshop/notes/{note_id}/external-sync/binding",
+    "sdk": "client.thought.bind",
+    "document": "/docs.html?page=sdk-reference-thought#bind",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

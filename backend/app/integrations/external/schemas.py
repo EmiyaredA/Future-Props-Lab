@@ -2,8 +2,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .contracts import ExternalError, document_target
-
 
 class ExternalConnectionInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -45,14 +43,6 @@ class ExternalConnectionList(BaseModel):
 class ExternalTargetInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     url: str = Field(max_length=2048)
-
-    @field_validator("url")
-    @classmethod
-    def target_url(cls, value: str) -> str:
-        try:
-            return document_target(value)[1]
-        except ExternalError as exc:
-            raise ValueError(str(exc)) from None
 
 
 class ExternalTargetOut(BaseModel):

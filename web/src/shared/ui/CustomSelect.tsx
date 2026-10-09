@@ -14,6 +14,7 @@ export type SelectOption = {
   label: string;
   description?: string;
   disabled?: boolean;
+  swatch?: string;
 };
 
 function Chevron({ open }: { open: boolean }) {
@@ -215,7 +216,16 @@ export function CustomSelect({
                 if (!option.disabled) setActiveIndex(index);
               }}
             >
-              <span>{option.label}</span>
+              <span>
+                {option.swatch ? (
+                  <i
+                    className="custom-select-swatch"
+                    style={{ background: option.swatch }}
+                    aria-hidden="true"
+                  />
+                ) : null}
+                {option.label}
+              </span>
               {option.description ? <small>{option.description}</small> : null}
             </button>
           ))}

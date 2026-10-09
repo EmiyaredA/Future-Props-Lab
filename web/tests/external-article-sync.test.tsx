@@ -188,3 +188,38 @@ test("a failed submit stays reviewable in the confirmation and preserves the pre
   await user.keyboard("{Escape}");
   expect(screen.getByText("本地正文")).toBeVisible();
 });
+test("a wiki link is checked and bound as the resolved document", async () => {
+  const user = userEvent.setup();
+  const resolved = "https://my.feishu.cn/docx/doxcnResolved";
+  vi.mocked(sync.getArticleSync).mockResolvedValue({
+    binding: null,
+    tasks: [],
+  });
+  vi.mocked(connections.checkExternalTarget).mockResolvedValue({
+    document_id: "doxcnResolved",
+    url: resolved,
+    title: "调研",
+    text: "正文",
+    fingerprint: "fp",
+    revision: 1,
+    can_write: true,
+  });
+  vi.mocked(sync.bindArticle).mockResolvedValue({ ...binding, url: resolved });
+  show(<ArticleSyncPanel note={note} close={vi.fn()} />);
+  await user.click(await screen.findByRole("combobox", { name: "使用连接" }));
+  await user.click(screen.getByRole("option", { name: "文章发布" }));
+  await user.type(
+    screen.getByRole("textbox", { name: "目标文档链接" }),
+    "https://my.feishu.cn/wiki/YdxcwJ8tolY8qPkOa3Pctfqknnc?from=wiki",
+  );
+  await user.click(screen.getByRole("button", { name: "检查目标" }));
+  expect(await screen.findByText("调研")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "绑定文档" }));
+  await waitFor(() =>
+    expect(sync.bindArticle).toHaveBeenCalledWith(note.id, connection.id, resolved, 0),
+  );
+  expect(connections.checkExternalTarget).toHaveBeenCalledWith(
+    connection.id,
+    "https://my.feishu.cn/wiki/YdxcwJ8tolY8qPkOa3Pctfqknnc?from=wiki",
+  );
+});

@@ -19,7 +19,7 @@ import {
   type View,
   type Scope,
 } from "./api";
-import { display, emptyRow, newTable, uid } from "./model";
+import { display, emptyRow, newTable, personDefaults, uid } from "./model";
 import { useTableDocument } from "./useTableDocument";
 import { GridView } from "./GridView";
 import { KanbanView, CalendarView } from "./BoardViews";
@@ -36,6 +36,7 @@ import { deleteFieldDraft, insertTextField } from "./fieldHeaderActions";
 import { formatFieldValue } from "./formatting";
 import { CsvDialog, HistoryDialog } from "./ExchangeDialogs";
 import "./multitable.css";
+import "./embed.css";
 
 export function TableEditor({
   noteId,
@@ -44,6 +45,7 @@ export function TableEditor({
   scope = {},
   embedded,
   guard,
+  onChooseView,
 }: {
   noteId: string;
   note?: Note;
@@ -51,6 +53,7 @@ export function TableEditor({
   scope?: Scope;
   embedded?: { tableId: string; viewId: string };
   guard?: NavigationGuard;
+  onChooseView?: () => void;
 }) {
   const controller = useTableDocument(noteId, scope, guard),
     client = useQueryClient();
@@ -140,6 +143,12 @@ export function TableEditor({
     enabled: !!table && !!view,
     retry: false,
   });
+  const people = useMemo(() => {
+    const names: Record<string, string> = {};
+    for (const page of results.data?.pages ?? [])
+      Object.assign(names, page.people);
+    return names;
+  }, [results.data]);
   const rows = useMemo(() => {
     const all = new Map(
       (results.data?.pages.flatMap((p) => p.items) ?? []).map((r) => [r.id, r]),
@@ -163,7 +172,7 @@ export function TableEditor({
         results.data?.pages[0].total ?? 0,
         Math.max(-1, ...rows.map((r) => r.position)) + 1,
       ),
-      values,
+      { ...personDefaults(table?.fields ?? []), ...values },
     );
     change([r]);
     setDetailId(r.id);
@@ -369,6 +378,7 @@ export function TableEditor({
           full={(results.data?.pages[0].total ?? 0) >= 5000}
           fields={() => setFieldsOpen(true)}
           settings={(section) => setViewOpen({ view, section })}
+          chooseView={onChooseView}
           action={(action: TableAction) => {
             if (action === "history") setHistoryOpen(true);
             if (action === "import") setCsvOpen(true);
@@ -431,6 +441,7 @@ export function TableEditor({
             readOnly={!canEdit}
             move={move}
             open={(r) => setDetailId(r.id)}
+            people={people}
           />
         ) : view.type === "calendar" ? (
           <CalendarView
@@ -441,6 +452,7 @@ export function TableEditor({
             move={move}
             open={(r) => setDetailId(r.id)}
             add={add}
+            people={people}
           />
         ) : (
           <GridView
@@ -459,6 +471,24 @@ export function TableEditor({
             error={controller.setError}
             scope={cellScope}
             noteId={noteId}
+            people={people}
+            embedded={!!embedded}
+            onColumnWidth={
+              canEdit
+                ? (fieldId, width) =>
+                    putView({
+                      ...view,
+                      config: {
+                        filter_mode: view.config?.filter_mode ?? "all",
+                        ...view.config,
+                        column_widths: {
+                          ...view.config?.column_widths,
+                          [fieldId]: width,
+                        },
+                      },
+                    })
+                : undefined
+            }
             configure={!embedded && canEdit ? putView : undefined}
             editField={
               !embedded && canEdit
@@ -529,6 +559,7 @@ export function TableEditor({
                 readOnly={!canEdit}
                 scope={cellScope}
                 noteId={noteId}
+                people={people}
                 change={(value) =>
                   change([
                     { ...detail, values: { ...detail.values, [f.id]: value } },
@@ -547,6 +578,7 @@ export function TableEditor({
       {fieldsOpen && (
         <FieldSettings
           table={table}
+          viewId={view.id}
           close={() => setFieldsOpen(false)}
           preview={previewFields}
           save={saveFields}

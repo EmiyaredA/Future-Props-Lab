@@ -696,13 +696,20 @@ export function ThoughtWorkshopPage({
                       </button>
                     </div>
                   ) : note.data.is_home && !editHome ? (
-                    <div className="knowledge-home-reading">
+                    <div
+                      className={`knowledge-home-reading${hasHomeContent ? "" : " is-empty"}`}
+                    >
                       <RichEditor
                         documentChrome={documentUI.chrome}
                         beforeContent={
                           <div className="thought-note-heading">
                             <span className="community-meta">知识库首页</span>
                             <h1>{project?.title || note.data.title}</h1>
+                            {!hasHomeContent && (
+                              <p className="knowledge-home-empty">
+                                这里是知识库首页。点击「编辑首页」，写下介绍、目标或常用资料。
+                              </p>
+                            )}
                           </div>
                         }
                         libraryId={note.data.knowledge_base_id}
@@ -716,11 +723,6 @@ export function ThoughtWorkshopPage({
                         onChange={() => {}}
                         onReady={() => {}}
                       />
-                      {!hasHomeContent && (
-                        <p className="knowledge-home-empty">
-                          这里是知识库首页。点击「编辑首页」，写下介绍、目标或常用资料。
-                        </p>
-                      )}
                     </div>
                   ) : note.data.kind === "multitable" ? (
                     <TableEditor

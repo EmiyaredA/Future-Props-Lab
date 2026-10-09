@@ -9,6 +9,7 @@ export const fieldTypes = [
   { value: "url", label: "链接" },
   { value: "attachment", label: "附件" },
   { value: "note", label: "笔记引用" },
+  { value: "person", label: "人员" },
 ];
 export const uid = () => crypto.randomUUID();
 export const newTable = (position: number): Table => ({
@@ -40,7 +41,17 @@ export const newTable = (position: number): Table => ({
       config: { filter_mode: "all" },
     },
   ],
+  groups: [],
 });
+export function personDefaults(fields: Field[]): RecordRow["values"] {
+  const values: RecordRow["values"] = {};
+  for (const field of fields) {
+    const ids = field.config?.default_user_ids ?? [];
+    if (field.type !== "person" || !ids.length) continue;
+    values[field.id] = field.config?.allow_multiple ? ids : ids[0];
+  }
+  return values;
+}
 export const emptyRow = (
   position: number,
   values: RecordRow["values"] = {},
@@ -48,6 +59,10 @@ export const emptyRow = (
 export function display(field: Field, value: unknown): string {
   if (value === null || value === undefined) return "";
   if (field.type === "checkbox") return value ? "✓" : "";
+  if (field.type === "person") {
+    const ids = Array.isArray(value) ? value : [value];
+    return ids.map(String).join("; ");
+  }
   if (field.type === "single" || field.type === "multi") {
     const options = new Map((field.options ?? []).map((o) => [o.id, o.label]));
     return (Array.isArray(value) ? value : [value])
@@ -99,6 +114,17 @@ export function parseCell(
       throw new Error(`${field.name}：请输入 true 或 false`);
     return ["true", "1", "✓"].includes(text.toLowerCase());
   }
+  if (field.type === "person") {
+    const parts = text
+      .split(";")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (parts.some((item) => !/^[A-Za-z0-9_-]{1,36}$/.test(item)))
+      throw new Error(`${field.name}：成员 ID 无效`);
+    if (field.config?.allow_multiple) return [...new Set(parts)];
+    if (parts.length > 1) throw new Error(`${field.name}：只能填写一个成员`);
+    return parts[0];
+  }
   if (["multi", "attachment", "note"].includes(field.type)) {
     const parts = text
       .split(";")
@@ -123,6 +149,60 @@ export function parseCell(
   }
   return text;
 }
+const embedGutter = 48;
+function embedFloor(field: Field, saved: number | undefined): number | null {
+  if (saved) return saved;
+  if (field.type === "checkbox") return 84;
+  if (field.position === 0) return 136;
+  if (field.type === "text") return null;
+  return 128;
+}
+export function fittedColumnWidths(
+  fields: Field[],
+  saved: Record<string, number> | undefined,
+  viewportWidth: number,
+): Record<string, number> {
+  const widths = fields.map((field) => embedFloor(field, saved?.[field.id]));
+  const flexible = widths.flatMap((width, index) =>
+    width === null ? [index] : [],
+  );
+  const available = viewportWidth > 0 ? viewportWidth - embedGutter : 0;
+  const grow = (resolved: number[]) => {
+    if (available <= 0) return resolved;
+    const used = resolved.reduce((sum, width) => sum + width, 0);
+    const index = [...fields.keys()]
+      .reverse()
+      .find(
+        (item) =>
+          fields[item].type === "text" &&
+          saved?.[fields[item].id] === undefined,
+      );
+    if (index !== undefined && used < available)
+      resolved[index] = Math.min(640, resolved[index] + available - used);
+    return resolved;
+  };
+  if (!flexible.length || available <= 0)
+    return Object.fromEntries(
+      grow(
+        widths.map(
+          (width, index) =>
+            width ?? (fields[index].type === "text" ? 200 : 128),
+        ),
+      ).map((width, index) => [fields[index].id, width]),
+    );
+  const fixed = widths.reduce<number>((sum, width) => sum + (width ?? 0), 0);
+  const share = Math.min(
+    640,
+    Math.max(120, Math.floor((available - fixed) / flexible.length)),
+  );
+  for (const index of flexible) widths[index] = share;
+  return Object.fromEntries(
+    grow(widths.map((width) => width ?? 128)).map((width, index) => [
+      fields[index].id,
+      width,
+    ]),
+  );
+}
 export function visibleFields(table: Table, view: View): Field[] {
   const config = view.config ?? { filter_mode: "all" };
   const order = config.column_order ?? [];
@@ -144,6 +224,9 @@ export const cleanConfig = (config: Config, ids: Set<string>): Config => ({
   sorts: (config.sorts ?? []).filter((f) => ids.has(f.field_id)),
   column_order: (config.column_order ?? []).filter((id) => ids.has(id)),
   hidden_fields: (config.hidden_fields ?? []).filter((id) => ids.has(id)),
+  color_rules: (config.color_rules ?? []).filter((rule) =>
+    ids.has(rule.field_id),
+  ),
   column_widths: Object.fromEntries(
     Object.entries(config.column_widths ?? {}).filter(([id]) => ids.has(id)),
   ),

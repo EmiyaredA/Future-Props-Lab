@@ -126,7 +126,7 @@ async def test_display_configuration_preserves_cells_csv_history_and_conflicts()
                 assert copied_number["id"] != number["id"]
                 break
         else:
-            pytest.fail("configured table missing after version 8 import")
+            pytest.fail("configured table missing after version 9 import")
         assert (
             await c.post(base + "/history/1/restore", json={"expected_revision": 2})
         ).status_code == 200
@@ -234,8 +234,8 @@ async def test_version_seven_missing_metadata_normalizes_complete_history():
         with zipfile.ZipFile(io.BytesIO(payload)) as archive:
             files = {name: archive.read(name) for name in archive.namelist()}
         manifest = json.loads(files["manifest.json"])
-        assert manifest["version"] == 8
-        assert convert_v3_folders_to_notes(deepcopy(manifest))["version"] == 8
+        assert manifest["version"] == 9
+        assert convert_v3_folders_to_notes(deepcopy(manifest))["version"] == 9
         manifest["version"] = 7
 
         def legacy(value):

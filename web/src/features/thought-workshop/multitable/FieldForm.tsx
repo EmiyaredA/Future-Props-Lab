@@ -3,6 +3,7 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { fieldTypes, uid } from "./model";
 import { FieldValue } from "./FieldValue";
+import { PersonChoices } from "./PersonField";
 import { dateFormats, formatFieldValue } from "./formatting";
 import "./field-settings.css";
 
@@ -201,13 +202,71 @@ export function FieldForm({
           </label>
         </>
       )}
+      {field.type === "person" && (
+        <>
+          <label className="multitable-field-check">
+            <input
+              type="checkbox"
+              checked={!!field.config?.allow_multiple}
+              aria-label="允许添加多个成员"
+              onChange={(event) => {
+                const ids = field.config?.default_user_ids ?? [];
+                change({
+                  ...field,
+                  options: [],
+                  config: {
+                    allow_multiple: event.target.checked || null,
+                    default_user_ids: event.target.checked
+                      ? ids.length
+                        ? ids
+                        : null
+                      : ids[0]
+                        ? [ids[0]]
+                        : null,
+                  },
+                });
+              }}
+            />
+            允许添加多个成员
+          </label>
+          <div className="multitable-view-field">
+            <span>默认值</span>
+            <PersonChoices
+              label={`${field.name}默认成员`}
+              multiple={!!field.config?.allow_multiple}
+              value={
+                field.config?.allow_multiple
+                  ? (field.config.default_user_ids ?? [])
+                  : (field.config?.default_user_ids?.[0] ?? "")
+              }
+              editable
+              onChange={(next) =>
+                change({
+                  ...field,
+                  config: {
+                    ...field.config,
+                    allow_multiple: field.config?.allow_multiple || null,
+                    default_user_ids: Array.isArray(next)
+                      ? next
+                      : next
+                        ? [next]
+                        : null,
+                  },
+                })
+              }
+            />
+          </div>
+        </>
+      )}
       {example !== null && (
         <div className="multitable-field-example" role="status">
           展示示例：{formatFieldValue(field, example)}
           <small>仅改变显示，原始值保持不变。</small>
         </div>
       )}
-      {!["single", "multi", "date", "number"].includes(field.type) && (
+      {!["single", "multi", "date", "number", "person"].includes(
+        field.type,
+      ) && (
         <p>
           {
             (
@@ -217,6 +276,7 @@ export function FieldForm({
                 url: "保存网页或邮件链接。",
                 attachment: "引用有权访问的托管素材。",
                 note: "引用有权访问的笔记。",
+                person: "保存当前空间的成员。",
               } as Partial<Record<Field["type"], string>>
             )[field.type]
           }

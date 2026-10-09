@@ -12,6 +12,7 @@
 | [delete_mcp](#delete-mcp) | `DELETE /v1/integrations/mcp/{integration_id}` |
 | [delete_skill](#delete-skill) | `DELETE /v1/integrations/skills/{skill_id}` |
 | [delete_tool_api](#delete-tool-api) | `DELETE /v1/integrations/tool-apis/{integration_id}` |
+| [list_connections](#list-connections) | `GET /v1/integrations/external-connections` |
 | [mcp_servers](#mcp-servers) | `GET /v1/integrations/mcp` |
 | [mcp_server](#mcp-server) | `GET /v1/integrations/mcp/{integration_id}` |
 | [mcp_tools](#mcp-tools) | `GET /v1/integrations/mcp/{integration_id}/tools` |
@@ -19,12 +20,19 @@
 | [skill](#skill) | `GET /v1/integrations/skills/{skill_id}` |
 | [skill_versions](#skill-versions) | `GET /v1/integrations/skills/{skill_id}/versions` |
 | [skill_version_content](#skill-version-content) | `GET /v1/integrations/skills/{skill_id}/versions/{version}/content` |
+| [skill_version_files](#skill-version-files) | `GET /v1/integrations/skills/{skill_id}/versions/{version}/files` |
+| [skill_version_file_content](#skill-version-file-content) | `GET /v1/integrations/skills/{skill_id}/versions/{version}/files/content` |
+| [skill_version_file_media](#skill-version-file-media) | `GET /v1/integrations/skills/{skill_id}/versions/{version}/files/media` |
 | [skill_version_markdown](#skill-version-markdown) | `GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md` |
 | [tool_apis](#tool-apis) | `GET /v1/integrations/tool-apis` |
 | [tool_api](#tool-api) | `GET /v1/integrations/tool-apis/{integration_id}` |
+| [update_connection](#update-connection) | `PATCH /v1/integrations/external-connections/{connection_id}` |
 | [update_mcp](#update-mcp) | `PATCH /v1/integrations/mcp/{integration_id}` |
 | [update_skill](#update-skill) | `PATCH /v1/integrations/skills/{skill_id}` |
 | [update_tool_api](#update-tool-api) | `PATCH /v1/integrations/tool-apis/{integration_id}` |
+| [create_connection](#create-connection) | `POST /v1/integrations/external-connections` |
+| [check_connection](#check-connection) | `POST /v1/integrations/external-connections/{connection_id}/check` |
+| [check_target](#check-target) | `POST /v1/integrations/external-connections/{connection_id}/target-check` |
 | [create_mcp](#create-mcp) | `POST /v1/integrations/mcp` |
 | [validate_mcp](#validate-mcp) | `POST /v1/integrations/mcp/{integration_id}/validate` |
 | [create_skill](#create-skill) | `POST /v1/integrations/skills` |
@@ -89,6 +97,24 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `DeleteOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_connections {#list-connections}
+
+`client.integrations.list_connections(...)`
+
+**接口**：`GET /v1/integrations/external-connections`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `ExternalConnectionList`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -224,6 +250,68 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## skill_version_files {#skill-version-files}
+
+`client.integrations.skill_version_files(...)`
+
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `skill_id` | path | string | 是 |
+| `version` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `SkillFileListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## skill_version_file_content {#skill-version-file-content}
+
+`client.integrations.skill_version_file_content(...)`
+
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files/content`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `skill_id` | path | string | 是 |
+| `version` | path | string | 是 |
+| `path` | query | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `SkillFileTextOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## skill_version_file_media {#skill-version-file-media}
+
+`client.integrations.skill_version_file_media(...)`
+
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files/media`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `skill_id` | path | string | 是 |
+| `version` | path | string | 是 |
+| `path` | query | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## skill_version_markdown {#skill-version-markdown}
 
 `client.integrations.skill_version_markdown(...)`
@@ -278,6 +366,32 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ToolApiOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## update_connection {#update-connection}
+
+`client.integrations.update_connection(...)`
+
+**接口**：`PATCH /v1/integrations/external-connections/{connection_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `connection_id` | path | string | 是 |
+| `body` | application/json | ExternalConnectionUpdate | 是 |
+| `body.app_id` | 请求体 | string | 是 |
+| `body.app_secret` | 请求体 | string | 否 |
+| `body.enabled` | 请求体 | boolean | 否 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.name` | 请求体 | string | 是 |
+| `body.provider` | 请求体 | string | 否 |
+
+**响应**：
+- `200` · `application/json` · `ExternalConnectionOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -371,6 +485,70 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ToolApiOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_connection {#create-connection}
+
+`client.integrations.create_connection(...)`
+
+**接口**：`POST /v1/integrations/external-connections`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | ExternalConnectionInput | 是 |
+| `body.app_id` | 请求体 | string | 是 |
+| `body.app_secret` | 请求体 | string | 否 |
+| `body.enabled` | 请求体 | boolean | 否 |
+| `body.name` | 请求体 | string | 是 |
+| `body.provider` | 请求体 | string | 否 |
+
+**响应**：
+- `201` · `application/json` · `ExternalConnectionOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## check_connection {#check-connection}
+
+`client.integrations.check_connection(...)`
+
+**接口**：`POST /v1/integrations/external-connections/{connection_id}/check`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `connection_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ExternalConnectionOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## check_target {#check-target}
+
+`client.integrations.check_target(...)`
+
+**接口**：`POST /v1/integrations/external-connections/{connection_id}/target-check`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `connection_id` | path | string | 是 |
+| `body` | application/json | ExternalTargetInput | 是 |
+| `body.url` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ExternalTargetOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

@@ -8,7 +8,11 @@ import {
   insertTextField,
   sortFieldFirst,
 } from "@features/thought-workshop/multitable/fieldHeaderActions";
-import { newTable } from "@features/thought-workshop/multitable/model";
+import {
+  fittedColumnWidths,
+  newTable,
+} from "@features/thought-workshop/multitable/model";
+import type { Field } from "@features/thought-workshop/multitable/api";
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
     getTotalSize: () => count * 44,
@@ -257,4 +261,49 @@ it("copies formatted dates and numbers as canonical TSV and pastes without losin
     clipboardData: { getData: () => "2026-10-04\t12345.6789" },
   });
   expect(props.change).toHaveBeenCalledWith([{ ...row, values }]);
+});
+it("fits an embedded comparison into the note and resizes without field controls", async () => {
+  const user = userEvent.setup();
+  const fields: Field[] = [
+    { id: "name", name: "方案", type: "text", position: 0, options: [] },
+    { id: "dim", name: "比较维度", type: "text", position: 1, options: [] },
+    { id: "result", name: "比较结果", type: "text", position: 2, options: [] },
+    { id: "proof", name: "验证证据", type: "note", position: 3, options: [] },
+  ];
+  const fitted = fittedColumnWidths(fields, undefined, 700);
+  expect(fitted).toMatchObject({ name: 136, proof: 128 });
+  expect(fitted.dim).toBe(fitted.result);
+  expect(fitted.result).toBeGreaterThan(fitted.name);
+  expect(fitted.name + fitted.dim + fitted.result + fitted.proof).toBe(
+    700 - 48,
+  );
+  expect(fittedColumnWidths(fields, { result: 400 }, 700).result).toBe(400);
+  const onColumnWidth = vi.fn();
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <GridView
+        table={{ ...table, fields }}
+        view={table.views[0]}
+        rows={[]}
+        readOnly={false}
+        change={vi.fn()}
+        error={vi.fn()}
+        open={vi.fn()}
+        scope={{}}
+        noteId="note"
+        positionKey="embed"
+        loadMore={vi.fn()}
+        hasMore={false}
+        embedded
+        onColumnWidth={onColumnWidth}
+      />
+    </QueryClientProvider>,
+  );
+  expect(screen.queryByRole("button", { name: /字段操作/ })).toBeNull();
+  const handle = screen.getByRole("separator", { name: "调整比较结果列宽" });
+  const before = Number(handle.getAttribute("aria-valuenow"));
+  handle.focus();
+  await user.keyboard("{ArrowRight}");
+  expect(onColumnWidth).toHaveBeenCalledOnce();
+  expect(onColumnWidth).toHaveBeenCalledWith("result", before + 20);
 });

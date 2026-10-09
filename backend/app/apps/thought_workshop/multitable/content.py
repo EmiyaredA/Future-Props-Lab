@@ -59,6 +59,9 @@ async def table_nodes(session, workspace_id, table, rows, *, view=None, readable
             return "; ".join(titles.get(id, "文档不可访问") for id in value)
         if f.type == "attachment":
             return f"{len(value)} 个附件（请从原表下载）"
+        if f.type == "person":
+            ids = value if isinstance(value, list) else [value]
+            return "; ".join(str(item) for item in ids)
         if f.type == "checkbox":
             return "是" if value else "否"
         return format_value(f, value)

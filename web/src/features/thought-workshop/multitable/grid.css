@@ -7,9 +7,35 @@
   background: var(--table-bg);
 }
 .multitable-grid-header,
+.multitable-grid-groups,
 .multitable-grid-row {
   display: flex;
   width: 100%;
+}
+.multitable-grid-groups {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  height: 28px;
+  background: var(--table-soft);
+}
+.multitable-grid-groups > div:not(.multitable-row-number) {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.multitable-grid-groups .is-field-group {
+  color: var(--text);
+  border-bottom: 2px solid var(--accent);
+}
+.multitable-grid-scroll:has(.multitable-grid-groups) .multitable-grid-header {
+  top: 28px;
 }
 .multitable-grid-header {
   position: sticky;
@@ -17,6 +43,9 @@
   z-index: 5;
   background: var(--table-soft);
   height: 36px;
+}
+.multitable-grid-row.is-filled {
+  background: color-mix(in srgb, var(--row-fill) 32%, transparent);
 }
 .multitable-grid-header > div:not(.multitable-row-number) {
   position: relative;
@@ -98,21 +127,39 @@
 }
 .multitable-column-resize {
   position: absolute;
-  right: -4px;
+  right: 0;
   top: 0;
   bottom: 0;
-  width: 8px;
+  width: 12px;
   cursor: col-resize;
   touch-action: none;
   user-select: none;
-  z-index: 4;
+  z-index: 6;
 }
 .multitable-column-resize::after {
   content: "";
   position: absolute;
-  inset: 6px 3px;
+  top: 8px;
+  bottom: 8px;
+  right: 5px;
+  width: 2px;
   background: transparent;
   border-radius: 2px;
+}
+.multitable-grid-scroll.is-embedded .multitable-grid-row > [role="gridcell"] {
+  align-items: flex-start;
+}
+.multitable-grid-scroll.is-embedded .multitable-cell-trigger {
+  height: auto;
+  white-space: normal;
+  text-overflow: clip;
+}
+.multitable-grid-scroll.is-embedded .multitable-value.is-text {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 18px;
 }
 .multitable-column-resize:hover::after,
 .multitable-column-resize:focus-visible::after {

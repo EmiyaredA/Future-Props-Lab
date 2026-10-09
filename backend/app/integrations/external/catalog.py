@@ -136,10 +136,21 @@ class ExternalConnections:
         await self.session.commit()
         return connection_out(await self.get(id))
 
-    async def target(self, id, url):
-        document_id, url = document_target(url)
+    async def resolve_document(self, id, url) -> tuple[str, str]:
+        parsed = document_target(url)
+        if parsed.kind == "docx":
+            return parsed.token, parsed.url
         client = await self.client(id)
         try:
+            return await client.resolve(parsed)
+        except httpx.HTTPError:
+            raise ExternalError("连接飞书失败，请稍后重试", 502) from None
+
+    async def target(self, id, url):
+        parsed = document_target(url)
+        client = await self.client(id)
+        try:
+            document_id, url = await client.resolve(parsed)
             remote = await client.read(document_id)
             writable = await client.can_write(document_id)
         except httpx.HTTPError:

@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,6 +16,7 @@ import type { Field, RecordRow, Table, View, Scope } from "./api";
 import {
   display,
   emptyRow,
+  fittedColumnWidths,
   parseCell,
   visibleFields,
   readTsv,
@@ -19,6 +26,9 @@ import { ColumnResize } from "./ColumnResize";
 import { formatFieldValue } from "./formatting";
 import { FieldIcon } from "./FieldValue";
 import { CellEditor } from "./CellEditor";
+import { columnBands } from "./columnBands";
+import { rowFill } from "./colorRules";
+import type { People } from "./formatting";
 import { FieldHeaderMenu } from "./FieldHeaderMenu";
 import "./grid.css";
 
@@ -40,6 +50,9 @@ export function GridView({
   positionKey,
   loadMore,
   hasMore,
+  embedded = false,
+  onColumnWidth,
+  people = {},
 }: {
   table: Table;
   view: View;
@@ -58,7 +71,11 @@ export function GridView({
   positionKey: string;
   loadMore: () => void;
   hasMore: boolean;
+  embedded?: boolean;
+  onColumnWidth?: (fieldId: string, width: number) => void;
+  people?: People;
 }) {
+  const rowSize = embedded ? 52 : 44;
   const container = useRef<HTMLDivElement>(null),
     [anchor, setAnchor] = useState<[number, number] | null>(null),
     [end, setEnd] = useState<[number, number] | null>(null);
@@ -99,9 +116,9 @@ export function GridView({
       wanted = restoreOffset.current;
     if (!element || wanted === null || !rows.length) return;
     element.scrollTop = wanted;
-    if (wanted > rows.length * 44 - 480 && hasMore) loadMore();
+    if (wanted > rows.length * rowSize - 480 && hasMore) loadMore();
     else restoreOffset.current = null;
-  }, [rows.length, positionKey, loadMore, hasMore]);
+  }, [rows.length, positionKey, loadMore, hasMore, rowSize]);
   const [viewportWidth, setViewportWidth] = useState(0);
   useEffect(() => {
     const element = container.current;
@@ -112,11 +129,19 @@ export function GridView({
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const compactName = viewportWidth > 0 && viewportWidth < 560;
+  const compactName = !embedded && viewportWidth > 0 && viewportWidth < 560;
+  const fitted = useMemo(
+    () =>
+      embedded
+        ? fittedColumnWidths(fields, view.config?.column_widths, viewportWidth)
+        : null,
+    [embedded, fields, view.config?.column_widths, viewportWidth],
+  );
   const columns = useMemo<ColumnDef<RecordRow>[]>(
     () =>
       fields.map((field) => {
         const saved =
+          fitted?.[field.id] ??
           view.config?.column_widths?.[field.id] ??
           (field.position === 0 ? 320 : 180);
         const width = resizing?.id === field.id ? resizing.width : saved;
@@ -125,12 +150,19 @@ export function GridView({
           header: field.name,
           minSize: 80,
           size:
-            field.position === 0 && viewportWidth > 0 && viewportWidth < 560
+            field.position === 0 && compactName
               ? Math.min(width, Math.max(120, Math.floor(viewportWidth / 2)))
               : width,
         };
       }),
-    [fields, view.config?.column_widths, resizing, viewportWidth],
+    [
+      fields,
+      fitted,
+      view.config?.column_widths,
+      resizing,
+      compactName,
+      viewportWidth,
+    ],
   );
   const grid = useReactTable({
     data: rows,
@@ -141,7 +173,7 @@ export function GridView({
   const virtual = useVirtualizer({
     count: rows.length,
     getScrollElement: () => container.current,
-    estimateSize: (index) => (startsGroup(index) ? 72 : 44),
+    estimateSize: (index) => (startsGroup(index) ? rowSize + 28 : rowSize),
     overscan: 8,
   });
   const range =
@@ -156,7 +188,7 @@ export function GridView({
   return (
     <div
       ref={container}
-      className="multitable-grid-scroll"
+      className={`multitable-grid-scroll${embedded ? " is-embedded" : ""}`}
       role="region"
       aria-label="表格记录"
       tabIndex={0}
@@ -239,6 +271,29 @@ export function GridView({
           minWidth: columns.reduce((n, c) => n + (c.size ?? 180), 48),
         }}
       >
+        {columnBands(fields, table.groups).some((band) => band.name) && (
+          <div role="row" className="multitable-grid-groups">
+            <div className="multitable-row-number" />
+            {columnBands(fields, table.groups).map((band) => {
+              const width = band.fieldIds.reduce((sum, id) => {
+                const index = fields.findIndex((field) => field.id === id);
+                return (
+                  sum +
+                  (grid.getHeaderGroups()[0]?.headers[index]?.getSize() ?? 0)
+                );
+              }, 0);
+              return (
+                <div
+                  key={band.key}
+                  className={band.name ? "is-field-group" : undefined}
+                  style={{ width }}
+                >
+                  {band.name}
+                </div>
+              );
+            })}
+          </div>
+        )}
         <div role="row" className="multitable-grid-header">
           <div className="multitable-row-number" role="columnheader">
             #
@@ -272,30 +327,35 @@ export function GridView({
                     {flexRender(h.column.columnDef.header, h.getContext())}
                   </span>
                 )}
-                {configure && !(compactName && field.position === 0) && (
-                  <ColumnResize
-                    name={field.name}
-                    width={h.getSize()}
-                    preview={(width) =>
-                      setResizing(
-                        width === null ? null : { id: field.id, width },
-                      )
-                    }
-                    commit={(width) =>
-                      configure({
-                        ...view,
-                        config: {
-                          filter_mode: view.config?.filter_mode ?? "all",
-                          ...view.config,
-                          column_widths: {
-                            ...view.config?.column_widths,
-                            [field.id]: width,
+                {(onColumnWidth || configure) &&
+                  !(compactName && field.position === 0) && (
+                    <ColumnResize
+                      name={field.name}
+                      width={h.getSize()}
+                      preview={(width) =>
+                        setResizing(
+                          width === null ? null : { id: field.id, width },
+                        )
+                      }
+                      commit={(width) => {
+                        if (onColumnWidth) {
+                          onColumnWidth(field.id, width);
+                          return;
+                        }
+                        configure?.({
+                          ...view,
+                          config: {
+                            filter_mode: view.config?.filter_mode ?? "all",
+                            ...view.config,
+                            column_widths: {
+                              ...view.config?.column_widths,
+                              [field.id]: width,
+                            },
                           },
-                        },
-                      })
-                    }
-                  />
-                )}
+                        });
+                      }}
+                    />
+                  )}
               </div>
             );
           })}
@@ -303,18 +363,24 @@ export function GridView({
         <div style={{ height: virtual.getTotalSize(), position: "relative" }}>
           {virtual.getVirtualItems().map((item) => {
             const row = grid.getRowModel().rows[item.index];
+            const fill = rowFill(view, table.fields, row.original);
             return (
               <div
                 key={row.id}
                 role="row"
                 aria-rowindex={item.index + 2}
-                className="multitable-grid-row"
-                style={{
-                  position: "absolute",
-                  top: item.start,
-                  height: item.size,
-                  paddingTop: startsGroup(item.index) ? 28 : 0,
-                }}
+                className={
+                  fill ? "multitable-grid-row is-filled" : "multitable-grid-row"
+                }
+                style={
+                  {
+                    position: "absolute",
+                    top: item.start,
+                    height: item.size,
+                    paddingTop: startsGroup(item.index) ? 28 : 0,
+                    "--row-fill": fill,
+                  } as CSSProperties
+                }
               >
                 {startsGroup(item.index) && groupField && (
                   <div className="multitable-group-heading">
@@ -322,6 +388,7 @@ export function GridView({
                     {formatFieldValue(
                       groupField,
                       row.original.values[groupField.id],
+                      people,
                     ) || "未分配"}
                   </div>
                 )}
@@ -414,6 +481,7 @@ export function GridView({
                       readOnly={readOnly}
                       scope={scope}
                       noteId={noteId}
+                      people={people}
                       change={(value) =>
                         change([
                           {

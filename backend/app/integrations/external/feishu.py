@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import json
+import re
 from time import monotonic
 
 import httpx
 
-from .contracts import ConnectionCredentials, ExternalError, ImageSource, RemoteDocument
+from .contracts import (
+    ConnectionCredentials,
+    DocumentTarget,
+    ExternalError,
+    ImageSource,
+    RemoteDocument,
+)
 
 BASE = "https://open.feishu.cn/open-apis"
 TOKEN_EXPIRED = {99991663}
@@ -49,7 +56,11 @@ class FeishuClient:
         if response.is_error or value.get("code") != 0:
             code = value.get("code", response.status_code)
             # Provider messages and request bodies may contain credentials. Never expose them.
-            raise ExternalError(f"飞书请求失败（错误码 {code}），请检查应用权限与目标文档授权", 502)
+            raise ExternalError(
+                f"飞书请求失败（错误码 {code}），请检查应用权限与目标文档授权",
+                502,
+                provider_code=code,
+            )
         return value
 
     async def request(self, method: str, path: str, **kwargs) -> dict:
@@ -75,6 +86,31 @@ class FeishuClient:
                 raise ExternalError("飞书返回了无效响应", 502)
             return data
         raise ExternalError("飞书访问凭证已失效", 502)
+
+    async def resolve(self, target: DocumentTarget) -> tuple[str, str]:
+        if target.kind == "docx":
+            return target.token, target.url
+        try:
+            data = await self.request(
+                "GET", "/wiki/v2/spaces/get_node", params={"token": target.token}
+            )
+        except ExternalError as exc:
+            if exc.provider_code is None:
+                raise
+            raise ExternalError(
+                "无法读取该知识库节点（错误码 "
+                f"{exc.provider_code}）。请确认链接有效，为应用开通知识库节点读取权限，并把该节点授权给应用",
+                502,
+            ) from None
+        node = data.get("node")
+        if not isinstance(node, dict):
+            raise ExternalError("飞书返回了无效的知识库节点", 502)
+        if node.get("obj_type") != "docx":
+            raise ExternalError("该知识库节点不是新版文档。请打开新版文档后重新复制链接")
+        document_id = node.get("obj_token")
+        if not isinstance(document_id, str) or not re.fullmatch(r"[a-zA-Z0-9]+", document_id):
+            raise ExternalError("飞书返回了无效的文档标识", 502)
+        return document_id, f"https://{target.host}/docx/{document_id}"
 
     async def read(self, document_id: str) -> RemoteDocument:
         prefix = f"/docx/v1/documents/{document_id}"

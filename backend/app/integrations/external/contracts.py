@@ -9,9 +9,16 @@ from urllib.parse import urlsplit
 
 
 class ExternalError(Exception):
-    def __init__(self, message: str, status: int = 422, code: str = "external_connection_error"):
+    def __init__(
+        self,
+        message: str,
+        status: int = 422,
+        code: str = "external_connection_error",
+        *,
+        provider_code: int | None = None,
+    ):
         super().__init__(message)
-        self.status, self.code = status, code
+        self.status, self.code, self.provider_code = status, code, provider_code
 
 
 def fingerprint(value: Any) -> str:
@@ -20,12 +27,24 @@ def fingerprint(value: Any) -> str:
     ).hexdigest()
 
 
-def document_target(url: str) -> tuple[str, str]:
+@dataclass(frozen=True)
+class DocumentTarget:
+    kind: str
+    token: str
+    host: str
+
+    @property
+    def url(self) -> str:
+        return f"https://{self.host}/{self.kind}/{self.token}"
+
+
+def document_target(url: str) -> DocumentTarget:
     try:
         parsed = urlsplit(url.strip())
         port = parsed.port
     except ValueError:
         raise ExternalError("文档链接格式不正确") from None
+    match = re.fullmatch(r"/(docx|wiki)/([a-zA-Z0-9]+)/?", parsed.path)
     if (
         parsed.scheme != "https"
         or not parsed.hostname
@@ -33,11 +52,12 @@ def document_target(url: str) -> tuple[str, str]:
         or parsed.username
         or parsed.password
         or port not in {None, 443}
-        or not re.fullmatch(r"/docx/[a-zA-Z0-9]+/?", parsed.path)
+        or match is None
     ):
-        raise ExternalError("请填写飞书新版 /docx/ 文档的 HTTPS 链接；暂不支持知识库链接")
-    document_id = parsed.path.strip("/").split("/")[1]
-    return document_id, f"https://{parsed.hostname}/docx/{document_id}"
+        raise ExternalError(
+            "请填写飞书新版文档的 HTTPS 链接，可以是 /docx/ 文档或知识库中的 /wiki/ 节点"
+        )
+    return DocumentTarget(match.group(1), match.group(2), parsed.hostname)
 
 
 @dataclass(frozen=True)

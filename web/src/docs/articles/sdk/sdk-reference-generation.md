@@ -35,6 +35,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `project_id` | query | string / null | 否 |
 | `page` | query | integer | 否 |
 | `page_size` | query | integer | 否 |
+| `current_nodes` | query | boolean | 否 |
 
 **响应**：
 - `200` · `application/json` · `GenerationBatchListOut`
@@ -96,6 +97,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `status` | query | queued / submitting / pending / processing / completed / failed / null | 否 |
 | `page` | query | integer | 否 |
 | `page_size` | query | integer | 否 |
+| `current_nodes` | query | boolean | 否 |
 
 **响应**：
 - `200` · `application/json` · `GenerationTaskListOut`
@@ -180,6 +182,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.model_id` | 请求体 | string | 是 |
 | `body.prompt` | 请求体 | string | 是 |
 | `body.reference_asset_id` | 请求体 | string / null | 否 |
+| `body.reference_asset_ids` | 请求体 | array | 否 |
 | `body.seed` | 请求体 | integer / null | 否 |
 | `body.size` | 请求体 | string | 否 |
 

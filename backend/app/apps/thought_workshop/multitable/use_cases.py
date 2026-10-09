@@ -14,6 +14,7 @@ from app.runtime.time import utc_now
 
 from . import query as queries
 from .models import DataChange, DataField, DataRecord, DataTable, DataView
+from .query import active_members, person_ids
 from .schemas import BatchOut, ConversionOut, Structure
 from .storage import asset_ids, historical, journal, persist, snapshot
 from .validation import convert_records, validate_snapshot, validate_table
@@ -50,7 +51,7 @@ class Multitable:
 
     async def records(self, note_id, table_id, query):
         table, revision = await self.table(note_id, table_id)
-        return await queries.records(self.session, table, query, revision)
+        return await queries.records(self.session, table, query, revision, self.workspace_id)
 
     async def conversion(self, note_id, body):
         before = await snapshot(self.session, (await self.note(note_id)).id)
@@ -187,8 +188,28 @@ class Multitable:
         ):
             raise ThoughtError("不能跨表移动记录", 422, "invalid_id")
 
+    async def validate_people(self, before, after):
+        def collect(state):
+            found = set()
+            for table in state.tables:
+                for field in table.fields:
+                    if field.type != "person":
+                        continue
+                    found.update(field.config.default_user_ids or [])
+                    for record in state.records.get(table.id, []):
+                        found.update(person_ids(record.values.get(field.id)))
+            return found
+
+        introduced = collect(after) - collect(before)
+        if not introduced:
+            return
+        members = await active_members(self.session, self.workspace_id, introduced)
+        if introduced - members.keys():
+            raise ThoughtError("只能选择当前空间的成员", 422, "invalid_member")
+
     async def commit(self, n, expected, before, after, *, checkpoint=False):
         validate_snapshot(after)
+        await self.validate_people(before, after)
         await self.validate_refs(after, before)
         n = await self.reserve(n, expected)
         await persist(self.session, n.id, before, after)

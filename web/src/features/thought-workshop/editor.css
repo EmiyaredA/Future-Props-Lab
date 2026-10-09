@@ -186,20 +186,38 @@
 }
 .thought-prose .tableWrapper {
   overflow-x: auto;
+  max-width: 100%;
+  min-width: 0;
   margin: 20px 0;
 }
 .thought-prose table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.thought-prose.document-prose :is(td, th) > :is(p, ul, ol),
+.thought-prose :is(td, th) > :is(p, ul, ol) {
+  margin: 0;
+}
+.thought-prose :is(td, th) > :is(p, ul, ol) + :is(p, ul, ol) {
+  margin-top: 0.4em;
+}
+.thought-prose.document-prose table[data-fixed-columns],
+.thought-prose table[data-fixed-columns] {
+  width: max-content;
 }
 .thought-prose td,
 .thought-prose th {
   border: 1px solid var(--border-strong);
-  padding: 8px 12px;
+  padding: 6px 10px;
   min-width: 60px;
   position: relative;
   vertical-align: top;
+}
+.thought-prose.document-prose :is(td, th) {
+  padding: 6px 10px;
 }
 .thought-prose th {
   background: var(--surface-soft);
