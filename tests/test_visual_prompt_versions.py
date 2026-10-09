@@ -7,10 +7,15 @@ from pydantic import ValidationError
 
 from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasAudioGenerationDraft,
+    VisualCanvasDocumentPutIn,
     VisualCanvasImageGenerationDraft,
     VisualCanvasVideoGenerationDraft,
 )
+from app.apps.visual_workshop.snapshots import _remap_canvas
+from app.capabilities.identity.principal import StudioPrincipal
+from app.deps import SessionDep, require_studio_auth
 from app.main import app
+from app.orm import bind_workspace
 from db.migrations import apply_migrations
 from db.migrations.registry import MIGRATIONS
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
@@ -219,3 +224,78 @@ def test_prompt_migration_preserves_drafts_layout_and_is_applied_once(tmp_path):
         assert (
             connection.execute("SELECT nodes FROM visual_canvas_documents").fetchone()[0] == content
         )
+
+
+def test_snapshot_remaps_shared_mention_names_without_changing_version_text():
+    draft = {
+        **variants(),
+        "reference_asset_ids": ["source"],
+        "prompt_reference_names": {"source": "舞蹈参考.png"},
+    }
+    canvas = VisualCanvasDocumentPutIn(
+        expected_revision=0,
+        nodes=[
+            {
+                "id": "target",
+                "kind": "video",
+                "title": "节点",
+                "position": {"x": 0, "y": 0},
+                "generation_draft": draft,
+            }
+        ],
+    )
+    nodes, _, _ = _remap_canvas(canvas, {"source": "imported"}, {}, {})
+    restored = nodes[0]["generation_draft"]
+    assert restored["prompt_reference_names"] == {"imported": "舞蹈参考.png"}
+    assert restored["reference_asset_ids"] == ["imported"]
+    assert restored["prompt_versions"] == draft["prompt_versions"]
+    assert restored["active_prompt_version_id"] == draft["active_prompt_version_id"]
+
+
+@pytest.mark.asyncio
+async def test_prompt_versions_cannot_be_read_or_changed_from_other_workspace():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = await client.post(
+            "/v1/visual-workshop/projects", json={"title": "私有提示词", "kind": "canvas"}
+        )
+        path = f"/v1/visual-workshop/projects/{project.json()['id']}/canvas"
+        body = {
+            "expected_revision": 0,
+            "nodes": [
+                {
+                    "id": "target",
+                    "kind": "image",
+                    "title": "节点",
+                    "position": {"x": 0, "y": 0},
+                    "generation_draft": variants(),
+                }
+            ],
+            "edges": [],
+        }
+        saved = await client.put(path, json=body)
+        assert saved.status_code == 200
+
+        async def other_workspace(session: SessionDep):
+            bind_workspace(session, "other-workspace")
+            return StudioPrincipal(
+                user_id="other",
+                workspace_id="other-workspace",
+                membership_id="other",
+                workspace_access="owner",
+                member_role="owner",
+                is_platform_admin=False,
+                must_change_password=False,
+                auth_kind="session",
+                scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
+                session_id="other",
+            )
+
+        app.dependency_overrides[require_studio_auth] = other_workspace
+        try:
+            assert (await client.get(path)).status_code == 404
+            body["expected_revision"] = saved.json()["revision"]
+            assert (await client.put(path, json=body)).status_code == 404
+        finally:
+            app.dependency_overrides.pop(require_studio_auth, None)

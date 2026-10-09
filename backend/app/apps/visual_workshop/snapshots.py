@@ -257,6 +257,12 @@ def _remap_canvas(
             draft[key] = [
                 mapped_asset(value, f"canvas.nodes[{index}].{key}") for value in draft.get(key, [])
             ]
+        if "prompt_reference_names" in draft:
+            draft["prompt_reference_names"] = {
+                asset_ids[source_id]: name
+                for source_id, name in draft["prompt_reference_names"].items()
+                if source_id in asset_ids
+            }
         source_model = draft.get("model_id")
         if source_model:
             draft["model_id"] = model_ids.get(source_model)

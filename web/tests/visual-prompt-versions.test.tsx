@@ -235,14 +235,43 @@ test.each(["image", "video", "audio"] as const)(
       throw new Error("画布存在保存冲突");
     });
     mount(kind, prepare);
-    await waitFor(() => expect(getGenerationOptions).toHaveBeenCalled());
-    await act(async () => {});
+    await screen.findByText(`Test ${kind}`, {
+      selector: "summary span, summary, .video-model-menu button",
+    });
     fireEvent.submit(editor(kind).closest("form")!);
     await waitFor(() =>
       expect(screen.getByText(/画布存在保存冲突/)).toBeInTheDocument(),
     );
     expect(createGenerationTask).not.toHaveBeenCalled();
     expect(text(kind)).toBe("第二版");
+  },
+);
+
+test.each(["image", "video", "audio"] as const)(
+  "%s freezes the selected prompt while awaiting the save queue",
+  async (kind) => {
+    let finish!: (revision: number) => void;
+    const prepare = vi.fn(
+      () =>
+        new Promise<number>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    mount(kind, prepare);
+    await screen.findByText(`Test ${kind}`, {
+      selector: "summary span, summary, .video-model-menu button",
+    });
+    fireEvent.submit(editor(kind).closest("form")!);
+    await waitFor(() => expect(prepare).toHaveBeenCalledTimes(1));
+    expect(createGenerationTask).not.toHaveBeenCalled();
+    await select("v1");
+    expect(text(kind)).toBe("第一版");
+    await act(async () => finish(9));
+    await waitFor(() => expect(createGenerationTask).toHaveBeenCalled());
+    expect(vi.mocked(createGenerationTask).mock.calls[0][1]).toMatchObject({
+      prompt: "第二版",
+      expected_canvas_revision: 9,
+    });
   },
 );
 
@@ -275,7 +304,7 @@ test("synchronous edits and switching do not depend on React renders or an old b
   expect(save).toHaveBeenCalledTimes(4);
 });
 
-test("the last version cannot be deleted and the twenty-version limit disables creation", async () => {
+test("the last version cannot be deleted and the twenty-version limit prevents creation", async () => {
   const save = vi.fn();
   const { result } = renderHook(() => usePromptVersions(undefined, save));
   act(() => result.current.remove("v1"));

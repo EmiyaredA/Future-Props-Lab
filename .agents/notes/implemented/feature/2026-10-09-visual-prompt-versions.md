@@ -14,6 +14,8 @@ Status: implemented
 
 迁移 r0089_visual_prompt_versions 仅补齐已有媒体草稿的 v1，保留文字、配置、布局、连线及原 revision。旧项目包通过 schema 归一化；迁移不导入应用模块，正式数据只通过已登记迁移入口升级。
 
+项目包导入同步重映射共用 prompt_reference_names 的素材 ID，使所有文字版本继续识别已改名素材块；不改变版本文字或当前选择。未包含在包内的失效素材名称不取得导入后素材的身份。
+
 ## Alternatives considered
 
 - 手动历史快照：不能直接编辑多个并行方案，也需要额外恢复动作。
@@ -29,3 +31,5 @@ Status: implemented
 - tests/test_visual_prompt_versions.py 覆盖三类 schema、旧请求、操作批次、CAS 冲突、项目包往返和隔离迁移。
 - web/tests/visual-prompt-versions.test.tsx 覆盖三类编辑器、管理动作、失败阻止提交、同步切换和副本独立性；参考排序测试验证非当前版本编号。
 - web/e2e/visual-prompt-versions.spec.ts 覆盖明暗主题、窄屏、真实 API 保存、刷新及视图切换；既有生成保存和看板编辑旅程继续验证原流程。
+
+相关后端与 SDK 回归、组件测试、12 项浏览器旅程及构建通过。OpenAPI、Web 和 SDK 模型生成校验通过；SDK 文档生成检查仍报告既有文档与覆盖清单过期，保留无关受保护产品文档。Agent Note 使用 node --import tsx 执行同一验证脚本，避开受限环境内 tsx CLI 的 IPC 监听。
