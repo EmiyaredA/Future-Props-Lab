@@ -271,7 +271,6 @@ export function DocsApp() {
             <Search size={18} />
             <kbd>⌘ K</kbd>
           </button>
-          <a href="/">返回 Studio</a>
           <ThemeToggle compact />
         </div>
       </header>

@@ -158,7 +158,6 @@
     gap: 16px;
   }
 
-  .docs-actions > a,
   .docs-primary-nav {
     display: none;
   }
@@ -196,8 +195,7 @@
   }
 
   .docs-brand small,
-  .docs-search,
-  .docs-actions > a {
+  .docs-search {
     display: none;
   }
 

@@ -384,10 +384,9 @@ test("renders and searches the documentation center", async () => {
   expect(
     await screen.findByRole("heading", { name: "欢迎使用未来道具研究所" }),
   ).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "返回 Studio" })).toHaveAttribute(
-    "href",
-    "/",
-  );
+  expect(
+    screen.queryByRole("link", { name: "返回 Studio" }),
+  ).not.toBeInTheDocument();
   expect(screen.getByRole("group", { name: "外观模式" })).toBeInTheDocument();
   expect(
     screen.getByRole("complementary", { name: "本页目录" }),
