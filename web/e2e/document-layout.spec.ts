@@ -99,7 +99,6 @@ test("用户编辑官方同款首页、排序保存、发布与权限过滤", as
     );
   }
   await page.goto(`/apps/thought-workshop/knowledge-bases/${library.id}`);
-  await page.getByRole("button", { name: "编辑首页", exact: true }).click();
   const body = page.getByRole("textbox", { name: "笔记正文", exact: true });
   await body.click();
   await page.keyboard.type("/知识库首页");

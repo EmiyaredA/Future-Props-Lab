@@ -101,7 +101,6 @@
   padding: 22px 0 0;
   border-top: 1px solid var(--border);
 }
-.knowledge-home-reading:has(.has-docked-outline) + .thought-subpages,
 .thought-edit-workspace:has(.has-docked-outline) + .thought-subpages {
   width: min(820px, calc(100% - 316px));
   margin-left: max(32px, calc((100% - 252px - min(820px, 100% - 316px)) / 2));
@@ -211,7 +210,6 @@
 }
 @media (max-width: 700px) {
   .thought-subpages,
-  .knowledge-home-reading:has(.has-docked-outline) + .thought-subpages,
   .thought-edit-workspace:has(.has-docked-outline) + .thought-subpages {
     width: calc(100% - 32px);
     margin-right: auto;

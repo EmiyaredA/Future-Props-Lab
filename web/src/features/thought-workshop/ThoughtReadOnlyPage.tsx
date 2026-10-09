@@ -229,7 +229,6 @@ export function ThoughtReadOnlyPage({
             )}
             <DocumentRelations
               id={note.data.id}
-              isHome={note.data.is_home}
               documents={directory.data?.documents ?? []}
               open={open}
             />

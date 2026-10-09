@@ -1,4 +1,3 @@
-import type { JSONContent } from "@tiptap/react";
 import {
   lazy,
   Suspense,
@@ -68,9 +67,6 @@ const TableEditor = lazy(() =>
 const NoteEditorPane = lazy(() =>
   import("./NoteEditorPane").then((m) => ({ default: m.NoteEditorPane })),
 );
-const RichEditor = lazy(() =>
-  import("./RichEditor").then((m) => ({ default: m.RichEditor })),
-);
 
 type Input = {
   title: string;
@@ -125,7 +121,6 @@ export function ThoughtWorkshopPage({
   const [moveParent, setMoveParent] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<NoteSummary | null>(null);
   const [drawer, setDrawer] = useState(false);
-  const [editHome, setEditHome] = useState(false);
   const [coverProject, setCoverProject] = useState<KnowledgeBase | null>(null);
   const [noteChrome, setNoteChrome] = useState<NoteEditorChrome | null>(null);
   const onNoteChromeChange = useCallback((chrome: NoteEditorChrome | null) => {
@@ -139,10 +134,6 @@ export function ThoughtWorkshopPage({
     },
     [registerNavigationGuard],
   );
-  const toggleHome = () => {
-    const proceed = () => setEditHome((value) => !value);
-    if (!editorGuard.current?.(proceed)) proceed();
-  };
   const coverInput = useRef<HTMLInputElement>(null);
   const importInput = useRef<HTMLInputElement>(null);
   const focus = useDrawerFocus(() => setDrawer(false), drawer);
@@ -166,18 +157,13 @@ export function ThoughtWorkshopPage({
     queryFn: ({ signal }) => getNote(currentId!, signal),
     enabled: !!currentId,
   });
-  const hasHomeContent = (
-    note.data?.document as JSONContent | undefined
-  )?.content?.some(
-    (block) => block.type !== "paragraph" || block.content?.length,
-  );
   const filtered = useNoteResults(projectId, query, view, browsing);
   useEffect(() => {
     setQuery("");
     setView("all");
     setBrowsing(false);
     setDrawer(false);
-    setEditHome(false);
+    setReading(false);
     setTrash(false);
   }, [projectId, noteId]);
   useEffect(() => {
@@ -352,7 +338,7 @@ export function ThoughtWorkshopPage({
     { value: "export", label: "导出知识库" },
     { value: "trash", label: "移入回收站" },
   ];
-  const noteMode = (!!noteId || editHome) && !browsing;
+  const noteMode = !browsing && (!!noteId || !!projectId);
   const noteMoreAction = (value: string) => {
     if (value === "library-html") libraryHtml();
     if (value === "copy" && note.data && !note.data.is_home)
@@ -503,7 +489,7 @@ export function ThoughtWorkshopPage({
         )}
         <KnowledgeTopbar
           onExternalSync={
-            canSync && noteId && note.data?.kind === "note"
+            canSync && noteMode && note.data?.kind === "note"
               ? () => {
                   void (
                     noteChrome ? noteChrome.save() : Promise.resolve(note.data)
@@ -516,7 +502,6 @@ export function ThoughtWorkshopPage({
               : undefined
           }
           documentToolsRef={documentUI.toolsRef}
-          homeMode={!!project && !noteId && !browsing}
           noteMode={noteMode}
           busy={busy}
           projectTitle={project?.title}
@@ -534,7 +519,7 @@ export function ThoughtWorkshopPage({
                 : "为想法建立一个空间，让知识有序生长。"
               : undefined
           }
-          currentLabel={noteId ? note.data?.title || "文档" : "首页"}
+          currentLabel={note.data?.title || (noteId ? "文档" : "首页")}
           currentId={currentId}
           documents={directory.data?.documents || []}
           noteChrome={noteChrome}
@@ -544,13 +529,9 @@ export function ThoughtWorkshopPage({
           onImport={() => importInput.current?.click()}
           canPublish={canPublish}
           onToggleReading={
-            project && !noteId && !browsing
-              ? toggleHome
-              : noteMode && !editHome
-                ? () => guarded(() => setReading(!reading))
-                : undefined
+            noteMode ? () => guarded(() => setReading(!reading)) : undefined
           }
-          reading={project && !noteId ? !editHome : reading}
+          reading={reading}
           onTemplates={() => guarded(() => setTemplatesOpen(true))}
           onCreateDocument={(kind) => void create(null, kind)}
           onBackup={() => void backup()}
@@ -695,35 +676,6 @@ export function ThoughtWorkshopPage({
                         恢复文档
                       </button>
                     </div>
-                  ) : note.data.is_home && !editHome ? (
-                    <div
-                      className={`knowledge-home-reading${hasHomeContent ? "" : " is-empty"}`}
-                    >
-                      <RichEditor
-                        documentChrome={documentUI.chrome}
-                        beforeContent={
-                          <div className="thought-note-heading">
-                            <span className="community-meta">知识库首页</span>
-                            <h1>{project?.title || note.data.title}</h1>
-                            {!hasHomeContent && (
-                              <p className="knowledge-home-empty">
-                                这里是知识库首页。点击「编辑首页」，写下介绍、目标或常用资料。
-                              </p>
-                            )}
-                          </div>
-                        }
-                        libraryId={note.data.knowledge_base_id}
-                        onNavigateHref={navigateResource}
-                        readingId={note.data.id}
-                        readingRevision={note.data.revision}
-                        outlineTitle={project?.title || note.data.title}
-                        key={note.data.id}
-                        document={note.data.document}
-                        readOnly
-                        onChange={() => {}}
-                        onReady={() => {}}
-                      />
-                    </div>
                   ) : note.data.kind === "multitable" ? (
                     <TableEditor
                       key={`${accountId}:${workspaceId}:${note.data.id}`}
@@ -755,7 +707,6 @@ export function ThoughtWorkshopPage({
             {note.data && !note.data.deleted_at && (
               <DocumentRelations
                 id={note.data.id}
-                isHome={note.data.is_home}
                 documents={directory.data?.documents ?? []}
                 open={open}
               />

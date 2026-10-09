@@ -82,9 +82,7 @@ test("project topbar uses a compact accessible action menu", async ({
     .getByRole("textbox")
     .fill("产品与设计 · 灵感知识库");
   await page.getByRole("button", { name: "确认", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "文档回收站", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "文档回收站", exact: true }),
@@ -165,9 +163,7 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
   await page.getByRole("button", { name: "创建知识库", exact: true }).click();
   await page.getByRole("dialog").getByRole("textbox").fill(libraryTitle);
   await page.getByRole("button", { name: "确认", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
   await expectSingleNavigation(page);
   const projectUrl = page.url();
   const projectId = projectUrl.split("/").pop()!;
@@ -181,10 +177,7 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
       filterRequests.push(url.searchParams.get("knowledge_base_id") || "");
   });
   const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
-  await expect(prose).toHaveAttribute("contenteditable", "false");
-  await expect(
-    page.getByRole("group", { name: "排版工具栏", exact: true }),
-  ).toHaveCount(0);
+  await expect(prose).toHaveAttribute("contenteditable", "true");
   for (const width of [1600, 1280, 390]) {
     await page.setViewportSize({
       width,
@@ -205,7 +198,6 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
     }
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.getByRole("button", { name: "编辑首页", exact: true }).click();
   await expect(prose).toHaveAttribute("contenteditable", "true");
   await prose.fill(
     [
@@ -379,9 +371,7 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
     .getByRole("alertdialog")
     .getByRole("button", { name: "确认", exact: true })
     .click();
-  await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "文档回收站", exact: true }).click();
   await expect(results).toContainText("一份有层次的设计笔记");
   await results.getByRole("button", { name: "恢复", exact: true }).click();
@@ -401,7 +391,7 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
     });
     for (const theme of ["light", "dark"]) {
       await setThoughtTheme(page, theme);
-      await expect(prose).toHaveAttribute("contenteditable", "false");
+      await expect(prose).toHaveAttribute("contenteditable", "true");
       if (width > 1200) {
         const track = page.locator(".knowledge-sidebar-track");
         const sidebar = page.getByRole("complementary", { name: "知识库导航" });
@@ -596,90 +586,29 @@ test("other workshop shells retain their own navigation and theme controls", asy
   }
 });
 
-test("empty knowledge home stacks the title, intro, and directory", async ({
-  page,
-}, info) => {
+test("knowledge home opens as an ordinary editable note", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/apps/thought-workshop");
   await page.getByRole("button", { name: "创建知识库", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "创建知识库", exact: true });
-  await dialog.getByRole("textbox").fill("首页排版");
+  await dialog.getByRole("textbox").fill("首页即文档");
   await dialog.getByRole("button", { name: "确认", exact: true }).click();
+  await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(
+    "首页",
+  );
+  const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
+  await expect(prose).toHaveAttribute("contenteditable", "true");
   await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
+    page.getByRole("button", { name: "返回阅读", exact: true }),
   ).toBeVisible();
+  await expect(
+    page
+      .locator(".thought-subpages")
+      .getByRole("navigation", { name: "知识库目录" }),
+  ).toHaveCount(0);
   await newDocument(page);
   await page.getByRole("button", { name: "首页", exact: true }).click();
-  const title = page.getByRole("heading", { name: "首页排版", exact: true });
-  const hint = page.locator(".knowledge-home-empty");
-  const directory = page
-    .locator(".thought-subpages")
-    .getByRole("navigation", { name: "知识库目录" });
-  await expect(title).toBeVisible();
-  await expect(hint).toBeVisible();
-  await expect(directory).toBeVisible();
-  const titleBox = (await title.boundingBox())!;
-  const hintBox = (await hint.boundingBox())!;
-  const directoryBox = (await directory.boundingBox())!;
-  expect(hintBox.y).toBeGreaterThan(titleBox.y + titleBox.height - 2);
-  expect(hintBox.y - (titleBox.y + titleBox.height)).toBeLessThan(40);
-  expect(directoryBox.y).toBeGreaterThan(hintBox.y + hintBox.height - 2);
-  expect(directoryBox.y - (hintBox.y + hintBox.height)).toBeLessThan(88);
-  expect(Math.abs(hintBox.x - titleBox.x)).toBeLessThan(8);
-  expect(Math.abs(directoryBox.x - titleBox.x)).toBeLessThan(8);
   await expect(
-    page.locator(".knowledge-home-reading.is-empty .thought-editor-canvas"),
-  ).toBeHidden();
-  await page.screenshot({
-    animations: "disabled",
-    path: info.outputPath("knowledge-home-stack.png"),
-  });
-
-  const projectId = new URL(page.url()).pathname.split("/").pop()!;
-  const library = await (
-    await page.request.get(`/v1/thought-workshop/knowledge-bases/${projectId}`)
-  ).json();
-  const home = await (
-    await page.request.get(`/v1/thought-workshop/notes/${library.home_note_id}`)
-  ).json();
-  const csrf = (await page.context().cookies()).find(
-    (cookie) => cookie.name === "fpl_csrf",
-  )!.value;
-  const saved = await page.request.put(
-    `/v1/thought-workshop/notes/${library.home_note_id}`,
-    {
-      headers: { "X-CSRF-Token": csrf, Origin: new URL(page.url()).origin },
-      data: {
-        title: home.title,
-        document: {
-          type: "doc",
-          content: [
-            {
-              type: "paragraph",
-              content: [{ type: "text", text: "一句放在标题下面的介绍。" }],
-            },
-          ],
-        },
-        schema_version: home.schema_version,
-        tags: home.tags,
-        favorite: home.favorite,
-        pinned: home.pinned,
-        knowledge_base_id: home.knowledge_base_id,
-        folder_id: home.folder_id,
-        expected_revision: home.revision,
-      },
-    },
-  );
-  expect(saved.ok(), await saved.text()).toBeTruthy();
-  await page.reload();
-  const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
-  await expect(prose).toContainText("一句放在标题下面的介绍。");
-  const proseBox = (await prose.boundingBox())!;
-  const followed = (await directory.boundingBox())!;
-  expect(proseBox.height).toBeLessThan(160);
-  expect(followed.y - (proseBox.y + proseBox.height)).toBeLessThan(80);
-  await page.screenshot({
-    animations: "disabled",
-    path: info.outputPath("knowledge-home-with-intro.png"),
-  });
+    page.locator(".thought-subpages").getByRole("navigation", { name: "子文档" }),
+  ).toHaveCount(0);
 });

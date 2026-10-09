@@ -392,22 +392,6 @@ body.knowledge-sidebar-resizing {
 .knowledge-home-heading .btn {
   margin-top: 10px;
 }
-.knowledge-home-reading {
-  padding-bottom: 8px;
-}
-.knowledge-shell .knowledge-home-reading .thought-editor-canvas,
-.knowledge-shell .knowledge-home-reading .thought-prose {
-  min-height: 0;
-}
-.knowledge-shell .knowledge-home-reading.is-empty .thought-editor-canvas {
-  display: none;
-}
-.knowledge-home-empty {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.75;
-}
 .knowledge-shell .thought-edit-workspace {
   margin: 0;
 }

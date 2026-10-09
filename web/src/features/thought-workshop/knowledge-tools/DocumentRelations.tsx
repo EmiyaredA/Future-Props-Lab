@@ -14,12 +14,10 @@ function chapterTitle(title: string) {
 }
 export function DocumentRelations({
   id,
-  isHome,
   documents,
   open,
 }: {
   id: string;
-  isHome: boolean;
   documents: NoteSummary[];
   open: (id: string) => void;
 }) {
@@ -36,14 +34,12 @@ export function DocumentRelations({
     enabled: show,
     retry: false,
   });
-  const children = documents.filter(
-    (item) => item.parent_id === (isHome ? null : id),
-  );
+  const children = documents.filter((item) => item.parent_id === id);
   return (
     <aside className="thought-subpages" aria-label="关联文档">
       {!!children.length && (
-        <nav aria-label={isHome ? "知识库目录" : "子文档"}>
-          <h3>{isHome ? "知识库目录" : "子文档"}</h3>
+        <nav aria-label="子文档">
+          <h3>子文档</h3>
           <ul className="thought-subpages-index">
             {children.map((item) => {
               const chapter = chapterTitle(item.title);

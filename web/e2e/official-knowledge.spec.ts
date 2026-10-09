@@ -21,9 +21,9 @@ test("administrators explicitly import private notes then publish through the or
   await expect(dialog).toContainText("93 篇文章");
   await expect(dialog).toContainText("不会自动发布");
   await dialog.getByRole("button", { name: "导入到当前 Workspace" }).click();
-  await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible({ timeout: 20000 });
+  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible({
+    timeout: 20000,
+  });
   const library = page.url().match(/knowledge-bases\/([^/?#]+)/)![1];
   const directory = await (
     await page.request.get(root + `/knowledge-bases/${library}/directory`)

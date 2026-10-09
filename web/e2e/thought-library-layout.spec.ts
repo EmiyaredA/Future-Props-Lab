@@ -182,9 +182,7 @@ test("knowledge library cards align with four-line previews across screen sizes 
   await expect(page).toHaveURL(
     new RegExp(`/knowledge-bases/${libraries[0].id}$`),
   );
-  await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
 
   for (const library of libraries)
     await write(

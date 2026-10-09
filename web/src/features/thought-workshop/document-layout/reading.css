@@ -41,8 +41,7 @@
   padding-right: 252px;
 }
 .thought-shell .thought-note-heading,
-.thought-shell .thought-prose,
-.thought-shell .knowledge-home-reading .thought-prose {
+.thought-shell .thought-prose {
   width: calc(100% - 64px);
   max-width: 820px;
   margin-inline: auto;
@@ -61,10 +60,6 @@
 .thought-shell .thought-title-input {
   font-size: clamp(27px, 2.8vw, 38px);
 }
-.thought-shell .knowledge-home-reading .thought-prose {
-  min-height: 0;
-  padding: 4px 0 20px;
-}
 .thought-shell .thought-prose {
   padding-top: 16px;
 }
@@ -76,8 +71,7 @@
 }
 @media (max-width: 700px) {
   .thought-shell .thought-note-heading,
-  .thought-shell .thought-prose,
-  .thought-shell .knowledge-home-reading .thought-prose {
+  .thought-shell .thought-prose {
     width: calc(100% - 32px);
   }
   .thought-shell .thought-note-heading {

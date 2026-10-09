@@ -271,11 +271,9 @@ test("compact popover, keyboard, empty outline, home and read-only", async ({
   await expect(
     page.getByRole("navigation", { name: "文档章节" }),
   ).toBeVisible();
-  // The existing home document starts with no headings and only exposes an entry.
+  // The home note opens in the editor and has no headings until one is saved.
   await page.goto(`/apps/thought-workshop/knowledge-bases/${project.id}`);
-  await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "文档大纲", exact: true }).click();
   await expect(page.getByText("使用标题样式生成文档目录")).toBeVisible();
   await page.keyboard.press("Escape");

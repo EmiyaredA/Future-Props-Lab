@@ -235,7 +235,6 @@ test("editor surfaces and compact panels fit without replacing the workspace", a
     await expect(page.getByRole("dialog")).toHaveCount(0);
   }
   await page.goto(`/apps/thought-workshop/knowledge-bases/${knowledge.id}`);
-  await page.getByRole("button", { name: "编辑首页", exact: true }).click();
   const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
   await prose.fill(
     "欢迎来到知识库。这里记录值得保留的想法。\n" +
@@ -245,8 +244,6 @@ test("editor surfaces and compact panels fit without replacing the workspace", a
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   await captureResponsive(page, info, "knowledge-long-editor");
   await page.reload();
-  await expect(page.locator(".knowledge-home-reading")).toContainText(
-    "欢迎来到知识库",
-  );
+  await expect(prose).toContainText("欢迎来到知识库");
   await captureResponsive(page, info, "knowledge-long-home");
 });

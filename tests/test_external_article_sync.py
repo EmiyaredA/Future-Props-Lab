@@ -62,6 +62,8 @@ class FakeFeishu:
             self.wiki_tokens.append(request.url.params.get("token", ""))
             if self.wiki_type == "denied":
                 return httpx.Response(400, json={"code": 131006, "msg": "provider secret"})
+            if self.wiki_type == "scope":
+                return httpx.Response(400, json={"code": 99991672, "msg": "provider secret"})
             return httpx.Response(
                 200,
                 json={
@@ -722,7 +724,7 @@ async def test_wiki_link_resolves_to_docx_and_binds_that_document(client, remote
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("wiki_type", ["sheet", "denied"])
+@pytest.mark.parametrize("wiki_type", ["sheet", "denied", "scope"])
 async def test_wiki_link_rejects_non_docx_nodes_without_leaking_provider_text(
     client, remote, wiki_type
 ):
@@ -732,12 +734,20 @@ async def test_wiki_link_rejects_non_docx_nodes_without_leaking_provider_text(
         f"/v1/integrations/external-connections/{conn['id']}/target-check",
         json={"url": "https://my.feishu.cn/wiki/YdxcwJ8tolY8qPkOa3Pctfqknnc"},
     )
+    body = result.json()
     if wiki_type == "sheet":
         assert result.status_code == 422, result.text
-        assert "不是新版文档" in result.json()["detail"]
+        assert "不是新版文档" in body["detail"]
+    elif wiki_type == "scope":
+        assert result.status_code == 502, result.text
+        assert body["code"] == "wiki_scope_required"
+        assert "99991672" in body["detail"]
+        assert "查看知识空间节点信息" in body["detail"]
     else:
         assert result.status_code == 502, result.text
-        assert "131006" in result.json()["detail"]
+        assert body["code"] == "wiki_node_forbidden"
+        assert "131006" in body["detail"]
+        assert "添加文档应用" in body["detail"]
     assert "provider secret" not in result.text
     assert "never-return-me" not in result.text
 

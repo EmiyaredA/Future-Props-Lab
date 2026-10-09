@@ -97,9 +97,24 @@ class FeishuClient:
         except ExternalError as exc:
             if exc.provider_code is None:
                 raise
+            if exc.provider_code == 131006:
+                raise ExternalError(
+                    "应用还不能读取这篇知识库文档（错误码 131006）。"
+                    "请打开文档，在右上角「…」→「更多」→「添加文档应用」，并把应用设为可编辑。"
+                    "若列表中没有该应用，请先在开放平台开通「查看知识空间节点信息」。",
+                    502,
+                    "wiki_node_forbidden",
+                ) from None
+            if exc.provider_code == 99991672:
+                raise ExternalError(
+                    "应用尚未开通知识库节点读取权限（错误码 99991672）。"
+                    "请在开放平台开通「查看知识空间节点信息」并发布新版本，再把该节点授权给应用。",
+                    502,
+                    "wiki_scope_required",
+                ) from None
             raise ExternalError(
                 "无法读取该知识库节点（错误码 "
-                f"{exc.provider_code}）。请确认链接有效，为应用开通知识库节点读取权限，并把该节点授权给应用",
+                f"{exc.provider_code}）。请确认链接有效，并检查应用权限与节点授权",
                 502,
             ) from None
         node = data.get("node")

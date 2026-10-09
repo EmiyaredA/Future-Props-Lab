@@ -117,6 +117,8 @@ test("shared reader matches the warm layout in both themes and all viewport size
   await page.goto(
     `/apps/thought-workshop/knowledge-bases/${current.note.knowledge_base_id}`,
   );
+  await page.getByRole("button", { name: "返回阅读", exact: true }).click();
+  await expect(article).toHaveAttribute("contenteditable", "false");
   await expect(header.getByRole("button", { name: "文内查找" })).toBeVisible();
   await expect(
     page.getByRole("navigation", { name: "文档章节" }),
@@ -125,7 +127,7 @@ test("shared reader matches the warm layout in both themes and all viewport size
     path: info.outputPath("private-home-light.png"),
     animations: "disabled",
   });
-  await page.getByRole("button", { name: "编辑首页", exact: true }).click();
+  await page.getByRole("button", { name: "编辑文档", exact: true }).click();
   await expect(article).toHaveAttribute("contenteditable", "true");
   await expect(header.getByRole("button", { name: "文内查找" })).toBeVisible();
   await page.screenshot({

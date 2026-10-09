@@ -474,7 +474,6 @@ export function CommunityReader({
           {article.data && !article.isError && directory.data && (
             <DocumentRelations
               id={article.data.note.id}
-              isHome={article.data.note.is_home}
               documents={directory.data.documents}
               open={open}
             />

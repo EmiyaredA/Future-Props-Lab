@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { FeishuMark } from "@shared/ui/FeishuMark";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { ApiError } from "@platform/api/errors";
 import { SyncConfirmation } from "./SyncConfirmation";
 import {
   getExternalConnections,
@@ -33,6 +34,126 @@ import {
   type SyncPreview,
 } from "./api";
 import "./article-sync.css";
+
+type AccessFailure = "wiki_node_forbidden" | "wiki_scope_required";
+
+type PanelFailure = { message: string; code?: string };
+
+function panelFailure(error: unknown): PanelFailure {
+  if (error instanceof ApiError) {
+    const code = error.problem.code;
+    return {
+      message: error.message,
+      code: typeof code === "string" ? code : undefined,
+    };
+  }
+  return {
+    message:
+      error instanceof Error && error.message ? error.message : "同步操作失败",
+  };
+}
+
+function accessFailure(code: string | undefined): AccessFailure | null {
+  return code === "wiki_node_forbidden" || code === "wiki_scope_required"
+    ? code
+    : null;
+}
+
+function feishuDocumentHref(value: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(value.trim());
+  } catch {
+    return null;
+  }
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username ||
+    parsed.password ||
+    (parsed.port && parsed.port !== "443") ||
+    !/^[a-zA-Z0-9-]+\.feishu\.cn$/.test(parsed.hostname) ||
+    !/^\/(docx|wiki)\/[a-zA-Z0-9]+\/?$/.test(parsed.pathname)
+  )
+    return null;
+  return `${parsed.origin}${parsed.pathname}`;
+}
+
+function feishuAppHref(appId: string, page: "auth" | "bot"): string | null {
+  if (!/^[a-zA-Z0-9_-]+$/.test(appId)) return null;
+  const path =
+    page === "auth"
+      ? "auth?q=wiki:node:read&op_from=openapi&token_type=tenant"
+      : "bot";
+  return `https://open.feishu.cn/app/${appId}/${path}`;
+}
+
+function WikiAccessGuide({
+  code,
+  appId,
+  documentUrl,
+}: {
+  code: AccessFailure;
+  appId: string;
+  documentUrl: string;
+}) {
+  const documentHref = feishuDocumentHref(documentUrl);
+  const permissionHref = feishuAppHref(appId, "auth");
+  const botHref = feishuAppHref(appId, "bot");
+  const scopeFirst = code === "wiki_scope_required";
+  return (
+    <div className="article-sync-error article-sync-access" role="alert">
+      <strong>
+        {scopeFirst
+          ? "应用还没有知识库节点读取权限"
+          : "应用还不能读取这篇知识库文档"}
+      </strong>
+      <p>
+        {scopeFirst
+          ? "先开通权限并发布新版本，再把这篇文档授权给应用。完成后回到这里点「检查目标」。"
+          : "错误码 131006 表示应用还没有这篇节点的访问权。按下面两步处理，再点「检查目标」。"}
+      </p>
+      <ol>
+        {(scopeFirst
+          ? (["permission", "document"] as const)
+          : (["document", "permission"] as const)
+        ).map((step) =>
+          step === "document" ? (
+            <li key={step}>
+              <span>
+                打开文档，点右上角「…」→「更多」→「添加文档应用」，选择当前应用并设为可编辑。
+              </span>
+              {documentHref && (
+                <a href={documentHref} target="_blank" rel="noreferrer">
+                  打开这篇文档 <ExternalLink size={13} aria-hidden />
+                </a>
+              )}
+            </li>
+          ) : (
+            <li key={step}>
+              <span>
+                {scopeFirst
+                  ? "开通「查看知识空间节点信息」。应用需要已开启机器人，开通后发布新版本。"
+                  : "如果列表里找不到应用，先开通「查看知识空间节点信息」，确认已开启机器人，并发布新版本。"}
+              </span>
+              <span className="article-sync-access-actions">
+                {permissionHref && (
+                  <a href={permissionHref} target="_blank" rel="noreferrer">
+                    开通权限 <ExternalLink size={13} aria-hidden />
+                  </a>
+                )}
+                {botHref && (
+                  <a href={botHref} target="_blank" rel="noreferrer">
+                    开启机器人 <ExternalLink size={13} aria-hidden />
+                  </a>
+                )}
+              </span>
+            </li>
+          ),
+        )}
+      </ol>
+    </div>
+  );
+}
 
 const STATUS: Record<string, string> = {
   queued: "等待同步",
@@ -75,7 +196,7 @@ export function ArticleSyncPanel({
   const [preview, setPreview] = useState<SyncPreview | null>(null);
   const [operationId, setOperationId] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState("");
+  const [failure, setFailure] = useState<PanelFailure | null>(null);
   const [confirm, setConfirm] = useState<"sync" | "unbind" | "end" | null>(
     null,
   );
@@ -85,14 +206,18 @@ export function ArticleSyncPanel({
   const unresolved = state.data?.tasks.find((t) =>
     ["queued", "running", "needs_review"].includes(t.status),
   );
+  const appId =
+    connections.data?.items.find((item) => item.id === connection)?.app_id ??
+    "";
+  const access = accessFailure(failure?.code);
   async function action(work: () => Promise<unknown>) {
     setPending(true);
-    setError("");
+    setFailure(null);
     try {
       await work();
       await client.invalidateQueries({ queryKey: key });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "同步操作失败");
+      setFailure(panelFailure(e));
     } finally {
       setPending(false);
     }
@@ -155,10 +280,16 @@ export function ArticleSyncPanel({
             </Dialog.Close>
           </header>
           <div className="article-sync-scroll">
-            {(error || state.error || connections.error) && (
-              <p className="article-sync-error" role="alert">
-                {error || state.error?.message || connections.error?.message}
-              </p>
+            {access ? (
+              <WikiAccessGuide code={access} appId={appId} documentUrl={url} />
+            ) : (
+              (failure || state.error || connections.error) && (
+                <p className="article-sync-error" role="alert">
+                  {failure?.message ||
+                    state.error?.message ||
+                    connections.error?.message}
+                </p>
+              )
             )}
             {state.isPending && <p role="status">正在读取同步配置…</p>}
             {binding ? (
@@ -510,7 +641,7 @@ export function ArticleSyncPanel({
             }
             description={
               <>
-                {error && <p role="alert">{error}</p>}
+                {failure && <p role="alert">{failure.message}</p>}
                 {confirm === "sync"
                   ? "将使用预览中的文章内容替换飞书正文。若目标再次变化，同步会暂停。"
                   : confirm === "unbind"

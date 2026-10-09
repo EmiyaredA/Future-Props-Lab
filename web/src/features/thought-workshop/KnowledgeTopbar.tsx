@@ -159,7 +159,6 @@ export function KnowledgeTopbar({
   onNoteAction,
   onProjectAction,
   documentToolsRef,
-  homeMode = false,
 }: {
   noteMode: boolean;
   canPublish?: boolean;
@@ -185,7 +184,6 @@ export function KnowledgeTopbar({
   onNoteAction: (value: string) => void;
   onProjectAction: (value: string) => void;
   documentToolsRef?: Ref<HTMLDivElement>;
-  homeMode?: boolean;
 }) {
   const ancestors: NoteSummary[] = [];
   if (noteMode && currentId) {
@@ -203,7 +201,7 @@ export function KnowledgeTopbar({
   const libraryMode = !noteMode && !projectTitle && !!libraryTitle;
   return (
     <header
-      className={`knowledge-topbar${noteMode || homeMode ? " is-note" : projectTitle ? " is-project" : libraryMode ? " is-library" : ""}`}
+      className={`knowledge-topbar${noteMode ? " is-note" : projectTitle ? " is-project" : libraryMode ? " is-library" : ""}`}
     >
       {!noteMode ? (
         <button className="btn knowledge-mobile" onClick={onOpenDirectory}>
@@ -217,7 +215,7 @@ export function KnowledgeTopbar({
             {libraryDescription ? <p>{libraryDescription}</p> : null}
           </div>
         ) : null}
-        {noteMode || homeMode ? (
+        {noteMode ? (
           <>
             <nav className="knowledge-breadcrumb" aria-label="文档路径">
               {projectTitle ? (
@@ -301,7 +299,7 @@ export function KnowledgeTopbar({
         )}
         {onToggleReading && (
           <button className="btn" onClick={onToggleReading}>
-            {reading ? (homeMode ? "编辑首页" : "编辑文档") : "返回阅读"}
+            {reading ? "编辑文档" : "返回阅读"}
           </button>
         )}
         {noteMode ? (

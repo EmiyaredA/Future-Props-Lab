@@ -7,6 +7,7 @@ import { ArticleSyncPanel } from "@features/thought-workshop/external-sync/Artic
 import * as sync from "@features/thought-workshop/external-sync/api";
 import * as connections from "@features/integrations/external/api";
 import { getNote, type Note } from "@features/thought-workshop/api";
+import { ApiError } from "@platform/api/errors";
 import type { ReactNode } from "react";
 
 vi.mock("@features/integrations/external/api", () => ({
@@ -216,10 +217,55 @@ test("a wiki link is checked and bound as the resolved document", async () => {
   expect(await screen.findByText("调研")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "绑定文档" }));
   await waitFor(() =>
-    expect(sync.bindArticle).toHaveBeenCalledWith(note.id, connection.id, resolved, 0),
+    expect(sync.bindArticle).toHaveBeenCalledWith(
+      note.id,
+      connection.id,
+      resolved,
+      0,
+    ),
   );
   expect(connections.checkExternalTarget).toHaveBeenCalledWith(
     connection.id,
     "https://my.feishu.cn/wiki/YdxcwJ8tolY8qPkOa3Pctfqknnc?from=wiki",
   );
+});
+test("a forbidden wiki node links to the document and the app permission page", async () => {
+  const user = userEvent.setup();
+  vi.mocked(sync.getArticleSync).mockResolvedValue({
+    binding: null,
+    tasks: [],
+  });
+  vi.mocked(connections.checkExternalTarget).mockRejectedValue(
+    new ApiError(
+      "应用还不能读取这篇知识库文档（错误码 131006）。",
+      { code: "wiki_node_forbidden" },
+      502,
+    ),
+  );
+  show(<ArticleSyncPanel note={note} close={vi.fn()} />);
+  await user.click(await screen.findByRole("combobox", { name: "使用连接" }));
+  await user.click(screen.getByRole("option", { name: "文章发布" }));
+  await user.type(
+    screen.getByRole("textbox", { name: "目标文档链接" }),
+    "https://my.feishu.cn/wiki/P79mwdka1XSGMMxhNPncqmE0nsh?from=wiki",
+  );
+  await user.click(screen.getByRole("button", { name: "检查目标" }));
+  const documentLink = await screen.findByRole("link", {
+    name: "打开这篇文档",
+  });
+  const permissionLink = screen.getByRole("link", { name: "开通权限" });
+  expect(documentLink).toHaveAttribute(
+    "href",
+    "https://my.feishu.cn/wiki/P79mwdka1XSGMMxhNPncqmE0nsh",
+  );
+  expect(permissionLink).toHaveAttribute(
+    "href",
+    "https://open.feishu.cn/app/cli_test/auth?q=wiki:node:read&op_from=openapi&token_type=tenant",
+  );
+  expect(screen.getByRole("link", { name: "开启机器人" })).toHaveAttribute(
+    "href",
+    "https://open.feishu.cn/app/cli_test/bot",
+  );
+  expect(documentLink).toHaveAttribute("target", "_blank");
+  expect(permissionLink).toHaveAttribute("rel", "noreferrer");
 });

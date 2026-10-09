@@ -123,8 +123,6 @@ test("document paths follow parents while browsing views omit redundant breadcru
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.getByRole("button", { name: "首页", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "编辑首页", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
   await expect(path).toHaveCount(0);
 });

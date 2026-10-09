@@ -8,9 +8,7 @@ export async function newDocument(page: Page) {
     });
     await dialog.getByRole("textbox").fill(`测试知识库 ${Date.now()}`);
     await dialog.getByRole("button", { name: "确认", exact: true }).click();
-    await expect(
-      page.getByRole("button", { name: "编辑首页", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
   }
   const previousUrl = page.url();
   await page
