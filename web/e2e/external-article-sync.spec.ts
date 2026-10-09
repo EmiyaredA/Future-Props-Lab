@@ -98,6 +98,14 @@ for (const scenario of [
             note_revision: request.postDataJSON().expected_revision,
             target_title: "飞书专用文档",
             local_text: "本地文章\n文章正文",
+            snapshot: [
+              {
+                kind: "heading",
+                level: 1,
+                runs: [{ text: "本地文章", link: "" }],
+              },
+              { kind: "text", runs: [{ text: "文章正文", link: "" }] },
+            ],
             remote_text: changed ? "飞书外部修改" : "待替换原正文",
             warnings: ["提示框转为引用块"],
             blockers: blocked ? ["正文/第2块：暂不支持画板"] : [],

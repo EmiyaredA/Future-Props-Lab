@@ -13,8 +13,8 @@ import {
   Square,
   ChevronDown,
   ChevronUp,
-  PanelRightOpen,
-  PanelRightClose,
+  ScrollText,
+  UserRound,
   MoreHorizontal,
   Trash2,
   Check,
@@ -205,11 +205,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 if (!inspectorOpen) setStageOpen(false);
               }}
             >
-              {inspectorOpen ? (
-                <PanelRightClose size={17} />
-              ) : (
-                <PanelRightOpen size={17} />
-              )}
+              <ScrollText size={17} />
             </button>
           )}
           <button
@@ -225,11 +221,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 .catch(() => setStageOpen(!next));
             }}
           >
-            {stageOpen ? (
-              <PanelRightClose size={17} />
-            ) : (
-              <PanelRightOpen size={17} />
-            )}
+            <UserRound size={17} />
           </button>
           <button
             title={alwaysOnTop ? "取消悬浮置顶" : "保持悬浮在应用上方"}

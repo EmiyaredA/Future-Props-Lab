@@ -33,9 +33,11 @@ import {
   unbindArticle,
   type SyncPreview,
 } from "./api";
+import { SnapshotView } from "./SnapshotView";
 import "./article-sync.css";
 
-type AccessFailure = "wiki_node_forbidden" | "wiki_scope_required";
+type AccessFailure =
+  "wiki_node_forbidden" | "wiki_scope_required" | "document_forbidden";
 
 type PanelFailure = { message: string; code?: string };
 
@@ -56,12 +58,14 @@ function panelFailure(error: unknown): PanelFailure {
 function accessFailure(failure: PanelFailure | null): AccessFailure | null {
   if (
     failure?.code === "wiki_node_forbidden" ||
-    failure?.code === "wiki_scope_required"
+    failure?.code === "wiki_scope_required" ||
+    failure?.code === "document_forbidden"
   )
     return failure.code;
   if (failure?.message.includes("错误码 131006")) return "wiki_node_forbidden";
   if (failure?.message.includes("错误码 99991672"))
     return "wiki_scope_required";
+  if (failure?.message.includes("错误码 1770032")) return "document_forbidden";
   return null;
 }
 
@@ -84,14 +88,55 @@ function feishuDocumentHref(value: string): string | null {
   return `${parsed.origin}${parsed.pathname}`;
 }
 
-function feishuAppHref(appId: string, page: "auth" | "bot"): string | null {
-  if (!/^[a-zA-Z0-9_-]+$/.test(appId)) return null;
+function feishuAppHref(
+  appId: string,
+  page: "auth" | "bot",
+  scope = "wiki:node:read",
+): string | null {
+  if (!/^[a-zA-Z0-9_-]+$/.test(appId) || !/^[a-z0-9_.:-]+$/i.test(scope))
+    return null;
   const path =
     page === "auth"
-      ? "auth?q=wiki:node:read&op_from=openapi&token_type=tenant"
+      ? `auth?q=${scope}&op_from=openapi&token_type=tenant`
       : "bot";
   return `https://open.feishu.cn/app/${appId}/${path}`;
 }
+
+const ACCESS_GUIDE: Record<
+  AccessFailure,
+  {
+    title: string;
+    lead: string;
+    documentFirst: boolean;
+    scope: string;
+    permission: string;
+  }
+> = {
+  wiki_scope_required: {
+    title: "应用还没有知识库节点读取权限",
+    lead: "先开通权限并发布新版本，再把这篇文档授权给应用。完成后回到这里点「检查目标」。",
+    documentFirst: false,
+    scope: "wiki:node:read",
+    permission:
+      "开通「查看知识空间节点信息」。应用需要已开启机器人，开通后发布新版本。",
+  },
+  wiki_node_forbidden: {
+    title: "应用还不能读取这篇知识库文档",
+    lead: "错误码 131006 表示应用还没有这篇节点的访问权。按下面两步处理，再点「检查目标」。",
+    documentFirst: true,
+    scope: "wiki:node:read",
+    permission:
+      "如果列表里找不到应用，先开通「查看知识空间节点信息」，确认已开启机器人，并发布新版本。",
+  },
+  document_forbidden: {
+    title: "应用还不能阅读或编辑这篇文档",
+    lead: "错误码 1770032 表示应用还不是这篇文档的协作者。按下面两步处理，再点「检查目标」。",
+    documentFirst: true,
+    scope: "docx:document",
+    permission:
+      "如果列表里找不到应用，先开通「查看、评论、编辑和管理云文档」，确认已开启机器人，并发布新版本。",
+  },
+};
 
 function WikiAccessGuide({
   code,
@@ -102,26 +147,18 @@ function WikiAccessGuide({
   appId: string;
   documentUrl: string;
 }) {
+  const guide = ACCESS_GUIDE[code];
   const documentHref = feishuDocumentHref(documentUrl);
-  const permissionHref = feishuAppHref(appId, "auth");
+  const permissionHref = feishuAppHref(appId, "auth", guide.scope);
   const botHref = feishuAppHref(appId, "bot");
-  const scopeFirst = code === "wiki_scope_required";
   return (
     <div className="article-sync-error article-sync-access" role="alert">
-      <strong>
-        {scopeFirst
-          ? "应用还没有知识库节点读取权限"
-          : "应用还不能读取这篇知识库文档"}
-      </strong>
-      <p>
-        {scopeFirst
-          ? "先开通权限并发布新版本，再把这篇文档授权给应用。完成后回到这里点「检查目标」。"
-          : "错误码 131006 表示应用还没有这篇节点的访问权。按下面两步处理，再点「检查目标」。"}
-      </p>
+      <strong>{guide.title}</strong>
+      <p>{guide.lead}</p>
       <ol>
-        {(scopeFirst
-          ? (["permission", "document"] as const)
-          : (["document", "permission"] as const)
+        {(guide.documentFirst
+          ? (["document", "permission"] as const)
+          : (["permission", "document"] as const)
         ).map((step) =>
           step === "document" ? (
             <li key={step}>
@@ -136,11 +173,7 @@ function WikiAccessGuide({
             </li>
           ) : (
             <li key={step}>
-              <span>
-                {scopeFirst
-                  ? "开通「查看知识空间节点信息」。应用需要已开启机器人，开通后发布新版本。"
-                  : "如果列表里找不到应用，先开通「查看知识空间节点信息」，确认已开启机器人，并发布新版本。"}
-              </span>
+              <span>{guide.permission}</span>
               <span className="article-sync-access-actions">
                 {permissionHref && (
                   <a href={permissionHref} target="_blank" rel="noreferrer">
@@ -213,9 +246,11 @@ export function ArticleSyncPanel({
     ["queued", "running", "needs_review"].includes(t.status),
   );
   const appId =
-    connections.data?.items.find((item) => item.id === connection)?.app_id ??
-    "";
+    connections.data?.items.find(
+      (item) => item.id === (connection || binding?.connection_id),
+    )?.app_id ?? "";
   const access = accessFailure(failure);
+  const guideUrl = url || binding?.url || "";
   async function action(work: () => Promise<unknown>) {
     setPending(true);
     setFailure(null);
@@ -287,7 +322,11 @@ export function ArticleSyncPanel({
           </header>
           <div className="article-sync-scroll">
             {access ? (
-              <WikiAccessGuide code={access} appId={appId} documentUrl={url} />
+              <WikiAccessGuide
+                code={access}
+                appId={appId}
+                documentUrl={guideUrl}
+              />
             ) : (
               (failure || state.error || connections.error) && (
                 <p className="article-sync-error" role="alert">
@@ -435,11 +474,15 @@ export function ArticleSyncPanel({
                       <div>
                         <h4>
                           <FileText size={15} aria-hidden />
-                          思绪工坊<span>本次内容</span>
+                          思绪工坊<span>写入快照</span>
                         </h4>
-                        <pre className="article-sync-text">
-                          {preview.local_text}
-                        </pre>
+                        {preview.snapshot.length ? (
+                          <SnapshotView blocks={preview.snapshot} />
+                        ) : (
+                          <pre className="article-sync-text">
+                            {preview.local_text}
+                          </pre>
+                        )}
                       </div>
                       <div>
                         <h4>

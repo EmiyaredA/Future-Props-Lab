@@ -52,6 +52,13 @@ const preview: sync.SyncPreview = {
   preview_id: "preview",
   note_revision: 3,
   local_text: "本地正文",
+  snapshot: [
+    { kind: "heading", level: 1, runs: [{ text: "本地正文", link: "" }] },
+    {
+      kind: "table",
+      rows: [[[{ kind: "text", runs: [{ text: "比较结果", link: "" }] }]]],
+    },
+  ],
   remote_text: "原正文",
   target_title: "远端标题",
   first_sync: true,
@@ -139,6 +146,9 @@ test("replacement needs explicit confirmation; Escape dismisses only the confirm
   const close = vi.fn();
   show(<ArticleSyncPanel note={note} close={close} />);
   await user.click(await screen.findByRole("button", { name: "预览并同步" }));
+  expect(screen.getByLabelText("写入快照")).toBeVisible();
+  expect(screen.getByRole("cell", { name: "比较结果" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "确认并同步" })).toBeEnabled();
   await user.click(screen.getByRole("button", { name: "确认并同步" }));
   expect(
     screen.getByRole("dialog", { name: "替换飞书整篇正文？" }),
@@ -296,4 +306,40 @@ test("wiki guidance appears from the 131006 message before the error code is ava
     "href",
     "https://open.feishu.cn/app/cli_test/auth?q=wiki:node:read&op_from=openapi&token_type=tenant",
   );
+});
+test("error 1770032 guides the reader to add the app on the document", async () => {
+  const user = userEvent.setup();
+  vi.mocked(sync.getArticleSync).mockResolvedValue({
+    binding: null,
+    tasks: [],
+  });
+  vi.mocked(connections.checkExternalTarget).mockRejectedValue(
+    new Error("飞书请求失败（错误码 1770032），请检查应用权限与目标文档授权"),
+  );
+  show(<ArticleSyncPanel note={note} close={vi.fn()} />);
+  await user.click(await screen.findByRole("combobox", { name: "使用连接" }));
+  await user.click(screen.getByRole("option", { name: "文章发布" }));
+  await user.type(
+    screen.getByRole("textbox", { name: "目标文档链接" }),
+    "https://my.feishu.cn/wiki/P79mwdka1XSQMkxNPncqmE0nsh",
+  );
+  await user.click(screen.getByRole("button", { name: "检查目标" }));
+  expect(await screen.findByText("应用还不能阅读或编辑这篇文档")).toBeVisible();
+  expect(screen.getByRole("link", { name: "打开这篇文档" })).toHaveAttribute(
+    "href",
+    "https://my.feishu.cn/wiki/P79mwdka1XSQMkxNPncqmE0nsh",
+  );
+  expect(screen.getByRole("link", { name: "开通权限" })).toHaveAttribute(
+    "href",
+    "https://open.feishu.cn/app/cli_test/auth?q=docx:document&op_from=openapi&token_type=tenant",
+  );
+  expect(screen.getByRole("link", { name: "开启机器人" })).toHaveAttribute(
+    "href",
+    "https://open.feishu.cn/app/cli_test/bot",
+  );
+  expect(
+    screen.queryByText(
+      "飞书请求失败（错误码 1770032），请检查应用权限与目标文档授权",
+    ),
+  ).not.toBeInTheDocument();
 });

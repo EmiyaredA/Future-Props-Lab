@@ -1383,6 +1383,13 @@
             "title": "Remote Text",
             "type": "string"
           },
+          "snapshot": {
+            "items": {
+              "$ref": "#/components/schemas/SnapshotBlock"
+            },
+            "title": "Snapshot",
+            "type": "array"
+          },
           "target_title": {
             "title": "Target Title",
             "type": "string"
@@ -1399,6 +1406,7 @@
           "preview_id",
           "note_revision",
           "local_text",
+          "snapshot",
           "remote_text",
           "target_title",
           "warnings",
@@ -28895,6 +28903,113 @@
           "records"
         ],
         "title": "Snapshot",
+        "type": "object"
+      },
+      "SnapshotBlock": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "checked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked"
+          },
+          "kind": {
+            "enum": [
+              "heading",
+              "text",
+              "quote",
+              "bullet",
+              "ordered",
+              "todo",
+              "code",
+              "table",
+              "image"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          },
+          "rows": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "items": {
+                      "$ref": "#/components/schemas/SnapshotBlock"
+                    },
+                    "type": "array"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rows"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/SnapshotRun"
+            },
+            "title": "Runs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "SnapshotBlock",
+        "type": "object"
+      },
+      "SnapshotRun": {
+        "properties": {
+          "link": {
+            "default": "",
+            "title": "Link",
+            "type": "string"
+          },
+          "style": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Style",
+            "type": "object"
+          },
+          "text": {
+            "default": "",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "title": "SnapshotRun",
         "type": "object"
       },
       "Sort": {

@@ -139,12 +139,12 @@
 .multitable-column-resize::after {
   content: "";
   position: absolute;
-  top: 8px;
-  bottom: 8px;
-  right: 5px;
+  top: 0;
+  bottom: 0;
+  right: -1px;
   width: 2px;
   background: transparent;
-  border-radius: 2px;
+  pointer-events: none;
 }
 .multitable-grid-scroll.is-embedded .multitable-grid-row > [role="gridcell"] {
   align-items: flex-start;
@@ -162,7 +162,8 @@
   line-height: 18px;
 }
 .multitable-column-resize:hover::after,
-.multitable-column-resize:focus-visible::after {
+.multitable-column-resize:focus-visible::after,
+.multitable-column-resize.is-dragging::after {
   background: var(--accent);
 }
 .multitable-cell-trigger {

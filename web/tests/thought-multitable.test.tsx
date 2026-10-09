@@ -1,4 +1,12 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import {
+  act,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,6 +14,7 @@ import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermission
 import { ApiError } from "@platform/api/client";
 import * as api from "@features/thought-workshop/multitable/api";
 import * as storage from "@features/thought-workshop/multitable/drafts";
+import { TableEditor } from "@features/thought-workshop/multitable/TableEditor";
 import { useTableDocument } from "@features/thought-workshop/multitable/useTableDocument";
 import {
   newTable,
@@ -21,6 +30,7 @@ vi.mock("@features/thought-workshop/multitable/api", async (original) => ({
   >()),
   tableStructure: vi.fn(),
   tableOperations: vi.fn(),
+  tableRecords: vi.fn(),
 }));
 vi.mock("@features/thought-workshop/multitable/drafts", () => ({
   drafts: vi.fn(),
@@ -68,6 +78,12 @@ beforeEach(() => {
   vi.mocked(api.tableStructure).mockResolvedValue(structure);
   vi.mocked(api.tableOperations).mockResolvedValue({
     structure: { ...structure, revision: 4 },
+  });
+  vi.mocked(api.tableRecords).mockResolvedValue({
+    items: [],
+    total: 0,
+    revision: structure.revision,
+    people: {},
   });
 });
 describe("多维表格编辑与恢复", () => {
@@ -192,6 +208,34 @@ describe("多维表格编辑与恢复", () => {
     expect(parseCell(table.fields[1], "进行中")).toBe(
       table.fields[1].options![1].id,
     );
+  });
+  it("autosaves an embedded table without flashing a save button", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <TableEditor
+        noteId="note"
+        embedded={{ tableId: table.id, viewId: table.views[0].id }}
+      />,
+      { wrapper },
+    );
+    const editor = () =>
+      screen.getByRole("region", { name: "多维表格", hidden: true });
+    await user.click(await screen.findByRole("button", { name: "新增记录" }));
+    expect(
+      within(editor()).queryByRole("button", { name: "保存", hidden: true }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(api.tableOperations).toHaveBeenCalled());
+    expect(
+      within(editor()).queryByRole("button", { name: "保存", hidden: true }),
+    ).not.toBeInTheDocument();
+
+    rerender(<TableEditor noteId="note" />);
+    await user.click(
+      within(editor()).getByRole("button", { name: "新增记录", hidden: true }),
+    );
+    expect(
+      within(editor()).getByRole("button", { name: "保存", hidden: true }),
+    ).toBeInTheDocument();
   });
   it("serializes a document's writes and allows later writes after rejection", async () => {
     const events: string[] = [];

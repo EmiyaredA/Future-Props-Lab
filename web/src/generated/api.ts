@@ -8274,6 +8274,8 @@ export interface components {
             remote_changed: boolean;
             /** Remote Text */
             remote_text: string;
+            /** Snapshot */
+            snapshot: components["schemas"]["SnapshotBlock"][];
             /** Target Title */
             target_title: string;
             /** Warnings */
@@ -18729,6 +18731,41 @@ export interface components {
             };
             /** Tables */
             tables: components["schemas"]["TableSpec"][];
+        };
+        /** SnapshotBlock */
+        SnapshotBlock: {
+            /** Asset Id */
+            asset_id?: string | null;
+            /** Checked */
+            checked?: boolean | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "heading" | "text" | "quote" | "bullet" | "ordered" | "todo" | "code" | "table" | "image";
+            /** Level */
+            level?: number | null;
+            /** Rows */
+            rows?: components["schemas"]["SnapshotBlock"][][][] | null;
+            /** Runs */
+            runs?: components["schemas"]["SnapshotRun"][];
+        };
+        /** SnapshotRun */
+        SnapshotRun: {
+            /**
+             * Link
+             * @default
+             */
+            link: string;
+            /** Style */
+            style?: {
+                [key: string]: boolean;
+            };
+            /**
+             * Text
+             * @default
+             */
+            text: string;
         };
         /** Sort */
         Sort: {

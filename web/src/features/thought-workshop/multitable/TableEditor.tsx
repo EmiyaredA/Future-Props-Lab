@@ -399,11 +399,6 @@ export function TableEditor({
               });
           }}
         />
-        {embedded && canEdit && controller.state !== "saved" && (
-          <button className="btn" onClick={() => run(controller.flush)}>
-            保存
-          </button>
-        )}
         {view.config?.group_field_id && results.data?.pages[0].groups && (
           <div className="multitable-group-summary">
             {Object.entries(results.data.pages[0].groups).map(

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 export function ColumnResize({
   name,
   width,
@@ -13,10 +13,12 @@ export function ColumnResize({
   const drag = useRef<{ x: number; width: number; current: number } | null>(
     null,
   );
+  const [dragging, setDragging] = useState(false);
   const clamp = (value: number) =>
     Math.max(80, Math.min(800, Math.round(value)));
   const cancel = () => {
     drag.current = null;
+    setDragging(false);
     preview(null);
   };
   return (
@@ -28,12 +30,17 @@ export function ColumnResize({
       aria-valuemax={800}
       aria-valuenow={width}
       tabIndex={0}
-      className="multitable-column-resize"
+      className={
+        dragging
+          ? "multitable-column-resize is-dragging"
+          : "multitable-column-resize"
+      }
       onPointerDown={(event) => {
         if (event.button !== 0) return;
         event.preventDefault();
         event.stopPropagation();
         drag.current = { x: event.clientX, width, current: width };
+        setDragging(true);
         event.currentTarget.setPointerCapture(event.pointerId);
         event.currentTarget.focus();
       }}
@@ -48,6 +55,7 @@ export function ColumnResize({
         const { current, width: original } = drag.current;
         drag.current = null;
         if (current !== original) commit(current);
+        setDragging(false);
         preview(null);
         if (event.currentTarget.hasPointerCapture(event.pointerId))
           event.currentTarget.releasePointerCapture(event.pointerId);

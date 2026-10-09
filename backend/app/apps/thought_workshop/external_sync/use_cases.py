@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.apps.thought_workshop.content_exports import resolve_assets
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase
+from app.apps.thought_workshop.multitable.content import project as project_tables
 from app.apps.thought_workshop.notes import Notes
 from app.integrations.external.blocks import feishu_tree
 from app.integrations.external.catalog import ExternalConnections
@@ -15,7 +16,7 @@ from app.integrations.external.contracts import ExternalError
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 
-from .content import project_content
+from .content import TABLE_SNAPSHOT, has_multitable_view, project_content
 from .models import ArticleSyncAsset, ArticleSyncBinding, ArticleSyncStep, ArticleSyncTask
 from .schemas import (
     ArticleBindingOut,
@@ -23,6 +24,7 @@ from .schemas import (
     ArticleSyncReconcileOut,
     ArticleSyncState,
     ArticleSyncTaskOut,
+    SnapshotBlock,
 )
 
 UNRESOLVED = {"queued", "running", "needs_review"}
@@ -206,17 +208,10 @@ class ArticleSync:
         if not binding or binding.revision != body.binding_revision:
             raise ExternalError("绑定已变化，请重新预览", 409)
         await self.idle(binding.target_key)
-        content = (
-            project_content(note.title, note.document)
-            if note.kind == "note"
-            else {
-                "nodes": [],
-                "text": note.title,
-                "asset_ids": [],
-                "warnings": [],
-                "blockers": ["暂不支持多维表文档"],
-            }
-        )
+        expanded = await project_tables(self.session, self.workspace_id, note)
+        content = project_content(note.title, expanded)
+        if note.kind == "multitable" or has_multitable_view(note.document):
+            content["warnings"] = sorted({*content["warnings"], TABLE_SNAPSHOT})
         if not content["blockers"]:
             try:
                 feishu_tree(content["nodes"])
@@ -276,6 +271,7 @@ class ArticleSync:
             preview_id=task.id if task else None,
             note_revision=fields["note_revision"],
             local_text=content["text"],
+            snapshot=[SnapshotBlock.model_validate(node) for node in content["nodes"]],
             remote_text=remote.text,
             target_title=remote.title,
             warnings=content["warnings"],

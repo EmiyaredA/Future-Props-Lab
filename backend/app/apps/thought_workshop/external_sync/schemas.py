@@ -44,10 +44,26 @@ class ArticlePreviewInput(BaseModel):
     binding_revision: int = Field(ge=0)
 
 
+class SnapshotRun(BaseModel):
+    text: str = ""
+    style: dict[str, bool] = Field(default_factory=dict)
+    link: str = ""
+
+
+class SnapshotBlock(BaseModel):
+    kind: Literal["heading", "text", "quote", "bullet", "ordered", "todo", "code", "table", "image"]
+    runs: list[SnapshotRun] = Field(default_factory=list)
+    level: int | None = None
+    checked: bool | None = None
+    asset_id: str | None = None
+    rows: list[list[list["SnapshotBlock"]]] | None = None
+
+
 class ArticleSyncPreview(BaseModel):
     preview_id: str | None
     note_revision: int
     local_text: str
+    snapshot: list[SnapshotBlock]
     remote_text: str
     target_title: str
     warnings: list[str]

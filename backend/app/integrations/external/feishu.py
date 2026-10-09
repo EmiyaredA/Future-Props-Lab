@@ -56,6 +56,15 @@ class FeishuClient:
         if response.is_error or value.get("code") != 0:
             code = value.get("code", response.status_code)
             # Provider messages and request bodies may contain credentials. Never expose them.
+            if code == 1770032:
+                raise ExternalError(
+                    "应用还不能阅读或编辑这篇文档（错误码 1770032）。"
+                    "请打开文档，在右上角「…」→「更多」→「添加文档应用」，并把应用设为可编辑。"
+                    "若列表中没有该应用，请先开通「查看、评论、编辑和管理云文档」，并开启机器人。",
+                    502,
+                    "document_forbidden",
+                    provider_code=code,
+                )
             raise ExternalError(
                 f"飞书请求失败（错误码 {code}），请检查应用权限与目标文档授权",
                 502,
@@ -95,7 +104,7 @@ class FeishuClient:
                 "GET", "/wiki/v2/spaces/get_node", params={"token": target.token}
             )
         except ExternalError as exc:
-            if exc.provider_code is None:
+            if exc.provider_code is None or exc.code == "document_forbidden":
                 raise
             if exc.provider_code == 131006:
                 raise ExternalError(

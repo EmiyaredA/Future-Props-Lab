@@ -16,6 +16,25 @@ BLOCKED = {
 }
 
 
+def has_multitable_view(document: dict) -> bool:
+    found = False
+
+    def walk(node):
+        nonlocal found
+        if not isinstance(node, dict):
+            return
+        if node.get("type") == "multitableView":
+            found = True
+        for child in node.get("content") or []:
+            walk(child)
+
+    walk(document)
+    return found
+
+
+TABLE_SNAPSHOT = "多维表格按当前视图导出为普通表格。之后改表需要重新同步；筛选、填色和编组不会保留"
+
+
 def project_content(title: str, document: dict) -> dict:
     warnings, blockers, assets = [], [], set()
 

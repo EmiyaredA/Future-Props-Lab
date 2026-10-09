@@ -235,6 +235,7 @@ class ArticleSyncPreview(WireModel):
     preview_id: str | None = Field(default=..., alias='preview_id')
     remote_changed: bool = Field(default=..., alias='remote_changed')
     remote_text: str = Field(default=..., alias='remote_text')
+    snapshot: list[SnapshotBlock] = Field(default=..., alias='snapshot')
     target_title: str = Field(default=..., alias='target_title')
     warnings: list[str] = Field(default=..., alias='warnings')
 
@@ -4558,6 +4559,19 @@ class Snapshot(WireModel):
     records: dict[str, list[RecordSpec]] = Field(default=..., alias='records')
     tables: list[TableSpec] = Field(default=..., alias='tables')
 
+class SnapshotBlock(WireModel):
+    asset_id: str | None = Field(default=None, alias='asset_id')
+    checked: bool | None = Field(default=None, alias='checked')
+    kind: Literal['heading', 'text', 'quote', 'bullet', 'ordered', 'todo', 'code', 'table', 'image'] = Field(default=..., alias='kind')
+    level: int | None = Field(default=None, alias='level')
+    rows: list[list[list[SnapshotBlock]]] | None = Field(default=None, alias='rows')
+    runs: list[SnapshotRun] | None = Field(default=None, alias='runs')
+
+class SnapshotRun(WireModel):
+    link: str = Field(default='', alias='link')
+    style: dict[str, bool] | None = Field(default=None, alias='style')
+    text: str = Field(default='', alias='text')
+
 class Sort(WireModel):
     direction: Literal['asc', 'desc'] = Field(default='asc', alias='direction')
     field_id: str = Field(default=..., alias='field_id')
@@ -6466,6 +6480,8 @@ SkillOut.model_rebuild()
 SkillUpdateIn.model_rebuild()
 SkillVersionOut.model_rebuild()
 Snapshot.model_rebuild()
+SnapshotBlock.model_rebuild()
+SnapshotRun.model_rebuild()
 Sort.model_rebuild()
 SplitClipOperation.model_rebuild()
 StorageLayoutIssueOut.model_rebuild()

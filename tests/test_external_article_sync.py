@@ -43,6 +43,7 @@ class FakeFeishu:
         self.wiki_tokens: list[str] = []
         self.hosts: set[str] = set()
         self.fail_token = False
+        self.read_code: int | None = None
         self.timeout_after_append = False
         self.edit_after_append = False
         self.transport = httpx.MockTransport(self.handle)
@@ -84,6 +85,13 @@ class FakeFeishu:
             return httpx.Response(
                 200, json={"code": 0, "tenant_access_token": "test-token", "expire": 3600}
             )
+        if (
+            request.method == "GET"
+            and self.read_code
+            and "/documents/" in path
+            and not path.endswith("/blocks")
+        ):
+            return httpx.Response(403, json={"code": self.read_code, "msg": "provider secret"})
         if "/permissions/" in path:
             data = {"auth_result": self.writable}
         elif request.method == "GET" and path.endswith("/blocks"):
@@ -432,6 +440,84 @@ async def test_auth_error_is_redacted_and_permission_check_separate(client, remo
     assert "secret should never leak" not in checked.text
 
 
+@pytest.mark.asyncio
+async def test_embedded_multitable_previews_as_a_static_table(client, remote):
+    library = await client.post("/v1/thought-workshop/knowledge-bases", json={"title": uuid4().hex})
+    assert library.status_code == 200, library.text
+    library = library.json()
+    table_note = await client.post(
+        "/v1/thought-workshop/notes",
+        json={
+            "knowledge_base_id": library["id"],
+            "expected_knowledge_revision": library["revision"],
+            "title": "调研台账",
+            "kind": "multitable",
+        },
+    )
+    assert table_note.status_code == 200, table_note.text
+    table_note = table_note.json()
+    base = f"/v1/thought-workshop/notes/{table_note['id']}/multitable"
+    table = (await client.get(base)).json()["tables"][0]
+    saved = await client.post(
+        base + "/operations",
+        json={
+            "expected_revision": table_note["revision"],
+            "operations": [
+                {
+                    "op": "records.put",
+                    "table_id": table["id"],
+                    "records": [
+                        {
+                            "id": "record1",
+                            "position": 0,
+                            "values": {table["fields"][0]["id"]: "比较结果"},
+                        }
+                    ],
+                }
+            ],
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    _, note, prefix, binding = await setup_article(
+        client,
+        remote,
+        {
+            "type": "doc",
+            "content": [
+                {"type": "paragraph", "content": [{"type": "text", "text": "正文说明"}]},
+                {
+                    "type": "multitableView",
+                    "attrs": {
+                        "noteId": table_note["id"],
+                        "tableId": table["id"],
+                        "viewId": table["views"][0]["id"],
+                    },
+                },
+            ],
+        },
+    )
+    preview = await client.post(
+        prefix + "/preview",
+        json={"expected_revision": note["revision"], "binding_revision": binding["revision"]},
+    )
+    assert preview.status_code == 200, preview.text
+    body = preview.json()
+    assert body["blockers"] == []
+    assert body["preview_id"]
+    assert "比较结果" in body["local_text"]
+    assert "正文说明" in body["local_text"]
+    assert any("普通表格" in warning for warning in body["warnings"])
+    tables = [block for block in body["snapshot"] if block["kind"] == "table"]
+    assert tables
+    assert any(
+        run["text"] == "比较结果"
+        for row in tables[0]["rows"]
+        for cell in row
+        for block in cell
+        for run in block["runs"]
+    )
+
+
 def test_content_projection_blockers_inline_and_style_warnings():
     content = project_content(
         "标题",
@@ -750,6 +836,23 @@ async def test_wiki_link_rejects_non_docx_nodes_without_leaking_provider_text(
         assert "添加文档应用" in body["detail"]
     assert "provider secret" not in result.text
     assert "never-return-me" not in result.text
+
+
+@pytest.mark.asyncio
+async def test_document_read_forbidden_explains_how_to_add_the_app(client, remote):
+    conn, _, _, _ = await setup_article(client, remote)
+    remote.read_code = 1770032
+    result = await client.post(
+        f"/v1/integrations/external-connections/{conn['id']}/target-check",
+        json={"url": "https://my.feishu.cn/wiki/P79mwdka1XSQMkxNPncqmE0nsh"},
+    )
+    body = result.json()
+    assert result.status_code == 502, result.text
+    assert body["code"] == "document_forbidden"
+    assert "1770032" in body["detail"]
+    assert "添加文档应用" in body["detail"]
+    assert "查看、评论、编辑和管理云文档" in body["detail"]
+    assert "provider secret" not in result.text
 
 
 @pytest.mark.asyncio
