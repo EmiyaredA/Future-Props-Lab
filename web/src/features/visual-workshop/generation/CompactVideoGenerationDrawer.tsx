@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import {
   ArrowUp,
   Check,
@@ -18,8 +18,12 @@ import {
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
 import { PromptVersionControls } from "./PromptVersionControls";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
+import { ReferenceDropNotice } from "@features/visual-workshop/generation/ReferenceDropNotice";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
-import { useProjectReferenceDrop } from "./useProjectReferenceDrop";
+import {
+  useProjectReferenceDrop,
+  type ReferenceDropNotice as ReferenceDropNoticeState,
+} from "./useProjectReferenceDrop";
 
 export function CompactVideoGenerationDrawer({
   controller,
@@ -99,10 +103,14 @@ export function CompactVideoGenerationDrawer({
     setAudioReferences(value);
     persistDraft({ audio_asset_ids: value }, true);
   };
+  const [dropNotice, setDropNotice] = useState<ReferenceDropNoticeState | null>(
+    null,
+  );
   const referenceDrop = useProjectReferenceDrop({
     projectId,
     files: controller.availableReferenceFiles,
     excludedAssetIds: controller.excludedAssetIds,
+    onResult: setDropNotice,
     selections: [
       {
         kind: "image",
@@ -201,6 +209,7 @@ export function CompactVideoGenerationDrawer({
               (firstFrame.length > 0 && videoMode !== "frames") ? (
                 <ProjectMediaPicker
                   excludedAssetIds={controller.excludedAssetIds}
+                  onDropResult={setDropNotice}
                   projectId={projectId}
                   label="起始画面"
                   minimal
@@ -222,6 +231,7 @@ export function CompactVideoGenerationDrawer({
                 <>
                   <ProjectMediaPicker
                     excludedAssetIds={controller.excludedAssetIds}
+                    onDropResult={setDropNotice}
                     projectId={projectId}
                     label="首帧"
                     minimal
@@ -239,6 +249,7 @@ export function CompactVideoGenerationDrawer({
                   />
                   <ProjectMediaPicker
                     excludedAssetIds={controller.excludedAssetIds}
+                    onDropResult={setDropNotice}
                     projectId={projectId}
                     label="尾帧（可选）"
                     minimal
@@ -259,6 +270,7 @@ export function CompactVideoGenerationDrawer({
               {lastFrame.length > 0 && videoMode !== "frames" ? (
                 <ProjectMediaPicker
                   excludedAssetIds={controller.excludedAssetIds}
+                  onDropResult={setDropNotice}
                   projectId={projectId}
                   label="尾帧"
                   minimal
@@ -283,6 +295,7 @@ export function CompactVideoGenerationDrawer({
                   linkedAssetIds.image.length ? (
                     <ProjectMediaPicker
                       excludedAssetIds={controller.excludedAssetIds}
+                      onDropResult={setDropNotice}
                       projectId={projectId}
                       label="参考图片"
                       onReorder={reorderImages}
@@ -303,6 +316,7 @@ export function CompactVideoGenerationDrawer({
                   linkedAssetIds.video.length ? (
                     <ProjectMediaPicker
                       excludedAssetIds={controller.excludedAssetIds}
+                      onDropResult={setDropNotice}
                       projectId={projectId}
                       label="参考视频"
                       kind="video"
@@ -323,6 +337,7 @@ export function CompactVideoGenerationDrawer({
                   linkedAssetIds.audio.length ? (
                     <ProjectMediaPicker
                       excludedAssetIds={controller.excludedAssetIds}
+                      onDropResult={setDropNotice}
                       projectId={projectId}
                       label="参考音频"
                       kind="audio"
@@ -342,6 +357,7 @@ export function CompactVideoGenerationDrawer({
               ) : null}
             </div>
           ) : null}
+          <ReferenceDropNotice notice={dropNotice} />
           <div className="video-composer-prompt">
             {controller.promptVersions && (
               <PromptVersionControls versions={controller.promptVersions} />

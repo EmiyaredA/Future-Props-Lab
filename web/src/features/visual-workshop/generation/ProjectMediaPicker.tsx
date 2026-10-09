@@ -37,7 +37,11 @@ import {
   moveReference,
   orderedReferenceIds,
 } from "@features/visual-workshop/generation/referenceOrder";
-import { useProjectReferenceDrop } from "./useProjectReferenceDrop";
+import { ReferenceDropNotice } from "./ReferenceDropNotice";
+import {
+  useProjectReferenceDrop,
+  type ReferenceDropNotice as ReferenceDropNoticeState,
+} from "./useProjectReferenceDrop";
 
 function uploadErrorMessage(error: unknown) {
   return apiErrorMessage(error, "上传失败，请稍后重试。");
@@ -146,6 +150,7 @@ export function ProjectMediaPicker({
   onReorder,
   onFilesLoaded,
   onInvalidSelection,
+  onDropResult,
 }: {
   projectId: string;
   label: string;
@@ -163,6 +168,7 @@ export function ProjectMediaPicker({
   onReorder?: (value: string[]) => void;
   onFilesLoaded?: (files: ManagedFile[]) => void;
   onInvalidSelection?: () => void;
+  onDropResult?: (notice: ReferenceDropNoticeState) => void;
 }) {
   const client = useQueryClient();
   const uploadInput = useRef<HTMLInputElement>(null);
@@ -297,6 +303,7 @@ export function ProjectMediaPicker({
     projectId,
     files,
     excludedAssetIds,
+    onResult: onDropResult,
     selections: [
       {
         kind,
@@ -663,6 +670,9 @@ export function ProjectMediaPicker({
           {uploadErrorMessage(upload.error)}
         </small>
       ) : null}
+      {onDropResult ? null : (
+        <ReferenceDropNotice notice={referenceDrop.notice} />
+      )}
       {sourceMenu}
       {previewFile
         ? createPortal(

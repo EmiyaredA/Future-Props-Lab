@@ -311,6 +311,72 @@
   color: var(--danger) !important;
 }
 
+.reference-drop-notice {
+  margin: 8px 0 0;
+  padding: 7px 8px 7px 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: none;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.reference-drop-notice span {
+  flex: 1;
+  min-width: 0;
+}
+
+.reference-drop-notice button {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+.reference-drop-notice button:hover,
+.visual-project-board .reference-drop-notice button:hover:not(:disabled),
+.audio-generation-composer .reference-drop-notice button:hover {
+  border: 0;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: inherit;
+}
+
+.visual-project-board .reference-drop-notice button,
+.audio-generation-composer .reference-drop-notice button {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.reference-drop-notice.is-success {
+  border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
+  background: color-mix(in srgb, var(--ok-soft) 88%, transparent);
+  color: var(--ok);
+}
+
+.reference-drop-notice.is-error {
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 .video-composer-prompt {
   position: relative;
   min-height: 0;

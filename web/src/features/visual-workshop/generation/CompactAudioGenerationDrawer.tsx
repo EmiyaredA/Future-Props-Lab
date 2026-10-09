@@ -11,6 +11,8 @@ import {
   X,
 } from "lucide-react";
 import { ProjectMediaPicker } from "./ProjectMediaPicker";
+import { ReferenceDropNotice } from "./ReferenceDropNotice";
+import type { ReferenceDropNotice as ReferenceDropNoticeState } from "./useProjectReferenceDrop";
 import {
   createGenerationTask,
   getGenerationOptions,
@@ -68,6 +70,9 @@ export function CompactAudioGenerationDrawer({
     audioDraft?.reference_asset_ids ?? [],
   );
   const [notice, setNotice] = useState("");
+  const [dropNotice, setDropNotice] = useState<ReferenceDropNoticeState | null>(
+    null,
+  );
   const [expanded, setExpanded] = useState(false);
   const options = useQuery({
     queryKey: visualWorkshopQueryKeys.generationOptions,
@@ -218,6 +223,7 @@ export function CompactAudioGenerationDrawer({
             <strong>参考音频</strong>
             <ProjectMediaPicker
               excludedAssetIds={excludedAssetIds}
+              onDropResult={setDropNotice}
               projectId={projectId}
               label="参考音频"
               kind="audio"
@@ -232,6 +238,7 @@ export function CompactAudioGenerationDrawer({
             />
           </div>
         ) : null}
+        <ReferenceDropNotice notice={dropNotice} />
       </div>
       <div className="audio-generation-editor">
         {onDraftChange && <PromptVersionControls versions={promptVersions} />}

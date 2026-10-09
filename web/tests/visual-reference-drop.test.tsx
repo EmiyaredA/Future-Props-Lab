@@ -203,6 +203,7 @@ test("board media drag adds typed references anywhere in the bar, saves and subm
   expect(
     await screen.findByRole("button", { name: "image素材" }),
   ).toBeVisible();
+  expect(await screen.findByText("已添加「image素材」。")).toBeVisible();
   expect(saved).toHaveBeenLastCalledWith(
     expect.objectContaining({ reference_asset_ids: ["image-asset"] }),
     true,
@@ -210,8 +211,8 @@ test("board media drag adds typed references anywhere in the bar, saves and subm
   expect(select).not.toHaveBeenCalled();
   fireEvent.drop(bar, { dataTransfer });
   expect(
-    screen.queryByText(/此素材已在参考框|已添加参考素材/),
-  ).not.toBeInTheDocument();
+    await screen.findByText("「image素材」已经在参考框里。"),
+  ).toBeVisible();
   for (const kind of ["video", "audio"] as const)
     fireEvent.drop(bar, { dataTransfer: transfer(`${kind}-asset`, kind) });
   expect(
@@ -234,17 +235,24 @@ test("board media drag adds typed references anywhere in the bar, saves and subm
 test("self references cannot be dragged or picked and old self selections are removed silently", async () => {
   const change = vi.fn();
   const invalid = vi.fn();
-  mount(
-    <ProjectMediaPicker
-      projectId="project"
-      label="自己的参考"
-      value={["image-asset"]}
-      excludedAssetIds={["image-asset"]}
-      minimal
-      onChange={change}
-      onInvalidSelection={invalid}
-    />,
-  );
+  function Harness() {
+    const [value, setValue] = useState(["image-asset"]);
+    return (
+      <ProjectMediaPicker
+        projectId="project"
+        label="自己的参考"
+        value={value}
+        excludedAssetIds={["image-asset"]}
+        minimal
+        onChange={(next) => {
+          change(next);
+          setValue(next);
+        }}
+        onInvalidSelection={invalid}
+      />
+    );
+  }
+  mount(<Harness />);
   await waitFor(() => expect(change).toHaveBeenCalledWith([]));
   change.mockClear();
   fireEvent.drop(screen.getByRole("group", { name: "自己的参考" }), {
@@ -252,7 +260,10 @@ test("self references cannot be dragged or picked and old self selections are re
   });
   expect(change).not.toHaveBeenCalled();
   expect(invalid).not.toHaveBeenCalled();
-  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(screen.queryByText(/已添加/)).not.toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "不能把当前节点自己的素材作为参考。",
+  );
   await userEvent.click(screen.getByRole("button", { name: "上传自己的参考" }));
   await userEvent.click(screen.getByRole("menuitem", { name: /本项目素材/ }));
   await screen.findByText("当前来源暂无可用素材");
@@ -277,8 +288,17 @@ test("picker rejects full, incompatible, missing, foreign and malformed referenc
   await screen.findByRole("button", { name: "image素材" });
   const picker = screen.getByRole("group", { name: "参考" });
   fireEvent.drop(picker, { dataTransfer: transfer() });
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "参考素材已达到数量上限。",
+  );
   fireEvent.drop(picker, { dataTransfer: transfer("video-asset", "video") });
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "当前参考框不接受这种素材。",
+  );
   fireEvent.drop(picker, { dataTransfer: transfer("missing") });
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "素材还没准备好，或已不在当前项目中。",
+  );
   const foreign = transfer();
   setCanvasAssetDragData(foreign, {
     assetId: "image-asset",
@@ -288,8 +308,12 @@ test("picker rejects full, incompatible, missing, foreign and malformed referenc
     sourceProjectId: "other",
   });
   fireEvent.drop(picker, { dataTransfer: foreign });
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "请先把素材导入当前项目，再拖入参考框。",
+  );
   foreign.setData(CANVAS_ASSET_DRAG_MIME, "null");
   fireEvent.drop(picker, { dataTransfer: foreign });
+  expect(screen.getByRole("alert")).toHaveTextContent("无法识别拖入的素材。");
   expect(change).not.toHaveBeenCalled();
 });
 
@@ -310,6 +334,7 @@ test("single frame accepts a replacement while disabled references stay unchange
   const picker = screen.getByRole("group", { name: "首帧" });
   fireEvent.drop(picker, { dataTransfer: transfer() });
   expect(change).toHaveBeenCalledWith(["image-asset"]);
+  expect(screen.getByRole("status")).toHaveTextContent("已添加「image素材」。");
   change.mockClear();
   view.rerender(
     <QueryClientProvider client={new QueryClient()}>
@@ -327,4 +352,5 @@ test("single frame accepts a replacement while disabled references stay unchange
     dataTransfer: transfer(),
   });
   expect(change).not.toHaveBeenCalled();
+  expect(screen.getByRole("alert")).toHaveTextContent("这个参考框当前不可用。");
 });

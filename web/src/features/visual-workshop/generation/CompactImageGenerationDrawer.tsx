@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ArrowUp,
   Check,
@@ -15,7 +16,9 @@ import {
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
 import { PromptVersionControls } from "./PromptVersionControls";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
+import { ReferenceDropNotice } from "@features/visual-workshop/generation/ReferenceDropNotice";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
+import type { ReferenceDropNotice as ReferenceDropNoticeState } from "@features/visual-workshop/generation/useProjectReferenceDrop";
 
 export function CompactImageGenerationDrawer({
   controller,
@@ -56,6 +59,9 @@ export function CompactImageGenerationDrawer({
     isSubmitting,
     submit,
   } = controller;
+  const [dropNotice, setDropNotice] = useState<ReferenceDropNoticeState | null>(
+    null,
+  );
   return (
     <aside
       className={`canvas-generation-drawer is-compact image-node-composer${composerExpanded ? " is-expanded" : ""}`}
@@ -66,6 +72,7 @@ export function CompactImageGenerationDrawer({
           <div className="image-composer-tools">
             <ProjectMediaPicker
               excludedAssetIds={controller.excludedAssetIds}
+              onDropResult={setDropNotice}
               projectId={projectId}
               multiple={(selectedModel?.max_reference_images ?? 1) > 1}
               max={selectedModel?.max_reference_images ?? 1}
@@ -105,6 +112,7 @@ export function CompactImageGenerationDrawer({
               )}
             </button>
           </div>
+          <ReferenceDropNotice notice={dropNotice} />
           <div className="video-composer-prompt image-composer-prompt">
             {controller.promptVersions && (
               <PromptVersionControls versions={controller.promptVersions} />
