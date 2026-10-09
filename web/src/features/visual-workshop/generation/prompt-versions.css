@@ -10,9 +10,16 @@
 }
 
 .prompt-version-controls > .custom-select {
-  flex: 1 1 100px;
+  flex: 0 1 auto;
+  width: auto;
   min-width: 0;
-  max-width: 200px;
+  max-width: 9rem;
+}
+
+.prompt-version-controls .custom-select-trigger {
+  width: auto;
+  min-width: 4.75rem;
+  max-width: 9rem;
 }
 
 .prompt-version-actions {
