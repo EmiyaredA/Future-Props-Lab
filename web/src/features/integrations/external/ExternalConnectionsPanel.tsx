@@ -241,40 +241,42 @@ export function ExternalConnectionsPanel({
       <div className="external-connections-list">
         {filtered.map((c) => (
           <article key={c.id} className="external-connection-card">
-            <div className="external-connection-card-heading">
-              <FeishuMark size={46} />
-              <div>
+            <FeishuMark size={32} />
+            <div className="external-connection-card-copy">
+              <div className="external-connection-card-heading">
                 <strong>{c.name}</strong>
-                <p>飞书 · 自建应用</p>
+                <span
+                  className={`external-connection-status ${!c.enabled ? "disabled" : c.status}`}
+                >
+                  <i />
+                  {!c.enabled
+                    ? "已停用"
+                    : c.status === "healthy"
+                      ? "连接正常"
+                      : c.status === "failed"
+                        ? "鉴权失败"
+                        : "待检查"}
+                </span>
               </div>
-              <span
-                className={`external-connection-status ${!c.enabled ? "disabled" : c.status}`}
-              >
-                <i />
-                {!c.enabled
-                  ? "已停用"
-                  : c.status === "healthy"
-                    ? "连接正常"
-                    : c.status === "failed"
-                      ? "鉴权失败"
-                      : "待检查"}
-              </span>
+              <p className="external-connection-card-meta">
+                <span>飞书 · 自建应用</span>
+                <span className="external-connection-status-detail">
+                  <ShieldCheck size={13} aria-hidden />
+                  {c.status_message || "凭据已保存，检查鉴权后即可绑定文档。"}
+                </span>
+                <span>
+                  {c.enabled && c.status === "healthy" ? (
+                    <>
+                      <Check size={13} aria-hidden />
+                      可以在文章中绑定目标
+                    </>
+                  ) : (
+                    c.app_id
+                  )}
+                </span>
+              </p>
             </div>
-            <p className="external-connection-status-detail">
-              <ShieldCheck size={15} aria-hidden />
-              {c.status_message || "凭据已保存，检查鉴权后即可绑定文档。"}
-            </p>
             <div className="external-connection-actions">
-              <span>
-                {c.enabled && c.status === "healthy" ? (
-                  <>
-                    <Check size={14} />
-                    可以在文章中绑定目标
-                  </>
-                ) : (
-                  c.app_id
-                )}
-              </span>
               <button
                 className="btn"
                 disabled={pending || !c.enabled}

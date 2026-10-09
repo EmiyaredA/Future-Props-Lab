@@ -1,6 +1,6 @@
 .external-connections {
   display: grid;
-  gap: 20px;
+  gap: 14px;
   padding-top: 10px;
 }
 .external-connections-heading {
@@ -120,40 +120,63 @@
 }
 .external-connections-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
-  gap: 16px;
+  gap: 8px;
 }
 .external-connection-card {
   min-width: 0;
-  padding: 22px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--surface);
+}
+.external-connection-card-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
 }
 .external-connection-card-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 6px 8px;
+  min-width: 0;
 }
-.external-connection-card-heading > div {
-  flex: 1;
+.external-connection-card strong {
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.external-connection-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.external-connection-card-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.external-connection-card strong {
-  font-size: 15px;
-}
-.external-connection-card-heading p {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 12px;
+.external-connection-card-meta > span + span::before {
+  content: "·";
+  margin: 0 7px;
+  color: var(--faint);
 }
 .external-connection-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 9px;
-  border-radius: 7px;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 6px;
   font-size: 11px;
   white-space: nowrap;
   background: var(--surface-soft);
@@ -173,37 +196,19 @@
   color: var(--danger);
   background: var(--danger-soft);
 }
-.external-connection-status-detail {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  min-height: 36px;
-  margin: 20px 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-}
 .external-connection-status-detail svg {
   flex-shrink: 0;
-  margin-top: 3px;
 }
 .external-connection-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
+  gap: 6px;
 }
-.external-connection-actions > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex: 1;
-  min-width: 0;
-  font-size: 11px;
-  color: var(--muted);
-  overflow-wrap: anywhere;
+.external-connection-actions .btn {
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
 }
 .integration-modal.external-connection-modal {
   width: min(600px, 100%);
@@ -353,14 +358,13 @@
     white-space: nowrap;
   }
   .external-connection-card {
-    padding: 16px;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    padding: 10px;
   }
   .external-connection-actions {
-    flex-wrap: wrap;
-  }
-  .external-connection-actions > span {
-    flex-basis: 100%;
-    margin-bottom: 4px;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
   }
   .external-connection-modal > header {
     padding: 16px 18px;
