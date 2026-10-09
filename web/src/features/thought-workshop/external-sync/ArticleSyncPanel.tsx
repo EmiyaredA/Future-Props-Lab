@@ -53,10 +53,16 @@ function panelFailure(error: unknown): PanelFailure {
   };
 }
 
-function accessFailure(code: string | undefined): AccessFailure | null {
-  return code === "wiki_node_forbidden" || code === "wiki_scope_required"
-    ? code
-    : null;
+function accessFailure(failure: PanelFailure | null): AccessFailure | null {
+  if (
+    failure?.code === "wiki_node_forbidden" ||
+    failure?.code === "wiki_scope_required"
+  )
+    return failure.code;
+  if (failure?.message.includes("错误码 131006")) return "wiki_node_forbidden";
+  if (failure?.message.includes("错误码 99991672"))
+    return "wiki_scope_required";
+  return null;
 }
 
 function feishuDocumentHref(value: string): string | null {
@@ -209,7 +215,7 @@ export function ArticleSyncPanel({
   const appId =
     connections.data?.items.find((item) => item.id === connection)?.app_id ??
     "";
-  const access = accessFailure(failure?.code);
+  const access = accessFailure(failure);
   async function action(work: () => Promise<unknown>) {
     setPending(true);
     setFailure(null);

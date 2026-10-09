@@ -34,3 +34,5 @@ Status: implemented
 - 全仓文档中心保护检查因本次工作开始前已有的两处 SDK 参考文章改动失败，本次没有修改这些保护路径。
 
 关联：[知识库通用正文编排](2026-10-03-document-layout.md)、[官方文档统一发布](../architecture/2026-10-04-unified-official-publications.md)。
+
+2026-10-09：[知识库首页就是一篇普通笔记](../simplification/2026-10-09-knowledge-home-is-a-note.md)替换本文中「编辑首页入口归顶栏、首页标题使用知识库名称」的约束。本文保留当时决定与验证记录。

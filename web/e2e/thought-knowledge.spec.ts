@@ -609,6 +609,8 @@ test("knowledge home opens as an ordinary editable note", async ({ page }) => {
   await newDocument(page);
   await page.getByRole("button", { name: "首页", exact: true }).click();
   await expect(
-    page.locator(".thought-subpages").getByRole("navigation", { name: "子文档" }),
+    page
+      .locator(".thought-subpages")
+      .getByRole("navigation", { name: "子文档" }),
   ).toHaveCount(0);
 });

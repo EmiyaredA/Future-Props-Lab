@@ -269,3 +269,31 @@ test("a forbidden wiki node links to the document and the app permission page", 
   expect(documentLink).toHaveAttribute("target", "_blank");
   expect(permissionLink).toHaveAttribute("rel", "noreferrer");
 });
+test("wiki guidance appears from the 131006 message before the error code is available", async () => {
+  const user = userEvent.setup();
+  vi.mocked(sync.getArticleSync).mockResolvedValue({
+    binding: null,
+    tasks: [],
+  });
+  vi.mocked(connections.checkExternalTarget).mockRejectedValue(
+    new Error(
+      "无法读取该知识库节点（错误码 131006）。请确认链接有效，为应用开通知识库节点读取权限",
+    ),
+  );
+  show(<ArticleSyncPanel note={note} close={vi.fn()} />);
+  await user.click(await screen.findByRole("combobox", { name: "使用连接" }));
+  await user.click(screen.getByRole("option", { name: "文章发布" }));
+  await user.type(
+    screen.getByRole("textbox", { name: "目标文档链接" }),
+    "https://evil.test/wiki/not-feishu",
+  );
+  await user.click(screen.getByRole("button", { name: "检查目标" }));
+  expect(await screen.findByText("应用还不能读取这篇知识库文档")).toBeVisible();
+  expect(
+    screen.queryByRole("link", { name: "打开这篇文档" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "开通权限" })).toHaveAttribute(
+    "href",
+    "https://open.feishu.cn/app/cli_test/auth?q=wiki:node:read&op_from=openapi&token_type=tenant",
+  );
+});
