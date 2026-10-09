@@ -304,17 +304,6 @@ summary > .docs-nav-chevron {
   min-width: 100px;
   padding: 10px 12px;
 }
-.docs-page-nav {
-  margin-top: 52px;
-}
-.docs-page-nav > a {
-  border: 0;
-  padding: 10px 0;
-  display: block;
-}
-.docs-page-nav .next {
-  text-align: right;
-}
 .docs-toc {
   overflow-y: auto;
   max-height: calc(100vh - 110px);

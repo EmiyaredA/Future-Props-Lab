@@ -3,7 +3,9 @@ from __future__ import annotations
 import io
 import shutil
 import stat
+import struct
 import zipfile
+import zlib
 from pathlib import Path
 
 import httpx
@@ -462,4 +464,116 @@ async def test_skill_zip_versions_download_and_rejects_unsafe_members() -> None:
         assert (
             await client.get(f"/v1/integrations/skills/{created['id']}/versions/v1/skill-md")
         ).status_code == 404
+    await _clear_integrations()
+
+
+def _png_bytes() -> bytes:
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + tag
+            + data
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
+    raw = zlib.compress(b"\x00\xff\x00\x00")
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", raw) + chunk(b"IEND", b"")
+
+
+def _preview_skill_zip() -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "SKILL.md",
+            "---\nname: preview-skill\ndescription: Shows the whole folder\n---\n# Preview\n",
+        )
+        archive.writestr("scripts/setup.py", "print('setup')\n")
+        archive.writestr("notes/page.html", "<p>hello</p>\n")
+        archive.writestr("notes/mark.svg", "<svg xmlns='http://www.w3.org/2000/svg'></svg>\n")
+        archive.writestr("assets/dot.png", _png_bytes())
+        archive.writestr("assets/blob.bin", b"\x00\x01\x02")
+        archive.writestr("notes/large.txt", "a" * (256 * 1024 + 1))
+    return buffer.getvalue()
+
+
+@pytest.mark.asyncio
+async def test_skill_version_preview_lists_files_and_rejects_unsafe_paths() -> None:
+    await _clear_integrations()
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post(
+            "/v1/integrations/skills",
+            files={"file": ("skill.zip", _preview_skill_zip(), "application/zip")},
+            data={"enabled": "false"},
+        )
+        assert created.status_code == 201, created.text
+        skill_id = created.json()["id"]
+        listed = await client.get(f"/v1/integrations/skills/{skill_id}/versions/v1/files")
+        assert listed.status_code == 200, listed.text
+        files = {item["path"]: item for item in listed.json()["files"]}
+        assert files["scripts/setup.py"]["kind"] == "text"
+        assert files["notes/page.html"]["kind"] == "text"
+        assert files["notes/mark.svg"]["kind"] == "text"
+        assert files["assets/dot.png"]["kind"] == "image"
+        assert files["assets/blob.bin"]["kind"] == "other"
+        assert files["notes/large.txt"]["kind"] == "other"
+        assert "outside" not in files
+
+        script = await client.get(
+            f"/v1/integrations/skills/{skill_id}/versions/v1/files/content",
+            params={"path": "scripts/setup.py"},
+        )
+        assert script.status_code == 200
+        assert script.json()["content"] == "print('setup')\n"
+        html = await client.get(
+            f"/v1/integrations/skills/{skill_id}/versions/v1/files/content",
+            params={"path": "notes/page.html"},
+        )
+        assert html.status_code == 200
+        assert html.json()["content"] == "<p>hello</p>\n"
+        image = await client.get(
+            f"/v1/integrations/skills/{skill_id}/versions/v1/files/media",
+            params={"path": "assets/dot.png"},
+        )
+        assert image.status_code == 200
+        assert image.headers["content-type"].startswith("image/png")
+        assert image.content.startswith(b"\x89PNG")
+
+        for path in (
+            "../SKILL.md",
+            "/etc/passwd",
+            "scripts/../SKILL.md",
+            "assets/dot.png",
+            "notes/large.txt",
+        ):
+            rejected = await client.get(
+                f"/v1/integrations/skills/{skill_id}/versions/v1/files/content",
+                params={"path": path},
+            )
+            assert rejected.status_code in {404, 422}, path
+        assert (
+            await client.get(
+                f"/v1/integrations/skills/{skill_id}/versions/v1/files/media",
+                params={"path": "scripts/setup.py"},
+            )
+        ).status_code == 422
+        assert (
+            await client.get(
+                f"/v1/integrations/skills/{skill_id}/versions/v1/files/media",
+                params={"path": "notes/mark.svg"},
+            )
+        ).status_code == 422
+
+        root = SkillArchiveStorage(get_settings(), "default").final_path(skill_id, "v1")
+        (root / "outside").symlink_to(Path("/etc/passwd"))
+        linked = await client.get(
+            f"/v1/integrations/skills/{skill_id}/versions/v1/files/content",
+            params={"path": "outside"},
+        )
+        assert linked.status_code == 422
+        listed_again = await client.get(f"/v1/integrations/skills/{skill_id}/versions/v1/files")
+        assert all(item["path"] != "outside" for item in listed_again.json()["files"])
+        missing = await client.get(f"/v1/integrations/skills/{skill_id}/versions/missing/files")
+        assert missing.status_code == 404
     await _clear_integrations()

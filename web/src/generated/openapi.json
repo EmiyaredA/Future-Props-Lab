@@ -28479,6 +28479,79 @@
         "title": "SkillCatalogOut",
         "type": "object"
       },
+      "SkillFileListOut": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/SkillFileOut"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "files"
+        ],
+        "title": "SkillFileListOut",
+        "type": "object"
+      },
+      "SkillFileOut": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "text",
+              "image",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "size": {
+            "minimum": 0.0,
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "path",
+          "size",
+          "kind"
+        ],
+        "title": "SkillFileOut",
+        "type": "object"
+      },
+      "SkillFileTextOut": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "path",
+          "content"
+        ],
+        "title": "SkillFileTextOut",
+        "type": "object"
+      },
       "SkillMarkdownOut": {
         "properties": {
           "content": {
@@ -48578,6 +48651,179 @@
           }
         },
         "summary": "Skill Version Content",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/skills/{skill_id}/versions/{version}/files": {
+      "get": {
+        "operationId": "skill_version_files_v1_integrations_skills__skill_id__versions__version__files_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillFileListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skill Version Files",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/skills/{skill_id}/versions/{version}/files/content": {
+      "get": {
+        "operationId": "skill_version_file_content_v1_integrations_skills__skill_id__versions__version__files_content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillFileTextOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skill Version File Content",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/skills/{skill_id}/versions/{version}/files/media": {
+      "get": {
+        "operationId": "skill_version_file_media_v1_integrations_skills__skill_id__versions__version__files_media_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "maxLength": 1024,
+              "minLength": 1,
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skill Version File Media",
         "tags": [
           "integrations"
         ]

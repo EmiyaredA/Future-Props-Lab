@@ -107,7 +107,8 @@
   line-height: 1.7;
 }
 
-.home-orbit {
+.home-orbit,
+.home-hero-pet {
   position: absolute;
   top: 50%;
   right: 11%;
@@ -115,9 +116,29 @@
   width: 228px;
   height: 228px;
   transform: translateY(-50%);
+}
+
+.home-orbit {
   filter: drop-shadow(
     0 22px 34px color-mix(in srgb, var(--accent) 28%, transparent)
   );
+}
+
+.home-hero-pet {
+  pointer-events: none;
+}
+
+.home-hero-pet .dp-pet-renderer,
+.home-hero-pet .dp-pet-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.home-hero-pet svg,
+.home-hero-pet canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .home-orbit-ring,
@@ -482,8 +503,11 @@
 }
 
 @media (max-width: 980px) {
-  .home-orbit {
+  .home-orbit,
+  .home-hero-pet {
     right: 4%;
+  }
+  .home-orbit {
     opacity: 0.62;
   }
   .home-destinations,
@@ -500,11 +524,14 @@
     min-height: 300px;
     padding: 30px 22px;
   }
-  .home-orbit {
+  .home-orbit,
+  .home-hero-pet {
     right: -38px;
     bottom: -36px;
     top: auto;
     transform: none;
+  }
+  .home-orbit {
     filter: none;
   }
   .home-header h1 {

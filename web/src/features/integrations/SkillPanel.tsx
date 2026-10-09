@@ -17,7 +17,6 @@ import {
   deleteSkill,
   downloadSkillVersion,
   getSkills,
-  getSkillMarkdown,
   getSkillVersions,
   updateSkill,
   type Skill,
@@ -36,6 +35,7 @@ import {
   SkillTagField,
   SkillTagDialog,
 } from "@features/integrations/SkillTags";
+import { SkillVersionBrowser } from "@features/integrations/SkillVersionBrowser";
 import "@features/integrations/skill-tags.css";
 import { parseSkillTags } from "@features/integrations/skillTagValues";
 
@@ -153,11 +153,6 @@ export function SkillPanel({
     queryKey: integrationKeys.versions(details?.id ?? ""),
     queryFn: () => getSkillVersions(details!),
     enabled: Boolean(details),
-  });
-  const markdownQuery = useQuery({
-    queryKey: integrationKeys.skillMarkdown(details?.id ?? "", detailVersion),
-    queryFn: () => getSkillMarkdown(details!, detailVersion),
-    enabled: Boolean(details && detailVersion),
   });
   const versionsQuery = useQuery({
     queryKey: integrationKeys.versions(viewing?.id ?? ""),
@@ -535,22 +530,18 @@ export function SkillPanel({
           title="Skill 详情"
           onClose={() => setDetails(null)}
           wide
+          className="skill-details-modal"
         >
           <div className="skill-details">
-            <h3>{details.name}</h3>
-            <p>{details.description || "暂无说明"}</p>
-            <div className="skill-tags" aria-label="全部标签">
-              {details.tags.length ? (
-                details.tags.map((tag) => <span key={tag}>{tag}</span>)
-              ) : (
-                <small>无标签</small>
-              )}
-            </div>
-            <div className="skill-markdown-heading">
-              <h4>SKILL.md</h4>
+            <div className="skill-details-heading">
+              <div>
+                <h3>{details.name}</h3>
+                <p>{details.description || "暂无说明"}</p>
+              </div>
               {detailVersionsQuery.data &&
               detailVersionsQuery.data.length > 1 ? (
                 <CustomSelect
+                  className="skill-version-select"
                   ariaLabel="查看 Skill 版本"
                   value={detailVersion}
                   options={detailVersionsQuery.data.map((version) => ({
@@ -560,20 +551,23 @@ export function SkillPanel({
                   onChange={setDetailVersion}
                 />
               ) : (
-                <span>{detailVersion}</span>
+                <span className="skill-version-chip">{detailVersion}</span>
               )}
             </div>
-            {markdownQuery.isPending ? (
-              <p role="status">正在加载 SKILL.md…</p>
-            ) : markdownQuery.isError ? (
-              <p role="alert">
-                SKILL.md 加载失败：{errorMessage(markdownQuery.error)}
-              </p>
-            ) : (
-              <pre className="skill-markdown-content">
-                {markdownQuery.data.content}
-              </pre>
-            )}
+            <div className="skill-tags" aria-label="全部标签">
+              {details.tags.length ? (
+                details.tags.map((tag) => <span key={tag}>{tag}</span>)
+              ) : (
+                <small>无标签</small>
+              )}
+            </div>
+            {detailVersion ? (
+              <SkillVersionBrowser
+                skill={details}
+                version={detailVersion}
+                onDownload={() => void download(details, detailVersion)}
+              />
+            ) : null}
           </div>
         </IntegrationModal>
       ) : null}

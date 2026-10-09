@@ -19,6 +19,7 @@ import { ColumnResize } from "./ColumnResize";
 import { formatFieldValue } from "./formatting";
 import { FieldIcon } from "./FieldValue";
 import { CellEditor } from "./CellEditor";
+import { FieldHeaderMenu } from "./FieldHeaderMenu";
 import "./grid.css";
 
 export function GridView({
@@ -33,6 +34,9 @@ export function GridView({
   noteId,
   configure,
   editField,
+  insertField,
+  deleteField,
+  openFilters,
   positionKey,
   loadMore,
   hasMore,
@@ -48,6 +52,9 @@ export function GridView({
   noteId: string;
   configure?: (view: View) => void;
   editField?: (field: Field, anchor: HTMLElement) => void;
+  insertField?: (field: Field, side: "before" | "after") => void;
+  deleteField?: (field: Field) => void;
+  openFilters?: () => void;
   positionKey: string;
   loadMore: () => void;
   hasMore: boolean;
@@ -249,16 +256,16 @@ export function GridView({
                 style={{ width: h.getSize() }}
               >
                 {editField && !readOnly ? (
-                  <button
-                    className="multitable-field-header"
-                    aria-label={`配置字段 ${field.name}`}
-                    aria-haspopup="dialog"
-                    onClick={(e) => editField(field, e.currentTarget)}
-                  >
-                    <FieldIcon type={field.type} />
-                    <span>{field.name}</span>
-                    <span aria-hidden="true">⌄</span>
-                  </button>
+                  <FieldHeaderMenu
+                    field={field}
+                    fieldCount={table.fields.length}
+                    view={view}
+                    onEdit={(anchor) => editField(field, anchor)}
+                    onConfigure={configure}
+                    onInsert={insertField}
+                    onDelete={deleteField}
+                    onFilter={openFilters}
+                  />
                 ) : (
                   <span>
                     <FieldIcon type={field.type} />

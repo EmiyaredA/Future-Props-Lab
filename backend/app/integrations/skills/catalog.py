@@ -18,6 +18,8 @@ from app.integrations.common import (
 from app.integrations.models import SkillIntegration, SkillVersion
 from app.integrations.schemas import (
     SkillCatalogOut,
+    SkillFileListOut,
+    SkillFileTextOut,
     SkillMarkdownOut,
     SkillOut,
     SkillTagsIn,
@@ -29,6 +31,7 @@ from app.integrations.skills.archive import (
     SkillArchiveStorage,
     StagedSkillArchive,
 )
+from app.integrations.skills.preview import list_skill_files, read_skill_image, read_skill_text
 from app.orm import require_workspace_id
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
@@ -344,6 +347,18 @@ class SkillCatalog:
             raise IntegrationValidationError("SKILL.md 必须使用 UTF-8") from exc
         except OSError as exc:
             raise IntegrationNotFoundError("SKILL.md 不可读取") from exc
+
+    async def version_files(self, skill_id: str, version: str) -> SkillFileListOut:
+        return list_skill_files(await self._version_root(skill_id, version), version)
+
+    async def version_file_text(self, skill_id: str, version: str, path: str) -> SkillFileTextOut:
+        return read_skill_text(await self._version_root(skill_id, version), version, path)
+
+    async def version_file_image(
+        self, skill_id: str, version: str, path: str
+    ) -> tuple[str, bytes, str]:
+        root = await self._version_root(skill_id, version)
+        return read_skill_image(root, path)
 
     async def _version_root(self, skill_id: str, version: str) -> Path:
         await self._get(skill_id)

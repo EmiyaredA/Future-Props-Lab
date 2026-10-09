@@ -3,6 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, it, vi } from "vitest";
 import { GridView } from "@features/thought-workshop/multitable/GridView";
+import {
+  deleteFieldDraft,
+  insertTextField,
+  sortFieldFirst,
+} from "@features/thought-workshop/multitable/fieldHeaderActions";
 import { newTable } from "@features/thought-workshop/multitable/model";
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
@@ -39,6 +44,9 @@ function grid(readOnly = false, editField = vi.fn()) {
     loadMore: vi.fn(),
     hasMore: false,
     editField,
+    insertField: vi.fn(),
+    deleteField: vi.fn(),
+    openFilters: vi.fn(),
     configure: vi.fn(),
   };
   const result = render(
@@ -70,21 +78,123 @@ it("opens an existing cell after range selection and retains its dialog across a
     { ...row, values: { [table.fields[0].id]: "已有任务追加" } },
   ]);
 });
-it("opens header configuration by keyboard, keeps resizing independent and hides it in readonly mode", async () => {
+it("opens the field menu from the header, then edits, and keeps resizing independent", async () => {
   const user = userEvent.setup(),
     { props, unmount } = grid();
-  const header = screen.getByRole("button", { name: "配置字段 名称" });
+  const header = screen.getByRole("button", { name: "字段操作 名称" });
   header.focus();
-  await user.keyboard("{Enter} ");
-  expect(props.editField).toHaveBeenCalledTimes(2);
+  await user.keyboard("{Enter}");
+  const menu = screen.getByRole("menu", { name: "字段操作 名称" });
+  expect(props.editField).not.toHaveBeenCalled();
+  expect(
+    within(menu).getByRole("menuitem", { name: "删除字段" }),
+  ).toBeDisabled();
+  expect(
+    within(menu).getByRole("menuitem", { name: "向左插入字段" }),
+  ).toBeDisabled();
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("menu", { name: "字段操作 名称" })).toBeNull();
+  await user.keyboard(" ");
+  await user.click(screen.getByRole("menuitem", { name: "修改字段" }));
+  expect(props.editField).toHaveBeenCalledOnce();
   expect(props.editField).toHaveBeenLastCalledWith(table.fields[0], header);
   screen.getByRole("separator", { name: "调整名称列宽" }).focus();
   await user.keyboard("{ArrowRight}");
   expect(props.configure).toHaveBeenCalledOnce();
-  expect(props.editField).toHaveBeenCalledTimes(2);
+  expect(props.editField).toHaveBeenCalledOnce();
   unmount();
   grid(true, props.editField);
-  expect(screen.queryByRole("button", { name: /配置字段/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /字段操作/ })).toBeNull();
+});
+it("hides, sorts, and filters the current field from the header menu", async () => {
+  const user = userEvent.setup(),
+    { props } = grid();
+  const status = table.fields[1];
+  await user.click(screen.getByRole("button", { name: "字段操作 状态" }));
+  expect(screen.getByRole("menuitem", { name: "删除字段" })).toBeEnabled();
+  await user.click(screen.getByRole("menuitem", { name: "隐藏字段" }));
+  expect(props.configure).toHaveBeenCalledWith(
+    expect.objectContaining({
+      config: expect.objectContaining({ hidden_fields: [status.id] }),
+    }),
+  );
+  await user.click(screen.getByRole("button", { name: "字段操作 状态" }));
+  await user.click(screen.getByRole("menuitem", { name: "升序" }));
+  expect(props.configure).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      config: expect.objectContaining({
+        sorts: [{ field_id: status.id, direction: "asc" }],
+      }),
+    }),
+  );
+  await user.click(screen.getByRole("button", { name: "字段操作 状态" }));
+  await user.click(screen.getByRole("menuitem", { name: "按此字段筛选" }));
+  expect(props.openFilters).toHaveBeenCalledOnce();
+});
+it("keeps earlier sorts, inserts beside the anchor, and blocks a field used by a board", () => {
+  const dated = table.fields[2];
+  const status = table.fields[1];
+  expect(
+    sortFieldFirst(
+      {
+        ...table.views[0],
+        config: {
+          filter_mode: "all",
+          sorts: [{ field_id: dated.id, direction: "desc" }],
+        },
+      },
+      status.id,
+      "asc",
+    ).config?.sorts,
+  ).toEqual([
+    { field_id: status.id, direction: "asc" },
+    { field_id: dated.id, direction: "desc" },
+  ]);
+  expect(() => insertTextField(table, table.fields[0], "before")).toThrow(
+    /名称/,
+  );
+  const inserted = insertTextField(table, status, "after");
+  const created = inserted.fields.find((field) => field.name === "新字段");
+  expect(created).toMatchObject({
+    type: "text",
+    position: status.position + 1,
+  });
+  expect(
+    inserted.fields.find((field) => field.id === status.id)?.position,
+  ).toBe(status.position);
+  const ordered = structuredClone(table);
+  ordered.views[0].config = {
+    filter_mode: "all",
+    column_order: ordered.fields.map((field) => field.id),
+  };
+  const beside = insertTextField(ordered, ordered.fields[1], "after");
+  const added = beside.fields.find((field) => field.name === "新字段");
+  expect(beside.views[0].config?.column_order).toEqual([
+    ordered.fields[0].id,
+    ordered.fields[1].id,
+    added?.id,
+    ordered.fields[2].id,
+    ordered.fields[3].id,
+  ]);
+  const full = structuredClone(table);
+  full.fields = Array.from({ length: 50 }, (_, index) => ({
+    id: `field-${index}`,
+    name: index === 0 ? "名称" : `字段${index}`,
+    type: "text" as const,
+    position: index,
+    options: [],
+  }));
+  expect(() => insertTextField(full, full.fields[1], "after")).toThrow(/50/);
+  expect(() => deleteFieldDraft(table, table.fields[0])).toThrow(/名称/);
+  const blocked = structuredClone(table);
+  blocked.views[0].config = {
+    filter_mode: "all",
+    stack_field_id: status.id,
+  };
+  expect(() => deleteFieldDraft(blocked, status)).toThrow(/看板或日历/);
+  const removed = deleteFieldDraft(table, dated);
+  expect(removed.fields.map((field) => field.id)).not.toContain(dated.id);
+  expect(removed.fields.map((field) => field.position)).toEqual([0, 1, 2]);
 });
 it("validates every pasted cell before submitting one batch and prevents readonly writes", () => {
   const { change, error, unmount } = grid();

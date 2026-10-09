@@ -13,6 +13,7 @@ import {
   conversionPreview,
   csvExport,
   tableRecords,
+  type Field,
   type RecordRow,
   type Table,
   type View,
@@ -31,6 +32,7 @@ import { CellEditor } from "./CellEditor";
 import { Modal } from "./Modal";
 import { FieldEditor } from "./FieldEditor";
 import { mergeFieldChanges, validateFieldDraft } from "./fieldChanges";
+import { deleteFieldDraft, insertTextField } from "./fieldHeaderActions";
 import { formatFieldValue } from "./formatting";
 import { CsvDialog, HistoryDialog } from "./ExchangeDialogs";
 import "./multitable.css";
@@ -75,6 +77,7 @@ export function TableEditor({
     field: Table["fields"][number];
     anchor: HTMLElement;
   } | null>(null);
+  const [fieldToDelete, setFieldToDelete] = useState<Field | null>(null);
   const prepareFields = async (draft: Table, base: Table) => {
     validateFieldDraft(draft);
     await controller.flush();
@@ -462,6 +465,37 @@ export function TableEditor({
                 ? (field, anchor) => setFieldEditor({ field, anchor })
                 : undefined
             }
+            insertField={
+              !embedded && canEdit
+                ? (field, side) =>
+                    run(async () => {
+                      await saveFields(
+                        insertTextField(table, field, side),
+                        table,
+                      );
+                    })
+                : undefined
+            }
+            deleteField={
+              !embedded && canEdit
+                ? (field) => {
+                    try {
+                      deleteFieldDraft(table, field);
+                    } catch (e) {
+                      controller.setError(
+                        e instanceof Error ? e.message : "无法删除字段",
+                      );
+                      return;
+                    }
+                    setFieldToDelete(field);
+                  }
+                : undefined
+            }
+            openFilters={
+              !embedded && canEdit
+                ? () => setViewOpen({ view, section: "filters" })
+                : undefined
+            }
           />
         )}
         <footer className="multitable-footer">
@@ -628,6 +662,21 @@ export function TableEditor({
           </div>
         </Modal>
       )}
+      <ConfirmDialog
+        open={!!fieldToDelete}
+        title="删除字段？"
+        description="将删除该字段及所有记录中的对应值。确认后可通过表格历史恢复。"
+        confirmLabel="删除"
+        onCancel={() => setFieldToDelete(null)}
+        onConfirm={() => {
+          const field = fieldToDelete;
+          setFieldToDelete(null);
+          if (field)
+            run(async () => {
+              await saveFields(deleteFieldDraft(table, field), table);
+            });
+        }}
+      />
       <ConfirmDialog
         open={!!remove}
         title={

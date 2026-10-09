@@ -12,6 +12,9 @@ export type Skill = components["schemas"]["SkillOut"];
 export type SkillCatalog = components["schemas"]["SkillCatalogOut"];
 export type SkillVersion = components["schemas"]["SkillVersionOut"];
 export type SkillMarkdown = components["schemas"]["SkillMarkdownOut"];
+export type SkillFileList = components["schemas"]["SkillFileListOut"];
+export type SkillFileEntry = components["schemas"]["SkillFileOut"];
+export type SkillFileText = components["schemas"]["SkillFileTextOut"];
 
 export const getToolApis = async () =>
   unwrap(await api.GET("/v1/integrations/tool-apis"));
@@ -164,6 +167,33 @@ export const getSkillMarkdown = async (current: Skill, version: string) =>
       "/v1/integrations/skills/{skill_id}/versions/{version}/skill-md",
       {
         params: { path: { skill_id: current.id, version } },
+      },
+    ),
+  );
+
+export const getSkillFiles = async (current: Skill, version: string) =>
+  unwrap(
+    await api.GET(
+      "/v1/integrations/skills/{skill_id}/versions/{version}/files",
+      {
+        params: { path: { skill_id: current.id, version } },
+      },
+    ),
+  );
+
+export const getSkillFileText = async (
+  current: Skill,
+  version: string,
+  path: string,
+) =>
+  unwrap(
+    await api.GET(
+      "/v1/integrations/skills/{skill_id}/versions/{version}/files/content",
+      {
+        params: {
+          path: { skill_id: current.id, version },
+          query: { path },
+        },
       },
     ),
   );

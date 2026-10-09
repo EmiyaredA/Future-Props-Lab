@@ -91,6 +91,18 @@ class Integrations:
         'Skill Version Content. GET /v1/integrations/skills/{skill_id}/versions/{version}/content'
         return self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/content', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=Any)
 
+    def skill_version_files(self, *, skill_id: str, version: str) -> models.SkillFileListOut:
+        'Skill Version Files. GET /v1/integrations/skills/{skill_id}/versions/{version}/files'
+        return self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/files', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=models.SkillFileListOut)
+
+    def skill_version_file_content(self, *, skill_id: str, version: str, path: str) -> models.SkillFileTextOut:
+        'Skill Version File Content. GET /v1/integrations/skills/{skill_id}/versions/{version}/files/content'
+        return self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/files/content', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version), ('path', 'query', path)], response_type=models.SkillFileTextOut)
+
+    def skill_version_file_media(self, *, skill_id: str, version: str, path: str) -> Any:
+        'Skill Version File Media. GET /v1/integrations/skills/{skill_id}/versions/{version}/files/media'
+        return self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/files/media', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version), ('path', 'query', path)], response_type=Any)
+
     def skill_version_markdown(self, *, skill_id: str, version: str) -> models.SkillMarkdownOut:
         'Skill Version Markdown. GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md'
         return self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/skill-md', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=models.SkillMarkdownOut)
@@ -202,6 +214,18 @@ class AsyncIntegrations:
     async def skill_version_content(self, *, skill_id: str, version: str) -> Any:
         'Skill Version Content. GET /v1/integrations/skills/{skill_id}/versions/{version}/content'
         return await self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/content', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=Any)
+
+    async def skill_version_files(self, *, skill_id: str, version: str) -> models.SkillFileListOut:
+        'Skill Version Files. GET /v1/integrations/skills/{skill_id}/versions/{version}/files'
+        return await self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/files', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version)], response_type=models.SkillFileListOut)
+
+    async def skill_version_file_content(self, *, skill_id: str, version: str, path: str) -> models.SkillFileTextOut:
+        'Skill Version File Content. GET /v1/integrations/skills/{skill_id}/versions/{version}/files/content'
+        return await self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/files/content', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version), ('path', 'query', path)], response_type=models.SkillFileTextOut)
+
+    async def skill_version_file_media(self, *, skill_id: str, version: str, path: str) -> Any:
+        'Skill Version File Media. GET /v1/integrations/skills/{skill_id}/versions/{version}/files/media'
+        return await self._client._call('GET', '/v1/integrations/skills/{skill_id}/versions/{version}/files/media', parameters=[('skill_id', 'path', skill_id), ('version', 'path', version), ('path', 'query', path)], response_type=Any)
 
     async def skill_version_markdown(self, *, skill_id: str, version: str) -> models.SkillMarkdownOut:
         'Skill Version Markdown. GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md'

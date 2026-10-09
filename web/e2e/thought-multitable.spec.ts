@@ -22,6 +22,12 @@ async function write(
   expect(response.ok(), `${path}: ${await response.text()}`).toBeTruthy();
   return response;
 }
+async function configureField(page: Page, name: string) {
+  await page
+    .getByRole("button", { name: `字段操作 ${name}`, exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "修改字段", exact: true }).click();
+}
 async function choose(page: Page, label: string, option: string) {
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
@@ -85,9 +91,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   await cell(page, "预算", "12345.6789");
   await cell(page, "截止日期", "2026-10-04");
   await saved(page);
-  await page
-    .getByRole("button", { name: "配置字段 预算", exact: true })
-    .click();
+  await configureField(page, "预算");
   await choose(page, "小数位数", "2 位小数");
   await page.getByRole("checkbox", { name: "千位分隔", exact: true }).check();
   await expect(page.getByRole("dialog", { name: "字段配置" })).toHaveClass(
@@ -107,9 +111,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
     page.getByRole("textbox", { name: "预算", exact: true }),
   ).toHaveValue("12345.6789");
   await page.keyboard.press("Escape");
-  await page
-    .getByRole("button", { name: "配置字段 截止日期", exact: true })
-    .click();
+  await configureField(page, "截止日期");
   await choose(page, "日期显示格式", "YYYY年M月D日 · 2026年10月4日");
   await captureField(page, "date-config");
   await page.getByRole("button", { name: "保存字段", exact: true }).click();
@@ -273,7 +275,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   await expect(
     page
       .locator(".multitable-embed")
-      .getByRole("button", { name: "配置字段 预算", exact: true }),
+      .getByRole("button", { name: "字段操作 预算", exact: true }),
   ).toHaveCount(0);
   await cell(page, "名称", "正文修改任务");
   await expect
@@ -347,9 +349,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
         expect(nameWidth).toBeLessThanOrEqual(gridWidth / 2 + 1);
       }
       const directory = process.env.FPL_MULTITABLE_PREVIEWS;
-      await page
-        .getByRole("button", { name: "配置字段 名称", exact: true })
-        .click();
+      await configureField(page, "名称");
       const fieldDialog = page.getByRole("dialog", {
         name: "字段配置",
         exact: true,
@@ -369,11 +369,9 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
         .getByRole("button", { name: "取消", exact: true })
         .click();
       await expect(
-        page.getByRole("button", { name: "配置字段 名称", exact: true }),
+        page.getByRole("button", { name: "字段操作 名称", exact: true }),
       ).toBeFocused();
-      await page
-        .getByRole("button", { name: "配置字段 状态", exact: true })
-        .click();
+      await configureField(page, "状态");
       await expect(
         page
           .getByRole("dialog", { name: "字段配置" })

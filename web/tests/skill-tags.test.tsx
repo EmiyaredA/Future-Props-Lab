@@ -6,7 +6,8 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { SkillPanel } from "@features/integrations/SkillPanel";
 import {
   createSkill,
-  getSkillMarkdown,
+  getSkillFiles,
+  getSkillFileText,
   getSkills,
   getSkillVersions,
   updateSkill,
@@ -20,7 +21,8 @@ vi.mock("@features/integrations/api", async () => ({
   )),
   getSkills: vi.fn(),
   getSkillVersions: vi.fn(),
-  getSkillMarkdown: vi.fn(),
+  getSkillFiles: vi.fn(),
+  getSkillFileText: vi.fn(),
   createSkill: vi.fn(),
   updateSkill: vi.fn(),
 }));
@@ -119,10 +121,22 @@ beforeEach(() => {
       created_at: base.created_at,
     },
   ]);
-  vi.mocked(getSkillMarkdown).mockImplementation(async (_skill, version) => ({
+  vi.mocked(getSkillFiles).mockImplementation(async (_skill, version) => ({
     version,
-    content: `# ${version} instructions`,
+    files: [
+      { path: "SKILL.md", size: 24, kind: "text" },
+      { path: "scripts/setup.py", size: 18, kind: "text" },
+    ],
   }));
+  vi.mocked(getSkillFileText).mockImplementation(
+    async (_skill, version, path) => ({
+      version,
+      path,
+      content: path.endsWith("SKILL.md")
+        ? `# ${version} instructions`
+        : `print(${JSON.stringify(version)})`,
+    }),
+  );
 });
 
 test("shows SKILL.md for the default and selected version to read-only viewers", async () => {
@@ -132,12 +146,19 @@ test("shows SKILL.md for the default and selected version to read-only viewers",
   );
   const dialog = screen.getByRole("dialog");
   expect(await within(dialog).findByText("# v1 instructions")).toBeVisible();
+  expect(
+    within(dialog).getByRole("button", { name: "scripts" }),
+  ).toHaveAttribute("aria-expanded", "true");
+  await user.click(
+    within(dialog).getByRole("button", { name: "scripts/setup.py" }),
+  );
+  expect(await within(dialog).findByText('print("v1")')).toBeVisible();
   await user.click(
     within(dialog).getByRole("combobox", { name: "查看 Skill 版本" }),
   );
   await user.click(within(dialog).getByRole("option", { name: "v2" }));
   expect(await within(dialog).findByText("# v2 instructions")).toBeVisible();
-  expect(getSkillMarkdown).toHaveBeenCalledWith(base, "v2");
+  expect(getSkillFileText).toHaveBeenCalledWith(base, "v2", "SKILL.md");
 });
 
 test("edits normalized tags, clears them and preserves version settings", async () => {
@@ -314,6 +335,19 @@ for (const canManage of [true, false]) {
       name: "查看 Skill 版本",
     });
     expect(versionSelect).toHaveFocus();
+    expect(
+      await dialog.findByRole("button", { name: "SKILL.md" }),
+    ).toBeVisible();
+    await user.tab();
+    expect(dialog.getByRole("button", { name: "SKILL.md" })).toHaveFocus();
+    await user.tab();
+    expect(dialog.getByRole("button", { name: "scripts" })).toHaveFocus();
+    await user.tab();
+    expect(
+      dialog.getByRole("button", { name: "scripts/setup.py" }),
+    ).toHaveFocus();
+    await user.tab();
+    expect(dialog.getByRole("button", { name: "下载 ZIP" })).toHaveFocus();
     await user.tab();
     expect(close).toHaveFocus();
     await user.keyboard("{Escape}");

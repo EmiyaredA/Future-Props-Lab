@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@shared/ui/button";
+import { HomeHeroPet } from "@features/home/HomeHeroPet";
 import "@features/home/home.css";
 
 const destinations = [
@@ -74,13 +75,7 @@ export function HomePage({
           <h1>今天想从哪里开始？</h1>
           <p>把灵感、模型和工具，收拢到一个顺手的工作空间。</p>
         </div>
-        <div className="home-orbit" aria-hidden="true">
-          <span className="home-orbit-glow" />
-          <span className="home-orbit-ring home-orbit-ring--one" />
-          <span className="home-orbit-ring home-orbit-ring--two" />
-          <span className="home-orbit-ring home-orbit-ring--three" />
-          <span className="home-orbit-core" />
-        </div>
+        <HomeHeroPet />
       </header>
 
       <div className="home-destinations" aria-label="功能导航">

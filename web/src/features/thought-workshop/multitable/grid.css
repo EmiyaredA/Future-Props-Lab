@@ -16,21 +16,24 @@
   top: 0;
   z-index: 5;
   background: var(--table-soft);
-  height: 40px;
+  height: 36px;
 }
 .multitable-grid-header > div:not(.multitable-row-number) {
   position: relative;
   display: flex;
   align-items: center;
-  padding: 0 10px;
-  font-size: 12px;
-  color: var(--muted);
+  padding: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
 }
 .multitable-grid-header > div > span {
   display: flex;
   align-items: center;
   gap: 7px;
   min-width: 0;
+  height: 100%;
+  padding: 0 10px;
   overflow: hidden;
   white-space: nowrap;
 }
@@ -56,8 +59,9 @@
   font-size: 13px;
   background: var(--table-bg);
 }
-.multitable-grid-row:hover > [role="gridcell"] {
-  background: var(--surface-raised);
+.multitable-grid-row:hover > [role="gridcell"],
+.multitable-grid-row:hover > .multitable-row-number {
+  background: color-mix(in srgb, var(--text) 4%, var(--table-bg));
 }
 .multitable-grid-row > [aria-selected="true"],
 .multitable-grid-row:hover > [aria-selected="true"] {
@@ -72,9 +76,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: var(--table-soft);
+  background: var(--table-bg);
   color: var(--faint);
-  font-size: 11px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
   padding: 0;
   border-top: 0;
@@ -87,7 +92,8 @@
   z-index: 2;
   border-right-color: var(--border-strong);
 }
-.multitable-grid-header > div.is-primary-column {
+.multitable-grid-header > div.is-primary-column,
+.multitable-grid-header > .multitable-row-number {
   background: var(--table-soft);
 }
 .multitable-column-resize {
@@ -130,6 +136,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.multitable-value.is-url {
+  color: var(--accent);
+}
 .multitable-empty-value {
   color: var(--faint);
 }
@@ -147,9 +156,10 @@
   gap: 5px;
   flex-shrink: 0;
   max-width: 100%;
-  padding: 3px 7px;
-  border-radius: 5px;
-  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 18px;
   color: var(--text);
   background: color-mix(in srgb, var(--option-color) 14%, var(--surface));
   white-space: nowrap;
@@ -157,8 +167,8 @@
   text-overflow: ellipsis;
 }
 .multitable-tag i {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   flex-shrink: 0;
   background: var(--option-color);
@@ -187,7 +197,7 @@
   gap: 7px;
   width: 100%;
   min-width: 0;
-  padding: 0;
+  padding: 0 8px 0 10px;
   height: 100%;
   border: 0;
   background: transparent;
@@ -201,12 +211,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.multitable-field-header > span:last-child {
+.multitable-field-header > svg:not(.multitable-field-chevron) {
+  color: var(--muted);
+}
+.multitable-field-chevron {
   margin-left: auto;
+  color: var(--muted);
   opacity: 0;
 }
-.multitable-field-header:hover > span:last-child,
-.multitable-field-header:focus-visible > span:last-child {
+.multitable-field-header:hover,
+.multitable-field-header.is-open {
+  background: var(--surface-hover);
+}
+.multitable-field-header:hover .multitable-field-chevron,
+.multitable-field-header:focus-visible .multitable-field-chevron,
+.multitable-field-header.is-open .multitable-field-chevron {
   opacity: 1;
 }
 .multitable-field-header:focus-visible {

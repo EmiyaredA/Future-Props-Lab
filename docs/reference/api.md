@@ -341,7 +341,8 @@ SenseAudio 结果包含全文、说话人和句级起止时间；ASR API 的嵌�
 - MCP：`GET/POST /v1/integrations/mcp`、`GET/PATCH/DELETE /v1/integrations/mcp/{id}`、
   `POST .../{id}/validate` 与 `GET .../{id}/tools`。
 - Skill：`GET/POST /v1/integrations/skills`、`GET/PATCH/DELETE /v1/integrations/skills/{id}`、
-  `GET/POST .../{id}/versions` 与 `GET .../{id}/versions/{version}/content`。
+  `GET/POST .../{id}/versions`、`GET .../{id}/versions/{version}/content`，以及只读预览
+  `GET .../files`、`GET .../files/content?path=` 和 `GET .../files/media?path=`。
 
 列表和详情允许普通成员读取脱敏配置；创建、修改、删除和验证仅允许 Workspace Owner 或平台管理员。
 修改、启停、删除、添加 Skill 版本和切换默认版本使用资源 `revision` 做 CAS，冲突返回服务器当前快照。
@@ -353,6 +354,8 @@ MCP v1 支持 Streamable HTTP 与 stdio，不支持旧 SSE。HTTP 可选 Bearer�
 绝对可执行文件，参数按数组传递且不使用 shell。验证建立短连接，发现 Server 信息和工具后立即关闭，
 并覆盖当前工具快照。Skill 创建与加版使用 multipart ZIP；允许一个包装目录，但拒绝路径穿越、
 绝对路径、符号链接、重复路径及超限包。每个版本在本地不可变，包内脚本不会执行。
+详情预览列出该版本目录中的文件：UTF-8 文本按原文返回，单文件不超过 256 KiB；png、jpeg、webp、gif
+在签名匹配且不超过 8 MiB 时按图片返回。SVG 和 HTML 只作为文本。路径必须是版本目录内的相对路径。
 
 Skill 列表和详情返回 `tags: string[]`。创建时用 multipart 重复字段 `tags` 传入标签，
 省略默认为空；PATCH 可传 `tags`，省略保留现值，`[]` 清空，`null` 或非数组返回 422。

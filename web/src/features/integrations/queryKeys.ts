@@ -6,5 +6,9 @@ export const integrationKeys = {
   versions: (id: string) => ["integrations", "skills", "versions", id] as const,
   skillMarkdown: (id: string, version: string) =>
     ["integrations", "skills", "skill-md", id, version] as const,
+  skillFiles: (id: string, version: string) =>
+    ["integrations", "skills", "files", id, version] as const,
+  skillFileText: (id: string, version: string, path: string) =>
+    ["integrations", "skills", "file", id, version, path] as const,
   tools: (id: string) => ["integrations", "mcp", "tools", id] as const,
 };

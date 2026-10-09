@@ -287,6 +287,26 @@ class SkillMarkdownOut(BaseModel):
     content: str
 
 
+SkillFileKind = Literal["text", "image", "other"]
+
+
+class SkillFileOut(BaseModel):
+    path: str
+    size: int = Field(ge=0)
+    kind: SkillFileKind
+
+
+class SkillFileListOut(BaseModel):
+    version: str
+    files: list[SkillFileOut]
+
+
+class SkillFileTextOut(BaseModel):
+    version: str
+    path: str
+    content: str
+
+
 class SkillCatalogOut(BaseModel):
     items: list[SkillOut]
     enabled_count: int

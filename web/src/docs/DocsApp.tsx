@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@platform/api/client";
 import { replaceDeveloperDocuments } from "./content";
-import { Search, Menu, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, Menu, X } from "lucide-react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import {
@@ -13,6 +13,7 @@ import {
   searchHeading,
   resolveLocation,
 } from "./content";
+import type { GuidePage } from "./types";
 import { DocsMarkdown, CopyButton } from "./DocsMarkdown";
 import { DocsExamples } from "./DocsExamples";
 import { DocsReadingProgress } from "./DocsReadingProgress";
@@ -30,6 +31,26 @@ function scrollToLocation() {
   const { section } = currentLocation();
   if (section) document.getElementById(section)?.scrollIntoView();
   else window.scrollTo(0, 0);
+}
+function DocsPagerLink({
+  target,
+  direction,
+}: {
+  target: GuidePage;
+  direction: "previous" | "next";
+}) {
+  const next = direction === "next";
+  return (
+    <a className={next ? "next" : undefined} href={pageHref(target)}>
+      {next ? null : <ArrowLeft aria-hidden="true" />}
+      <span>
+        <small>{next ? "下一篇" : "上一篇"}</small>
+        <strong>{target.title}</strong>
+        {target.lead ? <em>{target.lead}</em> : null}
+      </span>
+      {next ? <ArrowRight aria-hidden="true" /> : null}
+    </a>
+  );
 }
 export function DocsApp() {
   const [page, setPage] = useState(currentPage);
@@ -327,19 +348,15 @@ export function DocsApp() {
             )}
             <nav className="docs-page-nav" aria-label="上一篇和下一篇">
               {index > 0 ? (
-                <a href={pageHref(siblings[index - 1])}>
-                  ← 上一篇
-                  <br />
-                  {siblings[index - 1].title}
-                </a>
+                <DocsPagerLink
+                  target={siblings[index - 1]}
+                  direction="previous"
+                />
               ) : (
                 <span />
               )}
               {index >= 0 && index < siblings.length - 1 ? (
-                <a className="next" href={pageHref(siblings[index + 1])}>
-                  下一篇 →<br />
-                  {siblings[index + 1].title}
-                </a>
+                <DocsPagerLink target={siblings[index + 1]} direction="next" />
               ) : null}
             </nav>
             <footer className="docs-footer">

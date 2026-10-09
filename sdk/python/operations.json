@@ -555,6 +555,18 @@
     "method": "skill_version_content",
     "resource": "integrations"
   },
+  "GET /v1/integrations/skills/{skill_id}/versions/{version}/files": {
+    "method": "skill_version_files",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/skills/{skill_id}/versions/{version}/files/content": {
+    "method": "skill_version_file_content",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/skills/{skill_id}/versions/{version}/files/media": {
+    "method": "skill_version_file_media",
+    "resource": "integrations"
+  },
   "GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md": {
     "method": "skill_version_markdown",
     "resource": "integrations"

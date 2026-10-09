@@ -3290,6 +3290,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/integrations/skills/{skill_id}/versions/{version}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Skill Version Files */
+        get: operations["skill_version_files_v1_integrations_skills__skill_id__versions__version__files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/skills/{skill_id}/versions/{version}/files/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Skill Version File Content */
+        get: operations["skill_version_file_content_v1_integrations_skills__skill_id__versions__version__files_content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/skills/{skill_id}/versions/{version}/files/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Skill Version File Media */
+        get: operations["skill_version_file_media_v1_integrations_skills__skill_id__versions__version__files_media_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/integrations/skills/{skill_id}/versions/{version}/skill-md": {
         parameters: {
             query?: never;
@@ -18537,6 +18588,34 @@ export interface components {
             /** Version Count */
             version_count: number;
         };
+        /** SkillFileListOut */
+        SkillFileListOut: {
+            /** Files */
+            files: components["schemas"]["SkillFileOut"][];
+            /** Version */
+            version: string;
+        };
+        /** SkillFileOut */
+        SkillFileOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "image" | "other";
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
+        };
+        /** SkillFileTextOut */
+        SkillFileTextOut: {
+            /** Content */
+            content: string;
+            /** Path */
+            path: string;
+            /** Version */
+            version: string;
+        };
         /** SkillMarkdownOut */
         SkillMarkdownOut: {
             /** Content */
@@ -29557,6 +29636,106 @@ export interface operations {
     skill_version_content_v1_integrations_skills__skill_id__versions__version__content_get: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skill_version_files_v1_integrations_skills__skill_id__versions__version__files_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillFileListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skill_version_file_content_v1_integrations_skills__skill_id__versions__version__files_content_get: {
+        parameters: {
+            query: {
+                path: string;
+            };
+            header?: never;
+            path: {
+                skill_id: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillFileTextOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skill_version_file_media_v1_integrations_skills__skill_id__versions__version__files_media_get: {
+        parameters: {
+            query: {
+                path: string;
+            };
             header?: never;
             path: {
                 skill_id: string;

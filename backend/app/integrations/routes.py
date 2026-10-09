@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import io
+from pathlib import PurePosixPath
 from typing import Annotated
+from urllib.parse import quote
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -25,6 +27,8 @@ from app.integrations.schemas import (
     McpUpdateIn,
     McpValidationOut,
     SkillCatalogOut,
+    SkillFileListOut,
+    SkillFileTextOut,
     SkillMarkdownOut,
     SkillOut,
     SkillTagsIn,
@@ -338,6 +342,54 @@ async def skill_version_content(
         io.BytesIO(content),
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/skills/{skill_id}/versions/{version}/files", response_model=SkillFileListOut)
+async def skill_version_files(
+    session: SessionDep, workspace_id: WorkspaceDep, skill_id: str, version: str
+) -> SkillFileListOut:
+    try:
+        return await SkillCatalog(session, workspace_id).version_files(skill_id, version)
+    except IntegrationNotFoundError as exc:
+        _raise_integration(exc)
+
+
+@router.get(
+    "/skills/{skill_id}/versions/{version}/files/content",
+    response_model=SkillFileTextOut,
+)
+async def skill_version_file_content(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    skill_id: str,
+    version: str,
+    path: Annotated[str, Query(min_length=1, max_length=1024)],
+) -> SkillFileTextOut:
+    try:
+        return await SkillCatalog(session, workspace_id).version_file_text(skill_id, version, path)
+    except (IntegrationNotFoundError, IntegrationValidationError) as exc:
+        _raise_integration(exc)
+
+
+@router.get("/skills/{skill_id}/versions/{version}/files/media")
+async def skill_version_file_media(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    skill_id: str,
+    version: str,
+    path: Annotated[str, Query(min_length=1, max_length=1024)],
+):
+    try:
+        catalog = SkillCatalog(session, workspace_id)
+        filename, content, media_type = await catalog.version_file_image(skill_id, version, path)
+    except (IntegrationNotFoundError, IntegrationValidationError) as exc:
+        _raise_integration(exc)
+    safe_name = quote(PurePosixPath(filename).name, safe="")
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type=media_type,
+        headers={"Content-Disposition": f"inline; filename*=UTF-8''{safe_name}"},
     )
 
 

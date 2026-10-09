@@ -4490,6 +4490,20 @@ class SkillCatalogOut(WireModel):
     items: list[SkillOut] = Field(default=..., alias='items')
     version_count: int = Field(default=..., alias='version_count')
 
+class SkillFileListOut(WireModel):
+    files: list[SkillFileOut] = Field(default=..., alias='files')
+    version: str = Field(default=..., alias='version')
+
+class SkillFileOut(WireModel):
+    kind: Literal['text', 'image', 'other'] = Field(default=..., alias='kind')
+    path: str = Field(default=..., alias='path')
+    size: int = Field(default=..., alias='size', ge=0.0)
+
+class SkillFileTextOut(WireModel):
+    content: str = Field(default=..., alias='content')
+    path: str = Field(default=..., alias='path')
+    version: str = Field(default=..., alias='version')
+
 class SkillMarkdownOut(WireModel):
     content: str = Field(default=..., alias='content')
     version: str = Field(default=..., alias='version')
@@ -6425,6 +6439,9 @@ SetAudioTransitionOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()
 SetTransitionOperation.model_rebuild()
 SkillCatalogOut.model_rebuild()
+SkillFileListOut.model_rebuild()
+SkillFileOut.model_rebuild()
+SkillFileTextOut.model_rebuild()
 SkillMarkdownOut.model_rebuild()
 SkillOut.model_rebuild()
 SkillUpdateIn.model_rebuild()
