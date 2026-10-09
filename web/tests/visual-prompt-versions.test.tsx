@@ -16,6 +16,7 @@ import {
   createGenerationTask,
   getGenerationOptions,
   type VisualCanvasGenerationDraft,
+  type VisualCanvasVideoGenerationDraft,
 } from "@features/visual-workshop/api";
 import { GenerationDrawer } from "@features/visual-workshop/generation/GenerationDrawer";
 import { usePromptVersions } from "@features/visual-workshop/generation/usePromptVersions";
@@ -32,8 +33,14 @@ vi.mock("@features/visual-workshop/api", async (original) => ({
   createGenerationTask: vi.fn(),
 }));
 
-const initial: VisualCanvasGenerationDraft = {
+const initial: VisualCanvasVideoGenerationDraft = {
   model_id: "model-video",
+  mode: "text",
+  duration: 5,
+  resolution: "720p",
+  ratio: "16:9",
+  watermark: false,
+  generate_audio: false,
   prompt: "第二版",
   prompt_versions: [
     { id: "one", name: "v1", prompt: "第一版" },
@@ -52,7 +59,7 @@ beforeEach(() => {
     canvas_node_id: "node",
     provider_id: "provider",
     model_id: "model-video",
-    provider_kind: "volcengine_video",
+    provider_kind: "senseaudio_video",
     kind: "video",
     provider_name: "Test",
     model_slug: "test-model",
@@ -91,10 +98,27 @@ function mount(
 ) {
   const saved = vi.fn();
   function Harness() {
-    const [draft, setDraft] = useState<VisualCanvasGenerationDraft>({
-      ...initial,
+    const common = {
       model_id: `model-${kind}`,
-    });
+      prompt: initial.prompt,
+      prompt_versions: initial.prompt_versions,
+      active_prompt_version_id: initial.active_prompt_version_id,
+    };
+    const [draft, setDraft] = useState<VisualCanvasGenerationDraft>(
+      kind === "video"
+        ? initial
+        : kind === "image"
+          ? { ...common, size: "1024x1024", image_count: 1 }
+          : {
+              ...common,
+              mode: "music",
+              theme: "",
+              style: "",
+              smart_duration: true,
+              prompt_influence: 0.5,
+              output_format: "mp3",
+            },
+    );
     return (
       <GenerationDrawer
         compact
@@ -152,7 +176,7 @@ function text(kind: "image" | "video" | "audio") {
 }
 async function select(name: string) {
   await userEvent.click(screen.getByRole("combobox", { name: "提示词版本" }));
-  await userEvent.click(screen.getByRole("option", { name, exact: true }));
+  await userEvent.click(screen.getByRole("option", { name }));
 }
 
 test.each(["image", "video", "audio"] as const)(
@@ -180,9 +204,7 @@ test.each(["image", "video", "audio"] as const)(
     const dialog = screen.getByRole("dialog", { name: "重命名提示词版本" });
     await userEvent.clear(within(dialog).getByLabelText("版本名称"));
     await userEvent.type(within(dialog).getByLabelText("版本名称"), "舞蹈方案");
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "确认", exact: true }),
-    );
+    await userEvent.click(within(dialog).getByRole("button", { name: "确认" }));
     expect(createGenerationTask).not.toHaveBeenCalled();
     await userEvent.click(
       screen.getByRole("button", { name: "新增提示词版本" }),
@@ -191,9 +213,7 @@ test.each(["image", "video", "audio"] as const)(
     await userEvent.click(
       screen.getByRole("button", { name: "删除提示词版本" }),
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: "删除版本", exact: true }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "删除版本" }));
     await select("v2");
     expect(text(kind)).toBe("第二版新内容");
     // Submit through the form to cover audio's text-only submit button too.

@@ -594,6 +594,8 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 ## 视觉项目看板与输出历史
 
+`visual_workshop/schemas/prompts.py` 定义三类媒体草稿共用的提示词版本契约，`prompt_versions.py` 在画布用例边界保留旧客户端更新时的版本集合。`generation/usePromptVersions.ts` 持有独立编辑版本的同步快照，`PromptVersionControls.tsx` 提供画布与看板共用的版本操作；版本随节点 JSON 和画布 CAS 保存，生成仅消费当前文字。参考图片排序同步更新全部版本，输出历史保持独立生命周期。
+
 `board/MaterialTree.tsx` 为已有媒体输出提供项目素材拖拽数据；`generation/useProjectReferenceDrop.ts` 拥有生成参考框的拖入解析、项目文件与类型校验、去重及数量限制，参考框通过原草稿回调保存当前文件。全能参考栏统一按媒体类型路由拖入，不改变节点连线或来源选择。
 
 `backend/app/apps/visual_workshop/outputs/` 拥有节点输出 ORM、历史分页、最终版本 CAS、输入解析与提交快照、上传事务及快照重映射；包入口提供 `register_imported_output`，供视频剪辑分段交接在取得画布 CAS 写锁后、同一事务内登记素材版本；`routes/outputs.py` 只负责协议适配。`canvas.py` 保留节点身份、分类与连线整体 CAS，兼容旧素材写入并统一登记版本。`generation_runner.py` 在落盘后短事务中幂等归档输出。`web/src/features/visual-workshop/board/` 拥有项目素材树、创作工作台、状态分组、历史预览与输入选择，并按素材整理、管理菜单、节点元信息与状态呈现拆分；shell、工作台与状态卡样式按职责独立维护。生成组件通过显式 `layout` 参数适配工作台，保留画布布局；画布控制器统一持有草稿、选择与视口，项目页保留两种视图切换时的历史预览。
