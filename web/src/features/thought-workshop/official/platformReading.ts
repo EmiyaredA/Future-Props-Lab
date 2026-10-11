@@ -606,7 +606,7 @@ export const PLATFORM_READING: Record<
   },
   "video-editor/storage": {
     summary:
-      "了解顺序保存与未保存操作处理，区分原素材、代理缓存和固定渲染快照。",
+      "确认顺序保存并处理未保存操作，整理、重命名和下载原素材，区分代理缓存与渲染快照。",
     related: [
       {
         libraryId: "video-editor",

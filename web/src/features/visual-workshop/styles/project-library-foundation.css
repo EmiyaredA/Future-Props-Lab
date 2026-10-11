@@ -382,6 +382,7 @@
   font-weight: 750;
   transform: translateX(-50%);
   backdrop-filter: blur(12px);
+  white-space: nowrap;
 }
 
 .canvas-media-replace:hover {
@@ -390,9 +391,10 @@
   color: white;
 }
 
-.canvas-media-replace svg {
+.canvas-media-replace > svg {
   width: 14px;
   height: 14px;
+  flex: none;
 }
 
 .canvas-node-port {

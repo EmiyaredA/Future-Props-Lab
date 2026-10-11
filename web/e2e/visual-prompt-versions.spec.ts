@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { setResponsiveTheme } from "./responsive-capture";
 
@@ -99,6 +100,48 @@ for (const kind of ["image", "video", "audio"] as const) {
         await page.getByRole("button", { name: "替换素材" }).click();
         await page.getByRole("tab", { name: "AI 生成" }).click();
         await expect(select).toContainText("舞蹈方案");
+        // Simulate a lazy-loaded thought-workshop stylesheet arriving last.
+        await page.addStyleTag({
+          content: readFileSync(
+            new URL(
+              "../src/features/thought-workshop/diagrams/diagrams.css",
+              import.meta.url,
+            ),
+            "utf8",
+          ),
+        });
+        await expect(select).toHaveCSS("min-height", "36px");
+        await expect(select.locator(".select-chevron")).toHaveCSS(
+          "width",
+          /^(14|15)px$/,
+        );
+        await expect(select.locator(".select-chevron")).toHaveCSS(
+          "height",
+          /^(14|15)px$/,
+        );
+        const attachedControls = page.getByRole("group", {
+          name: "提示词版本管理",
+        });
+        for (const button of await attachedControls
+          .locator(".prompt-version-actions button")
+          .all()) {
+          await expect(button).toHaveCSS("white-space", "nowrap");
+          await expect(button.locator("svg")).toHaveCSS("width", /^(14|15)px$/);
+          await expect(button.locator("svg")).toHaveCSS(
+            "height",
+            /^(14|15)px$/,
+          );
+          expect((await button.boundingBox())!.height).toBeLessThan(50);
+        }
+        const replace = page.locator(
+          '[data-node-id="target"] .canvas-media-replace',
+        );
+        await expect(replace).toHaveCSS("white-space", "nowrap");
+        await expect(replace.locator("svg")).toHaveCSS("width", /^(14|15)px$/);
+        await expect(replace.locator("svg")).toHaveCSS("height", /^(14|15)px$/);
+        await page.screenshot({
+          path: info.outputPath("attached-prompt-versions.png"),
+        });
       }
       await page.getByRole("button", { name: "删除提示词版本" }).click();
       await page.getByRole("button", { name: "删除版本", exact: true }).click();

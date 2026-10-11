@@ -9,6 +9,11 @@
   font-size: 12px;
 }
 
+.prompt-version-controls > span {
+  flex: none;
+  white-space: nowrap;
+}
+
 .prompt-version-controls > .custom-select {
   flex: 0 1 auto;
   width: auto;
@@ -27,6 +32,7 @@
   flex-wrap: wrap;
   gap: 4px;
   margin-left: auto;
+  min-width: 0;
 }
 
 .prompt-version-actions button {
@@ -42,6 +48,14 @@
   color: var(--muted);
   font: inherit;
   cursor: pointer;
+  flex: none;
+  white-space: nowrap;
+}
+
+.prompt-version-actions button > svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
 }
 
 .prompt-version-actions button:hover:not(:disabled) {

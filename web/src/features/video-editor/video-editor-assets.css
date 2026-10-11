@@ -1,3 +1,6 @@
+.ve-assets-panel {
+  container-type: inline-size;
+}
 .ve-assets-panel > header > div {
   display: flex;
   align-items: center;
@@ -619,4 +622,47 @@
 .ve-batch-selection-head button:focus-visible {
   outline: 2px solid #a69cff;
   outline-offset: 2px;
+}
+
+.ve-asset-download-pending {
+  animation: ve-asset-download-spin 1s linear infinite;
+}
+.ve-asset-download-error {
+  margin: 4px 6px;
+  color: var(--danger);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+@keyframes ve-asset-download-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ve-asset-download-pending {
+    animation: none;
+  }
+}
+@container (max-width: 240px) {
+  .ve-asset-controls .ve-asset-rename {
+    width: 22px;
+    min-width: 22px;
+    padding: 0;
+  }
+  .ve-asset-rename span {
+    display: none;
+  }
+}
+
+@container (max-width: 220px) {
+  .ve-asset {
+    flex-wrap: wrap;
+  }
+  .ve-asset-main {
+    flex-basis: calc(100% - 24px);
+  }
+  .ve-asset-controls {
+    margin-left: auto;
+    padding-bottom: 3px;
+  }
 }

@@ -7,6 +7,8 @@ import { useState, type DragEvent } from "react";
 import {
   ArrowDown,
   ArrowUp,
+  Download,
+  LoaderCircle,
   FilePlus2,
   FolderInput,
   Image,
@@ -16,6 +18,10 @@ import {
   Type,
   Video,
 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { fetchApiDownload } from "@platform/api/client";
+import { apiErrorMessage } from "@platform/api/errors";
+import { downloadProjectSnapshot } from "@shared/ui/project-library/downloadProjectSnapshot";
 import type { VideoEditorAsset, VideoEditorAssetOrganization } from "./types";
 import { VideoEditorAssetRenameDialog } from "./VideoEditorAssetRenameDialog";
 import {
@@ -79,6 +85,17 @@ export function VideoEditorAssetRow({
   timelineType: string;
 }) {
   const [renaming, setRenaming] = useState(false);
+  const download = useMutation({
+    mutationFn: async () => {
+      const file = await fetchApiDownload(
+        `/v1/files/${encodeURIComponent(asset.id)}/download`,
+      );
+      downloadProjectSnapshot(
+        file,
+        asset.originalFilename.replace(/[\\/]/g, "_"),
+      );
+    },
+  });
   const Icon = iconFor(asset.mediaKind);
   const ready = canEditAsset(asset);
   const processing = ["queued", "processing"].includes(asset.processingStatus);
@@ -170,6 +187,20 @@ export function VideoEditorAssetRow({
           </button>
           <button
             type="button"
+            disabled={download.isPending}
+            aria-label={`下载素材“${asset.displayName}”`}
+            aria-busy={download.isPending}
+            title={download.isPending ? "正在下载…" : "下载原素材"}
+            onClick={() => download.mutate()}
+          >
+            {download.isPending ? (
+              <LoaderCircle className="ve-asset-download-pending" aria-hidden />
+            ) : (
+              <Download aria-hidden />
+            )}
+          </button>
+          <button
+            type="button"
             className="ve-asset-delete"
             disabled={processing || disabled}
             aria-label={`删除素材“${asset.displayName}”`}
@@ -180,6 +211,11 @@ export function VideoEditorAssetRow({
           </button>
         </div>
       </div>
+      {download.isError ? (
+        <p className="ve-asset-download-error" role="alert">
+          {apiErrorMessage(download.error, "下载失败，请重试")}
+        </p>
+      ) : null}
       {organizeOpen ? (
         <div className="ve-asset-organize-menu" role="menu">
           <button

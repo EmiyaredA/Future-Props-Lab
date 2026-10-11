@@ -112,12 +112,12 @@
   flex-wrap: wrap;
   gap: 6px;
 }
-.canvas-node svg {
+.thought-canvas-node svg {
   width: 100%;
   height: 100%;
   display: block;
 }
-.canvas-node {
+.thought-canvas-node {
   width: 100%;
   height: 100%;
 }

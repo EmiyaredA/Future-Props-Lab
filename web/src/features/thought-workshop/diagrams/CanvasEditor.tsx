@@ -51,7 +51,7 @@ const shapeNames = [
 ];
 function ShapeNode({ data, selected }: NodeProps<FlowNode>) {
   return (
-    <div className="canvas-node">
+    <div className="thought-canvas-node">
       <NodeResizer isVisible={selected} minWidth={40} minHeight={40} />
       <svg viewBox={`0 0 ${data.element.width} ${data.element.height}`}>
         <CanvasShape element={data.element} />
