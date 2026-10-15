@@ -429,7 +429,7 @@ export const PLATFORM_READING: Record<
   },
   "visual-workshop/storage": {
     summary:
-      "把生成、结果落盘和画布保存分别验收，中断后优先恢复原任务与已上传结果。",
+      "上传素材时选择分类与分组，分别验收生成、结果落盘和画布保存，中断后优先恢复已有结果。",
     related: [
       {
         libraryId: "visual-workshop",

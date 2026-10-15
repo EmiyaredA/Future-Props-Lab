@@ -253,6 +253,62 @@ test("batch uploads use latest returned nodes and stop on failure without replay
   expect(saved.nodes).toHaveLength(3);
 });
 
+test("board uploads keep the chosen category and group for every file and persist on reload", async () => {
+  const user = userEvent.setup();
+  saved.categories = [
+    { id: "character", name: "人设", groups: ["主角"] },
+    { id: "scene", name: "场景", groups: [] },
+  ];
+  saved.nodes = [];
+  vi.mocked(uploadMaterialNode).mockImplementation(
+    async (_id, file, revision, position, destination) => {
+      saved = {
+        ...saved,
+        revision: revision + 1,
+        nodes: [
+          ...saved.nodes,
+          {
+            id: file.name,
+            kind: "image",
+            title: file.name,
+            position,
+            ...destination,
+          },
+        ],
+      };
+      return structuredClone(saved);
+    },
+  );
+  const view = renderCanvas();
+  await screen.findByRole("button", { name: "添加内容" });
+  await user.click(screen.getByRole("button", { name: "看板" }));
+  await user.click(screen.getByRole("button", { name: "管理分类 人设" }));
+  await user.click(screen.getByRole("menuitem", { name: "上传到此分类" }));
+  expect(screen.getByRole("combobox", { name: "上传分类" })).toHaveTextContent(
+    "人设",
+  );
+  await user.click(screen.getByRole("combobox", { name: "上传分组" }));
+  await user.click(screen.getByRole("option", { name: "主角" }));
+  const files = ["one.png", "two.png"].map(
+    (name) => new File(["png"], name, { type: "image/png" }),
+  );
+  await user.upload(screen.getByLabelText("上传项目素材文件"), files);
+  await waitFor(() => expect(saved.nodes).toHaveLength(2));
+  expect(
+    vi.mocked(uploadMaterialNode).mock.calls.map((call) => [call[2], call[4]]),
+  ).toEqual([
+    [0, { category_id: "character", group: "主角" }],
+    [1, { category_id: "character", group: "主角" }],
+  ]);
+  view.unmount();
+  renderCanvas();
+  const material = await screen.findByRole("button", {
+    name: /^one\.png 图像/,
+  });
+  expect(material.closest(".board-category")).toHaveTextContent("人设");
+  expect(material.closest(".board-group")).toHaveTextContent("主角");
+});
+
 test("asset drop at an occupied point creates a free card without moving the original", async () => {
   saved.nodes = [textNode("original")];
   renderCanvas();

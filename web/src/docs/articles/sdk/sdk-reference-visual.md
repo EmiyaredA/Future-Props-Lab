@@ -387,8 +387,10 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `project_id` | path | string | 是 |
 | `body` | multipart/form-data | Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post | 是 |
+| `body.category_id` | 请求体 | string / null | 否 |
 | `body.expected_revision` | 请求体 | integer | 是 |
 | `body.file` | 请求体 | string | 是 |
+| `body.group` | 请求体 | string / null | 否 |
 | `body.x` | 请求体 | number | 否 |
 | `body.y` | 请求体 | number | 否 |
 
@@ -484,7 +486,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.categories` | 请求体 | array / null | 否 |
 | `body.edges` | 请求体 | array | 否 |
 | `body.expected_revision` | 请求体 | integer | 是 |
-| `body.nodes` | 请求体 | array | 否 |
+| `body.nodes` | 请求体 | array | 是 |
 
 **响应**：
 - `200` · `application/json` · `VisualCanvasDocumentOut`

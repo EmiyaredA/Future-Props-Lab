@@ -4,6 +4,7 @@ import {
   recordChromaDuplicateFrameSkip,
 } from "./chromaCanvas";
 import { clipSourceTimeUs } from "./editorModel";
+import { paintSpinBlurCanvas } from "./spinBlurCanvas";
 import type { VideoProxyCrop } from "./previewGeometry";
 import type { VideoEditorClip } from "./types";
 
@@ -15,6 +16,7 @@ export function VideoEditorProxyVideo({
   playing,
   crop,
   chromaKey,
+  spinBlur = 0,
 }: {
   source: string;
   clip: VideoEditorClip;
@@ -22,6 +24,7 @@ export function VideoEditorProxyVideo({
   playing: boolean;
   crop: VideoProxyCrop;
   chromaKey?: VideoEditorClip["chromaKey"];
+  spinBlur?: number;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -32,6 +35,7 @@ export function VideoEditorProxyVideo({
         clip: VideoEditorClip;
         source: string;
         playing: boolean;
+        spinBlur: number;
       }
     | undefined
   >(undefined);
@@ -52,9 +56,13 @@ export function VideoEditorProxyVideo({
             clip.sourceInUs ||
             (prior.clip.playbackRate ?? 1) !== (clip.playbackRate ?? 1))));
     const exact = !advancing || !prior?.playing || Boolean(cut);
-    if (cut || prior?.clip.chromaKey !== chromaKey)
+    if (
+      cut ||
+      prior?.clip.chromaKey !== chromaKey ||
+      prior?.spinBlur !== spinBlur
+    )
       paintedTime.current = Number.NaN;
-    previous.current = { clip, source, playing: advancing };
+    previous.current = { clip, source, playing: advancing, spinBlur };
     node.playbackRate = clip.playbackRate ?? 1;
     let cancelled = false;
     let callback = 0;
@@ -91,6 +99,17 @@ export function VideoEditorProxyVideo({
         if (surface.height !== node.videoHeight)
           surface.height = node.videoHeight;
         surface.getContext("2d")?.drawImage(node, 0, 0);
+      }
+      if (spinBlur) {
+        // Remove letterboxing before sampling so proxy padding never becomes a trail.
+        const width = (surface.width * 100) / crop.widthPercent;
+        const height = (surface.height * 100) / crop.heightPercent;
+        paintSpinBlurCanvas(surface, surface, width, height, spinBlur, {
+          x: (-crop.leftPercent / 100) * width,
+          y: (-crop.topPercent / 100) * height,
+          width,
+          height,
+        });
       }
     };
     const sync = () => {
@@ -145,7 +164,7 @@ export function VideoEditorProxyVideo({
       node.removeEventListener("loadeddata", mediaReady);
       node.removeEventListener("seeked", mediaReady);
     };
-  }, [clip, localUs, playing, source, chromaKey]);
+  }, [clip, localUs, playing, source, chromaKey, spinBlur, crop]);
   const placement = {
     left: `${crop.leftPercent}%`,
     top: `${crop.topPercent}%`,
@@ -164,7 +183,11 @@ export function VideoEditorProxyVideo({
       <canvas
         ref={canvas}
         className="ve-keyed-media"
-        style={placement}
+        style={
+          spinBlur
+            ? { left: 0, top: 0, width: "100%", height: "100%" }
+            : placement
+        }
         aria-hidden
       />
     </>

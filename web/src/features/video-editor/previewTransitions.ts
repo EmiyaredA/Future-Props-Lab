@@ -9,6 +9,8 @@ export type PreviewTransitionEffect = {
   opacityMultiplier: number;
   scaleMultiplier: number;
   blurPx: number;
+  /** Signed angular blur: outgoing clockwise, incoming counterclockwise. */
+  spinBlur?: number;
   clipPath?: string;
   overlayColor?: "#000000" | "#ffffff";
   overlayOpacity: number;
@@ -53,6 +55,7 @@ function effectForVisualKind(
   visibility: number,
   direction: string,
   pulse: boolean,
+  spinSign = 1,
 ): PreviewTransitionEffect {
   const normalizedKind =
     kind === "wipe-left" || kind === "wipe-right" ? "wipe" : kind;
@@ -76,6 +79,9 @@ function effectForVisualKind(
   }
   if (normalizedKind === "blur") {
     effect.blurPx = Math.max(0, (1 - visibility) * 10);
+  }
+  if (normalizedKind === "spin-blur") {
+    effect.spinBlur = spinSign * Math.max(0, Math.min(1, 1 - visibility));
   }
   if (normalizedKind === "wipe") {
     const legacyDirection =
@@ -117,6 +123,7 @@ function multiplyEffects(
     opacityMultiplier: base.opacityMultiplier * extra.opacityMultiplier,
     scaleMultiplier: base.scaleMultiplier * extra.scaleMultiplier,
     blurPx: Math.max(base.blurPx, extra.blurPx),
+    spinBlur: base.spinBlur ?? extra.spinBlur,
     clipPath: extra.clipPath ?? base.clipPath,
     overlayColor: overlay.overlayColor,
     overlayOpacity: overlay.overlayOpacity,
@@ -148,6 +155,7 @@ export function clipEdgePreviewEffect(
       visibility,
       transitionIn.direction ?? "left",
       true,
+      -1,
     );
   }
   const transitionOut = clip.transitionOut;
@@ -381,6 +389,7 @@ export function previewTransitionEffectForClip(
                 progress,
                 between.direction,
                 false,
+                -1,
               ),
               forceLocalUs: mediaLocalUs(
                 right,

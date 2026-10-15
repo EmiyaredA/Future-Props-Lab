@@ -444,6 +444,75 @@ async def test_outputs_workspace_scope_and_wrong_node_fixed_reference():
 
 
 @pytest.mark.asyncio
+async def test_material_upload_saves_category_group_and_history_atomically():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = await create_project(client)
+        categories = [{"id": "custom", "name": "角色参考", "groups": ["主角"]}]
+        canvas = await save_canvas(client, project, [], categories=categories)
+        base = f"/v1/visual-workshop/projects/{project}"
+        for group in ["主角", None]:
+            data = {"expected_revision": canvas["revision"], "category_id": "custom"}
+            if group:
+                data["group"] = group
+            response = await client.post(
+                base + "/node-uploads",
+                data=data,
+                files={"file": ("character.png", PNG, "image/png")},
+            )
+            assert response.status_code == 200, response.text
+            canvas = response.json()
+            material = canvas["nodes"][-1]
+            assert material["category_id"] == "custom" and material["group"] == group
+            assert material["final_version"] == 1
+            history = (await client.get(base + f"/nodes/{material['id']}/outputs")).json()
+            assert history["total"] == 1
+            assert history["items"][0]["asset_id"] == material["asset_id"]
+        assert canvas["categories"] == categories
+        assert (await client.get(base + "/canvas")).json() == canvas
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("target", "revision", "status"),
+    [
+        ({"category_id": "missing"}, 1, 422),
+        ({"category_id": "custom", "group": "missing"}, 1, 422),
+        ({"group": "主角"}, 1, 422),
+        ({"category_id": "scene", "group": "主角"}, 1, 422),
+        ({"category_id": "custom", "group": "主角"}, 0, 409),
+    ],
+)
+async def test_material_upload_rejects_invalid_or_stale_destination_without_creating_files(
+    target, revision, status
+):
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = await create_project(client)
+        canvas = await save_canvas(
+            client,
+            project,
+            [],
+            categories=[
+                {"id": "custom", "name": "角色参考", "groups": ["主角"]},
+                {"id": "scene", "name": "场景", "groups": []},
+            ],
+        )
+        base = f"/v1/visual-workshop/projects/{project}"
+        files = (await client.get("/v1/files", params={"project_id": project})).json()
+        response = await client.post(
+            base + "/node-uploads",
+            data={"expected_revision": revision, **target},
+            files={"file": ("character.png", PNG, "image/png")},
+        )
+        assert response.status_code == status, response.text
+        assert (await client.get(base + "/canvas")).json() == canvas
+        assert (await client.get("/v1/files", params={"project_id": project})).json() == files
+
+
+@pytest.mark.asyncio
 async def test_atomic_media_upload_and_snapshot_preserve_full_history_and_fixed_bindings():
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

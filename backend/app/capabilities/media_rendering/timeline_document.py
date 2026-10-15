@@ -92,6 +92,7 @@ class VideoEditorTransition(BaseModel):
         "wipe-right",
         "zoom",
         "blur",
+        "spin-blur",
         "flash",
         "eyelid",
         "audio-crossfade",
@@ -129,6 +130,7 @@ class VideoEditorTimelineTransition(BaseModel):
         "wipe-right",
         "zoom",
         "blur",
+        "spin-blur",
         "flash",
         "eyelid",
         "audio-crossfade",
@@ -298,6 +300,7 @@ _CLIP_EDGE_KINDS = {
     "wipe-right",
     "zoom",
     "blur",
+    "spin-blur",
     "flash",
     "audio-crossfade",
 }

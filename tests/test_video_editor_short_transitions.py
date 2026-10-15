@@ -13,7 +13,8 @@ from app.main import app
 
 @pytest.mark.parametrize("duration_us", [125_001, 33_333])
 @pytest.mark.parametrize("placement", ["between", "in", "out"])
-async def test_short_eyelid_transition_save_undo_redo(duration_us, placement):
+@pytest.mark.parametrize("kind", ["eyelid", "spin-blur"])
+async def test_short_transition_save_undo_redo(duration_us, placement, kind):
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -63,7 +64,7 @@ async def test_short_eyelid_transition_save_undo_redo(duration_us, placement):
         assert seeded.status_code == 200, seeded.text
         state = seeded.json()
         original = deepcopy(state)
-        transition = {"kind": "eyelid", "durationUs": 500_000}
+        transition = {"kind": kind, "durationUs": 500_000}
         if placement == "between":
             transition.update(id="seam", fromClipId="freeze", toClipId="next")
             redo = {"type": "addTransition", "transition": transition}
@@ -92,7 +93,7 @@ async def test_short_eyelid_transition_save_undo_redo(duration_us, placement):
                 "transitionIn" if placement == "in" else "transitionOut"
             ]
         assert actual["durationUs"] == duration_us
-        assert actual["kind"] == "eyelid"
+        assert actual["kind"] == kind
 
         restored = await submit([undo])
         assert restored.status_code == 200, restored.text

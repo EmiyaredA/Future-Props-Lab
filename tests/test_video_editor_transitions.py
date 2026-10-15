@@ -685,7 +685,7 @@ def test_add_transition_rejects_edge_placement() -> None:
         )
 
 
-@pytest.mark.parametrize("kind", ["crossfade", "wipe", "zoom", "blur", "flash"])
+@pytest.mark.parametrize("kind", ["crossfade", "wipe", "zoom", "blur", "spin-blur", "flash"])
 @pytest.mark.parametrize("reverse_order", [False, True])
 def test_chained_transitions_never_rewind_or_sample_a_clip_twice(kind, reverse_order):
     clips = [

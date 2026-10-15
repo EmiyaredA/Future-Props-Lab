@@ -197,6 +197,16 @@
   background: var(--board-soft);
   font-size: 12px;
 }
+.board-material-upload {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.board-material-upload > span,
+.board-material-upload > p {
+  font-size: 12px;
+  color: var(--board-muted);
+}
 .board-material-tree {
   flex: 1;
   overflow: auto;

@@ -22,6 +22,7 @@ vi.mock("@features/visual-workshop/board/TextWorkbench", () => ({
 }));
 
 function renderBoard() {
+  const upload = vi.fn();
   const patchNode = vi.fn();
   const removeNode = vi.fn();
   const client = new QueryClient({
@@ -49,7 +50,7 @@ function renderBoard() {
       projectId: "project",
       projectQuery: { data: { title: "节点管理" } },
       canvasQuery: {
-        data: { categories: [{ id: "cat", name: "人设", groups: [] }] },
+        data: { categories: [{ id: "cat", name: "人设", groups: ["主角"] }] },
       },
       client,
       canvasReady: true,
@@ -59,7 +60,7 @@ function renderBoard() {
       selectedId,
       setSelectedId,
       setSelectedNodeIds: vi.fn(),
-      upload: { isPending: false },
+      upload: { isPending: false, mutate: upload },
       uploadPosition: { current: undefined },
       patchNode: (
         id: string,
@@ -95,8 +96,41 @@ function renderBoard() {
     </QueryClientProvider>,
   );
   const sidebar = screen.getByRole("complementary", { name: "项目素材" });
-  return { sidebar, patchNode, removeNode };
+  return { sidebar, patchNode, removeNode, upload };
 }
+
+test("upload allows an explicit destination and clears the group when the category changes", async () => {
+  const user = userEvent.setup();
+  const { upload } = renderBoard();
+  const trigger = screen.getByRole("button", { name: "上传素材" });
+  trigger.focus();
+  await user.keyboard("{Enter}");
+  expect(trigger).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByRole("combobox", { name: "上传分类" })).toHaveTextContent(
+    "未分类",
+  );
+  expect(screen.getByRole("combobox", { name: "上传分组" })).toBeDisabled();
+  await user.click(screen.getByRole("combobox", { name: "上传分类" }));
+  await user.click(screen.getByRole("option", { name: "人设" }));
+  await user.click(screen.getByRole("combobox", { name: "上传分组" }));
+  await user.click(screen.getByRole("option", { name: "主角" }));
+  await user.click(screen.getByRole("combobox", { name: "上传分类" }));
+  await user.click(screen.getByRole("option", { name: "未分类" }));
+  expect(screen.getByRole("combobox", { name: "上传分组" })).toHaveTextContent(
+    "未分组",
+  );
+  expect(upload).not.toHaveBeenCalled();
+  const file = new File(["png"], "image.png", { type: "image/png" });
+  await user.upload(screen.getByLabelText("上传项目素材文件"), file);
+  expect(upload).toHaveBeenCalledWith({
+    files: [file],
+    destination: { category_id: null, group: null },
+  });
+  await user.click(trigger);
+  expect(
+    screen.queryByRole("combobox", { name: "上传分类" }),
+  ).not.toBeInTheDocument();
+});
 
 test("each row has a visible management button; keyboard renaming targets the unselected node", async () => {
   const user = userEvent.setup();

@@ -1,6 +1,6 @@
 """Validated file staging followed by one short output/CAS transaction."""
 
-from app.apps.visual_workshop.canvas import VisualCanvasDocuments
+from app.apps.visual_workshop.canvas import VisualCanvasDocuments, VisualCanvasError
 from app.apps.visual_workshop.outputs.history import NodeOutputs, OutputError
 from app.apps.visual_workshop.outputs.schemas import VisualNodeOutputCreateIn
 from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
@@ -61,6 +61,8 @@ async def upload_material(
     *,
     x: float = 0,
     y: float = 0,
+    category_id: str | None = None,
+    group: str | None = None,
 ):
     documents = VisualCanvasDocuments(session)
     current = await documents.get(project_id)
@@ -68,6 +70,11 @@ async def upload_material(
         raise RevisionConflictError(
             expected_revision, current.revision, current.model_dump(mode="json")
         )
+    category = next((item for item in current.categories if item.id == category_id), None)
+    if category_id and category is None:
+        raise VisualCanvasError("上传目标分类不存在")
+    if group and (category is None or group not in category.groups):
+        raise VisualCanvasError("上传目标分组不存在")
     library = AssetLibrary(session, settings)
     asset = None
     try:
@@ -94,6 +101,8 @@ async def upload_material(
                         "title": asset.display_name,
                         "position": {"x": x, "y": y},
                         "asset_id": asset.id,
+                        "category_id": category_id or None,
+                        "group": group or None,
                     },
                 ],
                 edges=current.edges,

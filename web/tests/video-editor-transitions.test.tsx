@@ -172,34 +172,40 @@ describe("VideoEditorTransitionPanel", () => {
     );
   });
 
-  it("adds the eyelid transition from the visual effects library", () => {
-    const commit = vi.fn().mockResolvedValue(undefined);
-    render(
-      <VideoEditorTransitionPanel
-        clips={[clip("a", 0), clip("b", 1_000_000)]}
-        tracks={[track]}
-        transitions={[]}
-        selectedClip={clip("a", 0)}
-        target={{ fromClipId: "a", toClipId: "b" }}
-        commit={commit}
-        onSelectTransition={vi.fn()}
-      />,
-    );
+  it.each([
+    ["风格", "闭眼睁眼", "eyelid"],
+    ["模糊", "旋转模糊", "spin-blur"],
+  ])(
+    "adds %s / %s from the visual effects library",
+    (category, label, kind) => {
+      const commit = vi.fn().mockResolvedValue(undefined);
+      render(
+        <VideoEditorTransitionPanel
+          clips={[clip("a", 0), clip("b", 1_000_000)]}
+          tracks={[track]}
+          transitions={[]}
+          selectedClip={clip("a", 0)}
+          target={{ fromClipId: "a", toClipId: "b" }}
+          commit={commit}
+          onSelectTransition={vi.fn()}
+        />,
+      );
 
-    fireEvent.click(screen.getByRole("tab", { name: "风格" }));
-    fireEvent.click(screen.getByRole("button", { name: "闭眼睁眼" }));
-    fireEvent.click(screen.getByRole("button", { name: "应用到片段之间" }));
+      fireEvent.click(screen.getByRole("tab", { name: category }));
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      fireEvent.click(screen.getByRole("button", { name: "应用到片段之间" }));
 
-    expect(commit).toHaveBeenCalledWith(
-      [
-        expect.objectContaining({
-          type: "addTransition",
-          transition: expect.objectContaining({ kind: "eyelid" }),
-        }),
-      ],
-      [expect.objectContaining({ type: "removeTransition" })],
-    );
-  });
+      expect(commit).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            type: "addTransition",
+            transition: expect.objectContaining({ kind }),
+          }),
+        ],
+        [expect.objectContaining({ type: "removeTransition" })],
+      );
+    },
+  );
 
   it("sets a clip-local in transition without touching seams", () => {
     const commit = vi.fn().mockResolvedValue(undefined);

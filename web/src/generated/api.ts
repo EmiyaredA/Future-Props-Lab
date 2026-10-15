@@ -8951,10 +8951,14 @@ export interface components {
         };
         /** Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post */
         Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post: {
+            /** Category Id */
+            category_id?: string | null;
             /** Expected Revision */
             expected_revision: number;
             /** File */
             file: string;
+            /** Group */
+            group?: string | null;
             /**
              * X
              * @default 0
@@ -20514,7 +20518,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "eyelid" | "audio-crossfade" | "audio-equal-power" | "audio-dip" | "audio-filter-sweep";
+            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "flash" | "eyelid" | "audio-crossfade" | "audio-equal-power" | "audio-dip" | "audio-filter-sweep";
             /**
              * Placement
              * @default between
@@ -20622,7 +20626,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "flash" | "eyelid" | "audio-crossfade";
+            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "flash" | "eyelid" | "audio-crossfade";
         };
         /** VideoFramesIn */
         VideoFramesIn: {
@@ -21230,7 +21234,7 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
             /** Nodes */
-            nodes?: (components["schemas"]["VisualCanvasTextNode"] | components["schemas"]["VisualCanvasImageNode"] | components["schemas"]["VisualCanvasVideoNode"] | components["schemas"]["VisualCanvasAudioNode"])[];
+            nodes: (components["schemas"]["VisualCanvasTextNode"] | components["schemas"]["VisualCanvasImageNode"] | components["schemas"]["VisualCanvasVideoNode"] | components["schemas"]["VisualCanvasAudioNode"])[];
         };
         /** VisualCanvasEdge */
         VisualCanvasEdge: {

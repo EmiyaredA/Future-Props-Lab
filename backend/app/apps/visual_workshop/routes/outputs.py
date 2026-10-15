@@ -130,13 +130,24 @@ async def upload_material_node(
     expected_revision: Annotated[int, Form(ge=0)],
     x: Annotated[float, Form()] = 0,
     y: Annotated[float, Form()] = 0,
+    category_id: Annotated[str | None, Form(max_length=64)] = None,
+    group: Annotated[str | None, Form(max_length=120)] = None,
 ):
     from app.apps.visual_workshop.canvas import VisualCanvasError
     from app.apps.visual_workshop.outputs.uploads import upload_material
 
     try:
         return await upload_material(
-            session, get_settings(), workspace_id, project_id, file, expected_revision, x=x, y=y
+            session,
+            get_settings(),
+            workspace_id,
+            project_id,
+            file,
+            expected_revision,
+            x=x,
+            y=y,
+            category_id=category_id,
+            group=group,
         )
     except (OutputError, AssetError, VisualCanvasError) as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

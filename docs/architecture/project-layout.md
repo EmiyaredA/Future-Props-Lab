@@ -207,6 +207,7 @@ Future-Props-Lab/
   后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有特效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、特效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
   FFmpeg/Pillow 合成和取消控制。`video_sampling.py` 按源视频 PTS 选择包含当前时刻的画面区间，
   精确停帧与导出共享该采样规则。正式剪辑渲染只依赖不可变时间轴快照和原素材，
+  `spin_blur.py` 拥有旋转模糊的角向采样；Web 的 `video-editor/spinBlurCanvas.ts` 使用相同的角度、采样数与覆盖缩放，`VideoEditorEffectImage.tsx` 复用图片和文字图层的已加载素材。
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { textLayerPath } from "./api";
+import { VideoEditorEffectImage } from "./VideoEditorEffectImage";
 import { textPosition, textPositionOperations } from "./textModel";
 import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
@@ -17,6 +18,7 @@ export function VideoEditorTextLayer({
   revision,
   clip,
   style,
+  spinBlur,
   canvasWidth,
   canvasHeight,
   stageRef,
@@ -32,6 +34,7 @@ export function VideoEditorTextLayer({
   revision: number;
   clip: VideoEditorClip;
   style: CSSProperties;
+  spinBlur?: number;
   canvasWidth: number;
   canvasHeight: number;
   stageRef: RefObject<HTMLDivElement | null>;
@@ -129,16 +132,11 @@ export function VideoEditorTextLayer({
     <>
       <div className="ve-text-layer" style={geometry}>
         {url && (
-          <img
-            src={url}
+          <VideoEditorEffectImage
+            source={url}
             alt={clip.text ?? "文字"}
-            draggable={false}
-            onLoad={(event) =>
-              setSize({
-                width: event.currentTarget.naturalWidth,
-                height: event.currentTarget.naturalHeight,
-              })
-            }
+            spinBlur={spinBlur}
+            onSize={setSize}
           />
         )}
       </div>

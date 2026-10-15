@@ -47,6 +47,53 @@ const track = (clips: VideoEditorClip[]): VideoEditorTrack => ({
 });
 
 describe("previewTransitions", () => {
+  it("spins seam partners clockwise through opposite signed angles", () => {
+    const left = clip("a", 0);
+    const right = clip("b", 2_000_000);
+    const transition: VideoEditorTimelineTransition = {
+      id: "spin",
+      kind: "spin-blur",
+      durationUs: 1_000_000,
+      placement: "between",
+      fromClipId: "a",
+      toClipId: "b",
+      direction: "left",
+      easing: "linear",
+    };
+    const layers = previewVisualLayers([track([left, right])], 2_000_000, [
+      transition,
+    ]);
+    expect(layers.map((layer) => layer.effect.spinBlur)).toEqual([0.5, -0.5]);
+    expect(layers.map((layer) => layer.effect.opacityMultiplier)).toEqual([
+      0.5, 0.5,
+    ]);
+    expect(
+      previewVisualLayers([track([left, right])], 2_500_000, [transition])[0]
+        ?.effect.spinBlur,
+    ).toBeUndefined();
+  });
+
+  it.each(["transitionIn", "transitionOut"] as const)(
+    "spins clip %s with easing",
+    (edge) => {
+      const target = {
+        ...clip("a", 0),
+        [edge]: {
+          kind: "spin-blur",
+          durationUs: 1_000_000,
+          direction: "left",
+          easing: "ease-in",
+        },
+      } as VideoEditorClip;
+      const effect = clipEdgePreviewEffect(
+        target,
+        edge === "transitionIn" ? 500_000 : 1_500_000,
+      );
+      expect(effect?.spinBlur).toBeCloseTo(
+        edge === "transitionIn" ? -0.75 : 0.25,
+      );
+    },
+  );
   it("closes at the seam, switches scenes while closed, then opens", () => {
     const left = clip("a", 0);
     const right = clip("b", 2_000_000);
@@ -108,7 +155,7 @@ describe("previewTransitions", () => {
     },
   );
 
-  it.each(["crossfade", "wipe", "zoom", "blur", "flash"] as const)(
+  it.each(["crossfade", "wipe", "zoom", "blur", "spin-blur", "flash"] as const)(
     "keeps chained %s transitions continuous regardless of saved order",
     (kind) => {
       const a = clip("a", 0, 4_000_000);

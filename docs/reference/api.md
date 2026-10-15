@@ -412,7 +412,7 @@ OpenAPI 或执行定时健康检查。
 - `GET/PATCH/DELETE /v1/visual-workshop/projects/{project_id}`：读取、修改或删除单个项目。
 - `GET /v1/visual-workshop/projects/{project_id}/snapshot` 与 `POST /v1/visual-workshop/projects/snapshot-imports`：下载可移植 ZIP，或上传 `file` 并创建全新副本。
 - `POST /v1/visual-workshop/projects/{project_id}/open-folder`：在运行 Studio 的电脑上打开服务端推导的项目目录。
-- `GET/PUT /v1/visual-workshop/projects/{project_id}/canvas`：读取或以 CAS 保存完整节点与连线画布。
+- `GET/PUT /v1/visual-workshop/projects/{project_id}/canvas`：读取或以 CAS 保存完整节点与连线画布。PUT 必须显式提交 `nodes` 和 `expected_revision`，缺少节点返回 422；只改分类也需携带原节点和连线，显式空节点列表表示删除全部节点。
 - `POST /v1/visual-workshop/projects/{project_id}/asset-references`：把文件管理中的文件引用到项目。
 - `PATCH/DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}`：整理或移除项目引用。
 - `GET/POST /v1/visual-workshop/projects/{project_id}/conversations`：读取或新建项目对话。
@@ -541,6 +541,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET /v1/video-editor/projects/{project_id}/timeline`：读取微秒级 16:9 多轨时间轴。
 - `POST /v1/video-editor/projects/{project_id}/timeline/operations`：以 `expectedRevision`、`requestId` 原子提交视觉、音频和混合轨道、Clip、链接、`separateClip` 分离、转场、关键帧和 `setAssetOrganization` 素材文件夹编排操作；批次只增加一次 revision，同一 requestId 幂等。`alignAudioSeam` 一次设置 B 的源接入点、重叠淡化和同轨后续片段及关联组跟随，失败整批回滚；撤销使用原片段快照与转场操作。`setAudioTransition` 接收 `fromClipId`、`toClipId`、`transitionId`、`kind`、`durationUs` 和 `easing`，对同轨相邻且已重叠或首尾相接的音频创建、替换或调整接缝效果；支持 `audio-crossfade`（线性）、`audio-equal-power`、`audio-dip` 和 `audio-filter-sweep`。它将 B 及同轨后续片段、关联组整体移动到指定重叠位置；已有画面关联的 A/B、间隙、锁轨或非法移动均拒绝，提交前可在 Web 预听，撤销用转场操作与片段快照。片段头尾仍使用 `audio-crossfade`。`assetOrganization` 保存一级文件夹、未分类素材及各自顺序，并随工程快照复制和重映射素材 ID。视频和图片 Clip 可选 `chromaKey`（`enabled`、十六进制 `color`、0–100 的 `similarity`、`softness`、`despill`），缺省时不抠像。
 - 混合轨支持视频与图片 Clip，图片可直接接在视频前后并使用相同的接缝吸附；新插入静态图片默认展示 5 秒，可调整时长。图片可在视觉轨和混合轨之间移动，不创建音频片段，也不参与原声音轨混音；同轨不允许重叠。混合轨视频仍需通过 `separateClip` 分离后移入视觉轨，音频、文字和纯色片段仍使用各自原有轨道类型。
+- 画面转场的 `kind` 支持 `spin-blur`（旋转模糊），可用于 `addTransition` / `updateTransition` 的片段接缝以及 `setTransition` 的片段头尾。共用 `durationUs`、`easing` 和现有 revision/CAS、撤销契约；围绕素材中心叠加九个角向采样，离场顺时针旋入，入场从反向角度顺时针恢复清晰。该效果不使用 `direction`，不改变音频或片段时间区间；实时预览、精确停帧和导出使用相同的角向进度。
 - 时间轴片段支持左右边缘拖动与键盘方向键逐帧调整（Shift 为十帧），关联片段同步裁剪。静态图片可延长展示，视频和音频受素材源区间限制；同轨邻接片段、时间轴零点与至少一帧时长限制会约束拖动。`trimClip` 拒绝锁定轨道，保留区间内关键帧随左边缘调整相对时间，移除区间外关键帧并缩短超出片段的转场；撤销使用 `restoreClipStates` 恢复完整状态。
 - 视频/音频素材后台处理会在预览转码前单独保存探测结果。`processingStatus=processing` 且 `probe.durationUs` 为有效正数时，Web 已允许拖入和剪辑；`proxyUrl` 仍为空时显示“预览准备中”，准备完成后自动使用预览文件。未读取到时长和失败素材不会被加入时间轴，拖放会提示原因。
 - 视频/音频 Clip 的 `playbackRate` 范围为 0.25～4，省略为 1。`setClipSpeed` 操作接收 `clipId`、`playbackRate` 和可选 `ripple`（默认 `false`，兼容旧客户端），同步修改同一链接组的媒体片段：保持起点、源起点及源范围，按旧速度/新速度调整时长（向下取整到微秒）、关键帧和转场。`ripple=true` 时，按变速前所选片段的结束时间，将同轨起点不早于该结束时间的后续片段及其链接组成员整体移动新旧时长差，每个片段只移动一次，保留间隔；变速媒体本身保持起点，其他无关联轨道不受影响。锁定轨道、负起点或非法重叠使整个批次失败。Web 默认开启“后续片段跟随”，允许关闭并按项目记住选择。`restoreClipStates` 接收非空且 ID 唯一的 `clips` 完整状态列表，在单个操作内恢复现有片段，用于一次撤销整个变速与跟随移动；不允许创建片段或改变所属轨道，仍执行 Workspace 权限、revision CAS、轨道锁定、素材归属和最终时间轴校验。撤销与重做不会因后续片段超过 200 个而拆成多个批次。源时间为 `sourceInUs + floor(localUs * playbackRate)`，分割、预览、精确帧、完整导出与分段导入遵循相同映射，音频变速保持音调。r0043 在现有时间轴 JSON 补齐默认速度；旧任务快照/导入文档仍按 1×读取，无需重写不可变快照。

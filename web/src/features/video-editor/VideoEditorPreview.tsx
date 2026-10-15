@@ -599,6 +599,7 @@ export function VideoEditorPreview({
                     revision={timeline.revision}
                     clip={clip}
                     style={style}
+                    spinBlur={effect.spinBlur}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
                     stageRef={stageRef}
@@ -626,6 +627,7 @@ export function VideoEditorPreview({
                   asset={asset}
                   geometry={geometry}
                   style={style}
+                  spinBlur={effect.spinBlur}
                   localUs={localUs}
                   playing={playing}
                   selected={selectedClipId === clip.id}

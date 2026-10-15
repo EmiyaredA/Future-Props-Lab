@@ -36,6 +36,7 @@ const visualTransitionLabels: Record<string, string> = {
   blur: "径向模糊",
   flash: "闪白",
   eyelid: "闭眼睁眼",
+  "spin-blur": "旋转模糊",
   "audio-crossfade": "音频淡化",
 };
 

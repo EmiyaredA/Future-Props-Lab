@@ -3334,6 +3334,18 @@
       },
       "Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post": {
         "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
           "expected_revision": {
             "minimum": 0.0,
             "title": "Expected Revision",
@@ -3343,6 +3355,18 @@
             "contentMediaType": "application/octet-stream",
             "title": "File",
             "type": "string"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
           },
           "x": {
             "default": 0,
@@ -33460,6 +33484,7 @@
               "wipe-right",
               "zoom",
               "blur",
+              "spin-blur",
               "flash",
               "eyelid",
               "audio-crossfade",
@@ -33658,6 +33683,7 @@
               "wipe-right",
               "zoom",
               "blur",
+              "spin-blur",
               "flash",
               "eyelid",
               "audio-crossfade"
@@ -35517,7 +35543,8 @@
           }
         },
         "required": [
-          "expected_revision"
+          "expected_revision",
+          "nodes"
         ],
         "title": "VisualCanvasDocumentPutIn",
         "type": "object"

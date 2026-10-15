@@ -23,6 +23,7 @@ import {
   getGenerationBatches,
   putVisualCanvas,
   type VisualMaterialCategory,
+  type MaterialUploadDestination,
 } from "../api";
 import { visualWorkshopQueryKeys } from "../queryKeys";
 import { nodeStatus, nodeTypeNames, type BoardController } from "./boardTypes";
@@ -30,6 +31,7 @@ import { InputReferences } from "./InputReferences";
 import { OutputHistory } from "./OutputHistory";
 import { BoardMenu } from "./BoardMenu";
 import { MaterialTree, type TreeAction } from "./MaterialTree";
+import { MaterialUpload } from "./MaterialUpload";
 import { TextWorkbench } from "./TextWorkbench";
 import { NodeMetadata } from "./NodeMetadata";
 import {
@@ -66,7 +68,8 @@ export function ProjectBoard({
   const [downloading, setDownloading] = useState(false);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState("");
-  const uploadInput = useRef<HTMLInputElement>(null);
+  const [uploadDestination, setUploadDestination] =
+    useState<MaterialUploadDestination>();
   const [newKind, setNewKind] = useState("image");
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 600);
   useEffect(() => {
@@ -312,26 +315,33 @@ export function ProjectBoard({
           </div>
           <button
             className="board-upload"
-            disabled={c.upload.isPending}
+            disabled={c.upload.isPending || !c.canvasReady}
+            aria-expanded={!!uploadDestination}
             onClick={() => {
-              c.uploadPosition.current = undefined;
-              uploadInput.current?.click();
+              setUploadDestination(
+                uploadDestination
+                  ? undefined
+                  : {
+                      category_id: selected?.category_id ?? null,
+                      group: selected?.group ?? null,
+                    },
+              );
             }}
           >
             <Upload size={14} /> 上传素材
           </button>
-          <input
-            ref={uploadInput}
-            hidden
-            type="file"
-            accept="image/*,video/*,audio/*"
-            multiple
-            onChange={(event) => {
-              const files = Array.from(event.currentTarget.files ?? []);
-              event.currentTarget.value = "";
-              if (files.length) c.upload.mutate(files);
-            }}
-          />
+          {uploadDestination && (
+            <MaterialUpload
+              categories={categories}
+              destination={uploadDestination}
+              disabled={c.upload.isPending || !c.canvasReady}
+              onChange={setUploadDestination}
+              onUpload={(files, destination) => {
+                c.uploadPosition.current = undefined;
+                c.upload.mutate({ files, destination });
+              }}
+            />
+          )}
           <MaterialTree
             projectId={c.projectId}
             categories={categories}
@@ -341,6 +351,10 @@ export function ProjectBoard({
             onAction={setAction}
             onNodeAction={manageNode}
             downloading={downloading}
+            onUpload={(categoryId) =>
+              setUploadDestination({ category_id: categoryId, group: null })
+            }
+            uploadDisabled={c.upload.isPending || !c.canvasReady}
           />
           <div className="board-material-footer">
             <button onClick={() => c.setAssetsOpen(true)}>

@@ -10,6 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
 from app.capabilities.media_rendering.chroma_key import apply_chroma_key
+from app.capabilities.media_rendering.spin_blur import spin_blur
 from app.capabilities.media_rendering.text_layer import render_text_layer
 from app.capabilities.media_rendering.timeline_document import (
     VideoEditorClip,
@@ -106,7 +107,7 @@ def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | N
             opacity=_edge_opacity(edge.kind, progress),
             kind=edge.kind,
             progress=progress,
-            direction=edge.direction,
+            direction="in" if edge.kind == "spin-blur" else edge.direction,
             overlay_color=overlay_color,
             overlay_alpha=overlay_alpha,
         )
@@ -128,7 +129,7 @@ def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | N
                 opacity=_edge_opacity(edge.kind, visibility),
                 kind=edge.kind,
                 progress=visibility,
-                direction=edge.direction,
+                direction="out" if edge.kind == "spin-blur" else edge.direction,
                 overlay_color=overlay_color,
                 overlay_alpha=overlay_alpha,
             )
@@ -361,11 +362,18 @@ class TimelineFrameRenderer:
                                     left_local_us,
                                     opacity_multiplier=left_opacity,
                                     transition_kind=(
-                                        between.kind if between.kind in {"zoom", "blur"} else None
+                                        between.kind
+                                        if between.kind in {"zoom", "blur", "spin-blur"}
+                                        else None
                                     ),
                                     transition_progress=(
-                                        1 - progress if between.kind in {"zoom", "blur"} else None
+                                        1 - progress
+                                        if between.kind in {"zoom", "blur", "spin-blur"}
+                                        else None
                                     ),
+                                    direction="out"
+                                    if between.kind == "spin-blur"
+                                    else between.direction,
                                     edge_local_us=left_edge_local,
                                 )
                             if right_layer is not None:
@@ -378,11 +386,13 @@ class TimelineFrameRenderer:
                                     opacity_multiplier=right_opacity,
                                     transition_kind=(
                                         between.kind
-                                        if between.kind in {"wipe", "zoom", "blur"}
+                                        if between.kind in {"wipe", "zoom", "blur", "spin-blur"}
                                         else None
                                     ),
                                     transition_progress=progress,
-                                    direction=between.direction,
+                                    direction="in"
+                                    if between.kind == "spin-blur"
+                                    else between.direction,
                                     edge_local_us=right_edge_local,
                                 )
                             continue
@@ -544,6 +554,11 @@ class TimelineFrameRenderer:
                 transition_progress if transition_progress is not None else edge.progress
             ),
             direction=direction if transition_kind else edge.direction,
+            edge_spin_amount=(
+                (1 - edge.progress) * (-1 if edge.direction == "in" else 1)
+                if edge.kind == "spin-blur" and transition_kind != "spin-blur"
+                else 0
+            ),
         )
         if edge.overlay_color and edge.overlay_alpha:
             self._queue_frame_overlay(edge.overlay_color, edge.overlay_alpha)
@@ -559,6 +574,7 @@ class TimelineFrameRenderer:
         transition_kind: str | None = None,
         transition_progress: float | None = None,
         direction: str = "left",
+        edge_spin_amount: float = 0,
     ) -> None:
         transform = clip.transform
         canvas_width, canvas_height = canvas.size
@@ -589,6 +605,11 @@ class TimelineFrameRenderer:
             if ground_ratio is None:
                 ground_ratio = self._visible_alpha_bottom(layer) / max(1, layer.height)
                 self._portrait_ground_ratio_by_asset[ground_key] = ground_ratio
+        if transition_kind == "spin-blur" and transition_progress is not None:
+            amount = (1 - transition_progress) * (-1 if direction == "in" else 1)
+            layer = spin_blur(layer, amount)
+        elif edge_spin_amount:
+            layer = spin_blur(layer, edge_spin_amount)
         if clip.flip_x:
             layer = layer.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         scale_x = property_at(clip, "scaleX", local_us, transform.scale_x)

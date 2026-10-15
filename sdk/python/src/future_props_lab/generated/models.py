@@ -567,8 +567,10 @@ class Body_upload_library_file_v1_director_desk_library_files_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
 class Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post(WireModel):
+    category_id: str | None = Field(default=None, alias='category_id')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
+    group: str | None = Field(default=None, alias='group')
     x: float = Field(default=0, alias='x')
     y: float = Field(default=0, alias='y')
 
@@ -5267,7 +5269,7 @@ class VideoEditorTimelineTransition(WireModel):
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
     from_clip_id: str = Field(default=..., alias='fromClipId', min_length=1, max_length=64)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
-    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'eyelid', 'audio-crossfade', 'audio-equal-power', 'audio-dip', 'audio-filter-sweep'] = Field(default=..., alias='kind')
+    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'spin-blur', 'flash', 'eyelid', 'audio-crossfade', 'audio-equal-power', 'audio-dip', 'audio-filter-sweep'] = Field(default=..., alias='kind')
     placement: Literal['between'] = Field(default='between', alias='placement')
     to_clip_id: str = Field(default=..., alias='toClipId', min_length=1, max_length=64)
 
@@ -5295,7 +5297,7 @@ class VideoEditorTransition(WireModel):
     direction: Literal['left', 'right', 'up', 'down', 'in', 'out'] = Field(default='left', alias='direction')
     duration_us: int = Field(default=..., alias='durationUs', ge=0.0, le=10000000.0)
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
-    kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'flash', 'eyelid', 'audio-crossfade'] = Field(default=..., alias='kind')
+    kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'spin-blur', 'flash', 'eyelid', 'audio-crossfade'] = Field(default=..., alias='kind')
 
 class VideoFramesIn(WireModel):
     max_width: int = Field(default=1280, alias='max_width', ge=64.0, le=1920.0)
@@ -5554,7 +5556,7 @@ class VisualCanvasDocumentPutIn(WireModel):
     categories: list[VisualMaterialCategory] | None = Field(default=None, alias='categories')
     edges: list[VisualCanvasEdge] | None = Field(default=None, alias='edges', max_length=1000)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    nodes: list[VisualCanvasTextNode | VisualCanvasImageNode | VisualCanvasVideoNode | VisualCanvasAudioNode] | None = Field(default=None, alias='nodes', max_length=500)
+    nodes: list[VisualCanvasTextNode | VisualCanvasImageNode | VisualCanvasVideoNode | VisualCanvasAudioNode] = Field(default=..., alias='nodes', max_length=500)
 
 class VisualCanvasEdge(WireModel):
     binding: Literal['final', 'fixed'] = Field(default='final', alias='binding')

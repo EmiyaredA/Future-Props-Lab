@@ -568,17 +568,26 @@ export async function deleteNodeOutput(
   );
 }
 
+export type MaterialUploadDestination = Pick<
+  VisualCanvasNode,
+  "category_id" | "group"
+>;
+
 export async function uploadMaterialNode(
   projectId: string,
   file: File,
   revision: number,
   position: { x: number; y: number },
+  destination?: MaterialUploadDestination,
 ) {
   const form = new FormData();
   form.append("file", file);
   form.append("expected_revision", String(revision));
   form.append("x", String(position.x));
   form.append("y", String(position.y));
+  if (destination?.category_id)
+    form.append("category_id", destination.category_id);
+  if (destination?.group) form.append("group", destination.group);
   return fetchApiJson<VisualCanvasDocument>(
     `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}/node-uploads`,
     { method: "POST", body: form },

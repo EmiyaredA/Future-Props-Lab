@@ -1,36 +1,8 @@
-import { useEffect, useRef, type CSSProperties } from "react";
-import { paintChromaCanvas } from "./chromaCanvas";
+import type { CSSProperties } from "react";
+import { VideoEditorEffectImage } from "./VideoEditorEffectImage";
 import { VideoEditorProxyVideo } from "./VideoEditorProxyVideo";
 import type { PreviewMediaGeometry } from "./previewGeometry";
 import type { VideoEditorClip, VideoEditorAsset } from "./types";
-function ChromaImage({
-  source,
-  chromaKey,
-}: {
-  source: string;
-  chromaKey: NonNullable<VideoEditorClip["chromaKey"]>;
-}) {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const node = new window.Image();
-    node.onload = () => {
-      if (canvas.current)
-        paintChromaCanvas(
-          canvas.current,
-          node,
-          node.naturalWidth,
-          node.naturalHeight,
-          chromaKey,
-        );
-    };
-    node.src = source;
-    return () => {
-      node.onload = null;
-    };
-  }, [source, chromaKey]);
-  return <canvas ref={canvas} className="ve-keyed-image" aria-hidden />;
-}
-
 export function VideoEditorMediaLayer({
   clip,
   asset,
@@ -39,6 +11,7 @@ export function VideoEditorMediaLayer({
   localUs,
   playing,
   selected,
+  spinBlur,
 }: {
   clip: VideoEditorClip;
   asset?: VideoEditorAsset;
@@ -47,6 +20,7 @@ export function VideoEditorMediaLayer({
   localUs: number;
   playing: boolean;
   selected: boolean;
+  spinBlur?: number;
 }) {
   return (
     <div
@@ -66,6 +40,7 @@ export function VideoEditorMediaLayer({
               playing={playing}
               crop={geometry.proxyCrop}
               chromaKey={clip.chromaKey}
+              spinBlur={spinBlur}
             />
           </div>
         ) : clip.kind === "video" && asset && !asset.proxyUrl ? (
@@ -74,13 +49,12 @@ export function VideoEditorMediaLayer({
               ? "视频预览处理失败，请检查素材"
               : "视频预览准备中，可继续剪辑"}
           </span>
-        ) : clip.kind === "image" && asset && clip.chromaKey?.enabled ? (
-          <ChromaImage
+        ) : clip.kind === "image" && asset ? (
+          <VideoEditorEffectImage
             source={`/v1/files/${asset.id}/content`}
             chromaKey={clip.chromaKey}
+            spinBlur={spinBlur}
           />
-        ) : clip.kind === "image" && asset ? (
-          <img src={`/v1/files/${asset.id}/content`} alt="" draggable={false} />
         ) : clip.kind === "color" ? (
           <i style={{ background: clip.color ?? "#000" }} />
         ) : null}

@@ -343,7 +343,7 @@ def default_material_categories() -> list[VisualMaterialCategory]:
 
 class VisualCanvasDocumentPutIn(BaseModel):
     expected_revision: int = Field(ge=0)
-    nodes: list[VisualCanvasNode] = Field(default_factory=list, max_length=500)
+    nodes: list[VisualCanvasNode] = Field(max_length=500)
     edges: list[VisualCanvasEdge] = Field(default_factory=list, max_length=1000)
     categories: list[VisualMaterialCategory] | None = Field(default=None, max_length=100)
 

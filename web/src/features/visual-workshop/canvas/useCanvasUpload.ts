@@ -11,6 +11,7 @@ import {
   uploadMaterialNode,
   type VisualCanvasDocument,
   type VisualCanvasNode,
+  type MaterialUploadDestination,
 } from "@features/visual-workshop/api";
 import { batchInsertionAnchor, type CanvasPoint } from "./canvasPlacement";
 import type { NodeKind } from "./geometry";
@@ -66,7 +67,12 @@ export function useCanvasUpload({
     null,
   );
   const upload = useMutation({
-    mutationFn: async (files: File[]) => {
+    mutationFn: async (
+      input: File[] | { files: File[]; destination: MaterialUploadDestination },
+    ) => {
+      const { files, destination } = Array.isArray(input)
+        ? { files: input, destination: undefined }
+        : input;
       const created: ManagedFile[] = [];
       const anchor = uploadPosition.current ?? getInsertionAnchor();
       const count = files.filter((file) => fileKind(file)).length;
@@ -84,6 +90,7 @@ export function useCanvasUpload({
             file,
             revision,
             position,
+            ...(destination ? [destination] : []),
           );
           applyServerCanvas(updated);
           client.setQueryData(

@@ -301,7 +301,7 @@ export const TECHNICAL_READING: Record<
   },
   "visual-workshop": {
     summary:
-      "把节点创作图、供应商任务和托管结果分开，说明生成与再次复用的过程。",
+      "区分节点创作图、供应商任务与托管结果，说明上传归类的原子保存、生成与再次复用过程。",
     related: [
       {
         libraryId: "technical",

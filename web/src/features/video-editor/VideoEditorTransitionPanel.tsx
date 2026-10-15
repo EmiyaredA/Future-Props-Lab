@@ -79,6 +79,14 @@ const definitions: TransitionDefinition[] = [
     media: "visual",
   },
   {
+    kind: "spin-blur",
+    label: "旋转模糊",
+    category: "模糊",
+    direction: "left",
+    description: "画面围绕中心旋转，以角向拖影衔接下一画面",
+    media: "visual",
+  },
+  {
     kind: "flash",
     label: "闪白",
     category: "光效",

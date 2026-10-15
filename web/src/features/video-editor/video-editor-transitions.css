@@ -324,3 +324,13 @@
   color: #f2a7ad;
   font-size: 10px;
 }
+.ve-transition-thumb.effect-spin-blur {
+  background: repeating-conic-gradient(
+    from 35deg,
+    #9d8df1 0deg 18deg,
+    #393569 35deg 60deg,
+    #c9c0ff 80deg 100deg
+  );
+  border-radius: 50%;
+  filter: blur(1px);
+}

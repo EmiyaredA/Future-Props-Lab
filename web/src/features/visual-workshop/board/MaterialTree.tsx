@@ -24,6 +24,8 @@ export function MaterialTree({
   onNodeAction,
   downloading,
   projectId,
+  onUpload,
+  uploadDisabled,
 }: {
   categories: VisualMaterialCategory[];
   nodes: VisualCanvasNode[];
@@ -33,6 +35,8 @@ export function MaterialTree({
   onNodeAction?: (action: NodeManagementAction, node: VisualCanvasNode) => void;
   downloading?: boolean;
   projectId?: string;
+  onUpload?: (categoryId: string) => void;
+  uploadDisabled?: boolean;
 }) {
   const entry = (node: VisualCanvasNode) => (
     <div
@@ -154,6 +158,15 @@ export function MaterialTree({
               <BoardMenu
                 label={`管理分类 ${category.name}`}
                 items={[
+                  ...(onUpload
+                    ? [
+                        {
+                          label: "上传到此分类",
+                          disabled: uploadDisabled,
+                          onSelect: () => onUpload(category.id),
+                        },
+                      ]
+                    : []),
                   {
                     label: "新建分组",
                     onSelect: () =>
