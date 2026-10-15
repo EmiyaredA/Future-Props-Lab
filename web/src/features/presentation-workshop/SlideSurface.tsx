@@ -237,6 +237,9 @@ export function SlidePreview({
       {visible ? (
         <div
           style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
             transform: `scale(${previewWidth / 1280})`,
             transformOrigin: "top left",
           }}

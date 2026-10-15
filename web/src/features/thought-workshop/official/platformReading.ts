@@ -218,7 +218,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/overview": {
     summary:
-      "不用模型，从封面到放映完成三页介绍，认识页面、元素与备注的编辑位置。",
+      "先预览版式与文稿，再从封面到放映完成三页介绍，认识页面、元素与备注的编辑位置。",
     related: [
       {
         libraryId: "presentation-workshop",

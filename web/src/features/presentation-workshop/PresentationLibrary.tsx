@@ -23,6 +23,7 @@ import { presentationKeys } from "./queryKeys";
 import { PresentationMenu } from "./PresentationMenu";
 import { newSlide, newDeck } from "./templates";
 import { SlidePreview } from "./SlideSurface";
+import { PresentationPreviewCard } from "./PresentationPreviewCard";
 import type { ProjectSummary } from "./types";
 
 export function PresentationLibrary({
@@ -97,20 +98,33 @@ export function PresentationLibrary({
           <section className="presentation-starters" aria-label="基础版式">
             <h3>从基础版式开始</h3>
             <div className="presentation-starter-grid">
-              {starters.map((starter) => (
-                <button
-                  key={starter.value}
-                  aria-label={`从${starter.label}新建文稿`}
-                  disabled={busy}
-                  onClick={() => startNew(starter.value)}
-                >
-                  <div className="presentation-starter-preview">
-                    <SlidePreview slide={starter.slide} />
-                    {starter.value === "blank" && <Plus size={26} />}
-                  </div>
-                  <span>{starter.label}</span>
-                </button>
-              ))}
+              {starters.map((starter) =>
+                starter.value === "blank" ? (
+                  <button
+                    key={starter.value}
+                    aria-label="从空白新建文稿"
+                    disabled={busy}
+                    onClick={() => startNew("blank")}
+                  >
+                    <div className="presentation-starter-preview">
+                      <SlidePreview slide={starter.slide} />
+                      <Plus size={26} />
+                    </div>
+                    <span>{starter.label}</span>
+                  </button>
+                ) : (
+                  <PresentationPreviewCard
+                    key={starter.value}
+                    title={starter.label}
+                    firstSlide={starter.slide}
+                    slides={[starter.slide]}
+                    disabled={busy}
+                    actionLabel="使用此版式"
+                    onUse={() => startNew(starter.value)}
+                    className="presentation-starter-card"
+                  />
+                ),
+              )}
             </div>
           </section>
         )}
@@ -150,16 +164,19 @@ export function PresentationLibrary({
         <div className="presentation-project-grid">
           {query.data?.items.map((project) => (
             <article className="presentation-project-card" key={project.id}>
-              <button
+              <PresentationPreviewCard
+                title={project.title}
+                firstSlide={project.first_slide}
+                projectId={project.id}
+                slideCount={project.slide_count}
+                actionLabel="打开文稿"
+                onUse={() => onOpen(project.id)}
                 className="presentation-project-open"
-                onClick={() => onOpen(project.id)}
-                aria-label={`打开 ${project.title}`}
-              >
-                <SlidePreview slide={project.first_slide} />
-              </button>
+              />
               <div className="presentation-project-info">
                 <button
                   onClick={() => onOpen(project.id)}
+                  aria-label={`打开 ${project.title}`}
                   title={project.title}
                 >
                   {project.title}

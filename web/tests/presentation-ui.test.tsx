@@ -76,8 +76,14 @@ it.each(["空白", "封面", "标题正文", "图文双栏"])(
     const onOpen = library();
     const user = userEvent.setup();
     await user.click(
-      screen.getByRole("button", { name: `从${label}新建文稿` }),
+      screen.getByRole("button", {
+        name: label === "空白" ? "从空白新建文稿" : `预览 ${label}`,
+      }),
     );
+    if (label !== "空白") {
+      expect(api.createProject).not.toHaveBeenCalled();
+      await user.click(screen.getByRole("button", { name: "使用此版式" }));
+    }
     const dialog = screen.getByRole("dialog", { name: "新建演示文稿" });
     await user.click(within(dialog).getByRole("button", { name: "确认" }));
     await waitFor(() => expect(onOpen).toHaveBeenCalledWith("project"));
