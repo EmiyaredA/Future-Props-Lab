@@ -344,7 +344,7 @@ export const TECHNICAL_READING: Record<
   },
   "video-editor": {
     summary:
-      "用两倍速采样、跳剪帧发布与 49.707 毫秒空隙解释时间坐标、独立预处理、精确闭合和定帧边界。",
+      "用两倍速采样、转场相邻切镜的帧保留与 49.707 毫秒空隙解释时间坐标、预览缓冲和精确闭合边界。",
     related: [
       {
         libraryId: "technical",

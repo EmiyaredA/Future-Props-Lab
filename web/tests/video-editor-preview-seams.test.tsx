@@ -400,4 +400,121 @@ describe("video editor seam preview", () => {
     );
     expect(view.container.querySelectorAll("video")).toHaveLength(0);
   });
+
+  it("holds the incoming transition player's frame across the following plain source cut", () => {
+    const paint = vi
+      .spyOn(chromaCanvas, "paintChromaCanvas")
+      .mockImplementation(() => {});
+    const doc = structuredClone(timeline);
+    const first = { ...left, id: "first", timelineStartUs: 0 };
+    const middle = {
+      ...left,
+      id: "middle",
+      timelineStartUs: first.durationUs,
+      sourceInUs: 0,
+      chromaKey: {
+        enabled: true,
+        color: "#00ff00",
+        similarity: 42,
+        softness: 18,
+        despill: 30,
+      },
+    };
+    const last = {
+      ...middle,
+      id: "last",
+      assetId: "other-source",
+      timelineStartUs: middle.timelineStartUs + middle.durationUs,
+    };
+    doc.document.tracks![0].clips = [first, middle, last];
+    doc.document.transitions = [
+      {
+        id: "spin",
+        kind: "spin-blur",
+        placement: "between",
+        fromClipId: first.id,
+        toClipId: middle.id,
+        durationUs: 1_000_000,
+        direction: "left",
+        easing: "ease-in-out",
+      },
+    ];
+    expect(
+      previewVideoPlaybackKeys(doc.document.tracks!, doc.document.transitions),
+    ).toEqual(
+      new Map([
+        [first.id, first.id],
+        [middle.id, middle.id],
+        [last.id, middle.id],
+      ]),
+    );
+    const media = [
+      ...assets,
+      { ...assets[0], id: "other-source", proxyUrl: "/other.mp4" },
+    ];
+    const seamUs = last.timelineStartUs;
+    const view = render(
+      <VideoEditorPreview
+        {...props}
+        timeline={doc}
+        assets={media}
+        playing
+        playheadUs={seamUs - 100_000}
+      />,
+    );
+    const video = view.container.querySelector("video")!;
+    const surface = view.container.querySelector("canvas")!;
+    Object.defineProperties(video, {
+      readyState: { configurable: true, value: 2 },
+      videoWidth: { configurable: true, value: 320 },
+      videoHeight: { configurable: true, value: 180 },
+    });
+    fireEvent.seeked(video);
+    expect(paint).toHaveBeenCalledOnce();
+    view.rerender(
+      <VideoEditorPreview
+        {...props}
+        timeline={doc}
+        assets={media}
+        playing
+        playheadUs={seamUs + 10_000}
+      />,
+    );
+    expect(view.container.querySelector("video")).toBe(video);
+    expect(view.container.querySelector("canvas")).toBe(surface);
+    expect(video).toHaveAttribute("src", "/other.mp4");
+    expect(paint).toHaveBeenCalledOnce();
+    fireEvent.seeked(video);
+    expect(paint).toHaveBeenCalledTimes(2);
+  });
+
+  it("reuses a preceding plain cut's buffer until the actual transition", () => {
+    const tracks = structuredClone(timeline.document.tracks!);
+    const third = {
+      ...right,
+      id: "third",
+      timelineStartUs: right.timelineStartUs + right.durationUs,
+    };
+    tracks[0].clips!.push(third);
+    expect(
+      previewVideoPlaybackKeys(tracks, [
+        {
+          id: "spin",
+          kind: "spin-blur",
+          placement: "between",
+          fromClipId: right.id,
+          toClipId: third.id,
+          durationUs: 500_000,
+          direction: "left",
+          easing: "ease-in-out",
+        },
+      ]),
+    ).toEqual(
+      new Map([
+        [left.id, left.id],
+        [right.id, left.id],
+        [third.id, third.id],
+      ]),
+    );
+  });
 });

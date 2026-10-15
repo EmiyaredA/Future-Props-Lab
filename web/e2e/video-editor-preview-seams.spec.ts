@@ -230,9 +230,8 @@ test("keeps decoded frames while scrubbing continuous seams with delayed exact f
     // real playing cut from the red trim to a non-contiguous blue trim.
     await seek(3.8);
     await page.getByRole("button", { name: "播放", exact: true }).click();
-    const colors = await page
-      .locator(".ve-stage canvas.ve-keyed-media")
-      .evaluate(
+    const samplePlayingCut = () =>
+      page.locator(".ve-stage canvas.ve-keyed-media").evaluate(
         (node) =>
           new Promise<number[][]>((resolve) => {
             const source = node as HTMLCanvasElement;
@@ -251,6 +250,7 @@ test("keeps decoded frames while scrubbing continuous seams with delayed exact f
             sample();
           }),
       );
+    const colors = await samplePlayingCut();
     expect(colors.some((color) => color[0] > 200)).toBeTruthy();
     expect(colors.some((color) => color[2] > 200)).toBeTruthy();
     expect(
@@ -272,6 +272,59 @@ test("keeps decoded frames while scrubbing continuous seams with delayed exact f
     await page
       .locator(".ve-stage")
       .screenshot({ path: info.outputPath("continuous-seam.png") });
+
+    // A transition on the preceding seam must not split this plain cut's
+    // display buffer, even while the new source position is being decoded.
+    const latestTimeline: VideoEditorTimeline = await (
+      await page.request.get(`${base}/timeline`)
+    ).json();
+    const transitioned = await page.request.post(
+      `${base}/timeline/operations`,
+      {
+        headers,
+        data: {
+          expectedRevision: latestTimeline.revision,
+          requestId: crypto.randomUUID(),
+          operations: [
+            {
+              type: "addTransition",
+              transition: {
+                id: "preceding-spin",
+                kind: "spin-blur",
+                placement: "between",
+                fromClipId: left.id,
+                toClipId: right.id,
+                durationUs: 200_000,
+                direction: "left",
+                easing: "ease-in-out",
+              },
+            },
+          ],
+        },
+      },
+    );
+    expect(transitioned.ok()).toBeTruthy();
+    await page.reload();
+    await expect(
+      page.locator('[data-clip-id="continuous-left"]'),
+    ).toBeVisible();
+    await seek(3.5);
+    await expect(frame).toBeVisible();
+    await video.evaluate((node) =>
+      node.setAttribute("data-seam-decoder", "after-spin"),
+    );
+    await page.getByRole("button", { name: "播放", exact: true }).click();
+    const afterSpinColors = await samplePlayingCut();
+    await expect(video).toHaveAttribute("data-seam-decoder", "after-spin");
+    expect(afterSpinColors.some((color) => color[0] > 200)).toBeTruthy();
+    expect(afterSpinColors.some((color) => color[2] > 200)).toBeTruthy();
+    expect(
+      afterSpinColors.every((color) => color[1] < 30 && color[3] === 255),
+    ).toBeTruthy();
+    await page.getByRole("button", { name: "暂停", exact: true }).click();
+    // Settle the final precise frame before deleting its source assets.
+    await expect(frame).toBeVisible();
+    await expect(page.getByText("画面更新中…", { exact: true })).toHaveCount(0);
   } finally {
     releaseFrames();
     const latest = await (await page.request.get(base)).json();

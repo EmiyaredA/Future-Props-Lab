@@ -21,10 +21,8 @@ export function previewVideoPlaybackKeys(
         (item) =>
           item.placement === "between" &&
           !item.kind.startsWith("audio-") &&
-          (item.fromClipId === previous?.id ||
-            item.toClipId === previous?.id ||
-            item.fromClipId === clip.id ||
-            item.toClipId === clip.id),
+          item.fromClipId === previous?.id &&
+          item.toClipId === clip.id,
       );
       const continuous =
         previous?.kind === "video" &&

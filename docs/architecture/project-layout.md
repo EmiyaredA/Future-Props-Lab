@@ -219,7 +219,7 @@ Future-Props-Lab/
 `VideoEditorProxyVideo.tsx` 在定位和源区间校验完成后发布代理视频帧，保留画布上的上一张有效画面，
 `previewGeometry.ts` 共用素材适配与图层样式，`previewClock.ts` 统一媒体时钟纠偏。
 `previewPlayback.ts` 为相邻视频片段维护显示缓冲身份，连续源区间自由播放，跳剪重新定位；
-同时参与视觉转场的伙伴使用独立播放器，真实空隙清空该缓冲。
+视觉转场实际连接的两个片段使用独立播放器，转场前后的普通切镜继续复用缓冲，真实空隙清空该缓冲。
 后端 `apps/video_editor/runner.py` 由装配层分别注册 media 与 export 两个独立串行轮询通道，
 素材预处理不等待长导出完成；每个通道只恢复自身中断任务，并分别参与后台健康检查。
 `VideoEditorPreciseFrame.tsx` 保留已解码画面直到当前请求加载完成，工程与保存版本变化时清空缓存画面。

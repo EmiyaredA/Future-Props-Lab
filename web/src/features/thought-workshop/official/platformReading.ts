@@ -588,7 +588,7 @@ export const PLATFORM_READING: Record<
   },
   "video-editor/workflow": {
     summary:
-      "安排多轨片段和字幕，检查锁定删除、素材就绪与跳剪预览，处理精确空隙。",
+      "安排多轨片段和字幕，检查锁定删除、素材就绪与转场相邻切镜预览，处理精确空隙。",
     related: [
       {
         libraryId: "video-editor",
