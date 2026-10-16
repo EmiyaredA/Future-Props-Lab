@@ -184,7 +184,7 @@ test.each(["image", "video", "audio"] as const)(
   async (kind) => {
     const { saved } = mount(kind);
     await screen.findByText(`Test ${kind}`, {
-      selector: "summary span, summary, .video-model-menu button",
+      selector: "summary span, summary, .custom-select-trigger span",
     });
     write(kind, "第二版新内容");
     await select("v1");
@@ -236,7 +236,7 @@ test.each(["image", "video", "audio"] as const)(
     });
     mount(kind, prepare);
     await screen.findByText(`Test ${kind}`, {
-      selector: "summary span, summary, .video-model-menu button",
+      selector: "summary span, summary, .custom-select-trigger span",
     });
     fireEvent.submit(editor(kind).closest("form")!);
     await waitFor(() =>
@@ -259,7 +259,7 @@ test.each(["image", "video", "audio"] as const)(
     );
     mount(kind, prepare);
     await screen.findByText(`Test ${kind}`, {
-      selector: "summary span, summary, .video-model-menu button",
+      selector: "summary span, summary, .custom-select-trigger span",
     });
     fireEvent.submit(editor(kind).closest("form")!);
     await waitFor(() => expect(prepare).toHaveBeenCalledTimes(1));

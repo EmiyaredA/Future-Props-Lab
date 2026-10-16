@@ -6,6 +6,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.llm.schemas.workflow_video import WorkflowVideoParameters
+
 GenerationTaskStatus = Literal[
     "queued", "submitting", "pending", "processing", "completed", "failed"
 ]
@@ -45,15 +47,16 @@ class VideoGenerationTaskCreateIn(BaseModel):
     prompt: str = Field(default="", max_length=6000)
     mode: Literal["text", "frames", "reference"] = "text"
     duration: int = Field(default=5, ge=2, le=15)
-    resolution: Literal["480p", "720p", "1080p"] = "720p"
-    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] = "16:9"
-    watermark: bool = True
-    generate_audio: bool = False
+    resolution: Literal["480p", "720p", "1080p"] | None = None
+    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] | None = None
+    watermark: bool | None = None
+    generate_audio: bool | None = None
     first_frame_asset_id: str | None = None
     last_frame_asset_id: str | None = None
     reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
     audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
     video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    workflow_parameters: WorkflowVideoParameters | None = None
     canvas_node_id: str | None = Field(default=None, min_length=1, max_length=64)
     expected_canvas_revision: int | None = Field(default=None, ge=0)
 

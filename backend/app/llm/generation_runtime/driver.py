@@ -127,14 +127,20 @@ class GenerationTaskStore:
             provider = (
                 await session.get(ModelProvider, task.provider_id) if task.provider_id else None
             )
-            if provider is None or not provider.enabled or not provider.api_key_ciphertext:
+            if (
+                provider is None
+                or not provider.enabled
+                or (provider.kind != "zealman_video" and not provider.api_key_ciphertext)
+            ):
                 await session.rollback()
                 raise ValueError("供应商已停用、删除或缺少 API Key")
             context = self._context(
                 task,
                 workspace_id=workspace_id,
                 base_url=provider.base_url,
-                api_key=decrypt_secret(provider.api_key_ciphertext),
+                api_key=decrypt_secret(provider.api_key_ciphertext)
+                if provider.api_key_ciphertext
+                else "",
             )
             if status == "queued":
                 claimed = await session.execute(

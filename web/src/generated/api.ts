@@ -14292,6 +14292,7 @@ export interface components {
              * @default true
              */
             supports_seed: boolean | null;
+            workflow_capabilities?: components["schemas"]["WorkflowVideoCapabilitiesOut"] | null;
         };
         /** GenerationOptionsOut */
         GenerationOptionsOut: {
@@ -14338,7 +14339,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "volcengine_image" | "senseaudio_image" | "senseaudio_video" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "volcengine_image" | "senseaudio_image" | "senseaudio_video" | "zealman_video" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Provider Task Id */
@@ -15667,6 +15668,7 @@ export interface components {
             sizes?: string[];
             /** Slug */
             slug: string;
+            workflow_capabilities?: components["schemas"]["WorkflowVideoCapabilitiesOut"] | null;
         };
         /** ModelTestGenerationTaskListOut */
         ModelTestGenerationTaskListOut: {
@@ -15706,7 +15708,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "senseaudio_image" | "volcengine_image" | "senseaudio_video";
+            provider_kind: "senseaudio_image" | "volcengine_image" | "senseaudio_video" | "zealman_video";
             /** Provider Name */
             provider_name: string;
             /** Request Payload */
@@ -16327,11 +16329,8 @@ export interface components {
              * @default 5
              */
             duration: number;
-            /**
-             * Generate Audio
-             * @default false
-             */
-            generate_audio: boolean;
+            /** Generate Audio */
+            generate_audio?: boolean | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -16341,27 +16340,17 @@ export interface components {
             model_id: string;
             /** Prompt */
             prompt: string;
-            /**
-             * Ratio
-             * @default 16:9
-             * @enum {string}
-             */
-            ratio: "16:9" | "9:16" | "4:3" | "3:4" | "1:1";
+            /** Ratio */
+            ratio?: ("16:9" | "9:16" | "4:3" | "3:4" | "1:1") | null;
             /** Reference Asset Ids */
             reference_asset_ids?: string[];
-            /**
-             * Resolution
-             * @default 720p
-             * @enum {string}
-             */
-            resolution: "480p" | "720p" | "1080p";
+            /** Resolution */
+            resolution?: ("480p" | "720p" | "1080p") | null;
             /** Video Asset Ids */
             video_asset_ids?: string[];
-            /**
-             * Watermark
-             * @default true
-             */
-            watermark: boolean;
+            /** Watermark */
+            watermark?: boolean | null;
+            workflow_parameters?: components["schemas"]["WorkflowVideoParameters"] | null;
         };
         /** ModelTurnIn */
         ModelTurnIn: {
@@ -17362,7 +17351,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
             /** Supplier Id */
@@ -17390,7 +17379,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Managed Fields */
             managed_fields?: string[];
             /** Models */
@@ -17756,7 +17745,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -19087,7 +19076,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -19123,7 +19112,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -20659,11 +20648,8 @@ export interface components {
             expected_canvas_revision?: number | null;
             /** First Frame Asset Id */
             first_frame_asset_id?: string | null;
-            /**
-             * Generate Audio
-             * @default false
-             */
-            generate_audio: boolean;
+            /** Generate Audio */
+            generate_audio?: boolean | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -20684,27 +20670,17 @@ export interface components {
              * @default
              */
             prompt: string;
-            /**
-             * Ratio
-             * @default 16:9
-             * @enum {string}
-             */
-            ratio: "16:9" | "9:16" | "4:3" | "3:4" | "1:1";
+            /** Ratio */
+            ratio?: ("16:9" | "9:16" | "4:3" | "3:4" | "1:1") | null;
             /** Reference Asset Ids */
             reference_asset_ids?: string[];
-            /**
-             * Resolution
-             * @default 720p
-             * @enum {string}
-             */
-            resolution: "480p" | "720p" | "1080p";
+            /** Resolution */
+            resolution?: ("480p" | "720p" | "1080p") | null;
             /** Video Asset Ids */
             video_asset_ids?: string[];
-            /**
-             * Watermark
-             * @default true
-             */
-            watermark: boolean;
+            /** Watermark */
+            watermark?: boolean | null;
+            workflow_parameters?: components["schemas"]["WorkflowVideoParameters"] | null;
         };
         /** ViewConfig */
         ViewConfig: {
@@ -21426,6 +21402,7 @@ export interface components {
              * @default true
              */
             watermark: boolean;
+            workflow_parameters?: components["schemas"]["WorkflowVideoParameters"] | null;
         };
         /** VisualCanvasVideoNode */
         VisualCanvasVideoNode: {
@@ -21625,6 +21602,51 @@ export interface components {
             status?: ("draft" | "completed") | null;
             /** Title */
             title?: string | null;
+        };
+        /** WorkflowNumericParameterOut */
+        WorkflowNumericParameterOut: {
+            /** Default */
+            default?: number | null;
+            /** Maximum */
+            maximum: number;
+            /** Minimum */
+            minimum: number;
+            /** Step */
+            step: number;
+        };
+        /** WorkflowVideoCapabilitiesOut */
+        WorkflowVideoCapabilitiesOut: {
+            /** Joint Audio */
+            joint_audio: boolean;
+            /** Max Reference Bytes */
+            max_reference_bytes?: number | null;
+            /** Parameters */
+            parameters: {
+                [key: string]: components["schemas"]["WorkflowNumericParameterOut"];
+            };
+            /** Reference Limits */
+            reference_limits: {
+                [key: string]: number;
+            };
+            /** Reference Mime Types */
+            reference_mime_types?: {
+                [key: string]: string[];
+            };
+            /** Supports Ratio */
+            supports_ratio: boolean;
+        };
+        /** WorkflowVideoParameters */
+        WorkflowVideoParameters: {
+            /** Height */
+            height?: number | null;
+            /** Megapixels */
+            megapixels?: number | null;
+            /** Seed */
+            seed?: number | null;
+            /** Upscale Factor */
+            upscale_factor?: number | null;
+            /** Width */
+            width?: number | null;
         };
         /** WorkspaceCreateIn */
         WorkspaceCreateIn: {

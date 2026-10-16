@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -33,6 +34,7 @@ from app.llm.generation_runtime import (
     upload_temporary_reference,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError
+from app.llm.providers.zealman_video import create_task, get_task, upload_reference
 from app.orm import bind_workspace
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
@@ -302,6 +304,14 @@ class VisualGenerationRunner(PollingTaskRunner):
         )
 
     async def _poll_context(self, task: GenerationTaskContext):
+        if task.provider_kind == "zealman_video":
+            async with self.session_factory() as session:
+                row = await self._load_task(session, task.task_id)
+                if row is None or utc_now() - row.created_at > timedelta(hours=1):
+                    raise ValueError("ZEALMAN 等待超过 60 分钟；请检查上游任务，系统不会自动重提")
+            return await get_task(
+                base_url=task.base_url, api_key=task.api_key, task_id=task.provider_task_id
+            )
         return await poll_generation_task(
             provider_kind=task.provider_kind,
             base_url=task.base_url,
@@ -356,6 +366,33 @@ class VisualGenerationRunner(PollingTaskRunner):
         payload: dict,
         workspace_id: str,
     ) -> str | ImmediateGenerationResult:
+        if provider_kind == "zealman_video":
+            references: dict[str, list[str]] = {"image": [], "audio": [], "video": []}
+            for kind, field in (
+                ("image", "reference_asset_ids"),
+                ("audio", "audio_asset_ids"),
+                ("video", "video_asset_ids"),
+            ):
+                for asset_id in payload.get(field, []):
+                    async with self.session_factory() as session:
+                        bind_workspace(session, workspace_id)
+                        asset = await session.get(VisualAsset, asset_id)
+                        if asset is None or asset.media_kind != kind:
+                            raise ValueError("参考素材已不存在或类型不匹配")
+                        path = self.storage.path_for(asset)
+                        mime_type = asset.mime_type
+                    references[kind].append(
+                        await upload_reference(
+                            base_url=base_url, api_key=api_key, path=path, mime_type=mime_type
+                        )
+                    )
+            return await create_task(
+                base_url=base_url,
+                api_key=api_key,
+                model=model_slug,
+                payload=payload,
+                references=references,
+            )
         reference_filenames = payload.get("reference_filenames")
         if not isinstance(reference_filenames, dict):
             reference_filenames = {}

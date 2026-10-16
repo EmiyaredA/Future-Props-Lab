@@ -45,6 +45,14 @@ from app.llm.models import (
 )
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
+from app.llm.providers.zealman_workflows import (
+    REFERENCE_MIME_TYPES as WORKFLOW_MIME_TYPES,
+)
+from app.llm.providers.zealman_workflows import (
+    WORKFLOWS,
+    normalize_request,
+    parameter_options,
+)
 from app.runtime.config import Settings, get_settings
 from app.runtime.task_admission import TaskAdmission
 from app.runtime.time import iso_utc, utc_now
@@ -113,6 +121,7 @@ class VisualGeneration:
                             "senseaudio_image",
                             "volcengine_image",
                             "senseaudio_video",
+                            "zealman_video",
                             "senseaudio_music",
                             "senseaudio_sfx",
                         )
@@ -131,7 +140,7 @@ class VisualGeneration:
                         "image"
                         if provider.kind in {"senseaudio_image", "volcengine_image"}
                         else "video"
-                        if provider.kind == "senseaudio_video"
+                        if provider.kind in {"senseaudio_video", "zealman_video"}
                         else "audio"
                     ),
                     slug=model.slug,
@@ -142,11 +151,22 @@ class VisualGeneration:
                         if provider.kind == "volcengine_image"
                         else IMAGE_MODEL_SIZES.get(model.slug, ())
                     ),
-                    max_reference_images=14 if provider.kind == "volcengine_image" else 1,
+                    max_reference_images=14
+                    if provider.kind == "volcengine_image"
+                    else 9
+                    if provider.kind == "zealman_video"
+                    else 1,
                     supports_seed=provider.kind != "volcengine_image",
-                    max_prompt_length=6000 if model.slug == "senseaudio-image-2.0-260319" else 2000,
+                    max_prompt_length=6000
+                    if provider.kind == "zealman_video"
+                    or model.slug == "senseaudio-image-2.0-260319"
+                    else 2000,
+                    workflow_capabilities=(
+                        parameter_options(model.slug) if provider.kind == "zealman_video" else None
+                    ),
                 )
                 for model, provider in rows
+                if provider.kind != "zealman_video" or model.slug in WORKFLOWS
             ]
         )
 
@@ -175,12 +195,14 @@ class VisualGeneration:
             not in (
                 {"senseaudio_image", "volcengine_image"}
                 if kind == "image"
+                else {"senseaudio_video", "zealman_video"}
+                if kind == "video"
                 else {expected_provider_kind}
             )
             or capability not in list(model.capabilities or [])
         ):
             raise GenerationError("当前生成模型不可用", code="model_unavailable", status=409)
-        if not provider.api_key_ciphertext:
+        if provider.kind != "zealman_video" and not provider.api_key_ciphertext:
             raise GenerationError("供应商尚未配置 API Key", code="missing_api_key", status=409)
         if provider.kind == "volcengine_image" and model.slug != SEEDREAM_MODEL:
             raise GenerationError("当前方舟图片适配仅支持 Seedream 4.5", code="unsupported_model")
@@ -258,9 +280,11 @@ class VisualGeneration:
                 "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
             )
 
-    async def _resolve_canvas_references(self, project_id, body):
+    async def _resolve_canvas_references(self, project_id, body, *, frame_constraints=True):
         try:
-            return await resolve_references(self.session, project_id, body)
+            return await resolve_references(
+                self.session, project_id, body, frame_constraints=frame_constraints
+            )
         except OutputError as exc:
             raise GenerationError(str(exc), code=exc.code, status=exc.status) from None
 
@@ -268,13 +292,14 @@ class VisualGeneration:
         self, project_id: str, body: GenerationTaskCreateIn
     ) -> VisualGenerationTask:
         await self._project(project_id)
-        body, reference_titles, input_snapshot = await self._resolve_canvas_references(
-            project_id, body
-        )
+        explicit_fields = body.model_fields_set.copy()
         model, provider = await self._model(
             body.model_id,
             body.kind,
             body.mode if isinstance(body, AudioGenerationTaskCreateIn) else None,
+        )
+        body, reference_titles, input_snapshot = await self._resolve_canvas_references(
+            project_id, body, frame_constraints=provider.kind != "zealman_video"
         )
         payload = body.model_dump(
             mode="json",
@@ -326,6 +351,27 @@ class VisualGeneration:
             payload["reference_asset_ids"] = reference_ids
             payload["reference_asset_id"] = reference_ids[0] if len(reference_ids) == 1 else None
         elif isinstance(body, VideoGenerationTaskCreateIn):
+            if provider.kind == "zealman_video":
+                try:
+                    payload["workflow_parameters"] = (
+                        body.workflow_parameters.model_dump(exclude_unset=True)
+                        if body.workflow_parameters
+                        else {}
+                    )
+                    payload = normalize_request(model.slug, payload, explicit_fields)
+                except ValueError as exc:
+                    raise GenerationError(str(exc), code="unsupported_parameter") from None
+            elif body.workflow_parameters is not None:
+                raise GenerationError("当前模型不支持工作流参数", code="unsupported_parameter")
+            if provider.kind != "zealman_video":
+                for field, default in {
+                    "resolution": "720p",
+                    "ratio": "16:9",
+                    "watermark": True,
+                    "generate_audio": False,
+                }.items():
+                    if payload.get(field) is None:
+                        payload[field] = default
             image_ids = [
                 item
                 for item in (
@@ -347,6 +393,16 @@ class VisualGeneration:
                 reference_assets[asset_id] = await self._reference_asset(
                     project_id, asset_id, "video"
                 )
+            if provider.kind == "zealman_video":
+                if sum(asset.byte_size for asset in reference_assets.values()) > 45 * 1024 * 1024:
+                    raise GenerationError(
+                        "参考素材总大小不能超过 45 MB", code="reference_too_large"
+                    )
+                if any(
+                    asset.mime_type not in WORKFLOW_MIME_TYPES[asset.media_kind]
+                    for asset in reference_assets.values()
+                ):
+                    raise GenerationError("工作流不支持所选素材格式", code="invalid_reference")
         elif isinstance(body, AudioGenerationTaskCreateIn):
             for asset_id in body.reference_asset_ids:
                 reference_assets[asset_id] = await self._reference_asset(

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -33,6 +34,7 @@ from app.llm.models import (
 )
 from app.llm.playground.generation import ACTIVE_GENERATION_STATUSES
 from app.llm.providers.temporary_media import TemporaryMediaError
+from app.llm.providers.zealman_video import create_task, get_task, upload_reference
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
@@ -76,8 +78,8 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             poll=self._poll_context,
             materialize=self._materialize,
             map_error=_safe_error,
-            provider_failure_message="SenseAudio 生成任务失败",
-            missing_result_message="SenseAudio 已完成任务但未返回结果地址",
+            provider_failure_message="供应商生成任务失败",
+            missing_result_message="供应商已完成任务但未返回结果地址",
         )
 
     async def _load_task(
@@ -96,6 +98,31 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         await self.task_driver.process(task_id)
 
     async def _submit_context(self, task: GenerationTaskContext) -> str | ImmediateGenerationResult:
+        if task.provider_kind == "zealman_video":
+            references: dict[str, list[str]] = {}
+            for kind, field in (
+                ("image", "reference_asset_ids"),
+                ("audio", "audio_asset_ids"),
+                ("video", "video_asset_ids"),
+            ):
+                references[kind] = []
+                for asset_id in task.payload.get(field, []):
+                    path, mime_type = await self._asset_path(task.task_id, str(asset_id), kind)
+                    references[kind].append(
+                        await upload_reference(
+                            base_url=task.base_url,
+                            api_key=task.api_key,
+                            path=path,
+                            mime_type=mime_type,
+                        )
+                    )
+            return await create_task(
+                base_url=task.base_url,
+                api_key=task.api_key,
+                model=task.model_slug,
+                payload=task.payload,
+                references=references,
+            )
         if task.provider_kind in {"senseaudio_image", "volcengine_image"}:
             return await submit_generation_task(
                 provider_kind=task.provider_kind,
@@ -141,6 +168,14 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         )
 
     async def _poll_context(self, task: GenerationTaskContext):
+        if task.provider_kind == "zealman_video":
+            async with self.session_factory() as session:
+                row = await self._load_task(session, task.task_id)
+                if row is None or utc_now() - row.created_at > timedelta(hours=1):
+                    raise ValueError("ZEALMAN 等待超过 60 分钟；请检查上游任务，系统不会自动重提")
+            return await get_task(
+                base_url=task.base_url, api_key=task.api_key, task_id=task.provider_task_id
+            )
         return await poll_generation_task(
             provider_kind=task.provider_kind,
             base_url=task.base_url,

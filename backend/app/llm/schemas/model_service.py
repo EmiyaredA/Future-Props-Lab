@@ -13,6 +13,7 @@ ProviderKind = Literal[
     "anthropic",
     "senseaudio_image",
     "senseaudio_video",
+    "zealman_video",
     "senseaudio_asr",
     "senseaudio_asr_pro",
     "senseaudio_realtime",
@@ -81,6 +82,10 @@ class ProviderIn(BaseModel):
             if self.kind == "senseaudio_realtime"
             else normalize_provider_base_url(self.base_url)
         )
+        if self.kind == "zealman_video":
+            from app.llm.providers.zealman_video import root_url
+
+            self.base_url = root_url(self.base_url)
         return self
 
 

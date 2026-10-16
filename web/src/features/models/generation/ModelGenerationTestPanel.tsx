@@ -53,6 +53,7 @@ import {
   type TestModel,
 } from "@features/models/generation/modelGenerationOptions";
 import { TaskThumbnail } from "@features/models/generation/ModelGenerationTaskThumbnail";
+import { WorkflowVideoControls } from "./WorkflowVideoControls";
 import { ModelGenerationReferenceList } from "@features/models/generation/ModelGenerationReferenceList";
 
 export function ModelGenerationTestPanel({
@@ -77,6 +78,9 @@ export function ModelGenerationTestPanel({
   const [size, setSize] = useState("");
   const [seed, setSeed] = useState("");
   const [duration, setDuration] = useState(5);
+  const [workflowValues, setWorkflowValues] = useState<Record<string, string>>(
+    {},
+  );
   const [resolution, setResolution] = useState<Resolution>("720p");
   const [ratio, setRatio] = useState<Ratio>("16:9");
   const [watermark, setWatermark] = useState(true);
@@ -130,6 +134,8 @@ export function ModelGenerationTestPanel({
   const selectedOption = optionsQuery.data?.items.find(
     (item) => item.id === modelId,
   );
+  const workflow = selectedOption?.workflow_capabilities;
+  const limits = workflow?.reference_limits ?? referenceLimits;
   const tasksQuery = useQuery({
     queryKey: modelQueryKeys.generationTasks(modelId),
     queryFn: () => getModelTestGenerationTasks(modelId),
@@ -158,6 +164,8 @@ export function ModelGenerationTestPanel({
   useEffect(() => {
     setActiveId(null);
     setTaskSearch("");
+    setWorkflowValues({});
+    setRatio("16:9");
     setPrompt("");
     setError("");
     setReferenceFiles((current) => {
@@ -254,10 +262,20 @@ export function ModelGenerationTestPanel({
           model_id: modelId,
           prompt: prompt.trim(),
           duration,
-          resolution,
-          ratio,
-          watermark,
-          generate_audio: generateAudio,
+          ...(workflow
+            ? {
+                ...(workflow.supports_ratio ? { ratio } : {}),
+                workflow_parameters: Object.fromEntries(
+                  Object.entries(workflow.parameters).map(([name, spec]) => [
+                    name,
+                    (workflowValues[name] ?? spec.default) == null ||
+                    workflowValues[name] === ""
+                      ? null
+                      : Number(workflowValues[name] ?? spec.default),
+                  ]),
+                ),
+              }
+            : { resolution, ratio, watermark, generate_audio: generateAudio }),
           reference_asset_ids: uploaded
             .filter((item) => item.reference.kind === "image")
             .map((item) => item.asset.id),
@@ -341,11 +359,10 @@ export function ModelGenerationTestPanel({
         continue;
       }
       if (
-        next.filter((item) => item.kind === kind).length >=
-        referenceLimits[kind]
+        next.filter((item) => item.kind === kind).length >= (limits[kind] ?? 0)
       ) {
         setError(
-          `${kind === "image" ? "图片" : kind === "audio" ? "音频" : "视频"}最多添加 ${referenceLimits[kind]} 个`,
+          `${kind === "image" ? "图片" : kind === "audio" ? "音频" : "视频"}最多添加 ${limits[kind] ?? 0} 个`,
         );
         continue;
       }
@@ -685,7 +702,10 @@ export function ModelGenerationTestPanel({
                     files={referenceFiles}
                     onRemove={removeReferenceFile}
                   />
-                  <p>音频需搭配参考图片或视频；最多 9 图、3 音频、3 视频。</p>
+                  <p>
+                    音频需搭配参考图片或视频；最多 {limits.image} 图、
+                    {limits.audio} 音频、{limits.video} 视频。
+                  </p>
                 </fieldset>
                 <label>
                   <span>时长</span>
@@ -697,78 +717,90 @@ export function ModelGenerationTestPanel({
                     onChange={(value) => setDuration(Number(value))}
                   />
                 </label>
-                <fieldset className="generation-fieldset">
-                  <legend>分辨率</legend>
-                  <div
-                    className="generation-segmented"
-                    role="group"
-                    aria-label="分辨率"
-                  >
-                    {resolutions.map((item) => (
-                      <button
-                        type="button"
-                        aria-pressed={resolution === item}
-                        className={resolution === item ? "active" : ""}
-                        key={item}
-                        onClick={() => setResolution(item)}
-                      >
-                        {item}
-                      </button>
-                    ))}
+                {workflow ? (
+                  <WorkflowVideoControls
+                    capabilities={workflow}
+                    values={workflowValues}
+                    onChange={setWorkflowValues}
+                  />
+                ) : (
+                  <fieldset className="generation-fieldset">
+                    <legend>分辨率</legend>
+                    <div
+                      className="generation-segmented"
+                      role="group"
+                      aria-label="分辨率"
+                    >
+                      {resolutions.map((item) => (
+                        <button
+                          type="button"
+                          aria-pressed={resolution === item}
+                          className={resolution === item ? "active" : ""}
+                          key={item}
+                          onClick={() => setResolution(item)}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
+                {(!workflow || workflow.supports_ratio) && (
+                  <fieldset className="generation-fieldset">
+                    <legend>比例</legend>
+                    <div
+                      className="generation-ratio-options"
+                      role="group"
+                      aria-label="比例"
+                    >
+                      {ratios.map((item) => (
+                        <button
+                          type="button"
+                          aria-pressed={ratio === item}
+                          className={ratio === item ? "active" : ""}
+                          key={item}
+                          onClick={() => setRatio(item)}
+                        >
+                          <i
+                            className={`generation-ratio-shape ratio-${item.replace(":", "-")}`}
+                            aria-hidden
+                          />
+                          <span>{item}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
+                {!workflow && (
+                  <div className="generation-switches">
+                    <label className="generation-switch-row">
+                      <span>
+                        <strong>生成音频</strong>
+                        <small>为视频同步生成声音</small>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={generateAudio}
+                        onChange={(event) =>
+                          setGenerateAudio(event.target.checked)
+                        }
+                      />
+                      <i aria-hidden />
+                    </label>
+                    <label className="generation-switch-row">
+                      <span>
+                        <strong>保留水印</strong>
+                        <small>在生成结果中保留平台标记</small>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={watermark}
+                        onChange={(event) => setWatermark(event.target.checked)}
+                      />
+                      <i aria-hidden />
+                    </label>
                   </div>
-                </fieldset>
-                <fieldset className="generation-fieldset">
-                  <legend>比例</legend>
-                  <div
-                    className="generation-ratio-options"
-                    role="group"
-                    aria-label="比例"
-                  >
-                    {ratios.map((item) => (
-                      <button
-                        type="button"
-                        aria-pressed={ratio === item}
-                        className={ratio === item ? "active" : ""}
-                        key={item}
-                        onClick={() => setRatio(item)}
-                      >
-                        <i
-                          className={`generation-ratio-shape ratio-${item.replace(":", "-")}`}
-                          aria-hidden
-                        />
-                        <span>{item}</span>
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-                <div className="generation-switches">
-                  <label className="generation-switch-row">
-                    <span>
-                      <strong>生成音频</strong>
-                      <small>为视频同步生成声音</small>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={generateAudio}
-                      onChange={(event) =>
-                        setGenerateAudio(event.target.checked)
-                      }
-                    />
-                    <i aria-hidden />
-                  </label>
-                  <label className="generation-switch-row">
-                    <span>
-                      <strong>保留水印</strong>
-                      <small>在生成结果中保留平台标记</small>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={watermark}
-                      onChange={(event) => setWatermark(event.target.checked)}
-                    />
-                    <i aria-hidden />
-                  </label>
-                </div>
+                )}
               </>
             )}
             <div className="generation-submit-wrap">

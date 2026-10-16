@@ -1,4 +1,3 @@
-.canvas-node-inspector.is-embedded:has(.video-composer-model[open]),
 .canvas-node-inspector.is-embedded:has(.video-composer-parameters[open]) {
   overflow: visible;
 }

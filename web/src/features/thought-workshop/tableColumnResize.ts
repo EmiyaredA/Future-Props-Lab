@@ -463,7 +463,7 @@ export const documentTableColumnResize = Extension.create({
           },
         }),
         props: {
-          attributes: (state) => {
+          attributes: (state): Record<string, string> => {
             const pluginState = columnResizeKey.getState(state);
             return pluginState && pluginState.activeHandle > -1
               ? { class: "resize-cursor" }

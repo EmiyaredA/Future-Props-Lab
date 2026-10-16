@@ -110,10 +110,10 @@ async def submit_generation_task(
         model=model_slug,
         content=content,
         duration=int(payload["duration"]),
-        resolution=str(payload["resolution"]),
-        ratio=str(payload["ratio"]),
-        watermark=bool(payload["watermark"]),
-        generate_audio=bool(payload["generate_audio"]),
+        resolution=str(payload.get("resolution") or "720p"),
+        ratio=str(payload.get("ratio") or "16:9"),
+        watermark=payload.get("watermark") is not False,
+        generate_audio=bool(payload.get("generate_audio")),
     )
 
 

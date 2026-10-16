@@ -9,7 +9,9 @@ from app.llm.schemas.generation_tasks import (
 )
 
 
-async def resolve_references(session: AsyncSession, project_id: str, body):
+async def resolve_references(
+    session: AsyncSession, project_id: str, body, *, frame_constraints: bool = True
+):
     if body.canvas_node_id is None:
         return body, {}, []
     canvas = await session.get(VisualCanvasDocument, project_id)
@@ -22,6 +24,10 @@ async def resolve_references(session: AsyncSession, project_id: str, body):
     if target is None or target["kind"] != body.kind:
         raise OutputError("生成节点不存在或类型不匹配", code="canvas_kind_mismatch")
     payload = body.model_dump(mode="json")
+    workflow_parameters = getattr(body, "workflow_parameters", None)
+    if workflow_parameters is not None:
+        # Preserve the requested fields so omitted workflow parameters keep their defaults.
+        payload["workflow_parameters"] = workflow_parameters.model_dump(exclude_unset=True)
     linked = {"image": [], "video": [], "audio": []}
     titles, snapshot, contexts = {}, [], []
     for edge in canvas.edges or []:
@@ -51,7 +57,11 @@ async def resolve_references(session: AsyncSession, project_id: str, body):
                 code="upstream_asset_pending",
                 status=409,
             )
-        elif body.kind == "video" and edge.get("purpose") in {"first_frame", "last_frame"}:
+        elif (
+            body.kind == "video"
+            and frame_constraints
+            and edge.get("purpose") in {"first_frame", "last_frame"}
+        ):
             if source["kind"] != "image":
                 raise OutputError("首尾帧输入必须是图片")
             field = f"{edge['purpose']}_asset_id"

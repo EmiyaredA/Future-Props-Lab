@@ -1,4 +1,5 @@
 import { Image, LoaderCircle, Sparkles, Video, X } from "lucide-react";
+import { WorkflowVideoControls } from "@features/models";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
 import { PromptVersionControls } from "./PromptVersionControls";
@@ -18,7 +19,9 @@ export function StandardGenerationDrawer({
     kind,
     setKind,
     modelId,
-    setModelId,
+    selectModel,
+    workflowCapabilities,
+    referenceLimits,
     prompt,
     setPrompt,
     size,
@@ -100,7 +103,7 @@ export function StandardGenerationDrawer({
           <CustomSelect
             ariaLabel="生成模型"
             value={modelId}
-            onChange={setModelId}
+            onChange={selectModel}
             disabled={options.isLoading}
             options={
               models.length
@@ -190,36 +193,47 @@ export function StandardGenerationDrawer({
                   }))}
                 />
               </label>
-              <label>
-                <span>分辨率</span>
-                <CustomSelect
-                  ariaLabel="视频分辨率"
-                  value={resolution}
-                  onChange={(value) =>
-                    setResolution(value as typeof resolution)
-                  }
-                  options={["480p", "720p", "1080p"].map((value) => ({
-                    value,
-                    label: value,
-                  }))}
-                />
-              </label>
-              <label>
-                <span>比例</span>
-                <CustomSelect
-                  ariaLabel="视频比例"
-                  value={ratio}
-                  onChange={(value) => setRatio(value as typeof ratio)}
-                  options={(["16:9", "9:16", "4:3", "3:4", "1:1"] as const).map(
-                    (value) => ({ value, label: value }),
-                  )}
-                />
-              </label>
+              {!workflowCapabilities && (
+                <label>
+                  <span>分辨率</span>
+                  <CustomSelect
+                    ariaLabel="视频分辨率"
+                    value={resolution}
+                    onChange={(value) =>
+                      setResolution(value as typeof resolution)
+                    }
+                    options={["480p", "720p", "1080p"].map((value) => ({
+                      value,
+                      label: value,
+                    }))}
+                  />
+                </label>
+              )}
+              {(!workflowCapabilities ||
+                workflowCapabilities.supports_ratio) && (
+                <label>
+                  <span>比例</span>
+                  <CustomSelect
+                    ariaLabel="视频比例"
+                    value={ratio}
+                    onChange={(value) => setRatio(value as typeof ratio)}
+                    options={(
+                      ["16:9", "9:16", "4:3", "3:4", "1:1"] as const
+                    ).map((value) => ({ value, label: value }))}
+                  />
+                </label>
+              )}
             </div>
             <fieldset className="generation-mode-options">
               <legend>输入方式</legend>
-              {(["text", "image", "frames", "reference"] as const).map(
-                (value) => (
+              {(["text", "image", "frames", "reference"] as const)
+                .filter(
+                  (value) =>
+                    !workflowCapabilities ||
+                    value === "text" ||
+                    value === "reference",
+                )
+                .map((value) => (
                   <button
                     type="button"
                     className={videoMode === value ? "selected" : ""}
@@ -235,8 +249,7 @@ export function StandardGenerationDrawer({
                           ? "首尾帧"
                           : "参考素材"}
                   </button>
-                ),
-              )}
+                ))}
             </fieldset>
             {videoMode === "image" ? (
               <ProjectMediaPicker
@@ -276,21 +289,23 @@ export function StandardGenerationDrawer({
                   label="参考图片"
                   value={references}
                   multiple
-                  max={9}
+                  max={referenceLimits.image}
                   onChange={setReferences}
                   onFilesLoaded={rememberPromptFiles}
                 />
-                <ProjectMediaPicker
-                  excludedAssetIds={controller.excludedAssetIds}
-                  projectId={projectId}
-                  label="参考视频"
-                  kind="video"
-                  value={videoReferences}
-                  multiple
-                  max={3}
-                  onChange={setVideoReferences}
-                  onFilesLoaded={rememberPromptFiles}
-                />
+                {(referenceLimits.video > 0 || videoReferences.length > 0) && (
+                  <ProjectMediaPicker
+                    excludedAssetIds={controller.excludedAssetIds}
+                    projectId={projectId}
+                    label="参考视频"
+                    kind="video"
+                    value={videoReferences}
+                    multiple
+                    max={referenceLimits.video}
+                    onChange={setVideoReferences}
+                    onFilesLoaded={rememberPromptFiles}
+                  />
+                )}
                 <ProjectMediaPicker
                   excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
@@ -298,30 +313,39 @@ export function StandardGenerationDrawer({
                   kind="audio"
                   value={audioReferences}
                   multiple
-                  max={3}
+                  max={referenceLimits.audio}
                   onChange={setAudioReferences}
                   onFilesLoaded={rememberPromptFiles}
                 />
               </>
             ) : null}
-            <div className="generation-switches">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={watermark}
-                  onChange={(event) => setWatermark(event.target.checked)}
-                />{" "}
-                保留水印
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={generateAudio}
-                  onChange={(event) => setGenerateAudio(event.target.checked)}
-                />{" "}
-                生成音频
-              </label>
-            </div>
+            {!workflowCapabilities && (
+              <div className="generation-switches">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={watermark}
+                    onChange={(event) => setWatermark(event.target.checked)}
+                  />{" "}
+                  保留水印
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={generateAudio}
+                    onChange={(event) => setGenerateAudio(event.target.checked)}
+                  />{" "}
+                  生成音频
+                </label>
+              </div>
+            )}
+            {workflowCapabilities && (
+              <WorkflowVideoControls
+                capabilities={workflowCapabilities}
+                values={controller.workflowValues}
+                onChange={controller.changeWorkflowValues}
+              />
+            )}
           </>
         )}
         {notice ? (

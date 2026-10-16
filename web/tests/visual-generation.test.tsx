@@ -399,7 +399,7 @@ test("uses the compact image node composer with reference, size, and seed contro
     />,
   );
 
-  const modelMenu = await screen.findByRole("button", {
+  const modelMenu = await screen.findByRole("combobox", {
     name: "生成模型",
   });
   await waitFor(() =>
@@ -568,7 +568,7 @@ test("opens selected reference media from the card and only removes it with the 
       onClose={vi.fn()}
     />,
   );
-  await screen.findByRole("button", { name: "生成模型" });
+  await screen.findByRole("combobox", { name: "生成模型" });
   const referencePicker = screen
     .getByRole("group", { name: "参考图片（可选）" })
     .querySelector<HTMLInputElement>('input[type="file"]')!;
@@ -603,7 +603,7 @@ test("selects current, cross-project, and library media from the source menu", a
       onClose={vi.fn()}
     />,
   );
-  await screen.findByRole("button", { name: "生成模型" });
+  await screen.findByRole("combobox", { name: "生成模型" });
   const sourceTrigger = await screen.findByRole("button", {
     name: "上传参考图片（可选）",
   });
@@ -703,7 +703,7 @@ test("uses the compact video node composer for image-to-video tasks", async () =
     />,
   );
 
-  const compactModelMenu = await screen.findByRole("button", {
+  const compactModelMenu = await screen.findByRole("combobox", {
     name: "生成模型",
   });
   await waitFor(() =>
@@ -1078,7 +1078,7 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
       onClose={vi.fn()}
     />,
   );
-  const modelMenu = await screen.findByRole("button", {
+  const modelMenu = await screen.findByRole("combobox", {
     name: "生成模型",
   });
   await waitFor(() =>
@@ -1086,7 +1086,7 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
   );
   await user.click(modelMenu);
   expect(
-    screen.getByRole("option", { name: "Doubao Seedance 2.0" }),
+    screen.getByRole("option", { name: /Doubao Seedance 2.0/ }),
   ).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "全能参考" }));
   const stickyReferenceBar = screen.getByRole("group", {

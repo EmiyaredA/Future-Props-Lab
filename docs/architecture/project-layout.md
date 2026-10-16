@@ -604,3 +604,13 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 视觉画布 `canvasPlacement.ts` 拥有卡片与节点组的有界避让，`canvasLayout.ts` 拥有稳定的流程与网格布局，`canvasVisibleArea.ts` 计算排除固定控件后的可见区域；`useCanvasSpatialActions.ts` 将纯位置结果接入视口、整体保存与单次撤销。各新增入口共用该能力，临时编辑面板不影响持久布局。后端 `visual_workshop/node_placement.py` 只处理后台自动节点，显式 API 坐标沿用原契约；`tests/fixtures/visual_node_placement.json` 同时约束前后端尺寸与默认避让结果。
 
 `backend/app/llm/providers/volcengine_image.py` 拥有方舟 Seedream 4.5 原生图片数组协议。共享 `generation_runtime/driver.py` 接收同步图片结果并持久化下载地址，提交中断禁止重提。迁移 `r0086_visual_node_outputs` 回填明确关联的历史，`r0087_volcengine_images` 扩展供应商枚举，保留旧模型凭证与任务数据。
+
+## ZEALMAN 视频模型测试与工坊生成
+
+`llm/providers/zealman_workflows.py` 保存 U17、U06 的节点契约、参数范围和请求副本裁剪；
+`zealman_video.py` 拥有同源素材上传、提交、结果轮询及任务账本恢复。测试台通过能力元数据展示
+参数，不读取原始 ComfyUI 事件。`llm/schemas/workflow_video.py` 拥有共用工作流参数与能力契约。
+视觉创作工坊通过自己的模型选项、项目素材校验和 runner 接入两个工作流；沿用画布 CAS 与输出归档，
+模型菜单共用 CustomSelect 的顶层 popover。独立推理目录维持原支持范围。
+迁移 `0091_zealman_video` 扩展连接和模型测试任务的协议约束，保留已有数据和外键。
+迁移 `0092_visual_zealman_video` 扩展工坊任务协议约束，同样保留原记录、索引与外键。

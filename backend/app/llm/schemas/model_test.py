@@ -13,6 +13,7 @@ from app.capabilities.transcription.schemas import (
     ModelTestTranscriptionParametersOut,
 )
 from app.llm.schemas.model_test_tools import ModelTestToolCallOut, ModelTestToolSummaryOut
+from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
 
 MessageStatus = Literal["pending", "completed", "error", "cancelled", "superseded"]
 
@@ -182,13 +183,14 @@ class ModelTestVideoGenerationIn(BaseModel):
     model_id: str
     prompt: str = Field(min_length=1, max_length=6000)
     duration: int = Field(default=5, ge=4, le=15)
-    resolution: Literal["480p", "720p", "1080p"] = "720p"
-    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] = "16:9"
-    watermark: bool = True
-    generate_audio: bool = False
+    resolution: Literal["480p", "720p", "1080p"] | None = None
+    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] | None = None
+    watermark: bool | None = None
+    generate_audio: bool | None = None
     reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
     audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
     video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    workflow_parameters: WorkflowVideoParameters | None = None
 
     @model_validator(mode="after")
     def clean_prompt(self) -> ModelTestVideoGenerationIn:
@@ -217,7 +219,9 @@ class ModelTestGenerationTaskOut(BaseModel):
     id: str
     provider_id: str | None
     model_id: str | None
-    provider_kind: Literal["senseaudio_image", "volcengine_image", "senseaudio_video"]
+    provider_kind: Literal[
+        "senseaudio_image", "volcengine_image", "senseaudio_video", "zealman_video"
+    ]
     kind: Literal["image", "video"]
     provider_name: str
     model_slug: str
@@ -251,6 +255,7 @@ class ModelTestGenerationOptionOut(BaseModel):
     label: str
     description: str
     sizes: list[str] = Field(default_factory=list)
+    workflow_capabilities: WorkflowVideoCapabilitiesOut | None = None
 
 
 class ModelTestGenerationOptionListOut(BaseModel):

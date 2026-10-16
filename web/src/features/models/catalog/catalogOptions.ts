@@ -9,6 +9,7 @@ export {
 export function providerBaseUrlPlaceholder(kind: ProviderInput["kind"]) {
   if (kind === "volcengine_image")
     return "https://ark.cn-beijing.volces.com/api/v3";
+  if (kind === "zealman_video") return "https://your-panel.example:8443";
   if (kind === "openai") return "https://api.openai.com/v1";
   if (kind === "anthropic") return "https://api.anthropic.com/v1";
   if (kind === "senseaudio_realtime") {

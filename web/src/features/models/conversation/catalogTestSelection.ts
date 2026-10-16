@@ -56,9 +56,10 @@ export function preferredModeModel(
         model.capabilities.includes("voice")
       );
     return (
-      model.providerKind ===
-      (mode === "image" ? "senseaudio_image" : "senseaudio_video")
-    );
+      mode === "image"
+        ? ["senseaudio_image", "volcengine_image"]
+        : ["senseaudio_video", "zealman_video"]
+    ).includes(model.providerKind);
   });
   return (
     candidates.find((model) => model.value === remembered) ??

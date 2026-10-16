@@ -92,6 +92,8 @@ from db.migrations.versions import (
     r0088_external_article_sync,
     r0089_visual_prompt_versions,
     r0090_thought_field_groups,
+    r0091_zealman_video,
+    r0092_visual_zealman_video,
 )
 
 
@@ -404,8 +406,18 @@ MIGRATIONS += (
     Migration(r0089_visual_prompt_versions.MIGRATION_ID, r0089_visual_prompt_versions.SQL),
 )
 
+MIGRATIONS += (Migration(r0090_thought_field_groups.MIGRATION_ID, r0090_thought_field_groups.SQL),)
+
 MIGRATIONS += (
-    Migration(r0090_thought_field_groups.MIGRATION_ID, r0090_thought_field_groups.SQL),
+    Migration(r0091_zealman_video.MIGRATION_ID, r0091_zealman_video.SQL, foreign_keys_off=True),
+)
+
+MIGRATIONS += (
+    Migration(
+        r0092_visual_zealman_video.MIGRATION_ID,
+        r0092_visual_zealman_video.SQL,
+        foreign_keys_off=True,
+    ),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

@@ -1,4 +1,5 @@
 import { ModelGenerationTestPanel } from "@features/models/generation/ModelGenerationTestPanel";
+import { modelGenerationKind } from "@features/models/generation/modelGenerationOptions";
 import { ModelTranscriptionTestPanel } from "@features/models/generation/ModelTranscriptionTestPanel";
 import { ModelRealtimeVoiceTestPanel } from "@features/models/realtime/ModelRealtimeVoiceTestPanel";
 import type { ModelTestMode } from "@features/models/workspace/ModelTestWorkspaceHeader";
@@ -55,17 +56,14 @@ export function ModelTestCapabilityPanel({
       />
     );
   }
-  if (
-    model &&
-    ["senseaudio_image", "senseaudio_video"].includes(model.providerKind)
-  ) {
-    const mode = model.providerKind === "senseaudio_image" ? "image" : "video";
+  const generationKind = model ? modelGenerationKind(model) : null;
+  if (generationKind) {
     return (
       <ModelGenerationTestPanel
         models={models}
         modelId={modelId}
         onSelectMode={onSelectMode}
-        onSelectModel={(id) => onSelectModel(id, mode)}
+        onSelectModel={(id) => onSelectModel(id, generationKind)}
       />
     );
   }

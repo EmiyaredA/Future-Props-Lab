@@ -170,7 +170,12 @@ def test_prompt_migration_preserves_drafts_layout_and_is_applied_once(tmp_path):
     path = tmp_path / "prompts.db"
     with connect_database(path) as connection:
         ensure_registry(connection)
-        for migration in MIGRATIONS[:-1]:
+        prompt_index = next(
+            i
+            for i, item in enumerate(MIGRATIONS)
+            if item.migration_id == "r0089_visual_prompt_versions"
+        )
+        for migration in MIGRATIONS[:prompt_index]:
             if migration.foreign_keys_off:
                 connection.execute("PRAGMA foreign_keys=OFF")
             connection.executescript(migration.sql)

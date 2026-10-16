@@ -106,10 +106,14 @@ export function ProviderForm({
           placeholder={providerBaseUrlPlaceholder(kind)}
           onChange={(event) => setBaseUrl(event.target.value)}
         />
-        <small>留空使用该协议的默认地址。</small>
+        <small>
+          {kind === "zealman_video"
+            ? "填写 ZEALMAN 面板根地址，页面查询参数会自动移除。"
+            : "留空使用该协议的默认地址。"}
+        </small>
       </label>
       <label>
-        <span>API Key</span>
+        <span>API Key{kind === "zealman_video" ? "（可选）" : ""}</span>
         <input
           type="password"
           autoComplete="new-password"
@@ -173,6 +177,7 @@ export function ModelForm({
     volcengine_image: ["image_generation"],
     senseaudio_image: ["image_generation"],
     senseaudio_video: ["video_generation"],
+    zealman_video: ["video_generation"],
     senseaudio_asr: ["speech_recognition"],
     senseaudio_asr_pro: ["speech_recognition"],
     senseaudio_realtime: ["voice"],
@@ -238,6 +243,27 @@ export function ModelForm({
           }}
         />
       </label>
+      {selectedProvider?.kind === "zealman_video" && !initial && (
+        <label>
+          <span>已支持的工作流</span>
+          <CustomSelect
+            ariaLabel="已支持的工作流"
+            value={slug}
+            options={[
+              { value: "", label: "选择工作流" },
+              ...["U17-9图1视频3音频V1-api", "U06-9图3音频-V5"].map(
+                (value) => ({ value, label: value }),
+              ),
+            ]}
+            onChange={(value) => {
+              setSlug(value);
+              setLabel(value);
+              setCapabilities(["video_generation"]);
+              setCategories(["video_generation"]);
+            }}
+          />
+        </label>
+      )}
       <label>
         <span>模型标识</span>
         <input

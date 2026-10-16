@@ -17406,6 +17406,16 @@
             ],
             "default": true,
             "title": "Supports Seed"
+          },
+          "workflow_capabilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowVideoCapabilitiesOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -17552,6 +17562,7 @@
               "volcengine_image",
               "senseaudio_image",
               "senseaudio_video",
+              "zealman_video",
               "senseaudio_music",
               "senseaudio_sfx"
             ],
@@ -21109,6 +21120,16 @@
           "slug": {
             "title": "Slug",
             "type": "string"
+          },
+          "workflow_capabilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowVideoCapabilitiesOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -21233,7 +21254,8 @@
             "enum": [
               "senseaudio_image",
               "volcengine_image",
-              "senseaudio_video"
+              "senseaudio_video",
+              "zealman_video"
             ],
             "title": "Provider Kind",
             "type": "string"
@@ -22903,9 +22925,15 @@
             "type": "integer"
           },
           "generate_audio": {
-            "default": false,
-            "title": "Generate Audio",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generate Audio"
           },
           "kind": {
             "const": "video",
@@ -22923,16 +22951,22 @@
             "type": "string"
           },
           "ratio": {
-            "default": "16:9",
-            "enum": [
-              "16:9",
-              "9:16",
-              "4:3",
-              "3:4",
-              "1:1"
+            "anyOf": [
+              {
+                "enum": [
+                  "16:9",
+                  "9:16",
+                  "4:3",
+                  "3:4",
+                  "1:1"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Ratio",
-            "type": "string"
+            "title": "Ratio"
           },
           "reference_asset_ids": {
             "items": {
@@ -22943,14 +22977,20 @@
             "type": "array"
           },
           "resolution": {
-            "default": "720p",
-            "enum": [
-              "480p",
-              "720p",
-              "1080p"
+            "anyOf": [
+              {
+                "enum": [
+                  "480p",
+                  "720p",
+                  "1080p"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Resolution",
-            "type": "string"
+            "title": "Resolution"
           },
           "video_asset_ids": {
             "items": {
@@ -22961,9 +23001,25 @@
             "type": "array"
           },
           "watermark": {
-            "default": true,
-            "title": "Watermark",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watermark"
+          },
+          "workflow_parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowVideoParameters"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -25512,6 +25568,7 @@
               "anthropic",
               "senseaudio_image",
               "senseaudio_video",
+              "zealman_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -25593,6 +25650,7 @@
               "anthropic",
               "senseaudio_image",
               "senseaudio_video",
+              "zealman_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -26441,6 +26499,7 @@
               "anthropic",
               "senseaudio_image",
               "senseaudio_video",
+              "zealman_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -29764,6 +29823,7 @@
               "anthropic",
               "senseaudio_image",
               "senseaudio_video",
+              "zealman_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -29842,6 +29902,7 @@
               "anthropic",
               "senseaudio_image",
               "senseaudio_video",
+              "zealman_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -33790,9 +33851,15 @@
             "title": "First Frame Asset Id"
           },
           "generate_audio": {
-            "default": false,
-            "title": "Generate Audio",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generate Audio"
           },
           "kind": {
             "const": "video",
@@ -33831,16 +33898,22 @@
             "type": "string"
           },
           "ratio": {
-            "default": "16:9",
-            "enum": [
-              "16:9",
-              "9:16",
-              "4:3",
-              "3:4",
-              "1:1"
+            "anyOf": [
+              {
+                "enum": [
+                  "16:9",
+                  "9:16",
+                  "4:3",
+                  "3:4",
+                  "1:1"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Ratio",
-            "type": "string"
+            "title": "Ratio"
           },
           "reference_asset_ids": {
             "items": {
@@ -33851,14 +33924,20 @@
             "type": "array"
           },
           "resolution": {
-            "default": "720p",
-            "enum": [
-              "480p",
-              "720p",
-              "1080p"
+            "anyOf": [
+              {
+                "enum": [
+                  "480p",
+                  "720p",
+                  "1080p"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Resolution",
-            "type": "string"
+            "title": "Resolution"
           },
           "video_asset_ids": {
             "items": {
@@ -33869,9 +33948,25 @@
             "type": "array"
           },
           "watermark": {
-            "default": true,
-            "title": "Watermark",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watermark"
+          },
+          "workflow_parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowVideoParameters"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -36147,6 +36242,16 @@
             "default": true,
             "title": "Watermark",
             "type": "boolean"
+          },
+          "workflow_parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowVideoParameters"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "title": "VisualCanvasVideoGenerationDraft",
@@ -36788,6 +36893,193 @@
           "expected_revision"
         ],
         "title": "VisualWorkshopProjectPatchIn",
+        "type": "object"
+      },
+      "WorkflowNumericParameterOut": {
+        "properties": {
+          "default": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "maximum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Maximum"
+          },
+          "minimum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Minimum"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Step"
+          }
+        },
+        "required": [
+          "minimum",
+          "maximum",
+          "step"
+        ],
+        "title": "WorkflowNumericParameterOut",
+        "type": "object"
+      },
+      "WorkflowVideoCapabilitiesOut": {
+        "properties": {
+          "joint_audio": {
+            "title": "Joint Audio",
+            "type": "boolean"
+          },
+          "max_reference_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Reference Bytes"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/WorkflowNumericParameterOut"
+            },
+            "title": "Parameters",
+            "type": "object"
+          },
+          "reference_limits": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Reference Limits",
+            "type": "object"
+          },
+          "reference_mime_types": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Reference Mime Types",
+            "type": "object"
+          },
+          "supports_ratio": {
+            "title": "Supports Ratio",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "reference_limits",
+          "parameters",
+          "supports_ratio",
+          "joint_audio"
+        ],
+        "title": "WorkflowVideoCapabilitiesOut",
+        "type": "object"
+      },
+      "WorkflowVideoParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "anyOf": [
+              {
+                "maximum": 2048.0,
+                "minimum": 256.0,
+                "multipleOf": 32.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "megapixels": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 0.1,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Megapixels"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "maximum": 1125899906842624.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "upscale_factor": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 1.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upscale Factor"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "maximum": 2048.0,
+                "minimum": 256.0,
+                "multipleOf": 32.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          }
+        },
+        "title": "WorkflowVideoParameters",
         "type": "object"
       },
       "WorkspaceCreateIn": {

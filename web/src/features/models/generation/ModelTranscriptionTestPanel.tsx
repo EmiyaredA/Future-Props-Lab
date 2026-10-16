@@ -33,6 +33,7 @@ import {
 } from "@features/models/api";
 import { formatFileSize } from "@shared/lib/fileSize";
 import { modelQueryKeys } from "@features/models/queryKeys";
+import { modelGenerationKind } from "./modelGenerationOptions";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
@@ -122,8 +123,8 @@ export function ModelTranscriptionTestPanel({
         ["openai", "anthropic"].includes(model.providerKind) &&
         model.capabilities.includes("chat"),
     ),
-    image: models.some((model) => model.providerKind === "senseaudio_image"),
-    video: models.some((model) => model.providerKind === "senseaudio_video"),
+    image: models.some((model) => modelGenerationKind(model) === "image"),
+    video: models.some((model) => modelGenerationKind(model) === "video"),
     speech: Boolean(speechModels.length),
     realtime_voice: models.some((model) =>
       model.capabilities.includes("voice"),

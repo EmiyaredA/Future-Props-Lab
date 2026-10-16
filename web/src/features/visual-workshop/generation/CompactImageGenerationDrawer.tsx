@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   ArrowUp,
   Check,
@@ -28,7 +29,6 @@ export function CompactImageGenerationDrawer({
   const {
     projectId,
     modelId,
-    setModelId,
     prompt,
     setPrompt,
     setSize,
@@ -47,7 +47,6 @@ export function CompactImageGenerationDrawer({
     notice,
     promptAssets,
     linkedAssetIds,
-    modelMenuRef,
     rememberPromptFiles,
     options,
     models,
@@ -143,45 +142,22 @@ export function CompactImageGenerationDrawer({
             <Image aria-hidden />
             图片生成
           </span>
-          <details
+          <CustomSelect
             className="video-composer-model"
-            ref={modelMenuRef}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget))
-                event.currentTarget.removeAttribute("open");
-            }}
-          >
-            <summary
-              role="button"
-              aria-label="生成模型"
-              aria-disabled={options.isLoading || models.length === 0}
-              onClick={(event) => {
-                if (options.isLoading || models.length === 0)
-                  event.preventDefault();
-              }}
-            >
-              <span>{selectedModel?.label ?? "暂无可用模型"}</span>
-              <ChevronDown aria-hidden />
-            </summary>
-            <div className="video-model-menu" role="listbox">
-              {models.map((model) => (
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={model.id === modelId}
-                  key={model.id}
-                  onClick={() => {
-                    setModelId(model.id);
-                    persistDraft({ model_id: model.id }, true);
-                    modelMenuRef.current?.removeAttribute("open");
-                  }}
-                >
-                  {model.id === modelId ? <Check aria-hidden /> : <span />}
-                  {model.label}
-                </button>
-              ))}
-            </div>
-          </details>
+            ariaLabel="生成模型"
+            value={modelId}
+            disabled={options.isLoading || models.length === 0}
+            options={
+              models.length
+                ? models.map((model) => ({
+                    value: model.id,
+                    label: model.label,
+                    description: model.provider_name,
+                  }))
+                : [{ value: "", label: "暂无可用模型", disabled: true }]
+            }
+            onChange={controller.selectModel}
+          />
           <details className="video-composer-parameters image-composer-parameters">
             <summary role="button" aria-label="图片参数">
               <span

@@ -2689,6 +2689,7 @@ class GenerationModelOptionOut(WireModel):
     sizes: list[str] | None = Field(default=None, alias='sizes')
     slug: str = Field(default=..., alias='slug')
     supports_seed: bool | None = Field(default=True, alias='supports_seed')
+    workflow_capabilities: WorkflowVideoCapabilitiesOut | None = Field(default=None, alias='workflow_capabilities')
 
 class GenerationOptionsOut(WireModel):
     models: list[GenerationModelOptionOut] = Field(default=..., alias='models')
@@ -2710,7 +2711,7 @@ class GenerationTaskOut(WireModel):
     progress: int = Field(default=..., alias='progress')
     project_id: str = Field(default=..., alias='project_id')
     provider_id: str | None = Field(default=..., alias='provider_id')
-    provider_kind: Literal['volcengine_image', 'senseaudio_image', 'senseaudio_video', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['volcengine_image', 'senseaudio_image', 'senseaudio_video', 'zealman_video', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     provider_task_id: str | None = Field(default=..., alias='provider_task_id')
     request_payload: dict[str, Any] = Field(default=..., alias='request_payload')
@@ -3287,6 +3288,7 @@ class ModelTestGenerationOptionOut(WireModel):
     provider_name: str = Field(default=..., alias='provider_name')
     sizes: list[str] | None = Field(default=None, alias='sizes')
     slug: str = Field(default=..., alias='slug')
+    workflow_capabilities: WorkflowVideoCapabilitiesOut | None = Field(default=None, alias='workflow_capabilities')
 
 class ModelTestGenerationTaskListOut(WireModel):
     items: list[ModelTestGenerationTaskOut] = Field(default=..., alias='items')
@@ -3304,7 +3306,7 @@ class ModelTestGenerationTaskOut(WireModel):
     model_slug: str = Field(default=..., alias='model_slug')
     progress: int = Field(default=..., alias='progress')
     provider_id: str | None = Field(default=..., alias='provider_id')
-    provider_kind: Literal['senseaudio_image', 'volcengine_image', 'senseaudio_video'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['senseaudio_image', 'volcengine_image', 'senseaudio_video', 'zealman_video'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     request_payload: dict[str, Any] = Field(default=..., alias='request_payload')
     result_available: bool = Field(default=..., alias='result_available')
@@ -3567,15 +3569,16 @@ class ModelTestTranscriptionWordOut(WireModel):
 class ModelTestVideoGenerationIn(WireModel):
     audio_asset_ids: list[str] | None = Field(default=None, alias='audio_asset_ids', max_length=3)
     duration: int = Field(default=5, alias='duration', ge=4.0, le=15.0)
-    generate_audio: bool = Field(default=False, alias='generate_audio')
+    generate_audio: bool | None = Field(default=None, alias='generate_audio')
     kind: Literal['video'] = Field(default=..., alias='kind')
     model_id: str = Field(default=..., alias='model_id')
     prompt: str = Field(default=..., alias='prompt', min_length=1, max_length=6000)
-    ratio: Literal['16:9', '9:16', '4:3', '3:4', '1:1'] = Field(default='16:9', alias='ratio')
+    ratio: Literal['16:9', '9:16', '4:3', '3:4', '1:1'] | None = Field(default=None, alias='ratio')
     reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=9)
-    resolution: Literal['480p', '720p', '1080p'] = Field(default='720p', alias='resolution')
+    resolution: Literal['480p', '720p', '1080p'] | None = Field(default=None, alias='resolution')
     video_asset_ids: list[str] | None = Field(default=None, alias='video_asset_ids', max_length=3)
-    watermark: bool = Field(default=True, alias='watermark')
+    watermark: bool | None = Field(default=None, alias='watermark')
+    workflow_parameters: WorkflowVideoParameters | None = Field(default=None, alias='workflow_parameters')
 
 class ModelTurnIn(WireModel):
     messages: list[dict[str, Any]] = Field(default=..., alias='messages', min_length=1, max_length=200)
@@ -3968,7 +3971,7 @@ class ProviderIn(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
-    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_id: str | None = Field(default=None, alias='supplier_id')
 
@@ -3982,7 +3985,7 @@ class ProviderOut(WireModel):
     enabled: bool = Field(default=..., alias='enabled')
     has_api_key: bool = Field(default=..., alias='has_api_key', repr=False)
     id: str = Field(default=..., alias='id')
-    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     managed_fields: list[str] | None = Field(default=None, alias='managed_fields')
     models: list[ModelEntryOut] = Field(default=..., alias='models')
     name: str = Field(default=..., alias='name')
@@ -4133,7 +4136,7 @@ class RealtimeVoiceModelOut(WireModel):
     output_sample_rate: int = Field(default=..., alias='output_sample_rate')
     playback: RealtimeVoicePlaybackOut = Field(default=..., alias='playback')
     provider_id: str = Field(default=..., alias='provider_id')
-    provider_kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     slug: str = Field(default=..., alias='slug')
     supports_interruption: bool = Field(default=..., alias='supports_interruption')
@@ -4695,7 +4698,7 @@ class TemplateProvider_Input(WireModel):
     clear_api_key: bool = Field(default=False, alias='clear_api_key', repr=False)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -4706,7 +4709,7 @@ class TemplateProvider_Output(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -5310,17 +5313,18 @@ class VideoGenerationTaskCreateIn(WireModel):
     duration: int = Field(default=5, alias='duration', ge=2.0, le=15.0)
     expected_canvas_revision: int | None = Field(default=None, alias='expected_canvas_revision')
     first_frame_asset_id: str | None = Field(default=None, alias='first_frame_asset_id')
-    generate_audio: bool = Field(default=False, alias='generate_audio')
+    generate_audio: bool | None = Field(default=None, alias='generate_audio')
     kind: Literal['video'] = Field(default=..., alias='kind')
     last_frame_asset_id: str | None = Field(default=None, alias='last_frame_asset_id')
     mode: Literal['text', 'frames', 'reference'] = Field(default='text', alias='mode')
     model_id: str = Field(default=..., alias='model_id')
     prompt: str = Field(default='', alias='prompt', max_length=6000)
-    ratio: Literal['16:9', '9:16', '4:3', '3:4', '1:1'] = Field(default='16:9', alias='ratio')
+    ratio: Literal['16:9', '9:16', '4:3', '3:4', '1:1'] | None = Field(default=None, alias='ratio')
     reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=9)
-    resolution: Literal['480p', '720p', '1080p'] = Field(default='720p', alias='resolution')
+    resolution: Literal['480p', '720p', '1080p'] | None = Field(default=None, alias='resolution')
     video_asset_ids: list[str] | None = Field(default=None, alias='video_asset_ids', max_length=3)
-    watermark: bool = Field(default=True, alias='watermark')
+    watermark: bool | None = Field(default=None, alias='watermark')
+    workflow_parameters: WorkflowVideoParameters | None = Field(default=None, alias='workflow_parameters')
 
 class ViewConfig(WireModel):
     color_rules: list[ColorRule] | None = Field(default=None, alias='color_rules', max_length=20)
@@ -5630,6 +5634,7 @@ class VisualCanvasVideoGenerationDraft(WireModel):
     resolution: Literal['480p', '720p', '1080p'] = Field(default='720p', alias='resolution')
     video_asset_ids: list[str] | None = Field(default=None, alias='video_asset_ids', max_length=3)
     watermark: bool = Field(default=True, alias='watermark')
+    workflow_parameters: WorkflowVideoParameters | None = Field(default=None, alias='workflow_parameters')
 
 class VisualCanvasVideoNode(WireModel):
     asset_id: str | None = Field(default=None, alias='asset_id')
@@ -5721,6 +5726,27 @@ class VisualWorkshopProjectPatchIn(WireModel):
     kind: Literal['image', 'video', 'canvas'] | None = Field(default=None, alias='kind')
     status: Literal['draft', 'completed'] | None = Field(default=None, alias='status')
     title: str | None = Field(default=None, alias='title')
+
+class WorkflowNumericParameterOut(WireModel):
+    default: int | float | None = Field(default=None, alias='default')
+    maximum: int | float = Field(default=..., alias='maximum')
+    minimum: int | float = Field(default=..., alias='minimum')
+    step: int | float = Field(default=..., alias='step')
+
+class WorkflowVideoCapabilitiesOut(WireModel):
+    joint_audio: bool = Field(default=..., alias='joint_audio')
+    max_reference_bytes: int | None = Field(default=None, alias='max_reference_bytes')
+    parameters: dict[str, WorkflowNumericParameterOut] = Field(default=..., alias='parameters')
+    reference_limits: dict[str, int] = Field(default=..., alias='reference_limits')
+    reference_mime_types: dict[str, list[str]] | None = Field(default=None, alias='reference_mime_types')
+    supports_ratio: bool = Field(default=..., alias='supports_ratio')
+
+class WorkflowVideoParameters(WireModel):
+    height: int | None = Field(default=None, alias='height')
+    megapixels: float | None = Field(default=None, alias='megapixels')
+    seed: int | None = Field(default=None, alias='seed')
+    upscale_factor: float | None = Field(default=None, alias='upscale_factor')
+    width: int | None = Field(default=None, alias='width')
 
 class WorkspaceCreateIn(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=255)
@@ -6635,6 +6661,9 @@ VisualWorkshopProjectCreateIn.model_rebuild()
 VisualWorkshopProjectListOut.model_rebuild()
 VisualWorkshopProjectOut.model_rebuild()
 VisualWorkshopProjectPatchIn.model_rebuild()
+WorkflowNumericParameterOut.model_rebuild()
+WorkflowVideoCapabilitiesOut.model_rebuild()
+WorkflowVideoParameters.model_rebuild()
 WorkspaceCreateIn.model_rebuild()
 WorkspaceInvitationActionIn.model_rebuild()
 WorkspaceInvitationCreateIn.model_rebuild()

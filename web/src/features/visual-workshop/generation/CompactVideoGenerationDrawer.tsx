@@ -1,7 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import {
   ArrowUp,
-  Check,
   ChevronDown,
   LoaderCircle,
   Maximize2,
@@ -9,6 +8,7 @@ import {
   Settings2,
   Video,
 } from "lucide-react";
+import { WorkflowVideoControls } from "@features/models";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   VIDEO_RATIO_OPTIONS,
@@ -39,7 +39,6 @@ export function CompactVideoGenerationDrawer({
   const {
     projectId,
     modelId,
-    setModelId,
     prompt,
     setPrompt,
     videoMode,
@@ -70,17 +69,18 @@ export function CompactVideoGenerationDrawer({
     notice,
     promptAssets,
     linkedAssetIds,
-    modelMenuRef,
     rememberPromptFiles,
     options,
     models,
-    selectedModel,
+    workflowCapabilities,
+    referenceLimits,
     persistDraft,
     invalidSelection,
     createMutation,
     submit,
     hasLinkedVideoReferences,
   } = controller;
+  const minimumDuration = workflowCapabilities ? 4 : 2;
   const hasFrameReferences = firstFrame.length > 0 || lastFrame.length > 0;
   const hasOmniReferences =
     references.length > 0 ||
@@ -117,7 +117,7 @@ export function CompactVideoGenerationDrawer({
         value: references,
         linkedValue: linkedAssetIds.image,
         multiple: true,
-        max: 9,
+        max: referenceLimits.image,
         disabled: videoMode !== "reference",
         onChange: changeImages,
       },
@@ -126,7 +126,7 @@ export function CompactVideoGenerationDrawer({
         value: videoReferences,
         linkedValue: linkedAssetIds.video,
         multiple: true,
-        max: 3,
+        max: referenceLimits.video,
         disabled: videoMode !== "reference",
         onChange: changeVideos,
       },
@@ -135,7 +135,7 @@ export function CompactVideoGenerationDrawer({
         value: audioReferences,
         linkedValue: linkedAssetIds.audio,
         multiple: true,
-        max: 3,
+        max: referenceLimits.audio,
         disabled: videoMode !== "reference",
         onChange: changeAudio,
       },
@@ -149,28 +149,35 @@ export function CompactVideoGenerationDrawer({
       <form className="video-node-composer-form" onSubmit={submit}>
         <header className="video-composer-header">
           <nav aria-label="视频生成方式">
-            {modeLabels.map((mode) => (
-              <button
-                type="button"
-                className={videoMode === mode.value ? "active" : ""}
-                aria-pressed={videoMode === mode.value}
-                disabled={
-                  hasLinkedVideoReferences && mode.value !== "reference"
-                }
-                title={
-                  hasLinkedVideoReferences && mode.value !== "reference"
-                    ? "存在画布连线素材时需使用全能参考"
-                    : undefined
-                }
-                key={mode.value}
-                onClick={() => {
-                  setVideoMode(mode.value);
-                  persistDraft({ mode: mode.value }, true);
-                }}
-              >
-                {mode.label}
-              </button>
-            ))}
+            {modeLabels
+              .filter(
+                (mode) =>
+                  !workflowCapabilities ||
+                  mode.value === "text" ||
+                  mode.value === "reference",
+              )
+              .map((mode) => (
+                <button
+                  type="button"
+                  className={videoMode === mode.value ? "active" : ""}
+                  aria-pressed={videoMode === mode.value}
+                  disabled={
+                    hasLinkedVideoReferences && mode.value !== "reference"
+                  }
+                  title={
+                    hasLinkedVideoReferences && mode.value !== "reference"
+                      ? "存在画布连线素材时需使用全能参考"
+                      : undefined
+                  }
+                  key={mode.value}
+                  onClick={() => {
+                    setVideoMode(mode.value);
+                    persistDraft({ mode: mode.value }, true);
+                  }}
+                >
+                  {mode.label}
+                </button>
+              ))}
           </nav>
           <button
             type="button"
@@ -304,14 +311,14 @@ export function CompactVideoGenerationDrawer({
                       value={references}
                       linkedValue={linkedAssetIds.image}
                       multiple
-                      max={9}
+                      max={referenceLimits.image}
                       disabled={videoMode !== "reference"}
                       onChange={changeImages}
                       onFilesLoaded={rememberPromptFiles}
                       onInvalidSelection={invalidSelection}
                     />
                   ) : null}
-                  {videoMode === "reference" ||
+                  {(videoMode === "reference" && referenceLimits.video > 0) ||
                   videoReferences.length ||
                   linkedAssetIds.video.length ? (
                     <ProjectMediaPicker
@@ -325,7 +332,7 @@ export function CompactVideoGenerationDrawer({
                       value={videoReferences}
                       linkedValue={linkedAssetIds.video}
                       multiple
-                      max={3}
+                      max={referenceLimits.video}
                       disabled={videoMode !== "reference"}
                       onChange={changeVideos}
                       onFilesLoaded={rememberPromptFiles}
@@ -346,7 +353,7 @@ export function CompactVideoGenerationDrawer({
                       value={audioReferences}
                       linkedValue={linkedAssetIds.audio}
                       multiple
-                      max={3}
+                      max={referenceLimits.audio}
                       disabled={videoMode !== "reference"}
                       onChange={changeAudio}
                       onFilesLoaded={rememberPromptFiles}
@@ -388,49 +395,28 @@ export function CompactVideoGenerationDrawer({
             <Video aria-hidden />
             视频生成
           </span>
-          <details
+          <CustomSelect
             className="video-composer-model"
-            ref={modelMenuRef}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget))
-                event.currentTarget.removeAttribute("open");
-            }}
-          >
-            <summary
-              role="button"
-              aria-label="生成模型"
-              aria-disabled={options.isLoading || models.length === 0}
-              onClick={(event) => {
-                if (options.isLoading || models.length === 0)
-                  event.preventDefault();
-              }}
-            >
-              <span>{selectedModel?.label ?? "暂无可用模型"}</span>
-              <ChevronDown aria-hidden />
-            </summary>
-            <div className="video-model-menu" role="listbox">
-              {models.map((model) => (
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={model.id === modelId}
-                  key={model.id}
-                  onClick={() => {
-                    setModelId(model.id);
-                    persistDraft({ model_id: model.id }, true);
-                    modelMenuRef.current?.removeAttribute("open");
-                  }}
-                >
-                  {model.id === modelId ? <Check aria-hidden /> : <span />}
-                  {model.label}
-                </button>
-              ))}
-            </div>
-          </details>
+            ariaLabel="生成模型"
+            value={modelId}
+            disabled={options.isLoading || models.length === 0}
+            options={
+              models.length
+                ? models.map((model) => ({
+                    value: model.id,
+                    label: model.label,
+                    description: model.provider_name,
+                  }))
+                : [{ value: "", label: "暂无可用模型", disabled: true }]
+            }
+            onChange={controller.selectModel}
+          />
           <details className="video-composer-parameters">
-            <summary>
+            <summary role="button" aria-label="视频参数">
               <Settings2 aria-hidden />
-              {ratio} · {duration}S · {resolution.toUpperCase()}
+              {workflowCapabilities
+                ? `${duration}S · ${workflowCapabilities.supports_ratio ? ratio : `${controller.workflowValues.width ?? workflowCapabilities.parameters.width?.default} × ${controller.workflowValues.height ?? workflowCapabilities.parameters.height?.default}`}`
+                : `${ratio} · ${duration}S · ${resolution.toUpperCase()}`}
               <ChevronDown aria-hidden />
             </summary>
             <div className="video-parameter-popover">
@@ -442,13 +428,13 @@ export function CompactVideoGenerationDrawer({
                 <input
                   type="range"
                   aria-label="时长"
-                  min="2"
+                  min={minimumDuration}
                   max="15"
                   step="1"
                   value={duration}
                   style={
                     {
-                      "--video-duration-progress": `${((duration - 2) / 13) * 100}%`,
+                      "--video-duration-progress": `${((duration - minimumDuration) / (15 - minimumDuration)) * 100}%`,
                     } as CSSProperties
                   }
                   onChange={(event) => {
@@ -460,65 +446,82 @@ export function CompactVideoGenerationDrawer({
                   onBlur={() => persistDraft({}, true)}
                 />
                 <span className="video-duration-limits" aria-hidden="true">
-                  <span>2 秒</span>
+                  <span>{minimumDuration} 秒</span>
                   <span>15 秒</span>
                 </span>
               </label>
-              <label>
-                <span>画面比例</span>
-                <CustomSelect
-                  ariaLabel="画面比例"
-                  className="video-parameter-select"
-                  value={ratio}
-                  options={VIDEO_RATIO_OPTIONS}
-                  onChange={(value) => {
-                    const next = value as typeof ratio;
-                    setRatio(next);
-                    persistDraft({ ratio: next }, true);
-                  }}
-                />
-              </label>
-              <label>
-                <span>清晰度</span>
-                <CustomSelect
-                  ariaLabel="清晰度"
-                  className="video-parameter-select"
-                  value={resolution}
-                  options={VIDEO_RESOLUTION_OPTIONS}
-                  onChange={(value) => {
-                    const next = value as typeof resolution;
-                    setResolution(next);
-                    persistDraft({ resolution: next }, true);
-                  }}
-                />
-              </label>
-              <div className="video-parameter-switches">
+              {(!workflowCapabilities ||
+                workflowCapabilities.supports_ratio) && (
                 <label>
-                  <input
-                    type="checkbox"
-                    checked={generateAudio}
-                    onChange={(event) => {
-                      setGenerateAudio(event.target.checked);
-                      persistDraft(
-                        { generate_audio: event.target.checked },
-                        true,
-                      );
+                  <span>画面比例</span>
+                  <CustomSelect
+                    ariaLabel="画面比例"
+                    className="video-parameter-select"
+                    value={ratio}
+                    options={VIDEO_RATIO_OPTIONS}
+                    onChange={(value) => {
+                      const next = value as typeof ratio;
+                      setRatio(next);
+                      persistDraft({ ratio: next }, true);
                     }}
                   />
-                  生成音频
                 </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={watermark}
-                    onChange={(event) => {
-                      setWatermark(event.target.checked);
-                      persistDraft({ watermark: event.target.checked }, true);
-                    }}
-                  />
-                  保留水印
-                </label>
-              </div>
+              )}
+              {!workflowCapabilities && (
+                <>
+                  <label>
+                    <span>清晰度</span>
+                    <CustomSelect
+                      ariaLabel="清晰度"
+                      className="video-parameter-select"
+                      value={resolution}
+                      options={VIDEO_RESOLUTION_OPTIONS}
+                      onChange={(value) => {
+                        const next = value as typeof resolution;
+                        setResolution(next);
+                        persistDraft({ resolution: next }, true);
+                      }}
+                    />
+                  </label>
+                  <div className="video-parameter-switches">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={generateAudio}
+                        onChange={(event) => {
+                          setGenerateAudio(event.target.checked);
+                          persistDraft(
+                            { generate_audio: event.target.checked },
+                            true,
+                          );
+                        }}
+                      />
+                      生成音频
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={watermark}
+                        onChange={(event) => {
+                          setWatermark(event.target.checked);
+                          persistDraft(
+                            { watermark: event.target.checked },
+                            true,
+                          );
+                        }}
+                      />
+                      保留水印
+                    </label>
+                  </div>
+                </>
+              )}
+              {workflowCapabilities && (
+                <WorkflowVideoControls
+                  capabilities={workflowCapabilities}
+                  values={controller.workflowValues}
+                  onChange={controller.changeWorkflowValues}
+                />
+              )}
             </div>
           </details>
           <button

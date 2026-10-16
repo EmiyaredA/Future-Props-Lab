@@ -78,8 +78,10 @@ export const formatBytes = (bytes: number) =>
   formatFileSize(bytes, { minimumUnit: "KB", fractionalDigits: 0 });
 
 export function modelGenerationKind(model: TestModel): GenerationKind | null {
-  if (model.providerKind === "senseaudio_image") return "image";
-  if (model.providerKind === "senseaudio_video") return "video";
+  if (["senseaudio_image", "volcengine_image"].includes(model.providerKind))
+    return "image";
+  if (["senseaudio_video", "zealman_video"].includes(model.providerKind))
+    return "video";
   return null;
 }
 

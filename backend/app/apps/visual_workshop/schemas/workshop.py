@@ -24,6 +24,7 @@ from app.llm.schemas.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
+from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
 
 __all__ = [
     "AudioGenerationTaskCreateIn",
@@ -150,6 +151,7 @@ class VisualCanvasVideoGenerationDraft(VisualPromptDraft):
     reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
     audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
     video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    workflow_parameters: WorkflowVideoParameters | None = None
     prompt_reference_names: dict[str, str] = Field(default_factory=dict, max_length=16)
 
     @field_validator("prompt_reference_names")
@@ -562,6 +564,7 @@ class GenerationModelOptionOut(BaseModel):
     max_reference_images: int = 1
     supports_seed: bool | None = True
     max_prompt_length: int | None = 2000
+    workflow_capabilities: WorkflowVideoCapabilitiesOut | None = None
     reference_mime_types: list[str] = Field(
         default_factory=lambda: ["image/jpeg", "image/png", "image/webp"]
     )
@@ -580,6 +583,7 @@ class GenerationTaskOut(BaseModel):
         "volcengine_image",
         "senseaudio_image",
         "senseaudio_video",
+        "zealman_video",
         "senseaudio_music",
         "senseaudio_sfx",
     ]

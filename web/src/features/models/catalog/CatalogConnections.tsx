@@ -293,7 +293,9 @@ export function CatalogConnections({
                     <dd>
                       {selected.has_api_key
                         ? `已配置 ···· ${selected.api_key_hint}`
-                        : "未配置"}
+                        : selected.kind === "zealman_video"
+                          ? "无需密钥"
+                          : "未配置"}
                     </dd>
                   </div>
                 </dl>

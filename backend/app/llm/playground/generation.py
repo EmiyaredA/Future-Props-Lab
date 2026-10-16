@@ -18,6 +18,7 @@ from app.llm.playground.generation_assets import (
 )
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
+from app.llm.providers.zealman_workflows import WORKFLOWS, normalize_request, parameter_options
 from app.llm.schemas.model_test import (
     ModelTestGenerationCreateIn,
     ModelTestGenerationOptionListOut,
@@ -90,13 +91,13 @@ class ModelTestGeneration:
             not in (
                 {expected_provider_kind, "volcengine_image"}
                 if kind == "image"
-                else {expected_provider_kind}
+                else {expected_provider_kind, "zealman_video"}
             )
         ):
             raise ModelTestGenerationError(
                 "当前生成模型不可用", code="model_unavailable", status=409
             )
-        if not provider.api_key_ciphertext:
+        if provider.kind != "zealman_video" and not provider.api_key_ciphertext:
             raise ModelTestGenerationError(
                 "供应商尚未配置 API Key", code="missing_api_key", status=409
             )
@@ -115,7 +116,12 @@ class ModelTestGeneration:
                     ModelProvider.enabled.is_(True),
                     ModelEntry.enabled.is_(True),
                     ModelProvider.kind.in_(
-                        ("senseaudio_image", "volcengine_image", "senseaudio_video")
+                        (
+                            "senseaudio_image",
+                            "volcengine_image",
+                            "senseaudio_video",
+                            "zealman_video",
+                        )
                     ),
                 )
                 .order_by(ModelProvider.sort_order, ModelEntry.sort_order)
@@ -133,6 +139,9 @@ class ModelTestGeneration:
                     slug=model.slug,
                     label=model.label or model.slug,
                     description=model.description,
+                    workflow_capabilities=parameter_options(model.slug)
+                    if provider.kind == "zealman_video"
+                    else None,
                     sizes=list(
                         SEEDREAM_SIZES
                         if provider.kind == "volcengine_image"
@@ -140,6 +149,7 @@ class ModelTestGeneration:
                     ),
                 )
                 for model, provider in rows
+                if provider.kind != "zealman_video" or model.slug in WORKFLOWS
             ]
         )
 
@@ -152,6 +162,15 @@ class ModelTestGeneration:
     ) -> ModelTestGenerationTaskOut:
         model, provider = await self._model(body.model_id, body.kind)
         payload = body.model_dump(mode="json")
+        if isinstance(body, ModelTestVideoGenerationIn):
+            for field, default in {
+                "resolution": "720p",
+                "ratio": "16:9",
+                "watermark": True,
+                "generate_audio": False,
+            }.items():
+                if payload[field] is None:
+                    payload[field] = default
         if isinstance(body, ModelTestImageGenerationIn):
             if provider.kind == "volcengine_image" and body.seed is not None:
                 raise ModelTestGenerationError(
@@ -171,6 +190,21 @@ class ModelTestGeneration:
                 raise ModelTestGenerationError(
                     f"当前模型提示词最多支持 {prompt_limit} 个字符",
                     code="prompt_too_long",
+                )
+        if isinstance(body, ModelTestVideoGenerationIn):
+            if provider.kind == "zealman_video":
+                try:
+                    payload["workflow_parameters"] = (
+                        body.workflow_parameters.model_dump(exclude_unset=True)
+                        if body.workflow_parameters
+                        else {}
+                    )
+                    payload = normalize_request(model.slug, payload, body.model_fields_set)
+                except ValueError as exc:
+                    raise ModelTestGenerationError(str(exc), code="unsupported_parameter") from None
+            elif body.workflow_parameters is not None:
+                raise ModelTestGenerationError(
+                    "当前模型不支持工作流参数", code="unsupported_parameter"
                 )
         snap = credential or CredentialSnapshot()
         row = ModelTestGenerationTask(
@@ -306,6 +340,7 @@ class ModelTestGeneration:
             .values(
                 status="processing",
                 error_message=None,
+                log_id=None,
                 revision=ModelTestGenerationTask.revision + 1,
                 updated_at=utc_now(),
             )

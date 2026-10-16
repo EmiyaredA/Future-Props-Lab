@@ -137,6 +137,13 @@ export function useGenerationDrawerController({
   const [videoReferences, setVideoReferences] = useState<string[]>(
     videoDraft?.video_asset_ids ?? [],
   );
+  const [workflowValues, setWorkflowValues] = useState<Record<string, string>>(
+    Object.fromEntries(
+      Object.entries(videoDraft?.workflow_parameters ?? {})
+        .filter(([, value]) => value != null)
+        .map(([key, value]) => [key, String(value)]),
+    ),
+  );
   const [composerExpanded, setComposerExpanded] = useState(false);
   const [notice, setNotice] = useState("");
   const [promptFiles, setPromptFiles] = useState<Record<string, ManagedFile>>(
@@ -149,7 +156,6 @@ export function useGenerationDrawerController({
       videoDraft?.prompt_reference_names ??
       {},
   );
-  const modelMenuRef = useRef<HTMLDetailsElement>(null);
   const rememberPromptFiles = useCallback((files: ManagedFile[]) => {
     setPromptFiles((current) => {
       let changed = false;
@@ -236,6 +242,22 @@ export function useGenerationDrawerController({
     (model) => model.kind === kind,
   );
   const selectedModel = models.find((model) => model.id === modelId);
+  const workflowCapabilities = selectedModel?.workflow_capabilities;
+  const workflowParameters = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(workflowValues)
+          .filter(([, value]) => value !== "")
+          .map(([key, value]) => [key, Number(value)]),
+      ),
+    [workflowValues],
+  );
+  const referenceLimits = workflowCapabilities?.reference_limits ?? {
+    image: 9,
+    video: 3,
+    audio: 3,
+  };
+
   const availableImageSizes = useMemo(
     () => imageSizeChoices(selectedModel?.sizes ?? []),
     [selectedModel?.sizes],
@@ -279,6 +301,7 @@ export function useGenerationDrawerController({
           ratio,
           watermark,
           generate_audio: generateAudio,
+          workflow_parameters: workflowParameters,
           first_frame_asset_id: firstFrame[0] ?? null,
           last_frame_asset_id: lastFrame[0] ?? null,
           reference_asset_ids: canvasNodeId
@@ -323,9 +346,64 @@ export function useGenerationDrawerController({
       videoMode,
       videoReferences,
       watermark,
+      workflowParameters,
     ],
   );
   savePrompt.current = (next, immediate) => persistDraft(next, immediate);
+  const selectModel = (id: string) => {
+    const model = models.find((item) => item.id === id);
+    setModelId(id);
+    if (id === modelId) return;
+    setWorkflowValues({});
+    const changes: Record<string, unknown> = {
+      model_id: id,
+      workflow_parameters: null,
+    };
+    if (
+      model?.workflow_capabilities &&
+      (videoMode === "frames" || videoMode === "image")
+    ) {
+      const images = uniqueAssetIds(references, firstFrame, lastFrame);
+      const mode =
+        images.length || hasLinkedVideoReferences ? "reference" : "text";
+      setVideoMode(mode);
+      setReferences(images);
+      setFirstFrame([]);
+      setLastFrame([]);
+      Object.assign(changes, {
+        mode,
+        reference_asset_ids: images,
+        first_frame_asset_id: null,
+        last_frame_asset_id: null,
+      });
+      if (images.length)
+        setNotice("该工作流使用图片参考，原首尾帧已放入参考图片。");
+    }
+    if (model?.workflow_capabilities && duration < 4) {
+      setDuration(5);
+      changes.duration = 5;
+    }
+    persistDraft(changes, true);
+  };
+  const changeWorkflowValues = (values: Record<string, string>) => {
+    setWorkflowValues(values);
+    const parameters = Object.fromEntries(
+      Object.entries(values)
+        .filter(([, value]) => value !== "")
+        .map(([key, value]) => [key, Number(value)]),
+    );
+    const valid = Object.entries(parameters).every(([key, value]) => {
+      const spec = workflowCapabilities?.parameters[key];
+      return (
+        spec &&
+        Number.isFinite(value) &&
+        value >= spec.minimum &&
+        value <= spec.maximum &&
+        (spec.step !== 32 || value % 32 === 0)
+      );
+    });
+    if (valid) persistDraft({ workflow_parameters: parameters }, true);
+  };
   const reorderImages = (next: string[]) => {
     const previous = orderedReferenceIds(
       kind === "image" ? imageReference : references,
@@ -567,9 +645,9 @@ export function useGenerationDrawerController({
     if (
       kind === "video" &&
       videoMode === "reference" &&
-      audioReferences.length > 0 &&
-      references.length === 0 &&
-      videoReferences.length === 0
+      audioReferences.length + linkedAssetIds.audio.length > 0 &&
+      references.length + linkedAssetIds.image.length === 0 &&
+      videoReferences.length + linkedAssetIds.video.length === 0
     ) {
       setNotice("参考音频需要搭配至少一张图片或一个视频。");
       return;
@@ -605,6 +683,50 @@ export function useGenerationDrawerController({
         `当前模型提示词最多支持 ${selectedModel?.max_prompt_length ?? 2000} 个字符。`,
       );
       return;
+    }
+    if (kind === "video" && workflowCapabilities) {
+      let referenceBytes = 0;
+      if (!prompt.trim()) {
+        setNotice("请输入生成提示词。");
+        return;
+      }
+      if (duration < 4 || duration > 15) {
+        setNotice("工作流视频时长必须为 4 至 15 秒。");
+        return;
+      }
+      if (videoMode === "frames" || videoMode === "image") {
+        setNotice("当前工作流请使用文生视频或全能参考。");
+        return;
+      }
+      for (const [media, ids] of Object.entries({
+        image: orderedReferenceIds(references, linkedAssetIds.image),
+        video: orderedReferenceIds(videoReferences, linkedAssetIds.video),
+        audio: orderedReferenceIds(audioReferences, linkedAssetIds.audio),
+      })) {
+        if (ids.length > (referenceLimits[media] ?? 0)) {
+          setNotice(
+            `当前工作流最多支持 ${referenceLimits[media] ?? 0} 个${({ image: "图片", video: "视频", audio: "音频" } as Record<string, string>)[media]}参考素材。`,
+          );
+          return;
+        }
+        for (const id of ids) {
+          const file = promptFiles[id];
+          if (!file) continue;
+          referenceBytes += file.byte_size;
+          const accepted = workflowCapabilities.reference_mime_types?.[media];
+          if (accepted?.length && !accepted.includes(file.mime_type)) {
+            setNotice(`当前工作流不支持素材格式：${file.display_name}`);
+            return;
+          }
+        }
+      }
+      if (
+        workflowCapabilities.max_reference_bytes &&
+        referenceBytes > workflowCapabilities.max_reference_bytes
+      ) {
+        setNotice("参考素材总大小不能超过 45 MB。");
+        return;
+      }
     }
     try {
       persistDraft({}, true);
@@ -659,10 +781,12 @@ export function useGenerationDrawerController({
         prompt,
         mode: videoMode === "image" ? "frames" : videoMode,
         duration,
-        resolution,
-        ratio,
-        watermark,
-        generate_audio: generateAudio,
+        ...(workflowCapabilities
+          ? {
+              workflow_parameters: workflowParameters,
+              ...(workflowCapabilities.supports_ratio ? { ratio } : {}),
+            }
+          : { resolution, ratio, watermark, generate_audio: generateAudio }),
         first_frame_asset_id:
           videoMode === "frames" || videoMode === "image"
             ? (firstFrame[0] ?? null)
@@ -709,6 +833,11 @@ export function useGenerationDrawerController({
     setKind,
     modelId,
     setModelId,
+    selectModel,
+    workflowCapabilities,
+    referenceLimits,
+    workflowValues,
+    changeWorkflowValues,
     prompt,
     setPrompt,
     size,
@@ -751,7 +880,6 @@ export function useGenerationDrawerController({
     setComposerExpanded,
     notice,
     promptAssets,
-    modelMenuRef,
     rememberPromptFiles,
     options,
     models,

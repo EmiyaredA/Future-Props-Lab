@@ -2,6 +2,7 @@ PROVIDER_DEFAULT_CATEGORIES: dict[str, tuple[str, ...]] = {
     "volcengine_image": ("image_generation",),
     "senseaudio_image": ("image_generation",),
     "senseaudio_video": ("video_generation",),
+    "zealman_video": ("video_generation",),
     "senseaudio_asr": ("speech_recognition",),
     "senseaudio_asr_pro": ("speech_recognition",),
     "senseaudio_realtime": ("end_to_end_speech",),

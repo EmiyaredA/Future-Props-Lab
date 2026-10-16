@@ -72,7 +72,8 @@ export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
     return "chat";
   if (["senseaudio_image", "volcengine_image"].includes(provider.kind))
     return "image";
-  if (provider.kind === "senseaudio_video") return "video";
+  if (["senseaudio_video", "zealman_video"].includes(provider.kind))
+    return "video";
   if (
     ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(
       provider.kind,
