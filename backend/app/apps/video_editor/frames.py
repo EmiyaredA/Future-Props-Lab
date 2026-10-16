@@ -17,7 +17,10 @@ from app.apps.video_editor.schemas import VideoEditorClip, parse_timeline_docume
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
-from app.capabilities.media_rendering.evaluator import timeline_duration_us
+from app.capabilities.media_rendering.evaluator import (
+    FRAME_COMPOSITOR_VERSION,
+    timeline_duration_us,
+)
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
 from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
@@ -48,6 +51,11 @@ def _render_frame(
     try:
         temporary.write_bytes(payload)
         os.replace(temporary, cache)
+    except FileNotFoundError:
+        # A project may be deleted while its read-only decode is finishing.
+        # Return the prepared response without recreating deleted cache folders.
+        if cache.parent.is_dir():
+            raise
     finally:
         temporary.unlink(missing_ok=True)
     return payload
@@ -109,10 +117,14 @@ class VideoEditorFrames:
         cache = (
             self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
             / "derived"
-            / f"frame-v{TEXT_RENDER_VERSION}-chroma2-sample{VIDEO_SAMPLING_VERSION}"
+            / f"frame-v{TEXT_RENDER_VERSION}-composite{FRAME_COMPOSITOR_VERSION}"
+            f"-chroma2-sample{VIDEO_SAMPLING_VERSION}"
             f"-r{revision}-t{time_us}-w{width}"
             f"-raw{comparison_key}.png"
         )
+        # Cache I/O and decoding must not hold a request's database connection.
+        # All values needed below are detached snapshots or validated paths.
+        await self.session.rollback()
         cached = await asyncio.to_thread(_cached_frame, cache)
         if cached is not None:
             return cached
@@ -138,6 +150,7 @@ class VideoEditorFrames:
             else []
         )
         paths = {asset.id: self.storage.path_for(asset) for asset in assets}
+        await self.session.rollback()
 
         # Only validated value objects and paths cross into the worker. The
         # request's AsyncSession remains on the event loop that owns it.
@@ -195,4 +208,5 @@ class VideoEditorFrames:
             if asset is None:
                 raise VideoEditorNotFoundError("字体素材不存在")
             font_path = self.storage.path_for(asset)
+        await self.session.rollback()
         return await asyncio.to_thread(_text_layer_png, clip, font_path)

@@ -30,6 +30,18 @@ export function VideoEditorProxyVideo({
   const canvas = useRef<HTMLCanvasElement>(null);
   const paintedTime = useRef(Number.NaN);
   const playRequested = useRef(false);
+  const updatePlayback = useRef<(() => void) | null>(null);
+  const frame = useRef({
+    target: 0,
+    start: 0,
+    end: 0,
+    advancing: false,
+    exact: true,
+    rate: 1,
+    chromaKey,
+    spinBlur,
+    crop,
+  });
   const previous = useRef<
     | {
         clip: VideoEditorClip;
@@ -40,9 +52,6 @@ export function VideoEditorProxyVideo({
     | undefined
   >(undefined);
   useLayoutEffect(() => {
-    const node = video.current;
-    const surface = canvas.current;
-    if (!node || !surface) return;
     const target = clipSourceTimeUs(clip, localUs) / 1_000_000;
     const start = clip.sourceInUs / 1_000_000;
     const end = clipSourceTimeUs(clip, clip.durationUs) / 1_000_000;
@@ -63,24 +72,50 @@ export function VideoEditorProxyVideo({
     )
       paintedTime.current = Number.NaN;
     previous.current = { clip, source, playing: advancing, spinBlur };
-    node.playbackRate = clip.playbackRate ?? 1;
+    frame.current = {
+      target,
+      start,
+      end,
+      advancing,
+      exact,
+      rate: clip.playbackRate ?? 1,
+      chromaKey,
+      spinBlur,
+      crop,
+    };
+    updatePlayback.current?.();
+  }, [clip, localUs, playing, source, chromaKey, spinBlur, crop]);
+  useLayoutEffect(() => {
+    const node = video.current;
+    const surface = canvas.current;
+    if (!node || !surface) return;
     let cancelled = false;
-    let callback = 0;
-    let raf = 0;
+    let callback: number | undefined;
+    let raf: number | undefined;
     const supportsFrames = typeof node.requestVideoFrameCallback === "function";
     const pause = () => {
       playRequested.current = false;
       node.pause();
     };
-    const positioned = () =>
-      !node.seeking &&
-      node.readyState >= 2 &&
-      node.currentTime >= start &&
-      node.currentTime < end &&
-      Math.abs(node.currentTime - target) <= (exact ? 0.000001 : 0.12);
+    const positioned = () => {
+      const { start, end, target, exact } = frame.current;
+      return (
+        !node.seeking &&
+        node.readyState >= 2 &&
+        node.currentTime >= start &&
+        node.currentTime < end &&
+        Math.abs(node.currentTime - target) <= (exact ? 0.000001 : 0.12)
+      );
+    };
     const paint = (mediaTime = node.currentTime) => {
+      const { start, end, target, chromaKey, spinBlur, crop } = frame.current;
       if (!positioned() || !node.videoWidth || !node.videoHeight) return;
-      if (mediaTime >= end || Math.abs(mediaTime - target) > 0.12) return;
+      if (
+        mediaTime < start ||
+        mediaTime >= end ||
+        Math.abs(mediaTime - target) > 0.12
+      )
+        return;
       if (mediaTime === paintedTime.current) {
         if (chromaKey?.enabled) recordChromaDuplicateFrameSkip();
         return;
@@ -114,6 +149,8 @@ export function VideoEditorProxyVideo({
     };
     const sync = () => {
       if (cancelled) return false;
+      const { target, start, end, exact, advancing, rate } = frame.current;
+      if (node.playbackRate !== rate) node.playbackRate = rate;
       const drift = Math.abs(node.currentTime - target);
       if (node.seeking) {
         pause();
@@ -121,7 +158,7 @@ export function VideoEditorProxyVideo({
       }
       if (
         drift > (exact ? 0.000001 : 0.12) ||
-        node.currentTime < start ||
+        (node.currentTime < start && (exact || !advancing)) ||
         node.currentTime >= end
       ) {
         pause();
@@ -140,31 +177,38 @@ export function VideoEditorProxyVideo({
       return positioned();
     };
     const tick = (_now?: number, metadata?: VideoFrameCallbackMetadata) => {
+      callback = undefined;
+      raf = undefined;
       if (cancelled) return;
       if (sync()) paint(metadata?.mediaTime);
       schedule();
     };
     const schedule = () => {
+      if (callback !== undefined || raf !== undefined) return;
       if (supportsFrames) callback = node.requestVideoFrameCallback(tick);
-      else if (advancing) raf = requestAnimationFrame(tick);
+      else if (frame.current.advancing) raf = requestAnimationFrame(tick);
     };
     const mediaReady = () => {
       if (sync()) paint();
     };
-    if (sync() && !advancing) paint();
-    schedule();
+    updatePlayback.current = () => {
+      if (sync() && !frame.current.advancing) paint();
+      schedule();
+    };
+    updatePlayback.current();
     node.addEventListener("loadedmetadata", sync);
     node.addEventListener("loadeddata", mediaReady);
     node.addEventListener("seeked", mediaReady);
     return () => {
       cancelled = true;
-      if (supportsFrames) node.cancelVideoFrameCallback(callback);
-      else cancelAnimationFrame(raf);
+      updatePlayback.current = null;
+      if (callback !== undefined) node.cancelVideoFrameCallback(callback);
+      if (raf !== undefined) cancelAnimationFrame(raf);
       node.removeEventListener("loadedmetadata", sync);
       node.removeEventListener("loadeddata", mediaReady);
       node.removeEventListener("seeked", mediaReady);
     };
-  }, [clip, localUs, playing, source, chromaKey, spinBlur, crop]);
+  }, []);
   const placement = {
     left: `${crop.leftPercent}%`,
     top: `${crop.topPercent}%`,

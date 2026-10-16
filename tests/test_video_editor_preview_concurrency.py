@@ -12,10 +12,12 @@ from app.apps.video_editor import frames
 from app.apps.video_editor.schemas import VideoEditorTimelineDocument
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.contracts import RenderPlan
+from app.capabilities.media_rendering.evaluator import FRAME_COMPOSITOR_VERSION
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION
 from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
 from app.main import app
 from app.runtime.config import get_settings
+from app.runtime.db import engine
 
 
 @pytest.mark.asyncio
@@ -75,6 +77,7 @@ async def test_split_saves_while_preview_is_still_rendering(monkeypatch, preview
         try:
             assert await asyncio.to_thread(started.wait, 2)
             assert not finished.is_set()
+            assert engine.pool.checkedout() == 0
             split = await asyncio.wait_for(
                 client.post(
                     f"{base}/timeline/operations",
@@ -140,6 +143,25 @@ def test_parallel_exact_frames_publish_separate_atomic_cache_files(monkeypatch, 
     assert request() == b"same-frame"
 
 
+def test_frame_finishing_after_project_deletion_does_not_recreate_cache(monkeypatch, tmp_path):
+    derived = tmp_path / "derived"
+    derived.mkdir()
+
+    def render(*_args, **_kwargs):
+        derived.rmdir()
+        return b"finished-frame"
+
+    monkeypatch.setattr(frames, "render_plan_frame", render)
+    plan = RenderPlan(VideoEditorTimelineDocument.model_validate({"tracks": []}), {})
+    assert (
+        frames._render_frame(
+            derived / "frame.png", plan, time_us=0, width=960, without_chroma_clip_id=None
+        )
+        == b"finished-frame"
+    )
+    assert not derived.exists()
+
+
 @pytest.mark.asyncio
 async def test_exact_frame_ignores_cache_from_previous_sampling_rule():
     async with httpx.AsyncClient(
@@ -179,12 +201,19 @@ async def test_exact_frame_ignores_cache_from_previous_sampling_rule():
         )
         legacy = derived / f"frame-v{TEXT_RENDER_VERSION}-chroma2-r1-t0-w320-rawnone.png"
         legacy.write_bytes(b"stale-sampling-frame")
+        old_compositor = derived / (
+            f"frame-v{TEXT_RENDER_VERSION}-chroma2-sample{VIDEO_SAMPLING_VERSION}"
+            "-r1-t0-w320-rawnone.png"
+        )
+        old_compositor.write_bytes(b"stale-eyelid-mask")
         response = await client.get(f"{base}/preview/frame?revision=1&timeUs=0&width=320")
         assert response.status_code == 200, response.text
         assert response.content.startswith(b"\x89PNG\r\n\x1a\n")
         assert legacy.read_bytes() == b"stale-sampling-frame"
+        assert old_compositor.read_bytes() == b"stale-eyelid-mask"
         current = derived / (
-            f"frame-v{TEXT_RENDER_VERSION}-chroma2-sample{VIDEO_SAMPLING_VERSION}"
+            f"frame-v{TEXT_RENDER_VERSION}-composite{FRAME_COMPOSITOR_VERSION}"
+            f"-chroma2-sample{VIDEO_SAMPLING_VERSION}"
             "-r1-t0-w320-rawnone.png"
         )
         assert current.read_bytes() == response.content

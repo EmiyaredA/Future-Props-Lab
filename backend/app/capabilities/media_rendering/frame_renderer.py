@@ -38,6 +38,7 @@ def _extract_video_frame(path: Path, source_us: int) -> Image.Image:
         ],
         check=True,
         capture_output=True,
+        timeout=30,
     )
     return Image.open(io.BytesIO(result.stdout)).convert("RGBA")
 

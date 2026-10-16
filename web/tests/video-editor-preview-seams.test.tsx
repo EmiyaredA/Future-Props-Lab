@@ -94,6 +94,85 @@ beforeEach(() => {
 });
 
 describe("video editor seam preview", () => {
+  it("keeps the decoded-frame callback scheduled across playhead refreshes", () => {
+    const request = vi.fn(() => 1);
+    const cancel = vi.fn();
+    const prototype = HTMLVideoElement.prototype;
+    const originalRequest = Object.getOwnPropertyDescriptor(
+      prototype,
+      "requestVideoFrameCallback",
+    );
+    const originalCancel = Object.getOwnPropertyDescriptor(
+      prototype,
+      "cancelVideoFrameCallback",
+    );
+    Object.defineProperties(prototype, {
+      requestVideoFrameCallback: { configurable: true, value: request },
+      cancelVideoFrameCallback: { configurable: true, value: cancel },
+    });
+    const view = render(
+      <VideoEditorPreview {...props} playing playheadUs={14_000_000} />,
+    );
+    try {
+      const video = view.container.querySelector("video")!;
+      Object.defineProperty(video, "readyState", {
+        configurable: true,
+        value: 2,
+      });
+      fireEvent.seeked(video);
+      for (let index = 1; index <= 12; index++) {
+        video.currentTime = (716_513 + 775_059 + index * 16_667) / 1_000_000;
+        view.rerender(
+          <VideoEditorPreview
+            {...props}
+            playing
+            playheadUs={14_000_000 + index * 16_667}
+          />,
+        );
+      }
+      expect(request).toHaveBeenCalledOnce();
+      expect(cancel).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      if (originalRequest)
+        Object.defineProperty(
+          prototype,
+          "requestVideoFrameCallback",
+          originalRequest,
+        );
+      else Reflect.deleteProperty(prototype, "requestVideoFrameCallback");
+      if (originalCancel)
+        Object.defineProperty(
+          prototype,
+          "cancelVideoFrameCallback",
+          originalCancel,
+        );
+      else Reflect.deleteProperty(prototype, "cancelVideoFrameCallback");
+    }
+  });
+
+  it("does not interrupt a continuous cut when decoding trails the cut by one frame", () => {
+    const view = render(
+      <VideoEditorPreview {...props} playing playheadUs={16_180_000} />,
+    );
+    const video = view.container.querySelector("video")!;
+    Object.defineProperty(video, "readyState", {
+      configurable: true,
+      value: 2,
+    });
+    fireEvent.seeked(video);
+    video.currentTime = 3.68;
+    const seek = vi.spyOn(video, "currentTime", "set");
+    const pause = vi.mocked(HTMLMediaElement.prototype.pause);
+    pause.mockClear();
+    view.rerender(
+      <VideoEditorPreview {...props} playing playheadUs={16_210_000} />,
+    );
+    expect(view.container.querySelector("video")).toBe(video);
+    expect(seek).not.toHaveBeenCalled();
+    expect(pause).not.toHaveBeenCalled();
+  });
+
   it("publishes only the latest positioned frame and holds the display across source jumps", () => {
     const paint = vi
       .spyOn(chromaCanvas, "paintChromaCanvas")

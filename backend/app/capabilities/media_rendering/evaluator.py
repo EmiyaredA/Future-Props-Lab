@@ -18,6 +18,9 @@ from app.capabilities.media_rendering.timeline_document import (
     VideoEditorTimelineTransition,
 )
 
+# Invalidate exact-frame caches when compositing geometry changes.
+FRAME_COMPOSITOR_VERSION = 2
+
 
 def timeline_duration_us(document: VideoEditorTimelineDocument) -> int:
     return max(
@@ -442,7 +445,9 @@ class TimelineFrameRenderer:
         bottom_curve = [(x, height - y) for x, y in top_curve]
         draw = ImageDraw.Draw(canvas)
         draw.polygon([(0, 0), (width, 0), *reversed(top_curve)], fill=(0, 0, 0, 255))
-        draw.polygon([(0, height), (width, height), *bottom_curve], fill=(0, 0, 0, 255))
+        # Walk from the lower-right corner back along the lid to the left.
+        # Left-to-right curve points would cross the polygon's closing edge.
+        draw.polygon([(0, height), (width, height), *reversed(bottom_curve)], fill=(0, 0, 0, 255))
 
     def _queue_frame_overlay(self, color: tuple[int, int, int], alpha: int) -> None:
         if alpha <= 0:

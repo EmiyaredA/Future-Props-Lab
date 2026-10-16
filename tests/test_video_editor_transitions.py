@@ -491,6 +491,34 @@ def test_eyelid_clip_edges_close_the_frame(edge: str) -> None:
     assert renderer.render(time_us).getpixel((960, 540))[:3] == (0, 0, 0)
 
 
+@pytest.mark.parametrize("opening", [0, 0.05, 0.25, 0.5, 0.75, 0.95, 1])
+@pytest.mark.parametrize("size", [(320, 180), (321, 181), (180, 320)])
+def test_eyelid_mask_has_one_centered_opening_per_column(opening, size):
+    frame = Image.new("RGBA", size, "white")
+    TimelineFrameRenderer._draw_eyelid_overlay(frame, opening)
+    width, height = size
+    for x in range(width):
+        visible = [y for y in range(height) if frame.getpixel((x, y))[:3] == (255, 255, 255)]
+        if not visible:
+            assert opening == 0
+            continue
+        # Each column is one centered clear interval between opaque lids.
+        # Pixel-inclusive polygon edges may differ by one raster row.
+        assert visible == list(range(visible[0], visible[-1] + 1))
+        assert abs(visible[0] - (height - 1 - visible[-1])) <= 1
+        if opening == 1:
+            assert len(visible) == height
+
+
+def test_eyelid_export_closes_bottom_corners_without_diagonal_leaks():
+    frame = Image.new("RGBA", (1920, 1080), "white")
+    TimelineFrameRenderer._draw_eyelid_overlay(frame, 0.5)
+    for x in [0, 240, 480, 960, 1440, 1680, 1919]:
+        assert frame.getpixel((x, 1079)) == (0, 0, 0, 255)
+        assert frame.getpixel((x, 1000)) == (0, 0, 0, 255)
+        assert frame.getpixel((x, 540)) == (255, 255, 255, 255)
+
+
 def test_seam_flash_outs_then_ins_without_double_start() -> None:
     document = parse_timeline_document(
         {

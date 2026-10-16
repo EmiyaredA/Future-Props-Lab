@@ -61,11 +61,11 @@ export function VideoEditorSaveGuard({
         title={busy ? "正在保存" : "处理未保存操作"}
         description={
           busy
-            ? "请等待当前保存完成。"
+            ? "保存仍在进行。你可以留在编辑器继续查看，保存完成后再离开。"
             : `有 ${failedCount ?? 0} 项操作未确认保存（${operations.map((kind) => (kind === "undo" ? "撤销" : kind === "redo" ? "重做" : kind)).join("、")}）。请核对服务器快照后重新编辑；这些操作不会自动重放。`
         }
-        pending={Boolean(busy)}
-        confirmLabel="放弃未保存操作"
+        confirmDisabled={Boolean(busy)}
+        confirmLabel={busy ? "等待保存完成" : "放弃未保存操作"}
         cancelLabel="留在编辑器"
         onCancel={() => {
           continuation.current = null;

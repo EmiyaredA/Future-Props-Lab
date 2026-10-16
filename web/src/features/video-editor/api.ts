@@ -1,6 +1,7 @@
 import type { paths } from "@generated/api";
 import type { components } from "@generated/api";
 import {
+  ApiError,
   api,
   fetchApiDownload,
   fetchApiJson,
@@ -79,16 +80,33 @@ export const applyVideoEditorOperations = async (
   expectedRevision: number,
   operations: VideoEditorOperation[],
   requestId = crypto.randomUUID(),
-) =>
-  unwrap(
-    await api.POST(
-      "/v1/video-editor/projects/{project_id}/timeline/operations",
-      {
-        params: { path: { project_id: projectId } },
-        body: { expectedRevision, requestId, operations },
-      },
-    ),
-  );
+) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    return await unwrap(
+      await api.POST(
+        "/v1/video-editor/projects/{project_id}/timeline/operations",
+        {
+          params: { path: { project_id: projectId } },
+          body: { expectedRevision, requestId, operations },
+          signal: controller.signal,
+        },
+      ),
+    );
+  } catch (error) {
+    // Aborting the response cannot establish whether the server committed it.
+    if (controller.signal.aborted)
+      throw new ApiError(
+        "保存请求超过 30 秒，结果尚未确认，请核对服务器时间线",
+        { code: "save_confirmation_timeout" },
+        408,
+      );
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
 
 export const listVideoEditorAssets = async (
   projectId: string,
@@ -338,7 +356,7 @@ export const exactFramePath = (
   width = 960,
   withoutChromaClipId?: string,
 ) =>
-  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}&renderVersion=5${withoutChromaClipId ? `&withoutChromaClipId=${encodeURIComponent(withoutChromaClipId)}` : ""}`;
+  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}&renderVersion=6${withoutChromaClipId ? `&withoutChromaClipId=${encodeURIComponent(withoutChromaClipId)}` : ""}`;
 
 export const exactFrameUrl = (
   projectId: string,
