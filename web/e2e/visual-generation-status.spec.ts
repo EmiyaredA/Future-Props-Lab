@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操作", async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
   const screenshots = resolve(
     process.env.FPL_GENERATION_SCREENSHOTS ||
       "../.local/generation-status-ui-20261017/browser",
@@ -57,7 +57,8 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
   });
   expect(saved.ok(), await saved.text()).toBeTruthy();
   let status = "processing";
-  let progress = 0;
+  const progress = 0;
+  let executionInfo: Record<string, unknown> | null = null;
   const task = () => ({
     id: "fixture-task",
     project_id: projectId,
@@ -72,6 +73,7 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
     provider_task_id: null,
     status,
     progress,
+    execution_info: executionInfo,
     error_message: null,
     result_asset_id: null,
     can_retry_materialization: false,
@@ -137,6 +139,20 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
       .locator("svg")
       .evaluate((element) => getComputedStyle(element).animationName),
   ).toBe("visual-generation-spin");
+  executionInfo = {
+    phase: "running",
+    node_id: "7",
+    node_label: "SamplerCustom",
+    step: 8,
+    total_steps: 10,
+    reported_progress: 5,
+    live_status: "connected",
+    updated_at: new Date().toISOString(),
+    last_event_at: new Date().toISOString(),
+  };
+  await expect(activity.getByText("采样 80%")).toBeVisible({ timeout: 10_000 });
+  await expect(activity.getByText(/采样 8\/10 步 · 上游报告 5%/)).toBeVisible();
+  expect((await activity.boundingBox())!.height).toBeLessThanOrEqual(85);
   await page.screenshot({
     animations: "disabled",
     path: resolve(screenshots, "light.png"),
@@ -152,14 +168,13 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
     path: resolve(screenshots, "dark.png"),
     fullPage: true,
   });
-  progress = 82;
   await expect(activity.getByRole("progressbar")).toHaveAttribute(
     "aria-valuenow",
-    "82",
+    "80",
   );
   await page.getByRole("button", { name: "状态分组", exact: true }).click();
   const card = page.locator(".board-task-card.is-running");
-  await expect(card.getByText("82%")).toBeVisible();
+  await expect(card.getByText(/采样 8\/10 步/)).toBeVisible();
   expect(
     await card
       .locator(".visual-generation-spinner")
@@ -173,7 +188,7 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
   await expect(activity).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await activity.scrollIntoViewIfNeeded();
-  expect((await activity.boundingBox())!.height).toBeLessThanOrEqual(68);
+  expect((await activity.boundingBox())!.height).toBeLessThanOrEqual(150);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

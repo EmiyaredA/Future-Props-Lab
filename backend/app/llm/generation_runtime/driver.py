@@ -9,6 +9,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.llm.models import ModelProvider
+from app.llm.task_execution import TaskExecutionInfo
 from app.orm import bind_workspace, require_workspace_id
 from app.runtime.credentials import decrypt_secret
 from app.runtime.time import utc_now
@@ -35,6 +36,7 @@ class ProviderTaskStatus(Protocol):
     progress: int
     result_url: str | None
     error_message: str | None
+    execution_info: TaskExecutionInfo | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,17 +183,29 @@ class GenerationTaskStore:
             task.status = "processing"
             task.progress = 100
             task.result_url = result_url
+            if task.execution_info is not None:
+                task.execution_info = TaskExecutionInfo(
+                    phase="finalizing", updated_at=utc_now()
+                ).model_dump(mode="json")
             task.revision += 1
             task.updated_at = utc_now()
             await session.commit()
 
-    async def mark_progress(self, task_id: str, status: str, progress: int) -> None:
+    async def mark_progress(
+        self,
+        task_id: str,
+        status: str,
+        progress: int,
+        execution_info: TaskExecutionInfo | None = None,
+    ) -> None:
         async with self.session_factory() as session:
             task = await self.load(session, task_id)
             if task is None or task.status not in self.active_statuses:
                 return
             task.status = "processing" if status == "processing" else "pending"
             task.progress = progress
+            if execution_info is not None:
+                task.execution_info = execution_info.model_dump(mode="json")
             task.revision += 1
             task.updated_at = utc_now()
             await session.commit()
@@ -300,6 +314,7 @@ class GenerationTaskDriver:
                 task.task_id,
                 provider_status.status,
                 provider_status.progress,
+                execution_info=getattr(provider_status, "execution_info", None),
             )
         except asyncio.CancelledError:
             raise

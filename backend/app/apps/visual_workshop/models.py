@@ -90,6 +90,7 @@ class VisualGenerationTask(Base):
     provider_task_id: Mapped[str | None] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(String(16), default="queued")
     progress: Mapped[int] = mapped_column(Integer, default=0)
+    execution_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text)
     result_url: Mapped[str | None] = mapped_column(Text)
     result_asset_id: Mapped[str | None] = mapped_column(

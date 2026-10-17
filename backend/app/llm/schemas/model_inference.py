@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.llm.task_execution import TaskExecutionInfo
+
 
 class InferenceMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -55,6 +57,7 @@ class InferenceTaskOut(BaseModel):
         "queued", "submitting", "pending", "processing", "running", "completed", "failed"
     ]
     progress: int
+    execution_info: TaskExecutionInfo | None = None
     request_payload: dict
     result: dict
     result_filename: str

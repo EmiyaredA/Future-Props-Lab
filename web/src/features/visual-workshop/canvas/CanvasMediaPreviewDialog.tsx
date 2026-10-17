@@ -1,3 +1,5 @@
+import { taskActivity } from "../generation/generationActivityModel";
+import { executionDetails } from "@shared/ui/taskExecutionPresentation";
 import {
   useEffect,
   useId,
@@ -592,12 +594,17 @@ export function CanvasMediaPreviewDialog({
                         {ACTIVE_STATUSES.has(selectedTask.status) && (
                           <GenerationSpinner size={12} />
                         )}
-                        {STATUS_LABELS[selectedTask.status]}
+                        {taskActivity(selectedTask)?.label ??
+                          STATUS_LABELS[selectedTask.status]}
                       </span>
-                      {ACTIVE_STATUSES.has(selectedTask.status) ? (
-                        <strong>{selectedTask.progress}%</strong>
+                      {taskActivity(selectedTask)?.progress !== undefined ? (
+                        <strong>{taskActivity(selectedTask)?.progress}%</strong>
                       ) : null}
                     </div>
+                    {taskActivity(selectedTask) &&
+                      selectedTask.execution_info && (
+                        <p>{executionDetails(selectedTask.execution_info)}</p>
+                      )}
                     {selectedTask.status === "failed" &&
                     selectedTask.error_message ? (
                       <p className="canvas-media-task-error">

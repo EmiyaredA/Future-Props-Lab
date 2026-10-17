@@ -14,6 +14,7 @@ from app.capabilities.transcription.schemas import (
 )
 from app.llm.schemas.model_test_tools import ModelTestToolCallOut, ModelTestToolSummaryOut
 from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
+from app.llm.task_execution import TaskExecutionInfo
 
 MessageStatus = Literal["pending", "completed", "error", "cancelled", "superseded"]
 
@@ -228,6 +229,7 @@ class ModelTestGenerationTaskOut(BaseModel):
     request_payload: dict
     status: GenerationTaskStatus
     progress: int
+    execution_info: TaskExecutionInfo | None = None
     error_message: str | None
     result_filename: str | None
     result_mime_type: str | None

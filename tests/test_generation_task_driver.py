@@ -54,7 +54,10 @@ class FakeStore:
         if self.task is not None:
             self.task = replace(self.task, status="processing", result_url=result_url)
 
-    async def mark_progress(self, _task_id: str, status: str, _progress: int) -> None:
+    async def mark_progress(
+        self, _task_id: str, status: str, _progress: int, execution_info=None
+    ) -> None:
+        self.execution_info = execution_info
         if self.task is not None:
             self.task = replace(
                 self.task,

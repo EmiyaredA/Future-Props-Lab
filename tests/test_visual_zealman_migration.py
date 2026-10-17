@@ -5,7 +5,10 @@ from db.migrations.runner import connect_database
 
 def test_visual_workflow_upgrade_preserves_history_indexes_and_foreign_keys(tmp_path, monkeypatch):
     path = tmp_path / "visual-upgrade.db"
-    previous = MIGRATIONS[:-1]
+    target = next(
+        i for i, m in enumerate(MIGRATIONS) if m.migration_id == "0092_visual_zealman_video"
+    )
+    previous = MIGRATIONS[:target]
     with monkeypatch.context() as patch:
         patch.setattr(runner, "MIGRATIONS", previous)
         patch.setattr(runner, "LATEST_MIGRATION_ID", previous[-1].migration_id)
@@ -29,7 +32,10 @@ def test_visual_workflow_upgrade_preserves_history_indexes_and_foreign_keys(tmp_
             "AND tbl_name='visual_generation_tasks' ORDER BY name"
         ).fetchall()
         db.commit()
-    apply_migrations(path)
+    with monkeypatch.context() as patch:
+        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[: target + 1])
+        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[target].migration_id)
+        apply_migrations(path)
     with connect_database(path) as db:
         assert db.execute("SELECT * FROM visual_generation_tasks").fetchall() == before
         assert (

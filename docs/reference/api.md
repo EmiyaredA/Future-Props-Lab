@@ -843,6 +843,14 @@ MIME 与文件签名校验并原子写入项目素材后才进入 `completed`。
 `can_retry_materialization=true` 的失败任务才能安全重试本地保存。任务与日志不保存 API Key、
 Data URI 或素材内容。
 
+任务响应可含 `execution_info`（旧任务或不支持的供应商为 `null`）；视觉工坊、模型测试和独立模型任务使用相同可选结构。
+`phase` 为 `queued/running/finalizing/unknown`，`queue_position` 为等待队列内从 1 开始的位置。
+`node_id/node_label` 标识当前执行节点，`step/total_steps` 仅表示该节点的采样步数。
+`reported_progress` 为上游账本报告值，不能解释为整段视频完成度；缺失值不推算。
+`updated_at` 为本次状态查询时间，`last_event_at` 为最近匹配任务的实时事件时间；
+`live_status` 为 `unavailable/connecting/connected/reconnecting`。客户端应在采样信息过期或断线时恢复不定值反馈。
+ZEALMAN 新提交使用应用独立实时连接，旧控制台客户端身份只通过 HTTP 查询；实时事件不决定终态，接口不返回未经验证的中间预览。
+
 `submitting` 表示本机已认领、但尚未持久化供应商任务编号。应用若在此阶段中断，恢复时会直接结算为
 `failed` 并提示重新生成，不会自动再次提交，以避免重复计费。`pending/processing` 会从已保存的
 供应商任务编号继续轮询；已保存 `result_url` 的 `processing` 任务只恢复本地下载和素材结算。

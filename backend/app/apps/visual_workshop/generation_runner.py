@@ -34,6 +34,7 @@ from app.llm.generation_runtime import (
     upload_temporary_reference,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError
+from app.llm.providers.zealman_live import ZealmanLiveMonitor
 from app.llm.providers.zealman_video import create_task, get_task, upload_reference
 from app.orm import bind_workspace
 from app.runtime.config import Settings, get_settings
@@ -61,6 +62,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         temporary_media_transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         super().__init__()
+        self.zealman_monitor = ZealmanLiveMonitor()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
@@ -85,6 +87,10 @@ class VisualGenerationRunner(PollingTaskRunner):
 
     async def _load_task(self, session: AsyncSession, task_id: str) -> VisualGenerationTask | None:
         return await self.task_store.load(session, task_id)
+
+    async def stop(self) -> None:
+        await super().stop()
+        await self.zealman_monitor.close()
 
     async def recover(self) -> None:
         await self.task_driver.recover()
@@ -310,7 +316,10 @@ class VisualGenerationRunner(PollingTaskRunner):
                 if row is None or utc_now() - row.created_at > timedelta(hours=1):
                     raise ValueError("ZEALMAN 等待超过 60 分钟；请检查上游任务，系统不会自动重提")
             return await get_task(
-                base_url=task.base_url, api_key=task.api_key, task_id=task.provider_task_id
+                base_url=task.base_url,
+                api_key=task.api_key,
+                task_id=task.provider_task_id,
+                monitor=self.zealman_monitor,
             )
         return await poll_generation_task(
             provider_kind=task.provider_kind,

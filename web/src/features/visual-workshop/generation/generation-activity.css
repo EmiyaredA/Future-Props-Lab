@@ -10,6 +10,13 @@
 .visual-generation-activity {
   padding: 0 0 3px;
 }
+.visual-generation-details {
+  margin: 0 0 7px;
+  color: var(--board-muted, var(--text-muted));
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
 .visual-generation-activity-line {
   display: flex;
   align-items: center;

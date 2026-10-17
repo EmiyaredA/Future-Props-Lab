@@ -1,3 +1,4 @@
+import { executionDetails } from "@shared/ui/taskExecutionPresentation";
 import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -483,7 +484,9 @@ export function ModelGenerationTestPanel({
                       <CheckCircle2 aria-hidden />
                     ) : null}
                     {statusLabel[task.status]}
-                    {task.status === "processing" ? ` ${task.progress}%` : ""}
+                    {task.status === "processing" && !task.execution_info
+                      ? ` ${task.progress}%`
+                      : ""}
                   </span>
                 </span>
               </button>
@@ -511,12 +514,19 @@ export function ModelGenerationTestPanel({
         <main className="generation-test-result">
           {activeTask ? (
             <>
+              {pendingStatuses.includes(activeTask.status) &&
+                activeTask.execution_info && (
+                  <small>
+                    {executionDetails(activeTask.execution_info, now)}
+                  </small>
+                )}
               <div className="generation-result-head">
                 <div className="generation-result-meta">
                   <strong>{activeTask.model_slug}</strong>
                   <span className={`generation-status ${activeTask.status}`}>
                     {statusLabel[activeTask.status]}
-                    {activeTask.status === "processing"
+                    {activeTask.status === "processing" &&
+                    !activeTask.execution_info
                       ? ` ${activeTask.progress}%`
                       : ""}
                   </span>

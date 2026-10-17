@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
+import {
+  executionDetails,
+  samplingPercent,
+} from "@shared/ui/taskExecutionPresentation";
 import type { GenerationActivity as Activity } from "./generationActivityModel";
 import "./generation-activity.css";
 
@@ -13,13 +17,22 @@ export function GenerationSpinner({ size = 16 }: { size?: number }) {
   );
 }
 
-export function GenerationActivity({ activity }: { activity: Activity }) {
+export function GenerationActivity({
+  activity,
+  showTaskLink = true,
+}: {
+  activity: Activity;
+  showTaskLink?: boolean;
+}) {
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [activity.id]);
   const start = Date.parse(activity.createdAt);
+  const sampling = samplingPercent(activity.executionInfo, now);
+  const progress = sampling ?? activity.progress;
+  const details = executionDetails(activity.executionInfo, now);
   const elapsed = Number.isFinite(start)
     ? Math.max(0, Math.floor((now - start) / 1000))
     : undefined;
@@ -39,25 +52,29 @@ export function GenerationActivity({ activity }: { activity: Activity }) {
             已用时 {clock}
           </time>
         )}
-        {activity.progress !== undefined && <span>{activity.progress}%</span>}
-        <a href="/apps/visual-workshop/tasks" aria-label="查看生成任务">
-          查看任务
-        </a>
+        {progress !== undefined && (
+          <span>
+            {sampling !== undefined ? "采样 " : ""}
+            {progress}%
+          </span>
+        )}
+        {showTaskLink && (
+          <a href="/apps/visual-workshop/tasks" aria-label="查看生成任务">
+            查看任务
+          </a>
+        )}
       </div>
+      {details && <p className="visual-generation-details">{details}</p>}
       <div
-        className={`visual-generation-track${activity.progress === undefined ? " is-indeterminate" : ""}`}
+        className={`visual-generation-track${progress === undefined ? " is-indeterminate" : ""}`}
         role="progressbar"
-        aria-label="生成进度"
+        aria-label={sampling !== undefined ? "当前节点采样进度" : "生成进度"}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={activity.progress}
+        aria-valuenow={progress}
       >
         <i
-          style={
-            activity.progress === undefined
-              ? undefined
-              : { width: `${activity.progress}%` }
-          }
+          style={progress === undefined ? undefined : { width: `${progress}%` }}
         />
       </div>
     </div>

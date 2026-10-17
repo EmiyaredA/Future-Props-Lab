@@ -80,6 +80,7 @@ def generation_task_out(row: VisualGenerationTask) -> GenerationTaskOut:
         provider_task_id=row.provider_task_id,
         status=row.status,
         progress=row.progress,
+        execution_info=row.execution_info,
         error_message=row.error_message,
         result_asset_id=row.result_asset_id,
         can_retry_materialization=row.status == "failed" and bool(row.result_url),

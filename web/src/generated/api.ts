@@ -14318,6 +14318,7 @@ export interface components {
             created_at: string;
             /** Error Message */
             error_message: string | null;
+            execution_info?: components["schemas"]["TaskExecutionInfo"] | null;
             /** Id */
             id: string;
             /**
@@ -14583,6 +14584,7 @@ export interface components {
             created_at: string;
             /** Error Message */
             error_message: string | null;
+            execution_info?: components["schemas"]["TaskExecutionInfo"] | null;
             /** Id */
             id: string;
             /**
@@ -15687,6 +15689,7 @@ export interface components {
             created_at: string;
             /** Error Message */
             error_message: string | null;
+            execution_info?: components["schemas"]["TaskExecutionInfo"] | null;
             /** Id */
             id: string;
             /**
@@ -18925,6 +18928,40 @@ export interface components {
             position: number;
             /** Views */
             views: components["schemas"]["ViewSpec"][];
+        };
+        /** TaskExecutionInfo */
+        TaskExecutionInfo: {
+            /** Last Event At */
+            last_event_at?: string | null;
+            /**
+             * Live Status
+             * @default unavailable
+             * @enum {string}
+             */
+            live_status: "unavailable" | "connecting" | "connected" | "reconnecting";
+            /** Node Id */
+            node_id?: string | null;
+            /** Node Label */
+            node_label?: string | null;
+            /**
+             * Phase
+             * @default unknown
+             * @enum {string}
+             */
+            phase: "queued" | "running" | "finalizing" | "unknown";
+            /** Queue Position */
+            queue_position?: number | null;
+            /** Reported Progress */
+            reported_progress?: number | null;
+            /** Step */
+            step?: number | null;
+            /** Total Steps */
+            total_steps?: number | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** TemplateApply */
         TemplateApply: {

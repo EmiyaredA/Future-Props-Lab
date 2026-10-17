@@ -31,6 +31,7 @@ class ModelInferenceTask(Base):
     request_payload: Mapped[dict] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(24), default="queued")
     progress: Mapped[int] = mapped_column(Integer, default=0)
+    execution_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     provider_task_id: Mapped[str] = mapped_column(Text, default="")
     result_url: Mapped[str] = mapped_column(Text, default="")
     result_storage_key: Mapped[str] = mapped_column(String(64), default="")

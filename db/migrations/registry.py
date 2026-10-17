@@ -94,6 +94,7 @@ from db.migrations.versions import (
     r0090_thought_field_groups,
     r0091_zealman_video,
     r0092_visual_zealman_video,
+    r0093_generation_execution_info,
 )
 
 
@@ -418,6 +419,10 @@ MIGRATIONS += (
         r0092_visual_zealman_video.SQL,
         foreign_keys_off=True,
     ),
+)
+
+MIGRATIONS += (
+    Migration(r0093_generation_execution_info.MIGRATION_ID, r0093_generation_execution_info.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

@@ -10,6 +10,8 @@ from uuid import uuid4
 import httpx
 
 from app.llm.providers._senseaudio import ProviderTaskStatus, sanitize_provider_message
+from app.llm.providers.zealman_live import ZealmanLiveMonitor
+from app.llm.providers.zealman_progress import execution_info, queue_entry
 from app.llm.providers.zealman_workflows import prepare_input_values
 from app.runtime.outbound_urls import require_safe_provider_base_url
 
@@ -99,7 +101,12 @@ async def create_task(
             await client.post(
                 f"{root}/api/workflow/generate",
                 headers=headers(api_key),
-                json={"workflow_id": model, "input_values": values, "source": "api"},
+                json={
+                    "workflow_id": model,
+                    "input_values": values,
+                    "source": "api",
+                    "client_id": f"fpl-{uuid4().hex}",
+                },
             )
         )
     identity = body.get("prompt_id")
@@ -112,7 +119,7 @@ def result_status(body: dict[str, Any], root: str) -> ProviderTaskStatus | None:
     for item in body.get("results") or body.get("outputs") or []:
         if isinstance(item, dict) and item.get("type") == "video" and item.get("url"):
             return ProviderTaskStatus("completed", 100, urljoin(root + "/", item["url"]))
-    if body.get("status") in {"error", "failed", "cancelled"} or body.get("error"):
+    if body.get("status") in ("error", "failed", "cancelled") or body.get("error"):
         return ProviderTaskStatus("failed", error_message=str(body.get("error") or "上游任务失败"))
     return None
 
@@ -122,6 +129,7 @@ async def get_task(
     base_url: str,
     api_key: str,
     task_id: str,
+    monitor: ZealmanLiveMonitor | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> ProviderTaskStatus:
     root = root_url(base_url)
@@ -135,6 +143,8 @@ async def get_task(
         )
         status = result_status(body, root)
         if status:
+            if monitor:
+                await monitor.forget(root, task_id)
             return status
         history_response = await client.get(
             f"{root}/api/comfy/proxy/history",
@@ -153,16 +163,43 @@ async def get_task(
                 ),
                 "上游执行失败",
             )
+            if monitor:
+                await monitor.forget(root, task_id)
             return ProviderTaskStatus("failed", error_message=str(detail))
-        ledger_response = await client.get(
-            f"{root}/api/tasks/{quote(task_id, safe='')}", headers=headers(api_key)
-        )
-        if ledger_response.status_code != 404:
-            ledger = response_json(ledger_response)
-            task = ledger.get("task", ledger)
-            status = result_status(task, root)
-            if status:
-                return status
+        ledger = await optional_json(client, f"{root}/api/tasks/{quote(task_id, safe='')}", api_key)
+        task = ledger.get("task", ledger) if ledger else {}
+        if not isinstance(task, dict):
+            task = {}
+        status = result_status(task, root)
+        if status:
+            if monitor:
+                await monitor.forget(root, task_id)
+            return status
         if body.get("pending") is False:
+            if monitor:
+                await monitor.forget(root, task_id)
             return ProviderTaskStatus("failed", error_message="ZEALMAN 已完成任务但未返回视频")
-    return ProviderTaskStatus("pending")
+        queue = await optional_json(client, f"{root}/api/comfy/proxy/queue", api_key)
+        info = execution_info(task_id, task, queue)
+        if monitor:
+            entry = queue_entry(queue or {}, "queue_running", task_id)
+            info = monitor.observe(
+                root=root,
+                api_key=api_key,
+                task_id=task_id,
+                client_id=str(task.get("client_id") or ""),
+                info=info,
+                graph=entry[1] if entry else {},
+            )
+    return ProviderTaskStatus(
+        "processing" if info.phase in {"running", "finalizing"} else "pending",
+        execution_info=info,
+    )
+
+
+async def optional_json(client: httpx.AsyncClient, url: str, api_key: str) -> dict | None:
+    """Older services may lack telemetry endpoints; keep result polling working."""
+    try:
+        return response_json(await client.get(url, headers=headers(api_key)))
+    except (httpx.HTTPError, ValueError):
+        return None

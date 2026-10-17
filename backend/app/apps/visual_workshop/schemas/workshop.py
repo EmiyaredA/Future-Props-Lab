@@ -25,6 +25,7 @@ from app.llm.schemas.generation_tasks import (
     VideoGenerationTaskCreateIn,
 )
 from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
+from app.llm.task_execution import TaskExecutionInfo
 
 __all__ = [
     "AudioGenerationTaskCreateIn",
@@ -595,6 +596,7 @@ class GenerationTaskOut(BaseModel):
     provider_task_id: str | None
     status: GenerationTaskStatus
     progress: int
+    execution_info: TaskExecutionInfo | None = None
     error_message: str | None
     result_asset_id: str | None
     can_retry_materialization: bool

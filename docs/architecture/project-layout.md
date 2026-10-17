@@ -357,6 +357,10 @@ schema migration 或直接数据库修改替代运行期迁移。工具单项状
 和模型测试复用 `runtime/polling_runner.py` 的生命周期与并发控制，并由
 `llm/generation_runtime/GenerationTaskDriver` 统一编排 queued、submitting、pending、processing
 与终态转换、重启恢复及安全失败；两者分别提供任务存取、调用日志、素材组装和结果落盘钩子。
+`llm/task_execution.py` 定义供应商无关的可选执行信息，由驱动器短事务持久保存；
+`llm/providers/zealman_progress.py` 与 `zealman_live.py` 归一化队列、账本和任务身份匹配的实时事件。
+实时连接由具体执行器拥有，断线回退 HTTP，不参与终态结算；前端共用
+`shared/ui/taskExecutionPresentation.ts` 区分节点采样进度与上游报告值。
 `submitting` 中断不会自动重提，以避免重复计费。`AsyncSession` 只能由单个异步任务
 使用；每个生成分支使用独立短会话，供应商网络调用和文件下载不占用已开始写入的事务。
 项目对话同样在发送准备与流式结算阶段使用独立短事务，并复用统一供应商适配边界。视觉工坊

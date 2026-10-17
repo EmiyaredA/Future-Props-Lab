@@ -126,6 +126,7 @@ async def test_upload_uses_unique_names_and_submission_has_no_implicit_credentia
     assert identity == "one-task"
     assert all("authorization" not in r.headers for r in requests)
     submitted = json.loads(requests[-1].content)
+    assert submitted.pop("client_id").startswith("fpl-")
     assert submitted == {
         "workflow_id": U17,
         "source": "api",

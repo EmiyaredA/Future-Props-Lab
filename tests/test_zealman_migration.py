@@ -55,7 +55,10 @@ def test_zealman_upgrade_preserves_connections_tasks_assets_and_foreign_keys(
             "('model_providers', 'model_test_generation_tasks') ORDER BY name"
         ).fetchall()
         connection.commit()
-    apply_migrations(database)
+    with monkeypatch.context() as patch:
+        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[: target + 1])
+        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[target].migration_id)
+        apply_migrations(database)
     with connect_database(database) as connection:
         assert (
             connection.execute("SELECT * FROM model_providers WHERE id='old-provider'").fetchone()

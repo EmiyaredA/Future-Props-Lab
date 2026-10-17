@@ -55,6 +55,7 @@ def generation_task_out(row: ModelTestGenerationTask) -> ModelTestGenerationTask
         request_payload=dict(row.request_payload or {}),
         status=row.status,
         progress=row.progress,
+        execution_info=row.execution_info,
         error_message=row.error_message,
         result_filename=row.result_filename,
         result_mime_type=row.result_mime_type,

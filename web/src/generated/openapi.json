@@ -17510,6 +17510,16 @@
             ],
             "title": "Error Message"
           },
+          "execution_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskExecutionInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -18261,6 +18271,16 @@
               }
             ],
             "title": "Error Message"
+          },
+          "execution_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskExecutionInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "title": "Id",
@@ -21196,6 +21216,16 @@
               }
             ],
             "title": "Error Message"
+          },
+          "execution_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskExecutionInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "title": "Id",
@@ -29501,6 +29531,128 @@
           "views"
         ],
         "title": "TableSpec",
+        "type": "object"
+      },
+      "TaskExecutionInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "last_event_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Event At"
+          },
+          "live_status": {
+            "default": "unavailable",
+            "enum": [
+              "unavailable",
+              "connecting",
+              "connected",
+              "reconnecting"
+            ],
+            "title": "Live Status",
+            "type": "string"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "node_label": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Label"
+          },
+          "phase": {
+            "default": "unknown",
+            "enum": [
+              "queued",
+              "running",
+              "finalizing",
+              "unknown"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "queue_position": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Position"
+          },
+          "reported_progress": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Progress"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "total_steps": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Steps"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "updated_at"
+        ],
+        "title": "TaskExecutionInfo",
         "type": "object"
       },
       "TemplateApply": {

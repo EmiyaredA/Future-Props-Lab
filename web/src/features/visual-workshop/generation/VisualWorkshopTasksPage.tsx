@@ -23,7 +23,8 @@ import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import "@features/visual-workshop/visual-workshop.css";
-import { GenerationSpinner } from "./GenerationActivity";
+import { taskActivity } from "./generationActivityModel";
+import { GenerationActivity, GenerationSpinner } from "./GenerationActivity";
 
 const ACTIVE_STATUSES = new Set<GenerationTaskStatus>([
   "queued",
@@ -224,7 +225,7 @@ export function VisualWorkshopTasksPage({
                       {ACTIVE_STATUSES.has(task.status) && (
                         <GenerationSpinner size={12} />
                       )}
-                      {STATUS_LABELS[task.status]}
+                      {taskActivity(task)?.label ?? STATUS_LABELS[task.status]}
                     </span>
                     <strong>{task.model_slug}</strong>
                   </div>
@@ -240,15 +241,12 @@ export function VisualWorkshopTasksPage({
                   <span>{task.kind === "image" ? "图片生成" : "视频生成"}</span>
                   <span>{task.provider_name}</span>
                 </div>
-                {ACTIVE_STATUSES.has(task.status) ? (
-                  <div
-                    className="generation-progress"
-                    aria-label={`进度 ${task.progress}%`}
-                  >
-                    <i style={{ width: `${task.progress}%` }} />
-                    <span>{task.progress}%</span>
-                  </div>
-                ) : null}
+                {taskActivity(task) && (
+                  <GenerationActivity
+                    activity={taskActivity(task)!}
+                    showTaskLink={false}
+                  />
+                )}
                 {task.error_message ? (
                   <div className="generation-task-error">
                     {task.error_message}

@@ -115,6 +115,73 @@ test("real progress is rendered and terminal tasks never remain active", () => {
   }
 });
 
+test("sampling and upstream reports stay distinct; stale sampling becomes indeterminate", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-17T04:01:24Z"));
+  render(
+    <GenerationActivity
+      activity={taskActivity({
+        ...task,
+        progress: 5,
+        execution_info: {
+          phase: "running",
+          node_id: "7",
+          node_label: "SamplerCustom",
+          step: 8,
+          total_steps: 10,
+          reported_progress: 5,
+          updated_at: "2026-10-17T04:01:24Z",
+          last_event_at: "2026-10-17T04:01:24Z",
+          live_status: "connected",
+        },
+      })!}
+    />,
+  );
+  expect(screen.getByText("采样 80%")).toBeVisible();
+  expect(
+    screen.getByText(/当前节点 SamplerCustom · 采样 8\/10 步 · 上游报告 5%/),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("progressbar", { name: "当前节点采样进度" }),
+  ).toHaveAttribute("aria-valuenow", "80");
+  act(() => vi.advanceTimersByTime(61_000));
+  expect(screen.getByRole("progressbar")).not.toHaveAttribute("aria-valuenow");
+  expect(screen.getByText(/采样信息暂未更新/)).toBeVisible();
+});
+
+test("queue position and unavailable telemetry do not invent a percentage", () => {
+  const { rerender } = render(
+    <GenerationActivity
+      activity={taskActivity({
+        ...task,
+        execution_info: {
+          phase: "queued",
+          queue_position: 3,
+          updated_at: task.updated_at,
+          live_status: "unavailable",
+        },
+      })!}
+    />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent("上游排队中");
+  expect(screen.getByText(/队列第 3 位/)).toBeVisible();
+  expect(screen.getByRole("progressbar")).not.toHaveAttribute("aria-valuenow");
+  rerender(
+    <GenerationActivity
+      activity={taskActivity({
+        ...task,
+        execution_info: {
+          phase: "unknown",
+          updated_at: task.updated_at,
+          live_status: "reconnecting",
+        },
+      })!}
+    />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent("等待上游状态");
+  expect(screen.getByText(/实时连接重连中/)).toBeVisible();
+});
+
 test("node activity selects its newest active task without leaking another node's status", () => {
   const newer = {
     ...task,

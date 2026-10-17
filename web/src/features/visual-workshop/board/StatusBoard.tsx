@@ -1,3 +1,4 @@
+import { executionDetails } from "@shared/ui/taskExecutionPresentation";
 import { Link2, Play } from "lucide-react";
 import { GenerationSpinner } from "../generation/GenerationActivity";
 import { nodeGenerationActivity } from "../generation/generationActivityModel";
@@ -135,6 +136,9 @@ function StatusCard({
                 <strong>{activity.progress}%</strong>
               )}
             </div>
+            {activity?.executionInfo && (
+              <small>{executionDetails(activity.executionInfo)}</small>
+            )}
             <progress
               aria-label={`${node.title}生成进度`}
               max={100}

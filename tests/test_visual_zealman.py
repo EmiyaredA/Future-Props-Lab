@@ -12,6 +12,7 @@ from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers._senseaudio import ProviderTaskStatus
 from app.llm.providers.zealman_video import create_task
 from app.llm.providers.zealman_workflows import U06, U17
+from app.llm.task_execution import TaskExecutionInfo
 from app.main import app
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now
@@ -21,6 +22,7 @@ from app.runtime.time import utc_now
 @pytest.mark.parametrize("slug", [U06, U17])
 async def test_workshop_keyless_workflow_references_completion_and_recovery(monkeypatch, slug):
     submitted, uploaded, requests = [], [], []
+    polls = 0
 
     async def upload(**kwargs):
         uploaded.append(kwargs)
@@ -36,7 +38,21 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
         return httpx.Response(200, json={"prompt_id": "remote-workflow-task"})
 
     async def poll(**kwargs):
+        nonlocal polls
+        polls += 1
         assert kwargs["task_id"] == "remote-workflow-task"
+        if polls == 1:
+            return ProviderTaskStatus(
+                "processing",
+                execution_info=TaskExecutionInfo(
+                    phase="running",
+                    node_id="7",
+                    step=8,
+                    total_steps=10,
+                    reported_progress=5,
+                    updated_at=utc_now(),
+                ),
+            )
         return ProviderTaskStatus("completed", 100, "https://example.test/result.mp4")
 
     async def allow(_url):
@@ -182,6 +198,15 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
                 )
             )
             await runner._process_task(task["id"])
+            await runner._process_task(task["id"])
+            current = (
+                await client.get(f"/v1/visual-workshop/generation-tasks/{task['id']}")
+            ).json()
+            assert current["status"] == "processing" and current["progress"] == 0
+            assert current["execution_info"]["step"] == 8
+            assert current["execution_info"]["updated_at"].endswith("Z")
+            assert current["execution_info"]["reported_progress"] == 5
+            assert len(submitted) == 1
             assert submitted[-1]["api_key"] == ""
             assert submitted[-1]["payload"]["prompt"] == "actual prompt"
             assert submitted[-1]["payload"]["workflow_parameters"] == payload["workflow_parameters"]

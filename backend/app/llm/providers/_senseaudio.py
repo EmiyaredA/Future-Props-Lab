@@ -6,6 +6,8 @@ from typing import Any
 
 import httpx
 
+from app.llm.task_execution import TaskExecutionInfo
+
 _BEARER = re.compile(r"(?i)(bearer\s+)[^\s,;]+")
 _DATA_URI = re.compile(r"(?i)(data:[^;,\s]+;base64,)[A-Za-z0-9+/=]+")
 _SECRET_FIELD = re.compile(r'(?i)((?:api[_-]?key|token)["\']?\s*[:=]\s*["\']?)[^"\'\s,}]+')
@@ -27,6 +29,7 @@ class ProviderTaskStatus:
     progress: int = 0
     result_url: str = ""
     error_message: str = ""
+    execution_info: TaskExecutionInfo | None = None
 
 
 def root_url(base_url: str) -> str:

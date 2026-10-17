@@ -1,4 +1,5 @@
 import type { GenerationBatch, GenerationTask, VisualCanvasNode } from "../api";
+import type { TaskExecutionInfo } from "@shared/ui/taskExecutionPresentation";
 
 const activeTaskStatuses = new Set<GenerationTask["status"]>([
   "queued",
@@ -12,6 +13,7 @@ export type GenerationActivity = {
   label: string;
   createdAt: string;
   progress?: number;
+  executionInfo?: TaskExecutionInfo | null;
 };
 
 export function taskActivity(
@@ -25,6 +27,7 @@ export function taskActivity(
   return {
     id: task.id,
     createdAt: task.created_at,
+    executionInfo: task.execution_info,
     label:
       task.status === "queued"
         ? "排队中"
@@ -32,8 +35,17 @@ export function taskActivity(
           ? "正在提交"
           : task.status === "processing" && progress === 100
             ? "正在保存输出"
-            : `正在生成${kind}`,
-    progress: progress > 0 && progress < 100 ? progress : undefined,
+            : task.execution_info?.phase === "queued"
+              ? "上游排队中"
+              : task.execution_info?.phase === "finalizing"
+                ? "正在整理视频"
+                : task.execution_info?.phase === "unknown"
+                  ? "等待上游状态"
+                  : `正在生成${kind}`,
+    progress:
+      !task.execution_info && progress > 0 && progress < 100
+        ? progress
+        : undefined,
   };
 }
 

@@ -1,3 +1,4 @@
+import { executionDetails } from "@shared/ui/taskExecutionPresentation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useMutation,
@@ -325,7 +326,12 @@ export function CanvasNodeInspector({
                 {taskActivity(task.data) && <GenerationSpinner size={12} />}
                 生成任务 · {taskActivity(task.data)?.label ?? task.data.status}
               </strong>
-              <span>{task.data.progress}%</span>
+              {taskActivity(task.data)?.progress !== undefined && (
+                <span>{taskActivity(task.data)?.progress}%</span>
+              )}
+              {taskActivity(task.data) && task.data.execution_info && (
+                <small>{executionDetails(task.data.execution_info)}</small>
+              )}
               {task.data.error_message ? (
                 <small>{task.data.error_message}</small>
               ) : null}
