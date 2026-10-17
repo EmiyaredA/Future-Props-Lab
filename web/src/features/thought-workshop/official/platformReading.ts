@@ -430,7 +430,7 @@ export const PLATFORM_READING: Record<
   },
   "visual-workshop/storage": {
     summary:
-      "上传素材时选择分类与分组，分别验收生成、结果落盘和画布保存，中断后优先恢复已有结果。",
+      "上传素材时选择分类与分组，将 GIF 保存为视频版本，删除人工上传的输出版本并核对最终输出，分别验收结果落盘与画布保存。",
     related: [
       {
         libraryId: "visual-workshop",

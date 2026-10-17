@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Check, Eye, Upload } from "lucide-react";
+import { Check, Eye, Trash2, Upload } from "lucide-react";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import {
   getNodeOutputs,
   getNodeOutput,
@@ -41,6 +42,7 @@ export function OutputHistory({
   const uploadInput = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<VisualNodeOutput>();
   const history = useInfiniteQuery({
     queryKey: visualWorkshopQueryKeys.nodeOutputs(controller.projectId, nodeId),
     initialPageParam: 1,
@@ -72,7 +74,7 @@ export function OutputHistory({
   const showing =
     (preview && preview.node_id === nodeId ? preview : undefined) ??
     final.data ??
-    items.find((item) => item.is_final);
+    items.find((item) => item.id === node.final_output_id);
   const mutate = async (
     action: (revision: number) => Promise<VisualCanvasDocument>,
   ) => {
@@ -183,14 +185,19 @@ export function OutputHistory({
               disabled={pending}
               onClick={() => uploadInput.current?.click()}
             >
-              <Upload size={15} /> 上传版本
+              <Upload size={15} /> {pending ? "正在处理…" : "上传版本"}
             </button>
             <input
               ref={uploadInput}
               hidden
               type="file"
               disabled={pending}
-              accept={`${node.kind}/*`}
+              aria-label="上传输出版本"
+              accept={
+                node.kind === "video"
+                  ? "video/*,image/gif,.gif"
+                  : `${node.kind}/*`
+              }
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
                 event.currentTarget.value = "";
@@ -208,7 +215,12 @@ export function OutputHistory({
           </div>
         )}
       </div>
-      {error && <p role="alert">{error}</p>}
+      {node.kind === "video" && (
+        <p className="board-muted">
+          支持视频和 GIF；GIF 转为无声 MP4，透明区域使用黑底。
+        </p>
+      )}
+      {error && !deleteTarget && <p role="alert">{error}</p>}
       {history.isError && (
         <p role="alert">
           历史加载失败{" "}
@@ -217,28 +229,42 @@ export function OutputHistory({
       )}
       <div className="board-version-list">
         {items.map((item) => (
-          <button
-            key={item.id}
-            aria-pressed={showing?.id === item.id}
-            className={showing?.id === item.id ? "is-preview" : ""}
-            onClick={() => onPreview(item)}
-          >
-            <div className="board-version-thumb">
-              <OutputPreview
-                kind={item.kind}
-                assetId={item.asset_id}
-                text={item.text}
-                compact
-              />
-            </div>
-            <span>
-              <strong>
-                v{item.version}{" "}
-                {item.id === node.final_output_id && <em>最终输出</em>}
-              </strong>
-              <small>{outputSource(item.source)}</small>
-            </span>
-          </button>
+          <div key={item.id} className="board-version-entry">
+            <button
+              aria-pressed={showing?.id === item.id}
+              className={`board-version-select${showing?.id === item.id ? " is-preview" : ""}`}
+              onClick={() => onPreview(item)}
+            >
+              <div className="board-version-thumb">
+                <OutputPreview
+                  kind={item.kind}
+                  assetId={item.asset_id}
+                  text={item.text}
+                  compact
+                />
+              </div>
+              <span>
+                <strong>
+                  v{item.version}{" "}
+                  {item.id === node.final_output_id && <em>最终输出</em>}
+                </strong>
+                <small>{outputSource(item.source)}</small>
+              </span>
+            </button>
+            {item.source === "uploaded" && (
+              <button
+                className="board-version-delete"
+                aria-label={`删除上传版本 v${item.version}`}
+                disabled={pending}
+                onClick={() => {
+                  setError("");
+                  setDeleteTarget(item);
+                }}
+              >
+                <Trash2 size={12} /> 删除
+              </button>
+            )}
+          </div>
         ))}
       </div>
       {history.hasNextPage && (
@@ -260,18 +286,10 @@ export function OutputHistory({
               <button onClick={() => onPreview(undefined)}>返回最终版本</button>
               <button
                 disabled={pending}
-                onClick={() =>
-                  void mutate(async (revision) => {
-                    const updated = await deleteNodeOutput(
-                      controller.projectId,
-                      nodeId,
-                      showing.id,
-                      revision,
-                    );
-                    onPreview(undefined);
-                    return updated;
-                  })
-                }
+                onClick={() => {
+                  setError("");
+                  setDeleteTarget(showing);
+                }}
               >
                 删除当前历史版本
               </button>
@@ -282,6 +300,37 @@ export function OutputHistory({
       {!history.isLoading && !items.length && (
         <p className="board-muted">生成或上传素材后，版本将在这里保留。</p>
       )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={`删除输出版本 v${deleteTarget?.version ?? ""}`}
+        description={
+          <>
+            <p>
+              确认删除此版本？项目素材中的原文件仍会保留。被固定引用的版本需先解除引用。
+              {deleteTarget?.id === node.final_output_id &&
+                "此版本是最终输出，删除后将使用剩余的最新版本；没有剩余版本时清空输出。"}
+            </p>
+            {error && <p role="alert">{error}</p>}
+          </>
+        }
+        confirmLabel="删除版本"
+        pending={pending}
+        onCancel={() => setDeleteTarget(undefined)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          return mutate(async (revision) => {
+            const updated = await deleteNodeOutput(
+              controller.projectId,
+              nodeId,
+              deleteTarget.id,
+              revision,
+            );
+            if (showing?.id === deleteTarget.id) onPreview(undefined);
+            setDeleteTarget(undefined);
+            return updated;
+          });
+        }}
+      />
     </section>
   );
 }

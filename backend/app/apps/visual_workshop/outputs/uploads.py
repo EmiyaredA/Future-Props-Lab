@@ -3,6 +3,7 @@
 from app.apps.visual_workshop.canvas import VisualCanvasDocuments, VisualCanvasError
 from app.apps.visual_workshop.outputs.history import NodeOutputs, OutputError
 from app.apps.visual_workshop.outputs.schemas import VisualNodeOutputCreateIn
+from app.apps.visual_workshop.outputs.video_uploads import prepare_output_upload
 from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 from app.capabilities.asset_store import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
@@ -31,19 +32,22 @@ async def upload_version(
     library = AssetLibrary(outputs.session, settings)
     asset = None
     try:
-        asset = await library.store_upload(
-            upload,
-            workspace_id=outputs.workspace_id,
-            visual_project_id=project_id,
-            allowed_extensions=extensions,
-            commit=False,
-        )
-        await outputs.add(
-            project_id,
-            node_id,
-            VisualNodeOutputCreateIn(expected_revision=expected_revision, asset_id=asset.id),
-        )
-    except Exception:
+        async with prepare_output_upload(
+            upload, node["kind"], max_bytes=settings.fpl_visual_asset_max_bytes
+        ) as prepared:
+            asset = await library.store_upload(
+                prepared,
+                workspace_id=outputs.workspace_id,
+                visual_project_id=project_id,
+                allowed_extensions=extensions,
+                commit=False,
+            )
+            await outputs.add(
+                project_id,
+                node_id,
+                VisualNodeOutputCreateIn(expected_revision=expected_revision, asset_id=asset.id),
+            )
+    except BaseException:
         path = library.storage.path_for(asset) if asset else None
         await outputs.session.rollback()
         if path:

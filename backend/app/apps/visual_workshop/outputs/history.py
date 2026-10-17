@@ -302,14 +302,35 @@ class NodeOutputs:
 
     async def delete(self, project_id: str, node_id: str, output_id: str, expected_revision: int):
         canvas, node = await self.document(project_id, node_id)
-        await self.get(project_id, node_id, output_id)
-        if node.get("final_output_id") == output_id or any(
-            edge.get("output_id") == output_id for edge in canvas.edges or []
-        ):
-            raise OutputError(
-                "请先切换最终输出并解除固定引用，再删除版本", code="output_in_use", status=409
-            )
+        output = await self.get(project_id, node_id, output_id)
+        if any(edge.get("output_id") == output_id for edge in canvas.edges or []):
+            raise OutputError("请先解除固定引用，再删除版本", code="output_in_use", status=409)
+        is_final = node.get("final_output_id") == output_id
+        if is_final and output.source != "uploaded":
+            raise OutputError("请先切换最终输出，再删除版本", code="output_in_use", status=409)
         await self.claim(canvas, expected_revision)
+        if is_final:
+            replacement = await self.session.scalar(
+                select(VisualNodeOutput)
+                .where(
+                    VisualNodeOutput.project_id == project_id,
+                    VisualNodeOutput.node_id == node_id,
+                    VisualNodeOutput.id != output_id,
+                )
+                .order_by(VisualNodeOutput.version.desc())
+                .limit(1)
+            )
+            nodes = deepcopy(canvas.nodes)
+            target = next(n for n in nodes if n["id"] == node_id)
+            target.update(
+                final_output_id=replacement.id if replacement else None,
+                final_version=replacement.version if replacement else None,
+                asset_id=replacement.asset_id if replacement else None,
+            )
+            if replacement:
+                replacement.is_final = True
+            # Keep output_sequence so deleting the last version never reuses a number.
+            canvas.nodes = nodes
         await self.session.execute(
             delete(VisualNodeOutput).where(
                 VisualNodeOutput.project_id == project_id,

@@ -21,6 +21,14 @@ Session 仅在客户端内存中保存。并发访问不同工作区时请创建
 完整说明见平台文档中心的「Python SDK」分类。该版本随同仓库服务端契约交付；
 `operations.json` 记录每个稳定方法与 HTTP 操作的对应关系。
 
+## 视觉工坊输出版本删除
+
+`visual.delete_node_output` 要求 `project_id`、`node_id`、`output_id` 和当前画布的
+`expected_revision`，返回更新后的画布。人工上传（`source=uploaded`）的最终版可以删除，
+服务端自动切换至剩余编号最大的版本，或在没有版本时清空输出；后续新增版本不复用编号。
+被固定引用的版本返回 409，须先解除引用；其他来源的最终版须先切换最终输出。
+删除不清理托管文件或改写已有任务快照。版本冲突由调用者处理，不自动重放删除。
+
 ## 笔记信息图
 
 `future_props_lab.canvas_example.thought_canvas_example` 提供可执行的异步例子：

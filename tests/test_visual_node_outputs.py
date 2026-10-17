@@ -149,10 +149,10 @@ async def test_upload_history_final_selection_pagination_cas_and_type_protection
         assert (await client.get("/v1/files", params={"project_id": project})).json()[
             "items"
         ] == before
-        protected = await client.delete(
-            base + "/outputs/" + first["id"], params={"expected_revision": canvas["revision"]}
+        stale_delete = await client.delete(
+            base + "/outputs/" + first["id"], params={"expected_revision": 0}
         )
-        assert protected.status_code == 409
+        assert stale_delete.status_code == 409
         removed = await client.delete(
             base + "/outputs/" + newest, params={"expected_revision": canvas["revision"]}
         )
@@ -648,3 +648,189 @@ async def test_composition_registers_one_version_with_frozen_inputs(monkeypatch)
         assert [item["output_id"] for item in result["input_snapshot"]] == versions
         assert [item["version"] for item in result["input_snapshot"]] == [1] * 4
         assert [item["asset_id"] for item in result["input_snapshot"]] == assets
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("kind", "file"),
+    [
+        ("image", ("version.png", PNG, "image/png")),
+        ("video", ("version.mp4", b"\x00\x00\x00\x18ftypmp42video", "video/mp4")),
+        ("audio", ("version.mp3", b"ID3audio", "audio/mpeg")),
+    ],
+)
+async def test_delete_uploaded_final_falls_back_then_clears_without_reusing_versions(kind, file):
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = await create_project(client)
+        source = node("source", kind)
+        source["position"] = {"x": 123, "y": 456}
+        source["tags"] = ["保留"]
+        edge = {"id": "follow", "source_node_id": "source", "target_node_id": "target"}
+        canvas = await save_canvas(client, project, [source, node("target", "video")], edges=[edge])
+        base = f"/v1/visual-workshop/projects/{project}/nodes/source"
+        outputs = []
+        for _ in range(2):
+            response = await client.post(
+                base + "/output-uploads",
+                data={"expected_revision": canvas["revision"]},
+                files={"file": file},
+            )
+            assert response.status_code == 200, response.text
+            canvas = response.json()
+            outputs.append((await client.get(base + "/outputs")).json()["items"][0])
+        deleted = await client.delete(
+            base + "/outputs/" + outputs[1]["id"],
+            params={"expected_revision": canvas["revision"]},
+        )
+        assert deleted.status_code == 200, deleted.text
+        previous = canvas
+        canvas = deleted.json()
+        assert canvas["revision"] == previous["revision"] + 1
+        assert canvas["nodes"][0]["final_output_id"] == outputs[0]["id"]
+        assert canvas["nodes"][0]["final_version"] == 1
+        assert canvas["nodes"][0]["asset_id"] == outputs[0]["asset_id"]
+        from app.apps.visual_workshop.outputs.references import resolve_references
+        from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
+
+        def request(revision):
+            return VideoGenerationTaskCreateIn(
+                kind="video",
+                mode="text",
+                model_id="model",
+                prompt="引用上游",
+                canvas_node_id="target",
+                expected_canvas_revision=revision,
+            )
+
+        async with SessionLocal() as session:
+            _, _, snapshot = await resolve_references(session, project, request(canvas["revision"]))
+            assert snapshot[0]["output_id"] == outputs[0]["id"]
+        assert (await client.get(base + "/outputs")).json() == {
+            "items": [{**outputs[0], "is_final": True}],
+            "total": 1,
+        }
+        # Replaying a completed deletion does not touch the canvas.
+        assert (
+            await client.delete(
+                base + "/outputs/" + outputs[1]["id"],
+                params={"expected_revision": canvas["revision"]},
+            )
+        ).status_code == 404
+        cleared = await client.delete(
+            base + "/outputs/" + outputs[0]["id"],
+            params={"expected_revision": canvas["revision"]},
+        )
+        assert cleared.status_code == 200, cleared.text
+        canvas = cleared.json()
+        current = canvas["nodes"][0]
+        assert current["final_output_id"] is None and current["final_version"] is None
+        assert current["asset_id"] is None and current["output_sequence"] == 2
+        assert current["position"] == source["position"] and current["tags"] == source["tags"]
+        assert canvas["edges"] == previous["edges"]
+        assert (await client.get(base + "/outputs")).json() == {"items": [], "total": 0}
+        async with SessionLocal() as session:
+            with pytest.raises(OutputError) as error:
+                await resolve_references(session, project, request(canvas["revision"]))
+            assert error.value.code == "upstream_asset_pending"
+        assert (await client.get(f"/v1/visual-workshop/projects/{project}/canvas")).json() == canvas
+        for output in outputs:
+            assert (await client.get(f"/v1/files/{output['asset_id']}/download")).status_code == 200
+        # A later canvas save cannot resurrect the removed output; the next upload is v3.
+        canvas = await save_canvas(
+            client, project, canvas["nodes"], canvas["revision"], canvas["edges"]
+        )
+        assert canvas["nodes"][0]["final_output_id"] is None
+        response = await client.post(
+            base + "/output-uploads",
+            data={"expected_revision": canvas["revision"]},
+            files={"file": file},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["nodes"][0]["final_version"] == 3
+
+
+@pytest.mark.asyncio
+async def test_uploaded_version_delete_fixed_reference_cas_and_scope_guards():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = await create_project(client)
+        asset = await upload(client, project)
+        canvas = await save_canvas(
+            client, project, [node("source", asset_id=asset), node("target")]
+        )
+        base = f"/v1/visual-workshop/projects/{project}/nodes/source"
+        output = canvas["nodes"][0]["final_output_id"]
+        edge = {
+            "id": "fixed",
+            "source_node_id": "source",
+            "target_node_id": "target",
+            "binding": "fixed",
+            "output_id": output,
+        }
+        canvas = await save_canvas(client, project, canvas["nodes"], canvas["revision"], [edge])
+        response = await client.delete(
+            base + "/outputs/" + output, params={"expected_revision": canvas["revision"]}
+        )
+        assert response.status_code == 409 and response.json()["code"] == "output_in_use"
+        assert (await client.get(f"/v1/visual-workshop/projects/{project}/canvas")).json() == canvas
+        old_revision = canvas["revision"]
+        canvas = await save_canvas(client, project, canvas["nodes"], canvas["revision"])
+        response = await client.delete(
+            base + "/outputs/" + output, params={"expected_revision": old_revision}
+        )
+        assert response.status_code == 409
+        assert (await client.get(base + "/outputs")).json()["total"] == 1
+        assert (await client.delete(base + "/outputs/" + output)).status_code == 422
+        wrong_node = f"/v1/visual-workshop/projects/{project}/nodes/target/outputs/{output}"
+        assert (
+            await client.delete(wrong_node, params={"expected_revision": canvas["revision"]})
+        ).status_code == 404
+        async with SessionLocal() as session:
+            with pytest.raises(OutputError) as error:
+                await NodeOutputs(session, str(uuid4())).delete(
+                    project, "source", output, canvas["revision"]
+                )
+            assert error.value.status == 404
+        assert (await client.get(f"/v1/visual-workshop/projects/{project}/canvas")).json() == canvas
+        response = await client.delete(
+            base + "/outputs/" + output, params={"expected_revision": canvas["revision"]}
+        )
+        assert response.status_code == 200, response.text
+
+
+@pytest.mark.asyncio
+async def test_delete_uploaded_final_restores_generated_version_and_protects_generated_final():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = await create_project(client)
+        asset = await upload(client, project)
+        await save_canvas(client, project, [node("source", asset_id=asset)])
+        async with SessionLocal() as session:
+            await publish_generated_output(
+                session, project, "source", asset, "generated:delete-test"
+            )
+            await session.commit()
+        base = f"/v1/visual-workshop/projects/{project}/nodes/source"
+        generated = (await client.get(base + "/outputs")).json()["items"][0]
+        canvas = (await client.get(f"/v1/visual-workshop/projects/{project}/canvas")).json()
+        protected = await client.delete(
+            base + "/outputs/" + generated["id"], params={"expected_revision": canvas["revision"]}
+        )
+        assert protected.status_code == 409
+        added = await client.post(
+            base + "/outputs", json={"asset_id": asset, "expected_revision": canvas["revision"]}
+        )
+        assert added.status_code == 200, added.text
+        canvas = added.json()
+        removed = await client.delete(
+            base + "/outputs/" + canvas["nodes"][0]["final_output_id"],
+            params={"expected_revision": canvas["revision"]},
+        )
+        assert removed.status_code == 200, removed.text
+        assert removed.json()["nodes"][0]["final_output_id"] == generated["id"]
+        remaining = (await client.get(base + "/outputs")).json()["items"]
+        assert remaining[0] == generated and len(remaining) == 2

@@ -20,9 +20,11 @@
 
 ## 输出版本与最终输出
 
-每次上传到已有节点、显式保存文本或成功生成都新增一个服务器维护的版本并成为最终输出。历史预览不修改最终输出；用户可另行选择旧版本作为最终输出。开始生成和失败不清空已有结果。版本列表分页，不靠前端轮询覆盖素材。删除历史版本不删除媒体文件；最终版本与被固定引用的版本受删除保护。
+每次上传到已有节点、显式保存文本或成功生成都新增一个服务器维护的版本并成为最终输出。历史预览不修改最终输出；用户可另行选择旧版本作为最终输出。开始生成和失败不清空已有结果。版本列表分页，不靠前端轮询覆盖素材。来源为 `uploaded` 的版本卡片提供「删除」，确认后可删除最终版或历史版；删除最终版时在同一画布 CAS 事务内选取剩余编号最大的版本作为最终输出，没有剩余版本则清空节点的最终输出与素材引用。保留版本计数器，后续新增版本不复用已删除编号。被固定引用的版本仍返回 409 `output_in_use`，须先解除引用；其他来源的最终版仍需先切换最终输出。删除版本不删除媒体文件，也不改写已有任务的输入快照。
 
-普通媒体上传使用 `POST /v1/visual-workshop/projects/{project_id}/node-uploads`，multipart 字段为 `file`、`expected_revision` 和可选 `x`、`y`、`category_id`、`group`。省略分类时进入未分类；分组必须属于目标分类。无效目标返回 422，过期 revision 返回 409；校验在文件落盘前执行。文件、节点分类、v1 与文档 CAS 原子保存。已有节点使用 `POST .../nodes/{node_id}/output-uploads`，上传类型必须与节点一致。
+普通媒体上传使用 `POST /v1/visual-workshop/projects/{project_id}/node-uploads`，multipart 字段为 `file`、`expected_revision` 和可选 `x`、`y`、`category_id`、`group`。省略分类时进入未分类；分组必须属于目标分类。无效目标返回 422，过期 revision 返回 409；校验在文件落盘前执行。文件、节点分类、v1 与文档 CAS 原子保存。已有节点使用 `POST .../nodes/{node_id}/output-uploads`，上传类型必须与节点一致；视频节点额外接受 `.gif`，按完整单次动画转换为无声 H.264 MP4 后登记视频版本，保留逐帧停留时长（含末帧），不展开 GIF 循环次数。透明区域合成为黑底，奇数尺寸只向右／下补齐至偶数，不缩放原画。图片节点继续保存原始 GIF。
+
+GIF 原文件与转换结果分别受现有上传大小限制；画布最长边不超过 8192、总像素不超过 16777216，转换最多 120 秒。无效文件／尺寸或转换超时返回 422，大小超限返回 413，缺少 FFmpeg 返回 503。临时文件与编码进程在失败或取消时清理；转换先于数据库写入，结束后通过既有 CAS 再次竞争 revision，冲突返回 409，不留下素材或输出版本。API/SDK 的 multipart 字段及响应形状不变。
 
 看板点击「上传素材」展开上传位置选择，默认带入当前节点的分类与分组，可改选或选「未分类」。分类菜单的「上传到此分类」预选该分类，再选择可选分组并点击「选择文件」，支持多文件使用同一目标。上传过程中禁止更改目标或重复选择文件；目标在其他窗口变更时需重新选择或处理版本冲突，不自动改放到其他分类。
 
@@ -32,7 +34,7 @@
 | GET    | `/nodes/{node_id}/outputs/{output_id}`                       | 具体版本及提交输入快照                                     |
 | POST   | `/nodes/{node_id}/outputs`                                   | `expected_revision` 与文本 `text`，或已托管素材 `asset_id` |
 | PUT    | `/nodes/{node_id}/final-output`                              | `expected_revision`、`output_id`；选择最终版本             |
-| DELETE | `/nodes/{node_id}/outputs/{output_id}?expected_revision=...` | 删除非最终、未被固定引用版本                               |
+| DELETE | `/nodes/{node_id}/outputs/{output_id}?expected_revision=...` | 删除未被固定引用的历史版或人工上传的最终版                 |
 
 上述路径均以 `/v1/visual-workshop/projects/{project_id}` 为前缀。写入要求当前画布 revision；冲突返回 409 与当前快照，不静默覆盖。读写使用视觉工坊固定权限并按 Principal 的 Workspace 校验；跨 Workspace 返回不存在。
 

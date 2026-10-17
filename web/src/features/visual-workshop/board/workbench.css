@@ -638,7 +638,16 @@
   padding: 2px 2px 6px;
   scrollbar-width: thin;
 }
-.board-version-list button {
+.board-version-entry {
+  flex: 0 0 110px;
+}
+.board-version-entry > .board-version-delete {
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+  color: var(--board-muted);
+}
+.board-version-list .board-version-select {
   width: 110px;
   min-width: 110px;
   padding: 6px;
