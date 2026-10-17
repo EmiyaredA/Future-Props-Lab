@@ -72,6 +72,43 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto(`/apps/visual-workshop/projects/${id}/canvas`);
     await page.getByRole("button", { name: "看板", exact: true }).click();
     await setResponsiveTheme(page, theme);
+    const approval = page.getByRole("switch", { name: "节点通过：角色描述" });
+    await approval.focus();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("switch", { name: "节点通过：角色描述" }),
+    ).toHaveAttribute("aria-checked", "true");
+    await expect
+      .poll(async () => {
+        const canvas = await (
+          await page.request.get(`/v1/visual-workshop/projects/${id}/canvas`)
+        ).json();
+        return canvas.nodes.find((node: { id: string }) => node.id === "text")
+          .approved;
+      })
+      .toBe(true);
+    await page.reload();
+    await expect(
+      page.getByRole("switch", { name: "节点通过：角色描述" }),
+    ).toHaveAttribute("aria-checked", "true");
+    await page.screenshot({ path: info.outputPath("node-approved.png") });
+    const longTitle = "真帆 / GIF舞蹈 / 蓝幕 / 视频草稿（未提交）";
+    const titleInput = page.getByRole("textbox", { name: "节点名称" });
+    await titleInput.fill(longTitle);
+    await page.screenshot({
+      path: info.outputPath("node-approved-long-title.png"),
+    });
+    await titleInput.fill("角色描述");
+    await page.getByRole("button", { name: "画布", exact: true }).click();
+    await page.getByRole("button", { name: "适配视图" }).click();
+    await expect(
+      page.getByRole("button", { name: "取消通过：角色描述" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "取消通过：角色描述" }).click();
+    await page.getByRole("button", { name: "看板", exact: true }).click();
+    await expect(
+      page.getByRole("switch", { name: "节点通过：角色描述" }),
+    ).toHaveAttribute("aria-checked", "false");
     const sidebar = page.getByRole("complementary", { name: "项目素材" });
     const menuFor = (name: string) =>
       sidebar.getByRole("button", { name: `管理节点 ${name}`, exact: true });
@@ -123,6 +160,13 @@ for (const theme of ["light", "dark"] as const) {
     await expect(menuFor("主角参考")).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("switch", { name: "节点通过：角色描述" }).click();
+    await expect(
+      page.getByRole("switch", { name: "节点通过：角色描述" }),
+    ).toBeInViewport();
+    await page.screenshot({
+      path: info.outputPath("node-approved-mobile.png"),
+    });
     await page.getByRole("button", { name: "切换项目素材面板" }).click();
     await menuFor("角色描述").click();
     await page.screenshot({ path: info.outputPath("node-menu-mobile.png") });

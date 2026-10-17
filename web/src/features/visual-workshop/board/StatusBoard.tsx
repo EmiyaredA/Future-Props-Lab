@@ -12,6 +12,7 @@ import {
   type BoardStatus,
 } from "./boardTypes";
 import { OutputPreview } from "./OutputPreview";
+import { NodeApproval } from "../NodeApproval";
 
 function StatusCard({
   node,
@@ -113,6 +114,10 @@ function StatusCard({
         </div>
       </button>
       <div className="board-card-body">
+        <NodeApproval
+          node={node}
+          onChange={(approved) => c.patchNode(node.id, { approved }, true)}
+        />
         <div className="board-card-tags">
           {tags.slice(0, 2).map((tag) => (
             <span key={tag}>{tag}</span>

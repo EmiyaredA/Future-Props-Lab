@@ -65,7 +65,10 @@ function renderBoard() {
       patchNode: (
         id: string,
         patch: Partial<
-          Pick<VisualCanvasNode, "title" | "category_id" | "group" | "tags">
+          Pick<
+            VisualCanvasNode,
+            "title" | "category_id" | "group" | "tags" | "approved"
+          >
         >,
         immediate?: boolean,
       ) => {
@@ -143,7 +146,7 @@ test("each row has a visible management button; keyboard renaming targets the un
   trigger.focus();
   await user.keyboard("{ArrowDown}");
   expect(screen.getByRole("menuitem", { name: "下载" })).toBeDisabled();
-  expect(screen.getByRole("menuitem", { name: "重命名" })).toHaveFocus();
+  expect(screen.getByRole("menuitem", { name: "标记通过" })).toHaveFocus();
   await user.keyboard("{Escape}");
   expect(trigger).toHaveFocus();
   await user.click(trigger);
@@ -208,4 +211,48 @@ test("deletion names the target, cancellation keeps it, confirmation removes onl
   expect(screen.getByRole("textbox", { name: "节点名称" })).toHaveValue(
     "当前节点",
   );
+});
+
+test("approval toggles from metadata and row menu without changing selection", async () => {
+  const user = userEvent.setup();
+  const { sidebar, patchNode } = renderBoard();
+  const trigger = screen.getByRole("switch", { name: "节点通过：当前节点" });
+  expect(
+    within(screen.getByRole("region", { name: "节点分类与标签" })).getByRole(
+      "switch",
+    ),
+  ).toBe(trigger);
+  trigger.focus();
+  await user.keyboard("{Enter}");
+  expect(patchNode).toHaveBeenLastCalledWith("first", { approved: true }, true);
+  expect(
+    screen.getByRole("switch", { name: "节点通过：当前节点" }),
+  ).toHaveAttribute("aria-checked", "true");
+  expect(within(sidebar).getByLabelText("当前节点已通过")).toBeVisible();
+  await user.click(screen.getByRole("switch", { name: "节点通过：当前节点" }));
+  expect(patchNode).toHaveBeenLastCalledWith(
+    "first",
+    { approved: false },
+    true,
+  );
+  expect(
+    within(sidebar).queryByLabelText("当前节点已通过"),
+  ).not.toBeInTheDocument();
+  await user.click(
+    within(sidebar).getByRole("button", { name: "管理节点 另一节点" }),
+  );
+  await user.click(screen.getByRole("menuitem", { name: "标记通过" }));
+  expect(patchNode).toHaveBeenLastCalledWith(
+    "second",
+    { approved: true },
+    true,
+  );
+  expect(screen.getByRole("textbox", { name: "节点名称" })).toHaveValue(
+    "当前节点",
+  );
+  expect(within(sidebar).getByLabelText("另一节点已通过")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "状态分组" }));
+  expect(
+    screen.getByRole("switch", { name: "节点通过：另一节点" }),
+  ).toHaveAttribute("aria-checked", "true");
 });

@@ -622,3 +622,5 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 模型菜单共用 CustomSelect 的顶层 popover。独立推理目录维持原支持范围。
 迁移 `0091_zealman_video` 扩展连接和模型测试任务的协议约束，保留已有数据和外键。
 迁移 `0092_visual_zealman_video` 扩展工坊任务协议约束，同样保留原记录、索引与外键。
+
+视觉节点的 `approved` 人工确认标记由画布节点 JSON 持久化，`NodeApproval.tsx` 提供工作台、状态卡与画布共用入口，素材菜单复用相同画布更新契约。输出登记／切换／删除在 `outputs/history.py` 清除确认；正文变更由画布写入校验清除。迁移 `r0094_visual_node_approval` 为旧节点补默认值，不改已有布局、版本或 revision。

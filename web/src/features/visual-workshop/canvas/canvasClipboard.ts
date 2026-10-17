@@ -50,6 +50,7 @@ export function cloneCanvasSelection(
   const nodes = copy.nodes.map((node): VisualCanvasNode => {
     const base = {
       ...node,
+      approved: false,
       id: ids.get(node.id)!,
       title: `${Array.from(node.title).slice(0, 117).join("")} 副本`,
       position: {

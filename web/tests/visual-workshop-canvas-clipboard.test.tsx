@@ -436,10 +436,12 @@ test("rejects an oversized group without changing the canvas or history", async 
   expect(putVisualCanvas).not.toHaveBeenCalled();
 });
 
-test("copied fixed bindings retain the original output owner", () => {
+test("copied fixed bindings retain the original output owner and require new approval", () => {
   const copied = cloneCanvasSelection(
     {
-      nodes: initialNodes.slice(0, 2),
+      nodes: initialNodes
+        .slice(0, 2)
+        .map((node) => ({ ...node, approved: true })),
       edges: [
         {
           id: "fixed",
@@ -461,4 +463,5 @@ test("copied fixed bindings retain the original output owner", () => {
     output_id: "image-v2",
   });
   expect(copied.nodes[0].id).not.toBe("image");
+  expect(copied.nodes.every((node) => node.approved === false)).toBe(true);
 });

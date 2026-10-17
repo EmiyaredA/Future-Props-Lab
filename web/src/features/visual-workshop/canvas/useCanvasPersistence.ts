@@ -253,7 +253,17 @@ export function useCanvasPersistence(
           );
           if (unchanged) return node;
           changed = true;
-          return { ...node, ...patch } as VisualCanvasNode;
+          const next = { ...node, ...patch } as VisualCanvasNode;
+          if (
+            (node.kind === "text" &&
+              next.kind === "text" &&
+              node.text !== next.text) ||
+            (node.kind !== "text" &&
+              next.kind !== "text" &&
+              node.asset_id !== next.asset_id)
+          )
+            next.approved = false;
+          return next;
         });
         return changed ? next : current;
       }, immediate);

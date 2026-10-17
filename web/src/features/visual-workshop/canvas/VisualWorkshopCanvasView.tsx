@@ -1,5 +1,6 @@
 import { CanvasSelectionActions } from "./CanvasSelectionActions";
 import { CanvasContextMenu } from "./CanvasContextMenu";
+import { NodeApproval } from "../NodeApproval";
 import {
   useCallback,
   useEffect,
@@ -457,6 +458,13 @@ export function VisualWorkshopCanvasView({
                   (node.kind === "image" || node.kind === "video") ? (
                     <Pencil className="canvas-node-title-edit" aria-hidden />
                   ) : null}
+                  <NodeApproval
+                    node={node}
+                    compact
+                    onChange={(approved) =>
+                      patchNode(node.id, { approved }, true)
+                    }
+                  />
                   {showNodeActions && node.kind === "text" ? (
                     <span className="canvas-node-actions">
                       <button

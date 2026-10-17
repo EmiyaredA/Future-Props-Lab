@@ -203,6 +203,11 @@ class VisualCanvasNodeBase(BaseModel):
     category_id: str | None = None
     group: str | None = Field(default=None, max_length=120)
     tags: list[str] = Field(default_factory=list, max_length=20)
+    approved: bool = Field(
+        default_factory=bool,
+        strict=True,
+        description="人工确认节点当前结果已通过，省略时默认未通过",
+    )
     output_sequence: int | None = Field(default=None, ge=0)
     final_output_id: str | None = None
     final_version: int | None = None

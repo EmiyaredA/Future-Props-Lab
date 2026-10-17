@@ -256,8 +256,12 @@ class VisualCanvasDocuments:
                 current.model_dump(mode="json"),
             )
         nodes = [node.model_dump(mode="json") for node in body.nodes]
-        for node in nodes:
+        for node, incoming in zip(nodes, body.nodes, strict=True):
             previous = old.get(node["id"], {})
+            if "approved" not in incoming.model_fields_set:
+                node["approved"] = previous.get("approved", False)
+            if node["kind"] == "text" and node.get("text") != previous.get("text"):
+                node["approved"] = False
             # Output selection is server-owned. Canvas saves cannot forge version
             # identifiers or replace a chosen history item through a stale patch.
             node["output_sequence"] = previous.get("output_sequence", 0)

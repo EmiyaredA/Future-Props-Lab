@@ -22,6 +22,7 @@
 }
 .board-node-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding-bottom: 6px;
@@ -32,6 +33,7 @@
   gap: 8px;
   align-items: center;
   flex-shrink: 0;
+  margin-left: auto;
 }
 .board-node-topline > .board-icon-button {
   margin-left: auto;
@@ -63,7 +65,7 @@
   display: block;
   order: -1;
   flex: 1;
-  min-width: 0;
+  min-width: min(100%, 240px);
   width: 0;
   padding: 2px 0;
   font-size: 18px;

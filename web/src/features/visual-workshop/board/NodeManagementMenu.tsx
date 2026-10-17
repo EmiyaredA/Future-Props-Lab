@@ -1,9 +1,9 @@
-import { Download, Pencil, Tags, Trash2 } from "lucide-react";
+import { Check, Download, Pencil, Tags, Trash2 } from "lucide-react";
 import type { VisualCanvasNode } from "../api";
 import { BoardMenu } from "./BoardMenu";
 
 export type NodeManagementAction =
-  "rename" | "organize" | "delete" | "download";
+  "rename" | "organize" | "delete" | "download" | "approve";
 
 export function NodeManagementMenu({
   node,
@@ -25,6 +25,11 @@ export function NodeManagementMenu({
             downloading ||
             (node.kind === "text" ? !node.text?.trim() : !node.asset_id),
           onSelect: () => onAction("download", node),
+        },
+        {
+          label: node.approved ? "取消通过" : "标记通过",
+          icon: <Check size={14} aria-hidden />,
+          onSelect: () => onAction("approve", node),
         },
         {
           label: "重命名",

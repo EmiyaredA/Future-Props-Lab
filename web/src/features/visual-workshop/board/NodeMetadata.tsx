@@ -3,6 +3,7 @@ import { Tags } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import type { VisualCanvasNode, VisualMaterialCategory } from "../api";
 import type { BoardController } from "./boardTypes";
+import { NodeApproval } from "../NodeApproval";
 
 export function NodeMetadata({
   node,
@@ -39,6 +40,10 @@ export function NodeMetadata({
         <button onClick={() => setOpen(!open)} aria-expanded={open}>
           整理
         </button>
+        <NodeApproval
+          node={node}
+          onChange={(approved) => onPatch(node.id, { approved }, true)}
+        />
       </div>
       {open && (
         <div className="board-metadata-form">

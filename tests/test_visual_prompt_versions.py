@@ -217,7 +217,7 @@ def test_prompt_migration_preserves_drafts_layout_and_is_applied_once(tmp_path):
         saved = json.loads(content)
         assert revision == 7
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
-        assert saved[3:] == nodes[3:]
+        assert saved[3:] == [{**node, "approved": False} for node in nodes[3:]]
         for before, after in zip(nodes[:3], saved[:3], strict=True):
             assert after["position"] == before["position"]
             assert after["generation_draft"]["model_id"] == "saved-model"

@@ -88,6 +88,7 @@ async def register_output(
     session.add(row)
     await session.flush()
     node.update(
+        approved=False,
         final_output_id=row.id,
         final_version=row.version,
         output_sequence=max((node.get("output_sequence") or 0), row.version),
@@ -277,6 +278,8 @@ class NodeOutputs:
         row.is_final = True
         nodes = deepcopy(canvas.nodes)
         node = next(n for n in nodes if n["id"] == node_id)
+        if node.get("final_output_id") != row.id:
+            node["approved"] = False
         node.update(
             final_output_id=row.id,
             final_version=row.version,
@@ -323,6 +326,7 @@ class NodeOutputs:
             nodes = deepcopy(canvas.nodes)
             target = next(n for n in nodes if n["id"] == node_id)
             target.update(
+                approved=False,
                 final_output_id=replacement.id if replacement else None,
                 final_version=replacement.version if replacement else None,
                 asset_id=replacement.asset_id if replacement else None,

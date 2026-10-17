@@ -21195,6 +21195,11 @@ export interface components {
         };
         /** VisualCanvasAudioNode */
         VisualCanvasAudioNode: {
+            /**
+             * Approved
+             * @description 人工确认节点当前结果已通过，省略时默认未通过
+             */
+            approved?: boolean;
             /** Asset Id */
             asset_id?: string | null;
             /** Category Id */
@@ -21312,6 +21317,11 @@ export interface components {
         };
         /** VisualCanvasImageNode */
         VisualCanvasImageNode: {
+            /**
+             * Approved
+             * @description 人工确认节点当前结果已通过，省略时默认未通过
+             */
+            approved?: boolean;
             /** Asset Id */
             asset_id?: string | null;
             /** Category Id */
@@ -21351,6 +21361,11 @@ export interface components {
         };
         /** VisualCanvasTextNode */
         VisualCanvasTextNode: {
+            /**
+             * Approved
+             * @description 人工确认节点当前结果已通过，省略时默认未通过
+             */
+            approved?: boolean;
             /** Category Id */
             category_id?: string | null;
             /** Final Output Id */
@@ -21443,6 +21458,11 @@ export interface components {
         };
         /** VisualCanvasVideoNode */
         VisualCanvasVideoNode: {
+            /**
+             * Approved
+             * @description 人工确认节点当前结果已通过，省略时默认未通过
+             */
+            approved?: boolean;
             /** Asset Id */
             asset_id?: string | null;
             /** Category Id */

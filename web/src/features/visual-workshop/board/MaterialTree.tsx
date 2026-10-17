@@ -9,6 +9,7 @@ import {
 } from "./NodeManagementMenu";
 import { setCanvasAssetDragData } from "../canvas/canvasAssetDrag";
 import { GenerationSpinner } from "../generation/GenerationActivity";
+import { NodeApproval } from "../NodeApproval";
 
 export type TreeAction = {
   kind: "category" | "rename" | "group";
@@ -90,6 +91,7 @@ export function MaterialTree({
                 : "暂无输出"}
           </small>
         </span>
+        <NodeApproval node={node} compact />
         {runningNodeIds?.has(node.id) ? (
           <span
             className="board-material-running"

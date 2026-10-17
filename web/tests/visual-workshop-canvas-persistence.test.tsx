@@ -189,3 +189,30 @@ test("a newer polling snapshot still exposes a real conflict without dropping lo
   expect(result.current.saveState).toBe("conflict");
   expect(result.current.nodesRef.current[0].title).toBe("本地尚未保存");
 });
+
+test("approval persists immediately, survives reload, and clears on content replacement", async () => {
+  const { result } = renderPersistence();
+  await act(async () => {
+    result.current.patchNode("video", { approved: true }, true);
+    await result.current.prepareCanvasForAgent();
+  });
+  expect(vi.mocked(putVisualCanvas).mock.calls[0][1][0].approved).toBe(true);
+  act(() =>
+    result.current.applyServerCanvas({
+      ...canvas,
+      revision: 2,
+      nodes: result.current.nodes,
+    }),
+  );
+  expect(result.current.nodes[0].approved).toBe(true);
+  await act(async () => {
+    result.current.patchNode("video", { title: "新名称" }, true);
+    await result.current.prepareCanvasForAgent();
+  });
+  expect(result.current.nodes[0].approved).toBe(true);
+  await act(async () => {
+    result.current.patchNode("video", { asset_id: "new-result" }, true);
+    await result.current.prepareCanvasForAgent();
+  });
+  expect(result.current.nodes[0].approved).toBe(false);
+});

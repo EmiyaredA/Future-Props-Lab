@@ -35533,6 +35533,11 @@
       },
       "VisualCanvasAudioNode": {
         "properties": {
+          "approved": {
+            "description": "人工确认节点当前结果已通过，省略时默认未通过",
+            "title": "Approved",
+            "type": "boolean"
+          },
           "asset_id": {
             "anyOf": [
               {
@@ -35987,6 +35992,11 @@
       },
       "VisualCanvasImageNode": {
         "properties": {
+          "approved": {
+            "description": "人工确认节点当前结果已通过，省略时默认未通过",
+            "title": "Approved",
+            "type": "boolean"
+          },
           "asset_id": {
             "anyOf": [
               {
@@ -36149,6 +36159,11 @@
       },
       "VisualCanvasTextNode": {
         "properties": {
+          "approved": {
+            "description": "人工确认节点当前结果已通过，省略时默认未通过",
+            "title": "Approved",
+            "type": "boolean"
+          },
           "category_id": {
             "anyOf": [
               {
@@ -36411,6 +36426,11 @@
       },
       "VisualCanvasVideoNode": {
         "properties": {
+          "approved": {
+            "description": "人工确认节点当前结果已通过，省略时默认未通过",
+            "title": "Approved",
+            "type": "boolean"
+          },
           "asset_id": {
             "anyOf": [
               {

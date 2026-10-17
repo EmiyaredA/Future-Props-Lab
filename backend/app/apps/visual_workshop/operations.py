@@ -11,7 +11,9 @@ from app.runtime.revisions import RevisionConflictError
 def transform(current, body):
     data = current.model_dump(mode="json")
     for op in body.operations:
-        edit(data["nodes" if op.entity == "node" else "edges"], op)
+        result = edit(data["nodes" if op.entity == "node" else "edges"], op)
+        if op.entity == "node" and op.action == "duplicate":
+            result["approved"] = False
         if op.entity == "node" and op.action == "remove":
             data["edges"] = [
                 e for e in data["edges"] if op.id not in (e["source_node_id"], e["target_node_id"])

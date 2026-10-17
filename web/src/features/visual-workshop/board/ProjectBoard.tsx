@@ -184,6 +184,8 @@ export function ProjectBoard({
           setNotice(error instanceof Error ? error.message : "下载失败"),
         )
         .finally(() => setDownloading(false));
+    } else if (kind === "approve") {
+      c.patchNode(node.id, { approved: !node.approved }, true);
     } else if (kind === "organize") {
       select(node.id);
       setTab("workbench");

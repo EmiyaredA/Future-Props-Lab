@@ -5549,6 +5549,7 @@ class VisualCanvasAudioGenerationDraft(WireModel):
     theme: str = Field(default='', alias='theme', max_length=500)
 
 class VisualCanvasAudioNode(WireModel):
+    approved: bool | None = Field(default=None, alias='approved')
     asset_id: str | None = Field(default=None, alias='asset_id')
     category_id: str | None = Field(default=None, alias='category_id')
     final_output_id: str | None = Field(default=None, alias='final_output_id')
@@ -5600,6 +5601,7 @@ class VisualCanvasImageGenerationDraft(WireModel):
     size: str = Field(default='1024x1024', alias='size', min_length=1, max_length=32)
 
 class VisualCanvasImageNode(WireModel):
+    approved: bool | None = Field(default=None, alias='approved')
     asset_id: str | None = Field(default=None, alias='asset_id')
     category_id: str | None = Field(default=None, alias='category_id')
     final_output_id: str | None = Field(default=None, alias='final_output_id')
@@ -5620,6 +5622,7 @@ class VisualCanvasPosition(WireModel):
     y: float = Field(default=..., alias='y', ge=-1000000.0, le=1000000.0)
 
 class VisualCanvasTextNode(WireModel):
+    approved: bool | None = Field(default=None, alias='approved')
     category_id: str | None = Field(default=None, alias='category_id')
     final_output_id: str | None = Field(default=None, alias='final_output_id')
     final_version: int | None = Field(default=None, alias='final_version')
@@ -5652,6 +5655,7 @@ class VisualCanvasVideoGenerationDraft(WireModel):
     workflow_parameters: WorkflowVideoParameters | None = Field(default=None, alias='workflow_parameters')
 
 class VisualCanvasVideoNode(WireModel):
+    approved: bool | None = Field(default=None, alias='approved')
     asset_id: str | None = Field(default=None, alias='asset_id')
     category_id: str | None = Field(default=None, alias='category_id')
     final_output_id: str | None = Field(default=None, alias='final_output_id')
