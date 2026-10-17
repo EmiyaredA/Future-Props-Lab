@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Download,
   FolderOpen,
   Image,
   LoaderCircle,
@@ -29,7 +30,9 @@ import {
   type MediaKind,
 } from "@features/files";
 import { apiErrorMessage } from "@platform/api/errors";
+import { fetchApiDownload } from "@platform/api/client";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { visualAssetDownloadPath } from "@features/visual-workshop/api";
 import { MEDIA_ACCEPT } from "@features/visual-workshop/generation/options";
 import { GenerationMediaPreview } from "@features/visual-workshop/generation/GenerationMediaPreview";
 import { ProjectMediaSourceDialog } from "@features/visual-workshop/generation/ProjectMediaSourceDialog";
@@ -59,6 +62,23 @@ function GenerationMediaPreviewDialog({
     `/v1/files/${encodeURIComponent(file.id)}/content`,
   );
   const failed = Boolean(error);
+  const download = useMutation({
+    mutationFn: async () => {
+      const result = await fetchApiDownload(visualAssetDownloadPath(file.id));
+      const url = URL.createObjectURL(result.blob);
+      const anchor = document.createElement("a");
+      try {
+        anchor.href = url;
+        anchor.download = result.filename || file.original_filename;
+        document.body.append(anchor);
+        anchor.click();
+      } finally {
+        anchor.remove();
+        URL.revokeObjectURL(url);
+      }
+    },
+    retry: false,
+  });
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -93,15 +113,37 @@ function GenerationMediaPreviewDialog({
             <span>{kindLabel}预览</span>
             <h2 id={titleId}>{file.display_name}</h2>
           </div>
-          <button
-            type="button"
-            aria-label="关闭预览"
-            title="关闭"
-            onClick={onClose}
-          >
-            <X aria-hidden />
-          </button>
+          <div className="generation-media-preview-actions">
+            <button
+              type="button"
+              className="generation-media-preview-download"
+              aria-label="下载当前预览素材"
+              title="下载当前预览素材"
+              disabled={download.isPending}
+              onClick={() => download.mutate()}
+            >
+              {download.isPending ? (
+                <LoaderCircle className="spinning" aria-hidden />
+              ) : (
+                <Download aria-hidden />
+              )}
+              {download.isPending ? "下载中…" : "下载"}
+            </button>
+            <button
+              type="button"
+              aria-label="关闭预览"
+              title="关闭"
+              onClick={onClose}
+            >
+              <X aria-hidden />
+            </button>
+          </div>
         </header>
+        {download.isError ? (
+          <p className="generation-picker-error" role="alert">
+            {apiErrorMessage(download.error, "下载失败，请重试。")}
+          </p>
+        ) : null}
         <div className={`generation-media-preview-stage ${file.media_kind}`}>
           {!source && !failed ? (
             <span className="generation-media-preview-state">

@@ -12,101 +12,58 @@ from app.llm.providers.zealman_workflows import (
     U17,
     WORKFLOWS,
     normalize_parameters,
-    prepare_workflow,
+    prepare_input_values,
 )
 
 
-def template(model: str) -> dict:
-    contract = WORKFLOWS[model]
-    graph = {}
-
-    def node(identity, kind, **inputs):
-        graph[identity] = {"class_type": kind, "inputs": inputs}
-
-    prompt_id, prompt_class, prompt_field = contract["prompt"]
-    node(prompt_id, prompt_class, **{prompt_field: "private upstream example"})
-    node("132", "PrimitiveFloat", value=5)
-    node("131", "ComfyMathExpression", **{"values.a": ["132", 0]})
-    node("115", "ResolutionSelector", megapixels=0.9)
-    node("182", "PrimitiveFloat", value=1.5)
-    node("665", "WJILatentPreset")
-    node("142", "easy seed", seed=123)
-    ref = {"prompt": [prompt_id, 0], "length": ["131", 1]}
-    for kind, plural, loader in (
-        ("image", "images", "LoadImage"),
-        ("audio", "audios", "LoadAudio"),
-        ("video", "videos", "VHS_LoadVideo"),
-    ):
-        for index, identity in enumerate(contract[plural]):
-            node(identity, loader, **{kind: "upstream-example"})
-            preprocess = f"pre-{identity}"
-            node(preprocess, "Preprocess", source=[identity, 0])
-            ref[f"ref_{plural}.ref_{kind}_{index}"] = [preprocess, 0]
-    ref.update(
-        width=["115" if model == U17 else "665", 0 if model == U17 else 1],
-        height=["115" if model == U17 else "665", 1 if model == U17 else 2],
-    )
-    if model == U06:
-        ref["seed"] = ["142", 0]
-    node(contract["reference"], "MiniMaxH3ReferenceToVideo", **ref)
-    output, kind = contract["output"]
-    node(output, kind, video=[contract["reference"], 0])
-    graph["_api_config"] = {"formValues": {"prompt": "never reuse this"}}
-    return graph
-
-
 @pytest.mark.parametrize("model", [U06, U17])
-def test_sparse_references_override_prompt_and_prune_examples_without_mutating_source(model):
-    source = template(model)
-    before = json.dumps(source)
-    graph = prepare_workflow(
-        source,
+def test_sparse_references_use_fixed_zero_based_names_without_reordering_or_mutation(model):
+    refs = {"image": ["second.png", "first.png"], "audio": ["voice.wav"]}
+    payload = {"prompt": "my actual prompt", "duration": 7}
+    before = json.dumps([refs, payload])
+    values = prepare_input_values(
         model,
-        {"prompt": "my actual prompt", "duration": 7},
-        {"image": ["first.png", "second.png"], "audio": ["voice.wav"]},
+        payload,
+        refs,
     )
-    assert json.dumps(source) == before
-    assert "_api_config" not in graph
-    prompt_id, _, field = WORKFLOWS[model]["prompt"]
-    assert graph[prompt_id]["inputs"][field] == "my actual prompt"
-    assert graph["132"]["inputs"]["value"] == 7
-    images = WORKFLOWS[model]["images"]
-    assert graph[images[0]]["inputs"]["image"] == "first.png"
-    assert graph[images[1]]["inputs"]["image"] == "second.png"
-    assert all(identity not in graph for identity in images[2:])
-    assert all(identity not in graph for identity in WORKFLOWS[model]["audios"][1:])
-    assert "upstream-example" not in json.dumps(graph)
+    assert json.dumps([refs, payload]) == before
+    assert values["prompt"] == "my actual prompt"
+    assert values["value"] == 7
+    assert values["ref_image_0"] == "second.png"
+    assert values["ref_image_1"] == "first.png"
+    assert values["ref_audio_0"] == "voice.wav"
+    assert {k for k in values if k.startswith("ref_")} == {
+        "ref_image_0",
+        "ref_image_1",
+        "ref_audio_0",
+    }
+    assert all(":" not in key and not key.isdecimal() for key in values)
 
 
 @pytest.mark.parametrize("model", [U06, U17])
 def test_all_reference_slots_and_parameter_snapshot(model):
     contract = WORKFLOWS[model]
-    refs = {
-        kind: [f"{kind}-{i}" for i in range(len(contract[plural]))]
-        for kind, plural in (("image", "images"), ("audio", "audios"), ("video", "videos"))
-    }
+    refs = {kind: [f"{kind}-{i}" for i in range(limit)] for kind, limit in contract.items()}
     params = normalize_parameters(model, {})
-    graph = prepare_workflow(
-        template(model),
+    values = prepare_input_values(
         model,
         {"prompt": "test", "duration": 5, "workflow_parameters": params},
         refs,
     )
-    for kind, plural in (("image", "images"), ("audio", "audios"), ("video", "videos")):
-        for i, identity in enumerate(contract[plural]):
-            assert graph[identity]["inputs"][kind] == f"{kind}-{i}"
+    for kind, limit in contract.items():
+        for i in range(limit):
+            assert values[f"ref_{kind}_{i}"] == f"{kind}-{i}"
     if model == U06:
-        assert graph["142"]["inputs"]["seed"] == params["seed"]
-        assert graph["665"]["inputs"]["自定义宽"] == 1344
+        assert values["seed"] == params["seed"]
+        assert values["param_4"] == 1344
+        assert values["param_5"] == 768
     else:
-        assert graph["115"]["inputs"]["aspect_ratio"] == "16:9 (Widescreen)"
+        assert values["aspect_ratio"] == "16:9 (Widescreen)"
+        assert values["megapixels"] == params["megapixels"]
+        assert values["value_2"] == params["upscale_factor"]
 
 
-def test_changed_reference_mapping_and_unsupported_parameters_are_rejected():
-    source = template(U17)
-    source["275"]["inputs"]["ref_images.ref_image_0"] = ["249", 0]
-    with pytest.raises(ValueError, match="参考连线"):
-        prepare_workflow(source, U17, {"prompt": "x", "duration": 5}, {})
+def test_unsupported_parameters_and_invalid_references_are_rejected():
     for model, params in [
         (U06, {"width": 641}),
         (U06, {"megapixels": 1}),
@@ -116,7 +73,10 @@ def test_changed_reference_mapping_and_unsupported_parameters_are_rejected():
         with pytest.raises(ValueError):
             normalize_parameters(model, params)
     with pytest.raises(ValueError, match="视频参考数量|video参考数量"):
-        prepare_workflow(template(U06), U06, {"prompt": "x", "duration": 5}, {"video": ["v"]})
+        prepare_input_values(U06, {"prompt": "x", "duration": 5}, {"video": ["v"]})
+    for refs in ({"image": ["ok.png", ""]}, {"image": [None]}, {"images": ["x.png"]}):
+        with pytest.raises(ValueError, match="参考素材"):
+            prepare_input_values(U17, {"prompt": "x", "duration": 5}, refs)
 
 
 @pytest.mark.asyncio
@@ -127,8 +87,8 @@ async def test_upload_uses_unique_names_and_submission_has_no_implicit_credentia
         requests.append(request)
         if request.url.path.endswith("/upload/file"):
             return httpx.Response(200, json={"name": "uploaded.png", "subfolder": "fpl"})
-        if request.method == "GET":
-            return httpx.Response(200, json=template(U17))
+        assert request.method == "POST"
+        assert request.url.path == "/api/workflow/generate"
         return httpx.Response(200, json={"success": True, "prompt_id": "one-task"})
 
     transport = httpx.MockTransport(respond)
@@ -150,15 +110,37 @@ async def test_upload_uses_unique_names_and_submission_has_no_implicit_credentia
         base_url="https://example.test/",
         api_key="",
         model=U17,
-        payload={"prompt": "x", "duration": 5},
-        references={"image": ["fpl/uploaded.png"]},
+        payload={
+            "prompt": "图1人设，图2首帧，图3尾帧，视频1动作",
+            "duration": 7,
+            "ratio": "16:9",
+            "workflow_parameters": {"megapixels": 0.9, "upscale_factor": 1.5},
+        },
+        references={
+            "image": ["fpl/identity.png", "fpl/start.png", "fpl/end.png"],
+            "video": ["fpl/motion.mp4"],
+            "audio": [],
+        },
         transport=transport,
     )
     assert identity == "one-task"
     assert all("authorization" not in r.headers for r in requests)
     submitted = json.loads(requests[-1].content)
-    assert submitted["workflow_id"] == U17
-    assert submitted["workflow_template"]["248"]["inputs"]["image"] == "fpl/uploaded.png"
+    assert submitted == {
+        "workflow_id": U17,
+        "source": "api",
+        "input_values": {
+            "prompt": "图1人设，图2首帧，图3尾帧，视频1动作",
+            "value": 7,
+            "aspect_ratio": "16:9 (Widescreen)",
+            "megapixels": 0.9,
+            "value_2": 1.5,
+            "ref_image_0": "fpl/identity.png",
+            "ref_image_1": "fpl/start.png",
+            "ref_image_2": "fpl/end.png",
+            "ref_video_0": "fpl/motion.mp4",
+        },
+    }
     assert root_url("https://example.test/?_=123#x") == "https://example.test"
 
 
@@ -168,8 +150,6 @@ async def test_submission_timeout_is_not_retried():
 
     def respond(request):
         nonlocal submitted
-        if request.method == "GET":
-            return httpx.Response(200, json=template(U06))
         submitted += 1
         raise httpx.ReadTimeout("interrupted", request=request)
 
@@ -247,5 +227,5 @@ async def test_result_polling_normalizes_outputs_errors_and_restart_recovery(mod
     "ratio,expected", [("9:16", "9:16 (Portrait Widescreen)"), ("3:4", "3:4 (Portrait Standard)")]
 )
 def test_portrait_ratio_values_match_comfyui_resolution_selector(ratio, expected):
-    graph = prepare_workflow(template(U17), U17, {"prompt": "x", "duration": 5, "ratio": ratio}, {})
-    assert graph["115"]["inputs"]["aspect_ratio"] == expected
+    values = prepare_input_values(U17, {"prompt": "x", "duration": 5, "ratio": ratio}, {})
+    assert values["aspect_ratio"] == expected

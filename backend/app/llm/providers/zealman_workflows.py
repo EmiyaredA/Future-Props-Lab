@@ -2,29 +2,14 @@
 
 from __future__ import annotations
 
-import copy
 import secrets
 from typing import Any
 
 U17 = "U17-9图1视频3音频V1-api"
 U06 = "U06-9图3音频-V5"
 WORKFLOWS = {
-    U17: {
-        "reference": "275",
-        "prompt": ("250", "PrimitiveStringMultiline", "value"),
-        "images": ("248", "249", "247", "246", "279", "280", "281", "282", "283"),
-        "audios": ("259", "260", "261"),
-        "videos": ("256",),
-        "output": ("180", "SaveVideo"),
-    },
-    U06: {
-        "reference": "136",
-        "prompt": ("664", "CR Prompt Text", "prompt"),
-        "images": ("137", "139", "144", "151", "653", "654", "655", "656", "657"),
-        "audios": ("719", "720", "721"),
-        "videos": (),
-        "output": ("732", "VHS_VideoCombine"),
-    },
+    U17: {"image": 9, "audio": 3, "video": 1},
+    U06: {"image": 9, "audio": 3, "video": 0},
 }
 RATIOS = {
     "16:9": "16:9 (Widescreen)",
@@ -90,9 +75,8 @@ def profile(model: str) -> dict[str, Any]:
 
 
 def parameter_options(model: str) -> dict[str, Any]:
-    contract = profile(model)
     return {
-        "reference_limits": {"image": 9, "audio": 3, "video": len(contract["videos"])},
+        "reference_limits": dict(profile(model)),
         "reference_mime_types": {
             kind: sorted(types) for kind, types in REFERENCE_MIME_TYPES.items()
         },
@@ -135,91 +119,35 @@ def normalize_parameters(model: str, values: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def prepare_workflow(
-    template: dict[str, Any], model: str, payload: dict[str, Any], references: dict[str, list[str]]
+def prepare_input_values(
+    model: str, payload: dict[str, Any], references: dict[str, list[str]]
 ) -> dict[str, Any]:
+    """Use public API names; slot zero is Picture/Video/Audio 1, never a node ID."""
     contract = profile(model)
-    graph = copy.deepcopy({k: v for k, v in template.items() if k != "_api_config"})
-
-    def inputs(identity: str, class_type: str) -> dict[str, Any]:
-        node = graph.get(identity, {})
-        if node.get("class_type") != class_type or not isinstance(node.get("inputs"), dict):
-            raise ValueError(f"ZEALMAN 工作流结构已变化（节点 {identity}）")
-        return node["inputs"]
-
-    prompt_id, prompt_type, prompt_field = contract["prompt"]
-    inputs(prompt_id, prompt_type)[prompt_field] = payload["prompt"]
-    ref = inputs(contract["reference"], "MiniMaxH3ReferenceToVideo")
-    if ref.get("prompt") != [prompt_id, 0]:
-        raise ValueError("ZEALMAN 工作流提示词连线已变化")
-    size_node = "115" if model == U17 else "665"
-    width_output = 0 if model == U17 else 1
-    expected_links = {
-        "width": [size_node, width_output],
-        "height": [size_node, width_output + 1],
-        "length": ["131", 1],
-    }
-    if any(ref.get(key) != value for key, value in expected_links.items()):
-        raise ValueError("ZEALMAN 工作流尺寸或时长连线已变化")
-    inputs("132", "PrimitiveFloat")["value"] = payload["duration"]
+    if set(references) - contract.keys():
+        raise ValueError("ZEALMAN 不支持此参考素材类型")
+    prompt = payload.get("prompt")
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise ValueError("请输入生成提示词")
+    duration = payload["duration"]
+    if not 4 <= duration <= 15:
+        raise ValueError("工作流视频时长必须为 4 至 15 秒")
+    values = {"prompt": prompt, "value": duration}
     params = normalize_parameters(model, payload.get("workflow_parameters") or {})
     if model == U17:
-        inputs("115", "ResolutionSelector").update(
-            aspect_ratio=RATIOS[payload.get("ratio", "16:9")], megapixels=params["megapixels"]
+        values.update(
+            aspect_ratio=RATIOS[payload.get("ratio", "16:9")],
+            megapixels=params["megapixels"],
+            value_2=params["upscale_factor"],
         )
-        inputs("182", "PrimitiveFloat")["value"] = params["upscale_factor"]
     else:
-        inputs("665", "WJILatentPreset").update(
-            {"预设分辨率": "自定义", "自定义宽": params["width"], "自定义高": params["height"]}
-        )
-        inputs("142", "easy seed")["seed"] = params["seed"]
-    for kind, plural, class_type, field in (
-        ("image", "images", "LoadImage", "image"),
-        ("audio", "audios", "LoadAudio", "audio"),
-        ("video", "videos", "VHS_LoadVideo", "video"),
-    ):
+        values.update(param_4=params["width"], param_5=params["height"], seed=params["seed"])
+    for kind, limit in contract.items():
         supplied = references.get(kind, [])
-        if len(supplied) > len(contract[plural]):
+        if len(supplied) > limit:
             raise ValueError(f"当前工作流不支持此{kind}参考数量")
-        for index, identity in enumerate(contract[plural]):
-            target = inputs(identity, class_type)
-            key = f"ref_{plural}.ref_{kind}_{index}"
-            connection = ref.get(key)
-
-            # Audio/video preprocessing may sit between the loader and the reference node.
-            def depends(node_id: str, target_id: str, seen: set[str]) -> bool:
-                if node_id == target_id:
-                    return True
-                if node_id in seen:
-                    return False
-                seen.add(node_id)
-                return any(
-                    depends(str(v[0]), target_id, seen)
-                    for v in graph.get(node_id, {}).get("inputs", {}).values()
-                    if isinstance(v, list) and len(v) == 2
-                )
-
-            if not isinstance(connection, list) or not depends(str(connection[0]), identity, set()):
-                raise ValueError("ZEALMAN 工作流参考连线已变化")
-            if index < len(supplied):
-                target[field] = supplied[index]
-            else:
-                ref.pop(key)
-    output_id, output_type = contract["output"]
-    inputs(output_id, output_type)
-    keep: set[str] = set()
-
-    def visit(identity: str) -> None:
-        if identity in keep:
-            return
-        if identity not in graph:
-            raise ValueError("ZEALMAN 工作流引用了缺失节点")
-        keep.add(identity)
-        for value in graph[identity]["inputs"].values():
-            if isinstance(value, list) and len(value) == 2:
-                visit(str(value[0]))
-
-    visit(output_id)
-    if contract["reference"] not in keep:
-        raise ValueError("ZEALMAN 最终输出未连接参考生成节点")
-    return {identity: graph[identity] for identity in graph if identity in keep}
+        for index, filename in enumerate(supplied):
+            if not isinstance(filename, str) or not filename.strip():
+                raise ValueError("ZEALMAN 参考素材上传未返回有效文件名")
+            values[f"ref_{kind}_{index}"] = filename
+    return values

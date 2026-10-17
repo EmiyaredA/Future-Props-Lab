@@ -10,7 +10,7 @@ from uuid import uuid4
 import httpx
 
 from app.llm.providers._senseaudio import ProviderTaskStatus, sanitize_provider_message
-from app.llm.providers.zealman_workflows import prepare_workflow
+from app.llm.providers.zealman_workflows import prepare_input_values
 from app.runtime.outbound_urls import require_safe_provider_base_url
 
 
@@ -93,19 +93,13 @@ async def create_task(
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> str:
     root = root_url(base_url)
+    values = prepare_input_values(model, payload, references)
     async with httpx.AsyncClient(timeout=120, transport=transport) as client:
-        template = response_json(
-            await client.get(
-                f"{root}/api/workflows/download/{quote(model + '.json', safe='')}",
-                headers=headers(api_key),
-            )
-        )
-        graph = prepare_workflow(template, model, payload, references)
         body = response_json(
             await client.post(
                 f"{root}/api/workflow/generate",
                 headers=headers(api_key),
-                json={"workflow_id": model, "workflow_template": graph, "source": "api"},
+                json={"workflow_id": model, "input_values": values, "source": "api"},
             )
         )
     identity = body.get("prompt_id")

@@ -63,6 +63,7 @@ export function useGenerationDrawerController({
   onBatchCreated,
   compact = false,
   layout = "canvas",
+  generating = false,
   canvasNodeId,
   onClose,
   linkedAssetIds = { image: [], video: [], audio: [] },
@@ -597,9 +598,11 @@ export function useGenerationDrawerController({
         return;
       }
       setNotice(
-        tasks.length === 1
-          ? `任务已提交（${task.id.slice(0, 8)}），可在“生成任务”页查看进度。`
-          : `已提交 ${tasks.length} 个生成任务，生成结果将保存为节点输出版本。`,
+        layout === "workbench"
+          ? ""
+          : tasks.length === 1
+            ? `任务已提交（${task.id.slice(0, 8)}），可在“生成任务”页查看进度。`
+            : `已提交 ${tasks.length} 个生成任务，生成结果将保存为节点输出版本。`,
       );
       void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
     },
@@ -620,11 +623,13 @@ export function useGenerationDrawerController({
         return;
       }
       setNotice(
-        `已提交 ${batch.grid_size} 张图片，${
-          batch.grid_output === "nodes"
-            ? "将自动排列到画布"
-            : "完成后自动拼成大图"
-        }。`,
+        layout === "workbench"
+          ? ""
+          : `已提交 ${batch.grid_size} 张图片，${
+              batch.grid_output === "nodes"
+                ? "将自动排列到画布"
+                : "完成后自动拼成大图"
+            }。`,
       );
       void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
     },
@@ -632,6 +637,8 @@ export function useGenerationDrawerController({
   });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (generating || createMutation.isPending || createBatchMutation.isPending)
+      return;
     const prompt = readPrompt().prompt;
     setNotice("");
     if (!modelId) {
@@ -829,6 +836,7 @@ export function useGenerationDrawerController({
     lockedKind,
     compact,
     layout,
+    generating,
     kind,
     setKind,
     modelId,

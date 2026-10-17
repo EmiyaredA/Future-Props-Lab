@@ -29,6 +29,7 @@ export type GenerationDrawerProps = {
   onBatchCreated?: (batch: GenerationBatch) => void | Promise<void>;
   compact?: boolean;
   layout?: "canvas" | "workbench";
+  generating?: boolean;
   canvasNodeId?: string;
   excludedAssetIds?: string[];
   linkedAssetIds?: LinkedReferenceAssetIds;

@@ -206,12 +206,15 @@ test("30 个节点下的重要信息首屏可见，菜单、分类与分页历�
     name: "项目素材",
     exact: true,
   });
-  await tree.getByRole("button", { name: /清晨卧室/ }).click();
+  const sceneNode = tree.getByRole("button").filter({
+    has: page.getByText("清晨卧室 · 光影与空间设定", { exact: true }),
+  });
+  await sceneNode.click();
   await expect(page.getByLabel("当前预览 v3 · 最终输出 v3")).toBeVisible();
   for (const locator of [
     page.getByRole("textbox", { name: "节点名称" }),
     page.getByRole("textbox", { name: "图片提示词" }),
-    page.getByRole("button", { name: "生成模型" }),
+    page.getByRole("combobox", { name: "生成模型" }),
     page.getByRole("button", { name: "图片参数" }),
     page.getByRole("button", { name: "生成图片" }),
     page.locator(".board-large-preview"),
@@ -233,8 +236,11 @@ test("30 个节点下的重要信息首屏可见，菜单、分类与分页历�
   const menu = page.getByRole("button", { name: "管理分类 场景" });
   await menu.focus();
   await page.keyboard.press("ArrowDown");
-  await expect(page.getByRole("menuitem", { name: "新建分组" })).toBeFocused();
+  await expect(
+    page.getByRole("menuitem", { name: "上传到此分类" }),
+  ).toBeFocused();
   await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitem", { name: "新建分组" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(menu).toBeFocused();
   await menu.click();
@@ -260,7 +266,7 @@ test("30 个节点下的重要信息首屏可见，菜单、分类与分页历�
   await expect(page.getByLabel("当前预览 v2 · 最终输出 v3")).toBeVisible();
   await page.getByRole("button", { name: "设为最终输出" }).click();
   await expect(page.getByLabel("当前预览 v2 · 最终输出 v2")).toBeVisible();
-  await tree.getByRole("button", { name: /角色说明 01/ }).click();
+  await tree.getByRole("button", { name: /^角色说明 01/ }).click();
   await page.getByRole("button", { name: "加载更早版本" }).click();
   await expect(page.locator(".board-version-list button")).toHaveCount(21);
   await page
@@ -268,7 +274,7 @@ test("30 个节点下的重要信息首屏可见，菜单、分类与分页历�
     .filter({ hasText: /^v1\s*文本保存$/ })
     .click();
   await expect(page.getByLabel("当前预览 v1 · 最终输出 v21")).toBeVisible();
-  await tree.getByRole("button", { name: /清晨卧室/ }).click();
+  await sceneNode.click();
   await page.getByRole("button", { name: "深色", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.locator(".board-version-list img")).toHaveCount(3);
@@ -332,7 +338,7 @@ test("30 个节点下的重要信息首屏可见，菜单、分类与分页历�
     .toBeTruthy();
   await page.getByRole("button", { name: "切换项目素材面板" }).click();
   await expect(tree).toBeVisible();
-  await tree.getByRole("button", { name: /清晨卧室/ }).click();
+  await sceneNode.click();
   await page.getByRole("button", { name: "创作工作台", exact: true }).click();
   await expect(tree).not.toBeVisible();
   await expect(page.getByRole("button", { name: "生成图片" })).toBeInViewport();

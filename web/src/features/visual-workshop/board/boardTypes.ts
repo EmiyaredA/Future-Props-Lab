@@ -1,5 +1,6 @@
 import type { useVisualCanvasController } from "../canvas/useVisualCanvasController";
 import type { GenerationTask, GenerationBatch, VisualCanvasNode } from "../api";
+import { nodeGenerationActivity } from "../generation/generationActivityModel";
 
 export type BoardController = ReturnType<typeof useVisualCanvasController>;
 export const nodeTypeNames = {
@@ -17,33 +18,15 @@ export function nodeStatus(
   upstreamReady: boolean,
   batches: GenerationBatch[] = [],
 ): BoardStatus {
-  const batch =
-    node.kind === "image"
-      ? (batches.find(
-          (batch) =>
-            batch.generation_node_id === node.id &&
-            ["queued", "processing"].includes(batch.status),
-        ) ?? batches.find((batch) => batch.id === node.generation_batch_id))
-      : undefined;
-  if (batch && ["queued", "processing"].includes(batch.status)) return "生成中";
+  if (nodeGenerationActivity(node, tasks, batches)) return "生成中";
+  const batch = batches.find(
+    (batch) => node.kind === "image" && batch.id === node.generation_batch_id,
+  );
   if (batch?.status === "failed") return upstreamReady ? "可生成" : "待准备";
-  if (
-    tasks.some(
-      (task) =>
-        task.canvas_node_id === node.id &&
-        ["queued", "submitting", "pending", "processing"].includes(task.status),
-    )
-  )
-    return "生成中";
   const task =
     node.kind === "text"
       ? undefined
       : tasks.find((task) => task.id === node.generation_task_id);
-  if (
-    task &&
-    ["queued", "submitting", "pending", "processing"].includes(task.status)
-  )
-    return "生成中";
   if (task?.status === "failed") return upstreamReady ? "可生成" : "待准备";
   if (node.final_output_id || (node.kind !== "text" && node.asset_id))
     return "已完成";

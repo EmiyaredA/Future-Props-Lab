@@ -37,6 +37,7 @@ import {
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { GenerationSpinner } from "../generation/GenerationActivity";
 
 import { CanvasImageCrop } from "./CanvasImageCrop";
 
@@ -588,6 +589,9 @@ export function CanvasMediaPreviewDialog({
                       <span
                         className={`canvas-media-task-status ${selectedTask.status}`}
                       >
+                        {ACTIVE_STATUSES.has(selectedTask.status) && (
+                          <GenerationSpinner size={12} />
+                        )}
                         {STATUS_LABELS[selectedTask.status]}
                       </span>
                       {ACTIVE_STATUSES.has(selectedTask.status) ? (

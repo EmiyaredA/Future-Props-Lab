@@ -41,6 +41,7 @@ import {
 import { StatusBoard } from "./StatusBoard";
 import { downloadNodeOutput } from "./downloadNodeOutput";
 import { statusIcons, statusKeys, typeIcons } from "./boardPresentation";
+import { GenerationSpinner } from "../generation/GenerationActivity";
 import type { VisualCanvasNode, VisualNodeOutput } from "../api";
 import "./project-board.css";
 import "./workbench.css";
@@ -346,6 +347,21 @@ export function ProjectBoard({
             projectId={c.projectId}
             categories={categories}
             nodes={filtered}
+            runningNodeIds={
+              new Set(
+                c.nodes
+                  .filter(
+                    (node) =>
+                      nodeStatus(
+                        node,
+                        tasks.data ?? [],
+                        ready(node.id),
+                        batches.data ?? [],
+                      ) === "生成中",
+                  )
+                  .map((node) => node.id),
+              )
+            }
             selectedId={selected?.id}
             onSelect={select}
             onAction={setAction}
@@ -453,7 +469,11 @@ export function ProjectBoard({
                     <span
                       className={`board-state-badge is-${statusKeys[selectedStatus]}`}
                     >
-                      <SelectedStatusIcon size={12} />
+                      {selectedStatus === "生成中" ? (
+                        <GenerationSpinner size={12} />
+                      ) : (
+                        <SelectedStatusIcon size={12} />
+                      )}
                       {selectedStatus}
                     </span>
                     <NodeManagementMenu
@@ -485,6 +505,7 @@ export function ProjectBoard({
                   <TextWorkbench controller={c} node={selected} />
                 ) : (
                   <CanvasNodeInspector
+                    generating={selectedStatus === "生成中"}
                     projectId={c.projectId}
                     node={selected}
                     onClose={() => undefined}
@@ -506,6 +527,8 @@ export function ProjectBoard({
               <OutputHistory
                 controller={c}
                 nodeId={selected.id}
+                tasks={tasks.data ?? []}
+                batches={batches.data ?? []}
                 preview={previews[selected.id]}
                 onPreview={(version) => onPreview(selected.id, version)}
               />

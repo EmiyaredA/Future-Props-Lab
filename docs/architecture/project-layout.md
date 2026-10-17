@@ -599,6 +599,8 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 `board/MaterialTree.tsx` 为已有媒体输出提供项目素材拖拽数据；`generation/useProjectReferenceDrop.ts` 拥有生成参考框的拖入解析、项目文件与类型校验、去重及数量限制，放下后由 `ReferenceDropNotice.tsx` 提示成功或失败原因，参考框通过原草稿回调保存当前文件。全能参考栏统一按媒体类型路由拖入，不改变节点连线或来源选择。
 
+`generation/generationActivityModel.ts` 将节点关联的任务／图片批次快照归一为运行状态，`GenerationActivity.tsx` 与 `generation-activity.css` 拥有紧凑状态栏、已用时和共用转圈图标。看板右侧输出历史、节点标题、素材树、状态分组与生成按钮共用运行状态；未知进度保持不定值，现有输出版本与当前任务分开显示，不用参考素材模拟中间帧。
+
 `backend/app/apps/visual_workshop/outputs/` 拥有节点输出 ORM、历史分页、最终版本 CAS、输入解析与提交快照、上传事务及快照重映射；包入口提供 `register_imported_output`，供视频剪辑分段交接在取得画布 CAS 写锁后、同一事务内登记素材版本；`routes/outputs.py` 只负责协议适配。`canvas.py` 保留节点身份、分类与连线整体 CAS，兼容旧素材写入并统一登记版本。`generation_runner.py` 在落盘后短事务中幂等归档输出。`web/src/features/visual-workshop/board/` 拥有项目素材树、创作工作台、状态分组、历史预览与输入选择，并按素材整理、管理菜单、节点元信息与状态呈现拆分；shell、工作台与状态卡样式按职责独立维护。生成组件通过显式 `layout` 参数适配工作台，保留画布布局；画布控制器统一持有草稿、选择与视口，项目页保留两种视图切换时的历史预览。
 
 视觉画布 `canvasPlacement.ts` 拥有卡片与节点组的有界避让，`canvasLayout.ts` 拥有稳定的流程与网格布局，`canvasVisibleArea.ts` 计算排除固定控件后的可见区域；`useCanvasSpatialActions.ts` 将纯位置结果接入视口、整体保存与单次撤销。各新增入口共用该能力，临时编辑面板不影响持久布局。后端 `visual_workshop/node_placement.py` 只处理后台自动节点，显式 API 坐标沿用原契约；`tests/fixtures/visual_node_placement.json` 同时约束前后端尺寸与默认避让结果。
@@ -607,7 +609,9 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 ## ZEALMAN 视频模型测试与工坊生成
 
-`llm/providers/zealman_workflows.py` 保存 U17、U06 的节点契约、参数范围和请求副本裁剪；
+`llm/providers/zealman_workflows.py` 保存 U17、U06 的固定 `input_values` 键契约、参考数量和参数范围；
+图片、视频与音频按各自输入顺序映射到从零开始的 `ref_image_n`、`ref_video_n`、`ref_audio_n`，
+提示词使用 `prompt`。不提交节点数字键或整张工作流，避免 API 模式将已上传但未显式传参的参考替换为空白占位。
 `zealman_video.py` 拥有同源素材上传、提交、结果轮询及任务账本恢复。测试台通过能力元数据展示
 参数，不读取原始 ComfyUI 事件。`llm/schemas/workflow_video.py` 拥有共用工作流参数与能力契约。
 视觉创作工坊通过自己的模型选项、项目素材校验和 runner 接入两个工作流；沿用画布 CAS 与输出归档，

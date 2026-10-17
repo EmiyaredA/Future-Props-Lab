@@ -153,3 +153,39 @@ test("debounced edits immediately report saving and failed saves block generatio
   expect(result.current.nodesRef.current[0].title).toBe("未保存草稿");
   expect(result.current.saveState).toBe("error");
 });
+
+test("polling the same revision preserves edits waiting for autosave", () => {
+  const { result } = renderPersistence();
+  act(() => result.current.patchNode("video", { title: "尚未保存的草稿" }));
+  act(() => result.current.applyServerCanvas({ ...canvas }));
+  expect(result.current.nodesRef.current[0].title).toBe("尚未保存的草稿");
+  expect(result.current.conflict).toBeUndefined();
+});
+
+test("a late polling snapshot cannot roll back a completed save or flag the next edit as a conflict", async () => {
+  const { result } = renderPersistence();
+  await act(async () => {
+    result.current.patchNode("video", { title: "已保存的新草稿" }, true);
+    await result.current.prepareCanvasForAgent();
+  });
+  act(() => result.current.applyServerCanvas({ ...canvas }));
+  expect(result.current.revisionRef.current).toBe(1);
+  expect(result.current.nodesRef.current[0].title).toBe("已保存的新草稿");
+  act(() => {
+    result.current.patchNode("video", { title: "下一次编辑" });
+    result.current.applyServerCanvas({ ...canvas });
+  });
+  expect(result.current.conflict).toBeUndefined();
+  expect(result.current.nodesRef.current[0].title).toBe("下一次编辑");
+});
+
+test("a newer polling snapshot still exposes a real conflict without dropping local edits", () => {
+  const { result } = renderPersistence();
+  act(() => {
+    result.current.patchNode("video", { title: "本地尚未保存" });
+    result.current.applyServerCanvas({ ...canvas, revision: 2 });
+  });
+  expect(result.current.conflict?.revision).toBe(2);
+  expect(result.current.saveState).toBe("conflict");
+  expect(result.current.nodesRef.current[0].title).toBe("本地尚未保存");
+});

@@ -2,7 +2,6 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
-  LoaderCircle,
   Music,
   Maximize2,
   Minimize2,
@@ -27,6 +26,7 @@ import {
   type PromptVersionState,
 } from "./usePromptVersions";
 import { PromptVersionControls } from "./PromptVersionControls";
+import { GenerationSpinner } from "./GenerationActivity";
 
 export function CompactAudioGenerationDrawer({
   projectId,
@@ -37,6 +37,7 @@ export function CompactAudioGenerationDrawer({
   onTaskCreated,
   onClose,
   layout = "canvas",
+  generating = false,
   linkedAssetIds = { image: [], video: [], audio: [] },
   excludedAssetIds = [],
 }: GenerationDrawerProps) {
@@ -126,7 +127,9 @@ export function CompactAudioGenerationDrawer({
       createGenerationTask(projectId, body),
     onSuccess: async (task) => {
       await onTaskCreated?.(task);
-      setNotice(`任务已提交（${task.id.slice(0, 8)}）`);
+      setNotice(
+        layout === "workbench" ? "" : `任务已提交（${task.id.slice(0, 8)}）`,
+      );
       void client.invalidateQueries({
         queryKey: visualWorkshopQueryKeys.generationTasks,
       });
@@ -136,6 +139,7 @@ export function CompactAudioGenerationDrawer({
   });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (generating || create.isPending) return;
     const prompt = promptVersions.read().prompt;
     if (!modelId) {
       setNotice("请先配置并启用对应的音频生成供应商。");
@@ -338,13 +342,17 @@ export function CompactAudioGenerationDrawer({
           ))}
         </div>
         {notice ? <span role="status">{notice}</span> : null}
-        <button className="audio-generate-submit" disabled={create.isPending}>
-          {create.isPending ? (
-            <LoaderCircle className="spinning" aria-hidden />
+        <button
+          className="audio-generate-submit"
+          disabled={generating || create.isPending}
+          aria-busy={generating || create.isPending}
+        >
+          {create.isPending || generating ? (
+            <GenerationSpinner />
           ) : (
             <Sparkles aria-hidden />
           )}
-          生成
+          {generating ? "生成中" : "生成"}
         </button>
       </footer>
     </form>

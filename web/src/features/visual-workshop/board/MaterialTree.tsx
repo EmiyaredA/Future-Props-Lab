@@ -8,6 +8,7 @@ import {
   type NodeManagementAction,
 } from "./NodeManagementMenu";
 import { setCanvasAssetDragData } from "../canvas/canvasAssetDrag";
+import { GenerationSpinner } from "../generation/GenerationActivity";
 
 export type TreeAction = {
   kind: "category" | "rename" | "group";
@@ -26,6 +27,7 @@ export function MaterialTree({
   projectId,
   onUpload,
   uploadDisabled,
+  runningNodeIds,
 }: {
   categories: VisualMaterialCategory[];
   nodes: VisualCanvasNode[];
@@ -37,6 +39,7 @@ export function MaterialTree({
   projectId?: string;
   onUpload?: (categoryId: string) => void;
   uploadDisabled?: boolean;
+  runningNodeIds?: ReadonlySet<string>;
 }) {
   const entry = (node: VisualCanvasNode) => (
     <div
@@ -80,11 +83,24 @@ export function MaterialTree({
           <strong title={node.title}>{node.title}</strong>
           <small>
             {nodeTypeNames[node.kind]} ·{" "}
-            {node.final_version ? `最终 v${node.final_version}` : "暂无输出"}
+            {runningNodeIds?.has(node.id)
+              ? "生成中"
+              : node.final_version
+                ? `最终 v${node.final_version}`
+                : "暂无输出"}
           </small>
         </span>
-        {node.final_version && (
-          <i className="board-material-ready" aria-label="已有最终输出" />
+        {runningNodeIds?.has(node.id) ? (
+          <span
+            className="board-material-running"
+            aria-label={`${node.title}生成中`}
+          >
+            <GenerationSpinner size={13} />
+          </span>
+        ) : (
+          node.final_version && (
+            <i className="board-material-ready" aria-label="已有最终输出" />
+          )
         )}
       </button>
       {onNodeAction && (

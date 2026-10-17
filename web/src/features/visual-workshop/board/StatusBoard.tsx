@@ -1,4 +1,6 @@
-import { Link2, LoaderCircle, Play } from "lucide-react";
+import { Link2, Play } from "lucide-react";
+import { GenerationSpinner } from "../generation/GenerationActivity";
+import { nodeGenerationActivity } from "../generation/generationActivityModel";
 import { statusIcons, statusKeys, typeIcons } from "./boardPresentation";
 import type { GenerationBatch, GenerationTask, VisualCanvasNode } from "../api";
 import {
@@ -43,15 +45,7 @@ function StatusCard({
             ["queued", "processing"].includes(batch.status),
         ) ?? batches.find((batch) => batch.id === node.generation_batch_id))
       : undefined;
-  const progress = Math.max(
-    0,
-    Math.min(
-      100,
-      batch?.grid_output === "composite" && batch.generation_node_id === node.id
-        ? Math.round((100 * batch.completed_count) / batch.grid_size)
-        : (task?.progress ?? 0),
-    ),
-  );
+  const activity = nodeGenerationActivity(node, tasks, batches);
   const failure =
     status !== "生成中" &&
     (task?.status === "failed" || batch?.status === "failed");
@@ -89,12 +83,6 @@ function StatusCard({
     )?.name ?? "未分类";
   const tags = [category, ...(node.tags ?? [])];
   const Icon = typeIcons[node.kind];
-  const phase =
-    batch?.status === "queued" || task?.status === "queued"
-      ? "排队中"
-      : task?.status === "submitting"
-        ? "提交中"
-        : "生成中";
   return (
     <article
       data-kind={node.kind}
@@ -140,15 +128,17 @@ function StatusCard({
           <div className="board-progress">
             <div>
               <span>
-                <LoaderCircle size={12} className="spinning" />
-                {phase}
+                <GenerationSpinner size={12} />
+                {activity?.label ?? "生成中"}
               </span>
-              <strong>{progress}%</strong>
+              {activity?.progress !== undefined && (
+                <strong>{activity.progress}%</strong>
+              )}
             </div>
             <progress
               aria-label={`${node.title}生成进度`}
               max={100}
-              value={progress}
+              value={activity?.progress}
             />
           </div>
         )}

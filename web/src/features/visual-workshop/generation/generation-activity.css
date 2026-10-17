@@ -1,0 +1,98 @@
+.visual-generation-spinner {
+  flex-shrink: 0;
+  animation: visual-generation-spin 900ms linear infinite;
+}
+@keyframes visual-generation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.visual-generation-activity {
+  padding: 0 0 3px;
+}
+.visual-generation-activity-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-height: 30px;
+  font-size: 11px;
+}
+.visual-generation-activity-line > svg {
+  color: var(--board-accent, var(--accent));
+}
+.visual-generation-activity-line > strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.visual-generation-activity-line time {
+  color: var(--board-muted, var(--text-muted));
+  font-variant-numeric: tabular-nums;
+}
+.visual-generation-activity-line a {
+  margin-left: auto;
+  padding: 6px 0 6px 8px;
+  color: var(--board-accent, var(--accent));
+  text-decoration: none;
+}
+.visual-generation-activity-line a:focus-visible {
+  outline: 2px solid var(--board-accent, var(--accent));
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.visual-generation-track {
+  height: 3px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--board-accent-soft, var(--surface-hover));
+}
+.visual-generation-track > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--board-accent, var(--accent));
+}
+.visual-generation-track.is-indeterminate > i {
+  width: 30%;
+  animation: visual-generation-travel 1600ms ease-in-out infinite;
+}
+@keyframes visual-generation-travel {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+.board-output-panel.is-generating .board-large-preview {
+  min-height: 0;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+.board-generating-placeholder {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: var(--board-muted);
+  font-size: 12px;
+}
+.board-generating-placeholder > svg,
+.board-material-running {
+  color: var(--board-accent);
+}
+.board-material > .board-material-running {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.board-output-heading > .board-state-badge {
+  margin-left: auto;
+}
+.board-version-list:empty {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .visual-generation-spinner,
+  .visual-generation-track.is-indeterminate > i {
+    animation: none;
+  }
+}

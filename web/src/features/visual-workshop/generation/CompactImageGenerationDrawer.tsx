@@ -5,7 +5,6 @@ import {
   Check,
   ChevronDown,
   Image,
-  LoaderCircle,
   Maximize2,
   Minimize2,
 } from "lucide-react";
@@ -16,6 +15,7 @@ import {
 } from "@features/visual-workshop/generation/options";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
 import { PromptVersionControls } from "./PromptVersionControls";
+import { GenerationSpinner } from "./GenerationActivity";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 import { ReferenceDropNotice } from "@features/visual-workshop/generation/ReferenceDropNotice";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
@@ -56,6 +56,7 @@ export function CompactImageGenerationDrawer({
     persistDraft,
     invalidSelection,
     isSubmitting,
+    generating,
     submit,
   } = controller;
   const [dropNotice, setDropNotice] = useState<ReferenceDropNoticeState | null>(
@@ -344,17 +345,22 @@ export function CompactImageGenerationDrawer({
           ) : null}
           <button
             className="video-composer-submit"
-            disabled={isSubmitting || !modelId || !prompt.trim()}
+            disabled={isSubmitting || generating || !modelId || !prompt.trim()}
             type="submit"
-            aria-label={isSubmitting ? "正在提交" : "生成图片"}
+            aria-label={
+              generating ? "图片生成中" : isSubmitting ? "正在提交" : "生成图片"
+            }
+            aria-busy={generating || isSubmitting}
           >
-            {isSubmitting ? (
-              <LoaderCircle className="spinning" aria-hidden />
+            {isSubmitting || generating ? (
+              <GenerationSpinner />
             ) : (
               <ArrowUp aria-hidden />
             )}
             {controller.layout === "workbench" && (
-              <span>{isSubmitting ? "提交中" : "生成"}</span>
+              <span>
+                {generating ? "生成中" : isSubmitting ? "提交中" : "生成"}
+              </span>
             )}
           </button>
         </footer>

@@ -2,7 +2,6 @@ import { useState, type CSSProperties } from "react";
 import {
   ArrowUp,
   ChevronDown,
-  LoaderCircle,
   Maximize2,
   Minimize2,
   Settings2,
@@ -17,6 +16,7 @@ import {
 } from "@features/visual-workshop/generation/options";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
 import { PromptVersionControls } from "./PromptVersionControls";
+import { GenerationSpinner } from "./GenerationActivity";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 import { ReferenceDropNotice } from "@features/visual-workshop/generation/ReferenceDropNotice";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
@@ -77,6 +77,7 @@ export function CompactVideoGenerationDrawer({
     persistDraft,
     invalidSelection,
     createMutation,
+    generating,
     submit,
     hasLinkedVideoReferences,
   } = controller;
@@ -528,19 +529,33 @@ export function CompactVideoGenerationDrawer({
             className="video-composer-submit"
             disabled={
               createMutation.isPending ||
+              generating ||
               !modelId ||
               (videoMode === "text" && !prompt.trim())
             }
             type="submit"
-            aria-label={createMutation.isPending ? "正在提交" : "生成视频"}
+            aria-label={
+              generating
+                ? "视频生成中"
+                : createMutation.isPending
+                  ? "正在提交"
+                  : "生成视频"
+            }
+            aria-busy={generating || createMutation.isPending}
           >
-            {createMutation.isPending ? (
-              <LoaderCircle className="spinning" aria-hidden />
+            {createMutation.isPending || generating ? (
+              <GenerationSpinner />
             ) : (
               <ArrowUp aria-hidden />
             )}
             {controller.layout === "workbench" && (
-              <span>{createMutation.isPending ? "提交中" : "生成"}</span>
+              <span>
+                {generating
+                  ? "生成中"
+                  : createMutation.isPending
+                    ? "提交中"
+                    : "生成"}
+              </span>
             )}
           </button>
         </footer>

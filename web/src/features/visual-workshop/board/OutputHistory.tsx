@@ -9,7 +9,14 @@ import {
   uploadNodeOutput,
   type VisualCanvasDocument,
   type VisualNodeOutput,
+  type GenerationTask,
+  type GenerationBatch,
 } from "../api";
+import { nodeGenerationActivity } from "../generation/generationActivityModel";
+import {
+  GenerationActivity,
+  GenerationSpinner,
+} from "../generation/GenerationActivity";
 import { visualWorkshopQueryKeys } from "../queryKeys";
 import { OutputPreview } from "./OutputPreview";
 import type { BoardController } from "./boardTypes";
@@ -19,13 +26,18 @@ export function OutputHistory({
   nodeId,
   preview,
   onPreview,
+  tasks = [],
+  batches = [],
 }: {
   controller: BoardController;
   nodeId: string;
   preview?: VisualNodeOutput;
   onPreview: (version?: VisualNodeOutput) => void;
+  tasks?: GenerationTask[];
+  batches?: GenerationBatch[];
 }) {
   const node = controller.nodes.find((node) => node.id === nodeId)!;
+  const activity = nodeGenerationActivity(node, tasks, batches);
   const uploadInput = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -86,25 +98,36 @@ export function OutputHistory({
     }
   };
   return (
-    <section className="board-output-panel" aria-label="节点输出历史">
+    <section
+      className={`board-output-panel${activity ? " is-generating" : ""}`}
+      aria-label="节点输出历史"
+    >
       <div className="board-output-heading">
         <div>
           <h2>输出预览</h2>
-          <div
-            className="board-preview-badges"
-            aria-label={`当前预览 ${showing ? `v${showing.version}` : "—"} · 最终输出 ${node.final_version ? `v${node.final_version}` : "未设置"}`}
-          >
-            <span className="board-preview-badge">
-              <Eye size={12} />
-              正在预览 {showing ? `v${showing.version}` : "—"}
-            </span>
-            <span className="board-final-badge">
-              <Check size={12} />
-              最终输出{" "}
-              {node.final_version ? `v${node.final_version}` : "未设置"}
-            </span>
-          </div>
+          {(!activity || showing) && (
+            <div
+              className="board-preview-badges"
+              aria-label={`当前预览 ${showing ? `v${showing.version}` : "—"} · 最终输出 ${node.final_version ? `v${node.final_version}` : "未设置"}`}
+            >
+              <span className="board-preview-badge">
+                <Eye size={12} />
+                正在预览 {showing ? `v${showing.version}` : "—"}
+              </span>
+              <span className="board-final-badge">
+                <Check size={12} />
+                最终输出{" "}
+                {node.final_version ? `v${node.final_version}` : "未设置"}
+              </span>
+            </div>
+          )}
         </div>
+        {activity && (
+          <span className="board-state-badge is-running">
+            <GenerationSpinner size={12} />
+            生成中
+          </span>
+        )}
         {showing && showing.id !== node.final_output_id && (
           <button
             disabled={pending}
@@ -129,15 +152,26 @@ export function OutputHistory({
         </p>
       )}
       <div className="board-large-preview">
-        <OutputPreview
-          kind={node.kind}
-          assetId={
-            showing?.asset_id ??
-            (node.kind !== "text" ? node.asset_id : undefined)
-          }
-          text={showing?.text}
-        />
+        {activity && !showing && node.kind !== "text" && !node.asset_id ? (
+          <div
+            className="board-generating-placeholder"
+            aria-label="等待生成画面"
+          >
+            <GenerationSpinner size={24} />
+            <span>等待生成画面</span>
+          </div>
+        ) : (
+          <OutputPreview
+            kind={node.kind}
+            assetId={
+              showing?.asset_id ??
+              (node.kind !== "text" ? node.asset_id : undefined)
+            }
+            text={showing?.text}
+          />
+        )}
       </div>
+      {activity && <GenerationActivity activity={activity} />}
       <div className="board-output-heading">
         <h3>
           输出版本 <small>{history.data?.pages[0].total ?? 0}</small>

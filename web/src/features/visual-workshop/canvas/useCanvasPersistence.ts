@@ -40,6 +40,7 @@ export function useCanvasPersistence(
   const [conflict, setConflict] = useState<VisualCanvasDocument>();
 
   const applyServerCanvas = useCallback((loaded: VisualCanvasDocument) => {
+    if (initialized.current && loaded.revision <= revisionRef.current) return;
     const externalRevision =
       initialized.current && loaded.revision !== revisionRef.current;
     if (externalRevision && (autoSave.current || pendingSaves.current > 0)) {

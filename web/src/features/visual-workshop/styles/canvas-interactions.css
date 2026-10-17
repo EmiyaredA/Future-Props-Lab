@@ -324,6 +324,17 @@
   min-width: 0;
 }
 
+.generation-media-preview-dialog > header > div:first-child {
+  flex: 1;
+}
+
+.generation-media-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
 .generation-media-preview-dialog > header span {
   color: var(--accent);
   font-size: 9px;
@@ -355,6 +366,28 @@
 .generation-media-preview-dialog > header button:hover {
   background: var(--surface-soft);
   color: var(--text);
+}
+
+.generation-media-preview-dialog > header button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.generation-media-preview-dialog > header .generation-media-preview-download {
+  width: auto;
+  padding: 0 10px;
+  display: flex;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.generation-media-preview-download:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .generation-media-preview-dialog > header button svg {

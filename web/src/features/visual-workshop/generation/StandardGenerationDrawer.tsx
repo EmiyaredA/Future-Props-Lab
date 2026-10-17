@@ -1,4 +1,5 @@
-import { Image, LoaderCircle, Sparkles, Video, X } from "lucide-react";
+import { Image, Sparkles, Video, X } from "lucide-react";
+import { GenerationSpinner } from "./GenerationActivity";
 import { WorkflowVideoControls } from "@features/models";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
@@ -355,15 +356,22 @@ export function StandardGenerationDrawer({
         ) : null}
         <button
           className="generation-submit"
-          disabled={createMutation.isPending || !modelId}
+          disabled={
+            controller.generating || createMutation.isPending || !modelId
+          }
+          aria-busy={controller.generating || createMutation.isPending}
           type="submit"
         >
-          {createMutation.isPending ? (
-            <LoaderCircle className="spinning" aria-hidden />
+          {createMutation.isPending || controller.generating ? (
+            <GenerationSpinner />
           ) : (
             <Sparkles aria-hidden />
           )}
-          {createMutation.isPending ? "正在提交…" : "创建生成任务"}
+          {controller.generating
+            ? "生成中…"
+            : createMutation.isPending
+              ? "正在提交…"
+              : "创建生成任务"}
         </button>
       </form>
     </aside>

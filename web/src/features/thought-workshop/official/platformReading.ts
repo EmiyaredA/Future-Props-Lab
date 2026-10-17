@@ -411,7 +411,8 @@ export const PLATFORM_READING: Record<
     ],
   },
   "visual-workshop/workflow": {
-    summary: "组织输入连线、复制节点组，并完成不改写原文件的裁剪和视频取帧。",
+    summary:
+      "组织输入连线、核对下载参考素材、查看生成状态，并完成节点复制、裁剪和视频取帧。",
     related: [
       {
         libraryId: "visual-workshop",

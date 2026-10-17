@@ -24,6 +24,11 @@ import {
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
+import {
+  taskActivity,
+  batchActivity,
+} from "../generation/generationActivityModel";
+import { GenerationSpinner } from "../generation/GenerationActivity";
 
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
 
@@ -92,6 +97,7 @@ export function CanvasNodeInspector({
   onBatchCreated,
   embedded = false,
   generationLayout = "canvas",
+  generating = false,
   initialTab,
   upstreamNodes = [],
 }: {
@@ -107,6 +113,7 @@ export function CanvasNodeInspector({
   onBatchCreated?: (batch: GenerationBatch) => void | Promise<void>;
   embedded?: boolean;
   generationLayout?: "canvas" | "workbench";
+  generating?: boolean;
   initialTab?: "content" | "generate";
   upstreamNodes?: MediaNode[];
 }) {
@@ -252,6 +259,9 @@ export function CanvasNodeInspector({
           layout={generationLayout}
           projectId={projectId}
           canvasNodeId={node.id}
+          generating={Boolean(
+            generating || taskActivity(task.data) || batchActivity(batch.data),
+          )}
           excludedAssetIds={node.asset_id ? [node.asset_id] : []}
           lockedKind={node.kind}
           draft={node.generation_draft}
@@ -311,7 +321,10 @@ export function CanvasNodeInspector({
               className={`canvas-node-task ${task.data.status}`}
               role="status"
             >
-              <strong>生成任务 · {task.data.status}</strong>
+              <strong>
+                {taskActivity(task.data) && <GenerationSpinner size={12} />}
+                生成任务 · {taskActivity(task.data)?.label ?? task.data.status}
+              </strong>
               <span>{task.data.progress}%</span>
               {task.data.error_message ? (
                 <small>{task.data.error_message}</small>
@@ -324,6 +337,7 @@ export function CanvasNodeInspector({
               role="status"
             >
               <strong>
+                {batchActivity(batch.data) && <GenerationSpinner size={12} />}
                 {batch.data.grid_size === 4 ? "4" : "9"} 宫格 ·{" "}
                 {batch.data.batch_kind === "composition"
                   ? "节点合成"

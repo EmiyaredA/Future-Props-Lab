@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from uuid import uuid4
 
@@ -9,6 +10,7 @@ from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
 from app.apps.visual_workshop.models import VisualGenerationTask
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers._senseaudio import ProviderTaskStatus
+from app.llm.providers.zealman_video import create_task
 from app.llm.providers.zealman_workflows import U06, U17
 from app.main import app
 from app.runtime.db import SessionLocal
@@ -18,7 +20,7 @@ from app.runtime.time import utc_now
 @pytest.mark.asyncio
 @pytest.mark.parametrize("slug", [U06, U17])
 async def test_workshop_keyless_workflow_references_completion_and_recovery(monkeypatch, slug):
-    submitted, uploaded = [], []
+    submitted, uploaded, requests = [], [], []
 
     async def upload(**kwargs):
         uploaded.append(kwargs)
@@ -26,7 +28,12 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
 
     async def submit(**kwargs):
         submitted.append(kwargs)
-        return "remote-workflow-task"
+        return await create_task(**kwargs, transport=httpx.MockTransport(respond))
+
+    def respond(request):
+        requests.append(request)
+        assert request.method == "POST" and request.url.path == "/api/workflow/generate"
+        return httpx.Response(200, json={"prompt_id": "remote-workflow-task"})
 
     async def poll(**kwargs):
         assert kwargs["task_id"] == "remote-workflow-task"
@@ -180,6 +187,15 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
             assert submitted[-1]["payload"]["workflow_parameters"] == payload["workflow_parameters"]
             assert len(uploaded) == (4 if slug == U17 else 3)
             assert len(submitted[-1]["references"]["image"]) == 2
+            wire = json.loads(requests[-1].content)
+            assert "workflow_template" not in wire
+            assert wire["input_values"]["ref_image_0"] == uploaded[0]["path"].name
+            assert wire["input_values"]["ref_image_1"] == uploaded[1]["path"].name
+            assert wire["input_values"]["ref_audio_0"] == uploaded[2]["path"].name
+            if slug == U17:
+                assert wire["input_values"]["ref_video_0"] == uploaded[3]["path"].name
+            else:
+                assert "ref_video_0" not in wire["input_values"]
             await runner.recover()
             await runner._process_task(task["id"])
             completed = (
@@ -198,6 +214,7 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
             await runner.recover()
             await runner._process_task(task["id"])
             assert len(submitted) == 1
+            assert len(requests) == 1
             async with SessionLocal() as session:
                 row = await session.get(VisualGenerationTask, task["id"])
                 row.status = "pending"

@@ -23,6 +23,7 @@ import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import "@features/visual-workshop/visual-workshop.css";
+import { GenerationSpinner } from "./GenerationActivity";
 
 const ACTIVE_STATUSES = new Set<GenerationTaskStatus>([
   "queued",
@@ -220,6 +221,9 @@ export function VisualWorkshopTasksPage({
                 <header>
                   <div>
                     <span className={`generation-task-status ${task.status}`}>
+                      {ACTIVE_STATUSES.has(task.status) && (
+                        <GenerationSpinner size={12} />
+                      )}
                       {STATUS_LABELS[task.status]}
                     </span>
                     <strong>{task.model_slug}</strong>
