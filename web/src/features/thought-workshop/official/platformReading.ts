@@ -42,7 +42,8 @@ export const PLATFORM_READING: Record<
     ],
   },
   "general/models": {
-    summary: "把供应商地址、凭证与模型能力逐项配置，再用最小请求确认连接可用。",
+    summary:
+      "配置供应商地址、凭证与模型能力，接入 Seedance 官方视频并用最小请求验证。",
     related: [
       {
         libraryId: "general",
@@ -412,7 +413,7 @@ export const PLATFORM_READING: Record<
   },
   "visual-workshop/workflow": {
     summary:
-      "组织输入连线、核对下载参考素材、查看生成状态，并完成节点复制、裁剪和视频取帧。",
+      "组织输入连线与参考素材，使用 Seedance 视频模型、查看生成状态，并完成裁剪与取帧。",
     related: [
       {
         libraryId: "visual-workshop",

@@ -9,6 +9,7 @@ from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, LocalInput, root
 from app.llm.inference.catalog import get_model, normalize_parameters
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
+from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError, fingerprint
@@ -96,6 +97,23 @@ class InferenceTasks:
             if assets[0].byte_size > max_transcription_input_bytes(provider):
                 raise OperationError("音频超过当前模型的上传上限", "file_too_large", 413)
         payload = normalize_parameters(body, model, provider, assets)
+        if provider.kind == "volcengine_video":
+            try:
+                await validate_seedance_references(
+                    model.slug,
+                    payload,
+                    [
+                        SeedanceReference(
+                            a.media_kind,
+                            a.mime_type,
+                            root(self.workspace_id) / "inputs" / a.storage_key,
+                        )
+                        for a in assets
+                    ],
+                    get_settings().fpl_temp_media_upload_url,
+                )
+            except ValueError as exc:
+                raise OperationError(str(exc)) from None
         payload["asset_ids"] = body.asset_ids
         snap = credential or CredentialSnapshot()
         row = ModelInferenceTask(

@@ -1,6 +1,10 @@
 import type { ProviderInput } from "@features/models/api";
 
 export const providerMetadata = {
+  volcengine_video: {
+    label: "火山方舟视频",
+    optionLabel: "火山方舟 · Seedance 2.0 / 2.5",
+  },
   volcengine_image: {
     label: "火山方舟图片",
     optionLabel: "火山方舟 · Seedream 原生多图",

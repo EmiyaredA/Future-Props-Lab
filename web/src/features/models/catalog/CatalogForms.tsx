@@ -177,6 +177,7 @@ export function ModelForm({
     volcengine_image: ["image_generation"],
     senseaudio_image: ["image_generation"],
     senseaudio_video: ["video_generation"],
+    volcengine_video: ["video_generation"],
     zealman_video: ["video_generation"],
     senseaudio_asr: ["speech_recognition"],
     senseaudio_asr_pro: ["speech_recognition"],
@@ -243,6 +244,27 @@ export function ModelForm({
           }}
         />
       </label>
+      {selectedProvider?.kind === "volcengine_video" && !initial && (
+        <label>
+          <span>Seedance 模型预设</span>
+          <CustomSelect
+            ariaLabel="Seedance 模型预设"
+            value={slug}
+            options={[
+              { value: "", label: "选择 Seedance 版本" },
+              { value: "doubao-seedance-2-0-260128", label: "Seedance 2.0" },
+              { value: "doubao-seedance-2-5-260628", label: "Seedance 2.5" },
+            ]}
+            onChange={(value) => {
+              setSlug(value);
+              setLabel(value.includes("2-5") ? "Seedance 2.5" : "Seedance 2.0");
+              setCapabilities(["video_generation"]);
+              setCategories(["video_generation"]);
+            }}
+          />
+          <small>在火山方舟开通对应模型后，使用方舟 API Key 调用。</small>
+        </label>
+      )}
       {selectedProvider?.kind === "zealman_video" && !initial && (
         <label>
           <span>已支持的工作流</span>

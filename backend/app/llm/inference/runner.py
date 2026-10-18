@@ -178,7 +178,14 @@ class InferenceRunner(PollingTaskRunner):
                 )
         for field, kind in (("audio_asset_ids", "audio"), ("video_asset_ids", "video")):
             for identity in payload.get(field, []):
-                content.append({"type": kind, f"{kind}_url": await media_url(identity)})
+                content.append(
+                    {
+                        "type": kind,
+                        f"{kind}_url": await image_url(identity)
+                        if kind == "audio" and task.provider_kind == "volcengine_video"
+                        else await media_url(identity),
+                    }
+                )
         return await submit_generation_task(
             provider_kind=task.provider_kind,
             base_url=task.base_url,

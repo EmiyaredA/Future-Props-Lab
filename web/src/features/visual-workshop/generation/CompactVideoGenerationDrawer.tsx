@@ -9,11 +9,7 @@ import {
 } from "lucide-react";
 import { WorkflowVideoControls } from "@features/models";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import {
-  VIDEO_RATIO_OPTIONS,
-  VIDEO_RESOLUTION_OPTIONS,
-  type VideoMode,
-} from "@features/visual-workshop/generation/options";
+import { type VideoMode } from "@features/visual-workshop/generation/options";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
 import { PromptVersionControls } from "./PromptVersionControls";
 import { GenerationSpinner } from "./GenerationActivity";
@@ -81,7 +77,10 @@ export function CompactVideoGenerationDrawer({
     submit,
     hasLinkedVideoReferences,
   } = controller;
-  const minimumDuration = workflowCapabilities ? 4 : 2;
+  const minimumDuration =
+    controller.videoCapabilities?.duration_min ??
+    (workflowCapabilities ? 4 : 2);
+  const maximumDuration = controller.videoCapabilities?.duration_max ?? 15;
   const hasFrameReferences = firstFrame.length > 0 || lastFrame.length > 0;
   const hasOmniReferences =
     references.length > 0 ||
@@ -417,40 +416,55 @@ export function CompactVideoGenerationDrawer({
               <Settings2 aria-hidden />
               {workflowCapabilities
                 ? `${duration}S · ${workflowCapabilities.supports_ratio ? ratio : `${controller.workflowValues.width ?? workflowCapabilities.parameters.width?.default} × ${controller.workflowValues.height ?? workflowCapabilities.parameters.height?.default}`}`
-                : `${ratio} · ${duration}S · ${resolution.toUpperCase()}`}
+                : `${controller.effectiveRatio === "adaptive" ? "自适应" : controller.effectiveRatio} · ${duration === -1 ? "自动时长" : `${duration}S`} · ${resolution.toUpperCase()}`}
               <ChevronDown aria-hidden />
             </summary>
             <div className="video-parameter-popover">
-              <label className="video-duration-control">
-                <span className="video-duration-head">
+              {controller.videoCapabilities ? (
+                <label>
                   <span>时长</span>
-                  <output>{duration} 秒</output>
-                </span>
-                <input
-                  type="range"
-                  aria-label="时长"
-                  min={minimumDuration}
-                  max="15"
-                  step="1"
-                  value={duration}
-                  style={
-                    {
-                      "--video-duration-progress": `${((duration - minimumDuration) / (15 - minimumDuration)) * 100}%`,
-                    } as CSSProperties
-                  }
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setDuration(value);
-                    persistDraft({ duration: value });
-                  }}
-                  onPointerUp={() => persistDraft({}, true)}
-                  onBlur={() => persistDraft({}, true)}
-                />
-                <span className="video-duration-limits" aria-hidden="true">
-                  <span>{minimumDuration} 秒</span>
-                  <span>15 秒</span>
-                </span>
-              </label>
+                  <CustomSelect
+                    ariaLabel="时长"
+                    value={String(duration)}
+                    options={controller.videoOptions.durations}
+                    onChange={(value) => {
+                      setDuration(Number(value));
+                      persistDraft({ duration: Number(value) }, true);
+                    }}
+                  />
+                </label>
+              ) : (
+                <label className="video-duration-control">
+                  <span className="video-duration-head">
+                    <span>时长</span>
+                    <output>{duration} 秒</output>
+                  </span>
+                  <input
+                    type="range"
+                    aria-label="时长"
+                    min={minimumDuration}
+                    max={maximumDuration}
+                    step="1"
+                    value={duration}
+                    style={
+                      {
+                        "--video-duration-progress": `${((duration - minimumDuration) / (maximumDuration - minimumDuration)) * 100}%`,
+                      } as CSSProperties
+                    }
+                    onChange={(event) => {
+                      const value = Number(event.target.value);
+                      setDuration(value);
+                      persistDraft({ duration: value });
+                    }}
+                    onPointerUp={() => persistDraft({}, true)}
+                    onBlur={() => persistDraft({}, true)}
+                  />
+                  <span className="video-duration-limits" aria-hidden="true">
+                    <span>{minimumDuration} 秒</span>
+                    <span>{maximumDuration} 秒</span>
+                  </span>
+                </label>
+              )}
               {(!workflowCapabilities ||
                 workflowCapabilities.supports_ratio) && (
                 <label>
@@ -458,8 +472,11 @@ export function CompactVideoGenerationDrawer({
                   <CustomSelect
                     ariaLabel="画面比例"
                     className="video-parameter-select"
-                    value={ratio}
-                    options={VIDEO_RATIO_OPTIONS}
+                    value={controller.effectiveRatio}
+                    options={controller.videoOptions.ratios.map((value) => ({
+                      value,
+                      label: value === "adaptive" ? "自适应" : value,
+                    }))}
                     onChange={(value) => {
                       const next = value as typeof ratio;
                       setRatio(next);
@@ -476,7 +493,9 @@ export function CompactVideoGenerationDrawer({
                       ariaLabel="清晰度"
                       className="video-parameter-select"
                       value={resolution}
-                      options={VIDEO_RESOLUTION_OPTIONS}
+                      options={controller.videoOptions.resolutions.map(
+                        (value) => ({ value, label: value.toUpperCase() }),
+                      )}
                       onChange={(value) => {
                         const next = value as typeof resolution;
                         setResolution(next);

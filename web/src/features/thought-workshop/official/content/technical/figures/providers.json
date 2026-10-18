@@ -20,7 +20,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "供应商请求适配\n鉴权与参数转换",
+      "text": "供应商请求适配\n鉴权、版本能力与参数转换",
       "fill": "#edf2fb",
       "stroke": "#365f62",
       "icon": "server"

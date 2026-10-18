@@ -17407,6 +17407,16 @@
             "default": true,
             "title": "Supports Seed"
           },
+          "video_capabilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoCapabilitiesOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "workflow_capabilities": {
             "anyOf": [
               {
@@ -17571,6 +17581,7 @@
             "enum": [
               "volcengine_image",
               "senseaudio_image",
+              "volcengine_video",
               "senseaudio_video",
               "zealman_video",
               "senseaudio_music",
@@ -18211,7 +18222,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 15,
+            "maxItems": 50,
             "title": "Asset Ids",
             "type": "array"
           },
@@ -21141,6 +21152,16 @@
             "title": "Slug",
             "type": "string"
           },
+          "video_capabilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoCapabilitiesOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "workflow_capabilities": {
             "anyOf": [
               {
@@ -21285,6 +21306,7 @@
               "senseaudio_image",
               "volcengine_image",
               "senseaudio_video",
+              "volcengine_video",
               "zealman_video"
             ],
             "title": "Provider Kind",
@@ -22943,16 +22965,27 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 3,
+            "maxItems": 10,
             "title": "Audio Asset Ids",
             "type": "array"
           },
           "duration": {
             "default": 5,
-            "maximum": 15.0,
-            "minimum": 4.0,
+            "maximum": 30.0,
+            "minimum": -1.0,
             "title": "Duration",
             "type": "integer"
+          },
+          "first_frame_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Frame Asset Id"
           },
           "generate_audio": {
             "anyOf": [
@@ -22968,6 +23001,27 @@
           "kind": {
             "const": "video",
             "title": "Kind",
+            "type": "string"
+          },
+          "last_frame_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Frame Asset Id"
+          },
+          "mode": {
+            "default": "reference",
+            "enum": [
+              "text",
+              "frames",
+              "reference"
+            ],
+            "title": "Mode",
             "type": "string"
           },
           "model_id": {
@@ -22988,7 +23042,9 @@
                   "9:16",
                   "4:3",
                   "3:4",
-                  "1:1"
+                  "1:1",
+                  "21:9",
+                  "adaptive"
                 ],
                 "type": "string"
               },
@@ -23002,7 +23058,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 9,
+            "maxItems": 30,
             "title": "Reference Asset Ids",
             "type": "array"
           },
@@ -23012,7 +23068,8 @@
                 "enum": [
                   "480p",
                   "720p",
-                  "1080p"
+                  "1080p",
+                  "4k"
                 ],
                 "type": "string"
               },
@@ -23026,7 +23083,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 3,
+            "maxItems": 10,
             "title": "Video Asset Ids",
             "type": "array"
           },
@@ -25597,6 +25654,7 @@
               "openai",
               "anthropic",
               "senseaudio_image",
+              "volcengine_video",
               "senseaudio_video",
               "zealman_video",
               "senseaudio_asr",
@@ -25679,6 +25737,7 @@
               "openai",
               "anthropic",
               "senseaudio_image",
+              "volcengine_video",
               "senseaudio_video",
               "zealman_video",
               "senseaudio_asr",
@@ -26528,6 +26587,7 @@
               "openai",
               "anthropic",
               "senseaudio_image",
+              "volcengine_video",
               "senseaudio_video",
               "zealman_video",
               "senseaudio_asr",
@@ -29974,6 +30034,7 @@
               "openai",
               "anthropic",
               "senseaudio_image",
+              "volcengine_video",
               "senseaudio_video",
               "zealman_video",
               "senseaudio_asr",
@@ -30053,6 +30114,7 @@
               "openai",
               "anthropic",
               "senseaudio_image",
+              "volcengine_video",
               "senseaudio_video",
               "zealman_video",
               "senseaudio_asr",
@@ -32066,6 +32128,73 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VideoCapabilitiesOut": {
+        "properties": {
+          "audio_only": {
+            "default": false,
+            "title": "Audio Only",
+            "type": "boolean"
+          },
+          "default_generate_audio": {
+            "default": true,
+            "title": "Default Generate Audio",
+            "type": "boolean"
+          },
+          "duration_max": {
+            "title": "Duration Max",
+            "type": "integer"
+          },
+          "duration_min": {
+            "default": 4,
+            "title": "Duration Min",
+            "type": "integer"
+          },
+          "frames_require_adaptive_ratio": {
+            "default": false,
+            "title": "Frames Require Adaptive Ratio",
+            "type": "boolean"
+          },
+          "ratios": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ratios",
+            "type": "array"
+          },
+          "reference_limits": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Reference Limits",
+            "type": "object"
+          },
+          "reference_video_upload_configured": {
+            "default": false,
+            "title": "Reference Video Upload Configured",
+            "type": "boolean"
+          },
+          "resolutions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Resolutions",
+            "type": "array"
+          },
+          "supports_auto_duration": {
+            "default": true,
+            "title": "Supports Auto Duration",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "duration_max",
+          "resolutions",
+          "ratios",
+          "reference_limits"
+        ],
+        "title": "VideoCapabilitiesOut",
+        "type": "object"
+      },
       "VideoEditorAssetBakeCreateIn": {
         "properties": {
           "effects": {
@@ -33955,7 +34084,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 3,
+            "maxItems": 10,
             "title": "Audio Asset Ids",
             "type": "array"
           },
@@ -33974,8 +34103,8 @@
           },
           "duration": {
             "default": 5,
-            "maximum": 15.0,
-            "minimum": 2.0,
+            "maximum": 30.0,
+            "minimum": -1.0,
             "title": "Duration",
             "type": "integer"
           },
@@ -34057,7 +34186,9 @@
                   "9:16",
                   "4:3",
                   "3:4",
-                  "1:1"
+                  "1:1",
+                  "21:9",
+                  "adaptive"
                 ],
                 "type": "string"
               },
@@ -34071,7 +34202,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 9,
+            "maxItems": 30,
             "title": "Reference Asset Ids",
             "type": "array"
           },
@@ -34081,7 +34212,8 @@
                 "enum": [
                   "480p",
                   "720p",
-                  "1080p"
+                  "1080p",
+                  "4k"
                 ],
                 "type": "string"
               },
@@ -34095,7 +34227,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 3,
+            "maxItems": 10,
             "title": "Video Asset Ids",
             "type": "array"
           },
@@ -36284,14 +36416,14 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 3,
+            "maxItems": 10,
             "title": "Audio Asset Ids",
             "type": "array"
           },
           "duration": {
             "default": 5,
-            "maximum": 15.0,
-            "minimum": 2.0,
+            "maximum": 30.0,
+            "minimum": -1.0,
             "title": "Duration",
             "type": "integer"
           },
@@ -36354,7 +36486,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "maxProperties": 16,
+            "maxProperties": 50,
             "title": "Prompt Reference Names",
             "type": "object"
           },
@@ -36374,7 +36506,9 @@
               "9:16",
               "4:3",
               "3:4",
-              "1:1"
+              "1:1",
+              "21:9",
+              "adaptive"
             ],
             "title": "Ratio",
             "type": "string"
@@ -36383,7 +36517,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 9,
+            "maxItems": 30,
             "title": "Reference Asset Ids",
             "type": "array"
           },
@@ -36392,7 +36526,8 @@
             "enum": [
               "480p",
               "720p",
-              "1080p"
+              "1080p",
+              "4k"
             ],
             "title": "Resolution",
             "type": "string"
@@ -36401,7 +36536,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 3,
+            "maxItems": 10,
             "title": "Video Asset Ids",
             "type": "array"
           },

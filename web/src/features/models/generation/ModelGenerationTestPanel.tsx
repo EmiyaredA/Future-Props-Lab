@@ -1,3 +1,4 @@
+import { videoChoices, videoSelectionError } from "./videoCapabilities";
 import { executionDetails } from "@shared/ui/taskExecutionPresentation";
 import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -37,16 +38,13 @@ import {
 import { modelQueryKeys } from "@features/models/queryKeys";
 
 import {
-  durationOptions,
   formatElapsed,
   formatTime,
   maxReferenceBytes,
   modelGenerationKind,
   pendingStatuses,
-  ratios,
   referenceKind,
   referenceLimits,
-  resolutions,
   statusLabel,
   type LocalReference,
   type Ratio,
@@ -78,6 +76,9 @@ export function ModelGenerationTestPanel({
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState("");
   const [seed, setSeed] = useState("");
+  const [videoMode, setVideoMode] = useState<"text" | "frames" | "reference">(
+    "reference",
+  );
   const [duration, setDuration] = useState(5);
   const [workflowValues, setWorkflowValues] = useState<Record<string, string>>(
     {},
@@ -135,8 +136,17 @@ export function ModelGenerationTestPanel({
   const selectedOption = optionsQuery.data?.items.find(
     (item) => item.id === modelId,
   );
+  const videoCaps = selectedOption?.video_capabilities;
+  const choices = videoChoices(videoCaps, videoMode === "frames");
+  const effectiveRatio =
+    videoCaps?.frames_require_adaptive_ratio && videoMode === "frames"
+      ? "adaptive"
+      : ratio;
   const workflow = selectedOption?.workflow_capabilities;
-  const limits = workflow?.reference_limits ?? referenceLimits;
+  const limits =
+    workflow?.reference_limits ??
+    videoCaps?.reference_limits ??
+    referenceLimits;
   const tasksQuery = useQuery({
     queryKey: modelQueryKeys.generationTasks(modelId),
     queryFn: () => getModelTestGenerationTasks(modelId),
@@ -166,17 +176,9 @@ export function ModelGenerationTestPanel({
     setActiveId(null);
     setTaskSearch("");
     setWorkflowValues({});
-    setRatio("16:9");
-    setPrompt("");
     setError("");
-    setReferenceFiles((current) => {
-      current.forEach((item) => {
-        URL.revokeObjectURL(item.previewUrl);
-        referenceUrlsRef.current.delete(item.previewUrl);
-      });
-      return [];
-    });
-  }, [kind, modelId]);
+    setGenerateAudio(currentModel?.providerKind === "volcengine_video");
+  }, [kind, modelId, currentModel?.providerKind]);
 
   useEffect(
     () => () => {
@@ -263,6 +265,15 @@ export function ModelGenerationTestPanel({
           model_id: modelId,
           prompt: prompt.trim(),
           duration,
+          ...(videoCaps
+            ? {
+                mode: videoMode,
+                first_frame_asset_id:
+                  videoMode === "frames" ? uploaded[0]?.asset.id : null,
+                last_frame_asset_id:
+                  videoMode === "frames" ? uploaded[1]?.asset.id : null,
+              }
+            : {}),
           ...(workflow
             ? {
                 ...(workflow.supports_ratio ? { ratio } : {}),
@@ -276,9 +287,18 @@ export function ModelGenerationTestPanel({
                   ]),
                 ),
               }
-            : { resolution, ratio, watermark, generate_audio: generateAudio }),
+            : {
+                resolution,
+                ratio: effectiveRatio,
+                watermark,
+                generate_audio: generateAudio,
+              }),
           reference_asset_ids: uploaded
-            .filter((item) => item.reference.kind === "image")
+            .filter(
+              (item) =>
+                item.reference.kind === "image" &&
+                !(videoCaps && videoMode === "frames"),
+            )
             .map((item) => item.asset.id),
           audio_asset_ids: uploaded
             .filter((item) => item.reference.kind === "audio")
@@ -343,9 +363,45 @@ export function ModelGenerationTestPanel({
     const hasVisualReference = referenceFiles.some(
       (item) => item.kind === "image" || item.kind === "video",
     );
-    if (generationKind === "video" && hasAudio && !hasVisualReference) {
+    if (
+      generationKind === "video" &&
+      !videoCaps?.audio_only &&
+      hasAudio &&
+      !hasVisualReference
+    ) {
       setError("参考音频需要搭配至少一张参考图片或一个参考视频");
       return;
+    }
+    if (generationKind === "video" && !workflow) {
+      if (videoCaps && videoMode === "text" && referenceFiles.length) {
+        setError("纯文本模式不能携带素材；请移除素材或切换输入方式。");
+        return;
+      }
+      if (
+        videoCaps &&
+        videoMode === "frames" &&
+        (referenceFiles.length < 1 ||
+          referenceFiles.length > 2 ||
+          referenceFiles.some((item) => item.kind !== "image"))
+      ) {
+        setError("首帧/首尾帧模式需要按顺序选择 1–2 张图片。");
+        return;
+      }
+      const invalid = videoSelectionError(videoCaps, {
+        duration,
+        resolution,
+        ratio: effectiveRatio,
+        image:
+          videoMode === "frames" && videoCaps
+            ? 0
+            : referenceFiles.filter((i) => i.kind === "image").length,
+        audio: referenceFiles.filter((i) => i.kind === "audio").length,
+        video: referenceFiles.filter((i) => i.kind === "video").length,
+      });
+      if (invalid) {
+        setError(invalid);
+        return;
+      }
     }
     createMutation.mutate();
   };
@@ -375,7 +431,7 @@ export function ModelGenerationTestPanel({
         setError("单张参考图片不能超过 30 MB");
         continue;
       }
-      if (totalBytes + file.size > maxReferenceBytes) {
+      if (!videoCaps && totalBytes + file.size > maxReferenceBytes) {
         setError("本地参考素材总大小不能超过 45 MB");
         continue;
       }
@@ -684,6 +740,23 @@ export function ModelGenerationTestPanel({
               </>
             ) : (
               <>
+                {videoCaps && (
+                  <label>
+                    <span>输入方式</span>
+                    <CustomSelect
+                      ariaLabel="视频输入方式"
+                      value={videoMode}
+                      onChange={(value) =>
+                        setVideoMode(value as typeof videoMode)
+                      }
+                      options={[
+                        { value: "text", label: "纯文本" },
+                        { value: "frames", label: "首帧 / 首尾帧" },
+                        { value: "reference", label: "参考素材" },
+                      ]}
+                    />
+                  </label>
+                )}
                 <fieldset className="generation-reference-fieldset">
                   <legend>
                     参考素材 <small>可选</small>
@@ -705,7 +778,11 @@ export function ModelGenerationTestPanel({
                     <Paperclip aria-hidden />
                     <span>
                       <strong>上传参考图片、音频或视频</strong>
-                      <small>可多选，本地素材合计不超过 45 MB</small>
+                      <small>
+                        {videoCaps
+                          ? "图片/音频编码请求不超过 64 MB；参考视频需配置临时上传"
+                          : "可多选，本地素材合计不超过 45 MB"}
+                      </small>
                     </span>
                   </button>
                   <ModelGenerationReferenceList
@@ -713,7 +790,10 @@ export function ModelGenerationTestPanel({
                     onRemove={removeReferenceFile}
                   />
                   <p>
-                    音频需搭配参考图片或视频；最多 {limits.image} 图、
+                    {videoCaps?.audio_only
+                      ? "支持纯音频参考；"
+                      : "音频需搭配参考图片或视频；"}
+                    最多 {limits.image} 图、
                     {limits.audio} 音频、{limits.video} 视频。
                   </p>
                 </fieldset>
@@ -723,7 +803,7 @@ export function ModelGenerationTestPanel({
                     ariaLabel="时长"
                     className="generation-parameter-select generation-duration-select"
                     value={String(duration)}
-                    options={durationOptions}
+                    options={choices.durations}
                     onChange={(value) => setDuration(Number(value))}
                   />
                 </label>
@@ -741,13 +821,13 @@ export function ModelGenerationTestPanel({
                       role="group"
                       aria-label="分辨率"
                     >
-                      {resolutions.map((item) => (
+                      {choices.resolutions.map((item) => (
                         <button
                           type="button"
                           aria-pressed={resolution === item}
                           className={resolution === item ? "active" : ""}
                           key={item}
-                          onClick={() => setResolution(item)}
+                          onClick={() => setResolution(item as Resolution)}
                         >
                           {item}
                         </button>
@@ -763,19 +843,19 @@ export function ModelGenerationTestPanel({
                       role="group"
                       aria-label="比例"
                     >
-                      {ratios.map((item) => (
+                      {choices.ratios.map((item) => (
                         <button
                           type="button"
-                          aria-pressed={ratio === item}
-                          className={ratio === item ? "active" : ""}
+                          aria-pressed={effectiveRatio === item}
+                          className={effectiveRatio === item ? "active" : ""}
                           key={item}
-                          onClick={() => setRatio(item)}
+                          onClick={() => setRatio(item as Ratio)}
                         >
                           <i
                             className={`generation-ratio-shape ratio-${item.replace(":", "-")}`}
                             aria-hidden
                           />
-                          <span>{item}</span>
+                          <span>{item === "adaptive" ? "自适应" : item}</span>
                         </button>
                       ))}
                     </div>

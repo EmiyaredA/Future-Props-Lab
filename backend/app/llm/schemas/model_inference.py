@@ -45,7 +45,7 @@ class InferenceTaskIn(BaseModel):
     model_id: str
     kind: Literal["image", "video", "music", "sound_effect", "transcription"]
     parameters: dict = Field(default_factory=dict)
-    asset_ids: list[str] = Field(default_factory=list, max_length=15)
+    asset_ids: list[str] = Field(default_factory=list, max_length=50)
 
 
 class InferenceTaskOut(BaseModel):

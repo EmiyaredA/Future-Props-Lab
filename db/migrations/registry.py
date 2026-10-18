@@ -96,6 +96,7 @@ from db.migrations.versions import (
     r0092_visual_zealman_video,
     r0093_generation_execution_info,
     r0094_visual_node_approval,
+    r0095_volcengine_video,
 )
 
 
@@ -427,5 +428,11 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0094_visual_node_approval.MIGRATION_ID, r0094_visual_node_approval.SQL),)
+
+MIGRATIONS += (
+    Migration(
+        r0095_volcengine_video.MIGRATION_ID, r0095_volcengine_video.SQL, foreign_keys_off=True
+    ),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

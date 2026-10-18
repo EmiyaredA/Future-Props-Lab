@@ -24,6 +24,7 @@ from app.llm.schemas.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
+from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
 from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
 from app.llm.task_execution import TaskExecutionInfo
 
@@ -142,18 +143,18 @@ class VisualCanvasImageGenerationDraft(VisualPromptDraft):
 class VisualCanvasVideoGenerationDraft(VisualPromptDraft):
     model_id: str | None = None
     mode: Literal["text", "image", "frames", "reference"] = "text"
-    duration: int = Field(default=5, ge=2, le=15)
-    resolution: Literal["480p", "720p", "1080p"] = "720p"
-    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] = "16:9"
+    duration: int = Field(default=5, ge=-1, le=30)
+    resolution: Literal["480p", "720p", "1080p", "4k"] = "720p"
+    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1", "21:9", "adaptive"] = "16:9"
     watermark: bool = True
     generate_audio: bool = False
     first_frame_asset_id: str | None = None
     last_frame_asset_id: str | None = None
-    reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
-    audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
-    video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    reference_asset_ids: list[str] = Field(default_factory=list, max_length=30)
+    audio_asset_ids: list[str] = Field(default_factory=list, max_length=10)
+    video_asset_ids: list[str] = Field(default_factory=list, max_length=10)
     workflow_parameters: WorkflowVideoParameters | None = None
-    prompt_reference_names: dict[str, str] = Field(default_factory=dict, max_length=16)
+    prompt_reference_names: dict[str, str] = Field(default_factory=dict, max_length=50)
 
     @field_validator("prompt_reference_names")
     @classmethod
@@ -570,6 +571,7 @@ class GenerationModelOptionOut(BaseModel):
     max_reference_images: int = 1
     supports_seed: bool | None = True
     max_prompt_length: int | None = 2000
+    video_capabilities: VideoCapabilitiesOut | None = None
     workflow_capabilities: WorkflowVideoCapabilitiesOut | None = None
     reference_mime_types: list[str] = Field(
         default_factory=lambda: ["image/jpeg", "image/png", "image/webp"]
@@ -588,6 +590,7 @@ class GenerationTaskOut(BaseModel):
     provider_kind: Literal[
         "volcengine_image",
         "senseaudio_image",
+        "volcengine_video",
         "senseaudio_video",
         "zealman_video",
         "senseaudio_music",

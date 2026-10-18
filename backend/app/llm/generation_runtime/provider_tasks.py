@@ -15,6 +15,7 @@ from app.llm.providers import (
     get_image_task,
     get_music_task,
     get_video_task,
+    volcengine_video,
 )
 from app.llm.providers._senseaudio import (
     ProviderTaskStatus,
@@ -102,6 +103,15 @@ async def submit_generation_task(
             output_format=str(payload.get("output_format") or "mp3"),
         )
 
+    if provider_kind == "volcengine_video":
+        return await volcengine_video.create_task(
+            base_url=base_url,
+            api_key=api_key,
+            model=model_slug,
+            payload=payload,
+            content=video_content or [],
+        )
+
     content = video_content or []
     validate_provider_content(content)
     return await create_video_task(
@@ -121,6 +131,10 @@ async def poll_generation_task(
     *, provider_kind: str, base_url: str, api_key: str, provider_task_id: str
 ):
     base_url = require_safe_provider_base_url(base_url)
+    if provider_kind == "volcengine_video":
+        return await volcengine_video.get_task(
+            base_url=base_url, api_key=api_key, task_id=provider_task_id
+        )
     if provider_kind == "senseaudio_image":
         return await get_image_task(
             base_url=base_url,

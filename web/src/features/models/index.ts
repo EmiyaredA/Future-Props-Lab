@@ -8,3 +8,8 @@ export type {
   ModelCatalogActions,
   ModelCatalogPermissions,
 } from "./catalog";
+
+export {
+  videoChoices,
+  videoSelectionError,
+} from "./generation/videoCapabilities";

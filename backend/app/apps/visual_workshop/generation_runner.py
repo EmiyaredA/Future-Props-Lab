@@ -332,7 +332,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         async with self.session_factory() as session:
             bind_workspace(session, workspace_id)
             asset = await session.get(VisualAsset, asset_id)
-            if asset is None or asset.media_kind != "image":
+            if asset is None or asset.media_kind not in {"image", "audio"}:
                 raise ValueError("参考图片已不存在")
             path = self.storage.path_for(asset)
             mime_type = asset.mime_type
@@ -485,7 +485,9 @@ class VisualGenerationRunner(PollingTaskRunner):
                 content.append(
                     {
                         "type": "audio",
-                        "audio_url": await self._temporary_asset_url(
+                        "audio_url": await self._asset_data_uri(str(asset_id), workspace_id)
+                        if provider_kind == "volcengine_video"
+                        else await self._temporary_asset_url(
                             str(asset_id),
                             "audio",
                             workspace_id,

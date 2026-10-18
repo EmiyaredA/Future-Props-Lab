@@ -43,6 +43,8 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
+from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
+from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
 from app.llm.providers.zealman_workflows import (
@@ -122,6 +124,7 @@ class VisualGeneration:
                             "senseaudio_image",
                             "volcengine_image",
                             "senseaudio_video",
+                            "volcengine_video",
                             "zealman_video",
                             "senseaudio_music",
                             "senseaudio_sfx",
@@ -141,7 +144,8 @@ class VisualGeneration:
                         "image"
                         if provider.kind in {"senseaudio_image", "volcengine_image"}
                         else "video"
-                        if provider.kind in {"senseaudio_video", "zealman_video"}
+                        if provider.kind
+                        in {"senseaudio_video", "zealman_video", "volcengine_video"}
                         else "audio"
                     ),
                     slug=model.slug,
@@ -154,20 +158,32 @@ class VisualGeneration:
                     ),
                     max_reference_images=14
                     if provider.kind == "volcengine_image"
+                    else 30
+                    if provider.kind == "volcengine_video"
+                    and model.slug == "doubao-seedance-2-5-260628"
                     else 9
-                    if provider.kind == "zealman_video"
+                    if provider.kind in {"zealman_video", "volcengine_video"}
                     else 1,
-                    supports_seed=provider.kind != "volcengine_image",
+                    supports_seed=provider.kind not in {"volcengine_image", "volcengine_video"},
                     max_prompt_length=6000
                     if provider.kind == "zealman_video"
                     or model.slug == "senseaudio-image-2.0-260319"
                     else 2000,
+                    video_capabilities=video_capabilities(
+                        provider.kind,
+                        model.slug,
+                        upload_configured=bool(self.settings.fpl_temp_media_upload_url),
+                    ),
                     workflow_capabilities=(
                         parameter_options(model.slug) if provider.kind == "zealman_video" else None
                     ),
                 )
                 for model, provider in rows
-                if provider.kind != "zealman_video" or model.slug in WORKFLOWS
+                if (provider.kind != "zealman_video" or model.slug in WORKFLOWS)
+                and (
+                    provider.kind != "volcengine_video"
+                    or model.slug in {"doubao-seedance-2-0-260128", "doubao-seedance-2-5-260628"}
+                )
             ]
         )
 
@@ -196,7 +212,7 @@ class VisualGeneration:
             not in (
                 {"senseaudio_image", "volcengine_image"}
                 if kind == "image"
-                else {"senseaudio_video", "zealman_video"}
+                else {"senseaudio_video", "zealman_video", "volcengine_video"}
                 if kind == "video"
                 else {expected_provider_kind}
             )
@@ -207,6 +223,10 @@ class VisualGeneration:
             raise GenerationError("供应商尚未配置 API Key", code="missing_api_key", status=409)
         if provider.kind == "volcengine_image" and model.slug != SEEDREAM_MODEL:
             raise GenerationError("当前方舟图片适配仅支持 Seedream 4.5", code="unsupported_model")
+        try:
+            video_capabilities(provider.kind, model.slug)
+        except ValueError as exc:
+            raise GenerationError(str(exc), code="unsupported_model") from None
         return model, provider
 
     async def _reference_asset(
@@ -352,6 +372,10 @@ class VisualGeneration:
             payload["reference_asset_ids"] = reference_ids
             payload["reference_asset_id"] = reference_ids[0] if len(reference_ids) == 1 else None
         elif isinstance(body, VideoGenerationTaskCreateIn):
+            try:
+                payload = normalize_video_parameters(provider.kind, model.slug, payload)
+            except ValueError as exc:
+                raise GenerationError(str(exc), code="unsupported_parameter") from None
             if provider.kind == "zealman_video":
                 try:
                     payload["workflow_parameters"] = (
@@ -404,6 +428,21 @@ class VisualGeneration:
                     for asset in reference_assets.values()
                 ):
                     raise GenerationError("工作流不支持所选素材格式", code="invalid_reference")
+            if provider.kind == "volcengine_video":
+                try:
+                    await validate_seedance_references(
+                        model.slug,
+                        payload,
+                        [
+                            SeedanceReference(
+                                asset.media_kind, asset.mime_type, self.storage.path_for(asset)
+                            )
+                            for asset in reference_assets.values()
+                        ],
+                        self.settings.fpl_temp_media_upload_url,
+                    )
+                except ValueError as exc:
+                    raise GenerationError(str(exc), code="invalid_reference") from None
         elif isinstance(body, AudioGenerationTaskCreateIn):
             for asset_id in body.reference_asset_ids:
                 reference_assets[asset_id] = await self._reference_asset(

@@ -3,8 +3,9 @@ import type { ModelTestGenerationTask } from "@features/models/api";
 import { formatFileSize } from "@shared/lib/fileSize";
 
 export type GenerationKind = "image" | "video";
-export type Resolution = "480p" | "720p" | "1080p";
-export type Ratio = "16:9" | "9:16" | "4:3" | "3:4" | "1:1";
+export type Resolution = "480p" | "720p" | "1080p" | "4k";
+export type Ratio =
+  "16:9" | "9:16" | "4:3" | "3:4" | "1:1" | "21:9" | "adaptive";
 export type ReferenceKind = "image" | "audio" | "video";
 
 export type LocalReference = {
@@ -80,7 +81,11 @@ export const formatBytes = (bytes: number) =>
 export function modelGenerationKind(model: TestModel): GenerationKind | null {
   if (["senseaudio_image", "volcengine_image"].includes(model.providerKind))
     return "image";
-  if (["senseaudio_video", "zealman_video"].includes(model.providerKind))
+  if (
+    ["senseaudio_video", "zealman_video", "volcengine_video"].includes(
+      model.providerKind,
+    )
+  )
     return "video";
   return null;
 }

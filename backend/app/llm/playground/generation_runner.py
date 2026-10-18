@@ -138,6 +138,20 @@ class ModelTestGenerationRunner(PollingTaskRunner):
                 payload=task.payload,
             )
         content: list[dict[str, object]] = [{"type": "text", "text": str(task.payload["prompt"])}]
+        for field, role in (
+            ("first_frame_asset_id", "first_frame"),
+            ("last_frame_asset_id", "last_frame"),
+        ):
+            if task.payload.get(field):
+                content.append(
+                    {
+                        "type": "image",
+                        "url": await self._asset_data_uri(
+                            task.task_id, task.payload[field], "image"
+                        ),
+                        "role": role,
+                    }
+                )
         for asset_id in task.payload.get("reference_asset_ids", []):
             content.append(
                 {
@@ -150,9 +164,9 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             content.append(
                 {
                     "type": "audio",
-                    "audio_url": await self._temporary_asset_url(
-                        task.task_id, str(asset_id), "audio"
-                    ),
+                    "audio_url": await self._asset_data_uri(task.task_id, str(asset_id), "audio")
+                    if task.provider_kind == "volcengine_video"
+                    else await self._temporary_asset_url(task.task_id, str(asset_id), "audio"),
                 }
             )
         for asset_id in task.payload.get("video_asset_ids", []):

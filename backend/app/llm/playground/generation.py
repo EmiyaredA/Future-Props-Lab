@@ -16,6 +16,8 @@ from app.llm.playground.generation_assets import (
     GenerationAssetError,
     ModelTestGenerationAssets,
 )
+from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
+from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
 from app.llm.providers.zealman_workflows import WORKFLOWS, normalize_request, parameter_options
@@ -92,7 +94,7 @@ class ModelTestGeneration:
             not in (
                 {expected_provider_kind, "volcengine_image"}
                 if kind == "image"
-                else {expected_provider_kind, "zealman_video"}
+                else {expected_provider_kind, "zealman_video", "volcengine_video"}
             )
         ):
             raise ModelTestGenerationError(
@@ -106,6 +108,10 @@ class ModelTestGeneration:
             raise ModelTestGenerationError(
                 "当前方舟图片适配仅支持 Seedream 4.5", code="unsupported_model"
             )
+        try:
+            video_capabilities(provider.kind, model.slug)
+        except ValueError as exc:
+            raise ModelTestGenerationError(str(exc), code="unsupported_model") from None
         return model, provider
 
     async def options(self) -> ModelTestGenerationOptionListOut:
@@ -121,6 +127,7 @@ class ModelTestGeneration:
                             "senseaudio_image",
                             "volcengine_image",
                             "senseaudio_video",
+                            "volcengine_video",
                             "zealman_video",
                         )
                     ),
@@ -140,6 +147,11 @@ class ModelTestGeneration:
                     slug=model.slug,
                     label=model.label or model.slug,
                     description=model.description,
+                    video_capabilities=video_capabilities(
+                        provider.kind,
+                        model.slug,
+                        upload_configured=bool(self.settings.fpl_temp_media_upload_url),
+                    ),
                     workflow_capabilities=parameter_options(model.slug)
                     if provider.kind == "zealman_video"
                     else None,
@@ -150,7 +162,11 @@ class ModelTestGeneration:
                     ),
                 )
                 for model, provider in rows
-                if provider.kind != "zealman_video" or model.slug in WORKFLOWS
+                if (provider.kind != "zealman_video" or model.slug in WORKFLOWS)
+                and (
+                    provider.kind != "volcengine_video"
+                    or model.slug in {"doubao-seedance-2-0-260128", "doubao-seedance-2-5-260628"}
+                )
             ]
         )
 
@@ -164,6 +180,14 @@ class ModelTestGeneration:
         model, provider = await self._model(body.model_id, body.kind)
         payload = body.model_dump(mode="json")
         if isinstance(body, ModelTestVideoGenerationIn):
+            if provider.kind != "volcengine_video" and (body.duration < 4 or body.mode == "frames"):
+                raise ModelTestGenerationError(
+                    "当前测试模型不支持所选时长或首尾帧模式", code="unsupported_parameter"
+                )
+            try:
+                payload = normalize_video_parameters(provider.kind, model.slug, payload)
+            except ValueError as exc:
+                raise ModelTestGenerationError(str(exc), code="unsupported_parameter") from None
             for field, default in {
                 "resolution": "720p",
                 "ratio": "16:9",
@@ -207,6 +231,34 @@ class ModelTestGeneration:
                 raise ModelTestGenerationError(
                     "当前模型不支持工作流参数", code="unsupported_parameter"
                 )
+        if isinstance(body, ModelTestVideoGenerationIn) and provider.kind == "volcengine_video":
+            references = []
+            for identity in [
+                *body.reference_asset_ids,
+                *body.audio_asset_ids,
+                *body.video_asset_ids,
+                *([body.first_frame_asset_id] if body.first_frame_asset_id else []),
+                *([body.last_frame_asset_id] if body.last_frame_asset_id else []),
+            ]:
+                asset = await self.session.get(ModelTestGenerationAsset, identity)
+                if asset is None or asset.task_id is not None:
+                    raise ModelTestGenerationError(
+                        "参考素材不存在或已被使用", code="reference_asset_missing", status=404
+                    )
+                references.append(
+                    SeedanceReference(
+                        asset.media_kind,
+                        asset.mime_type,
+                        self.settings.workspace_model_test_path(asset.workspace_id, "references")
+                        / asset.storage_key,
+                    )
+                )
+            try:
+                await validate_seedance_references(
+                    model.slug, payload, references, self.settings.fpl_temp_media_upload_url
+                )
+            except ValueError as exc:
+                raise ModelTestGenerationError(str(exc), code="invalid_reference") from None
         snap = credential or CredentialSnapshot()
         row = ModelTestGenerationTask(
             provider_id=provider.id,
@@ -229,10 +281,21 @@ class ModelTestGeneration:
                 ).claim_for_task(
                     row.id,
                     (
-                        (body.reference_asset_ids, "reference_image", "image"),
+                        (
+                            [
+                                *body.reference_asset_ids,
+                                *([body.first_frame_asset_id] if body.first_frame_asset_id else []),
+                                *([body.last_frame_asset_id] if body.last_frame_asset_id else []),
+                            ],
+                            "reference_image",
+                            "image",
+                        ),
                         (body.audio_asset_ids, "reference_audio", "audio"),
                         (body.video_asset_ids, "reference_video", "video"),
                     ),
+                    max_inline_image_bytes=None
+                    if provider.kind == "volcengine_video"
+                    else 45 * 1024 * 1024,
                 )
             except GenerationAssetError as exc:
                 await self.session.rollback()

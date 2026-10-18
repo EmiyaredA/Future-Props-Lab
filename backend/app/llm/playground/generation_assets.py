@@ -25,10 +25,12 @@ from app.llm.schemas.model_test import (
 from app.runtime.config import Settings, get_settings
 from app.runtime.time import iso_utc, utc_now
 
-MAX_DRAFT_ASSETS = 15
+MAX_DRAFT_ASSETS = 50
 DRAFT_TTL = timedelta(hours=24)
 ACTIVE_STATUSES = {"queued", "submitting", "pending", "processing"}
 ROLE_FIELDS = (
+    ("first_frame_asset_id", "reference_image", "image"),
+    ("last_frame_asset_id", "reference_image", "image"),
     ("reference_asset_ids", "reference_image", "image"),
     ("audio_asset_ids", "reference_audio", "audio"),
     ("video_asset_ids", "reference_video", "video"),
@@ -44,6 +46,11 @@ ALLOWED_REFERENCES: dict[str, tuple[str, set[str]]] = {
     ".mp4": ("video", {"video/mp4"}),
     ".mov": ("video", {"video/quicktime"}),
 }
+
+
+def _reference_ids(payload: dict, field: str) -> list[str]:
+    value = payload.get(field)
+    return [value] if isinstance(value, str) else value or []
 
 
 class GenerationAssetError(Exception):
@@ -110,7 +117,7 @@ class ModelTestGenerationAssets:
 
     async def upload(self, files: list[IncomingFile]) -> ModelTestGenerationAssetListOut:
         if not files or len(files) > MAX_DRAFT_ASSETS:
-            raise GenerationAssetError("每次可上传 1 至 15 个参考素材")
+            raise GenerationAssetError("每次可上传 1 至 50 个参考素材")
         root = self._root()
         temp_dir = root / ".tmp"
         temp_dir.mkdir(parents=True, exist_ok=True)
@@ -193,6 +200,8 @@ class ModelTestGenerationAssets:
         self,
         task_id: str,
         groups: tuple[tuple[list[str], str, str], ...],
+        *,
+        max_inline_image_bytes: int | None = 45 * 1024 * 1024,
     ) -> None:
         asset_ids = [asset_id for ids, _role, _kind in groups for asset_id in ids]
         if not asset_ids:
@@ -242,7 +251,7 @@ class ModelTestGenerationAssets:
                     raise GenerationAssetError(
                         "参考素材已被其他任务使用", code="asset_claimed", status=409
                     )
-        if inline_image_bytes > 45 * 1024 * 1024:
+        if max_inline_image_bytes is not None and inline_image_bytes > max_inline_image_bytes:
             raise GenerationAssetError(
                 "内联参考图片总大小不能超过 45 MB",
                 code="reference_payload_too_large",
@@ -352,9 +361,12 @@ class ModelTestGenerationAssets:
                 root = self._root(task.workspace_id)
                 temp_dir = root / ".tmp"
                 temp_dir.mkdir(parents=True, exist_ok=True)
+                positions: dict[str, int] = {}
                 for field, role, _kind in ROLE_FIELDS:
                     next_ids: list[str] = []
-                    for position, source in enumerate(legacy[field]):
+                    for source in legacy[field]:
+                        position = positions.get(role, 0)
+                        positions[role] = position + 1
                         storage_key = uuid4().hex
                         temp_path = temp_dir / storage_key
                         final_path = root / storage_key
@@ -374,7 +386,9 @@ class ModelTestGenerationAssets:
                         )
                         prepared.append((row, temp_path, final_path))
                         next_ids.append(row.id)
-                    payload[field] = next_ids
+                    payload[field] = (
+                        (next_ids[0] if next_ids else None) if field.endswith("_id") else next_ids
+                    )
                 result = await self.session.execute(
                     update(ModelTestGenerationTask)
                     .where(
@@ -456,7 +470,11 @@ class ModelTestGenerationAssets:
         self, task: LegacyTaskSnapshot
     ) -> dict[str, list[LegacyAssetSource]] | None:
         payload = dict(task.request_payload)
-        ids = [str(item) for field, _role, _kind in ROLE_FIELDS for item in payload.get(field, [])]
+        ids = [
+            str(item)
+            for field, _role, _kind in ROLE_FIELDS
+            for item in _reference_ids(payload, field)
+        ]
         rows = list(
             (await self.session.execute(select(VisualAsset).where(VisualAsset.id.in_(ids))))
             .scalars()
@@ -466,7 +484,7 @@ class ModelTestGenerationAssets:
         result: dict[str, list[LegacyAssetSource]] = {}
         for field, _role, expected_kind in ROLE_FIELDS:
             items: list[LegacyAssetSource] = []
-            for asset_id in payload.get(field, []):
+            for asset_id in _reference_ids(payload, field):
                 row = by_id.get(str(asset_id))
                 if row is None or row.media_kind != expected_kind:
                     return None

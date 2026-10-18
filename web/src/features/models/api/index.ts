@@ -34,8 +34,13 @@ export type ModelTestReferenceAsset =
   components["schemas"]["ModelTestGenerationAssetOut"];
 export type ModelTestImageGenerationInput =
   components["schemas"]["ModelTestImageGenerationIn"];
-export type ModelTestVideoGenerationInput =
+type VideoGenerationRequest =
   components["schemas"]["ModelTestVideoGenerationIn"];
+export type ModelTestVideoGenerationInput = Omit<
+  VideoGenerationRequest,
+  "mode"
+> &
+  Partial<Pick<VideoGenerationRequest, "mode">>;
 export type ModelTestGenerationInput =
   ModelTestImageGenerationInput | ModelTestVideoGenerationInput;
 export type ModelTestTranscriptionTask =
@@ -381,7 +386,14 @@ export async function getModelTestGenerationOptions() {
 export async function createModelTestGenerationTask(
   body: ModelTestGenerationInput,
 ) {
-  return unwrap(await api.POST("/v1/model-test/generation-tasks", { body }));
+  return unwrap(
+    await api.POST("/v1/model-test/generation-tasks", {
+      body:
+        body.kind === "video"
+          ? { ...body, mode: body.mode ?? "reference" }
+          : body,
+    }),
+  );
 }
 
 export async function uploadModelTestReferenceAssets(files: File[]) {

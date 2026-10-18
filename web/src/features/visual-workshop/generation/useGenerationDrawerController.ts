@@ -1,3 +1,4 @@
+import { videoSelectionError, videoChoices } from "@features/models";
 import {
   type FormEvent,
   useCallback,
@@ -113,12 +114,12 @@ export function useGenerationDrawerController({
     videoDraft?.mode ?? "text",
   );
   const [duration, setDuration] = useState(videoDraft?.duration ?? 5);
-  const [resolution, setResolution] = useState<"480p" | "720p" | "1080p">(
-    videoDraft?.resolution ?? "720p",
-  );
-  const [ratio, setRatio] = useState<"16:9" | "9:16" | "4:3" | "3:4" | "1:1">(
-    videoDraft?.ratio ?? "16:9",
-  );
+  const [resolution, setResolution] = useState<
+    "480p" | "720p" | "1080p" | "4k"
+  >(videoDraft?.resolution ?? "720p");
+  const [ratio, setRatio] = useState<
+    "16:9" | "9:16" | "4:3" | "3:4" | "1:1" | "21:9" | "adaptive"
+  >(videoDraft?.ratio ?? "16:9");
   const [watermark, setWatermark] = useState(videoDraft?.watermark ?? true);
   const [generateAudio, setGenerateAudio] = useState(
     videoDraft?.generate_audio ?? false,
@@ -243,7 +244,21 @@ export function useGenerationDrawerController({
     (model) => model.kind === kind,
   );
   const selectedModel = models.find((model) => model.id === modelId);
+  const videoCapabilities = selectedModel?.video_capabilities;
+  const videoFrames = videoMode === "frames" || videoMode === "image";
+  const effectiveRatio =
+    videoCapabilities?.frames_require_adaptive_ratio && videoFrames
+      ? "adaptive"
+      : ratio;
+  const videoOptions = videoChoices(videoCapabilities, videoFrames);
   const workflowCapabilities = selectedModel?.workflow_capabilities;
+  useEffect(() => {
+    if (
+      videoCapabilities &&
+      (!videoDraft?.model_id || videoDraft?.generate_audio == null)
+    )
+      setGenerateAudio(true);
+  }, [videoCapabilities, videoDraft?.generate_audio, videoDraft?.model_id]);
   const workflowParameters = useMemo(
     () =>
       Object.fromEntries(
@@ -253,11 +268,12 @@ export function useGenerationDrawerController({
       ),
     [workflowValues],
   );
-  const referenceLimits = workflowCapabilities?.reference_limits ?? {
-    image: 9,
-    video: 3,
-    audio: 3,
-  };
+  const referenceLimits = workflowCapabilities?.reference_limits ??
+    videoCapabilities?.reference_limits ?? {
+      image: 9,
+      video: 3,
+      audio: 3,
+    };
 
   const availableImageSizes = useMemo(
     () => imageSizeChoices(selectedModel?.sizes ?? []),
@@ -299,7 +315,11 @@ export function useGenerationDrawerController({
           mode: videoMode,
           duration,
           resolution,
-          ratio,
+          ratio:
+            videoCapabilities?.frames_require_adaptive_ratio &&
+            ["frames", "image"].includes(String(changes.mode ?? videoMode))
+              ? "adaptive"
+              : ratio,
           watermark,
           generate_audio: generateAudio,
           workflow_parameters: workflowParameters,
@@ -345,6 +365,7 @@ export function useGenerationDrawerController({
       seed,
       size,
       videoMode,
+      videoCapabilities,
       videoReferences,
       watermark,
       workflowParameters,
@@ -356,10 +377,19 @@ export function useGenerationDrawerController({
     setModelId(id);
     if (id === modelId) return;
     setWorkflowValues({});
+    if (model?.video_capabilities) setGenerateAudio(true);
+    setNotice(
+      "已保留提示词与素材；请确认当前模型支持所选时长、分辨率和参考数量。",
+    );
     const changes: Record<string, unknown> = {
       model_id: id,
       workflow_parameters: null,
     };
+    if (model?.video_capabilities) {
+      changes.generate_audio = true;
+      if (model.video_capabilities.frames_require_adaptive_ratio && videoFrames)
+        changes.ratio = "adaptive";
+    }
     if (
       model?.workflow_capabilities &&
       (videoMode === "frames" || videoMode === "image")
@@ -651,6 +681,7 @@ export function useGenerationDrawerController({
     }
     if (
       kind === "video" &&
+      !videoCapabilities?.audio_only &&
       videoMode === "reference" &&
       audioReferences.length + linkedAssetIds.audio.length > 0 &&
       references.length + linkedAssetIds.image.length === 0 &&
@@ -690,6 +721,29 @@ export function useGenerationDrawerController({
         `当前模型提示词最多支持 ${selectedModel?.max_prompt_length ?? 2000} 个字符。`,
       );
       return;
+    }
+    if (kind === "video" && !workflowCapabilities) {
+      const error = videoSelectionError(videoCapabilities, {
+        duration,
+        resolution,
+        ratio: effectiveRatio,
+        image:
+          videoMode === "reference"
+            ? orderedReferenceIds(references, linkedAssetIds.image).length
+            : 0,
+        audio:
+          videoMode === "reference"
+            ? orderedReferenceIds(audioReferences, linkedAssetIds.audio).length
+            : 0,
+        video:
+          videoMode === "reference"
+            ? orderedReferenceIds(videoReferences, linkedAssetIds.video).length
+            : 0,
+      });
+      if (error) {
+        setNotice(error);
+        return;
+      }
     }
     if (kind === "video" && workflowCapabilities) {
       let referenceBytes = 0;
@@ -793,7 +847,12 @@ export function useGenerationDrawerController({
               workflow_parameters: workflowParameters,
               ...(workflowCapabilities.supports_ratio ? { ratio } : {}),
             }
-          : { resolution, ratio, watermark, generate_audio: generateAudio }),
+          : {
+              resolution,
+              ratio: effectiveRatio,
+              watermark,
+              generate_audio: generateAudio,
+            }),
         first_frame_asset_id:
           videoMode === "frames" || videoMode === "image"
             ? (firstFrame[0] ?? null)
@@ -827,6 +886,9 @@ export function useGenerationDrawerController({
   };
 
   return {
+    videoCapabilities,
+    videoOptions,
+    effectiveRatio,
     promptVersions: lockedKind && onDraftChange ? promptVersions : undefined,
     availableReferenceFiles: Object.values(promptFiles),
     excludedAssetIds,

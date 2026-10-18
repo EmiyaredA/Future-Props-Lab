@@ -475,7 +475,9 @@ export function ModelTestPage({
       (model) => model.providerKind === "senseaudio_image",
     ),
     video: availableModels.some((model) =>
-      ["senseaudio_video", "zealman_video"].includes(model.providerKind),
+      ["senseaudio_video", "zealman_video", "volcengine_video"].includes(
+        model.providerKind,
+      ),
     ),
     speech: availableModels.some(
       (model) =>

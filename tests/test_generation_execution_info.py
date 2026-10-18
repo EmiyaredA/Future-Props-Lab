@@ -18,9 +18,14 @@ async def test_upgrade_preserves_tasks_and_execution_info_survives_store_reload(
     tmp_path, monkeypatch
 ):
     path = tmp_path / "telemetry.db"
+    target = next(
+        i
+        for i, migration in enumerate(MIGRATIONS)
+        if migration.migration_id == "0093_generation_execution_info"
+    )
     with monkeypatch.context() as patch:
-        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:-1])
-        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[-2].migration_id)
+        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:target])
+        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[target - 1].migration_id)
         apply_migrations(path)
     with connect_database(path) as db:
         db.execute("INSERT INTO visual_workshop_projects (id,title,kind) VALUES ('p','P','video')")

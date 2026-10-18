@@ -37,7 +37,6 @@ export function StandardGenerationDrawer({
     setDuration,
     resolution,
     setResolution,
-    ratio,
     setRatio,
     watermark,
     setWatermark,
@@ -185,13 +184,7 @@ export function StandardGenerationDrawer({
                   ariaLabel="视频时长"
                   value={String(duration)}
                   onChange={(value) => setDuration(Number(value))}
-                  options={Array.from(
-                    { length: 12 },
-                    (_, index) => index + 4,
-                  ).map((value) => ({
-                    value: String(value),
-                    label: `${value} 秒`,
-                  }))}
+                  options={controller.videoOptions.durations}
                 />
               </label>
               {!workflowCapabilities && (
@@ -203,10 +196,12 @@ export function StandardGenerationDrawer({
                     onChange={(value) =>
                       setResolution(value as typeof resolution)
                     }
-                    options={["480p", "720p", "1080p"].map((value) => ({
-                      value,
-                      label: value,
-                    }))}
+                    options={controller.videoOptions.resolutions.map(
+                      (value) => ({
+                        value,
+                        label: value,
+                      }),
+                    )}
                   />
                 </label>
               )}
@@ -216,11 +211,14 @@ export function StandardGenerationDrawer({
                   <span>比例</span>
                   <CustomSelect
                     ariaLabel="视频比例"
-                    value={ratio}
-                    onChange={(value) => setRatio(value as typeof ratio)}
-                    options={(
-                      ["16:9", "9:16", "4:3", "3:4", "1:1"] as const
-                    ).map((value) => ({ value, label: value }))}
+                    value={controller.effectiveRatio}
+                    onChange={(value) =>
+                      setRatio(value as typeof controller.ratio)
+                    }
+                    options={controller.videoOptions.ratios.map((value) => ({
+                      value,
+                      label: value === "adaptive" ? "自适应" : value,
+                    }))}
                   />
                 </label>
               )}

@@ -12,6 +12,7 @@ ProviderKind = Literal[
     "openai",
     "anthropic",
     "senseaudio_image",
+    "volcengine_video",
     "senseaudio_video",
     "zealman_video",
     "senseaudio_asr",
@@ -77,6 +78,8 @@ class ProviderIn(BaseModel):
 
     @model_validator(mode="after")
     def valid_base_url(self) -> ProviderIn:
+        if self.kind == "volcengine_video" and not self.base_url.strip():
+            self.base_url = "https://ark.cn-beijing.volces.com/api/v3"
         self.base_url = (
             normalize_provider_websocket_url(self.base_url)
             if self.kind == "senseaudio_realtime"

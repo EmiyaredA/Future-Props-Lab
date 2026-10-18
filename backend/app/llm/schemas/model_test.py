@@ -13,6 +13,7 @@ from app.capabilities.transcription.schemas import (
     ModelTestTranscriptionParametersOut,
 )
 from app.llm.schemas.model_test_tools import ModelTestToolCallOut, ModelTestToolSummaryOut
+from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
 from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
 from app.llm.task_execution import TaskExecutionInfo
 
@@ -180,17 +181,20 @@ class ModelTestImageGenerationIn(BaseModel):
 
 
 class ModelTestVideoGenerationIn(BaseModel):
+    mode: Literal["text", "frames", "reference"] = "reference"
+    first_frame_asset_id: str | None = None
+    last_frame_asset_id: str | None = None
     kind: Literal["video"]
     model_id: str
     prompt: str = Field(min_length=1, max_length=6000)
-    duration: int = Field(default=5, ge=4, le=15)
-    resolution: Literal["480p", "720p", "1080p"] | None = None
-    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] | None = None
+    duration: int = Field(default=5, ge=-1, le=30)
+    resolution: Literal["480p", "720p", "1080p", "4k"] | None = None
+    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1", "21:9", "adaptive"] | None = None
     watermark: bool | None = None
     generate_audio: bool | None = None
-    reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
-    audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
-    video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    reference_asset_ids: list[str] = Field(default_factory=list, max_length=30)
+    audio_asset_ids: list[str] = Field(default_factory=list, max_length=10)
+    video_asset_ids: list[str] = Field(default_factory=list, max_length=10)
     workflow_parameters: WorkflowVideoParameters | None = None
 
     @model_validator(mode="after")
@@ -199,14 +203,23 @@ class ModelTestVideoGenerationIn(BaseModel):
         if not self.prompt:
             raise ValueError("提示词不能为空")
         all_asset_ids = [
+            *([self.first_frame_asset_id] if self.first_frame_asset_id else []),
+            *([self.last_frame_asset_id] if self.last_frame_asset_id else []),
             *self.reference_asset_ids,
             *self.audio_asset_ids,
             *self.video_asset_ids,
         ]
         if len(all_asset_ids) != len(set(all_asset_ids)):
             raise ValueError("参考素材不能重复")
-        if self.audio_asset_ids and not (self.reference_asset_ids or self.video_asset_ids):
-            raise ValueError("参考音频必须搭配参考图片或视频")
+        if self.mode == "frames":
+            if not self.first_frame_asset_id or (
+                self.reference_asset_ids or self.audio_asset_ids or self.video_asset_ids
+            ):
+                raise ValueError("首尾帧模式需要首帧且不能混用参考素材")
+        elif self.first_frame_asset_id or self.last_frame_asset_id:
+            raise ValueError("首尾帧仅可用于首尾帧模式")
+        if self.mode == "text" and all_asset_ids:
+            raise ValueError("纯文本模式不能携带参考素材")
         return self
 
 
@@ -221,7 +234,11 @@ class ModelTestGenerationTaskOut(BaseModel):
     provider_id: str | None
     model_id: str | None
     provider_kind: Literal[
-        "senseaudio_image", "volcengine_image", "senseaudio_video", "zealman_video"
+        "senseaudio_image",
+        "volcengine_image",
+        "senseaudio_video",
+        "volcengine_video",
+        "zealman_video",
     ]
     kind: Literal["image", "video"]
     provider_name: str
@@ -257,6 +274,7 @@ class ModelTestGenerationOptionOut(BaseModel):
     label: str
     description: str
     sizes: list[str] = Field(default_factory=list)
+    video_capabilities: VideoCapabilitiesOut | None = None
     workflow_capabilities: WorkflowVideoCapabilitiesOut | None = None
 
 

@@ -7,7 +7,7 @@ export {
 } from "@features/models/metadata";
 
 export function providerBaseUrlPlaceholder(kind: ProviderInput["kind"]) {
-  if (kind === "volcengine_image")
+  if (["volcengine_image", "volcengine_video"].includes(kind))
     return "https://ark.cn-beijing.volces.com/api/v3";
   if (kind === "zealman_video") return "https://your-panel.example:8443";
   if (kind === "openai") return "https://api.openai.com/v1";

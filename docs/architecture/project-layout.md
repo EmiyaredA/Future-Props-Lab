@@ -624,3 +624,11 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 迁移 `0092_visual_zealman_video` 扩展工坊任务协议约束，同样保留原记录、索引与外键。
 
 视觉节点的 `approved` 人工确认标记由画布节点 JSON 持久化，`NodeApproval.tsx` 提供工作台、状态卡与画布共用入口，素材菜单复用相同画布更新契约。输出登记／切换／删除在 `outputs/history.py` 清除确认；正文变更由画布写入校验清除。迁移 `r0094_visual_node_approval` 为旧节点补默认值，不改已有布局、版本或 revision。
+
+## Seedance 官方视频接入
+
+`llm/providers/volcengine_video.py` 拥有方舟视频创建／查询协议及状态归一化；
+`seedance_parameters.py` 按版本提供公共视频能力与参数校验，`seedance_references.py`
+在任务 admission 前校验本地参考文件。模型测试、视觉工坊与独立推理只持有各自的素材和任务，
+复用 `GenerationTaskDriver`，不互相导入实现。公共 `VideoCapabilitiesOut` 同步前端参数选择、
+画布草稿和 SDK 契约；参考视频复用已配置的临时素材上传服务。

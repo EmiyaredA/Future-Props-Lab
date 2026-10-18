@@ -7,6 +7,7 @@ from app.capabilities.transcription import (
 )
 from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
 from app.llm.models import ModelEntry, ModelProvider
+from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
 from app.llm.schemas.generation_tasks import (
@@ -15,12 +16,14 @@ from app.llm.schemas.generation_tasks import (
     VideoGenerationTaskCreateIn,
 )
 from app.llm.schemas.model_inference import InferenceModelOut, InferenceOptionsOut, InferenceTextIn
+from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
 GENERATION_KINDS = {
     "senseaudio_image": "image",
     "volcengine_image": "image",
     "senseaudio_video": "video",
+    "volcengine_video": "video",
     "senseaudio_music": "music",
     "senseaudio_sfx": "sound_effect",
 }
@@ -88,6 +91,16 @@ async def options(session, workspace_id):
         if not kinds or not provider.api_key_ciphertext:
             continue
         parameters = {}
+        if "video" in kinds and provider.kind == "volcengine_video":
+            try:
+                caps = video_capabilities(
+                    provider.kind,
+                    model.slug,
+                    upload_configured=bool(get_settings().fpl_temp_media_upload_url),
+                )
+            except ValueError:
+                continue
+            parameters["video"] = {"video_capabilities": caps.model_dump(mode="json")}
         if "text" in kinds:
             text_schema = InferenceTextIn.model_json_schema()
             text_schema["properties"].pop("model_id")
@@ -208,4 +221,9 @@ def normalize_parameters(body, model, provider, assets):
             for identity in references
         ):
             raise OperationError("Seedream 4.5 参考图片只支持 PNG、JPEG 或 WebP")
+    if body.kind == "video":
+        try:
+            payload = normalize_video_parameters(provider.kind, model.slug, payload)
+        except ValueError as exc:
+            raise OperationError(str(exc)) from None
     return payload

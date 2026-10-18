@@ -6,6 +6,7 @@ export function ProviderIcon({
     | "openai"
     | "anthropic"
     | "volcengine_image"
+    | "volcengine_video"
     | "senseaudio_image"
     | "senseaudio_video"
     | "zealman_video"
@@ -38,7 +39,7 @@ export function ProviderIcon({
     >
       {kind === "zealman_video" ? (
         <path fill="var(--text-strong)" d="M3 4h18v3L8 17h13v3H3v-3L16 7H3Z" />
-      ) : kind === "volcengine_image" ? (
+      ) : ["volcengine_image", "volcengine_video"].includes(kind) ? (
         <path
           fill="var(--text-strong)"
           d="M12 2 2 7v10l10 5 10-5V7Zm0 3 7 3.5-7 3.5-7-3.5Zm-7 6 6 3v5l-6-3Zm8 8v-5l6-3v5Z"

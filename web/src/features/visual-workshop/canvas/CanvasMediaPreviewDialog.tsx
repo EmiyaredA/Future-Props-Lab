@@ -118,7 +118,14 @@ function taskParameters(task?: GenerationTask) {
       : task.kind === "video"
         ? [
             ["生成方式", payload.mode],
-            ["目标时长", payload.duration ? `${payload.duration} 秒` : null],
+            [
+              "目标时长",
+              payload.duration === -1
+                ? "自动时长"
+                : payload.duration
+                  ? `${payload.duration} 秒`
+                  : null,
+            ],
             ["分辨率", payload.resolution],
             ["画面比例", payload.ratio],
             [
