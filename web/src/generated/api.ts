@@ -17016,6 +17016,55 @@ export interface components {
             /** Y */
             y: number;
         };
+        /** PresentationConnection */
+        PresentationConnection: {
+            /**
+             * Arrow
+             * @default true
+             */
+            arrow: boolean;
+            /**
+             * Color
+             * @default #365F62
+             */
+            color: string;
+            /** Id */
+            id: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /**
+             * Source Anchor
+             * @default right
+             * @enum {string}
+             */
+            source_anchor: "left" | "right" | "top" | "bottom";
+            /** Source Id */
+            source_id: string;
+            /**
+             * Style
+             * @default step
+             * @enum {string}
+             */
+            style: "straight" | "step";
+            /**
+             * Target Anchor
+             * @default left
+             * @enum {string}
+             */
+            target_anchor: "left" | "right" | "top" | "bottom";
+            /** Target Id */
+            target_id: string;
+            /** Waypoints */
+            waypoints?: components["schemas"]["PresentationPoint"][];
+            /**
+             * Width
+             * @default 2
+             */
+            width: number;
+        };
         /** PresentationCrop */
         PresentationCrop: {
             /** Bottom */
@@ -17040,7 +17089,7 @@ export interface components {
              * Version
              * @constant
              */
-            version: 1;
+            version: 2;
             /**
              * Width
              * @constant
@@ -17138,7 +17187,8 @@ export interface components {
              * Entity
              * @enum {string}
              */
-            entity: "slide" | "element";
+            entity: "slide" | "element" | "group" | "connection" | "infographic" | "fragment";
+            fragment?: components["schemas"]["PresentationFragment"] | null;
             /** Id */
             id: string;
             /** Index */
@@ -17154,6 +17204,71 @@ export interface components {
         PresentationExportIn: {
             /** Expected Revision */
             expected_revision: number;
+        };
+        /**
+         * PresentationFragment
+         * @description Native fragment rooted at id; reference and archived slide image must be empty.
+         */
+        PresentationFragment: {
+            /**
+             * Background
+             * @default #FFFFFF
+             */
+            background: string;
+            /** Connections */
+            connections?: components["schemas"]["PresentationConnection"][];
+            /** Elements */
+            elements: components["schemas"]["PresentationElement"][];
+            /** Groups */
+            groups?: components["schemas"]["PresentationGroup"][];
+            /** Id */
+            id: string;
+            /**
+             * Image Asset Id
+             * @description Archived Workspace image; excluded from slide rendering and PPTX.
+             */
+            image_asset_id?: string | null;
+            /** Infographics */
+            infographics?: components["schemas"]["PresentationInfographic"][];
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            reference?: components["schemas"]["PresentationReference"] | null;
+        };
+        /** PresentationGroup */
+        PresentationGroup: {
+            /** Element Ids */
+            element_ids?: string[];
+            /** Id */
+            id: string;
+            /**
+             * Name
+             * @default 分组
+             */
+            name: string;
+            /** Parent Id */
+            parent_id?: string | null;
+        };
+        /** PresentationInfographic */
+        PresentationInfographic: {
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "antv" | "scene";
+            /** Group Id */
+            group_id: string;
+            /** Id */
+            id: string;
+            /** Source */
+            source: string;
+            /**
+             * Template
+             * @default
+             */
+            template: string;
         };
         /** PresentationOperationsIn */
         PresentationOperationsIn: {
@@ -17177,6 +17292,13 @@ export interface components {
             line_height: number;
             /** Runs */
             runs: components["schemas"]["PresentationRun"][];
+        };
+        /** PresentationPoint */
+        PresentationPoint: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /** PresentationProjectIn */
         PresentationProjectIn: {
@@ -17236,6 +17358,27 @@ export interface components {
              */
             updated_at: string;
         };
+        /** PresentationReference */
+        PresentationReference: {
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * Mode
+             * @default side
+             * @enum {string}
+             */
+            mode: "side" | "overlay";
+            /**
+             * Opacity
+             * @default 0.35
+             */
+            opacity: number;
+            /**
+             * Visible
+             * @default true
+             */
+            visible: boolean;
+        };
         /** PresentationRun */
         PresentationRun: {
             /** Bold */
@@ -17260,12 +17403,24 @@ export interface components {
         PresentationSlide: {
             /** Background */
             background: string;
+            /** Connections */
+            connections?: components["schemas"]["PresentationConnection"][];
             /** Elements */
             elements: components["schemas"]["PresentationElement"][];
+            /** Groups */
+            groups?: components["schemas"]["PresentationGroup"][];
             /** Id */
             id: string;
+            /**
+             * Image Asset Id
+             * @description Archived Workspace image; excluded from slide rendering and PPTX.
+             */
+            image_asset_id?: string | null;
+            /** Infographics */
+            infographics?: components["schemas"]["PresentationInfographic"][];
             /** Notes */
             notes: string;
+            reference?: components["schemas"]["PresentationReference"] | null;
         };
         /** ProjectCreateIn */
         ProjectCreateIn: {

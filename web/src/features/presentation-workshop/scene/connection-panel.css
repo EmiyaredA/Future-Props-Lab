@@ -1,0 +1,152 @@
+.presentation-connection-host {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.presentation-connection-panel {
+  position: absolute;
+  z-index: 45;
+  width: 300px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 6px 24px #0002;
+  font-size: 13px;
+}
+.presentation-connection-panel header,
+.presentation-connection-panel footer {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.presentation-connection-panel header {
+  border-bottom: 1px solid var(--border);
+}
+.presentation-connection-grip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 5px 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: grab;
+  touch-action: none;
+}
+.presentation-connection-grip:active {
+  cursor: grabbing;
+}
+.presentation-connection-body {
+  overflow: auto;
+  min-height: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.presentation-connection-row,
+.presentation-connection-color,
+.presentation-connection-width {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.presentation-connection-color {
+  justify-content: space-between;
+}
+.presentation-connection-row button,
+.presentation-connection-disclosure {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  padding: 7px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.presentation-connection-row button {
+  flex: 1;
+}
+.presentation-connection-row button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.presentation-connection-field,
+.presentation-connection-ends {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.presentation-connection-panel input:not([type="range"]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+}
+.presentation-connection-width input[type="number"] {
+  width: 68px;
+}
+.presentation-connection-width input[type="range"] {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  height: 5px;
+  border-radius: 4px;
+  background: var(--border);
+  cursor: pointer;
+}
+.presentation-connection-width input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.presentation-connection-width input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.presentation-connection-disclosure {
+  display: flex;
+  justify-content: space-between;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  text-align: left;
+}
+.presentation-connection-panel footer {
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.presentation-connection-panel footer span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.presentation-connection-panel :is(button, input):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

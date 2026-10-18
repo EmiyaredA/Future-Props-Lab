@@ -1,4 +1,6 @@
+import { slideTheme } from "./slideTheme";
 import type { Deck, Slide, SlideElement, TextRun } from "./types";
+import { cloneFragment } from "./scene/model";
 
 export const layouts = [
   { value: "blank", label: "空白" },
@@ -21,7 +23,7 @@ export const defaultRun = (text = "在此输入文字"): TextRun => ({
   text,
   font: "Microsoft YaHei",
   size: 28,
-  color: "#24344B",
+  color: slideTheme.navy,
   bold: false,
   italic: false,
   underline: false,
@@ -44,13 +46,13 @@ export function newElement(
     image_border: false,
     rotation: 0,
     locked: false,
-    fill: "#6476DC",
+    fill: slideTheme.blue,
     fill_opacity: 1,
     stroke_dash: "solid",
     start_arrow: "none",
     end_arrow: "none",
-    corner_radius: null,
-    stroke: "#4556BA",
+    corner_radius: kind === "roundRect" ? 12 : null,
+    stroke: slideTheme.blue,
     stroke_width: kind === "line" ? 3 : 0,
     paragraphs:
       kind === "text"
@@ -76,12 +78,13 @@ function text(
   size: number,
   color: string,
   bold = false,
+  height = size > 40 ? 100 : 180,
 ): SlideElement {
   return newElement("text", {
     x,
     y,
     width,
-    height: size > 40 ? 110 : 220,
+    height,
     paragraphs: [
       {
         align: "left",
@@ -95,75 +98,87 @@ function text(
 export function newSlide(layout = "blank"): Slide {
   const slide: Slide = {
     id: newId(),
-    background: "#FFFFFF",
+    background: slideTheme.background,
     notes: "",
+    groups: [],
+    connections: [],
+    infographics: [],
+    reference: null,
+    image_asset_id: null,
     elements: [],
   };
   if (layout === "cover" || layout === "ending") {
-    slide.background = "#132338";
+    slide.background = slideTheme.navy;
     slide.elements = [
       newElement("rect", {
-        x: 80,
-        y: 168,
-        width: 62,
-        height: 7,
-        fill: "#D5AE75",
+        x: 88,
+        y: 176,
+        width: 64,
+        height: 6,
+        fill: slideTheme.teal,
       }),
       text(
         layout === "cover" ? "让想法，被看见" : "感谢聆听",
-        72,
-        220,
+        80,
+        224,
         1080,
         64,
-        "#FFFFFF",
+        slideTheme.white,
         true,
+        110,
       ),
       text(
         layout === "cover"
           ? "演示文稿 · 从一个清晰的想法开始"
           : "让我们一起，把想法变成行动",
-        76,
-        360,
-        950,
+        84,
+        364,
+        1000,
         26,
-        "#B5C1D1",
+        slideTheme.border,
+        false,
+        90,
       ),
     ];
   } else if (layout !== "blank") {
     slide.elements = [
-      text("在这里写下标题", 72, 62, 1080, 46, "#24344B", true),
+      text("在这里写下标题", 72, 56, 1120, 44, slideTheme.navy, true, 80),
       newElement("rect", {
         x: 80,
-        y: 168,
-        width: 72,
-        height: 5,
-        fill: "#6476DC",
+        y: 158,
+        width: 56,
+        height: 4,
+        fill: slideTheme.blue,
       }),
       text(
         "用简洁的文字表达核心观点。\n补充事实、数据或一个令人印象深刻的故事。",
         72,
-        214,
-        layout === "columns" ? 530 : 1080,
-        30,
-        "#52627A",
+        210,
+        layout === "columns" ? 520 : 1080,
+        26,
+        slideTheme.muted,
+        false,
+        300,
       ),
     ];
     if (layout === "columns")
       slide.elements.push(
         newElement("roundRect", {
-          x: 700,
-          y: 214,
-          width: 480,
+          x: 680,
+          y: 210,
+          width: 520,
           height: 360,
-          fill: "#EDF0F8",
+          fill: slideTheme.fill,
+          stroke: slideTheme.border,
+          stroke_width: 1,
         }),
-        text("在此插入图片", 784, 340, 340, 28, "#7D8BA0"),
+        text("在此插入图片", 804, 354, 300, 24, slideTheme.muted, false, 70),
       );
   }
   return slide;
 }
 export const newDeck = (layout = "cover"): Deck => ({
-  version: 1,
+  version: 2,
   width: 1280,
   height: 720,
   slides: [newSlide(layout)],
@@ -172,9 +187,11 @@ export function copySlide(slide: Slide): Slide {
   return {
     ...structuredClone(slide),
     id: newId(),
-    elements: slide.elements.map((e) => ({
-      ...structuredClone(e),
-      id: newId(),
-    })),
+    ...cloneFragment(
+      slide,
+      slide.elements.map((e) => e.id),
+      newId,
+      0,
+    ),
   };
 }

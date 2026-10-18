@@ -1,7 +1,13 @@
-import { useId, useState } from "react";
+import { slideTheme } from "./slideTheme";
+import { lazy, Suspense, useId, useState, type ReactNode } from "react";
 import { LockKeyhole, UnlockKeyhole, RotateCcw } from "lucide-react";
 import { useInspectorResize } from "./useInspectorResize";
 import { MediaAppearance } from "./MediaAppearance";
+import {
+  layoutControls,
+  type LayoutControls,
+  type LayoutCommand,
+} from "./layoutObjects";
 import { InspectorArrange } from "./InspectorArrange";
 import "./presentation-inspector.css";
 import type { Editor } from "@tiptap/react";
@@ -11,6 +17,8 @@ import { NumberField } from "./PresentationNumberField";
 import { PresentationShapeSettings } from "./PresentationShapeSettings";
 import { useSelectionFormat } from "./useSelectionFormat";
 
+const CodeHighlightDialog = lazy(() => import("./CodeHighlightDialog"));
+
 export function PresentationInspector({
   slide,
   selected,
@@ -18,19 +26,27 @@ export function PresentationInspector({
   background,
   editor,
   arrange,
+  layout,
   order,
   editText,
   readOnly,
+  imageVersionPanel,
+  onStyle,
+  styleDisabled = false,
 }: {
   slide: Slide;
   selected: string[];
   patch: (patch: Partial<SlideElement>) => void;
   background: (color: string) => void;
   editor: Editor | null;
-  arrange: (mode: string) => void;
+  arrange: (mode: LayoutCommand) => void;
+  layout?: LayoutControls;
   order: (mode: string) => void;
   editText: () => void;
   readOnly: boolean;
+  imageVersionPanel?: ReactNode;
+  onStyle?: () => void;
+  styleDisabled?: boolean;
 }) {
   const resize = useInspectorResize();
   const elements = slide.elements.filter((e) => selected.includes(e.id));
@@ -50,8 +66,15 @@ export function PresentationInspector({
     setTabState({ selectionKey, tab });
   }
   const tabId = useId();
-  const colors = ["#132338", "#FFFFFF", "#E7EAEE", "#F5F1E8", "#F4DED5"];
+  const colors = [
+    slideTheme.navy,
+    slideTheme.white,
+    slideTheme.fill,
+    slideTheme.blue,
+    slideTheme.teal,
+  ];
   const disabled = readOnly || !!element?.locked;
+  const [codeTarget, setCodeTarget] = useState<string | null>(null);
   const { lineHeight, bullet, paragraph } = useSelectionFormat(
     element ?? undefined,
     editor,
@@ -183,9 +206,16 @@ export function PresentationInspector({
                 />
               ))}
             </div>
-            <p className="muted presentation-page-hint">
-              选择画布中的元素，调整文字、图形与图片样式。
-            </p>
+            {onStyle && (
+              <button
+                className="btn presentation-theme-button"
+                disabled={readOnly || styleDisabled}
+                onClick={onStyle}
+              >
+                应用蓝青风格
+              </button>
+            )}
+            {imageVersionPanel}
           </>
         ) : null}
         {tab === "elements" && !elements.length && (
@@ -264,6 +294,13 @@ export function PresentationInspector({
                       disabled={disabled}
                     >
                       编辑文字
+                    </button>
+                    <button
+                      className="btn"
+                      disabled={disabled || !!editor}
+                      onClick={() => setCodeTarget(element.id)}
+                    >
+                      代码高亮
                     </button>
                     <fieldset
                       disabled={disabled}
@@ -370,7 +407,10 @@ export function PresentationInspector({
             ) : null}
             {elements.length ? (
               <InspectorArrange
-                disabled={readOnly || elements.every((e) => e.locked)}
+                disabled={readOnly}
+                layout={
+                  layout ?? layoutControls(slide, selected, null, readOnly)
+                }
                 arrange={arrange}
                 order={order}
               />
@@ -378,6 +418,16 @@ export function PresentationInspector({
           </>
         )}
       </div>
+      {codeTarget && element?.id === codeTarget && !disabled && !editor && (
+        <Suspense fallback={<p role="status">正在加载代码高亮…</p>}>
+          <CodeHighlightDialog
+            key={codeTarget}
+            element={element}
+            onApply={(paragraphs) => patch({ paragraphs })}
+            onClose={() => setCodeTarget(null)}
+          />
+        </Suspense>
+      )}
     </aside>
   );
 }

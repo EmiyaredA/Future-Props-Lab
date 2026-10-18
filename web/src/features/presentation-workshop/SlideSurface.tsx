@@ -5,6 +5,7 @@ import { fontFamily } from "./textAdapter";
 import { coverCrop } from "./imageCrop";
 import { elementStyle } from "./geometry";
 import type { Slide, SlideElement } from "./types";
+import { Connections } from "./scene/Connections";
 
 export function ElementImage({
   element,
@@ -149,16 +150,25 @@ export const SlideSurface = memo(function SlideSurface({
   slide,
   children,
   editingId,
+  selectedConnection,
+  onSelectConnection,
 }: {
   slide: Slide;
   children?: ReactNode;
   editingId?: string | null;
+  selectedConnection?: string | null;
+  onSelectConnection?: (id: string) => void;
 }) {
   return (
     <div
       className="presentation-slide"
       style={{ background: slide.background }}
     >
+      <Connections
+        slide={slide}
+        selected={selectedConnection}
+        onSelect={onSelectConnection}
+      />
       {slide.elements.map((element) => (
         <div
           key={element.id}

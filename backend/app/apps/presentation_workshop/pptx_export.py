@@ -6,6 +6,7 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_CONNECTOR
 from pptx.enum.text import MSO_AUTO_SIZE, PP_ALIGN
+from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Emu, Pt
@@ -13,6 +14,7 @@ from pptx.util import Emu, Pt
 from app.apps.presentation_workshop.image_crop import pptx_crop
 from app.apps.presentation_workshop.native_shapes import freeform, points_for
 from app.apps.presentation_workshop.pptx_media import picture_style, vector_picture
+from app.apps.presentation_workshop.pptx_scene import add_scene
 from app.apps.presentation_workshop.pptx_styles import apply_shape_style
 from app.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
@@ -93,6 +95,7 @@ def write_pptx(document: PresentationDocument, images: dict[str, Path], target: 
     deck = Presentation()
     deck.slide_width, deck.slide_height = px(document.width), px(document.height)
     for page in document.slides:
+        shape_map = {}
         slide = deck.slides.add_slide(deck.slide_layouts[6])
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = color(page.background)
@@ -134,6 +137,7 @@ def write_pptx(document: PresentationDocument, images: dict[str, Path], target: 
             if item.kind == "arrow":
                 shape.adjustments[1] = 0.35 * item.width / min(item.width, item.height)
             shape.name = item.id
+            shape_map[item.id] = shape
             shape.rotation = item.rotation % 360
             if item.flip_x:
                 shape._element.spPr.get_or_add_xfrm().set("flipH", "1")
@@ -143,4 +147,12 @@ def write_pptx(document: PresentationDocument, images: dict[str, Path], target: 
                 picture_style(shape, item)
             if item.kind not in {"text", "image", "vector"}:
                 apply_shape_style(shape, item)
+        add_scene(slide, page, shape_map)
+    # python-pptx creates the notes master relationship but omits its presentation
+    # reference. Keynote rejects notes-bearing decks without this registration.
+    notes_masters = OxmlElement("p:notesMasterIdLst")
+    notes_master = OxmlElement("p:notesMasterId")
+    notes_master.set(qn("r:id"), deck.part.relate_to(deck.part.notes_master_part, RT.NOTES_MASTER))
+    notes_masters.append(notes_master)
+    deck._element.insert_element_before(notes_masters, "p:sldIdLst")
     deck.save(target)

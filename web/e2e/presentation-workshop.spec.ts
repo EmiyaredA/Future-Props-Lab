@@ -73,7 +73,10 @@ test("图形移动、缩放、旋转、锁定与撤销", async ({ page }) => {
     .getByRole("toolbar", { name: "所选元素工具栏" })
     .getByRole("button", { name: "解锁元素", exact: true })
     .click();
-  await page.getByRole("button", { name: "复制所选元素", exact: true }).click();
+  await page.getByRole("button", { name: "更多编辑工具" }).click();
+  await page
+    .getByRole("menuitem", { name: "复制所选元素", exact: true })
+    .click();
   await expect(
     page.locator(".presentation-canvas .presentation-element"),
   ).toHaveCount(5);
@@ -197,7 +200,10 @@ test("缩放后的拖动、多选变换、复制粘贴与一次撤销", async ({
   ).toBeCloseTo(Number(original) + 60, 0);
   await page.getByRole("button", { name: "撤销", exact: true }).click();
   await expect(page.getByLabel("X", { exact: true })).toHaveValue(original);
-  await page.getByRole("button", { name: "复制所选元素", exact: true }).click();
+  await page.getByRole("button", { name: "更多编辑工具" }).click();
+  await page
+    .getByRole("menuitem", { name: "复制所选元素", exact: true })
+    .click();
   await page.getByLabel("X", { exact: true }).fill("600");
   const first = canvas.locator("[data-element-id]").nth(3);
   await first.click({ modifiers: ["Shift"] });

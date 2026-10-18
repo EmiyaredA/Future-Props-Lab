@@ -236,7 +236,8 @@ export const PLATFORM_READING: Record<
     ],
   },
   "presentation-workshop/workflow": {
-    summary: "按选区调整文字、图片与矢量元素，完成对齐、裁剪和页面排序。",
+    summary:
+      "缩放查看细节，对照视觉稿重建信息图，逐层编辑组内元素，用浮动面板实时调节连接并保存。",
     related: [
       {
         libraryId: "presentation-workshop",
@@ -253,7 +254,8 @@ export const PLATFORM_READING: Record<
     ],
   },
   "presentation-workshop/storage": {
-    summary: "区分自动保存、撤销和图片引用，处理冲突后再离开或导出。",
+    summary:
+      "为每页归档原始生成图，区分自动保存、撤销和图片引用，处理冲突后再离开或导出。",
     related: [
       {
         libraryId: "presentation-workshop",
@@ -270,7 +272,8 @@ export const PLATFORM_READING: Record<
     ],
   },
   "presentation-workshop/delivery": {
-    summary: "从放映验收到可编辑 PPTX 交付，核对字体、素材与当前导入容量限制。",
+    summary:
+      "从放映验收到可编辑 PPTX 交付，核对字体、素材，以及普通连接和自由曲线的编辑边界。",
     related: [
       {
         libraryId: "presentation-workshop",
@@ -287,7 +290,8 @@ export const PLATFORM_READING: Record<
     ],
   },
   "presentation-workshop/help": {
-    summary: "按图片裁剪、文字选区、字体替换与保存冲突等现象找到处理步骤。",
+    summary:
+      "按整组选择、图片裁剪、文字选区、字体替换与保存冲突等现象找到处理步骤。",
     related: [
       {
         libraryId: "presentation-workshop",

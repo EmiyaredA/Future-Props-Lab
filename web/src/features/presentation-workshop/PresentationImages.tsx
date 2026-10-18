@@ -16,6 +16,9 @@ export function PresentationImages({
   initialFile,
   busy = false,
   error = "",
+  title = "图片与矢量素材",
+  chooseLabel = "插入",
+  uploadHint = "选择图片，插入后可裁剪与调整样式",
 }: {
   onClose: () => void;
   onChoose: (id: string) => void;
@@ -24,6 +27,9 @@ export function PresentationImages({
   initialFile?: File;
   busy?: boolean;
   error?: string;
+  title?: string;
+  chooseLabel?: string;
+  uploadHint?: string;
 }) {
   const root = useDrawerFocus<HTMLDivElement>(onClose, true, false);
   const [tab, setTab] = useState(initialTab),
@@ -47,10 +53,10 @@ export function PresentationImages({
         className="presentation-image-library presentation-media-picker"
         role="dialog"
         aria-modal="true"
-        aria-label="选择文件库图片"
+        aria-label={title === "图片与矢量素材" ? "选择文件库图片" : title}
       >
         <header>
-          <h3>图片与矢量素材</h3>
+          <h3>{title}</h3>
           <button
             className="icon-btn"
             aria-label="关闭图片选择"
@@ -106,7 +112,7 @@ export function PresentationImages({
                   key={image.id}
                   disabled={busy}
                   onClick={() => onChoose(image.id)}
-                  aria-label={`插入 ${image.display_name || image.original_filename}`}
+                  aria-label={`${chooseLabel} ${image.display_name || image.original_filename}`}
                 >
                   <div>
                     <ElementImage
@@ -162,7 +168,7 @@ export function PresentationImages({
         ) : (
           <div className="presentation-upload-zone">
             <Upload size={32} />
-            <p>选择图片，插入后可裁剪与调整样式</p>
+            <p>{uploadHint}</p>
             <label className="btn presentation-file-input">
               选择图片
               <input

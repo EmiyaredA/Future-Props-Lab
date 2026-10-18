@@ -26,7 +26,7 @@ test("首页版式、卡片菜单与独立真实页面截图", async ({ page }, 
   const title = await create(page, "未命名演示");
   await page.getByRole("button", { name: "返回文稿列表" }).click();
   await expect(
-    page.getByRole("button", { name: title, exact: true }),
+    page.getByRole("button", { name: `打开 ${title}`, exact: true }),
   ).toBeVisible();
   await expect(
     page
@@ -41,7 +41,8 @@ test("首页版式、卡片菜单与独立真实页面截图", async ({ page }, 
   await expect(rename).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(card.getByRole("button", { name: /文稿操作/ })).toBeFocused();
-  await page.getByRole("button", { name: "从图文双栏新建文稿" }).click();
+  await page.getByRole("button", { name: "预览 图文双栏" }).click();
+  await page.getByRole("button", { name: "使用此版式" }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "确认", exact: true })
@@ -105,11 +106,11 @@ test("编辑器菜单、备注、背景、实际缩放与独立截图", async ({
   ).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: "页面", exact: true }).click();
   await page
-    .getByRole("button", { name: "页面背景 #F5F1E8", exact: true })
+    .getByRole("button", { name: "页面背景 #EEF7F9", exact: true })
     .click();
   await expect(canvas.locator(".presentation-slide")).toHaveCSS(
     "background-color",
-    "rgb(245, 241, 232)",
+    "rgb(238, 247, 249)",
   );
   await page.getByRole("button", { name: "放映选项" }).click();
   await page.getByRole("menuitem", { name: "从当前页放映" }).click();

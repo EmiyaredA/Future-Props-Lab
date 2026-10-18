@@ -3838,6 +3838,19 @@ class Point(WireModel):
     x: float = Field(default=..., alias='x', ge=-100000.0, le=100000.0)
     y: float = Field(default=..., alias='y', ge=-100000.0, le=100000.0)
 
+class PresentationConnection(WireModel):
+    arrow: bool = Field(default=True, alias='arrow')
+    color: str = Field(default='#365F62', alias='color')
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    label: str = Field(default='', alias='label', max_length=500)
+    source_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='right', alias='source_anchor')
+    source_id: str = Field(default=..., alias='source_id', min_length=1, max_length=64)
+    style: Literal['straight', 'step'] = Field(default='step', alias='style')
+    target_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='left', alias='target_anchor')
+    target_id: str = Field(default=..., alias='target_id', min_length=1, max_length=64)
+    waypoints: list[PresentationPoint] | None = Field(default=None, alias='waypoints', max_length=32)
+    width: float = Field(default=2, alias='width', ge=0.5, le=30.0)
+
 class PresentationCrop(WireModel):
     bottom: float = Field(default=..., alias='bottom', ge=0.0, lt=1.0)
     left: float = Field(default=..., alias='left', ge=0.0, lt=1.0)
@@ -3847,7 +3860,7 @@ class PresentationCrop(WireModel):
 class PresentationDocument(WireModel):
     height: Literal[720] = Field(default=..., alias='height')
     slides: list[PresentationSlide] = Field(default=..., alias='slides', min_length=1, max_length=100)
-    version: Literal[1] = Field(default=..., alias='version')
+    version: Literal[2] = Field(default=..., alias='version')
     width: Literal[1280] = Field(default=..., alias='width')
 
 class PresentationElement(WireModel):
@@ -3878,7 +3891,8 @@ class PresentationElement(WireModel):
 
 class PresentationEntityOperation(WireModel):
     action: Literal['insert', 'update', 'remove', 'move', 'duplicate'] = Field(default=..., alias='action')
-    entity: Literal['slide', 'element'] = Field(default=..., alias='entity')
+    entity: Literal['slide', 'element', 'group', 'connection', 'infographic', 'fragment'] = Field(default=..., alias='entity')
+    fragment: PresentationFragment | None = Field(default=None, alias='fragment')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     index: int | None = Field(default=None, alias='index')
     parent_id: str | None = Field(default=None, alias='parent_id')
@@ -3886,6 +3900,30 @@ class PresentationEntityOperation(WireModel):
 
 class PresentationExportIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+
+class PresentationFragment(WireModel):
+    background: str = Field(default='#FFFFFF', alias='background')
+    connections: list[PresentationConnection] | None = Field(default=None, alias='connections', max_length=200)
+    elements: list[PresentationElement] = Field(default=..., alias='elements', max_length=200)
+    groups: list[PresentationGroup] | None = Field(default=None, alias='groups', max_length=200)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    image_asset_id: str | None = Field(default=None, alias='image_asset_id')
+    infographics: list[PresentationInfographic] | None = Field(default=None, alias='infographics', max_length=50)
+    notes: str = Field(default='', alias='notes')
+    reference: PresentationReference | None = Field(default=None, alias='reference')
+
+class PresentationGroup(WireModel):
+    element_ids: list[str] | None = Field(default=None, alias='element_ids', max_length=200)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    name: str = Field(default='分组', alias='name', max_length=120)
+    parent_id: str | None = Field(default=None, alias='parent_id')
+
+class PresentationInfographic(WireModel):
+    format: Literal['antv', 'scene'] = Field(default=..., alias='format')
+    group_id: str = Field(default=..., alias='group_id', min_length=1, max_length=64)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    source: str = Field(default=..., alias='source', max_length=50000)
+    template: str = Field(default='', alias='template', max_length=120)
 
 class PresentationOperationsIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -3897,6 +3935,10 @@ class PresentationParagraph(WireModel):
     bullet: bool = Field(default=..., alias='bullet')
     line_height: float = Field(default=..., alias='line_height', ge=1.0, le=3.0)
     runs: list[PresentationRun] = Field(default=..., alias='runs', max_length=1000)
+
+class PresentationPoint(WireModel):
+    x: float = Field(default=..., alias='x', ge=-10000.0, le=10000.0)
+    y: float = Field(default=..., alias='y', ge=-10000.0, le=10000.0)
 
 class PresentationProjectIn(WireModel):
     document: PresentationDocument = Field(default=..., alias='document')
@@ -3927,6 +3969,12 @@ class PresentationProjectSummary(WireModel):
     title: str = Field(default=..., alias='title')
     updated_at: datetime = Field(default=..., alias='updated_at')
 
+class PresentationReference(WireModel):
+    asset_id: str = Field(default=..., alias='asset_id', min_length=1, max_length=64)
+    mode: Literal['side', 'overlay'] = Field(default='side', alias='mode')
+    opacity: float = Field(default=0.35, alias='opacity', ge=0.05, le=1.0)
+    visible: bool = Field(default=True, alias='visible')
+
 class PresentationRun(WireModel):
     bold: bool = Field(default=..., alias='bold')
     color: str = Field(default=..., alias='color')
@@ -3938,9 +3986,14 @@ class PresentationRun(WireModel):
 
 class PresentationSlide(WireModel):
     background: str = Field(default=..., alias='background')
+    connections: list[PresentationConnection] | None = Field(default=None, alias='connections', max_length=200)
     elements: list[PresentationElement] = Field(default=..., alias='elements', max_length=200)
+    groups: list[PresentationGroup] | None = Field(default=None, alias='groups', max_length=200)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    image_asset_id: str | None = Field(default=None, alias='image_asset_id')
+    infographics: list[PresentationInfographic] | None = Field(default=None, alias='infographics', max_length=50)
     notes: str = Field(default=..., alias='notes', max_length=20000)
+    reference: PresentationReference | None = Field(default=None, alias='reference')
 
 class ProjectCreateIn(WireModel):
     aspect: Literal['16:9', '9:16', '1:1'] = Field(default='16:9', alias='aspect')
@@ -6431,18 +6484,24 @@ PetSave.model_rebuild()
 PetSkin.model_rebuild()
 PetSync.model_rebuild()
 Point.model_rebuild()
+PresentationConnection.model_rebuild()
 PresentationCrop.model_rebuild()
 PresentationDocument.model_rebuild()
 PresentationElement.model_rebuild()
 PresentationEntityOperation.model_rebuild()
 PresentationExportIn.model_rebuild()
+PresentationFragment.model_rebuild()
+PresentationGroup.model_rebuild()
+PresentationInfographic.model_rebuild()
 PresentationOperationsIn.model_rebuild()
 PresentationParagraph.model_rebuild()
+PresentationPoint.model_rebuild()
 PresentationProjectIn.model_rebuild()
 PresentationProjectList.model_rebuild()
 PresentationProjectOut.model_rebuild()
 PresentationProjectPut.model_rebuild()
 PresentationProjectSummary.model_rebuild()
+PresentationReference.model_rebuild()
 PresentationRun.model_rebuild()
 PresentationSlide.model_rebuild()
 ProjectCreateIn.model_rebuild()

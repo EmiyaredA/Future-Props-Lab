@@ -5,6 +5,7 @@ export type PresentationAction = {
   label: string;
   icon?: ReactNode;
   disabled?: boolean;
+  description?: string;
   danger?: boolean;
   onSelect: () => void;
 };
@@ -123,6 +124,7 @@ export function PresentationMenu({
               tabIndex={-1}
               key={action.label}
               disabled={action.disabled}
+              title={action.description}
               className={action.danger ? "danger" : ""}
               onClick={() => {
                 close();

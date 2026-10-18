@@ -24772,6 +24772,99 @@
         "title": "Point",
         "type": "object"
       },
+      "PresentationConnection": {
+        "additionalProperties": false,
+        "properties": {
+          "arrow": {
+            "default": true,
+            "title": "Arrow",
+            "type": "boolean"
+          },
+          "color": {
+            "default": "#365F62",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Label",
+            "type": "string"
+          },
+          "source_anchor": {
+            "default": "right",
+            "enum": [
+              "left",
+              "right",
+              "top",
+              "bottom"
+            ],
+            "title": "Source Anchor",
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "style": {
+            "default": "step",
+            "enum": [
+              "straight",
+              "step"
+            ],
+            "title": "Style",
+            "type": "string"
+          },
+          "target_anchor": {
+            "default": "left",
+            "enum": [
+              "left",
+              "right",
+              "top",
+              "bottom"
+            ],
+            "title": "Target Anchor",
+            "type": "string"
+          },
+          "target_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Target Id",
+            "type": "string"
+          },
+          "waypoints": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationPoint"
+            },
+            "maxItems": 32,
+            "title": "Waypoints",
+            "type": "array"
+          },
+          "width": {
+            "default": 2,
+            "maximum": 30.0,
+            "minimum": 0.5,
+            "title": "Width",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "source_id",
+          "target_id"
+        ],
+        "title": "PresentationConnection",
+        "type": "object"
+      },
       "PresentationCrop": {
         "additionalProperties": false,
         "properties": {
@@ -24827,7 +24920,7 @@
             "type": "array"
           },
           "version": {
-            "const": 1,
+            "const": 2,
             "title": "Version",
             "type": "integer"
           },
@@ -25081,10 +25174,24 @@
           "entity": {
             "enum": [
               "slide",
-              "element"
+              "element",
+              "group",
+              "connection",
+              "infographic",
+              "fragment"
             ],
             "title": "Entity",
             "type": "string"
+          },
+          "fragment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationFragment"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "maxLength": 64,
@@ -25144,6 +25251,179 @@
           "expected_revision"
         ],
         "title": "PresentationExportIn",
+        "type": "object"
+      },
+      "PresentationFragment": {
+        "additionalProperties": false,
+        "description": "Native fragment rooted at id; reference and archived slide image must be empty.",
+        "properties": {
+          "background": {
+            "default": "#FFFFFF",
+            "title": "Background",
+            "type": "string"
+          },
+          "connections": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationConnection"
+            },
+            "maxItems": 200,
+            "title": "Connections",
+            "type": "array"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationElement"
+            },
+            "maxItems": 200,
+            "title": "Elements",
+            "type": "array"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationGroup"
+            },
+            "maxItems": 200,
+            "title": "Groups",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "image_asset_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Archived Workspace image; excluded from slide rendering and PPTX.",
+            "title": "Image Asset Id"
+          },
+          "infographics": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationInfographic"
+            },
+            "maxItems": 50,
+            "title": "Infographics",
+            "type": "array"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "elements"
+        ],
+        "title": "PresentationFragment",
+        "type": "object"
+      },
+      "PresentationGroup": {
+        "additionalProperties": false,
+        "properties": {
+          "element_ids": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 200,
+            "title": "Element Ids",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "default": "分组",
+            "maxLength": 120,
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "PresentationGroup",
+        "type": "object"
+      },
+      "PresentationInfographic": {
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "enum": [
+              "antv",
+              "scene"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "group_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Group Id",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 50000,
+            "title": "Source",
+            "type": "string"
+          },
+          "template": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Template",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "group_id",
+          "format",
+          "source"
+        ],
+        "title": "PresentationInfographic",
         "type": "object"
       },
       "PresentationOperationsIn": {
@@ -25216,6 +25496,29 @@
           "bullet"
         ],
         "title": "PresentationParagraph",
+        "type": "object"
+      },
+      "PresentationPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "PresentationPoint",
         "type": "object"
       },
       "PresentationProjectIn": {
@@ -25367,6 +25670,43 @@
         "title": "PresentationProjectSummary",
         "type": "object"
       },
+      "PresentationReference": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "mode": {
+            "default": "side",
+            "enum": [
+              "side",
+              "overlay"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "opacity": {
+            "default": 0.35,
+            "maximum": 1.0,
+            "minimum": 0.05,
+            "title": "Opacity",
+            "type": "number"
+          },
+          "visible": {
+            "default": true,
+            "title": "Visible",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "asset_id"
+        ],
+        "title": "PresentationReference",
+        "type": "object"
+      },
       "PresentationRun": {
         "additionalProperties": false,
         "properties": {
@@ -25428,6 +25768,14 @@
             "title": "Background",
             "type": "string"
           },
+          "connections": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationConnection"
+            },
+            "maxItems": 200,
+            "title": "Connections",
+            "type": "array"
+          },
           "elements": {
             "items": {
               "$ref": "#/components/schemas/PresentationElement"
@@ -25436,16 +25784,56 @@
             "title": "Elements",
             "type": "array"
           },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationGroup"
+            },
+            "maxItems": 200,
+            "title": "Groups",
+            "type": "array"
+          },
           "id": {
             "maxLength": 64,
             "minLength": 1,
             "title": "Id",
             "type": "string"
           },
+          "image_asset_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Archived Workspace image; excluded from slide rendering and PPTX.",
+            "title": "Image Asset Id"
+          },
+          "infographics": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationInfographic"
+            },
+            "maxItems": 50,
+            "title": "Infographics",
+            "type": "array"
+          },
           "notes": {
             "maxLength": 20000,
             "title": "Notes",
             "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

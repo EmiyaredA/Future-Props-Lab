@@ -53,7 +53,7 @@ it("preserves transparent fill, zero radius, and old auto-radius appearance", ()
 
 it("edits opacity and radius independently and disables read-only controls", () => {
   const patch = vi.fn();
-  const element = newElement("roundRect");
+  const element = newElement("roundRect", { corner_radius: 4 });
   const { rerender } = render(
     <PresentationShapeSettings
       element={element}

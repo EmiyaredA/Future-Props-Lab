@@ -1,0 +1,82 @@
+.presentation-code-dialog {
+  width: min(900px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+  padding: 24px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+.presentation-code-dialog header,
+.presentation-code-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.presentation-code-dialog h3,
+.presentation-code-dialog h4 {
+  margin: 0;
+}
+.presentation-code-dialog p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.presentation-code-settings,
+.presentation-code-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+.presentation-code-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.presentation-code-dialog textarea,
+.presentation-code-preview {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 320px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font:
+    13px/1.5 Consolas,
+    Menlo,
+    monospace;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.presentation-code-dialog textarea {
+  resize: vertical;
+  color: var(--text);
+  background: var(--surface);
+}
+.presentation-code-preview {
+  margin-top: 8px;
+}
+.presentation-code-dialog textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.presentation-code-dialog footer {
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+@media (max-width: 767px) {
+  .presentation-code-dialog {
+    padding: 16px;
+  }
+  .presentation-code-settings,
+  .presentation-code-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

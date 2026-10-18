@@ -467,6 +467,20 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `web/src/features/presentation-workshop/` 拥有项目列表、五种版式、DOM/SVG 页面渲染、
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
+`codeHighlight.ts` 将 lowlight 语法树解析为现有原生段落与显式 run 颜色；`CodeHighlightDialog`
+按需加载源码与预览，用户应用才更新当前文本框，保存和 PPTX 导出不依赖高亮 CSS。
+`codeBlock.ts` 生成原生代码背景、语言标签和文本分组，工具栏插入复用现有片段、撤销与保存链路。
+`scene/` 拥有原生分组、节点连接、参考图对照和页面检查；`infographics/` 拥有 AntV
+声明式输入、受控模板原生转换与 ELK 布局，不持有另一套保存或导出状态。`elkLayout.ts` 按需创建并销毁独立布局 Worker，`validation.ts` 在原生片段预览前校验结构，装饰 SVG 复用正式素材预览校验。
+`scene/selection.ts` 解析命中元素与分组选择，`useSceneTools` 唯一持有组内层级；画布在点击松手时请求下钻，拖动保留原选区。这些选择状态不进入文稿持久化。
+后端 `schemas/scene.py` 校验文稿 v2 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
+`slideTheme.ts` 拥有新建色板、可修改颜色收集与单页换肤纯函数，`SlideThemeDialog` 只维护预览替换表；用户应用才进入原草稿历史与 CAS 保存，不追加持久化字段。`useSceneTools` 返回动作描述与独立弹窗，`PresentationToolbar` 统一展示信息图与“更多”菜单，不再增加整排场景工具。`slide-theme.css` 仅维护换肤弹窗布局。
+`pptx_scene.py` 拥有原生分组与端点绑定导出。迁移 `0096_presentation_scene` 为旧文稿追加空场景字段，
+不改变原内容或 revision；参考图纳入 Workspace 素材保护但不参与放映与 PPTX。
+页面 `image_asset_id` 单独保存一张归档图的公共素材引用，沿用同一 CAS、Workspace 校验与删除保护。
+迁移 `0097_presentation_image_version` 只为缺失字段补 null，不改变已有图像 ID、revision 或更新时间。
+`SlideImageVersion.tsx` 拥有页面面板内的归档选择、上传、预览与下载，`slide-image-version.css` 维护其样式；
+图像版本独立于参考图，不参与画布、缩略图、放映或 PPTX，不建立第二套保存状态。
 结构类型来自 OpenAPI，缩放不改变文稿坐标。样式分别由 `presentation-library.css`、
 `presentation-workshop.css`、`presentation-canvas.css`、`presentation-controls.css` 与 `presentation-selection.css` 维护，
 分别对应首页、编辑器布局、画布渲染、交互控件与选区悬浮操作；移动端只做浏览及轻编辑。
@@ -474,8 +488,13 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `useInspectorResize` 管理面板左边缘拖动、键盘调宽与工作区宽度约束，宽度仅作为界面状态。
 `PresentationToolbar`、`PresentationMenu`、`PresentationNotes` 与 `PresentationStatusbar`
 拥有工具栏、键盘菜单、备注折叠和缩放操作，UI 状态不进入文稿数据。
+`useSlideViewport` 拥有容器适应比例、捏合与修饰键滚轮缩放、鼠标或可视中心锚点和局部滚动补偿；
+`SlideCanvas` 显式反馈手动比例并在元素变换或裁剪期间暂停手势缩放，视图状态不进入保存与历史。
 `SelectionOverlay` 根据旋转后的屏幕选区定位悬浮栏，`SelectionToolbar` 按元素类型提供格式命令，
 `useSelectionFormat` 统一整框与 Tiptap 选区格式，`selectionGeometry` 和 `SelectionHandles` 拥有八方向缩放及选框。
+`layoutObjects.ts` 按当前分组范围解析逻辑对象、首选尺寸基准和排列命令可用性，整体分组不拆成成员对齐；
+`layoutSnapping.ts` 拥有屏幕距离阈值、吸附保持、等距与约束缩放计算，`LayoutGuides` 与 `layout-guides.css`
+只绘制临时辅助线。面板和悬浮菜单共用排列描述与提交入口，手势预览不持久化，提交沿用 `updateScene`、草稿历史和 CAS 保存。
 首页基础版式创建复用 `templates.ts`；画布报告实际缩放比例，缩略图按容器宽度等比适配。
 新增路由由响应式清单登记，浏览器流程位于 `presentation-workshop.spec.ts`。
 

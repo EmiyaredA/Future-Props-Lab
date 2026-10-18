@@ -52,7 +52,8 @@ def picture_style(shape, item):
     if item.opacity != 1:
         alpha = OxmlElement("a:alphaModFix")
         alpha.set("amt", str(round(item.opacity * 100000)))
-        shape._element.blipFill.blip.append(alpha)
+        # Effects precede the extension list containing the SVG relationship.
+        shape._element.blipFill.blip.insert_element_before(alpha, "a:extLst")
     if item.kind == "image" and item.corner_radius:
         geom = shape._element.spPr.prstGeom
         geom.set("prst", "roundRect")

@@ -10,30 +10,38 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 0 14px;
+  min-height: 48px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 .presentation-inspector .presentation-inspector-tabs {
+  display: flex;
   flex: 1;
   margin: 0;
-  padding: 3px;
-  gap: 3px;
+  padding: 0;
+  gap: 12px;
   border: 0;
-  border-radius: 9px;
-  background: var(--bg);
+  background: transparent;
 }
 .presentation-inspector .presentation-inspector-tabs button {
   border: 0;
-  border-radius: 6px;
-  padding: 7px 8px;
+  flex: 1;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding: 15px 8px 13px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
 }
 .presentation-inspector
   .presentation-inspector-tabs
   button[aria-selected="true"] {
   color: var(--accent);
-  background: var(--surface);
-  box-shadow: 0 1px 4px #0000000d;
+  border-bottom-color: var(--accent);
+  font-weight: 600;
 }
 .presentation-inspector-reset,
 .presentation-lock-toggle {
@@ -234,4 +242,10 @@
   .presentation-inspector-content {
     padding: 10px 14px;
   }
+}
+.presentation-layout-reference,
+.presentation-layout-reason {
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }

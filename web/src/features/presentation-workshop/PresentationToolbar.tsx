@@ -1,6 +1,9 @@
 import {
   ChevronDown,
+  Code2,
   Copy,
+  Ellipsis,
+  Workflow,
   FolderOpen,
   ImagePlus,
   Plus,
@@ -9,7 +12,7 @@ import {
   Type,
   Undo2,
 } from "lucide-react";
-import { PresentationMenu } from "./PresentationMenu";
+import { PresentationMenu, type PresentationAction } from "./PresentationMenu";
 import { PresentationShapePicker } from "./PresentationShapePicker";
 import { layouts } from "./templates";
 import type { SlideElement } from "./types";
@@ -25,6 +28,7 @@ export function PresentationToolbar({
   onUndo,
   onRedo,
   onText,
+  onCode,
   onShape,
   onIcon,
   onSvg,
@@ -32,6 +36,8 @@ export function PresentationToolbar({
   onLibrary,
   onCopy,
   onDelete,
+  infoAction,
+  sceneActions = [],
 }: {
   readOnly: boolean;
   canAdd: boolean;
@@ -43,6 +49,7 @@ export function PresentationToolbar({
   onUndo: () => void;
   onRedo: () => void;
   onText: () => void;
+  onCode?: () => void;
   onShape: (kind: SlideElement["kind"], patch?: Partial<SlideElement>) => void;
   onIcon?: (svg: string, name: string) => void;
   onSvg?: () => void;
@@ -50,6 +57,8 @@ export function PresentationToolbar({
   onLibrary: () => void;
   onCopy: () => void;
   onDelete: () => void;
+  infoAction?: PresentationAction;
+  sceneActions?: PresentationAction[];
 }) {
   if (readOnly) return null;
   return (
@@ -106,11 +115,17 @@ export function PresentationToolbar({
           <Redo2 size={18} />
         </button>
       </div>
-      <div className="presentation-toolbar-group presentation-desktop-control">
+      <div className="presentation-toolbar-group">
         <button className="btn" onClick={onText}>
           <Type size={19} />
           文本
         </button>
+        {onCode && (
+          <button className="btn" onClick={onCode}>
+            <Code2 size={18} />
+            代码块
+          </button>
+        )}
         <PresentationShapePicker
           onShape={onShape}
           onIcon={onIcon ?? (() => {})}
@@ -130,25 +145,40 @@ export function PresentationToolbar({
           文件库
         </button>
       </div>
-      <div className="presentation-toolbar-group presentation-desktop-control">
-        <button
-          className="icon-btn"
-          aria-label="复制所选元素"
-          title="复制所选元素"
-          disabled={!hasSelection}
-          onClick={onCopy}
+      <div className="presentation-toolbar-group">
+        {infoAction && (
+          <button
+            className="btn"
+            disabled={infoAction.disabled}
+            onClick={infoAction.onSelect}
+          >
+            <Workflow size={18} />
+            {infoAction.label}
+          </button>
+        )}
+        <PresentationMenu
+          label="更多编辑工具"
+          actions={[
+            ...sceneActions,
+            {
+              label: "复制所选元素",
+              icon: <Copy size={16} />,
+              disabled: !hasSelection,
+              onSelect: onCopy,
+            },
+            {
+              label: "删除所选元素",
+              icon: <Trash2 size={16} />,
+              disabled: !hasSelection,
+              danger: true,
+              onSelect: onDelete,
+            },
+          ]}
         >
-          <Copy size={17} />
-        </button>
-        <button
-          className="icon-btn"
-          aria-label="删除所选元素"
-          title="删除所选元素"
-          disabled={!hasSelection}
-          onClick={onDelete}
-        >
-          <Trash2 size={17} />
-        </button>
+          <Ellipsis size={18} />
+          更多
+          <ChevronDown size={14} />
+        </PresentationMenu>
       </div>
     </div>
   );

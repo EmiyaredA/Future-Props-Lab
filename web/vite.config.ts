@@ -54,6 +54,16 @@ export default defineConfig(({ mode }) => ({
       },
       output: {
         manualChunks(id) {
+          if (
+            id.includes(
+              "/node_modules/@antv/infographic/esm/designs/structures/",
+            )
+          )
+            return "infographic-structures";
+          if (id.includes("/node_modules/@antv/infographic/esm/editor/"))
+            return "infographic-editor";
+          if (id.includes("/node_modules/measury/"))
+            return "infographic-metrics";
           if (id.includes("/node_modules/three/build/three.core.js"))
             return "three-core";
           if (id.includes("/node_modules/three/build/three.module.js"))

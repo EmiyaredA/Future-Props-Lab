@@ -257,7 +257,8 @@ export const TECHNICAL_READING: Record<
     ],
   },
   "presentation-workshop": {
-    summary: "从移动标题到导出 PPTX，理解文稿树、元素约束和格式转换的关系。",
+    summary:
+      "理解版本 2 文稿、选择与缩放、连接面板与新建预览，以及统一保存、图像归档和 PPTX 连接转换。",
     related: [
       {
         libraryId: "technical",

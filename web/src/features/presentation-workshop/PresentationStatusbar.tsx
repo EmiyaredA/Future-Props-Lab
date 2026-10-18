@@ -20,7 +20,10 @@ export function PresentationStatusbar({
       <span>
         第 {page} / {total} 页
       </span>
-      <div className="presentation-zoom-controls">
+      <div
+        className="presentation-zoom-controls"
+        title="在画布上捏合触控板，或按住 Ctrl／⌘ 滚动缩放；双指滑动查看细节"
+      >
         <output aria-label="实际缩放比例">{Math.round(scale * 100)}%</output>
         <button
           aria-label="缩小画布"
@@ -33,6 +36,7 @@ export function PresentationStatusbar({
           type="range"
           className="presentation-zoom-slider"
           aria-label="画布缩放"
+          aria-valuetext={`${Math.round(scale * 100)}%`}
           min={25}
           max={200}
           step={5}

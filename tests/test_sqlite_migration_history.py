@@ -153,6 +153,11 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("0090_thought_field_groups",),
             ("0091_zealman_video",),
             ("0092_visual_zealman_video",),
+            ("0093_generation_execution_info",),
+            ("r0094_visual_node_approval",),
+            ("0095_volcengine_video",),
+            ("0096_presentation_scene",),
+            ("0097_presentation_image_version",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

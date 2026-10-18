@@ -1019,6 +1019,7 @@ Principal 工作区隔离。统计独立于列表筛选，按所选工作区的 
 - `POST /v1/presentation-workshop/projects`：创建文稿；`title` 与 `document` 必填，也用于创建副本。
 - `GET /v1/presentation-workshop/projects/{project_id}`：读取完整结构及 revision。
 - `PUT /v1/presentation-workshop/projects/{project_id}`：整体更新标题和结构，必填 `expected_revision`。
+- `POST /v1/presentation-workshop/projects/{project_id}/operations`：批量原子编辑，必填 `expected_revision`、`request_id` 和 `operations`。
 - `DELETE /v1/presentation-workshop/projects/{project_id}`：必填查询参数 `expected_revision`，释放图片引用。
 - `POST /v1/presentation-workshop/projects/{project_id}/export`：请求体 `expected_revision`，返回原生可编辑 PPTX 附件。
 
@@ -1031,12 +1032,19 @@ CAS 缺失返回 422，冲突返回 409 与当前快照。图片复用 `/v1/file
 箭头用于直线，圆角用于圆角矩形；保存、缩略图、放映与 PPTX 导出共享这些值。
 字体包括 Microsoft YaHei、Arial、Consolas；Consolas 在浏览器缺失时回退到等宽字体。
 
-文稿版本 1 使用 1280×720 逻辑坐标。最多 100 页、每页 200 个元素，结构最大 8 MiB；
+文稿版本 2 使用 1280×720 逻辑坐标，旧版 1 输入确定性规范化为版本 2。最多 100 页、每页 200 个元素，结构最大 8 MiB；
 页面与元素 ID 全文唯一。元素保存位置、尺寸、旋转、锁定、样式、段落或图片 ID 及矩形裁剪。
 文字只允许微软雅黑 / Arial 与受控段落格式，不接受任意 HTML 或外部图片 URL。
 导出按预期版本拍摄只读快照；全进程同时执行两路导出，繁忙返回 429。
 去重图片输入超过 100 MiB 返回 413，缺失或损坏图片返回 422，不静默遗漏对象。
 导出文件仅作请求临时附件，完成或失败后清理，不建立后台任务记录。
+
+每页可选 `image_asset_id: string | null`，默认 null，关联当前 Workspace 公共文件库的一张归档图像。
+创建、整体保存和批量 `slide/update` 均校验该引用；缺失或跨空间素材返回 404，失败不推进 revision。
+例如批量操作 `{"entity":"slide","action":"update","id":"slide-id","value":{"image_asset_id":"asset-id"}}`
+设置归档，将值改为 null 则解除关联。复制页保留图像 ID，替换、清空、删页或删文稿不删除源图；
+仍有文稿引用时删除文件返回 409。字段与编辑对照用的 `reference` 独立，不参与画布、缩略图、放映或 PPTX，
+仅用于归档的图片不计入 PPTX 图片导出预算。原生 `fragment` 必须不带参考图和图像版本。
 
 导出时单张图片最多 2500 万像素，转换为 PNG 后的去重图片总量也限制在 100 MiB 内；超限返回明确错误。
 

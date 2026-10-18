@@ -26,7 +26,19 @@ export function PresentationFilmstrip({
   return (
     <aside className="presentation-filmstrip" aria-label="幻灯片列表">
       <div className="presentation-filmstrip-heading">
-        幻灯片 <span>{deck.slides.length}</span>
+        <span>
+          幻灯片 <small>{deck.slides.length}</small>
+        </span>
+        {!readOnly && (
+          <button
+            className="icon-btn"
+            aria-label="在当前页后新建幻灯片"
+            disabled={deck.slides.length >= 100}
+            onClick={onAdd}
+          >
+            <Plus size={16} />
+          </button>
+        )}
       </div>
       {deck.slides.map((slide, index) => (
         <div
@@ -95,7 +107,7 @@ export function PresentationFilmstrip({
       {!readOnly && (
         <button
           className="presentation-filmstrip-add"
-          aria-label="在当前页后新建幻灯片"
+          aria-label="从列表新建幻灯片"
           disabled={deck.slides.length >= 100}
           onClick={onAdd}
         >

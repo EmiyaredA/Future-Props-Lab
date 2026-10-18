@@ -178,7 +178,9 @@ def test_approval_migration_preserves_document_and_is_idempotent(tmp_path):
     path = tmp_path / "approval.db"
     with connect_database(path) as connection:
         ensure_registry(connection)
-        for migration in MIGRATIONS[:-1]:
+        for migration in MIGRATIONS:
+            if migration.migration_id == "r0094_visual_node_approval":
+                break
             if migration.foreign_keys_off:
                 connection.execute("PRAGMA foreign_keys=OFF")
             connection.executescript(migration.sql)

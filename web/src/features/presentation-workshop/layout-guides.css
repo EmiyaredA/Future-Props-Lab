@@ -1,0 +1,20 @@
+.presentation-layout-guides {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 8;
+  color: var(--accent, #df6041);
+}
+.presentation-layout-guides line {
+  stroke: currentColor;
+}
+.presentation-layout-guides rect {
+  fill: var(--surface);
+  stroke: currentColor;
+  stroke-width: 1;
+}
+.presentation-layout-guides text {
+  fill: currentColor;
+  font: 11px sans-serif;
+}

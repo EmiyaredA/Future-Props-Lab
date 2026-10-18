@@ -1,3 +1,4 @@
+import type { LayoutCommand, LayoutControls } from "./layoutObjects";
 import {
   AlignStartVertical,
   AlignCenterVertical,
@@ -13,16 +14,16 @@ import {
   SendToBack,
 } from "lucide-react";
 
-const alignment = [
-  ["left", "左对齐", AlignStartVertical],
-  ["center", "水平居中", AlignCenterVertical],
-  ["right", "右对齐", AlignEndVertical],
-  ["top", "顶部对齐", AlignStartHorizontal],
-  ["middle", "垂直居中", AlignCenterHorizontal],
-  ["bottom", "底部对齐", AlignEndHorizontal],
-  ["horizontal", "水平分布", AlignHorizontalDistributeCenter],
-  ["vertical", "垂直分布", AlignVerticalDistributeCenter],
-] as const;
+const alignmentIcons = {
+  left: AlignStartVertical,
+  center: AlignCenterVertical,
+  right: AlignEndVertical,
+  top: AlignStartHorizontal,
+  middle: AlignCenterHorizontal,
+  bottom: AlignEndHorizontal,
+  horizontal: AlignHorizontalDistributeCenter,
+  vertical: AlignVerticalDistributeCenter,
+};
 const layers = [
   ["front", "置于顶层", BringToFront],
   ["forward", "上移一层", ArrowUpToLine],
@@ -32,11 +33,13 @@ const layers = [
 
 export function InspectorArrange({
   disabled,
+  layout,
   arrange,
   order,
 }: {
   disabled: boolean;
-  arrange: (mode: string) => void;
+  arrange: (mode: LayoutCommand) => void;
+  layout: LayoutControls;
   order: (mode: string) => void;
 }) {
   return (
@@ -47,17 +50,51 @@ export function InspectorArrange({
         role="group"
         aria-label="对齐与分布"
       >
-        {alignment.map(([mode, label, Icon]) => (
-          <button
-            key={mode}
-            title={label}
-            aria-label={label}
-            onClick={() => arrange(mode)}
-          >
-            <Icon size={17} aria-hidden="true" />
-          </button>
-        ))}
+        {layout.commands
+          .filter((c) => c.mode in alignmentIcons)
+          .map((c) => {
+            const Icon = alignmentIcons[c.mode as keyof typeof alignmentIcons];
+            return (
+              <button
+                key={c.mode}
+                title={c.reason ?? c.label}
+                aria-label={c.label}
+                disabled={!!c.reason}
+                onClick={() => arrange(c.mode)}
+              >
+                <Icon size={17} aria-hidden="true" />
+              </button>
+            );
+          })}
       </div>
+      {layout.reference && (
+        <p className="presentation-layout-reference">
+          尺寸基准：{layout.reference}
+        </p>
+      )}
+      <div
+        className="presentation-layer-grid"
+        role="group"
+        aria-label="统一尺寸"
+      >
+        {layout.commands
+          .filter((c) => ["width", "height", "size"].includes(c.mode))
+          .map((c) => (
+            <button
+              key={c.mode}
+              disabled={!!c.reason}
+              title={c.reason ?? c.label}
+              onClick={() => arrange(c.mode)}
+            >
+              {c.label}
+            </button>
+          ))}
+      </div>
+      {layout.commands.find((c) => c.mode === "size")?.reason && (
+        <p className="muted presentation-layout-reason">
+          {layout.commands.find((c) => c.mode === "size")?.reason}
+        </p>
+      )}
       <div
         className="presentation-layer-grid"
         role="group"

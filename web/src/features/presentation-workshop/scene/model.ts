@@ -1,0 +1,312 @@
+import type { Slide, SlideElement } from "../types";
+
+export type Group = NonNullable<Slide["groups"]>[number];
+export type Connection = NonNullable<Slide["connections"]>[number];
+export type Infographic = NonNullable<Slide["infographics"]>[number];
+export type Anchor = Connection["source_anchor"];
+export type Fragment = Pick<
+  Slide,
+  "elements" | "groups" | "connections" | "infographics"
+>;
+
+export function completeScene(slide: Slide): Slide {
+  return {
+    ...slide,
+    groups: slide.groups ?? [],
+    connections: slide.connections ?? [],
+    infographics: slide.infographics ?? [],
+    reference: slide.reference ?? null,
+  };
+}
+
+export function members(slide: Slide, groupId: string): string[] {
+  const groups = new Set([groupId]);
+  for (let pass = 0; pass < (slide.groups?.length ?? 0); pass++) {
+    for (const group of slide.groups ?? [])
+      if (group.parent_id && groups.has(group.parent_id)) groups.add(group.id);
+  }
+  return (slide.groups ?? [])
+    .filter((g) => groups.has(g.id))
+    .flatMap((g) => g.element_ids ?? []);
+}
+
+export function selectedGroup(
+  slide: Slide,
+  ids: string[],
+  scope: string | null = null,
+): Group | undefined {
+  return (slide.groups ?? []).find(
+    (g) =>
+      (g.parent_id ?? null) === scope &&
+      members(slide, g.id).length > 0 &&
+      members(slide, g.id).every((id) => ids.includes(id)),
+  );
+}
+
+export function selectionIds(
+  slide: Slide,
+  id: string,
+  scope: string | null = null,
+): string[] {
+  const group = (slide.groups ?? []).find(
+    (g) => (g.parent_id ?? null) === scope && members(slide, g.id).includes(id),
+  );
+  return group ? members(slide, group.id) : [id];
+}
+
+export function groupSelection(
+  slide: Slide,
+  ids: string[],
+  identity: string,
+  scope: string | null,
+): Slide {
+  const eligible = new Set(
+    ids.filter((id) => slide.elements.some((e) => e.id === id && !e.locked)),
+  );
+  if (
+    eligible.size < 2 ||
+    slide.elements.some((e) => ids.includes(e.id) && e.locked)
+  )
+    return slide;
+  const children = (slide.groups ?? []).filter(
+    (g) =>
+      (g.parent_id ?? null) === scope &&
+      members(slide, g.id).every((id) => eligible.has(id)),
+  );
+  const childMembers = new Set(children.flatMap((g) => members(slide, g.id)));
+  if (
+    (slide.groups ?? []).some(
+      (g) =>
+        g.id !== scope &&
+        (g.element_ids ?? []).some(
+          (id) => eligible.has(id) && !childMembers.has(id),
+        ),
+    )
+  )
+    return slide;
+  return {
+    ...slide,
+    groups: [
+      ...(slide.groups ?? []).map((g) =>
+        children.includes(g)
+          ? { ...g, parent_id: identity }
+          : g.id === scope
+            ? {
+                ...g,
+                element_ids: (g.element_ids ?? []).filter(
+                  (id) => !eligible.has(id),
+                ),
+              }
+            : g,
+      ),
+      {
+        id: identity,
+        name: "分组",
+        parent_id: scope,
+        element_ids: [...eligible].filter((id) => !childMembers.has(id)),
+      },
+    ],
+  };
+}
+
+export function ungroup(slide: Slide, id: string): Slide {
+  const group = (slide.groups ?? []).find((g) => g.id === id);
+  if (!group) return slide;
+  return {
+    ...slide,
+    groups: (slide.groups ?? [])
+      .filter((g) => g.id !== id)
+      .map((g) =>
+        g.id === group.parent_id
+          ? {
+              ...g,
+              element_ids: [
+                ...(g.element_ids ?? []),
+                ...(group.element_ids ?? []),
+              ],
+            }
+          : g.parent_id === id
+            ? { ...g, parent_id: group.parent_id }
+            : g,
+      ),
+    infographics: (slide.infographics ?? []).filter((i) => i.group_id !== id),
+  };
+}
+
+export function cleanScene(slide: Slide): Slide {
+  const ids = new Set(slide.elements.map((e) => e.id));
+  const groups = (slide.groups ?? []).map((g) => ({
+    ...g,
+    element_ids: (g.element_ids ?? []).filter((id) => ids.has(id)),
+  }));
+  const active = new Set(
+    groups.filter((g) => g.element_ids.length).map((g) => g.id),
+  );
+  for (let pass = 0; pass < groups.length; pass++) {
+    for (const g of groups)
+      if (active.has(g.id) && g.parent_id) active.add(g.parent_id);
+  }
+  return {
+    ...slide,
+    groups: groups.filter((g) => active.has(g.id)),
+    connections: (slide.connections ?? []).filter(
+      (c) => ids.has(c.source_id) && ids.has(c.target_id),
+    ),
+    infographics: (slide.infographics ?? []).filter((i) =>
+      active.has(i.group_id),
+    ),
+  };
+}
+
+export function updateScene(before: Slide, after: Slide): Slide {
+  const moved = new Set(
+    after.elements
+      .filter((e) => {
+        const old = before.elements.find((x) => x.id === e.id);
+        return (
+          old &&
+          ["x", "y", "width", "height", "rotation"].some(
+            (k) => e[k as keyof SlideElement] !== old[k as keyof SlideElement],
+          )
+        );
+      })
+      .map((e) => e.id),
+  );
+  return cleanScene({
+    ...after,
+    connections: (after.connections ?? []).map((c) =>
+      (moved.has(c.source_id) || moved.has(c.target_id)) &&
+      c.waypoints ===
+        before.connections?.find((old) => old.id === c.id)?.waypoints
+        ? { ...c, waypoints: [] }
+        : c,
+    ),
+  });
+}
+
+export function cloneFragment(
+  slide: Slide,
+  ids: string[],
+  makeId: () => string,
+  offset = 24,
+): Fragment {
+  const selected = new Set(ids);
+  const groups = (slide.groups ?? []).filter(
+    (g) =>
+      members(slide, g.id).length &&
+      members(slide, g.id).every((id) => selected.has(id)),
+  );
+  const groupIds = new Set(groups.map((g) => g.id));
+  const edges = (slide.connections ?? []).filter(
+    (c) => selected.has(c.source_id) && selected.has(c.target_id),
+  );
+  const infos = (slide.infographics ?? []).filter((i) =>
+    groupIds.has(i.group_id),
+  );
+  const mapping = new Map(
+    [
+      ...ids,
+      ...groups.map((g) => g.id),
+      ...edges.map((c) => c.id),
+      ...infos.map((i) => i.id),
+    ].map((id) => [id, makeId()]),
+  );
+  const remap = (id: string) => mapping.get(id)!;
+  return {
+    elements: slide.elements
+      .filter((e) => selected.has(e.id))
+      .map((e) => ({
+        ...structuredClone(e),
+        id: remap(e.id),
+        x: e.x + offset,
+        y: e.y + offset,
+      })),
+    groups: groups.map((g) => ({
+      ...g,
+      id: remap(g.id),
+      parent_id:
+        g.parent_id && groupIds.has(g.parent_id) ? remap(g.parent_id) : null,
+      element_ids: (g.element_ids ?? []).map(remap),
+    })),
+    connections: edges.map((c) => ({
+      ...c,
+      id: remap(c.id),
+      source_id: remap(c.source_id),
+      target_id: remap(c.target_id),
+      waypoints: (c.waypoints ?? []).map((p) => ({
+        x: p.x + offset,
+        y: p.y + offset,
+      })),
+    })),
+    infographics: infos.map((i) => ({
+      ...i,
+      id: remap(i.id),
+      group_id: remap(i.group_id),
+    })),
+  };
+}
+
+export function appendFragment(slide: Slide, fragment: Fragment): Slide {
+  if (slide.elements.length + fragment.elements.length > 200)
+    throw new Error("每页最多 200 个元素，请拆分信息图");
+  return {
+    ...slide,
+    elements: [...slide.elements, ...fragment.elements],
+    groups: [...(slide.groups ?? []), ...(fragment.groups ?? [])],
+    connections: [
+      ...(slide.connections ?? []),
+      ...(fragment.connections ?? []),
+    ],
+    infographics: [
+      ...(slide.infographics ?? []),
+      ...(fragment.infographics ?? []),
+    ],
+  };
+}
+
+export function withoutGroup(slide: Slide, id: string): Slide {
+  const ids = new Set(members(slide, id));
+  return cleanScene({
+    ...slide,
+    elements: slide.elements.filter((e) => !ids.has(e.id)),
+  });
+}
+
+export function anchor(element: SlideElement, side: Anchor) {
+  const x =
+    element.x +
+    (side === "left"
+      ? 0
+      : side === "right"
+        ? element.width
+        : element.width / 2);
+  const y =
+    element.y +
+    (side === "top"
+      ? 0
+      : side === "bottom"
+        ? element.height
+        : element.height / 2);
+  const a = (element.rotation * Math.PI) / 180,
+    cx = element.x + element.width / 2,
+    cy = element.y + element.height / 2;
+  return {
+    x: cx + (x - cx) * Math.cos(a) - (y - cy) * Math.sin(a),
+    y: cy + (x - cx) * Math.sin(a) + (y - cy) * Math.cos(a),
+  };
+}
+
+export function connectionPoints(slide: Slide, edge: Connection) {
+  const source = slide.elements.find((e) => e.id === edge.source_id),
+    target = slide.elements.find((e) => e.id === edge.target_id);
+  if (!source || !target) return [];
+  const a = anchor(source, edge.source_anchor ?? "right"),
+    b = anchor(target, edge.target_anchor ?? "left");
+  if (edge.waypoints?.length) return [a, ...edge.waypoints, b];
+  if (edge.style === "straight") return [a, b];
+  const vertical =
+    edge.source_anchor === "top" || edge.source_anchor === "bottom";
+  return vertical
+    ? [a, { x: a.x, y: (a.y + b.y) / 2 }, { x: b.x, y: (a.y + b.y) / 2 }, b]
+    : [a, { x: (a.x + b.x) / 2, y: a.y }, { x: (a.x + b.x) / 2, y: b.y }, b];
+}

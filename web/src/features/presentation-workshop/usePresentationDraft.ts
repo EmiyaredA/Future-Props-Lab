@@ -3,6 +3,11 @@ import { ApiError } from "@platform/api/client";
 import { publishResourceRevision } from "@platform/sync/resourceBroadcast";
 import { createProject, saveProject } from "./api";
 import type { Draft, Project } from "./types";
+import {
+  historyEntry,
+  type HistoryEntry,
+  type HistoryLocation,
+} from "./presentationHistory";
 
 type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 export function usePresentationDraft(
@@ -17,6 +22,7 @@ export function usePresentationDraft(
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState<Project | null>(null);
   const [historyVersion, historyChanged] = useState(0);
+  const [restoreVersion, restored] = useState(0);
   const latest = useRef(draft),
     saved = useRef(initial),
     generation = useRef(0),
@@ -27,9 +33,13 @@ export function usePresentationDraft(
   const composing = useRef(false),
     compositionEnd = useRef<(() => void) | null>(null);
   const composition = useRef<Promise<void> | null>(null);
-  const history = useRef<{ before: Draft; after: Draft }[]>([]),
-    future = useRef<{ before: Draft; after: Draft }[]>([]);
+  const history = useRef<HistoryEntry[]>([]),
+    future = useRef<HistoryEntry[]>([]);
   const lastGroup = useRef({ key: "", time: 0 });
+  const continuous = useRef(false);
+  const endGroup = useCallback(() => {
+    lastGroup.current.key = "";
+  }, []);
   const callback = useRef(onSaved);
   callback.current = onSaved;
   const change = useCallback((next: Draft) => {
@@ -39,7 +49,11 @@ export function usePresentationDraft(
     if (!blocked.current) setState("dirty");
   }, []);
   const commit = useCallback(
-    (update: (current: Draft) => Draft, group = "") => {
+    (
+      update: (current: Draft) => Draft,
+      group = "",
+      location?: HistoryLocation,
+    ) => {
       const before = latest.current,
         after = update(before);
       if (before === after || JSON.stringify(before) === JSON.stringify(after))
@@ -48,12 +62,16 @@ export function usePresentationDraft(
       if (
         group &&
         lastGroup.current.key === group &&
-        (composing.current || now - lastGroup.current.time < 800) &&
+        (continuous.current ||
+          composing.current ||
+          now - lastGroup.current.time < 800) &&
         history.current.length
       ) {
         history.current[history.current.length - 1].after = after;
+        history.current[history.current.length - 1].afterLocation =
+          historyEntry(before, after, location).afterLocation;
       } else {
-        history.current.push({ before, after });
+        history.current.push(historyEntry(before, after, location));
         if (history.current.length > 100) history.current.shift();
       }
       lastGroup.current = { key: group, time: now };
@@ -64,20 +82,26 @@ export function usePresentationDraft(
     [change],
   );
   const undo = useCallback(() => {
+    if (composing.current) return;
     const entry = history.current.pop();
     if (!entry) return;
     future.current.push(entry);
     lastGroup.current.key = "";
     change(entry.before);
     historyChanged((v) => v + 1);
+    restored((v) => v + 1);
+    return entry.beforeLocation;
   }, [change]);
   const redo = useCallback(() => {
+    if (composing.current) return;
     const entry = future.current.pop();
     if (!entry) return;
     history.current.push(entry);
     lastGroup.current.key = "";
     change(entry.after);
     historyChanged((v) => v + 1);
+    restored((v) => v + 1);
+    return entry.afterLocation;
   }, [change]);
   const flush = useCallback((): Promise<Project> => {
     if (flight.current) return flight.current;
@@ -154,6 +178,8 @@ export function usePresentationDraft(
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
   const setComposition = useCallback((active: boolean) => {
+    if (composing.current === active) return;
+    if (active) lastGroup.current.key = "";
     composing.current = active;
     if (active && !composition.current)
       composition.current = new Promise((resolve) => {
@@ -169,6 +195,7 @@ export function usePresentationDraft(
             ? "saved"
             : "dirty",
       );
+      lastGroup.current.time = Date.now();
     }
   }, []);
   const adopt = (project: Project) => {
@@ -179,6 +206,8 @@ export function usePresentationDraft(
     setDraft(latest.current);
     history.current = [];
     future.current = [];
+    endGroup();
+    restored((v) => v + 1);
     historyChanged((v) => v + 1);
     setConflict(null);
     setState("saved");
@@ -195,6 +224,12 @@ export function usePresentationDraft(
     flush,
     adopt,
     setComposition,
+    endGroup,
+    restoreVersion,
+    isComposing: () => composing.current,
+    setContinuous: (active: boolean) => {
+      continuous.current = active;
+    },
     canUndo: historyVersion >= 0 && history.current.length > 0,
     canRedo: future.current.length > 0,
     isDirty: () =>

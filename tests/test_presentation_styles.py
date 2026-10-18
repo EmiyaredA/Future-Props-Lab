@@ -39,7 +39,7 @@ def test_style_migration_preserves_order_content_and_explicit_values(tmp_path):
             conn.execute("SELECT document, revision FROM presentation_projects").fetchone() == once
         )
     expected = PresentationDocument.model_validate(old).model_dump()
-    assert json.loads(once[0]) == expected
+    assert PresentationDocument.model_validate(json.loads(once[0])).model_dump() == expected
     assert once[1] == 17
 
 

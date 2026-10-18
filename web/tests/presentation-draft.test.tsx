@@ -64,7 +64,7 @@ it("统一历史跨文字与图形操作撤销重做", () => {
     })),
   );
   act(() => result.current.undo());
-  expect(result.current.draft.document.slides[0].background).toBe("#132338");
+  expect(result.current.draft.document.slides[0].background).toBe("#142D40");
   act(() => result.current.undo());
   expect(result.current.draft.title).toBe("测试");
   act(() => result.current.redo());

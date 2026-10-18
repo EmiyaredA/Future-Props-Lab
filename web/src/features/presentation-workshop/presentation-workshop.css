@@ -5,6 +5,8 @@
   min-width: 0;
 }
 .presentation-editor {
+  --border: color-mix(in srgb, var(--text) 12%, var(--surface));
+  --bg: color-mix(in srgb, var(--surface) 92%, #56708a);
   height: var(--viewport-height, 100dvh);
   display: flex;
   flex-direction: column;
@@ -13,7 +15,9 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 7px 16px;
+  padding: 8px 20px;
+  min-height: 56px;
+  box-sizing: border-box;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
@@ -24,7 +28,8 @@
   background: transparent;
   color: var(--text);
   border-radius: 5px;
-  width: min(24vw, 300px);
+  width: min(40vw, 600px);
+  flex: 1;
   min-width: 80px;
   font-size: 15px;
   padding: 7px;
@@ -52,7 +57,10 @@
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 5px 16px;
+  padding: 5px 20px;
+  min-height: 48px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   overflow-x: auto;
@@ -90,7 +98,7 @@
   flex: 1;
 }
 .presentation-filmstrip {
-  padding: 10px 6px;
+  padding: 14px 8px;
   overflow-y: auto;
   min-height: 0;
   border-right: 1px solid var(--border);
@@ -99,14 +107,30 @@
 .presentation-filmstrip-heading {
   display: flex;
   justify-content: space-between;
-  padding: 0 10px 10px;
+  align-items: center;
+  padding: 0 6px 14px;
   font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.presentation-filmstrip-heading small {
+  margin-left: 6px;
+  font-weight: 400;
   color: var(--muted);
+}
+.presentation-filmstrip-heading .icon-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
 }
 .presentation-filmstrip-item {
   position: relative;
   padding: 0 0 0 23px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
 }
 .presentation-slide-number {
   position: absolute;
@@ -127,6 +151,9 @@
 .presentation-slide-select .presentation-preview {
   border-radius: 3px;
   box-shadow: 0 0 0 1px #00000012;
+}
+.presentation-filmstrip-item.active {
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
 }
 .presentation-filmstrip-item.active .presentation-slide-select {
   border-color: var(--accent);

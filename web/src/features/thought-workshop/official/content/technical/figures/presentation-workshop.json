@@ -9,7 +9,7 @@
       "y": 180,
       "width": 220,
       "height": 110,
-      "text": "原生文稿树\n页面、元素与素材",
+      "text": "原生文稿 v2\n元素、分组与连接",
       "fill": "#eef5f3",
       "stroke": "#365f62",
       "icon": "file"
@@ -21,7 +21,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "编辑器\n选择、排版与拖动",
+      "text": "编辑器与连接调节\n选区、吸附、缩放与面板\n仅存内存",
       "fill": "#edf2fb",
       "stroke": "#365f62"
     },
@@ -43,7 +43,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "项目用例\n校验并保存版本",
+      "text": "项目用例\n保存文稿与归档图引用",
       "fill": "#fff1dd",
       "stroke": "#365f62",
       "icon": "database"
@@ -55,7 +55,7 @@
       "y": 310,
       "width": 220,
       "height": 110,
-      "text": "PPTX 导出\n转换为目标元素",
+      "text": "PPTX 导出\n普通连接保留绑定\n显式折线为自由曲线",
       "fill": "#fff1dd",
       "stroke": "#365f62",
       "icon": "file"
@@ -66,7 +66,7 @@
       "id": "doc_edit",
       "source": "doc",
       "target": "edit",
-      "label": "编辑结构",
+      "label": "连接修改进入文稿",
       "arrow": true,
       "style": "step"
     },

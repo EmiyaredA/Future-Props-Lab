@@ -117,6 +117,8 @@ async def export_project(
     if snapshot.revision != revision:
         raise RevisionConflictError(revision, snapshot.revision, snapshot.model_dump(mode="json"))
     rows = await projects.assets(snapshot.document)
+    rendered_ids = {e.asset_id for slide in snapshot.document.slides for e in slide.elements}
+    rows = [row for row in rows if row.id in rendered_ids]
     if sum(row.byte_size for row in rows) > MAX_EXPORT_BYTES:
         raise PresentationError("导出图片总量不能超过 100 MiB", 413, "export_too_large")
     paths = {row.id: storage.path_for(row) for row in rows}

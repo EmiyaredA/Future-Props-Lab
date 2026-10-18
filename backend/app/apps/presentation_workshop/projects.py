@@ -94,6 +94,8 @@ class Presentations:
 
     async def assets(self, document: PresentationDocument) -> list[VisualAsset]:
         ids = {e.asset_id for slide in document.slides for e in slide.elements if e.asset_id}
+        ids.update(slide.reference.asset_id for slide in document.slides if slide.reference)
+        ids.update(slide.image_asset_id for slide in document.slides if slide.image_asset_id)
         if not ids:
             return []
         rows = list(

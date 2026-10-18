@@ -1,4 +1,5 @@
 from app.apps.presentation_workshop.projects import Presentations
+from app.apps.presentation_workshop.scene_edits import apply_fragment, prune, remap
 from app.apps.presentation_workshop.schemas.document import (
     PresentationProjectOut,
     PresentationProjectPut,
@@ -12,16 +13,43 @@ def transform(current, body):
     document = current.document.model_dump(mode="json")
     for op in body.operations:
         slides = document["slides"]
-        items = slides if op.entity == "slide" else find(slides, op.parent_id)["elements"]
+        if op.entity == "fragment":
+            apply_fragment(find(slides, op.parent_id), op)
+            continue
+        owner = None if op.entity == "slide" else find(slides, op.parent_id)
+        collection = {
+            "element": "elements",
+            "group": "groups",
+            "connection": "connections",
+            "infographic": "infographics",
+        }
+        items = slides if owner is None else owner[collection[op.entity]]
+        removed_group = (
+            find(items, op.id) if op.entity == "group" and op.action == "remove" else None
+        )
         if op.entity == "element" and op.action not in {"insert", "duplicate"}:
             item = find(items, op.id)
             if item["locked"] and not (op.action == "update" and op.value == {"locked": False}):
                 raise OperationError("请先解锁元素", "element_locked", 409)
         clone = edit(items, op)
+        if owner and op.entity == "element" and op.action == "update":
+            if {"x", "y", "width", "height", "rotation"}.intersection(op.value):
+                for connection in owner["connections"]:
+                    if op.id in (connection["source_id"], connection["target_id"]):
+                        connection["waypoints"] = []
+        if owner and op.action == "remove":
+            if op.entity == "element":
+                prune(owner, {op.id})
+            elif op.entity == "group":
+                for group in owner["groups"]:
+                    if group["parent_id"] == op.id:
+                        group["parent_id"] = removed_group["parent_id"]
+                    if group["id"] == removed_group["parent_id"]:
+                        group["element_ids"].extend(removed_group["element_ids"])
+                owner["infographics"] = [i for i in owner["infographics"] if i["group_id"] != op.id]
         if op.entity == "slide" and op.action == "duplicate":
             # New slide IDs deterministically namespace child IDs; no duplicate global identities.
-            for index, element in enumerate(clone["elements"]):
-                element["id"] = f"{clone['id'][:48]}-element-{index}"
+            clone.update(remap(clone, clone["id"]))
     return PresentationProjectPut(
         title=current.title, document=document, expected_revision=body.expected_revision
     )

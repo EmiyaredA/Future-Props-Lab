@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  alignElements,
-  snapMove,
-} from "@features/presentation-workshop/geometry";
+import { applyLayout } from "@features/presentation-workshop/layoutObjects";
+import { snapTranslation } from "@features/presentation-workshop/layoutSnapping";
 import {
   copySlide,
   layouts,
@@ -54,17 +52,18 @@ describe("演示文稿编辑规则", () => {
         .join(""),
     ).toBe("第一行\n第二行");
   });
-  it("按选择边界对齐，锁定元素不变", () => {
+  it("按选择边界对齐，含锁定元素时禁用整个命令", () => {
     const a = newElement("rect", { x: 100, width: 60 }),
       b = newElement("rect", { x: 350, width: 100 }),
       locked = newElement("rect", { x: 900, locked: true });
-    const output = alignElements(
-      [a, b, locked],
-      [a.id, b.id, locked.id],
-      "left",
+    const slide = { ...newSlide("blank"), elements: [a, b, locked] };
+    expect(applyLayout(slide, [a.id, b.id, locked.id], null, "left")).toBe(
+      slide,
     );
-    expect(output.map((e) => e.x)).toEqual([100, 100, 900]);
-    expect(alignElements([a], [a.id], "center")[0].x).toBe(610);
+    expect(
+      applyLayout(slide, [a.id, b.id], null, "left").elements.map((e) => e.x),
+    ).toEqual([100, 100, 900]);
+    expect(applyLayout(slide, [a.id], null, "center").elements[0].x).toBe(610);
   });
   it("等距分布保留两端，吸附阈值随画布缩放换算", () => {
     const elements = [
@@ -73,21 +72,23 @@ describe("演示文稿编辑规则", () => {
       newElement("rect", { x: 350, width: 50 }),
     ];
     expect(
-      alignElements(
-        elements,
+      applyLayout(
+        { ...newSlide("blank"), elements },
         elements.map((e) => e.id),
+        null,
         "horizontal",
-      ).map((e) => e.x),
+      ).elements.map((e) => e.x),
     ).toEqual([0, 150, 350]);
-    const snapped = snapMove(
+    const snapped = snapTranslation(
       { x: 30, y: 90, width: 100, height: 100 },
       -27,
       0,
       [],
-      6,
+      { x: 0, y: 0, width: 1280, height: 720 },
+      1,
     );
     expect(snapped.dx).toBe(-30);
-    expect(snapped.x).toBe(0);
+    expect(snapped.guides.some((g) => g.x1 === 0 && g.x2 === 0)).toBe(true);
   });
 });
 

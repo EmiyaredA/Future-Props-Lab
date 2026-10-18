@@ -1,0 +1,55 @@
+.presentation-image-version {
+  display: grid;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.presentation-image-version h4,
+.presentation-image-version p {
+  margin: 0;
+}
+.presentation-image-version p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.presentation-image-version-preview {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+.presentation-image-version-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.presentation-image-version-preview:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.presentation-image-version-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.presentation-image-version-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+}
+.presentation-image-version > .muted {
+  font-size: 11px;
+}

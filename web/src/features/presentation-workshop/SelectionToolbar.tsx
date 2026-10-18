@@ -5,28 +5,47 @@ import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { SelectionTextTools } from "./SelectionTextTools";
 import { SelectionMediaTools, type MediaActions } from "./SelectionMediaTools";
+import {
+  layoutControls,
+  type LayoutControls,
+  type LayoutCommand,
+} from "./layoutObjects";
 import type { SlideElement } from "./types";
 
 export type SelectionActions = {
   patch: (p: Partial<SlideElement>) => void;
   duplicate: () => void;
   remove: () => void;
-  arrange: (mode: string) => void;
+  arrange: (mode: LayoutCommand) => void;
   order: (mode: string) => void;
   inspect: () => void;
   media?: MediaActions;
 };
 export function SelectionToolbar({
   elements,
+  layout,
   editor,
   actions,
   exit,
 }: {
   elements: SlideElement[];
+  layout?: LayoutControls;
   editor: Editor | null;
   actions: SelectionActions;
   exit: () => void;
 }) {
+  const controls =
+    layout ??
+    layoutControls(
+      {
+        id: "selection",
+        background: "#FFFFFF",
+        notes: "",
+        elements,
+        groups: [],
+      },
+      elements.map((e) => e.id),
+    );
   const element = elements.length === 1 ? elements[0] : undefined;
   const locked = elements.every((e) => e.locked);
   return (
@@ -165,32 +184,23 @@ export function SelectionToolbar({
             </>
           ) : (
             <>
-              <span className="selection-count">{elements.length} 个元素</span>
+              <span
+                className="selection-count"
+                title={
+                  controls.reference
+                    ? `尺寸基准：${controls.reference}`
+                    : undefined
+                }
+              >
+                {elements.length} 个元素
+              </span>
               <PresentationMenu
                 label="对齐所选元素"
-                actions={[
-                  "left",
-                  "center",
-                  "right",
-                  "top",
-                  "middle",
-                  "bottom",
-                  "horizontal",
-                  "vertical",
-                ].map((mode, i) => ({
-                  label: [
-                    "左对齐",
-                    "水平居中",
-                    "右对齐",
-                    "顶部对齐",
-                    "垂直居中",
-                    "底部对齐",
-                    "水平分布",
-                    "垂直分布",
-                  ][i],
-                  disabled:
-                    i > 5 && elements.filter((e) => !e.locked).length < 3,
-                  onSelect: () => actions.arrange(mode),
+                actions={controls.commands.map((c) => ({
+                  label: c.label,
+                  disabled: !!c.reason,
+                  description: c.reason,
+                  onSelect: () => actions.arrange(c.mode),
                 }))}
               >
                 对齐

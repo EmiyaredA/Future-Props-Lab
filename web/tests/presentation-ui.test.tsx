@@ -94,7 +94,7 @@ it.each(["空白", "封面", "标题正文", "图文双栏"])(
       label === "空白" ? 0 : label === "图文双栏" ? 5 : 3,
     );
     expect(document.slides[0].background).toBe(
-      label === "封面" ? "#132338" : "#FFFFFF",
+      label === "封面" ? "#142D40" : "#FBFCFD",
     );
   },
 );
@@ -109,7 +109,7 @@ it("取消命名不创建，顶部新建默认封面", async () => {
   await waitFor(() => expect(api.createProject).toHaveBeenCalled());
   expect(
     vi.mocked(api.createProject).mock.calls[0][0].document.slides[0].background,
-  ).toBe("#132338");
+  ).toBe("#142D40");
 });
 it("卡片菜单中的删除先确认，取消不会删除", async () => {
   library();

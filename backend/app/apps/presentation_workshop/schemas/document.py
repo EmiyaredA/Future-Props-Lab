@@ -1,17 +1,20 @@
 """Versioned, bounded native slide document shared by editing and PPTX export."""
 
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import Field, model_validator
 
-Color = Annotated[str, Field(pattern=r"^#[0-9a-fA-F]{6}$")]
-Identifier = Annotated[str, Field(min_length=1, max_length=64)]
+from app.apps.presentation_workshop.schemas.scene import (
+    PresentationConnection,
+    PresentationGroup,
+    PresentationInfographic,
+    PresentationReference,
+    validate_scene,
+)
+from app.apps.presentation_workshop.schemas.values import Color, Identifier, SlideModel
+
 Font = Literal["Microsoft YaHei", "Arial", "Consolas"]
-
-
-class SlideModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
 
 class PresentationRun(SlideModel):
@@ -112,18 +115,43 @@ class PresentationSlide(SlideModel):
     background: Color
     notes: str = Field(max_length=20000)
     elements: list[PresentationElement] = Field(max_length=200)
+    groups: list[PresentationGroup] = Field(default_factory=list, max_length=200)
+    connections: list[PresentationConnection] = Field(default_factory=list, max_length=200)
+    infographics: list[PresentationInfographic] = Field(default_factory=list, max_length=50)
+    reference: PresentationReference | None = None
+    image_asset_id: Identifier | None = Field(
+        default=None,
+        description="Archived Workspace image; excluded from slide rendering and PPTX.",
+    )
+
+    @model_validator(mode="after")
+    def scene_integrity(self):
+        return validate_scene(self)
 
 
 class PresentationDocument(SlideModel):
-    version: Literal[1]
+    version: Literal[2]
     width: Literal[1280]
     height: Literal[720]
     slides: list[PresentationSlide] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode="before")
+    @classmethod
+    def upgrade_legacy(cls, value):
+        if isinstance(value, dict) and value.get("version") == 1:
+            return {**value, "version": 2}
+        return value
 
     @model_validator(mode="after")
     def unique_ids_and_size(self):
         ids = [slide.id for slide in self.slides]
         ids += [element.id for slide in self.slides for element in slide.elements]
+        ids += [
+            item.id
+            for slide in self.slides
+            for items in (slide.groups, slide.connections, slide.infographics)
+            for item in items
+        ]
         if len(ids) != len(set(ids)):
             raise ValueError("页面和元素 ID 必须唯一")
         if len(self.model_dump_json().encode()) > 8 * 1024 * 1024:

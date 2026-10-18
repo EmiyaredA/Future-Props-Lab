@@ -64,3 +64,63 @@ Markdown 的 `fpl-canvas` 代码块保留编辑数据；普通 Markdown 阅读�
 备份 version 6 保存历史、模板、快照标记和素材，接受旧版本并重映射 ID。
 `thought.saved_filters`、`thought.recently_visited` 和 `thought.record_reading` 属于当前账号，
 只读成员也可维护个人状态；个人偏好不会进入备份。本机未保存草稿由浏览器 IndexedDB 管理。
+
+## 演示工坊原生信息图
+
+演示文稿当前为 `version: 2`，读取与写入仍接受旧版 1 并确定性规范化。每页保留
+`elements`，新增 `groups`、`connections`、`infographics` 和编辑参考图 `reference`。
+参考图是受 Workspace 校验和引用保护的托管素材，不进入放映或 PPTX。
+
+Agent 通过现有 `presentation.get_project`、`put_project` 和
+`apply_presentation_operations` 写入同一原生结构。AntV 源码在浏览器预览和转换；
+服务端不会执行源码，也没有新增 JavaScript 渲染服务。
+
+```python
+import uuid
+
+project = client.presentation.get_project(project_id=project_id)
+# fragment 是完整原生页面片段：id 与唯一根组 ID 相同，包含所有必填元素字段，
+# elements/groups/connections/infographics 自洽，reference 和 image_asset_id 必须为空。
+result = client.presentation.apply_presentation_operations(
+    project_id=project_id,
+    body={
+        "expected_revision": project.revision,
+        "request_id": str(uuid.uuid4()),
+        "operations": [{
+            "entity": "fragment", "action": "insert",
+            "id": fragment["id"], "parent_id": slide_id,
+            "fragment": fragment,
+        }],
+    },
+)
+```
+
+`fragment` 支持 `insert/update/remove`，更新与删除的 ID 指向根组；整批原子校验，
+相同 request_id 与请求体可重放回执。替换会删除旧组及其成员和关联边，再插入新对象。
+直接插入须提供文稿内唯一 ID；复制页面由服务端统一重映射所有子对象与连接。
+`group`、`connection`、`infographic` 可单独批量编辑；删除组表示解组并将成员交还父级，
+删除节点会清理关联边，移动节点会清理过时的布局折点。非法引用、循环组、跨 Workspace
+素材和版本冲突不会部分落盘。PPTX 使用可编辑文本、原生组和绑定端点的连接线。
+
+每页可选 `image_asset_id` 归档一张原始生成图，值为当前 Workspace 公共文件库的图片 ID，
+默认为 `None`。它与参考图独立，参与素材删除保护；复制页面保留关联，清空或替换不会删除源文件。
+图像版本不进入画布、放映或 PPTX。先用文件上传 API 取得素材 ID，再通过现有批量编辑更新页面：
+
+```python
+project = client.presentation.get_project(project_id=project_id)
+result = client.presentation.apply_presentation_operations(
+    project_id=project_id,
+    body={
+        "expected_revision": project.revision,
+        "request_id": str(uuid.uuid4()),
+        "operations": [{
+            "entity": "slide", "action": "update", "id": slide_id,
+            "value": {"image_asset_id": image_asset_id},
+        }],
+    },
+)
+assert next(s for s in result.document.slides if s.id == slide_id).image_asset_id == image_asset_id
+```
+
+调用者需要文稿编辑权限；缺少素材或跨空间返回 404，revision 过期返回 409，原文稿不变。
+移除归档时将 `image_asset_id` 设为 `None`；整篇 `put_project` 也使用相同字段与校验。
