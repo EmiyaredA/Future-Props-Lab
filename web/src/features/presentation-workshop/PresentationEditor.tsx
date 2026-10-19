@@ -557,6 +557,7 @@ export function PresentationEditor({
                   align: "left",
                   line_height: 1.3,
                   bullet: false,
+                  numbered: false,
                   runs: [defaultRun(text.slice(0, 20000))],
                 },
               ],

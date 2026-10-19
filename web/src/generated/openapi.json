@@ -25487,6 +25487,12 @@
             "title": "Line Height",
             "type": "number"
           },
+          "numbered": {
+            "default": false,
+            "description": "Decimal list item; mutually exclusive with bullet.",
+            "title": "Numbered",
+            "type": "boolean"
+          },
           "runs": {
             "items": {
               "$ref": "#/components/schemas/PresentationRun"

@@ -3935,6 +3935,7 @@ class PresentationParagraph(WireModel):
     align: Literal['left', 'center', 'right'] = Field(default=..., alias='align')
     bullet: bool = Field(default=..., alias='bullet')
     line_height: float = Field(default=..., alias='line_height', ge=1.0, le=3.0)
+    numbered: bool = Field(default=False, alias='numbered')
     runs: list[PresentationRun] = Field(default=..., alias='runs', max_length=1000)
 
 class PresentationPoint(WireModel):

@@ -32,6 +32,15 @@ class PresentationParagraph(SlideModel):
     align: Literal["left", "center", "right"]
     line_height: float = Field(ge=1, le=3)
     bullet: bool
+    numbered: bool = Field(
+        default=False, description="Decimal list item; mutually exclusive with bullet."
+    )
+
+    @model_validator(mode="after")
+    def list_marker(self):
+        if self.bullet and self.numbered:
+            raise ValueError("段落不能同时使用项目符号和编号")
+        return self
 
 
 class PresentationCrop(SlideModel):

@@ -4,6 +4,7 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { PresentationMenu } from "./PresentationMenu";
 import { useSelectionFormat } from "./useSelectionFormat";
 import type { SlideElement, TextRun } from "./types";
+import { listAttributes, listOptions, type ListType } from "./paragraphLists";
 
 export function SelectionTextTools({
   element,
@@ -14,7 +15,7 @@ export function SelectionTextTools({
   editor: Editor | null;
   patch: (p: Partial<SlideElement>) => void;
 }) {
-  const { style, format, align, paragraph } = useSelectionFormat(
+  const { style, format, align, listType, paragraph } = useSelectionFormat(
     element,
     editor,
     patch,
@@ -105,6 +106,16 @@ export function SelectionTextTools({
           }
         />
       </span>
+      <CustomSelect
+        ariaLabel="列表类型"
+        className="selection-secondary"
+        value={listType ?? "mixed"}
+        options={[
+          { value: "mixed", label: "混合", disabled: true },
+          ...listOptions,
+        ]}
+        onChange={(value) => paragraph(listAttributes(value as ListType))}
+      />
       <PresentationMenu
         className="selection-compact-only"
         label="更多文字格式"
@@ -116,6 +127,10 @@ export function SelectionTextTools({
           ...(["left", "center", "right"] as const).map((value, i) => ({
             label: ["左对齐", "居中", "右对齐"][i],
             onSelect: () => paragraph({ align: value }),
+          })),
+          ...listOptions.map(({ value, label }) => ({
+            label,
+            onSelect: () => paragraph(listAttributes(value as ListType)),
           })),
         ]}
       >

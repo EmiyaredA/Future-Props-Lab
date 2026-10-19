@@ -20,6 +20,95 @@ async function save(page: Page) {
   await page.getByRole("button", { name: "保存文稿", exact: true }).click();
   await expect(page.locator(".presentation-save-state")).toHaveText("已保存");
 }
+test("正文列表可选类型、续项退出、保存重开及放映", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await create(page);
+  await page.getByRole("button", { name: "新建幻灯片", exact: true }).click();
+  await page.getByRole("button", { name: "文本", exact: true }).click();
+  const canvas = page.getByRole("group", { name: "幻灯片画布" });
+  await canvas.getByText("在此输入文字", { exact: true }).dblclick();
+  const editor = page.getByRole("textbox", { name: "编辑幻灯片文字" });
+  await editor.fill("第一项");
+  const toolbar = page.getByRole("toolbar", { name: "所选元素工具栏" });
+  await toolbar.getByRole("combobox", { name: "列表类型" }).click();
+  await page.getByRole("option", { name: "编号列表", exact: true }).click();
+  await editor.click();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.insertText("第二项");
+  await page.keyboard.press("Shift+Enter");
+  await page.keyboard.insertText("同项续行");
+  await expect(editor.locator('p[data-numbered="true"]')).toHaveCount(2);
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+  await page.keyboard.insertText("普通正文");
+  await expect(editor.locator('p[data-numbered="false"]').last()).toHaveText(
+    "普通正文",
+  );
+  await page.keyboard.press("Escape");
+  const list = canvas
+    .locator(".presentation-text")
+    .filter({ hasText: "第一项" });
+  await expect(list.locator(".presentation-bullet")).toHaveText(["1.", "2."]);
+  await save(page);
+  await page.reload();
+  await page.getByRole("button", { name: "幻灯片 2", exact: true }).click();
+  await expect(list.locator(".presentation-bullet")).toHaveText(["1.", "2."]);
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((value) => {
+      document.documentElement.dataset.theme = value;
+    }, theme);
+    await page.screenshot({ path: testInfo.outputPath(`lists-${theme}.png`) });
+  }
+  await page.getByRole("button", { name: "从头放映", exact: true }).click();
+  await page.keyboard.press("ArrowRight");
+  const show = page.getByRole("dialog", { name: "幻灯片放映" });
+  await expect(
+    show
+      .locator(".presentation-text")
+      .filter({ hasText: "第一项" })
+      .locator(".presentation-bullet"),
+  ).toHaveText(["1.", "2."]);
+  await page.keyboard.press("Escape");
+  await list.click();
+  const inspector = page.getByRole("complementary", { name: "格式面板" });
+  await inspector.getByRole("combobox", { name: "列表类型" }).click();
+  await page.getByRole("option", { name: "项目符号", exact: true }).click();
+  await expect(list.locator(".presentation-bullet")).toHaveText([
+    "•",
+    "•",
+    "•",
+  ]);
+  await page.getByRole("button", { name: "撤销", exact: true }).click();
+  await expect(list.locator(".presentation-bullet")).toHaveText(["1.", "2."]);
+  await page.getByRole("button", { name: "重做", exact: true }).click();
+  await expect(list.locator(".presentation-bullet")).toHaveText([
+    "•",
+    "•",
+    "•",
+  ]);
+  await page.setViewportSize({ width: 390, height: 900 });
+  await toolbar
+    .getByRole("button", { name: "更多文字格式", exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "编号列表", exact: true }).click();
+  await expect(list.locator(".presentation-bullet")).toHaveText([
+    "1.",
+    "2.",
+    "3.",
+  ]);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await inspector.getByRole("combobox", { name: "列表类型" }).press("Enter");
+  await page.getByRole("option", { name: "无列表", exact: true }).click();
+  await expect(list.locator(".presentation-bullet")).toHaveCount(0);
+});
 test("创建、编辑文字、备注和页面，保存重开及放映", async ({ page }) => {
   await create(page);
   const canvas = page.getByRole("group", { name: "幻灯片画布" });

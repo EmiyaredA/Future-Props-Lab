@@ -46,6 +46,7 @@ export function textElement(
         align: "center",
         line_height: 1.3,
         bullet: false,
+        numbered: false,
         runs: [{ ...defaultRun(text), size, color, bold }],
       },
     ],

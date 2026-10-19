@@ -53,6 +53,11 @@
   left: 6px;
   width: 18px;
 }
+.presentation-bullet.is-numbered {
+  left: 0;
+  width: 1.7em;
+  text-align: right;
+}
 .presentation-image-clip {
   position: absolute;
   inset: 0;
@@ -147,6 +152,7 @@
   height: 100%;
 }
 .presentation-text-editor .tiptap {
+  counter-reset: presentation-list;
   outline: none;
   height: 100%;
   padding: 0;
@@ -158,11 +164,30 @@
 .presentation-text-editor .tiptap p {
   margin: 0;
   padding: 0;
+  position: relative;
+}
+.presentation-text-editor .tiptap p:not([data-numbered="true"]) {
+  counter-reset: presentation-list;
+}
+.presentation-text-editor .tiptap p[data-bullet="true"] {
+  padding-left: 24px;
+}
+.presentation-text-editor .tiptap p[data-numbered="true"] {
+  counter-increment: presentation-list;
+  padding-left: 2em;
 }
 .presentation-text-editor .tiptap p[data-bullet="true"]::before {
   content: "•";
-  display: inline-block;
-  width: 24px;
+  position: absolute;
+  left: 6px;
+  width: 18px;
+}
+.presentation-text-editor .tiptap p[data-numbered="true"]::before {
+  content: counter(presentation-list) ".";
+  position: absolute;
+  left: 0;
+  width: 1.7em;
+  text-align: right;
 }
 .presentation-show {
   position: fixed;

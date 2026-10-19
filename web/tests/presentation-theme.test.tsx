@@ -40,6 +40,7 @@ function legacy() {
           align: "left",
           line_height: 1.4,
           bullet: true,
+          numbered: false,
           runs: [
             {
               text: "警示与正文",

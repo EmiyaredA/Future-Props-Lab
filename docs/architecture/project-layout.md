@@ -488,6 +488,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 分别对应首页、编辑器布局、画布渲染、交互控件与选区悬浮操作；移动端只做浏览及轻编辑。
 `presentation-inspector.css` 拥有格式面板的分区与控件样式，`InspectorArrange` 拥有对齐和层级控件，
 `useInspectorResize` 管理面板左边缘拖动、键盘调宽与工作区宽度约束，宽度仅作为界面状态。
+`paragraphLists.ts` 统一段落列表选项与连续编号推导；`bullet` 与 `numbered` 互斥，迁移 `0099_presentation_lists` 为旧段落补齐未编号缺省值，保留文稿 revision。文字编辑、放映与 PPTX 使用相同的单层列表规则。
 `PresentationToolbar`、`PresentationMenu`、`PresentationNotes` 与 `PresentationStatusbar`
 拥有工具栏、键盘菜单、备注折叠和缩放操作，UI 状态不进入文稿数据。
 `useSlideViewport` 拥有容器适应比例、捏合与修饰键滚轮缩放、鼠标或可视中心锚点和局部滚动补偿；

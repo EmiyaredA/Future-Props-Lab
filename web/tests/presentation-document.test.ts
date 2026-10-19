@@ -31,6 +31,7 @@ describe("演示文稿编辑规则", () => {
         align: "center" as const,
         line_height: 1.5,
         bullet: true,
+        numbered: false,
         runs: [
           { ...defaultRun("中文"), bold: true },
           {

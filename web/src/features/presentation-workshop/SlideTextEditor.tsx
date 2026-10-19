@@ -34,6 +34,13 @@ const ParagraphStyle = Extension.create({
             parseHTML: (el) => el.dataset.bullet === "true",
             renderHTML: (attrs) => ({ "data-bullet": String(attrs.bullet) }),
           },
+          numbered: {
+            default: false,
+            parseHTML: (el) => el.dataset.numbered === "true",
+            renderHTML: (attrs) => ({
+              "data-numbered": String(attrs.numbered),
+            }),
+          },
         },
       },
     ];
@@ -98,8 +105,28 @@ export function SlideTextEditor({
           return false;
         },
       },
-      handleKeyDown: (_, event) => {
-        if (event.isComposing) return false;
+      handleKeyDown: (view, event) => {
+        if (event.isComposing || view.composing) return false;
+        const { $from, empty } = view.state.selection;
+        if (
+          event.key === "Enter" &&
+          !event.shiftKey &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          empty &&
+          $from.parent.type.name === "paragraph" &&
+          $from.parent.content.size === 0 &&
+          ($from.parent.attrs.bullet || $from.parent.attrs.numbered)
+        ) {
+          view.dispatch(
+            view.state.tr.setNodeMarkup($from.before(), undefined, {
+              ...$from.parent.attrs,
+              bullet: false,
+              numbered: false,
+            }),
+          );
+          return true;
+        }
         if (event.key === "Escape") {
           callbacks.current.onExit();
           return true;
@@ -128,8 +155,8 @@ export function SlideTextEditor({
     if (!editor || editor.view.composing) return;
     const json = toEditor(element.paragraphs);
     if (
-      JSON.stringify(fromEditor(editor.getJSON(), fallback)) !==
-      JSON.stringify(element.paragraphs)
+      JSON.stringify(toEditor(fromEditor(editor.getJSON(), fallback))) !==
+      JSON.stringify(json)
     )
       editor.commands.setContent(json, { emitUpdate: false });
   }, [editor, element.paragraphs, fallback]);

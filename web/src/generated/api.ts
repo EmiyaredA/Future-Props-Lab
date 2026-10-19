@@ -17295,6 +17295,12 @@ export interface components {
             bullet: boolean;
             /** Line Height */
             line_height: number;
+            /**
+             * Numbered
+             * @description Decimal list item; mutually exclusive with bullet.
+             * @default false
+             */
+            numbered: boolean;
             /** Runs */
             runs: components["schemas"]["PresentationRun"][];
         };

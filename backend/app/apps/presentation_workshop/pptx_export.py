@@ -59,7 +59,9 @@ def add_text(shape, element: PresentationElement):
     frame.auto_size = MSO_AUTO_SIZE.NONE
     frame.margin_left = frame.margin_right = px(8)
     frame.margin_top = frame.margin_bottom = px(8)
+    number = 0
     for index, paragraph in enumerate(element.paragraphs):
+        number = number + 1 if paragraph.numbered else 0
         p = frame.paragraphs[0] if index == 0 else frame.add_paragraph()
         p.alignment = {"left": PP_ALIGN.LEFT, "center": PP_ALIGN.CENTER, "right": PP_ALIGN.RIGHT}[
             paragraph.align
@@ -69,26 +71,40 @@ def add_text(shape, element: PresentationElement):
             max((r.size for r in paragraph.runs), default=24) * paragraph.line_height * 0.75
         )
         properties = p._p.get_or_add_pPr()
-        bullet = OxmlElement("a:buChar" if paragraph.bullet else "a:buNone")
-        if paragraph.bullet:
+        bullet = OxmlElement(
+            "a:buAutoNum" if paragraph.numbered else "a:buChar" if paragraph.bullet else "a:buNone"
+        )
+        if paragraph.numbered:
+            bullet.set("type", "arabicPeriod")
+            # Restart only at the beginning of a run, preserving native renumbering.
+            if number == 1:
+                bullet.set("startAt", "1")
+        elif paragraph.bullet:
             bullet.set("char", "•")
-            properties.set("marL", str(px(24)))
-            properties.set("indent", str(px(-18)))
+        if paragraph.bullet or paragraph.numbered:
+            indent = (
+                max((r.size for r in paragraph.runs), default=24) * 2 if paragraph.numbered else 24
+            )
+            properties.set("marL", str(px(indent)))
+            properties.set("indent", str(px(6 - indent)))
         properties.append(bullet)
         for item in paragraph.runs:
-            run = p.add_run()
-            run.text = item.text
-            run.font.name = item.font
-            run.font.size = Pt(item.size * 0.75)
-            run.font.bold, run.font.italic, run.font.underline = (
-                item.bold,
-                item.italic,
-                item.underline,
-            )
-            run.font.color.rgb = color(item.color)
-            ea = OxmlElement("a:ea")
-            ea.set("typeface", item.font)
-            run._r.get_or_add_rPr().append(ea)
+            for part_index, text in enumerate(item.text.split("\n")):
+                if part_index:
+                    p.add_line_break()
+                run = p.add_run()
+                run.text = text
+                run.font.name = item.font
+                run.font.size = Pt(item.size * 0.75)
+                run.font.bold, run.font.italic, run.font.underline = (
+                    item.bold,
+                    item.italic,
+                    item.underline,
+                )
+                run.font.color.rgb = color(item.color)
+                ea = OxmlElement("a:ea")
+                ea.set("typeface", item.font)
+                run._r.get_or_add_rPr().append(ea)
 
 
 def write_pptx(document: PresentationDocument, images: dict[str, Path], target: Path):

@@ -100,6 +100,7 @@ from db.migrations.versions import (
     r0096_presentation_scene,
     r0097_presentation_image_version,
     r0098_presentation_connection_layers,
+    r0099_presentation_lists,
 )
 
 
@@ -449,5 +450,7 @@ MIGRATIONS += (
         r0098_presentation_connection_layers.MIGRATION_ID, r0098_presentation_connection_layers.SQL
     ),
 )
+
+MIGRATIONS += (Migration(r0099_presentation_lists.MIGRATION_ID, r0099_presentation_lists.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

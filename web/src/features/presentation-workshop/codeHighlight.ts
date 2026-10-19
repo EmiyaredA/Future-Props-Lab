@@ -104,6 +104,7 @@ export function highlightCode(
     paragraphs.push({
       align: "left",
       bullet: false,
+      numbered: false,
       line_height: lineHeight,
       runs: runs.length ? runs : [run("", colors.text)],
     });

@@ -58,6 +58,7 @@ export function codeBlock(
         {
           align: "left",
           bullet: false,
+          numbered: false,
           line_height: 1.3,
           runs: [
             {

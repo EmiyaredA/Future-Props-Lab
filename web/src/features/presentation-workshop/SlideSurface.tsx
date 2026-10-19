@@ -7,6 +7,7 @@ import { elementStyle } from "./geometry";
 import type { Slide, SlideElement } from "./types";
 import { Connections } from "./scene/Connections";
 import { sceneOrder } from "./scene/stacking";
+import { paragraphMarkers } from "./paragraphLists";
 
 export function ElementImage({
   element,
@@ -108,7 +109,8 @@ export const ElementContent = memo(function ElementContent({
     return (
       <ElementImage element={element} contain={element.kind === "vector"} />
     );
-  if (element.kind === "text")
+  if (element.kind === "text") {
+    const markers = paragraphMarkers(element.paragraphs);
     return (
       <div className="presentation-text">
         {element.paragraphs.map((p, index) => (
@@ -119,11 +121,17 @@ export const ElementContent = memo(function ElementContent({
               fontSize: Math.max(0, ...p.runs.map((r) => r.size)) || 24,
               fontFamily: fontFamily(p.runs[0]?.font ?? "Arial"),
               color: p.runs[0]?.color,
-              paddingLeft: p.bullet ? 24 : 0,
+              paddingLeft: p.numbered ? "2em" : p.bullet ? 24 : 0,
               lineHeight: `${(Math.max(0, ...p.runs.map((r) => r.size)) || 24) * p.line_height}px`,
             }}
           >
-            {p.bullet ? <span className="presentation-bullet">•</span> : null}
+            {markers[index] ? (
+              <span
+                className={`presentation-bullet${p.numbered ? " is-numbered" : ""}`}
+              >
+                {markers[index]}
+              </span>
+            ) : null}
             {p.runs.map((run, i) => (
               <span
                 key={i}
@@ -144,6 +152,7 @@ export const ElementContent = memo(function ElementContent({
         ))}
       </div>
     );
+  }
   return <PresentationShape element={element} />;
 });
 

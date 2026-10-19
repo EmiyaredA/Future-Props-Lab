@@ -16,6 +16,8 @@ import type { Slide, SlideElement } from "./types";
 import { NumberField } from "./PresentationNumberField";
 import { PresentationShapeSettings } from "./PresentationShapeSettings";
 import { useSelectionFormat } from "./useSelectionFormat";
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import { listAttributes, listOptions, type ListType } from "./paragraphLists";
 
 const CodeHighlightDialog = lazy(() => import("./CodeHighlightDialog"));
 
@@ -75,7 +77,7 @@ export function PresentationInspector({
   ];
   const disabled = readOnly || !!element?.locked;
   const [codeTarget, setCodeTarget] = useState<string | null>(null);
-  const { lineHeight, bullet, paragraph } = useSelectionFormat(
+  const { lineHeight, listType, paragraph } = useSelectionFormat(
     element ?? undefined,
     editor,
     patch,
@@ -315,14 +317,18 @@ export function PresentationInspector({
                         step={0.1}
                         onChange={(line_height) => paragraph({ line_height })}
                       />
-                      <button
-                        className="btn"
+                      <CustomSelect
+                        ariaLabel="列表类型"
+                        value={listType ?? "mixed"}
+                        options={[
+                          { value: "mixed", label: "混合", disabled: true },
+                          ...listOptions,
+                        ]}
                         disabled={disabled}
-                        aria-pressed={bullet === undefined ? "mixed" : bullet}
-                        onClick={() => paragraph({ bullet: bullet !== true })}
-                      >
-                        项目符号
-                      </button>
+                        onChange={(value) =>
+                          paragraph(listAttributes(value as ListType))
+                        }
+                      />
                     </fieldset>
                   </>
                 ) : element.kind === "image" ? (

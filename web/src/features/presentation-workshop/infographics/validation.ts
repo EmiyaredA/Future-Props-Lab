@@ -133,7 +133,9 @@ export function validateFragment(fragment: Fragment): void {
         p.runs.length > 1000 ||
         !["left", "center", "right"].includes(p.align) ||
         !finite(p.line_height, 1, 3) ||
-        typeof p.bullet !== "boolean"
+        typeof p.bullet !== "boolean" ||
+        (p.numbered !== undefined && typeof p.numbered !== "boolean") ||
+        (p.bullet && p.numbered)
       )
         invalid("段落格式无效");
       for (const r of p.runs)

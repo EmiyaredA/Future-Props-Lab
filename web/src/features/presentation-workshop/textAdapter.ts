@@ -11,6 +11,7 @@ export function toEditor(paragraphs: Paragraph[]): JSONContent {
         textAlign: p.align,
         lineHeight: p.line_height,
         bullet: p.bullet,
+        numbered: p.numbered ?? false,
       },
       content: p.runs.flatMap((run) => {
         const marks = [
@@ -46,6 +47,7 @@ export function fromEditor(
       : "left",
     line_height: Number(p.attrs?.lineHeight) || 1.3,
     bullet: !!p.attrs?.bullet,
+    numbered: !!p.attrs?.numbered,
     runs: (p.content?.length ? p.content : [{ type: "text", text: "" }]).map(
       (node) => {
         const marks = node.marks ?? [],

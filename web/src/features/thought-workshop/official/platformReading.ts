@@ -237,7 +237,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/workflow": {
     summary:
-      "缩放查看细节，对照视觉稿重建信息图，逐层编辑组内元素，用浮动面板调节连接样式与前后层级并保存。",
+      "设置正文圆点与编号列表，缩放查看细节，对照视觉稿重建信息图，逐层编辑组内元素并调节连接样式与前后层级。",
     related: [
       {
         libraryId: "presentation-workshop",

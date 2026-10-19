@@ -3,6 +3,7 @@ import type { Editor } from "@tiptap/react";
 import type { Paragraph, SlideElement, TextRun } from "./types";
 import { defaultRun } from "./templates";
 import { fromEditor } from "./textAdapter";
+import { paragraphListType, type ListType } from "./paragraphLists";
 
 type RunStyle = Omit<TextRun, "text">;
 export function commonRunStyle(runs: TextRun[]): Partial<RunStyle> {
@@ -45,7 +46,9 @@ export function useSelectionFormat(
   const paragraphs = element?.paragraphs ?? [];
   let align: Paragraph["align"] | undefined = paragraphs[0]?.align;
   let lineHeight: number | undefined = paragraphs[0]?.line_height;
-  let bullet: boolean | undefined = paragraphs[0]?.bullet;
+  let listType: ListType | undefined = paragraphs[0]
+    ? paragraphListType(paragraphs[0])
+    : "none";
   if (editor && !editor.isDestroyed) {
     const { from, to, empty, $from } = editor.state.selection;
     const nodes: {
@@ -79,12 +82,18 @@ export function useSelectionFormat(
         : undefined;
     align = common("textAlign") as Paragraph["align"] | undefined;
     lineHeight = common("lineHeight") as number | undefined;
-    bullet = common("bullet") as boolean | undefined;
+    const lists = selectedParagraphs.map((p) =>
+      paragraphListType({ bullet: !!p.bullet, numbered: !!p.numbered }),
+    );
+    listType = lists.every((value) => value === lists[0])
+      ? lists[0]
+      : undefined;
   } else {
     if (!paragraphs.every((p) => p.align === align)) align = undefined;
     if (!paragraphs.every((p) => p.line_height === lineHeight))
       lineHeight = undefined;
-    if (!paragraphs.every((p) => p.bullet === bullet)) bullet = undefined;
+    if (!paragraphs.every((p) => paragraphListType(p) === listType))
+      listType = undefined;
   }
   const chain = () => {
     if (!editor || editor.isDestroyed || editor.view.composing) return null;
@@ -140,6 +149,8 @@ export function useSelectionFormat(
         });
       if (values.bullet !== undefined)
         commands.updateAttributes("paragraph", { bullet: values.bullet });
+      if (values.numbered !== undefined)
+        commands.updateAttributes("paragraph", { numbered: values.numbered });
       commands.run();
     } else
       patch({
@@ -150,7 +161,7 @@ export function useSelectionFormat(
     style: commonRunStyle(runs),
     align,
     lineHeight,
-    bullet,
+    listType,
     format,
     paragraph,
   };
