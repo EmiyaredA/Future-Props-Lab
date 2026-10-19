@@ -474,6 +474,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `scene/` 拥有原生分组、节点连接、参考图对照和页面检查；`infographics/` 拥有 AntV
 声明式输入、受控模板原生转换与 ELK 布局，不持有另一套保存或导出状态。`elkLayout.ts` 按需创建并销毁独立布局 Worker，`validation.ts` 在原生片段预览前校验结构，装饰 SVG 复用正式素材预览校验。
 `scene/selection.ts` 解析命中元素与分组选择，`useSceneTools` 唯一持有组内层级；画布在点击松手时请求下钻，拖动保留原选区。这些选择状态不进入文稿持久化。
+`scene/connectionGeometry.ts` 拥有沿边比例端点、旋转边缘投影、路径编辑与节点跟随；`ConnectionHandles` 展示画布覆盖层，`useConnectionDrag` 只持有可取消预览，松手经统一草稿提交一次。直线拖动保持直线，折线才编辑走线。后端 `connection_routes.py` 与 Web 共用测试向量，operations 合并整批节点变换后调整路径，显式路径优先。连接 `source_offset`、`target_offset` 为 0–1，迁移 `0100_presentation_connection_offsets` 为旧连接补 0.5，保留路径与 revision；PPTX 将非中点连接导出为自由形状以保留几何。
 `scene/stacking.ts` 解析并调整元素与连接的统一前后顺序；连接 `layer` 保存下方元素数量，同层按连接数组顺序。迁移 `0098_presentation_connection_layers` 为缺失层级补 0，保留旧画面与 revision。`SlideSurface` 与 `pptx_scene.py` 消费相同顺序；PPTX 仅保留连续叠放的原生组，交错组在导出时展开以保持遮挡，源分组不变。
 后端 `schemas/scene.py` 校验文稿 v2 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
 `slideTheme.ts` 拥有新建色板、可修改颜色收集与单页换肤纯函数，`SlideThemeDialog` 只维护预览替换表；用户应用才进入原草稿历史与 CAS 保存，不追加持久化字段。`useSceneTools` 返回动作描述与独立弹窗，`PresentationToolbar` 统一展示信息图与“更多”菜单，不再增加整排场景工具。`slide-theme.css` 仅维护换肤弹窗布局。

@@ -40,6 +40,8 @@ function fixture(): Project {
       arrow: true,
       source_anchor: "right",
       target_anchor: "left",
+      source_offset: 0.5,
+      target_offset: 0.5,
       style: "step",
       id: "ab",
       layer: 0,
@@ -55,6 +57,8 @@ function fixture(): Project {
       color: "#365F62",
       source_anchor: "right",
       target_anchor: "left",
+      source_offset: 0.5,
+      target_offset: 0.5,
       style: "step",
       id: "bc",
       layer: 0,
@@ -321,6 +325,8 @@ it("仅连接几何变化清除布局路径，非法端点无法通过验证", (
     { target_id: "c" },
     { source_anchor: "top" as const },
     { target_anchor: "bottom" as const },
+    { source_offset: 0.2 },
+    { target_offset: 0.8 },
     { style: "straight" as const },
   ])
     expect(patchConnection(edge, patch).waypoints).toEqual([]);

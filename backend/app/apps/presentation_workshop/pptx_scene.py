@@ -8,6 +8,8 @@ from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Emu, Pt
 
+from app.apps.presentation_workshop.connection_routes import anchor as route_anchor
+
 SITES = {"top": 0, "left": 1, "bottom": 2, "right": 3}
 
 
@@ -15,26 +17,32 @@ def px(value):
     return Emu(round(value * 9525))
 
 
-def anchor(item, side):
-    x = item.x + (0 if side == "left" else item.width if side == "right" else item.width / 2)
-    y = item.y + (0 if side == "top" else item.height if side == "bottom" else item.height / 2)
-    angle = math.radians(item.rotation)
-    cx, cy = item.x + item.width / 2, item.y + item.height / 2
-    return (
-        cx + (x - cx) * math.cos(angle) - (y - cy) * math.sin(angle),
-        cy + (x - cx) * math.sin(angle) + (y - cy) * math.cos(angle),
-    )
+def anchor(item, side, offset=0.5):
+    point = route_anchor(item.model_dump(), side, offset)
+    return point["x"], point["y"]
 
 
 def add_scene(slide, page, shapes):
     elements = {e.id: e for e in page.elements}
     connection_shapes = {}
     for edge in page.connections:
-        start = anchor(elements[edge.source_id], edge.source_anchor)
-        end = anchor(elements[edge.target_id], edge.target_anchor)
-        routed = bool(edge.waypoints and edge.style == "step")
+        start = anchor(elements[edge.source_id], edge.source_anchor, edge.source_offset)
+        end = anchor(elements[edge.target_id], edge.target_anchor, edge.target_offset)
+        points = [start, *((p.x, p.y) for p in edge.waypoints if edge.style != "straight"), end]
+        if edge.style == "step" and not edge.waypoints:
+            if edge.source_anchor in {"top", "bottom"}:
+                y = (start[1] + end[1]) / 2
+                points = [start, (start[0], y), (end[0], y), end]
+            else:
+                x = (start[0] + end[0]) / 2
+                points = [start, (x, start[1]), (x, end[1]), end]
+        routed = (
+            bool(edge.waypoints and edge.style != "straight")
+            or edge.source_offset != 0.5
+            or edge.target_offset != 0.5
+        )
         line = (
-            _routed_shape(slide, [start, *((p.x, p.y) for p in edge.waypoints), end])
+            _routed_shape(slide, points)
             if routed
             else slide.shapes.add_connector(
                 MSO_CONNECTOR.ELBOW if edge.style == "step" else MSO_CONNECTOR.STRAIGHT,
@@ -69,14 +77,6 @@ def add_scene(slide, page, shapes):
             line._element.spPr.get_or_add_ln().append(arrow)
         parts = [line]
         if edge.label:
-            points = [start, *((p.x, p.y) for p in edge.waypoints), end]
-            if edge.style == "step" and not edge.waypoints:
-                if edge.source_anchor in {"top", "bottom"}:
-                    y = (start[1] + end[1]) / 2
-                    points = [start, (start[0], y), (end[0], y), end]
-                else:
-                    x = (start[0] + end[0]) / 2
-                    points = [start, (x, start[1]), (x, end[1]), end]
             midpoint = _midpoint(points)
             label = slide.shapes.add_textbox(
                 px(midpoint[0] - 90), px(midpoint[1] - 28), px(180), px(28)

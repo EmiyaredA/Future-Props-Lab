@@ -1,3 +1,4 @@
+from app.apps.presentation_workshop.connection_routes import follow_batch
 from app.apps.presentation_workshop.projects import Presentations
 from app.apps.presentation_workshop.scene_edits import (
     apply_fragment,
@@ -16,7 +17,11 @@ from app.runtime.revisions import RevisionConflictError
 
 def transform(current, body):
     document = current.document.model_dump(mode="json")
+    before = current.document.model_dump(mode="json")
+    explicit_paths = set()
     for op in body.operations:
+        if op.entity == "connection" and op.action == "update" and "waypoints" in op.value:
+            explicit_paths.add((op.parent_id, op.id))
         slides = document["slides"]
         if op.entity == "fragment":
             apply_fragment(find(slides, op.parent_id), op)
@@ -39,11 +44,6 @@ def transform(current, body):
         if owner and op.entity == "element" and op.action == "remove":
             rebase_layers_after_removal(owner, {op.id})
         clone = edit(items, op)
-        if owner and op.entity == "element" and op.action == "update":
-            if {"x", "y", "width", "height", "rotation"}.intersection(op.value):
-                for connection in owner["connections"]:
-                    if op.id in (connection["source_id"], connection["target_id"]):
-                        connection["waypoints"] = []
         if owner and op.action == "remove":
             if op.entity == "element":
                 prune(owner, {op.id})
@@ -57,6 +57,10 @@ def transform(current, body):
         if op.entity == "slide" and op.action == "duplicate":
             # New slide IDs deterministically namespace child IDs; no duplicate global identities.
             clone.update(remap(clone, clone["id"]))
+    try:
+        follow_batch(before, document, explicit_paths)
+    except ValueError as exc:
+        raise OperationError(str(exc), "connection_route_limit", 422) from exc
     return PresentationProjectPut(
         title=current.title, document=document, expected_revision=body.expected_revision
     )

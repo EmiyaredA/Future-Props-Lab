@@ -1,0 +1,493 @@
+[
+  {
+    "name": "source translation",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "left",
+      "style": "step",
+      "waypoints": [
+        {
+          "x": 500,
+          "y": 150
+        },
+        {
+          "x": 500,
+          "y": 350
+        }
+      ]
+    },
+    "changes": [
+      {
+        "id": "a",
+        "x": 140,
+        "y": 130
+      }
+    ],
+    "expected": [
+      {
+        "x": 500,
+        "y": 180
+      },
+      {
+        "x": 500,
+        "y": 350
+      }
+    ]
+  },
+  {
+    "name": "group translation",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "left",
+      "style": "step",
+      "waypoints": [
+        {
+          "x": 500,
+          "y": 150
+        },
+        {
+          "x": 500,
+          "y": 350
+        }
+      ]
+    },
+    "changes": [
+      {
+        "id": "a",
+        "x": 140,
+        "y": 130
+      },
+      {
+        "id": "b",
+        "x": 740,
+        "y": 330
+      }
+    ],
+    "expected": [
+      {
+        "x": 540,
+        "y": 180
+      },
+      {
+        "x": 540,
+        "y": 380
+      }
+    ]
+  },
+  {
+    "name": "target resize",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "left",
+      "style": "step",
+      "waypoints": [
+        {
+          "x": 500,
+          "y": 150
+        },
+        {
+          "x": 500,
+          "y": 350
+        }
+      ]
+    },
+    "changes": [
+      {
+        "id": "b",
+        "height": 200
+      }
+    ],
+    "expected": [
+      {
+        "x": 500,
+        "y": 150
+      },
+      {
+        "x": 500,
+        "y": 400
+      }
+    ]
+  },
+  {
+    "name": "source rotation",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "left",
+      "style": "step",
+      "waypoints": [
+        {
+          "x": 500,
+          "y": 150
+        },
+        {
+          "x": 500,
+          "y": 350
+        }
+      ]
+    },
+    "changes": [
+      {
+        "id": "a",
+        "rotation": 90
+      }
+    ],
+    "expected": [
+      {
+        "x": 500,
+        "y": 250
+      },
+      {
+        "x": 500,
+        "y": 350
+      }
+    ]
+  },
+  {
+    "name": "source resize",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "left",
+      "style": "step",
+      "waypoints": [
+        {
+          "x": 500,
+          "y": 150
+        },
+        {
+          "x": 500,
+          "y": 350
+        }
+      ]
+    },
+    "changes": [
+      {
+        "id": "a",
+        "width": 300,
+        "height": 200
+      }
+    ],
+    "expected": [
+      {
+        "x": 500,
+        "y": 200
+      },
+      {
+        "x": 500,
+        "y": 350
+      }
+    ]
+  },
+  {
+    "name": "automatic route",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "left",
+      "style": "step",
+      "waypoints": []
+    },
+    "changes": [
+      {
+        "id": "a",
+        "y": 150
+      }
+    ],
+    "expected": []
+  },
+  {
+    "name": "noncentral port",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "left",
+      "style": "step",
+      "waypoints": [
+        {
+          "x": 500,
+          "y": 150
+        },
+        {
+          "x": 500,
+          "y": 350
+        }
+      ],
+      "target_offset": 0.25
+    },
+    "changes": [
+      {
+        "id": "b",
+        "height": 200
+      }
+    ],
+    "expected": [
+      {
+        "x": 500,
+        "y": 150
+      },
+      {
+        "x": 500,
+        "y": 350
+      }
+    ]
+  },
+  {
+    "name": "legacy diagonal",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "left",
+      "style": "step",
+      "waypoints": [
+        {
+          "x": 420,
+          "y": 230
+        },
+        {
+          "x": 500,
+          "y": 350
+        }
+      ]
+    },
+    "changes": [
+      {
+        "id": "a",
+        "x": 120,
+        "y": 130
+      }
+    ],
+    "expected": [
+      {
+        "x": 420,
+        "y": 230
+      },
+      {
+        "x": 500,
+        "y": 350
+      }
+    ]
+  },
+  {
+    "name": "equal resizing is not translation",
+    "elements": [
+      {
+        "id": "a",
+        "x": 100,
+        "y": 100,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      },
+      {
+        "id": "b",
+        "x": 700,
+        "y": 300,
+        "width": 200,
+        "height": 100,
+        "rotation": 0
+      }
+    ],
+    "edge": {
+      "id": "edge",
+      "source_id": "a",
+      "target_id": "b",
+      "source_anchor": "right",
+      "target_anchor": "right",
+      "style": "step",
+      "waypoints": [
+        {
+          "x": 500,
+          "y": 150
+        },
+        {
+          "x": 500,
+          "y": 350
+        }
+      ]
+    },
+    "changes": [
+      {
+        "id": "a",
+        "width": 240
+      },
+      {
+        "id": "b",
+        "width": 240
+      }
+    ],
+    "expected": [
+      {
+        "x": 500,
+        "y": 150
+      },
+      {
+        "x": 500,
+        "y": 350
+      }
+    ]
+  }
+]

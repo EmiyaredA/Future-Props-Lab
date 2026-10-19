@@ -230,6 +230,8 @@ export function convertSvg(
         target_id: id,
         source_anchor: "right",
         target_anchor: "left",
+        source_offset: 0.5,
+        target_offset: 0.5,
         label: "",
         style: "straight",
         arrow: true,

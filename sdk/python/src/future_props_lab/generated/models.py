@@ -3846,9 +3846,11 @@ class PresentationConnection(WireModel):
     layer: int = Field(default=0, alias='layer', ge=0.0, le=200.0)
     source_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='right', alias='source_anchor')
     source_id: str = Field(default=..., alias='source_id', min_length=1, max_length=64)
+    source_offset: float = Field(default=0.5, alias='source_offset', ge=0.0, le=1.0)
     style: Literal['straight', 'step'] = Field(default='step', alias='style')
     target_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='left', alias='target_anchor')
     target_id: str = Field(default=..., alias='target_id', min_length=1, max_length=64)
+    target_offset: float = Field(default=0.5, alias='target_offset', ge=0.0, le=1.0)
     waypoints: list[PresentationPoint] | None = Field(default=None, alias='waypoints', max_length=32)
     width: float = Field(default=2, alias='width', ge=0.5, le=30.0)
 

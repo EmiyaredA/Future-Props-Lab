@@ -168,24 +168,29 @@ export function PresentationEditor({
         selected,
       });
   };
-  const changeSlide = (update: (s: Slide) => Slide, group?: string) =>
-    commit(
-      (d) => ({
-        ...d,
-        document: {
-          ...d.document,
-          slides: d.document.slides.map((s) =>
-            s.id === slide.id
-              ? ((next) => ({
-                  ...updateScene(s, next),
-                  elements: next.elements.map(boundedElement),
-                }))(update(s))
-              : s,
-          ),
-        },
-      }),
-      group,
-    );
+  const changeSlide = (update: (s: Slide) => Slide, group?: string) => {
+    try {
+      commit(
+        (d) => ({
+          ...d,
+          document: {
+            ...d.document,
+            slides: d.document.slides.map((s) =>
+              s.id === slide.id
+                ? ((next) => ({
+                    ...updateScene(s, next),
+                    elements: next.elements.map(boundedElement),
+                  }))(update(s))
+                : s,
+            ),
+          },
+        }),
+        group,
+      );
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "无法调整页面");
+    }
+  };
   const patch = (values: Partial<SlideElement>) =>
     changeSlide((s) => ({
       ...s,

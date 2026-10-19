@@ -22,7 +22,9 @@ import { SlideSurface } from "./SlideSurface";
 import { SlideTextEditor } from "./SlideTextEditor";
 import type { Slide, SlideElement } from "./types";
 import type { Connection } from "./scene/model";
-import { selectionIds } from "./scene/model";
+import { selectionIds, updateScene } from "./scene/model";
+import { useConnectionDrag } from "./scene/useConnectionDrag";
+import { ConnectionHandles } from "./scene/ConnectionHandles";
 import { groupAtHit, selectionAtHit } from "./scene/selection";
 import { useSlideViewport } from "./useSlideViewport";
 
@@ -114,6 +116,7 @@ export function SlideCanvas({
   const [transient, setTransient] = useState<Slide | null>(null);
   const [gesturing, setGesturing] = useState(false);
   const [guides, setGuides] = useState<LayoutGuide[]>([]);
+  const [routeError, setRouteError] = useState("");
   const [marquee, setMarquee] = useState<{
     x: number;
     y: number;
@@ -157,9 +160,29 @@ export function SlideCanvas({
     canvas,
     zoom,
     onZoomChange,
-    isZoomBlocked: () => !!press.current || !!gesture.current || !!cropOverlay,
+    isZoomBlocked: () =>
+      !!press.current ||
+      !!gesture.current ||
+      !!cropOverlay ||
+      connectionDrag.active(),
   });
-  const display = transient?.id === slide.id ? transient : slide;
+  const connectionDrag = useConnectionDrag({
+    slide,
+    selected: selectedConnection,
+    readOnly,
+    canvas,
+    scale,
+    commit: replace,
+  });
+  const baseDisplay = transient?.id === slide.id ? transient : slide;
+  const display = connectionDrag.preview
+    ? {
+        ...baseDisplay,
+        connections: (baseDisplay.connections ?? []).map((c) =>
+          c.id === connectionDrag.preview!.id ? connectionDrag.preview! : c,
+        ),
+      }
+    : baseDisplay;
   useLayoutEffect(() => {
     onScaleChange?.(scale);
   }, [scale, onScaleChange]);
@@ -181,6 +204,7 @@ export function SlideCanvas({
   const start = (event: PointerEvent<HTMLDivElement>) => {
     if (
       event.button !== 0 ||
+      connectionDrag.active() ||
       (event.target as HTMLElement).closest(".presentation-text-editor")
     )
       return;
@@ -195,6 +219,7 @@ export function SlideCanvas({
       "[data-handle]",
     )?.dataset.handle as Gesture["mode"] | undefined;
     setEditing(null);
+    setRouteError("");
     const additive = event.shiftKey || event.metaKey || event.ctrlKey;
     const hit = selectionAtHit(
       slide,
@@ -309,12 +334,18 @@ export function SlideCanvas({
             x: Math.max(-10000, Math.min(10000, e.x + dx)),
             y: Math.max(-10000, Math.min(10000, e.y + dy)),
           }));
-    rawPreview.current = {
+    const raw = {
       ...g.base,
       elements: g.base.elements.map(
         (e) => rawElements.find((r) => r.id === e.id) ?? e,
       ),
     };
+    try {
+      rawPreview.current = updateScene(g.base, raw);
+    } catch (e) {
+      setRouteError(e instanceof Error ? e.message : "无法调整走线");
+      return;
+    }
     if ((g.mode === "move" || g.mode === "resize") && !event.altKey) {
       const snap =
         g.mode === "move"
@@ -378,8 +409,16 @@ export function SlideCanvas({
         };
       }),
     };
-    preview.current = next;
-    setTransient(next);
+    try {
+      const following = updateScene(g.base, next);
+      preview.current = following;
+      setTransient(following);
+      setRouteError("");
+    } catch (e) {
+      preview.current = null;
+      setTransient(null);
+      setRouteError(e instanceof Error ? e.message : "无法调整走线");
+    }
   };
   const finish = (cancel = false) => {
     if (
@@ -415,6 +454,7 @@ export function SlideCanvas({
   useLayoutEffect(() => {
     if (!historyGesture) return;
     historyGesture.current = () => {
+      if (connectionDrag.cancel()) return true;
       if (!press.current && !gesture.current) return false;
       finish(true);
       return true;
@@ -434,7 +474,9 @@ export function SlideCanvas({
       onPointerDown={(event) => {
         if (
           event.button === 0 &&
-          !(event.target as Element).closest("[data-connection-id]")
+          !(event.target as Element).closest(
+            "[data-connection-id], [data-connection-editor]",
+          )
         )
           onCanvasInteract?.();
       }}
@@ -451,14 +493,21 @@ export function SlideCanvas({
           tabIndex={0}
           style={{ transform: `scale(${scale})`, width: 1280, height: 720 }}
           onPointerDown={start}
-          onPointerMove={move}
+          onPointerMove={(event) => {
+            if (!connectionDrag.move(event)) move(event);
+          }}
           onPointerUp={(event) => {
+            if (connectionDrag.finish(event)) return;
             if (press.current?.pointer !== event.pointerId) return;
             move(event);
             finish();
           }}
-          onPointerCancel={() => finish(true)}
+          onPointerCancel={() => {
+            connectionDrag.cancel();
+            finish(true);
+          }}
           onLostPointerCapture={() => {
+            connectionDrag.cancel();
             if (press.current) finish(true);
           }}
           onClick={(event) => {
@@ -469,6 +518,12 @@ export function SlideCanvas({
               };
           }}
           onKeyDown={(e) => {
+            if (e.key === "Escape" && connectionDrag.active()) {
+              e.preventDefault();
+              e.stopPropagation();
+              connectionDrag.cancel();
+              return;
+            }
             if (e.altKey && e.key === "F10") {
               e.preventDefault();
               host.current
@@ -558,9 +613,27 @@ export function SlideCanvas({
               />
             ) : null}
             {cropOverlay}
+            {!readOnly &&
+              selectedConnection &&
+              selectedConnection !== previewConnection?.id &&
+              display.connections?.find((c) => c.id === selectedConnection) && (
+                <ConnectionHandles
+                  slide={display}
+                  edge={display.connections.find(
+                    (c) => c.id === selectedConnection,
+                  )!}
+                  scale={scale}
+                  drag={connectionDrag}
+                />
+              )}
           </SlideSurface>
         </div>
       </div>
+      {(routeError || connectionDrag.error) && (
+        <div className="presentation-connection-drag-error" role="alert">
+          {routeError || connectionDrag.error}
+        </div>
+      )}
       {!readOnly && !gesturing && chosen.length > 0 && selectionToolbar ? (
         <SelectionOverlay
           area={host}

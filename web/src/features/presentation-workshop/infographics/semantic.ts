@@ -148,6 +148,8 @@ export async function semanticDiagram(
       target_id: ids.get(link.to)!,
       source_anchor: "right",
       target_anchor: "left",
+      source_offset: 0.5,
+      target_offset: 0.5,
       label: link.label ?? "",
       style: "step",
       arrow: link.showArrow !== false && link.direction !== "none",

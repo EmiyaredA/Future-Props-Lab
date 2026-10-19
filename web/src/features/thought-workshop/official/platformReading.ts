@@ -237,7 +237,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/workflow": {
     summary:
-      "设置正文圆点与编号列表，缩放查看细节，对照视觉稿重建信息图，逐层编辑组内元素并调节连接样式与前后层级。",
+      "设置正文圆点与编号列表，缩放查看细节，对照视觉稿重建信息图，逐层编辑组内元素，拖动连接路径与边缘端点并调节样式和层级。",
     related: [
       {
         libraryId: "presentation-workshop",

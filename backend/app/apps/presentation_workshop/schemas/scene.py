@@ -23,6 +23,18 @@ class PresentationConnection(SlideModel):
     target_id: Identifier
     source_anchor: Literal["left", "right", "top", "bottom"] = "right"
     target_anchor: Literal["left", "right", "top", "bottom"] = "left"
+    source_offset: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="沿起点所在边的位置比例；左右边从上到下，上下边从左到右",
+    )
+    target_offset: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="沿终点所在边的位置比例；左右边从上到下，上下边从左到右",
+    )
     style: Literal["straight", "step"] = "step"
     label: str = Field(default="", max_length=500)
     color: Color = "#365F62"

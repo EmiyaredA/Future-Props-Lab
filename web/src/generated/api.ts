@@ -17049,6 +17049,12 @@ export interface components {
             /** Source Id */
             source_id: string;
             /**
+             * Source Offset
+             * @description 沿起点所在边的位置比例；左右边从上到下，上下边从左到右
+             * @default 0.5
+             */
+            source_offset: number;
+            /**
              * Style
              * @default step
              * @enum {string}
@@ -17062,6 +17068,12 @@ export interface components {
             target_anchor: "left" | "right" | "top" | "bottom";
             /** Target Id */
             target_id: string;
+            /**
+             * Target Offset
+             * @description 沿终点所在边的位置比例；左右边从上到下，上下边从左到右
+             * @default 0.5
+             */
+            target_offset: number;
             /** Waypoints */
             waypoints?: components["schemas"]["PresentationPoint"][];
             /**

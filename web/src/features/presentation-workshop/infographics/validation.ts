@@ -197,6 +197,8 @@ export function validateFragment(fragment: Fragment): void {
             "target_id",
             "source_anchor",
             "target_anchor",
+            "source_offset",
+            "target_offset",
             "style",
             "label",
             "color",
@@ -220,6 +222,8 @@ export function validateFragment(fragment: Fragment): void {
     if (
       (edge.source_anchor && !sides.includes(edge.source_anchor)) ||
       (edge.target_anchor && !sides.includes(edge.target_anchor)) ||
+      (edge.source_offset !== undefined && !finite(edge.source_offset, 0, 1)) ||
+      (edge.target_offset !== undefined && !finite(edge.target_offset, 0, 1)) ||
       (edge.style && !["straight", "step"].includes(edge.style)) ||
       (edge.label?.length ?? 0) > 500 ||
       (edge.color && !color(edge.color)) ||

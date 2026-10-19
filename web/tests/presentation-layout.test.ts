@@ -172,6 +172,8 @@ describe("logical layout objects", () => {
         style: "step",
         source_anchor: "right",
         target_anchor: "left",
+        source_offset: 0.5,
+        target_offset: 0.5,
         arrow: true,
         color: "#000000",
         label: "",
@@ -185,7 +187,7 @@ describe("logical layout objects", () => {
     );
     expect(rotatedBounds(output.elements.slice(0, 3)).width).toBeCloseTo(100);
     expect(output.elements[1].x - output.elements[0].x).toBeCloseTo(25);
-    expect(output.connections![0].waypoints).toEqual([]);
+    expect(output.connections![0].waypoints).toEqual([{ x: 1, y: 1 }]);
   });
   it("distributes visual groups with fixed endpoints; one selected object uses its container", () => {
     const s = slide([rect("a", 100), rect("b", 250), rect("c", 700)]);

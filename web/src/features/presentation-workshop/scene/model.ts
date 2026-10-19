@@ -1,4 +1,6 @@
-import type { Slide, SlideElement } from "../types";
+import type { Slide } from "../types";
+import { followConnection } from "./connectionGeometry";
+export { anchor, connectionPoints } from "./connectionGeometry";
 
 export type Group = NonNullable<Slide["groups"]>[number];
 export type Connection = NonNullable<Slide["connections"]>[number];
@@ -160,19 +162,6 @@ export function cleanScene(slide: Slide): Slide {
 
 export function updateScene(before: Slide, after: Slide): Slide {
   const remaining = new Set(after.elements.map((e) => e.id));
-  const moved = new Set(
-    after.elements
-      .filter((e) => {
-        const old = before.elements.find((x) => x.id === e.id);
-        return (
-          old &&
-          ["x", "y", "width", "height", "rotation"].some(
-            (k) => e[k as keyof SlideElement] !== old[k as keyof SlideElement],
-          )
-        );
-      })
-      .map((e) => e.id),
-  );
   return cleanScene({
     ...after,
     connections: (after.connections ?? []).map((c) => {
@@ -186,9 +175,8 @@ export function updateScene(before: Slide, after: Slide): Slide {
       const next = removedBelow
         ? { ...c, layer: (c.layer ?? 0) - removedBelow }
         : c;
-      return (moved.has(c.source_id) || moved.has(c.target_id)) &&
-        c.waypoints === old?.waypoints
-        ? { ...next, waypoints: [] }
+      return c.waypoints === old?.waypoints
+        ? followConnection(before, after, next)
         : next;
     }),
   });
@@ -288,43 +276,4 @@ export function withoutGroup(slide: Slide, id: string): Slide {
     ...slide,
     elements: slide.elements.filter((e) => !ids.has(e.id)),
   });
-}
-
-export function anchor(element: SlideElement, side: Anchor) {
-  const x =
-    element.x +
-    (side === "left"
-      ? 0
-      : side === "right"
-        ? element.width
-        : element.width / 2);
-  const y =
-    element.y +
-    (side === "top"
-      ? 0
-      : side === "bottom"
-        ? element.height
-        : element.height / 2);
-  const a = (element.rotation * Math.PI) / 180,
-    cx = element.x + element.width / 2,
-    cy = element.y + element.height / 2;
-  return {
-    x: cx + (x - cx) * Math.cos(a) - (y - cy) * Math.sin(a),
-    y: cy + (x - cx) * Math.sin(a) + (y - cy) * Math.cos(a),
-  };
-}
-
-export function connectionPoints(slide: Slide, edge: Connection) {
-  const source = slide.elements.find((e) => e.id === edge.source_id),
-    target = slide.elements.find((e) => e.id === edge.target_id);
-  if (!source || !target) return [];
-  const a = anchor(source, edge.source_anchor ?? "right"),
-    b = anchor(target, edge.target_anchor ?? "left");
-  if (edge.waypoints?.length) return [a, ...edge.waypoints, b];
-  if (edge.style === "straight") return [a, b];
-  const vertical =
-    edge.source_anchor === "top" || edge.source_anchor === "bottom";
-  return vertical
-    ? [a, { x: a.x, y: (a.y + b.y) / 2 }, { x: b.x, y: (a.y + b.y) / 2 }, b]
-    : [a, { x: (a.x + b.x) / 2, y: a.y }, { x: (a.x + b.x) / 2, y: b.y }, b];
 }

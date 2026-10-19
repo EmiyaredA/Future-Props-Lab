@@ -163,6 +163,14 @@ export function ConnectionPanel({
             onChange={(color) => onChange({ color }, "color")}
           />
         </div>
+        <button
+          type="button"
+          className="btn"
+          disabled={!value.waypoints?.length}
+          onClick={() => onChange({ waypoints: [] })}
+        >
+          重置走线
+        </button>
         <label className="presentation-connection-field">
           粗细
           <div className="presentation-connection-width">
@@ -293,6 +301,37 @@ export function ConnectionPanel({
                       )
                     }
                   />
+                  <label>
+                    沿边位置（%）
+                    <input
+                      aria-label={source ? "起点沿边位置" : "终点沿边位置"}
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={
+                        Math.round(
+                          ((source
+                            ? value.source_offset
+                            : value.target_offset) ?? 0.5) * 1000,
+                        ) / 10
+                      }
+                      onChange={(event) => {
+                        const percent = event.target.valueAsNumber;
+                        if (
+                          Number.isFinite(percent) &&
+                          percent >= 0 &&
+                          percent <= 100
+                        )
+                          onChange(
+                            source
+                              ? { source_offset: percent / 100 }
+                              : { target_offset: percent / 100 },
+                            `${end}-offset`,
+                          );
+                      }}
+                    />
+                  </label>
                 </div>
               );
             })}

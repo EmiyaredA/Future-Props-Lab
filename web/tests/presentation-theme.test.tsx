@@ -96,6 +96,8 @@ function legacy() {
       waypoints: [{ x: 12, y: 60 }],
       source_anchor: "right",
       target_anchor: "left",
+      source_offset: 0.5,
+      target_offset: 0.5,
     },
     {
       id: "locked-edge",
@@ -110,6 +112,8 @@ function legacy() {
       waypoints: [],
       source_anchor: "right",
       target_anchor: "left",
+      source_offset: 0.5,
+      target_offset: 0.5,
     },
   ];
   slide.reference = {

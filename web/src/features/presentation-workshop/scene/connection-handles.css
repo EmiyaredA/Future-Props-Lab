@@ -1,0 +1,62 @@
+.presentation-connection-handles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.presentation-connection-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  border-radius: 3px;
+  pointer-events: auto;
+  cursor: move;
+  touch-action: none;
+}
+.presentation-connection-handle.source,
+.presentation-connection-handle.target {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  cursor: crosshair;
+}
+.presentation-connection-handle.segment {
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+}
+.presentation-connection-handle:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+.presentation-connection-port {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--surface);
+}
+.presentation-connection-port.active {
+  background: var(--accent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.presentation-connection-ghost {
+  position: absolute;
+  overflow: visible;
+}
+.presentation-connection-drag-error {
+  position: sticky;
+  bottom: 12px;
+  left: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  z-index: 6;
+}

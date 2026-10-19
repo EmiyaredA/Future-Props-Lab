@@ -24822,6 +24822,14 @@
             "title": "Source Id",
             "type": "string"
           },
+          "source_offset": {
+            "default": 0.5,
+            "description": "沿起点所在边的位置比例；左右边从上到下，上下边从左到右",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Source Offset",
+            "type": "number"
+          },
           "style": {
             "default": "step",
             "enum": [
@@ -24847,6 +24855,14 @@
             "minLength": 1,
             "title": "Target Id",
             "type": "string"
+          },
+          "target_offset": {
+            "default": 0.5,
+            "description": "沿终点所在边的位置比例；左右边从上到下，上下边从左到右",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Target Offset",
+            "type": "number"
           },
           "waypoints": {
             "items": {

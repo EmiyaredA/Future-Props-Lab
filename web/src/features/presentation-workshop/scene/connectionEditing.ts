@@ -17,6 +17,8 @@ export function newConnection(slide: Slide, selected: string[]): Connection {
     target_id: target,
     source_anchor: "right",
     target_anchor: "left",
+    source_offset: 0.5,
+    target_offset: 0.5,
     style: "step",
     label: "",
     color: slideTheme.teal,
@@ -46,6 +48,8 @@ export function patchConnection(
       "target_id",
       "source_anchor",
       "target_anchor",
+      "source_offset",
+      "target_offset",
       "style",
     ] as const
   ).some((key) => key in patch && patch[key] !== edge[key]);

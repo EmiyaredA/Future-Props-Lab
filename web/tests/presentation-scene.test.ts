@@ -58,6 +58,8 @@ function fixture() {
       target_id: "b",
       source_anchor: "right",
       target_anchor: "left",
+      source_offset: 0.5,
+      target_offset: 0.5,
       label: "",
       style: "step",
       waypoints: [{ x: 500, y: 100 }],
@@ -100,13 +102,15 @@ describe("信息图场景编辑", () => {
     expect(appendFragment(s, f).elements).toHaveLength(6);
     validateFragment(f);
   });
-  it("删除节点清理关联边，移动节点丢弃过时的布局路径", () => {
+  it("删除节点清理关联边，移动节点保留手调的布局路径", () => {
     const s = fixture();
     const moved = updateScene(s, {
       ...s,
       elements: s.elements.map((e) => (e.id === "a" ? { ...e, x: 55 } : e)),
     });
-    expect(moved.connections![0].waypoints).toEqual([]);
+    expect(moved.connections![0].waypoints).toEqual(
+      s.connections![0].waypoints,
+    );
     const deleted = cleanScene({
       ...s,
       elements: s.elements.filter((e) => e.id !== "a"),
