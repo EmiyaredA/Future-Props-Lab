@@ -115,6 +115,29 @@ test("富文本键盘撤销只执行一次，未提交的弹窗输入不穿透�
   ).toBeVisible();
 });
 
+test("文字快捷键复制粘贴追加内容，支持撤销重做并保存", async ({ page }) => {
+  await open(page);
+  const canvas = page.getByRole("group", { name: "幻灯片画布" });
+  await canvas.getByText("让想法，被看见", { exact: true }).dblclick();
+  const text = page.getByRole("textbox", { name: "编辑幻灯片文字" });
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.press("ControlOrMeta+c");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(text).toHaveText("让想法，被看见让想法，被看见");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(text).toHaveText("让想法，被看见");
+  await page.keyboard.press("ControlOrMeta+Shift+z");
+  await expect(text).toHaveText("让想法，被看见让想法，被看见");
+  await page.keyboard.press("Escape");
+  await expect(canvas.locator("[data-element-id]")).toHaveCount(3);
+  await save(page);
+  await page.reload();
+  await expect(
+    canvas.getByText("让想法，被看见让想法，被看见", { exact: true }),
+  ).toBeVisible();
+});
+
 test("拖拽中的首次撤销只取消预览，页面删除撤销定位到恢复页面", async ({
   page,
 }) => {

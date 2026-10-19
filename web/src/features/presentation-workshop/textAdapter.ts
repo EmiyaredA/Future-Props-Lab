@@ -2,6 +2,17 @@ import type { JSONContent } from "@tiptap/core";
 import type { Paragraph, TextRun } from "./types";
 import { defaultRun } from "./templates";
 
+function runColor(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  if (/^#[0-9a-f]{6}$/i.test(value)) return value;
+  // The browser serializes hex styles as rgb() when pasted marks are parsed.
+  const rgb = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/.exec(value);
+  if (!rgb) return fallback;
+  const channels = rgb.slice(1).map(Number);
+  if (channels.some((channel) => channel > 255)) return fallback;
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+}
+
 export function toEditor(paragraphs: Paragraph[]): JSONContent {
   return {
     type: "doc",
@@ -68,7 +79,7 @@ export function fromEditor(
             240,
             Math.max(6, parseFloat(style?.fontSize) || fallback.size),
           ),
-          color: style?.color || fallback.color,
+          color: runColor(style?.color, fallback.color),
           bold: marks.some((m) => m.type === "bold"),
           italic: marks.some((m) => m.type === "italic"),
           underline: marks.some((m) => m.type === "underline"),

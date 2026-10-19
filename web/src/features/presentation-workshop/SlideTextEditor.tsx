@@ -96,6 +96,15 @@ export function SlideTextEditor({
         "aria-multiline": "true",
       },
       handleDOMEvents: {
+        paste: (view, event) => {
+          if (!event.clipboardData) return false;
+          event.preventDefault();
+          const text = event.clipboardData.getData("text/plain");
+          // Choose the plain-text parser before ProseMirror prefers HTML.
+          // Clearing HTML later would paste an empty slice over the selection.
+          if (text) view.pasteText(text, event);
+          return true;
+        },
         compositionstart: () => {
           callbacks.current.onComposition(true);
           return false;
@@ -133,7 +142,6 @@ export function SlideTextEditor({
         }
         return false;
       },
-      transformPastedHTML: () => "",
     },
     onUpdate: ({ editor, transaction }) =>
       callbacks.current.onChange(

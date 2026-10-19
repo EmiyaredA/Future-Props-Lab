@@ -14,6 +14,27 @@ import {
 } from "@features/presentation-workshop/textAdapter";
 
 describe("演示文稿编辑规则", () => {
+  it.each([
+    ["rgb(18, 52, 86)", "#123456"],
+    ["rgb(255, 255, 255)", "#ffffff"],
+    ["#ABCDEF", "#ABCDEF"],
+    ["rgb(256, 0, 0)", "#123456"],
+    ["transparent", "#123456"],
+  ])("编辑器颜色 %s 转为文稿约定的十六进制颜色", (color, expected) => {
+    const content = toEditor([
+      {
+        align: "left",
+        line_height: 1.3,
+        bullet: false,
+        numbered: false,
+        runs: [{ ...defaultRun("文字"), color }],
+      },
+    ]);
+    expect(
+      fromEditor(content, { ...defaultRun(), color: "#123456" })[0].runs[0]
+        .color,
+    ).toBe(expected);
+  });
   it("五种版式生成普通元素，复制页面不会复用身份", () => {
     for (const layout of layouts) {
       const slide = newSlide(layout.value),
