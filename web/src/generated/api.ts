@@ -17036,6 +17036,11 @@ export interface components {
              */
             label: string;
             /**
+             * Layer
+             * @default 0
+             */
+            layer: number;
+            /**
              * Source Anchor
              * @default right
              * @enum {string}

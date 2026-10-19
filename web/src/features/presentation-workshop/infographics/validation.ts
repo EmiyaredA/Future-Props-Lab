@@ -200,6 +200,7 @@ export function validateFragment(fragment: Fragment): void {
             "color",
             "width",
             "arrow",
+            "layer",
             "waypoints",
           ].includes(k),
       )
@@ -220,7 +221,9 @@ export function validateFragment(fragment: Fragment): void {
       (edge.style && !["straight", "step"].includes(edge.style)) ||
       (edge.label?.length ?? 0) > 500 ||
       (edge.color && !color(edge.color)) ||
-      (edge.width !== undefined && !finite(edge.width, 0.5, 30))
+      (edge.width !== undefined && !finite(edge.width, 0.5, 30)) ||
+      (edge.layer !== undefined &&
+        (!Number.isInteger(edge.layer) || !finite(edge.layer, 0, 200)))
     )
       invalid("连接样式无效");
     if (

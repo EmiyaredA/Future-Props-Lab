@@ -3843,6 +3843,7 @@ class PresentationConnection(WireModel):
     color: str = Field(default='#365F62', alias='color')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     label: str = Field(default='', alias='label', max_length=500)
+    layer: int = Field(default=0, alias='layer', ge=0.0, le=200.0)
     source_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='right', alias='source_anchor')
     source_id: str = Field(default=..., alias='source_id', min_length=1, max_length=64)
     style: Literal['straight', 'step'] = Field(default='step', alias='style')

@@ -99,7 +99,8 @@ export function PresentationToolbar({
         <button
           className="icon-btn"
           aria-label="撤销"
-          title="撤销"
+          title="撤销（Ctrl/Cmd+Z）"
+          aria-keyshortcuts="Control+z Meta+z"
           disabled={!canUndo}
           onClick={onUndo}
         >
@@ -108,7 +109,8 @@ export function PresentationToolbar({
         <button
           className="icon-btn"
           aria-label="重做"
-          title="重做"
+          title="重做（Ctrl/Cmd+Shift+Z 或 Ctrl+Y）"
+          aria-keyshortcuts="Control+Shift+z Meta+Shift+z Control+y Meta+y"
           disabled={!canRedo}
           onClick={onRedo}
         >

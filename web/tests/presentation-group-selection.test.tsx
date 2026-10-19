@@ -110,8 +110,7 @@ function Harness({
         zoom={1}
         onReady={vi.fn()}
         onComposition={vi.fn()}
-        undo={vi.fn()}
-        redo={vi.fn()}
+
         groupScope={tools.scope}
         onGroupScopeChange={tools.selectInScope}
       />

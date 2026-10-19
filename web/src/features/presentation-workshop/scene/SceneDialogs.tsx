@@ -54,6 +54,7 @@ export function ReferenceDialog({
         role="dialog"
         aria-modal="true"
         aria-label="参考图设置"
+        data-presentation-history="document"
       >
         <header>
           <h3>参考图</h3>

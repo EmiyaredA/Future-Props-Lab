@@ -1,5 +1,10 @@
 from app.apps.presentation_workshop.projects import Presentations
-from app.apps.presentation_workshop.scene_edits import apply_fragment, prune, remap
+from app.apps.presentation_workshop.scene_edits import (
+    apply_fragment,
+    prune,
+    rebase_layers_after_removal,
+    remap,
+)
 from app.apps.presentation_workshop.schemas.document import (
     PresentationProjectOut,
     PresentationProjectPut,
@@ -31,6 +36,8 @@ def transform(current, body):
             item = find(items, op.id)
             if item["locked"] and not (op.action == "update" and op.value == {"locked": False}):
                 raise OperationError("请先解锁元素", "element_locked", 409)
+        if owner and op.entity == "element" and op.action == "remove":
+            rebase_layers_after_removal(owner, {op.id})
         clone = edit(items, op)
         if owner and op.entity == "element" and op.action == "update":
             if {"x", "y", "width", "height", "rotation"}.intersection(op.value):

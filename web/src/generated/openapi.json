@@ -24798,6 +24798,13 @@
             "title": "Label",
             "type": "string"
           },
+          "layer": {
+            "default": 0,
+            "maximum": 200.0,
+            "minimum": 0.0,
+            "title": "Layer",
+            "type": "integer"
+          },
           "source_anchor": {
             "default": "right",
             "enum": [

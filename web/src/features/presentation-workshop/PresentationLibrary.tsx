@@ -168,7 +168,6 @@ export function PresentationLibrary({
                 title={project.title}
                 firstSlide={project.first_slide}
                 projectId={project.id}
-                slideCount={project.slide_count}
                 actionLabel="打开文稿"
                 onUse={() => onOpen(project.id)}
                 className="presentation-project-open"

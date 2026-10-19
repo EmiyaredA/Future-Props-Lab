@@ -239,8 +239,6 @@ it.each([false, true])(
       onZoomChange: vi.fn(),
       onReady: vi.fn(),
       onComposition: vi.fn(),
-      undo: vi.fn(),
-      redo: vi.fn(),
     };
     const { rerender } = render(<SlideCanvas {...props} />);
     const canvas = screen.getByRole("group", { name: "幻灯片画布" });

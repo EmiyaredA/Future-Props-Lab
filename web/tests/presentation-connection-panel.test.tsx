@@ -42,6 +42,7 @@ function fixture(): Project {
       target_anchor: "left",
       style: "step",
       id: "ab",
+      layer: 0,
       source_id: "a",
       target_id: "b",
       label: "第一条",
@@ -56,6 +57,7 @@ function fixture(): Project {
       target_anchor: "left",
       style: "step",
       id: "bc",
+      layer: 0,
       source_id: "b",
       target_id: "c",
       label: "第二条",
@@ -130,6 +132,33 @@ const data = () => JSON.parse(screen.getByLabelText("文稿").textContent!);
 const panel = () => screen.getByRole("region", { name: "连接线调节" });
 
 describe("连接浮动面板", () => {
+  it("连接层级可逐层调整、置顶置底并撤销重做，路径保持不变", async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByRole("button", { name: "第一条" }));
+    const layers = within(screen.getByRole("group", { name: "连接线层级" }));
+    expect(layers.getByRole("button", { name: "置于底层" })).toBeDisabled();
+    await userEvent.click(layers.getByRole("button", { name: "上移一层" }));
+    expect(data().connections.map((c: { id: string }) => c.id)).toEqual([
+      "bc",
+      "ab",
+    ]);
+    await userEvent.click(layers.getByRole("button", { name: "上移一层" }));
+    expect(data().connections[1].layer).toBe(1);
+    await userEvent.click(layers.getByRole("button", { name: "置于顶层" }));
+    expect(data().connections[1].layer).toBe(3);
+    expect(layers.getByRole("button", { name: "上移一层" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "撤销" }));
+    expect(data().connections[1].layer).toBe(1);
+    await userEvent.click(screen.getByRole("button", { name: "重做" }));
+    expect(data().connections[1].layer).toBe(3);
+    await userEvent.click(layers.getByRole("button", { name: "下移一层" }));
+    expect(data().connections[1].layer).toBe(2);
+    await userEvent.click(layers.getByRole("button", { name: "置于底层" }));
+    expect(data().connections[0].id).toBe("ab");
+    expect(data().connections[0].layer).toBe(0);
+    expect(data().connections[0].waypoints).toEqual([{ x: 250, y: 50 }]);
+  });
+
   it("实时修改保留路径，文本连续编辑合并历史，撤销重做直接同步面板", async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole("button", { name: "第一条" }));

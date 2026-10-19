@@ -45,26 +45,20 @@ export function SlideTextEditor({
   onComposition,
   onReady,
   onExit,
-  undo,
-  redo,
 }: {
   element: SlideElement;
   onChange: (paragraphs: Paragraph[], format?: boolean) => void;
   onComposition: (active: boolean) => void;
   onReady: (editor: Editor | null) => void;
   onExit: () => void;
-  undo: () => void;
-  redo: () => void;
 }) {
   const callbacks = useRef({
     onChange,
     onComposition,
     onReady,
     onExit,
-    undo,
-    redo,
   });
-  callbacks.current = { onChange, onComposition, onReady, onExit, undo, redo };
+  callbacks.current = { onChange, onComposition, onReady, onExit };
   const fallback = element.paragraphs[0]?.runs[0] ?? defaultRun();
   const editor = useEditor({
     extensions: [
@@ -108,16 +102,6 @@ export function SlideTextEditor({
         if (event.isComposing) return false;
         if (event.key === "Escape") {
           callbacks.current.onExit();
-          return true;
-        }
-        if (
-          (event.metaKey || event.ctrlKey) &&
-          ["z", "y"].includes(event.key.toLowerCase())
-        ) {
-          event.preventDefault();
-          if (event.shiftKey || event.key.toLowerCase() === "y")
-            callbacks.current.redo();
-          else callbacks.current.undo();
           return true;
         }
         return false;

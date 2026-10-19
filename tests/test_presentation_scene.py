@@ -97,6 +97,9 @@ def test_scene_contract_rejects_invalid_references(problem):
 
 def test_native_scene_export_contains_groups_routed_paths_and_editable_text(tmp_path):
     data = scene_document()
+    # Nested native groups require contiguous members in the page's paint order.
+    items = data["slides"][0]["elements"]
+    data["slides"][0]["elements"] = [items[1], items[0], items[2]]
     data["slides"][0]["reference"] = {"asset_id": "not-exported"}
     target = tmp_path / "native.pptx"
     write_pptx(PresentationDocument.model_validate(data), {}, target)

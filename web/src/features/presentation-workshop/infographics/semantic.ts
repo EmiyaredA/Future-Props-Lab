@@ -152,6 +152,7 @@ export async function semanticDiagram(
       arrow: link.showArrow !== false && link.direction !== "none",
       color: slideTheme.teal,
       width: 1.5,
+      layer: 0,
       waypoints: [],
     };
     return link.direction === "both"

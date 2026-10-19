@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   type KeyboardEvent,
   type SyntheticEvent,
@@ -35,10 +36,12 @@ export function usePresentationHistory({
   draft,
   blocked,
   onRestore,
+  scopeKey,
 }: {
   draft: DraftController;
   blocked: boolean;
   onRestore: (location: HistoryLocation) => void;
+  scopeKey: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const cancelGesture = useRef<(() => boolean) | null>(null);
@@ -47,6 +50,14 @@ export function usePresentationHistory({
   const fields = useRef(new WeakMap<HTMLElement, string>());
   const range = useRef<HTMLElement | null>(null);
   const composingTarget = useRef<HTMLElement | null>(null);
+  const { endGroup } = draft;
+  useEffect(() => endGroup(), [scopeKey, endGroup]);
+  useLayoutEffect(() => {
+    if (!draft.restoreVersion) return;
+    const document = root.current?.ownerDocument;
+    if (document?.activeElement === document?.body)
+      root.current?.querySelector<HTMLElement>(".presentation-canvas")?.focus();
+  }, [draft.restoreVersion]);
   const fieldKey = (target: HTMLElement) => {
     let key = fields.current.get(target);
     if (!key) {
@@ -85,7 +96,7 @@ export function usePresentationHistory({
   const move = (redo: boolean) => {
     if (blocked || draft.isComposing()) return;
     if (
-      root.current?.querySelector(
+      root.current?.ownerDocument.querySelector(
         '[aria-modal="true"]:not([data-presentation-history="document"])',
       )
     )
@@ -94,6 +105,28 @@ export function usePresentationHistory({
     const location = redo ? draft.redo() : draft.undo();
     if (location) onRestore(location);
   };
+  useEffect(() => {
+    const element = root.current;
+    const nativeHistory = (event: Event) => {
+      if (!(event instanceof InputEvent)) return;
+      if (!["historyUndo", "historyRedo"].includes(event.inputType)) return;
+      if (
+        blocked ||
+        event.isComposing ||
+        draft.isComposing() ||
+        !documentTarget(event.target)
+      )
+        return;
+      // Native edit-menu actions may arrive without a DOM keydown. A consumed
+      // keydown prevents its default beforeinput, so the two routes do not stack.
+      event.preventDefault();
+      event.stopPropagation();
+      move(event.inputType === "historyRedo");
+    };
+    element?.addEventListener("beforeinput", nativeHistory, true);
+    return () =>
+      element?.removeEventListener("beforeinput", nativeHistory, true);
+  });
   return {
     root,
     cancelGesture,

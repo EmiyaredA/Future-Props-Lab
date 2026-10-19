@@ -286,8 +286,6 @@ it("画布尺寸变化报告适应比例，手动缩放保持坐标比例", () =
     onScaleChange,
     onReady: vi.fn(),
     onComposition: vi.fn(),
-    undo: vi.fn(),
-    redo: vi.fn(),
   };
   const { container, rerender } = render(<SlideCanvas {...props} />);
   const host = container.querySelector(".presentation-canvas-area")!;

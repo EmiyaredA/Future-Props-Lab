@@ -5,6 +5,7 @@ import {
   useState,
   type PointerEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import type { Editor } from "@tiptap/react";
 import { bounds } from "./geometry";
@@ -56,8 +57,7 @@ export function SlideCanvas({
   cropOverlay,
   onReady,
   onComposition,
-  undo,
-  redo,
+  historyGesture,
   groupScope = null,
   onGroupScopeChange,
   selectedConnection,
@@ -87,8 +87,7 @@ export function SlideCanvas({
   cropOverlay?: ReactNode;
   onReady: (editor: Editor | null) => void;
   onComposition: (active: boolean) => void;
-  undo: () => void;
-  redo: () => void;
+  historyGesture?: RefObject<(() => boolean) | null>;
   groupScope?: string | null;
   onGroupScopeChange?: (scope: string | null, ids: string[]) => void;
   selectedConnection?: string | null;
@@ -413,6 +412,17 @@ export function SlideCanvas({
     snapMemory.current = [];
     rawPreview.current = null;
   };
+  useLayoutEffect(() => {
+    if (!historyGesture) return;
+    historyGesture.current = () => {
+      if (!press.current && !gesture.current) return false;
+      finish(true);
+      return true;
+    };
+    return () => {
+      historyGesture.current = null;
+    };
+  });
   const active = display.elements.find(
     (e) => e.id === editing && e.kind === "text" && !e.locked,
   );
@@ -526,8 +536,6 @@ export function SlideCanvas({
                   setEditing(null);
                   canvas.current?.focus();
                 }}
-                undo={undo}
-                redo={redo}
               />
             ) : null}
             {!editing && box && !readOnly ? (

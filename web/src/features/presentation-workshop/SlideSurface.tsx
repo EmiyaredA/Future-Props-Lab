@@ -6,6 +6,7 @@ import { coverCrop } from "./imageCrop";
 import { elementStyle } from "./geometry";
 import type { Slide, SlideElement } from "./types";
 import { Connections } from "./scene/Connections";
+import { sceneOrder } from "./scene/stacking";
 
 export function ElementImage({
   element,
@@ -159,39 +160,50 @@ export const SlideSurface = memo(function SlideSurface({
   selectedConnection?: string | null;
   onSelectConnection?: (id: string) => void;
 }) {
+  const elements = new Map(
+    slide.elements.map((element) => [element.id, element]),
+  );
   return (
     <div
       className="presentation-slide"
       style={{ background: slide.background }}
     >
-      <Connections
-        slide={slide}
-        selected={selectedConnection}
-        onSelect={onSelectConnection}
-      />
-      {slide.elements.map((element) => (
-        <div
-          key={element.id}
-          data-element-id={element.id}
-          data-amadeus-id={element.id}
-          data-amadeus-name={element.kind}
-          data-amadeus-value={`幻灯片元素 · ${element.kind}`}
-          data-transparent-shape={
-            element.kind !== "text" &&
-            element.kind !== "image" &&
-            element.kind !== "vector" &&
-            element.fill_opacity === 0
-              ? "true"
-              : undefined
-          }
-          className={`presentation-element${element.locked ? " locked" : ""}`}
-          style={elementStyle(element)}
-        >
-          {element.id !== editingId ? (
-            <ElementContent element={element} />
-          ) : null}
-        </div>
-      ))}
+      {sceneOrder(slide).map((item) => {
+        if (item.kind === "connection")
+          return (
+            <Connections
+              key={item.id}
+              slide={slide}
+              edges={[item.edge]}
+              selected={selectedConnection}
+              onSelect={onSelectConnection}
+            />
+          );
+        const element = elements.get(item.id)!;
+        return (
+          <div
+            key={element.id}
+            data-element-id={element.id}
+            data-amadeus-id={element.id}
+            data-amadeus-name={element.kind}
+            data-amadeus-value={`幻灯片元素 · ${element.kind}`}
+            data-transparent-shape={
+              element.kind !== "text" &&
+              element.kind !== "image" &&
+              element.kind !== "vector" &&
+              element.fill_opacity === 0
+                ? "true"
+                : undefined
+            }
+            className={`presentation-element${element.locked ? " locked" : ""}`}
+            style={elementStyle(element)}
+          >
+            {element.id !== editingId ? (
+              <ElementContent element={element} />
+            ) : null}
+          </div>
+        );
+      })}
       {children}
     </div>
   );

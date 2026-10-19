@@ -36,6 +36,7 @@ describe("原生场景控件", () => {
         position={null}
         onMove={vi.fn()}
         onChange={vi.fn()}
+        onOrder={vi.fn()}
         onCreate={apply}
         onRemove={vi.fn()}
         onClose={vi.fn()}

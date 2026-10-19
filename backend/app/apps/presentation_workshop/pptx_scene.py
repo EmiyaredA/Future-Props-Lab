@@ -104,19 +104,53 @@ def add_scene(slide, page, shapes):
     for edge in page.connections:
         targets = set(ancestors(edge.target_id))
         owner = next((g for g in ancestors(edge.source_id) if g in targets), None)
-        edges_by_group.setdefault(owner, []).extend(connection_shapes[edge.id])
+        edges_by_group.setdefault(owner, []).append(edge.id)
+
+    # Use the same element slots and stable connection order as the DOM renderer.
+    ordered = []
+    for index in range(len(page.elements) + 1):
+        ordered.extend(
+            edge.id for edge in page.connections if min(edge.layer, len(page.elements)) == index
+        )
+        if index < len(page.elements):
+            ordered.append(page.elements[index].id)
+    ranks = {identity: index for index, identity in enumerate(ordered)}
+
+    def group_items(group):
+        identities = list(group.element_ids) + edges_by_group.get(group.id, [])
+        for child in page.groups:
+            if child.parent_id == group.id:
+                identities.extend(group_items(child))
+        return identities
+
+    def sort_parts(parts):
+        return sorted(parts, key=lambda part: part[0])
 
     def assemble(group):
-        members = [shapes[i] for i in group.element_ids]
-        members += [assemble(g) for g in page.groups if g.parent_id == group.id]
-        members += edges_by_group.get(group.id, [])
-        result = slide.shapes.add_group_shape(members)
+        parts = [(ranks[i], [shapes[i]]) for i in group.element_ids]
+        parts += [part for g in page.groups if g.parent_id == group.id for part in assemble(g)]
+        parts += [(ranks[i], connection_shapes[i]) for i in edges_by_group.get(group.id, [])]
+        parts = sort_parts(parts)
+        identities = group_items(group)
+        if not identities:
+            return []
+        low, high = min(ranks[i] for i in identities), max(ranks[i] for i in identities)
+        # A PPTX group is an indivisible stacking item. Expand only groups whose
+        # members interleave with outside objects, preserving the visible order.
+        if high - low + 1 != len(identities):
+            return parts
+        result = slide.shapes.add_group_shape([shape for _, items in parts for shape in items])
         result.name = group.id
-        return result
+        return [(low, [result])]
 
+    parts = [(ranks[e.id], [shapes[e.id]]) for e in page.elements if e.id not in ownership]
+    parts += [(ranks[i], connection_shapes[i]) for i in edges_by_group.get(None, [])]
     for group in page.groups:
         if group.parent_id is None:
-            assemble(group)
+            parts.extend(assemble(group))
+    for _, items in sort_parts(parts):
+        for shape in items:
+            slide.shapes._spTree.append(shape._element)
 
 
 def _midpoint(points):

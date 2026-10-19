@@ -45,7 +45,7 @@ export function historyEntry(
   );
   const changed = newSlides.find((s) => {
     const old = oldSlides.find((old) => old.id === s.id);
-    return old && JSON.stringify(old) !== JSON.stringify(s);
+    return old && old !== s && JSON.stringify(old) !== JSON.stringify(s);
   });
   const affected = added ?? removed ?? changed;
   const preferred = affected
@@ -66,7 +66,10 @@ export function historyEntry(
       page.elements
         .filter((e) => {
           const match = other.elements.find((item) => item.id === e.id);
-          return !match || JSON.stringify(match) !== JSON.stringify(e);
+          return (
+            !match ||
+            (match !== e && JSON.stringify(match) !== JSON.stringify(e))
+          );
         })
         .map((e) => e.id);
     if (!beforeLocation.selected.length)

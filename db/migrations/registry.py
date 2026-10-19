@@ -99,6 +99,7 @@ from db.migrations.versions import (
     r0095_volcengine_video,
     r0096_presentation_scene,
     r0097_presentation_image_version,
+    r0098_presentation_connection_layers,
 )
 
 
@@ -441,6 +442,12 @@ MIGRATIONS += (Migration(r0096_presentation_scene.MIGRATION_ID, r0096_presentati
 
 MIGRATIONS += (
     Migration(r0097_presentation_image_version.MIGRATION_ID, r0097_presentation_image_version.SQL),
+)
+
+MIGRATIONS += (
+    Migration(
+        r0098_presentation_connection_layers.MIGRATION_ID, r0098_presentation_connection_layers.SQL
+    ),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

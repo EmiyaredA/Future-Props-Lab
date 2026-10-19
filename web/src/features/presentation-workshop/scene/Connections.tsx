@@ -1,15 +1,18 @@
 import { useId } from "react";
 import type { Slide } from "../types";
 import { connectionPoints } from "./model";
+import type { Connection } from "./model";
 
 export function Connections({
   slide,
   selected,
   onSelect,
+  edges = slide.connections ?? [],
 }: {
   slide: Slide;
   selected?: string | null;
   onSelect?: (id: string) => void;
+  edges?: Connection[];
 }) {
   const prefix = useId().replace(/:/g, "");
   return (
@@ -19,7 +22,7 @@ export function Connections({
       height="720"
       aria-label="信息图连接"
     >
-      {(slide.connections ?? []).map((edge) => {
+      {edges.map((edge) => {
         const points = connectionPoints(slide, edge);
         if (!points.length) return null;
         const d = points

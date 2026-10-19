@@ -159,6 +159,7 @@ export function cleanScene(slide: Slide): Slide {
 }
 
 export function updateScene(before: Slide, after: Slide): Slide {
+  const remaining = new Set(after.elements.map((e) => e.id));
   const moved = new Set(
     after.elements
       .filter((e) => {
@@ -174,13 +175,22 @@ export function updateScene(before: Slide, after: Slide): Slide {
   );
   return cleanScene({
     ...after,
-    connections: (after.connections ?? []).map((c) =>
-      (moved.has(c.source_id) || moved.has(c.target_id)) &&
-      c.waypoints ===
-        before.connections?.find((old) => old.id === c.id)?.waypoints
-        ? { ...c, waypoints: [] }
-        : c,
-    ),
+    connections: (after.connections ?? []).map((c) => {
+      const old = before.connections?.find((edge) => edge.id === c.id);
+      const removedBelow =
+        old && c.layer === old.layer
+          ? before.elements
+              .slice(0, old.layer ?? 0)
+              .filter((e) => !remaining.has(e.id)).length
+          : 0;
+      const next = removedBelow
+        ? { ...c, layer: (c.layer ?? 0) - removedBelow }
+        : c;
+      return (moved.has(c.source_id) || moved.has(c.target_id)) &&
+        c.waypoints === old?.waypoints
+        ? { ...next, waypoints: [] }
+        : next;
+    }),
   });
 }
 
@@ -230,6 +240,9 @@ export function cloneFragment(
     })),
     connections: edges.map((c) => ({
       ...c,
+      layer: slide.elements
+        .slice(0, c.layer ?? 0)
+        .filter((e) => selected.has(e.id)).length,
       id: remap(c.id),
       source_id: remap(c.source_id),
       target_id: remap(c.target_id),
@@ -255,7 +268,12 @@ export function appendFragment(slide: Slide, fragment: Fragment): Slide {
     groups: [...(slide.groups ?? []), ...(fragment.groups ?? [])],
     connections: [
       ...(slide.connections ?? []),
-      ...(fragment.connections ?? []),
+      ...(fragment.connections ?? []).map((edge) => ({
+        ...edge,
+        layer:
+          slide.elements.length +
+          Math.min(fragment.elements.length, edge.layer ?? 0),
+      })),
     ],
     infographics: [
       ...(slide.infographics ?? []),

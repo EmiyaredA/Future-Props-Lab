@@ -22,6 +22,7 @@ import {
   validConnection,
 } from "./connectionEditing";
 import { SceneChecks } from "./SceneChecks";
+import { orderScene } from "./stacking";
 import "./scene.css";
 
 const InfographicDialog = lazy(
@@ -35,6 +36,7 @@ export function useSceneTools({
   change,
   readOnly,
   onComposition,
+  restoreVersion,
 }: {
   slide: Slide;
   selected: string[];
@@ -42,6 +44,7 @@ export function useSceneTools({
   change: (update: (s: Slide) => Slide, group?: string) => void;
   readOnly: boolean;
   onComposition?: (active: boolean) => void;
+  restoreVersion?: number;
 }) {
   const [dialog, setDialog] = useState<"info" | "reference" | null>(null),
     [scopeState, setScopeState] = useState({
@@ -275,7 +278,12 @@ export function useSceneTools({
         position={position}
         onMove={setPosition}
         onComposition={onComposition}
+        restoreVersion={restoreVersion}
         onChange={updateConnection}
+        onOrder={(mode) => {
+          if (!edge || readOnly) return;
+          change((current) => orderScene(current, [edge.id], mode));
+        }}
         onClose={closeConnection}
         onCreate={() => {
           if (!pending || !validConnection(slide, pending) || readOnly) return;

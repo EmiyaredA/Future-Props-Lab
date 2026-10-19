@@ -17,10 +17,12 @@ import {
   Presentation,
 } from "lucide-react";
 import { PresentationMenu } from "./PresentationMenu";
+import { orderScene, type OrderMode } from "./scene/stacking";
 import { PresentationToolbar } from "./PresentationToolbar";
 import { PresentationStatusbar } from "./PresentationStatusbar";
 import { PresentationNotes } from "./PresentationNotes";
 import { usePresentationDraft } from "./usePresentationDraft";
+import { usePresentationHistory } from "./usePresentationHistory";
 import { download, exportProject, imageBlob } from "./api";
 import { presentationKeys } from "./queryKeys";
 import {
@@ -159,7 +161,12 @@ export function PresentationEditor({
     return () => registerNavigationGuard?.(null);
   }, [registerNavigationGuard, draft, report]);
   const commit = (update: (d: Draft) => Draft, group?: string) => {
-    if (!readOnly) draft.commit(update, group);
+    if (!readOnly)
+      draft.commit(update, group ?? history.group(), {
+        slideId: slide.id,
+        slideIndex,
+        selected,
+      });
   };
   const changeSlide = (update: (s: Slide) => Slide, group?: string) =>
     commit(
@@ -206,6 +213,7 @@ export function PresentationEditor({
     },
     change: changeSlide,
     onComposition: draft.setComposition,
+    restoreVersion: draft.restoreVersion,
     readOnly: readOnly || !!crop.session,
   });
   const cropSession =
@@ -215,6 +223,25 @@ export function PresentationEditor({
     slide.elements.some((e) => e.id === crop.session!.base.id && !e.locked)
       ? crop.session
       : null;
+  const history = usePresentationHistory({
+    draft,
+    scopeKey: `${slide.id}:${selected.join(",")}:${editing ?? ""}`,
+    blocked:
+      readOnly || !!cropSession || show !== null || media.isOpen || !!previewId,
+    onRestore: (location) => {
+      setTitleDraft(null);
+      setActive(location.slideId);
+      select(location.selected);
+      const restored = draft
+        .current()
+        .document.slides.find((s) => s.id === location.slideId);
+      setEditing((id) =>
+        id && restored?.elements.some((e) => e.id === id && !e.locked)
+          ? id
+          : null,
+      );
+    },
+  });
   const displayedSlide = cropSession
     ? {
         ...slide,
@@ -261,6 +288,7 @@ export function PresentationEditor({
     );
   const chooseSlide = (id: string) => {
     if (editor?.view.composing) return;
+    draft.endGroup();
     setEditing(null);
     select([]);
     crop.cancel();
@@ -305,41 +333,28 @@ export function PresentationEditor({
       ),
     );
   const order = (mode: string) =>
-    changeSlide((s) => {
-      const isSelected = (e: SlideElement) =>
-        selected.includes(e.id) && !e.locked;
-      let elements = [...s.elements];
-      if (mode === "front")
-        elements = [
-          ...elements.filter((e) => !isSelected(e)),
-          ...elements.filter(isSelected),
-        ];
-      if (mode === "back")
-        elements = [
-          ...elements.filter(isSelected),
-          ...elements.filter((e) => !isSelected(e)),
-        ];
-      if (mode === "forward")
-        for (let i = elements.length - 2; i >= 0; i--) {
-          if (isSelected(elements[i]) && !isSelected(elements[i + 1]))
-            [elements[i], elements[i + 1]] = [elements[i + 1], elements[i]];
-        }
-      if (mode === "backward")
-        for (let i = 1; i < elements.length; i++) {
-          if (isSelected(elements[i]) && !isSelected(elements[i - 1]))
-            [elements[i], elements[i - 1]] = [elements[i - 1], elements[i]];
-        }
-      return { ...s, elements };
-    });
-  const moveSlide = (id: string, index: number) =>
-    commit((d) => {
-      const slides = [...d.document.slides];
-      const from = slides.findIndex((s) => s.id === id);
-      if (from < 0) return d;
-      const [item] = slides.splice(from, 1);
-      slides.splice(index, 0, item);
-      return { ...d, document: { ...d.document, slides } };
-    });
+    changeSlide((s) =>
+      orderScene(
+        s,
+        selected.filter((id) => !s.elements.find((e) => e.id === id)?.locked),
+        mode as OrderMode,
+      ),
+    );
+  const moveSlide = (id: string, index: number) => {
+    if (readOnly) return;
+    draft.commit(
+      (d) => {
+        const slides = [...d.document.slides];
+        const from = slides.findIndex((s) => s.id === id);
+        if (from < 0) return d;
+        const [item] = slides.splice(from, 1);
+        slides.splice(index, 0, item);
+        return { ...d, document: { ...d.document, slides } };
+      },
+      "",
+      { slideId: id, slideIndex: index, selected: [] },
+    );
+  };
   const addSlide = (copy?: string, layout = "blank") => {
     if (draft.draft.document.slides.length >= 100) {
       setError("文稿最多 100 页");
@@ -379,6 +394,8 @@ export function PresentationEditor({
     );
   return (
     <div
+      ref={history.root}
+      {...history.bindings}
       className={`presentation-editor mobile-panel-${panel}`}
       onDragOver={(event) => {
         if (!readOnly && Array.from(event.dataTransfer.types).includes("Files"))
@@ -393,6 +410,8 @@ export function PresentationEditor({
         }
       }}
       onKeyDownCapture={(event) => {
+        history.keyDown(event);
+        if (event.defaultPrevented) return;
         if (
           !readOnly &&
           !event.nativeEvent.isComposing &&
@@ -426,15 +445,6 @@ export function PresentationEditor({
           void report(async () => {
             await draft.flush();
           });
-        }
-        if (mod && key === "z") {
-          event.preventDefault();
-          if (event.shiftKey) draft.redo();
-          else draft.undo();
-        }
-        if (mod && key === "y") {
-          event.preventDefault();
-          draft.redo();
         }
         if (mod && key === "a") {
           event.preventDefault();
@@ -668,6 +678,7 @@ export function PresentationEditor({
             onClick={() => {
               if (draft.conflict) {
                 draft.adopt(draft.conflict);
+                setTitleDraft(null);
                 select([]);
                 setEditing(null);
               }
@@ -697,8 +708,8 @@ export function PresentationEditor({
         busy={busy}
         hasSelection={!!selected.length}
         onAdd={(layout) => addSlide(undefined, layout)}
-        onUndo={draft.undo}
-        onRedo={draft.redo}
+        onUndo={history.undo}
+        onRedo={history.redo}
         onText={() => insert([newElement("text")])}
         onCode={() => {
           setEditing(null);
@@ -853,8 +864,7 @@ export function PresentationEditor({
                 }
                 onReady={setEditor}
                 onComposition={draft.setComposition}
-                undo={draft.undo}
-                redo={draft.redo}
+                historyGesture={history.cancelGesture}
               />
               {scene.connectionPanel}
             </div>

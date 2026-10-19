@@ -219,7 +219,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/overview": {
     summary:
-      "先预览版式与文稿，再从封面到放映完成三页介绍，认识页面、元素与备注的编辑位置。",
+      "直接打开文稿或按需预览，从封面到放映完成三页介绍，认识页面、元素与备注的编辑位置。",
     related: [
       {
         libraryId: "presentation-workshop",
@@ -237,7 +237,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/workflow": {
     summary:
-      "缩放查看细节，对照视觉稿重建信息图，逐层编辑组内元素，用浮动面板实时调节连接并保存。",
+      "缩放查看细节，对照视觉稿重建信息图，逐层编辑组内元素，用浮动面板调节连接样式与前后层级并保存。",
     related: [
       {
         libraryId: "presentation-workshop",
@@ -255,7 +255,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/storage": {
     summary:
-      "为每页归档原始生成图，区分自动保存、撤销和图片引用，处理冲突后再离开或导出。",
+      "使用统一快捷键撤销文字、页面与素材引用，核对会话历史和保存结果，处理冲突并归档原始生成图。",
     related: [
       {
         libraryId: "presentation-workshop",

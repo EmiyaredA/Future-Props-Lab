@@ -235,6 +235,7 @@ export function convertSvg(
         arrow: true,
         color: slideTheme.teal,
         width: 1.5,
+        layer: 0,
         waypoints: [],
       }))
     : [];

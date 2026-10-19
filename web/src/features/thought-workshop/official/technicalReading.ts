@@ -258,7 +258,7 @@ export const TECHNICAL_READING: Record<
   },
   "presentation-workshop": {
     summary:
-      "理解版本 2 文稿、选择与缩放、连接面板与新建预览，以及统一保存、图像归档和 PPTX 连接转换。",
+      "理解版本 2 文稿、选择与缩放、连接面板和前后层级，以及统一保存、图像归档和 PPTX 连接转换。",
     related: [
       {
         libraryId: "technical",

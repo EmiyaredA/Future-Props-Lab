@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { GripHorizontal, X } from "lucide-react";
+import {
+  GripHorizontal,
+  X,
+  BringToFront,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  SendToBack,
+} from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import type { Slide } from "../types";
 import type { Connection } from "./model";
 import { validConnection } from "./connectionEditing";
+import { sceneOrder, type OrderMode } from "./stacking";
 import {
   useConnectionPanelPosition,
   type PanelPosition,
@@ -25,10 +33,12 @@ export function ConnectionPanel({
   position,
   onMove,
   onChange,
+  onOrder,
   onCreate,
   onRemove,
   onClose,
   onComposition,
+  restoreVersion = 0,
 }: {
   slide: Slide;
   value: Connection;
@@ -36,15 +46,18 @@ export function ConnectionPanel({
   position: PanelPosition | null;
   onMove: (position: PanelPosition) => void;
   onChange: (patch: Partial<Connection>, group?: string) => void;
+  onOrder: (mode: OrderMode) => void;
   onCreate: () => void;
   onRemove: () => void;
   onClose: () => void;
   onComposition?: (active: boolean) => void;
+  restoreVersion?: number;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(creating);
   const [widthDraft, setWidthDraft] = useState<string | null>(null);
   const composing = useRef(false);
+  useEffect(() => setWidthDraft(null), [restoreVersion]);
   useEffect(
     () => () => {
       if (composing.current) onComposition?.(false);
@@ -52,6 +65,8 @@ export function ConnectionPanel({
     [onComposition],
   );
   const move = useConnectionPanelPosition(root, position, onMove);
+  const order = sceneOrder(slide);
+  const index = order.findIndex((item) => item.id === value.id);
   const choices = slide.elements
     .filter((e) => e.kind !== "line")
     .map((e, i) => ({
@@ -73,6 +88,7 @@ export function ConnectionPanel({
     <div
       ref={root}
       className="presentation-connection-panel"
+      data-presentation-history={creating ? "local" : "document"}
       role="region"
       aria-label="连接线调节"
       style={{ visibility: "hidden" }}
@@ -196,6 +212,40 @@ export function ConnectionPanel({
             onChange={(e) => onChange({ label: e.target.value }, "label")}
           />
         </label>
+        {!creating && (
+          <div className="presentation-connection-field">
+            <span>层级</span>
+            <div
+              className="presentation-connection-layers"
+              role="group"
+              aria-label="连接线层级"
+            >
+              {(
+                [
+                  ["front", "置于顶层", BringToFront],
+                  ["forward", "上移一层", ArrowUpToLine],
+                  ["backward", "下移一层", ArrowDownToLine],
+                  ["back", "置于底层", SendToBack],
+                ] as const
+              ).map(([mode, label, Icon]) => (
+                <button
+                  type="button"
+                  key={mode}
+                  disabled={
+                    index < 0 ||
+                    (mode === "front" || mode === "forward"
+                      ? index === order.length - 1
+                      : index === 0)
+                  }
+                  onClick={() => onOrder(mode)}
+                >
+                  <Icon size={14} aria-hidden="true" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button
           type="button"
           className="presentation-connection-disclosure"

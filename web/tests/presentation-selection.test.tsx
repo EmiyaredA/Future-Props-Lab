@@ -167,8 +167,6 @@ it("does not render selection editing UI on a read-only canvas", async () => {
         zoom={1}
         onReady={vi.fn()}
         onComposition={vi.fn()}
-        undo={vi.fn()}
-        redo={vi.fn()}
         selectionToolbar={<div role="toolbar">编辑</div>}
       />,
     );

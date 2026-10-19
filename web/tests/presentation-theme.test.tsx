@@ -84,6 +84,7 @@ function legacy() {
   slide.connections = [
     {
       id: "edge",
+      layer: 0,
       source_id: "node",
       target_id: "text",
       color: "#365F62",
@@ -97,6 +98,7 @@ function legacy() {
     },
     {
       id: "locked-edge",
+      layer: 0,
       source_id: "locked",
       target_id: "node",
       color: "#365F62",

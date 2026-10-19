@@ -31,10 +31,18 @@ def remove_fragment(slide, identity):
     groups, members = group_members(slide, identity)
     if any(e["locked"] for e in slide["elements"] if e["id"] in members):
         raise OperationError("请先解锁分组成员", "element_locked", 409)
+    rebase_layers_after_removal(slide, members)
     slide["elements"] = [e for e in slide["elements"] if e["id"] not in members]
     slide["groups"] = [g for g in slide["groups"] if g["id"] not in groups]
     slide["infographics"] = [i for i in slide["infographics"] if i["group_id"] not in groups]
     prune(slide, members)
+
+
+def rebase_layers_after_removal(slide, removed):
+    for edge in slide["connections"]:
+        edge["layer"] = sum(
+            e["id"] not in removed for e in slide["elements"][: edge.get("layer", 0)]
+        )
 
 
 def remap(slide, namespace, *, offset=0):
@@ -81,5 +89,9 @@ def apply_fragment(slide, op):
         raise OperationError("片段元素必须全部属于根组", "invalid_fragment")
     if op.action == "update":
         remove_fragment(slide, op.id)
+    for edge in fragment["connections"]:
+        edge["layer"] = len(slide["elements"]) + min(
+            len(fragment["elements"]), edge.get("layer", 0)
+        )
     for kind in COLLECTIONS:
         slide[kind].extend(fragment[kind])

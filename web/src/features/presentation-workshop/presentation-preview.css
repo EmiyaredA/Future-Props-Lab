@@ -9,76 +9,25 @@
   background: #132338d9;
   color: #fff;
   font-size: 12px;
-  opacity: 0;
-  transition: opacity 160ms;
+  border: 0;
 }
-.presentation-starter-card:hover .presentation-preview-hint,
-.presentation-starter-card:focus-visible .presentation-preview-hint,
-.presentation-project-open:hover .presentation-preview-hint,
-.presentation-project-open:focus-visible .presentation-preview-hint {
-  opacity: 1;
+.presentation-project-cover {
+  position: relative;
 }
-.presentation-hover-preview {
-  z-index: 1100;
-  width: min(320px, calc(100vw - 32px));
-  max-height: min(280px, var(--radix-tooltip-content-available-height));
-  overflow-y: auto;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 12px 36px #0003;
+.presentation-project-preview {
+  cursor: pointer;
 }
-.presentation-hover-preview[data-page-count="2"] {
-  width: min(420px, calc(100vw - 32px));
+.presentation-project-preview:hover {
+  background: #132338;
 }
-.presentation-hover-preview[data-page-count="3"] {
-  width: min(520px, calc(100vw - 32px));
+.presentation-project-preview:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
-.presentation-hover-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  margin-bottom: 8px;
-}
-.presentation-hover-heading strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.presentation-hover-heading span,
-.presentation-hover-preview p,
-.presentation-hover-pages figcaption {
-  color: var(--muted);
-  font-size: 11px;
-}
-.presentation-hover-heading span {
-  flex-shrink: 0;
-}
-.presentation-hover-pages {
-  display: flex;
-  gap: 8px;
-}
-.presentation-hover-pages figure {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-}
-.presentation-hover-pages .presentation-preview,
 .presentation-preview-stage .presentation-preview {
   overflow: hidden;
   border-radius: 5px;
   box-shadow: 0 0 0 1px #0002;
-}
-.presentation-hover-pages figcaption {
-  margin-top: 5px;
-  text-align: center;
-}
-.presentation-hover-arrow {
-  fill: var(--surface);
 }
 .presentation-preview-backdrop {
   position: fixed;
@@ -183,18 +132,5 @@
   }
   .presentation-preview-stage {
     width: 100%;
-  }
-  .presentation-hover-heading {
-    flex-wrap: wrap;
-  }
-}
-@media (hover: none) {
-  .presentation-preview-hint {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .presentation-preview-hint {
-    transition: none;
   }
 }

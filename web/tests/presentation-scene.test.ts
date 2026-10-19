@@ -53,6 +53,7 @@ function fixture() {
   slide.connections = [
     {
       id: "edge",
+      layer: 0,
       source_id: "a",
       target_id: "b",
       source_anchor: "right",

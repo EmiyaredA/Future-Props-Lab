@@ -146,6 +146,32 @@
   font-size: 11px;
   color: var(--muted);
 }
+.presentation-connection-layers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.presentation-connection-layers button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.presentation-connection-layers button:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.presentation-connection-layers button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 .presentation-connection-panel :is(button, input):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

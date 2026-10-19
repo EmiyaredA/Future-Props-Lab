@@ -4,17 +4,15 @@ import {
   newSlide,
 } from "../src/features/presentation-workshop/templates";
 
-test("基础版式先完整预览，再选择使用，取消不会创建", async ({
-  page,
-}, testInfo) => {
+test("基础版式先完整预览，再选择使用，取消不会创建", async ({ page }) => {
   await page.goto("/apps/presentation-workshop");
   const trigger = page.getByRole("button", {
     name: "预览 图文双栏",
     exact: true,
   });
   await trigger.hover();
-  await expect(page.locator(".presentation-hover-pages figure")).toHaveCount(1);
-  await page.screenshot({ path: testInfo.outputPath("hover-single.png") });
+  await page.waitForTimeout(500);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await trigger.click();
   const preview = page.getByRole("dialog", { name: "图文双栏", exact: true });
   await expect(preview.getByLabel("第 1 页完整预览")).toBeVisible();
@@ -28,7 +26,7 @@ test("基础版式先完整预览，再选择使用，取消不会创建", async
   await expect(page).toHaveURL(/\/apps\/presentation-workshop$/);
 });
 
-test("文稿悬停前三页、完整预览及明暗主题响应式", async ({ page }, testInfo) => {
+test("文稿直接打开、独立预览及明暗主题响应式", async ({ page }, testInfo) => {
   await page.goto("/apps/presentation-workshop");
   const document = {
     ...newDeck(),
@@ -51,12 +49,17 @@ test("文稿悬停前三页、完整预览及明暗主题响应式", async ({ pa
     name: `预览 ${title}`,
     exact: true,
   });
-  await trigger.hover();
-  await expect(page.locator(".presentation-hover-pages figure")).toHaveCount(3);
-  await expect(page.locator(".presentation-hover-heading")).toContainText(
-    "4 页",
-  );
-  await page.screenshot({ path: testInfo.outputPath("hover.png") });
+  const cover = page.getByRole("button", {
+    name: `打开 ${title}（封面）`,
+    exact: true,
+  });
+  await cover.hover();
+  await page.waitForTimeout(500);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await cover.click();
+  await expect(page).toHaveURL(/\/apps\/presentation-workshop\/.+/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.goto("/apps/presentation-workshop");
   await trigger.click();
   const preview = page.getByRole("dialog", { name: title, exact: true });
   await expect(preview.getByLabel("第 1 页完整预览")).toBeVisible();
@@ -109,5 +112,9 @@ test("文稿悬停前三页、完整预览及明暗主题响应式", async ({ pa
   await page.keyboard.press("Escape");
   await expect(preview).toHaveCount(0);
   await expect(trigger).toBeFocused();
-  await expect(page.locator(".presentation-hover-preview")).toHaveCount(0);
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: `打开 ${title}`, exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/apps\/presentation-workshop\/.+/);
 });

@@ -21,6 +21,7 @@ export function newConnection(slide: Slide, selected: string[]): Connection {
     label: "",
     color: slideTheme.teal,
     width: 1.5,
+    layer: 0,
     arrow: true,
     waypoints: [],
   };

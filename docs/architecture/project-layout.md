@@ -467,12 +467,14 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `web/src/features/presentation-workshop/` 拥有项目列表、五种版式、DOM/SVG 页面渲染、
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
+`presentationHistory.ts` 解析历史快照的页面与元素定位；`usePresentationDraft` 持有本次会话的 100 步历史与保存队列，`usePresentationHistory` 统一键盘、按钮、字段合并边界、输入法与未提交手势取消。历史定位和分组提示只存在内存，不进入文稿、HTTP 或 SDK 契约。
 `codeHighlight.ts` 将 lowlight 语法树解析为现有原生段落与显式 run 颜色；`CodeHighlightDialog`
 按需加载源码与预览，用户应用才更新当前文本框，保存和 PPTX 导出不依赖高亮 CSS。
 `codeBlock.ts` 生成原生代码背景、语言标签和文本分组，工具栏插入复用现有片段、撤销与保存链路。
 `scene/` 拥有原生分组、节点连接、参考图对照和页面检查；`infographics/` 拥有 AntV
 声明式输入、受控模板原生转换与 ELK 布局，不持有另一套保存或导出状态。`elkLayout.ts` 按需创建并销毁独立布局 Worker，`validation.ts` 在原生片段预览前校验结构，装饰 SVG 复用正式素材预览校验。
 `scene/selection.ts` 解析命中元素与分组选择，`useSceneTools` 唯一持有组内层级；画布在点击松手时请求下钻，拖动保留原选区。这些选择状态不进入文稿持久化。
+`scene/stacking.ts` 解析并调整元素与连接的统一前后顺序；连接 `layer` 保存下方元素数量，同层按连接数组顺序。迁移 `0098_presentation_connection_layers` 为缺失层级补 0，保留旧画面与 revision。`SlideSurface` 与 `pptx_scene.py` 消费相同顺序；PPTX 仅保留连续叠放的原生组，交错组在导出时展开以保持遮挡，源分组不变。
 后端 `schemas/scene.py` 校验文稿 v2 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
 `slideTheme.ts` 拥有新建色板、可修改颜色收集与单页换肤纯函数，`SlideThemeDialog` 只维护预览替换表；用户应用才进入原草稿历史与 CAS 保存，不追加持久化字段。`useSceneTools` 返回动作描述与独立弹窗，`PresentationToolbar` 统一展示信息图与“更多”菜单，不再增加整排场景工具。`slide-theme.css` 仅维护换肤弹窗布局。
 `pptx_scene.py` 拥有原生分组与端点绑定导出。迁移 `0096_presentation_scene` 为旧文稿追加空场景字段，

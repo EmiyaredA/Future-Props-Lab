@@ -169,8 +169,6 @@ function canvas(replace = vi.fn()) {
       zoom={1}
       onReady={noop}
       onComposition={noop}
-      undo={noop}
-      redo={noop}
     />,
   );
   const host = screen.getByRole("group", { name: "幻灯片画布" });

@@ -166,6 +166,7 @@ describe("logical layout objects", () => {
     s.connections = [
       {
         id: "edge",
+        layer: 0,
         source_id: "a",
         target_id: "outside",
         style: "step",

@@ -44,7 +44,6 @@ function card() {
         title="四页文稿"
         firstSlide={document.slides[0]}
         projectId="preview"
-        slideCount={4}
         actionLabel="打开文稿"
         onUse={use}
         className="presentation-project-open"
@@ -53,25 +52,34 @@ function card() {
   );
   return { ...result, use };
 }
-it("悬停按需加载前三页，移出后关闭，不打开文稿", async () => {
+it("悬停与聚焦不弹出预览或读取文稿", async () => {
   const { use } = card();
   const user = userEvent.setup();
+  const cover = screen.getByRole("button", { name: "打开 四页文稿（封面）" });
+  const preview = screen.getByRole("button", { name: "预览 四页文稿" });
+  await user.hover(cover);
+  await user.tab();
+  expect(cover).toHaveFocus();
+  await user.hover(preview);
+  await user.tab();
+  expect(preview).toHaveFocus();
+  expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(api.getProject).not.toHaveBeenCalled();
-  const trigger = screen.getByRole("button", { name: "预览 四页文稿" });
-  await user.hover(trigger);
-  const tooltip = await screen.findByRole("tooltip");
-  expect(tooltip).toHaveTextContent("共 4 页");
-  await waitFor(() =>
-    expect(
-      globalThis.document.querySelectorAll(".presentation-hover-pages figure"),
-    ).toHaveLength(3),
-  );
-  expect(api.getProject).toHaveBeenCalledOnce();
   expect(use).not.toHaveBeenCalled();
-  await user.unhover(trigger);
-  await waitFor(() =>
-    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument(),
-  );
+});
+it.each(["click", "Enter", " "])("封面通过 %s 直接打开文稿", async (action) => {
+  const { use } = card();
+  const user = userEvent.setup();
+  const cover = screen.getByRole("button", { name: "打开 四页文稿（封面）" });
+  if (action === "click") await user.click(cover);
+  else {
+    cover.focus();
+    await user.keyboard(action === "Enter" ? "{Enter}" : " ");
+  }
+  expect(use).toHaveBeenCalledOnce();
+  expect(api.getProject).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 it("点击完整预览，按钮、方向键与缩略图均可翻页，Escape恢复焦点", async () => {
   const { use } = card();
