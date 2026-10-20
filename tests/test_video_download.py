@@ -26,11 +26,78 @@ def test_validate_video_url_accepts_douyin_and_bilibili() -> None:
     assert vd.validate_video_url("https://v.douyin.com/abc123/").startswith("https://")
 
 
+def test_extract_video_url_from_share_text_and_modal() -> None:
+    share = (
+        "5.15 10/07 :6pm x@s.Rx 【漂泊监狱】第二集 "
+        "https://v.douyin.com/u32i-u6Sa3U/ 复制此链接，打开Dou音搜索，直接观看视频！"
+    )
+    assert vd.extract_video_url(share) == "https://v.douyin.com/u32i-u6Sa3U/"
+    assert (
+        vd.extract_video_url(
+            "https://www.douyin.com/jingxuan?modal_id=7686880989229927732"
+        )
+        == "https://www.douyin.com/video/7686880989229927732"
+    )
+
+
 def test_validate_video_url_rejects_other_hosts() -> None:
     with pytest.raises(vd.VideoDownloadError, match="仅支持"):
         vd.validate_video_url("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     with pytest.raises(vd.VideoDownloadError, match="有效"):
         vd.validate_video_url("ftp://www.bilibili.com/video/BV1")
+
+
+def test_network_hint_prefers_fresh_cookies_over_generic_403() -> None:
+    message = vd._network_hint(
+        "WARNING: Failed HTTP Error 403: Forbidden\n"
+        "ERROR: Fresh cookies (not necessarily logged in) are needed"
+    )
+    assert "需要登录" in message
+    assert "Cookie" in message
+    assert "brew upgrade yt-dlp" not in message
+
+
+def test_douyin_sign_and_stream_pick() -> None:
+    from app.tool_navigation import video_download_douyin as douyin
+
+    signed = douyin.sign_detail_query(
+        "7693736628409355530",
+        uifid="abc",
+        timestamp="1710000000",
+    )
+    assert signed["aweme_id"] == "7693736628409355530"
+    assert signed["uifid"] == "abc"
+    assert signed["timestamp"] == "1710000000"
+    assert len(signed["x-secsdk-web-signature"]) == 32
+
+    video = {
+        "bit_rate": [
+            {
+                "play_addr": {
+                    "width": 720,
+                    "height": 1280,
+                    "url_list": ["https://cdn.example/720.mp4"],
+                }
+            },
+            {
+                "play_addr": {
+                    "width": 576,
+                    "height": 1024,
+                    "url_list": ["https://cdn.example/540.mp4"],
+                }
+            },
+        ],
+        "play_addr": {
+            "width": 720,
+            "height": 1280,
+            "url_list": ["https://cdn.example/play.mp4"],
+        },
+    }
+    url, width, height = douyin.pick_stream(video, quality="best")
+    assert url.endswith("720.mp4")
+    assert width == 720 and height == 1280
+    capped, *_rest = douyin.pick_stream(video, quality="480")
+    assert capped.endswith("540.mp4")
 
 
 def test_job_create_requires_destination() -> None:

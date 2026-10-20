@@ -34,6 +34,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.mocked(getVideoDownloadDeps).mockResolvedValue({
     ready: true,
     yt_dlp: {
@@ -109,11 +110,50 @@ test("requires a destination before starting", async () => {
   expect(createVideoDownloadJob).not.toHaveBeenCalled();
 });
 
-test("confirms browser cookies before creating a job", async () => {
+test("opens the link help dialog", async () => {
+  const user = userEvent.setup();
+  renderPage();
+  await screen.findByText("yt-dlp 与 ffmpeg 已就绪");
+  await user.click(screen.getByRole("button", { name: "如何获取链接" }));
+  expect(
+    screen.getByRole("heading", { name: "如何获取要下载的视频链接" }),
+  ).toBeInTheDocument();
+  expect(screen.getByText("抖音 App")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "知道了" }));
+  expect(
+    screen.queryByRole("heading", { name: "如何获取要下载的视频链接" }),
+  ).toBeNull();
+});
+
+test("starts without cookies by default", async () => {
   const user = userEvent.setup();
   renderPage();
   await screen.findByText("yt-dlp 与 ffmpeg 已就绪");
 
+  await user.type(
+    screen.getByRole("textbox", { name: "视频链接" }),
+    "https://www.bilibili.com/video/BV1xx411c7mD",
+  );
+  await user.click(screen.getByRole("button", { name: "开始下载" }));
+  await waitFor(() => expect(createVideoDownloadJob).toHaveBeenCalled());
+  expect(vi.mocked(createVideoDownloadJob).mock.calls[0][0]).toEqual({
+    url: "https://www.bilibili.com/video/BV1xx411c7mD",
+    quality: "best",
+    use_browser_cookies: false,
+    cookies_from_browser: "chrome",
+    save_to_disk: true,
+    save_to_library: true,
+  });
+});
+
+test("confirms browser cookies when enabled", async () => {
+  const user = userEvent.setup();
+  renderPage();
+  await screen.findByText("yt-dlp 与 ffmpeg 已就绪");
+
+  await user.click(
+    screen.getByLabelText("从本机浏览器读取 Cookie（登录可见 / B 站需要时）"),
+  );
   await user.type(
     screen.getByRole("textbox", { name: "视频链接" }),
     "https://www.bilibili.com/video/BV1xx411c7mD",

@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   CheckCircle2,
+  CircleAlert,
+  CircleHelp,
   Download,
+  ExternalLink,
   FolderOpen,
   Link2,
+  LoaderCircle,
   RefreshCw,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -67,6 +73,126 @@ function statusLabel(status: string): string {
   }
 }
 
+function LinkHelpDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const titleId = useId();
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    const ownsScrollLock = previousOverflow !== "hidden";
+    if (ownsScrollLock) document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        event.preventDefault();
+        closeRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      if (ownsScrollLock) document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus?.({ preventScroll: true });
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className="modal-backdrop video-download-help-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="modal-card video-download-help-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <button
+          type="button"
+          className="icon-btn video-download-help-close"
+          aria-label="关闭说明"
+          onClick={onClose}
+        >
+          <X aria-hidden />
+        </button>
+        <h2 id={titleId}>如何获取要下载的视频链接</h2>
+        <div className="video-download-help-body">
+          <section>
+            <h3>抖音 App</h3>
+            <ol>
+              <li>打开目标视频，点右下角「分享」。</li>
+              <li>选择「复制链接」。</li>
+              <li>
+                回到本工具，整段分享文案可直接粘贴（含
+                <code>v.douyin.com</code> 短链即可）。
+              </li>
+            </ol>
+          </section>
+          <section>
+            <h3>抖音网页</h3>
+            <ol>
+              <li>
+                打开并播放该视频；若在「精选」弹层里，请点进视频页再复制。
+              </li>
+              <li>
+                地址栏优先使用形如{" "}
+                <code>https://www.douyin.com/video/数字ID</code>{" "}
+                的链接。
+              </li>
+              <li>
+                <code>jingxuan?modal_id=…</code>{" "}
+                也可粘贴，工具会自动转成标准视频页。
+              </li>
+            </ol>
+          </section>
+          <section>
+            <h3>哔哩哔哩</h3>
+            <ol>
+              <li>打开视频页，复制地址栏链接（含 BV 号）。</li>
+              <li>或点「分享 → 复制链接」，短链 <code>b23.tv</code> 也可。</li>
+            </ol>
+          </section>
+          <section>
+            <h3>什么时候需要 Cookie</h3>
+            <ol>
+              <li>
+                普通抖音公开视频一般<strong>不需要</strong>
+                Cookie，工具会自行解析播放地址。
+              </li>
+              <li>
+                若视频需登录才能看，或 B
+                站下载失败提示要登录：开启「从本机浏览器读取 Cookie」。
+              </li>
+              <li>
+                先点「在浏览器打开视频」并播放，再回本页下载；钥匙串弹窗请点允许。
+              </li>
+            </ol>
+          </section>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="btn primary" onClick={onClose}>
+            知道了
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
   const depsQuery = useQuery({
     queryKey: DEPS_KEY,
@@ -76,11 +202,12 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
   });
   const [url, setUrl] = useState("");
   const [quality, setQuality] = useState<VideoDownloadQuality>("best");
-  const [useCookies, setUseCookies] = useState(true);
+  const [useCookies, setUseCookies] = useState(false);
   const [browser, setBrowser] = useState<VideoDownloadBrowser>("chrome");
   const [saveToDisk, setSaveToDisk] = useState(true);
   const [saveToLibrary, setSaveToLibrary] = useState(true);
   const [confirmCookies, setConfirmCookies] = useState(false);
+  const [showLinkHelp, setShowLinkHelp] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<VideoDownloadJob | null>(null);
   const [notice, setNotice] = useState("");
@@ -99,11 +226,36 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
   });
 
   useEffect(() => {
-    if (jobQuery.data) setJob(jobQuery.data);
+    const next = jobQuery.data;
+    if (!next) return;
+    setJob(next);
+    if (next.status === "queued" || next.status === "running") {
+      setNotice("正在下载，请稍候…");
+      setError("");
+      return;
+    }
+    if (next.status === "succeeded") {
+      setNotice(
+        next.save_to_disk
+          ? "下载完成。可点击下方「保存到本机」。"
+          : "下载完成，已写入文件库。",
+      );
+      setError("");
+      return;
+    }
+    if (next.status === "failed") {
+      // Keep the failure only in the result panel so it doesn't fight a
+      // leftover "正在下载" banner.
+      setNotice("");
+      setError("");
+    }
   }, [jobQuery.data]);
 
   useEffect(() => {
-    if (jobQuery.error) setError(errorMessage(jobQuery.error));
+    if (jobQuery.error) {
+      setNotice("");
+      setError(errorMessage(jobQuery.error));
+    }
   }, [jobQuery.error]);
 
   const startMutation = useMutation({
@@ -112,7 +264,11 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
       setJobId(created.id);
       setJob(created);
       setError("");
-      setNotice("已开始下载，请稍候…");
+      setNotice(
+        created.status === "failed"
+          ? ""
+          : "正在下载，请稍候…",
+      );
     },
     onError: (failure) => {
       setError(errorMessage(failure));
@@ -178,6 +334,25 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const openInBrowser = () => {
+    const target = url.trim();
+    if (!target) {
+      setError("请先粘贴视频链接，再打开浏览器。");
+      return;
+    }
+    setError("");
+    const opened = window.open(target, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      setError("浏览器拦截了弹窗，请允许本站弹窗后重试，或手动把链接粘到 Chrome。");
+      return;
+    }
+    setNotice(
+      `已在系统默认浏览器打开。请用「${
+        BROWSER_OPTIONS.find((item) => item.value === browser)?.label || browser
+      }」播放该视频并保持登录，然后回到这里点「开始下载」。`,
+    );
+  };
+
   const deps = depsQuery.data;
 
   return (
@@ -209,18 +384,32 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
           </div>
 
           <div className="video-download-fields">
-            <label htmlFor="video-download-url">视频链接</label>
-            <div className="video-download-url">
+            <div className="video-download-label-row">
+              <label htmlFor="video-download-url">视频链接</label>
+              <button
+                type="button"
+                className="video-download-help-trigger"
+                onClick={() => setShowLinkHelp(true)}
+              >
+                <CircleHelp aria-hidden /> 如何获取链接
+              </button>
+            </div>
+            <div className="video-download-url video-download-url-multiline">
               <Link2 aria-hidden />
-              <input
+              <textarea
                 id="video-download-url"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
-                placeholder="https://www.bilibili.com/video/… 或抖音分享链接"
+                placeholder="粘贴抖音/B站链接，或 App「复制链接」得到的整段分享文案"
                 autoComplete="off"
                 spellCheck={false}
+                rows={3}
               />
             </div>
+            <p className="video-download-hint">
+              支持分享短链、标准视频页，以及抖音精选页的{" "}
+              <code>modal_id</code> 链接。
+            </p>
 
             <label htmlFor="video-download-quality">清晰度</label>
             <CustomSelect
@@ -236,12 +425,12 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
                 checked={useCookies}
                 onChange={(event) => setUseCookies(event.target.checked)}
               />
-              <span>从本机浏览器读取 Cookie（抖音常需要）</span>
+              <span>从本机浏览器读取 Cookie（登录可见 / B 站需要时）</span>
             </label>
 
             {useCookies ? (
               <>
-                <label htmlFor="video-download-browser">浏览器</label>
+                <label htmlFor="video-download-browser">读取哪个浏览器的 Cookie</label>
                 <CustomSelect
                   ariaLabel="浏览器"
                   value={browser}
@@ -250,10 +439,23 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
                     setBrowser(value as VideoDownloadBrowser)
                   }
                 />
-                <p className="video-download-hint">
-                  确认后将读取该浏览器中已登录的抖音 / B
-                  站 Cookie。系统可能再弹出钥匙串或浏览器授权提示。
-                </p>
+                <ol className="video-download-steps">
+                  <li>
+                    点「在浏览器打开视频」，用上面选的浏览器打开并播放（保持登录）。
+                  </li>
+                  <li>等视频能播起来后，回到本页。</li>
+                  <li>
+                    再点「开始下载」；工具会读取该浏览器 Cookie（可能弹出钥匙串确认）。普通抖音公开视频通常不必开此项。
+                  </li>
+                </ol>
+                <button
+                  type="button"
+                  className="video-download-secondary"
+                  disabled={!url.trim()}
+                  onClick={openInBrowser}
+                >
+                  <ExternalLink aria-hidden /> 在浏览器打开视频
+                </button>
               </>
             ) : null}
 
@@ -301,42 +503,63 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
           ) : null}
 
           {job ? (
-            <div className="video-download-result" aria-live="polite">
+            <div
+              className={`video-download-result status-${job.status}`}
+              aria-live="polite"
+            >
               <div className="video-download-result-head">
-                <strong>{statusLabel(job.status)}</strong>
                 {job.status === "succeeded" ? (
                   <CheckCircle2 aria-hidden />
                 ) : null}
+                {job.status === "failed" ? <CircleAlert aria-hidden /> : null}
+                {job.status === "queued" || job.status === "running" ? (
+                  <LoaderCircle
+                    className="video-download-spin"
+                    aria-hidden
+                  />
+                ) : null}
+                <strong>{statusLabel(job.status)}</strong>
               </div>
-              <dl>
-                <div>
-                  <dt>标题</dt>
-                  <dd>{job.title || "—"}</dd>
-                </div>
-                <div>
-                  <dt>文件</dt>
-                  <dd>{job.filename || "—"}</dd>
-                </div>
-                <div>
-                  <dt>大小</dt>
-                  <dd>{formatBytes(job.byte_size)}</dd>
-                </div>
-                {job.error ? (
-                  <div>
-                    <dt>错误</dt>
-                    <dd>{job.error}</dd>
+              {job.status === "failed" && job.error ? (
+                <>
+                  <p className="video-download-result-error">{job.error}</p>
+                  <div className="video-download-result-actions">
+                    <button
+                      type="button"
+                      className="video-download-secondary"
+                      disabled={!url.trim()}
+                      onClick={openInBrowser}
+                    >
+                      <ExternalLink aria-hidden /> 先在浏览器打开并播放
+                    </button>
                   </div>
-                ) : null}
-                {job.asset ? (
+                </>
+              ) : null}
+              {job.status !== "failed" ? (
+                <dl>
                   <div>
-                    <dt>文件库</dt>
-                    <dd>
-                      已写入「{job.asset.display_name}」（
-                      {formatBytes(job.asset.byte_size)}）
-                    </dd>
+                    <dt>标题</dt>
+                    <dd>{job.title || "—"}</dd>
                   </div>
-                ) : null}
-              </dl>
+                  <div>
+                    <dt>文件</dt>
+                    <dd>{job.filename || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt>大小</dt>
+                    <dd>{formatBytes(job.byte_size)}</dd>
+                  </div>
+                  {job.asset ? (
+                    <div>
+                      <dt>文件库</dt>
+                      <dd>
+                        已写入「{job.asset.display_name}」（
+                        {formatBytes(job.asset.byte_size)}）
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
+              ) : null}
               <div className="video-download-result-actions">
                 {job.status === "succeeded" && job.save_to_disk ? (
                   <button
@@ -412,8 +635,11 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
         title="读取浏览器 Cookie？"
         description={
           <>
-            将从本机 {BROWSER_OPTIONS.find((item) => item.value === browser)?.label || browser}{" "}
-            读取抖音与哔哩哔哩的登录 Cookie，以便下载需要登录的视频。系统可能再弹出钥匙串或浏览器授权提示。确认后才会开始下载。
+            将从本机{" "}
+            {BROWSER_OPTIONS.find((item) => item.value === browser)?.label ||
+              browser}{" "}
+            读取登录 Cookie，用于需登录才可看的视频（含部分 B
+            站内容）。系统可能再弹出钥匙串或浏览器授权提示。确认后才会开始下载。
           </>
         }
         confirmLabel="允许并下载"
@@ -421,6 +647,10 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
         pending={startMutation.isPending}
         onCancel={() => setConfirmCookies(false)}
         onConfirm={confirmAndStart}
+      />
+      <LinkHelpDialog
+        open={showLinkHelp}
+        onClose={() => setShowLinkHelp(false)}
       />
     </section>
   );

@@ -107,19 +107,44 @@
 }
 
 .video-download-fields > label,
-.video-download-destinations legend {
+.video-download-destinations legend,
+.video-download-label-row label {
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
 }
 
-.video-download-url {
+.video-download-label-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.video-download-help-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.video-download-help-trigger svg {
+  width: 15px;
+  height: 15px;
+}
+
+.video-download-url {
+  display: flex;
+  align-items: flex-start;
   gap: 10px;
   min-height: 42px;
   margin-bottom: 9px;
-  padding: 0 12px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--surface);
@@ -128,17 +153,77 @@
 .video-download-url svg {
   width: 16px;
   height: 16px;
+  margin-top: 3px;
   color: var(--muted);
   flex: 0 0 auto;
 }
 
-.video-download-url input {
+.video-download-url input,
+.video-download-url textarea {
   flex: 1;
   min-width: 0;
   border: 0;
   background: transparent;
   color: var(--text);
   outline: none;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.video-download-help-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(84vh, 720px);
+  overflow: auto;
+  padding: 28px 26px 22px;
+}
+
+.video-download-help-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.video-download-help-dialog h2 {
+  margin: 0 36px 16px 0;
+  color: var(--text-strong);
+  font-size: 22px;
+}
+
+.video-download-help-body {
+  display: grid;
+  gap: 16px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.video-download-help-body h3 {
+  margin: 0 0 6px;
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.video-download-help-body ol {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.video-download-help-body p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.video-download-help-body code,
+.video-download-hint code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--border) 45%, transparent);
+  font-size: 12px;
+}
+
+.video-download-help-dialog .modal-actions {
+  margin-top: 20px;
 }
 
 .video-download-fields .custom-select {
@@ -176,6 +261,39 @@
   color: var(--muted);
   font-size: 13px;
   line-height: 1.65;
+}
+
+.video-download-steps {
+  margin: 4px 0 12px;
+  padding-left: 1.2em;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.video-download-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 41px;
+  margin-bottom: 8px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.video-download-secondary svg {
+  width: 16px;
+  height: 16px;
+}
+
+.video-download-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .video-download-actions {
@@ -248,7 +366,39 @@
 .video-download-result-head svg {
   width: 18px;
   height: 18px;
+}
+
+.video-download-result.status-succeeded .video-download-result-head {
   color: var(--ok);
+}
+
+.video-download-result.status-succeeded .video-download-result-head svg {
+  color: var(--ok);
+}
+
+.video-download-result.status-failed .video-download-result-head {
+  color: var(--warning);
+}
+
+.video-download-result.status-failed .video-download-result-head svg {
+  color: var(--warning);
+}
+
+.video-download-result-error {
+  margin: 0 0 4px;
+  color: var(--warning);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.video-download-spin {
+  animation: video-download-spin 0.9s linear infinite;
+}
+
+@keyframes video-download-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .video-download-result dl,

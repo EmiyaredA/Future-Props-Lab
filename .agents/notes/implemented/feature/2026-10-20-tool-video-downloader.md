@@ -20,7 +20,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：工具页内完成链接下载、Cookie 授权提示、本机另存与文件库入库。
-- **代价与已知上限**：依赖本机 yt-dlp/ffmpeg（不打包）；站点风控与 Cookie 解密失败需用户更新工具或授权；任务不跨进程持久化；不支持播放列表与其它站点。
+- **代价与已知上限**：依赖本机 yt-dlp/ffmpeg（不打包）；B 站等仍可能需 Cookie 授权；抖音公开视频改由应用内签名详情接口解析（见 [douyin-aweme-signature](../bug-fix/2026-10-20-douyin-aweme-signature.md)）；任务不跨进程持久化；不支持播放列表与其它站点。
 
 ## Verification
 
