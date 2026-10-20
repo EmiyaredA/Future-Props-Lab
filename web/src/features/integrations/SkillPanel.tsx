@@ -84,7 +84,7 @@ function UploadDialog({
         <div className="skill-drop">
           <FileArchive aria-hidden />
           <strong>{file?.name ?? "选择 Skill ZIP 包"}</strong>
-          <small>最多 10 MiB，必须包含根 SKILL.md</small>
+          <small>默认最多 20 MiB，必须包含根 SKILL.md；以部署配置为准</small>
           <button
             type="button"
             className="btn"

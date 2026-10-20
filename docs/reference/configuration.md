@@ -49,7 +49,7 @@ Web 的 `VITE_API_BASE` 是执行 `npm run build` 时读取的构建变量，不
 - `FPL_TEMP_MEDIA_UPLOAD_URL`：可选的视频生成参考音频/视频临时托管上传地址，默认留空。配置后必须是无凭证 HTTPS 地址；未配置时需要外传参考媒体的请求会在发起网络访问前返回明确配置错误。
 - `FPL_MCP_STDIO_ALLOWED_COMMANDS`：允许 MCP stdio 启动的绝对可执行文件路径，使用系统路径分隔符
   分隔多项；默认空，即完全禁用 stdio。命令解析后必须精确命中白名单，参数始终按数组传递且不使用 shell。
-- `FPL_SKILL_ARCHIVE_MAX_BYTES`：Skill ZIP 单文件上限，默认 `10485760`（10 MiB）。
+- `FPL_SKILL_ARCHIVE_MAX_BYTES`：Skill ZIP 单文件上限，默认 `20971520`（20 MiB）。已有配置中的显式上限继续生效；持久配置使用 `backend/config.toml` 的 `[limits].skill_archive_max_bytes`。
 - `FPL_SKILL_EXPANDED_MAX_BYTES`：Skill 解压后的文件总量上限，默认 `52428800`（50 MiB）。
 - `FPL_SKILL_MAX_FILES`：单个 Skill 解压后的文件数量上限，默认 `500`。
 - `FPL_SECRETS_KEY`：必填 Fernet 密钥，用于加密供应商 API Key。丢失后旧密钥不可恢复。

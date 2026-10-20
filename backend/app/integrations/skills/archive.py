@@ -16,6 +16,7 @@ from app.integrations.common import IntegrationValidationError
 from app.runtime.config import Settings
 
 SKILL_MD_MAX_BYTES = 256 * 1024
+SKILL_DESCRIPTION_MAX_LENGTH = 4000
 
 
 @dataclass(frozen=True)
@@ -45,7 +46,10 @@ class SkillArchiveStorage:
                 while chunk := await upload.read(1024 * 1024):
                     size += len(chunk)
                     if size > self.settings.fpl_skill_archive_max_bytes:
-                        raise IntegrationValidationError("Skill ZIP 超过 10 MiB 限制")
+                        limit = self.settings.fpl_skill_archive_max_bytes
+                        raise IntegrationValidationError(
+                            f"Skill ZIP 超过 {limit} 字节限制（{limit / 1024**2:g} MiB）"
+                        )
                     digest.update(chunk)
                     destination.write(chunk)
             return self._extract(archive_path, stage_dir, digest.hexdigest())
@@ -67,10 +71,15 @@ class SkillArchiveStorage:
         with archive:
             files = [item for item in archive.infolist() if not item.is_dir()]
             if not files or len(files) > self.settings.fpl_skill_max_files:
-                raise IntegrationValidationError("Skill 文件数量必须在 1 到 500 之间")
+                raise IntegrationValidationError(
+                    f"Skill 文件数量必须在 1 到 {self.settings.fpl_skill_max_files} 之间"
+                )
             expanded = sum(item.file_size for item in files)
             if expanded > self.settings.fpl_skill_expanded_max_bytes:
-                raise IntegrationValidationError("Skill 解压后超过 50 MiB 限制")
+                limit = self.settings.fpl_skill_expanded_max_bytes
+                raise IntegrationValidationError(
+                    f"Skill 解压后超过 {limit} 字节限制（{limit / 1024**2:g} MiB）"
+                )
             prefix = self._root_prefix(files)
             normalized: dict[str, zipfile.ZipInfo] = {}
             for item in files:
@@ -159,8 +168,12 @@ class SkillArchiveStorage:
             raise IntegrationValidationError("SKILL.md 的 name 和 description 必须是文本")
         name = raw_name.strip()
         description = raw_description.strip()
-        if not 1 <= len(name) <= 120 or not 1 <= len(description) <= 1000:
-            raise IntegrationValidationError("SKILL.md 必须包含有效的 name 和 description")
+        if not 1 <= len(name) <= 120:
+            raise IntegrationValidationError("SKILL.md 的 name 必须为 1 到 120 个字符")
+        if not 1 <= len(description) <= SKILL_DESCRIPTION_MAX_LENGTH:
+            raise IntegrationValidationError(
+                f"SKILL.md 的 description 必须为 1 到 {SKILL_DESCRIPTION_MAX_LENGTH} 个字符"
+            )
         return name, description
 
     def final_path(self, skill_id: str, version: str) -> Path:

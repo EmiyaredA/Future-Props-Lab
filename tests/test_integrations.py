@@ -365,12 +365,12 @@ async def test_skill_archive_enforces_configured_size_and_file_limits() -> None:
         }
     )
     storage = SkillArchiveStorage(settings, "archive-limit-fixture")
-    with pytest.raises(IntegrationValidationError, match="10 MiB"):
+    with pytest.raises(IntegrationValidationError, match="Skill ZIP 超过 32 字节"):
         await storage.stage(UploadFile(file=io.BytesIO(_skill_zip()), filename="oversized.zip"))
 
     settings = settings.model_copy(update={"fpl_skill_archive_max_bytes": 1024 * 1024})
     storage = SkillArchiveStorage(settings, "archive-limit-fixture")
-    with pytest.raises(IntegrationValidationError, match="50 MiB"):
+    with pytest.raises(IntegrationValidationError, match="Skill 解压后超过 32 字节"):
         await storage.stage(UploadFile(file=io.BytesIO(_skill_zip()), filename="expanded.zip"))
 
     settings = settings.model_copy(update={"fpl_skill_expanded_max_bytes": 1024 * 1024})
@@ -379,7 +379,7 @@ async def test_skill_archive_enforces_configured_size_and_file_limits() -> None:
     with zipfile.ZipFile(payload, "w") as archive:
         archive.writestr("SKILL.md", "---\nname: x\ndescription: y\n---\n")
         archive.writestr("extra.txt", "x")
-    with pytest.raises(IntegrationValidationError, match="1 到 500"):
+    with pytest.raises(IntegrationValidationError, match="1 到 1"):
         await storage.stage(UploadFile(file=io.BytesIO(payload.getvalue()), filename="many.zip"))
 
 

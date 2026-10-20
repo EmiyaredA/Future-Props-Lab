@@ -15,6 +15,22 @@ from fpl_config.migration import convert_legacy, encode, publish
 KEY = Fernet.generate_key().decode()
 
 
+def test_skill_archive_limit_default_toml_and_environment(tmp_path, monkeypatch):
+    monkeypatch.delenv("FPL_SKILL_ARCHIVE_MAX_BYTES", raising=False)
+    assert Settings(_config_file=None).fpl_skill_archive_max_bytes == 20 * 1024**2
+    config = tmp_path / "skill-limits.toml"
+    config.write_text("[limits]\nskill_archive_max_bytes = 15728640\n", encoding="utf-8")
+    assert Settings(_config_file=config).fpl_skill_archive_max_bytes == 15 * 1024**2
+    monkeypatch.setenv("FPL_SKILL_ARCHIVE_MAX_BYTES", str(25 * 1024**2))
+    assert Settings(_config_file=config).fpl_skill_archive_max_bytes == 25 * 1024**2
+    assert (
+        Settings(
+            _config_file=config, _read_environment=False, fpl_secrets_key=KEY
+        ).fpl_skill_archive_max_bytes
+        == 15 * 1024**2
+    )
+
+
 def legacy(directory: Path, extra: str = "") -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / "config.toml"

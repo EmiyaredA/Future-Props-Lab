@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     fpl_galgame_export_max_bytes: int = 8 * 1024 * 1024 * 1024
     fpl_temp_media_upload_url: str = ""
     fpl_mcp_stdio_allowed_commands: str = ""
-    fpl_skill_archive_max_bytes: int = 10 * 1024 * 1024
+    fpl_skill_archive_max_bytes: int = 20 * 1024 * 1024
     fpl_skill_expanded_max_bytes: int = 50 * 1024 * 1024
     fpl_skill_max_files: int = 500
     fpl_project_snapshot_max_bytes: int = 8 * 1024 * 1024 * 1024

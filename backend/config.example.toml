@@ -19,7 +19,7 @@ visual_asset_max_bytes = 209715200
 galgame_export_max_bytes = 8589934592
 project_snapshot_max_bytes = 8589934592
 project_snapshot_max_files = 10000
-skill_archive_max_bytes = 10485760
+skill_archive_max_bytes = 20971520
 skill_expanded_max_bytes = 52428800
 skill_max_files = 500
 
