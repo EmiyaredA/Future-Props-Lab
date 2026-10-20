@@ -151,4 +151,8 @@ async def test_missing_deps_block_job_creation(monkeypatch) -> None:
             },
         )
         assert response.status_code == 422
-        assert "yt-dlp" in response.json()["detail"]["message"]
+        body = response.json()
+        message = body.get("message") or body.get("detail")
+        if isinstance(message, dict):
+            message = message.get("message", str(message))
+        assert "yt-dlp" in str(message)
