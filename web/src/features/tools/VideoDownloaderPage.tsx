@@ -122,7 +122,6 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
 
   const canSubmit =
     Boolean(url.trim()) &&
-    (saveToDisk || saveToLibrary) &&
     !startMutation.isPending &&
     job?.status !== "queued" &&
     job?.status !== "running";

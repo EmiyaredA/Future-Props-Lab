@@ -124,14 +124,13 @@ test("confirms browser cookies before creating a job", async () => {
   ).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "允许并下载" }));
-  await waitFor(() =>
-    expect(createVideoDownloadJob).toHaveBeenCalledWith({
-      url: "https://www.bilibili.com/video/BV1xx411c7mD",
-      quality: "best",
-      use_browser_cookies: true,
-      cookies_from_browser: "chrome",
-      save_to_disk: true,
-      save_to_library: true,
-    }),
-  );
+  await waitFor(() => expect(createVideoDownloadJob).toHaveBeenCalled());
+  expect(vi.mocked(createVideoDownloadJob).mock.calls[0][0]).toEqual({
+    url: "https://www.bilibili.com/video/BV1xx411c7mD",
+    quality: "best",
+    use_browser_cookies: true,
+    cookies_from_browser: "chrome",
+    save_to_disk: true,
+    save_to_library: true,
+  });
 });
