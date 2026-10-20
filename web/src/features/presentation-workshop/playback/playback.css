@@ -1,0 +1,123 @@
+.presentation-show-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.presentation-show-body > .presentation-show-viewport {
+  min-width: 0;
+  flex: 1;
+}
+.presentation-show-slide {
+  position: relative;
+  flex-shrink: 0;
+}
+.presentation-show-annotations {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+.presentation-presenter-notes {
+  width: 280px;
+  padding: 20px;
+  overflow-y: auto;
+  background: #1e293b;
+  color: #f8fafc;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.presentation-presenter-notes p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.presentation-presenter-notes h3 {
+  font-size: 14px;
+}
+.presentation-show .presentation-show-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 10px;
+  color: #fff;
+}
+.presentation-show-tools button {
+  border: 1px solid #64748b;
+  background: #1e293b;
+  color: #fff;
+  border-radius: 4px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.presentation-show button[aria-pressed="true"] {
+  background: #3d5fbc;
+  color: #fff;
+}
+.presentation-show-thumbnails {
+  display: flex;
+  overflow-x: auto;
+  max-width: 100%;
+  gap: 8px;
+  padding: 10px;
+  flex-shrink: 0;
+}
+.presentation-show-thumbnails button {
+  flex-shrink: 0;
+  padding: 3px;
+  border: 2px solid transparent;
+  background: #1e293b;
+  color: #fff;
+}
+.presentation-show-thumbnails button[aria-current="page"] {
+  border-color: #819aff;
+}
+.presentation-audience-status {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #0b1120;
+  color: #fff;
+  z-index: 100;
+}
+.presentation-animation-panel fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.presentation-show nav {
+  flex-wrap: wrap;
+}
+.presentation-show nav[aria-label] {
+  height: auto;
+  min-height: 44px;
+  gap: 6px;
+  padding: 6px;
+}
+.presentation-show nav[aria-label] button {
+  width: auto;
+  min-width: 34px;
+  padding: 5px 8px;
+}
+@media (max-width: 767px) {
+  .presentation-show-body {
+    flex-direction: column;
+  }
+  .presentation-presenter-notes {
+    width: 100%;
+    max-height: 28dvh;
+  }
+  .presentation-show nav {
+    gap: 4px;
+    padding: 5px;
+  }
+  .presentation-show nav button {
+    font-size: 11px;
+    padding: 4px;
+  }
+}

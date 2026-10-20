@@ -17,7 +17,7 @@ class PresentationProject(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
-    # Versioned scene JSON; 0099 adds paragraph numbering without changing project revisions.
+    # Versioned scene JSON; 0101 upgrades document metadata without changing project revisions.
     document: Mapped[dict] = mapped_column(JSON)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

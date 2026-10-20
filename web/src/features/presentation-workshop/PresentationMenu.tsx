@@ -6,6 +6,7 @@ export type PresentationAction = {
   icon?: ReactNode;
   disabled?: boolean;
   description?: string;
+  shortcut?: string;
   danger?: boolean;
   onSelect: () => void;
 };
@@ -133,6 +134,7 @@ export function PresentationMenu({
             >
               {action.icon}
               <span>{action.label}</span>
+              {action.shortcut && <kbd>{action.shortcut}</kbd>}
             </button>
           ))}
         </div>

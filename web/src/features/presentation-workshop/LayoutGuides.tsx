@@ -11,8 +11,8 @@ export function LayoutGuides({
   return (
     <svg
       className="presentation-layout-guides"
-      width="1280"
-      height="720"
+      width="100%"
+      height="100%"
       aria-hidden="true"
     >
       {guides.map((g, i) => (

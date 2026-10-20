@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld(
     minimize: () => ipcRenderer.invoke("desktop:minimize"),
     close: () => ipcRenderer.invoke("desktop:close"),
     openNewWindow: () => ipcRenderer.invoke("desktop:open-new-window"),
+    openPresentationAudience: (projectId: string, sessionId: string) =>
+      ipcRenderer.invoke("desktop:presentation-audience", projectId, sessionId),
     openPet: (projectId: string) =>
       ipcRenderer.invoke("desktop:pet-open", projectId),
     closePet: () => ipcRenderer.invoke("desktop:pet-close"),

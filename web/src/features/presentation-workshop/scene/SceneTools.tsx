@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { newId } from "../templates";
-import type { Slide } from "../types";
+import type { PageSize, Slide } from "../types";
 import type { PresentationAction } from "../PresentationMenu";
 import {
   appendFragment,
@@ -31,6 +31,7 @@ const InfographicDialog = lazy(
 
 export function useSceneTools({
   slide,
+  size,
   selected,
   select,
   change,
@@ -39,6 +40,7 @@ export function useSceneTools({
   restoreVersion,
 }: {
   slide: Slide;
+  size?: PageSize;
   selected: string[];
   select: (ids: string[]) => void;
   change: (update: (s: Slide) => Slide, group?: string) => void;
@@ -324,6 +326,7 @@ export function useSceneTools({
         )}
         {checks && (
           <SceneChecks
+            size={size}
             slide={slide}
             select={(ids) => {
               if (slide.connections?.some((c) => c.id === ids[0])) {

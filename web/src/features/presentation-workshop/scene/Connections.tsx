@@ -18,8 +18,8 @@ export function Connections({
   return (
     <svg
       className="presentation-connections"
-      width="1280"
-      height="720"
+      width="100%"
+      height="100%"
       aria-label="信息图连接"
     >
       {edges.map((edge) => {

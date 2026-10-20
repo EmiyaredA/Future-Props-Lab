@@ -5,7 +5,7 @@ import { getProject } from "./api";
 import { presentationKeys } from "./queryKeys";
 import { SlidePreview } from "./SlideSurface";
 import { PresentationPreviewDialog } from "./PresentationPreviewDialog";
-import type { Slide } from "./types";
+import type { PageSize, Slide } from "./types";
 import "./presentation-preview.css";
 
 type PreviewSource =
@@ -21,7 +21,9 @@ export function PresentationPreviewCard({
   onUse,
   disabled = false,
   className,
+  size,
 }: PreviewSource & {
+  size?: PageSize;
   title: string;
   firstSlide: Slide;
   actionLabel: string;
@@ -54,7 +56,7 @@ export function PresentationPreviewCard({
             onClick={onUse}
           >
             <div className="presentation-starter-preview">
-              <SlidePreview slide={firstSlide} />
+              <SlidePreview slide={firstSlide} size={size} />
             </div>
           </button>
           <button
@@ -78,7 +80,7 @@ export function PresentationPreviewCard({
           onClick={() => setOpen(true)}
         >
           <div className="presentation-starter-preview">
-            <SlidePreview slide={firstSlide} />
+            <SlidePreview slide={firstSlide} size={size} />
             <span className="presentation-preview-hint">
               <Eye size={16} aria-hidden /> 预览
             </span>
@@ -90,6 +92,7 @@ export function PresentationPreviewCard({
         <PresentationPreviewDialog
           title={title}
           slides={pages}
+          size={project.data?.document ?? size}
           loading={loading}
           failed={failed}
           retry={() => void project.refetch()}

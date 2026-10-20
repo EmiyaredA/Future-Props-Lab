@@ -237,7 +237,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/workflow": {
     summary:
-      "设置正文圆点与编号列表，缩放查看细节，对照视觉稿重建信息图，逐层编辑组内元素，拖动连接路径与边缘端点并调节样式和层级。",
+      "使用紧凑编辑器、页面设计、图层、表格图表与媒体，调节样式、动画和双窗口放映，保留信息图与统一历史。",
     related: [
       {
         libraryId: "presentation-workshop",
@@ -273,7 +273,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/delivery": {
     summary:
-      "从放映验收到可编辑 PPTX 交付，核对字体、素材，以及普通连接和自由曲线的编辑边界。",
+      "预检导入 PPTX 与文稿包，交付原生对象、图片和打印 PDF，核对转换报告与跨空间素材。",
     related: [
       {
         libraryId: "presentation-workshop",

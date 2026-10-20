@@ -1,0 +1,224 @@
+.presentation-dialog,
+.modal-card.presentation-dialog {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(var(--presentation-dialog-width, 600px), calc(100vw - 32px));
+  max-height: min(720px, calc(100dvh - 32px));
+  min-height: 0;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 18px 60px #0004;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.presentation-dialog-small {
+  --presentation-dialog-width: 440px;
+}
+.presentation-dialog-large {
+  --presentation-dialog-width: 840px;
+}
+.presentation-dialog-floating {
+  position: fixed;
+  z-index: var(--presentation-dialog-z, 1001);
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+}
+.presentation-dialog > header,
+.presentation-dialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+.presentation-dialog > header {
+  flex-wrap: nowrap;
+}
+.presentation-dialog > header > div {
+  min-width: 0;
+}
+.presentation-dialog > header > button {
+  flex: none;
+}
+.presentation-dialog > footer {
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.presentation-dialog h2,
+.presentation-dialog h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.presentation-dialog h4 {
+  margin: 0;
+  font-size: 13px;
+}
+.presentation-dialog p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.presentation-dialog > p,
+.presentation-dialog header p {
+  color: var(--muted);
+  font-size: 12px;
+}
+.presentation-dialog [role="alert"] {
+  color: var(--danger, var(--text));
+}
+.presentation-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 2px;
+}
+.presentation-dialog-body > * {
+  flex-shrink: 0;
+}
+.presentation-dialog .btn,
+.presentation-dialog .custom-select-trigger,
+.presentation-dialog .custom-color-picker-trigger {
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.presentation-dialog .icon-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 4px;
+}
+.presentation-dialog .custom-select {
+  min-width: 0;
+}
+.presentation-dialog label {
+  min-width: 0;
+}
+.presentation-dialog
+  input:not([type="file"]):not([type="checkbox"]):not([type="range"]) {
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 8px;
+  font: inherit;
+}
+.presentation-dialog :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.presentation-dialog-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+}
+.presentation-dialog-split > * {
+  min-width: 0;
+}
+.presentation-dialog-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.presentation-dialog-fields > input {
+  flex: 1 1 140px;
+}
+.presentation-dialog-report {
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  padding-left: 22px;
+  overflow-wrap: anywhere;
+}
+.presentation-dialog-report li + li {
+  margin-top: 6px;
+}
+.presentation-dialog .modal-actions {
+  flex: none;
+  margin: 0;
+  padding-top: 10px;
+}
+.presentation-dialog.confirm-dialog {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 12px;
+}
+.presentation-dialog.confirm-dialog .modal-actions {
+  grid-column: 1 / -1;
+}
+.presentation-dialog .confirm-dialog-icon {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+.presentation-dialog .confirm-dialog-copy {
+  padding-right: 20px;
+  min-height: 0;
+  overflow: auto;
+}
+.presentation-dialog .confirm-dialog-description {
+  margin-top: 8px;
+  font-size: 13px;
+}
+.presentation-dialog .confirm-dialog-copy h2 {
+  margin: 4px 0 8px;
+  font-size: 16px;
+}
+.presentation-dialog.text-input-dialog h2 {
+  margin-right: 24px;
+}
+.presentation-dialog .eyebrow {
+  font-size: 11px;
+}
+@media (min-width: 1024px) {
+  .presentation-dialog-split {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+}
+@media (max-width: 767px) {
+  .presentation-dialog,
+  .modal-card.presentation-dialog {
+    width: min(var(--presentation-dialog-width, 600px), calc(100vw - 24px));
+    max-height: min(720px, calc(100dvh - 24px));
+    padding: 12px;
+  }
+}
+@media (pointer: coarse) {
+  .presentation-dialog .btn,
+  .presentation-dialog .icon-btn,
+  .presentation-dialog .custom-select-trigger,
+  .presentation-dialog .custom-color-picker-trigger,
+  .presentation-dialog .presentation-media-tabs button,
+  .presentation-dialog
+    input:not([type="file"]):not([type="checkbox"]):not([type="range"]) {
+    min-height: 40px;
+    min-width: 40px;
+  }
+  .presentation-dialog .icon-btn {
+    min-width: 40px;
+  }
+  .presentation-dialog
+    .custom-color-picker.compact
+    .custom-color-picker-trigger {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}

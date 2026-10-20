@@ -45,6 +45,18 @@ export function newElement(
     vector_color: null,
     image_border: false,
     rotation: 0,
+    paint: null,
+    shadow: null,
+    text_layout: null,
+    image_effects: null,
+    table: null,
+    chart: null,
+    formula: null,
+    media: null,
+    path: null,
+    link: null,
+    name: "",
+    hidden: false,
     locked: false,
     fill: slideTheme.blue,
     fill_opacity: 1,
@@ -107,6 +119,12 @@ export function newSlide(layout = "blank"): Slide {
     infographics: [],
     reference: null,
     image_asset_id: null,
+    annotations: [],
+    animations: [],
+    transition: null,
+    background_style: null,
+    section: "",
+    notes_rich: null,
     elements: [],
   };
   if (layout === "cover" || layout === "ending") {
@@ -180,15 +198,16 @@ export function newSlide(layout = "blank"): Slide {
   return slide;
 }
 export const newDeck = (layout = "cover"): Deck => ({
-  version: 2,
+  version: 3,
   width: 1280,
   height: 720,
   slides: [newSlide(layout)],
 });
 export function copySlide(slide: Slide): Slide {
-  return {
+  const id = newId();
+  const result = {
     ...structuredClone(slide),
-    id: newId(),
+    id,
     ...cloneFragment(
       slide,
       slide.elements.map((e) => e.id),
@@ -196,4 +215,19 @@ export function copySlide(slide: Slide): Slide {
       0,
     ),
   };
+  const mapping = new Map(
+    slide.elements.map((e, i) => [e.id, result.elements[i].id]),
+  );
+  result.elements = result.elements.map((e) =>
+    e.link?.type === "slide" && e.link.target === slide.id
+      ? { ...e, link: { ...e.link, target: id } }
+      : e,
+  );
+  result.annotations = (slide.annotations ?? []).map((a) => ({
+    ...a,
+    id: newId(),
+    element_id: a.element_id ? (mapping.get(a.element_id) ?? null) : null,
+    replies: (a.replies ?? []).map((r) => ({ ...r, id: newId() })),
+  }));
+  return result;
 }

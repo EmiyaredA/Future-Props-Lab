@@ -1,3 +1,4 @@
+import { containDialogComposition } from "../dialogKeyboard";
 import { useState } from "react";
 import { X } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -49,8 +50,9 @@ export function ReferenceDialog({
   return (
     <div className="presentation-modal-backdrop">
       <div
+        onKeyDownCapture={containDialogComposition}
         ref={root}
-        className="presentation-scene-dialog small"
+        className="presentation-dialog presentation-dialog-small presentation-scene-dialog"
         role="dialog"
         aria-modal="true"
         aria-label="参考图设置"
@@ -66,52 +68,56 @@ export function ReferenceDialog({
             <X size={20} />
           </button>
         </header>
-        {reference && (
-          <>
-            <div className="presentation-reference-thumbnail">
-              <ElementImage
-                element={newElement("image", { asset_id: reference.asset_id })}
-                contain
-              />
-            </div>
-            <CustomSelect
-              ariaLabel="参考图显示方式"
-              value={reference.mode ?? "side"}
-              options={[
-                { value: "side", label: "并排对照" },
-                { value: "overlay", label: "透明叠加" },
-              ]}
-              onChange={(mode) =>
-                onChange({ ...reference, mode: mode as "side" | "overlay" })
-              }
-            />
-            <label>
-              叠加透明度
-              <input
-                aria-label="参考图透明度"
-                type="range"
-                min="0.05"
-                max="1"
-                step="0.05"
-                value={reference.opacity ?? 0.35}
-                onChange={(e) =>
-                  onChange({ ...reference, opacity: Number(e.target.value) })
+        <div className="presentation-dialog-body">
+          {reference && (
+            <>
+              <div className="presentation-reference-thumbnail">
+                <ElementImage
+                  element={newElement("image", {
+                    asset_id: reference.asset_id,
+                  })}
+                  contain
+                />
+              </div>
+              <CustomSelect
+                ariaLabel="参考图显示方式"
+                value={reference.mode ?? "side"}
+                options={[
+                  { value: "side", label: "并排对照" },
+                  { value: "overlay", label: "透明叠加" },
+                ]}
+                onChange={(mode) =>
+                  onChange({ ...reference, mode: mode as "side" | "overlay" })
                 }
               />
-            </label>
-            <label className="presentation-scene-checkbox">
-              <input
-                type="checkbox"
-                checked={reference.visible !== false}
-                onChange={(e) =>
-                  onChange({ ...reference, visible: e.target.checked })
-                }
-              />
-              显示参考图
-            </label>
-          </>
-        )}
-        <p>参考图用于重建对照，放映和 PPTX 中不包含此图。</p>
+              <label>
+                叠加透明度
+                <input
+                  aria-label="参考图透明度"
+                  type="range"
+                  min="0.05"
+                  max="1"
+                  step="0.05"
+                  value={reference.opacity ?? 0.35}
+                  onChange={(e) =>
+                    onChange({ ...reference, opacity: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <label className="presentation-scene-checkbox">
+                <input
+                  type="checkbox"
+                  checked={reference.visible !== false}
+                  onChange={(e) =>
+                    onChange({ ...reference, visible: e.target.checked })
+                  }
+                />
+                显示参考图
+              </label>
+            </>
+          )}
+          <p>参考图用于重建对照，放映和 PPTX 中不包含此图。</p>
+        </div>
         <footer>
           <button className="btn" onClick={() => setPicking(true)}>
             更换参考图

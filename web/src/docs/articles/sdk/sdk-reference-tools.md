@@ -11,9 +11,13 @@
 | --- | --- |
 | [get_codex_source](#get-codex-source) | `GET /v1/tool-navigation/codex-source` |
 | [get_state](#get-state) | `GET /v1/tool-navigation/state` |
+| [get_video_download_deps](#get-video-download-deps) | `GET /v1/tool-navigation/video-download/deps` |
+| [get_video_download_job](#get-video-download-job) | `GET /v1/tool-navigation/video-download/jobs/{job_id}` |
+| [download_video_download_file](#download-video-download-file) | `GET /v1/tool-navigation/video-download/jobs/{job_id}/file` |
 | [set_favorite](#set-favorite) | `PATCH /v1/tool-navigation/tools/{tool_id}` |
 | [post_codex_source_restore](#post-codex-source-restore) | `POST /v1/tool-navigation/codex-source/restore` |
 | [record_use](#record-use) | `POST /v1/tool-navigation/tools/{tool_id}/use` |
+| [post_video_download_job](#post-video-download-job) | `POST /v1/tool-navigation/video-download/jobs` |
 | [put_codex_source](#put-codex-source) | `PUT /v1/tool-navigation/codex-source` |
 
 ## get_codex_source {#get-codex-source}
@@ -49,6 +53,62 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ToolNavigationStateOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_video_download_deps {#get-video-download-deps}
+
+`client.tools.get_video_download_deps(...)`
+
+**接口**：`GET /v1/tool-navigation/video-download/deps`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `VideoDownloadDepsOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_video_download_job {#get-video-download-job}
+
+`client.tools.get_video_download_job(...)`
+
+**接口**：`GET /v1/tool-navigation/video-download/jobs/{job_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `job_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoDownloadJobOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## download_video_download_file {#download-video-download-file}
+
+`client.tools.download_video_download_file(...)`
+
+**接口**：`GET /v1/tool-navigation/video-download/jobs/{job_id}/file`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `job_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/octet-stream` · `string`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -109,6 +169,32 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ToolNavigationItemOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## post_video_download_job {#post-video-download-job}
+
+`client.tools.post_video_download_job(...)`
+
+**接口**：`POST /v1/tool-navigation/video-download/jobs`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | VideoDownloadJobCreate | 是 |
+| `body.cookies_from_browser` | 请求体 | string | 否 |
+| `body.folder_id` | 请求体 | string / null | 否 |
+| `body.quality` | 请求体 | string | 否 |
+| `body.save_to_disk` | 请求体 | boolean | 否 |
+| `body.save_to_library` | 请求体 | boolean | 否 |
+| `body.url` | 请求体 | string | 是 |
+| `body.use_browser_cookies` | 请求体 | boolean | 否 |
+
+**响应**：
+- `200` · `application/json` · `VideoDownloadJobOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

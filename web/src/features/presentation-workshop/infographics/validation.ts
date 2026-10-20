@@ -17,7 +17,14 @@ export function validateFragment(fragment: Fragment): void {
   if (
     fragment &&
     Object.keys(fragment).some(
-      (k) => !["elements", "groups", "connections", "infographics"].includes(k),
+      (k) =>
+        ![
+          "elements",
+          "groups",
+          "connections",
+          "infographics",
+          "animations",
+        ].includes(k),
     )
   )
     invalid("片段仅接受 elements、groups、connections 和 infographics");
@@ -72,6 +79,8 @@ export function validateFragment(fragment: Fragment): void {
     "roundCallout",
     "ellipseCallout",
   ]);
+  if (fragment.animations?.length)
+    invalid("信息图片段不接受放映动画，请在动画面板设置");
   const elementKeys = new Set(Object.keys(newElement("text")));
   for (const e of fragment.elements) {
     if (Object.keys(e).some((k) => !elementKeys.has(k)) || !kinds.has(e.kind))

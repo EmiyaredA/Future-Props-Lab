@@ -12,3 +12,6 @@ export type Draft = Pick<Project, "title" | "document">;
 export type NavigationGuard = (
   guard: ((proceed: () => void) => boolean) | null,
 ) => void;
+
+export type PageSize = Pick<Deck, "width" | "height">;
+export const defaultPageSize: PageSize = { width: 1280, height: 720 };

@@ -23,6 +23,7 @@ export type StudioPage =
   | "integrations-skills"
   | "integrations-external-connections"
   | "video-frame-exporter"
+  | "video-downloader"
   | "codex-model-source"
   | "model-test"
   | "model-test-tools"
@@ -201,6 +202,8 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
     return { page: "integrations-tool-apis" };
   if (pathname.startsWith("/tools/video-frame-exporter"))
     return { page: "video-frame-exporter" };
+  if (pathname.startsWith("/tools/video-downloader"))
+    return { page: "video-downloader" };
   if (pathname.startsWith("/tools/codex-model-source"))
     return { page: "codex-model-source" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
@@ -258,6 +261,7 @@ export function pathFor(
     "integrations-skills": "/integrations/skills",
     "integrations-external-connections": "/integrations/external-connections",
     "video-frame-exporter": "/tools/video-frame-exporter",
+    "video-downloader": "/tools/video-downloader",
     "codex-model-source": "/tools/codex-model-source",
     "model-test": "/model-test",
     "model-test-tools": projectId

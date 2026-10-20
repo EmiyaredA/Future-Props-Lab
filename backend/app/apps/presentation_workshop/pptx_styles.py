@@ -9,13 +9,16 @@ from app.apps.presentation_workshop.schemas.document import PresentationElement
 
 def apply_shape_style(shape, item: PresentationElement):
     if item.kind != "line":
-        fill = shape._element.spPr.find(
-            "{http://schemas.openxmlformats.org/drawingml/2006/main}solidFill"
-        )
-        if fill is not None and len(fill):
+        properties = shape._element.spPr
+        colors = properties.xpath("./a:solidFill/*|./a:gradFill/a:gsLst/a:gs/*")
+        for color in colors:
             alpha = OxmlElement("a:alpha")
             alpha.set("val", str(round(item.fill_opacity * item.opacity * 100000)))
-            fill[0].append(alpha)
+            color.append(alpha)
+        for blip in properties.xpath("./a:blipFill/a:blip"):
+            alpha = OxmlElement("a:alphaModFix")
+            alpha.set("amt", str(round(item.fill_opacity * item.opacity * 100000)))
+            blip.append(alpha)
     if item.kind == "roundRect" and item.corner_radius is not None:
         shortest = min(item.width, item.height)
         shape.adjustments[0] = min(item.corner_radius / shortest, 0.5)

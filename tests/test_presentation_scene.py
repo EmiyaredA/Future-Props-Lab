@@ -66,9 +66,20 @@ def test_v2_migration_preserves_order_content_and_revision(tmp_path):
             == first
         )
     expected = PresentationDocument.model_validate(old).model_dump()
+    expected["version"] = 2  # Historical 0096 SQL is immutable; 0101 upgrades to v3.
     # 0096 predates optional image archives, which are materialized by 0097.
-    for page in expected["slides"]:
+    for source, page in zip(old["slides"], expected["slides"], strict=True):
         page.pop("image_asset_id")
+        for key in (
+            "animations",
+            "transition",
+            "background_style",
+            "section",
+            "notes_rich",
+            "annotations",
+        ):
+            if key not in source:
+                page.pop(key)
     assert json.loads(first[0]) == expected
     assert first[1] == 12
 

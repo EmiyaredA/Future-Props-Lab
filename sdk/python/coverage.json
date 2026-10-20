@@ -2499,6 +2499,20 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/presentation-workshop/imports",
+    "sdk": "client.presentation.import_project",
+    "document": "/docs.html?page=sdk-reference-presentation#import-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/imports/preview",
+    "sdk": "client.presentation.preview_import",
+    "document": "/docs.html?page=sdk-reference-presentation#preview-import",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/presentation-workshop/projects",
     "sdk": "client.presentation.create_project",
     "document": "/docs.html?page=sdk-reference-presentation#create-project",
@@ -2509,6 +2523,20 @@
     "http": "POST /v1/presentation-workshop/projects/{project_id}/export",
     "sdk": "client.presentation.export_pptx",
     "document": "/docs.html?page=sdk-reference-presentation#export-pptx",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/projects/{project_id}/export/preview",
+    "sdk": "client.presentation.preview_export",
+    "document": "/docs.html?page=sdk-reference-presentation#preview-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/projects/{project_id}/export/{format}",
+    "sdk": "client.presentation.export_file",
+    "document": "/docs.html?page=sdk-reference-presentation#export-file",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3339,6 +3367,27 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/tool-navigation/video-download/deps",
+    "sdk": "client.tools.get_video_download_deps",
+    "document": "/docs.html?page=sdk-reference-tools#get-video-download-deps",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/tool-navigation/video-download/jobs/{job_id}",
+    "sdk": "client.tools.get_video_download_job",
+    "document": "/docs.html?page=sdk-reference-tools#get-video-download-job",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/tool-navigation/video-download/jobs/{job_id}/file",
+    "sdk": "client.tools.download_video_download_file",
+    "document": "/docs.html?page=sdk-reference-tools#download-video-download-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PATCH /v1/tool-navigation/tools/{tool_id}",
     "sdk": "client.tools.set_favorite",
     "document": "/docs.html?page=sdk-reference-tools#set-favorite",
@@ -3356,6 +3405,13 @@
     "http": "POST /v1/tool-navigation/tools/{tool_id}/use",
     "sdk": "client.tools.record_use",
     "document": "/docs.html?page=sdk-reference-tools#record-use",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/tool-navigation/video-download/jobs",
+    "sdk": "client.tools.post_video_download_job",
+    "document": "/docs.html?page=sdk-reference-tools#post-video-download-job",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

@@ -1,0 +1,154 @@
+.presentation-object-actions,
+.presentation-object-media {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.presentation-object-dialog fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.presentation-object-preview {
+  max-width: 100%;
+  overflow: auto;
+  min-height: 80px;
+  max-height: 220px;
+  box-sizing: border-box;
+  background: #fff;
+  margin: 0;
+  padding: 8px;
+  color: #17334a;
+}
+.presentation-data-grid {
+  max-height: 260px;
+  max-width: 100%;
+  overflow: auto;
+}
+.presentation-data-grid table {
+  border-collapse: collapse;
+  min-width: 100%;
+}
+.presentation-data-grid td,
+.presentation-data-grid th {
+  min-width: 90px;
+  padding: 2px;
+  border: 1px solid var(--border);
+}
+.presentation-data-grid [data-selected="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.presentation-object-dialog textarea,
+.presentation-object-dialog input {
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 7px;
+  font: inherit;
+}
+.presentation-data-grid textarea,
+.presentation-data-grid input {
+  width: 100%;
+  min-width: 80px;
+  border: 0;
+}
+.presentation-data-grid textarea {
+  resize: vertical;
+  min-height: 40px;
+  height: 40px;
+}
+.presentation-object-dialog label > textarea {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+}
+.presentation-object-dialog .btn[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.presentation-media-play {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffff88;
+  border-radius: 50%;
+  background: #101827d9;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+.presentation-object-upload {
+  cursor: pointer;
+}
+.presentation-object-dialog :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.presentation-object-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.presentation-object-settings .custom-select {
+  flex: 0 1 120px;
+}
+.presentation-chart-preview-host {
+  width: 100%;
+  height: 200px;
+}
+.presentation-chart-series-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.presentation-chart-series-heading input {
+  flex: 1;
+  width: 90px;
+}
+.presentation-data-grid .presentation-data-delete {
+  min-width: 32px;
+  width: 32px;
+}
+.presentation-data-grid .presentation-data-remove {
+  min-width: 28px;
+  width: 28px;
+  min-height: 28px;
+  padding: 2px;
+}
+.presentation-object-dialog fieldset > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.presentation-object-dialog
+  fieldset
+  > :not(:last-child):not(.presentation-dialog-split) {
+  margin-bottom: 10px;
+}
+.presentation-search-results {
+  list-style: none;
+  padding: 2px;
+}
+.presentation-search-results .btn {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (pointer: coarse) {
+  .presentation-data-grid .presentation-data-remove {
+    width: 40px;
+    min-height: 40px;
+  }
+}

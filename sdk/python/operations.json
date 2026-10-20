@@ -947,6 +947,18 @@
     "method": "get_state",
     "resource": "tools"
   },
+  "GET /v1/tool-navigation/video-download/deps": {
+    "method": "get_video_download_deps",
+    "resource": "tools"
+  },
+  "GET /v1/tool-navigation/video-download/jobs/{job_id}": {
+    "method": "get_video_download_job",
+    "resource": "tools"
+  },
+  "GET /v1/tool-navigation/video-download/jobs/{job_id}/file": {
+    "method": "download_video_download_file",
+    "resource": "tools"
+  },
   "GET /v1/video-editor/import-sources": {
     "method": "import_sources",
     "resource": "video"
@@ -1867,12 +1879,28 @@
     "method": "add_workspace",
     "resource": "admin"
   },
+  "POST /v1/presentation-workshop/imports": {
+    "method": "import_project",
+    "resource": "presentation"
+  },
+  "POST /v1/presentation-workshop/imports/preview": {
+    "method": "preview_import",
+    "resource": "presentation"
+  },
   "POST /v1/presentation-workshop/projects": {
     "method": "create_project",
     "resource": "presentation"
   },
   "POST /v1/presentation-workshop/projects/{project_id}/export": {
     "method": "export_pptx",
+    "resource": "presentation"
+  },
+  "POST /v1/presentation-workshop/projects/{project_id}/export/preview": {
+    "method": "preview_export",
+    "resource": "presentation"
+  },
+  "POST /v1/presentation-workshop/projects/{project_id}/export/{format}": {
+    "method": "export_file",
     "resource": "presentation"
   },
   "POST /v1/presentation-workshop/projects/{project_id}/operations": {
@@ -2005,6 +2033,10 @@
   },
   "POST /v1/tool-navigation/tools/{tool_id}/use": {
     "method": "record_use",
+    "resource": "tools"
+  },
+  "POST /v1/tool-navigation/video-download/jobs": {
+    "method": "post_video_download_job",
     "resource": "tools"
   },
   "POST /v1/video-editor/projects": {

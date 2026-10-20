@@ -19,7 +19,10 @@ def transform(current, body):
     document = current.document.model_dump(mode="json")
     before = current.document.model_dump(mode="json")
     explicit_paths = set()
+    removed_slides = set()
     for op in body.operations:
+        if op.entity == "slide" and op.action == "remove":
+            removed_slides.add(op.id)
         if op.entity == "connection" and op.action == "update" and "waypoints" in op.value:
             explicit_paths.add((op.parent_id, op.id))
         slides = document["slides"]
@@ -57,6 +60,19 @@ def transform(current, body):
         if op.entity == "slide" and op.action == "duplicate":
             # New slide IDs deterministically namespace child IDs; no duplicate global identities.
             clone.update(remap(clone, clone["id"]))
+            for element in clone["elements"]:
+                if (
+                    element.get("link")
+                    and element["link"]["type"] == "slide"
+                    and element["link"]["target"] == op.id
+                ):
+                    element["link"]["target"] = clone["id"]
+    present = {page["id"] for page in document["slides"]}
+    for page in document["slides"]:
+        for element in page["elements"]:
+            link = element.get("link")
+            if link and link["type"] == "slide" and link["target"] in removed_slides - present:
+                element["link"] = None
     try:
         follow_batch(before, document, explicit_paths)
     except ValueError as exc:

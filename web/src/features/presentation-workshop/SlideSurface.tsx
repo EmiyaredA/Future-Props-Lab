@@ -1,10 +1,28 @@
-import { memo, useEffect, useRef, useState, type ReactNode } from "react";
+import { PaintLayer } from "./objects/paint";
+import { shadowFilter } from "./objects/paintStyle";
+import { lazy, Suspense } from "react";
+import { NativeTable } from "./objects/NativeTable";
+import { ManagedMedia } from "./objects/ManagedMedia";
+const ChartSvg = lazy(() => import("./objects/ChartSvg"));
+import {
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  useId,
+  type ReactNode,
+} from "react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { PresentationShape } from "./PresentationShape";
 import { fontFamily } from "./textAdapter";
 import { coverCrop } from "./imageCrop";
 import { elementStyle } from "./geometry";
-import type { Slide, SlideElement } from "./types";
+import {
+  defaultPageSize,
+  type PageSize,
+  type Slide,
+  type SlideElement,
+} from "./types";
 import { Connections } from "./scene/Connections";
 import { sceneOrder } from "./scene/stacking";
 import { paragraphMarkers } from "./paragraphLists";
@@ -12,15 +30,19 @@ import { paragraphMarkers } from "./paragraphLists";
 export function ElementImage({
   element,
   contain = false,
+  assetUrl,
 }: {
   element: SlideElement;
   contain?: boolean;
+  assetUrl?: string;
 }) {
-  const { url, error } = useApiBlobUrl(
-    element.asset_id
+  const loadedAsset = useApiBlobUrl(
+    element.asset_id && !assetUrl
       ? `/v1/files/${encodeURIComponent(element.asset_id)}/content`
       : null,
   );
+  const url = assetUrl ?? loadedAsset.url;
+  const error = assetUrl ? null : loadedAsset.error;
   const [loaded, setLoaded] = useState<{
     url: string;
     width: number;
@@ -39,11 +61,28 @@ export function ElementImage({
           element.crop,
         )
       : { left: 0, right: 0, top: 0, bottom: 0 };
+  const effects = element.image_effects;
+  const tintId = useId().replace(/:/g, "");
+  const filter = effects
+    ? `brightness(${effects.brightness}) contrast(${effects.contrast}) saturate(${effects.saturation}) grayscale(${effects.grayscale}) blur(${effects.blur}px)${effects.tint ? ` url(#${tintId})` : ""}`
+    : undefined;
+  const tint = effects?.tint
+    ?.slice(1)
+    .match(/../g)
+    ?.map((value) => (parseInt(value, 16) / 255) * 0.35);
   return (
     <div
       className="presentation-image-clip"
       style={{
         opacity: element.opacity ?? 1,
+        clipPath:
+          effects?.crop_shape === "ellipse"
+            ? "ellipse(50% 50% at 50% 50%)"
+            : effects?.crop_shape === "triangle"
+              ? "polygon(50% 0,100% 100%,0 100%)"
+              : effects?.crop_shape === "diamond"
+                ? "polygon(50% 0,100% 50%,50% 100%,0 50%)"
+                : undefined,
         borderRadius:
           element.kind === "image" ? (element.corner_radius ?? 0) : 0,
         outline: element.image_border
@@ -52,6 +91,23 @@ export function ElementImage({
         transform: `scale(${element.flip_x ? -1 : 1}, ${element.flip_y ? -1 : 1})`,
       }}
     >
+      {tint && (
+        <svg
+          width="0"
+          height="0"
+          aria-hidden="true"
+          style={{ position: "absolute" }}
+        >
+          <defs>
+            <filter id={tintId}>
+              <feColorMatrix
+                type="matrix"
+                values={`.65 0 0 0 ${tint[0]} 0 .65 0 0 ${tint[1]} 0 0 .65 0 ${tint[2]} 0 0 0 1 0`}
+              />
+            </filter>
+          </defs>
+        </svg>
+      )}
       {url ? (
         <img
           key={url}
@@ -69,6 +125,7 @@ export function ElementImage({
           onError={() => setFailedUrl(url)}
           draggable={false}
           style={{
+            filter,
             visibility:
               ready && !failed && !element.vector_color ? "visible" : "hidden",
             objectFit: contain ? "contain" : "fill",
@@ -102,59 +159,129 @@ export function ElementImage({
 }
 export const ElementContent = memo(function ElementContent({
   element,
+  playing = false,
+  assetUrls,
 }: {
   element: SlideElement;
+  playing?: boolean;
+  assetUrls?: Record<string, string>;
 }) {
-  if (element.kind === "image" || element.kind === "vector")
+  if (element.kind === "table") return <NativeTable element={element} />;
+  if (element.kind === "chart")
     return (
-      <ElementImage element={element} contain={element.kind === "vector"} />
+      <Suspense fallback={<span role="status">正在绘制图表…</span>}>
+        <ChartSvg element={element} />
+      </Suspense>
     );
-  if (element.kind === "text") {
-    const markers = paragraphMarkers(element.paragraphs);
+  if (element.kind === "audio" || element.kind === "video")
     return (
-      <div className="presentation-text">
-        {element.paragraphs.map((p, index) => (
-          <p
-            key={index}
-            style={{
-              textAlign: p.align,
-              fontSize: Math.max(0, ...p.runs.map((r) => r.size)) || 24,
-              fontFamily: fontFamily(p.runs[0]?.font ?? "Arial"),
-              color: p.runs[0]?.color,
-              paddingLeft: p.numbered ? "2em" : p.bullet ? 24 : 0,
-              lineHeight: `${(Math.max(0, ...p.runs.map((r) => r.size)) || 24) * p.line_height}px`,
-            }}
-          >
-            {markers[index] ? (
-              <span
-                className={`presentation-bullet${p.numbered ? " is-numbered" : ""}`}
-              >
-                {markers[index]}
-              </span>
-            ) : null}
-            {p.runs.map((run, i) => (
-              <span
-                key={i}
-                style={{
-                  fontFamily: fontFamily(run.font),
-                  fontSize: run.size,
-                  color: run.color,
-                  fontWeight: run.bold ? 700 : 400,
-                  fontStyle: run.italic ? "italic" : "normal",
-                  textDecoration: run.underline ? "underline" : "none",
-                }}
-              >
-                {run.text}
-              </span>
-            ))}
-            {p.runs.every((r) => !r.text) ? <br /> : null}
-          </p>
-        ))}
-      </div>
+      <ManagedMedia element={element} playing={playing} assetUrls={assetUrls} />
     );
-  }
-  return <PresentationShape element={element} />;
+  if (
+    element.kind === "image" ||
+    element.kind === "vector" ||
+    element.kind === "formula"
+  )
+    return (
+      <ElementImage
+        assetUrl={element.asset_id ? assetUrls?.[element.asset_id] : undefined}
+        element={element}
+        contain={element.kind === "vector" || element.kind === "formula"}
+      />
+    );
+  if (element.kind === "text") return <ElementText element={element} />;
+  return (
+    <>
+      <PresentationShape element={element} assetUrls={assetUrls} />
+      {element.paragraphs.length > 0 && (
+        <div style={{ position: "absolute", inset: 0 }}>
+          <ElementText element={element} />
+        </div>
+      )}
+    </>
+  );
 });
+
+export function ElementText({ element }: { element: SlideElement }) {
+  const markers = paragraphMarkers(element.paragraphs);
+  return (
+    <div
+      className="presentation-text"
+      style={{
+        padding: element.text_layout?.padding ?? 8,
+        letterSpacing: element.text_layout?.letter_spacing ?? 0,
+        opacity: element.opacity,
+        writingMode: element.text_layout?.vertical ? "vertical-rl" : undefined,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent:
+          element.text_layout?.align === "middle"
+            ? "center"
+            : element.text_layout?.align === "bottom"
+              ? "flex-end"
+              : "flex-start",
+      }}
+    >
+      {element.paragraphs.map((p, index) => (
+        <p
+          key={index}
+          style={{
+            textAlign: p.align,
+            fontSize: Math.max(0, ...p.runs.map((r) => r.size)) || 24,
+            fontFamily: fontFamily(p.runs[0]?.font ?? "Arial"),
+            color: p.runs[0]?.color,
+            paddingLeft: p.numbered
+              ? "2em"
+              : p.bullet
+                ? 24
+                : `${(p.indent ?? 0) * 2}em`,
+            textIndent: p.first_line_indent ?? 0,
+            marginTop: p.space_before ?? 0,
+            marginBottom: p.space_after ?? 0,
+            lineHeight: `${(Math.max(0, ...p.runs.map((r) => r.size)) || 24) * p.line_height}px`,
+          }}
+        >
+          {markers[index] ? (
+            <span
+              className={`presentation-bullet${p.numbered ? " is-numbered" : ""}`}
+            >
+              {markers[index]}
+            </span>
+          ) : null}
+          {p.runs.map((run, i) => (
+            <span
+              key={i}
+              style={{
+                fontFamily: fontFamily(run.code ? "Consolas" : run.font),
+                fontSize: run.size,
+                color: run.color,
+                fontWeight: run.bold ? 700 : 400,
+                fontStyle: run.italic ? "italic" : "normal",
+                textDecoration:
+                  [
+                    run.underline ? "underline" : "",
+                    run.strike ? "line-through" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || "none",
+                backgroundColor: run.highlight ?? undefined,
+                verticalAlign:
+                  run.script === "sup"
+                    ? "super"
+                    : run.script === "sub"
+                      ? "sub"
+                      : undefined,
+              }}
+            >
+              {run.text}
+            </span>
+          ))}
+          {p.runs.every((r) => !r.text) ? <br /> : null}
+        </p>
+      ))}
+    </div>
+  );
+}
 
 export const SlideSurface = memo(function SlideSurface({
   slide,
@@ -162,8 +289,16 @@ export const SlideSurface = memo(function SlideSurface({
   editingId,
   selectedConnection,
   onSelectConnection,
+  size = defaultPageSize,
+  playMedia = false,
+  assetUrls,
+  onNavigateSlide,
 }: {
+  onNavigateSlide?: (id: string) => void;
+  playMedia?: boolean;
+  assetUrls?: Record<string, string>;
   slide: Slide;
+  size?: PageSize;
   children?: ReactNode;
   editingId?: string | null;
   selectedConnection?: string | null;
@@ -175,10 +310,23 @@ export const SlideSurface = memo(function SlideSurface({
   return (
     <div
       className="presentation-slide"
-      style={{ background: slide.background }}
+      style={{
+        background: slide.background,
+        width: size.width,
+        height: size.height,
+      }}
     >
+      {slide.background_style && (
+        <PaintLayer paint={slide.background_style} assetUrls={assetUrls} />
+      )}
       {sceneOrder(slide).map((item) => {
-        if (item.kind === "connection")
+        if (item.kind === "connection") {
+          if (
+            [item.edge.source_id, item.edge.target_id].some(
+              (id) => elements.get(id)?.hidden,
+            )
+          )
+            return null;
           return (
             <Connections
               key={item.id}
@@ -188,10 +336,37 @@ export const SlideSurface = memo(function SlideSurface({
               onSelect={onSelectConnection}
             />
           );
+        }
         const element = elements.get(item.id)!;
+        if (element.hidden) return null;
         return (
           <div
             key={element.id}
+            role={playMedia && element.link ? "link" : undefined}
+            tabIndex={playMedia && element.link ? 0 : undefined}
+            onClick={() => {
+              if (playMedia && element.link) {
+                if (element.link.type === "slide")
+                  onNavigateSlide?.(element.link.target);
+                else
+                  window.open(
+                    element.link.target,
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+              }
+            }}
+            onKeyDown={(event) => {
+              if (
+                playMedia &&
+                element.link &&
+                ["Enter", " "].includes(event.key)
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.currentTarget.click();
+              }
+            }}
             data-element-id={element.id}
             data-amadeus-id={element.id}
             data-amadeus-name={element.kind}
@@ -208,7 +383,22 @@ export const SlideSurface = memo(function SlideSurface({
             style={elementStyle(element)}
           >
             {element.id !== editingId ? (
-              <ElementContent element={element} />
+              <div
+                className="presentation-element-content"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  filter: shadowFilter(element.shadow),
+                }}
+              >
+                <ElementContent
+                  element={element}
+                  playing={playMedia}
+                  assetUrls={assetUrls}
+                />
+              </div>
+            ) : element.kind !== "text" ? (
+              <PresentationShape element={element} assetUrls={assetUrls} />
             ) : null}
           </div>
         );
@@ -221,7 +411,11 @@ export const SlideSurface = memo(function SlideSurface({
 export function SlidePreview({
   slide,
   width,
+  size = defaultPageSize,
+  assetUrls,
 }: {
+  assetUrls?: Record<string, string>;
+  size?: PageSize;
   slide: Slide;
   width?: number;
 }) {
@@ -261,7 +455,7 @@ export function SlidePreview({
       className="presentation-preview"
       style={{
         width: width ?? "100%",
-        aspectRatio: "16 / 9",
+        aspectRatio: `${size.width} / ${size.height}`,
         background: slide.background,
       }}
     >
@@ -271,11 +465,11 @@ export function SlidePreview({
             position: "absolute",
             top: 0,
             left: 0,
-            transform: `scale(${previewWidth / 1280})`,
+            transform: `scale(${previewWidth / size.width})`,
             transformOrigin: "top left",
           }}
         >
-          <SlideSurface slide={slide} />
+          <SlideSurface slide={slide} size={size} assetUrls={assetUrls} />
         </div>
       ) : null}
     </div>

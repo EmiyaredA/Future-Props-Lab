@@ -1,44 +1,15 @@
-.presentation-theme-dialog {
-  width: min(960px, 100%);
-  max-height: calc(100dvh - 40px);
-  overflow: auto;
-  box-sizing: border-box;
-  padding: 24px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 18px 70px #0003;
-}
-.presentation-theme-dialog header,
-.presentation-theme-dialog footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-.presentation-theme-dialog h3,
-.presentation-theme-dialog h4 {
-  margin: 0;
-}
-.presentation-theme-dialog p {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.6;
-}
 .presentation-theme-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 24px;
+  gap: 12px;
   align-items: start;
-  margin: 20px 0;
 }
 .presentation-theme-preview {
   min-width: 0;
   border: 1px solid var(--border);
 }
 .presentation-theme-colors {
-  max-height: 360px;
+  max-height: 300px;
   overflow-y: auto;
   min-width: 0;
   padding: 3px;
@@ -48,7 +19,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin: 10px 0;
+  margin: 6px 0;
   font-size: 11px;
 }
 .presentation-theme-color > span:first-child {
@@ -69,13 +40,9 @@
   width: 100%;
   margin: 8px 0 18px;
 }
-@media (max-width: 767px) {
-  .presentation-theme-dialog {
-    padding: 16px;
-  }
+@media (max-width: 1023px) {
   .presentation-theme-body {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
   }
   .presentation-theme-colors {
     max-height: 240px;

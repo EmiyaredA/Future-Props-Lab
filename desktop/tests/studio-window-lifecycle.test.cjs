@@ -44,13 +44,19 @@ test("opening another Studio returns a cloneable IPC result", () => {
   const context = vm.createContext({
     state: { phase: "ready" },
     quitting: false,
-    studioPathForNewWindow: () => "/apps/desktop-pet",
+    presentation_windows_1: {
+      studioPathForNewWindow: () => "/apps/desktop-pet",
+    },
+    pageOrigin: () => "http://localhost:9000",
     openStudioWindow: (url) => {
       opened.push(url);
       return { uncloneable: () => {} };
     },
   });
-  const result = vm.runInContext(`((win) => {${match[1]}})({})`, context);
+  const result = vm.runInContext(
+    `((win) => {${match[1]}})({webContents:{getURL:()=>"http://localhost:9000"}})`,
+    context,
+  );
   assert.equal(result, undefined);
   assert.doesNotThrow(() => structuredClone(result));
   assert.deepEqual(opened, ["/apps/desktop-pet"]);

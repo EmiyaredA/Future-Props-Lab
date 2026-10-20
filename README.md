@@ -97,13 +97,13 @@ Mermaid；AI 写作经 Agent/SDK 接入（应用内无入口）。提供回收�
 
 ### 演示工坊
 
-应用中的演示工坊支持基础幻灯片编辑、自动保存、放映和原生可编辑 PPTX 导出。
+应用中的演示工坊支持紧凑 React 编辑器、统一历史与自动保存、原生表格／图表／公式／媒体、动画放映及可编辑 PPTX。已有 PPTX 可预检后导入，跨空间复用使用携带素材的 `.fplppt` 文稿包；静态交付可选择 PNG、JPEG 或打印 PDF。图表和公式矢量能力按需加载，全部字体与资源在本地提供。
 图片支持更换、画布裁剪、翻转和外观调整；图形面板提供分类形状、图标与经过预检的 SVG 导入。
 后端通过锁定的 `python-pptx`（含 lxml / XlsxWriter）在现有进程内导出；
 `defusedxml` 校验自包含 SVG，`resvg-py` 生成 PowerPoint 所需的 PNG 兼容图，两者随 `npm run setup` 安装。
 生产环境无需安装 Office 或 LibreOffice，后者仅用于交付时的外观核验。
 仍使用单进程 SQLite 与现有公共文件库，不新增环境变量或常驻服务。
-使用与限制见[演示工坊说明](web/src/docs/articles/presentation/presentation-workshop.md)。
+使用流程见[演示工坊官方指南来源](web/src/features/thought-workshop/official/content/presentation-workshop/overview.md)，文件互通与转换边界见[交付说明](web/src/features/thought-workshop/official/content/presentation-workshop/delivery.md)。管理员可主动导入更新后的指南，升级不会覆盖已导入的文章。
 
 
 ### Python 自动化

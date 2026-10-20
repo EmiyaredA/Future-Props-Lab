@@ -5,6 +5,7 @@ import "@shared/ui/text-input-dialog.css";
 
 export function TextInputDialog({
   open,
+  className = "",
   title,
   label,
   initialValue = "",
@@ -18,6 +19,7 @@ export function TextInputDialog({
   onConfirm,
 }: {
   open: boolean;
+  className?: string;
   title: string;
   label: string;
   initialValue?: string;
@@ -98,7 +100,7 @@ export function TextInputDialog({
     >
       <form
         ref={formRef}
-        className="modal-card text-input-dialog"
+        className={`modal-card text-input-dialog ${className}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

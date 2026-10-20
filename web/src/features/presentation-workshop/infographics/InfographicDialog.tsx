@@ -1,3 +1,4 @@
+import { containDialogComposition } from "../dialogKeyboard";
 import { slideTheme } from "../slideTheme";
 import { useRef, useState } from "react";
 import { X } from "lucide-react";
@@ -76,8 +77,9 @@ export default function InfographicDialog({
   return (
     <div className="presentation-modal-backdrop">
       <div
+        onKeyDownCapture={containDialogComposition}
         ref={root}
-        className="presentation-scene-dialog"
+        className="presentation-dialog presentation-dialog-large presentation-scene-dialog"
         role="dialog"
         aria-modal="true"
         aria-label="插入与编辑信息图"
@@ -93,95 +95,103 @@ export default function InfographicDialog({
             <X size={20} />
           </button>
         </header>
-        <div className="presentation-scene-fields">
-          <CustomSelect
-            ariaLabel="信息图输入格式"
-            value={format}
-            options={[
-              { value: "antv", label: "AntV 信息图语法" },
-              { value: "scene", label: "工坊场景 JSON" },
-            ]}
-            disabled={busy}
-            onChange={(value) => {
-              setFormat(value as "antv" | "scene");
-              change(
-                value === "antv"
-                  ? exampleSource(template)
-                  : '{"elements": [], "groups": [], "connections": [], "infographics": []}',
-              );
-            }}
-          />
-          {format === "antv" && (
+        <div className="presentation-dialog-body">
+          <div className="presentation-scene-fields">
             <CustomSelect
-              ariaLabel="信息图模板"
-              value={template}
-              options={infographicTemplates}
+              ariaLabel="信息图输入格式"
+              value={format}
+              options={[
+                { value: "antv", label: "AntV 信息图语法" },
+                { value: "scene", label: "工坊场景 JSON" },
+              ]}
               disabled={busy}
               onChange={(value) => {
-                setTemplate(value);
-                change(exampleSource(value));
+                setFormat(value as "antv" | "scene");
+                change(
+                  value === "antv"
+                    ? exampleSource(template)
+                    : '{"elements": [], "groups": [], "connections": [], "infographics": []}',
+                );
               }}
             />
-          )}
-        </div>
-        <label>
-          模板数据与源码
-          <textarea
-            aria-label="信息图源码"
-            value={source}
-            maxLength={50000}
-            disabled={busy}
-            onChange={(e) => change(e.target.value)}
-            spellCheck={false}
-          />
-        </label>
-        {info && (
-          <p>
-            应用更新会替换这一信息图中的对象及其手动调整，其他页面内容不受影响。可撤销恢复。
-          </p>
-        )}
-        {error && <p role="alert">{error}</p>}
-        {result && (
-          <>
-            <div className="presentation-scene-preview">
-              <SlideSurface
-                slide={{
-                  id: newId(),
-                  background: slideTheme.background,
-                  notes: "",
-                  ...result.fragment,
-                  elements: result.fragment.elements.filter(
-                    (e) =>
-                      !result.decorations.some((d) => d.elementId === e.id),
-                  ),
+            {format === "antv" && (
+              <CustomSelect
+                ariaLabel="信息图模板"
+                value={template}
+                options={infographicTemplates}
+                disabled={busy}
+                onChange={(value) => {
+                  setTemplate(value);
+                  change(exampleSource(value));
                 }}
               />
-              {result.decorations.map((d) => {
-                const e = result.fragment.elements.find(
-                  (v) => v.id === d.elementId,
-                )!;
-                return (
-                  <img
-                    key={d.elementId}
-                    src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(d.svg)}`}
-                    alt="保留为矢量的装饰"
-                    style={{
-                      left: `${e.x / 12.8}%`,
-                      top: `${e.y / 7.2}%`,
-                      width: `${e.width / 12.8}%`,
-                      height: `${e.height / 7.2}%`,
-                    }}
-                  />
-                );
-              })}
+            )}
+          </div>
+          <div className="presentation-dialog-split presentation-infographic-columns">
+            <label>
+              模板数据与源码
+              <textarea
+                aria-label="信息图源码"
+                value={source}
+                maxLength={50000}
+                disabled={busy}
+                onChange={(e) => change(e.target.value)}
+                spellCheck={false}
+              />
+            </label>
+            <div className="presentation-infographic-result">
+              {info && (
+                <p>
+                  应用更新会替换这一信息图中的对象及其手动调整，其他页面内容不受影响。可撤销恢复。
+                </p>
+              )}
+              {error && <p role="alert">{error}</p>}
+              {result && (
+                <>
+                  <div className="presentation-scene-preview">
+                    <SlideSurface
+                      slide={{
+                        id: newId(),
+                        background: slideTheme.background,
+                        notes: "",
+                        ...result.fragment,
+                        elements: result.fragment.elements.filter(
+                          (e) =>
+                            !result.decorations.some(
+                              (d) => d.elementId === e.id,
+                            ),
+                        ),
+                      }}
+                    />
+                    {result.decorations.map((d) => {
+                      const e = result.fragment.elements.find(
+                        (v) => v.id === d.elementId,
+                      )!;
+                      return (
+                        <img
+                          key={d.elementId}
+                          src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(d.svg)}`}
+                          alt="保留为矢量的装饰"
+                          style={{
+                            left: `${e.x / 12.8}%`,
+                            top: `${e.y / 7.2}%`,
+                            width: `${e.width / 12.8}%`,
+                            height: `${e.height / 7.2}%`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <p role="status">
+                    {result.fragment.elements.length} 个原生元素，
+                    {result.fragment.connections?.length ?? 0} 条连接。
+                    {result.notices.join("；")}
+                  </p>
+                </>
+              )}
             </div>
-            <p role="status">
-              {result.fragment.elements.length} 个原生元素，
-              {result.fragment.connections?.length ?? 0} 条连接。
-              {result.notices.join("；")}
-            </p>
-          </>
-        )}
+          </div>
+        </div>
         <footer>
           <button className="btn" onClick={onClose} disabled={busy}>
             取消

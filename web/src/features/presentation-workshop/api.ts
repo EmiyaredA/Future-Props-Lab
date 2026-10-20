@@ -70,6 +70,25 @@ export const uploadImage = async (file: File) =>
       },
     }),
   );
+
+export const listMedia = async (
+  kind: "image" | "audio" | "video",
+  query = "",
+  signal?: AbortSignal,
+) =>
+  unwrap(
+    await api.GET("/v1/files", {
+      params: {
+        query: {
+          media_kind: kind,
+          include_references: false,
+          include_svg: kind === "image",
+          query,
+        },
+      },
+      signal,
+    }),
+  );
 export function download(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

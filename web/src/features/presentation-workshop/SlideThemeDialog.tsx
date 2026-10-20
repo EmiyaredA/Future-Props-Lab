@@ -1,17 +1,20 @@
+import { containDialogComposition } from "./dialogKeyboard";
 import { useState } from "react";
 import { X } from "lucide-react";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { SlidePreview } from "./SlideSurface";
 import { applySlideTheme, themeMapping, slideTheme } from "./slideTheme";
-import type { Slide } from "./types";
+import type { PageSize, Slide } from "./types";
 import "./slide-theme.css";
 
 export function SlideThemeDialog({
+  size,
   slide,
   onApply,
   onClose,
 }: {
+  size?: PageSize;
   slide: Slide;
   onApply: (slide: Slide) => void;
   onClose: () => void;
@@ -23,8 +26,9 @@ export function SlideThemeDialog({
   return (
     <div className="presentation-modal-backdrop">
       <div
+        onKeyDownCapture={containDialogComposition}
         ref={root}
-        className="presentation-theme-dialog"
+        className="presentation-dialog presentation-dialog-large presentation-theme-dialog"
         role="dialog"
         aria-modal="true"
         aria-label="应用蓝青风格"
@@ -42,36 +46,38 @@ export function SlideThemeDialog({
             <X size={18} />
           </button>
         </header>
-        <div className="presentation-theme-body">
-          <div className="presentation-theme-preview" aria-label="换肤预览">
-            <SlidePreview slide={preview} />
+        <div className="presentation-dialog-body">
+          <div className="presentation-theme-body">
+            <div className="presentation-theme-preview" aria-label="换肤预览">
+              <SlidePreview slide={preview} size={size} />
+            </div>
+            <div className="presentation-theme-colors">
+              <h4>颜色替换</h4>
+              <p>内置色已匹配；其他颜色默认保留，可逐项调整。</p>
+              {Object.entries(mapping).map(([from, to]) => (
+                <div className="presentation-theme-color" key={from}>
+                  <span>
+                    <i style={{ background: from }} />
+                    {from}
+                  </span>
+                  <span aria-hidden="true">→</span>
+                  <CustomColorPicker
+                    ariaLabel={`替换颜色 ${from}`}
+                    value={to}
+                    colors={Object.values(slideTheme)}
+                    onChange={(value) =>
+                      setMapping((m) => ({ ...m, [from]: value }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="presentation-theme-colors">
-            <h4>颜色替换</h4>
-            <p>内置色已匹配；其他颜色默认保留，可逐项调整。</p>
-            {Object.entries(mapping).map(([from, to]) => (
-              <div className="presentation-theme-color" key={from}>
-                <span>
-                  <i style={{ background: from }} />
-                  {from}
-                </span>
-                <span aria-hidden="true">→</span>
-                <CustomColorPicker
-                  ariaLabel={`替换颜色 ${from}`}
-                  value={to}
-                  colors={Object.values(slideTheme)}
-                  onChange={(value) =>
-                    setMapping((m) => ({ ...m, [from]: value }))
-                  }
-                />
-              </div>
-            ))}
-          </div>
+          <p className="muted">
+            锁定元素、连接到锁定元素的线条、图片和 SVG
+            素材保持原样。应用后可撤销。
+          </p>
         </div>
-        <p className="muted">
-          锁定元素、连接到锁定元素的线条、图片和 SVG
-          素材保持原样。应用后可撤销。
-        </p>
         <footer>
           <button className="btn" onClick={onClose}>
             取消

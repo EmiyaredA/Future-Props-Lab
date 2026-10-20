@@ -1,3 +1,7 @@
+import { CanvasSketch } from "./editor/CanvasSketch";
+import { canContainText } from "./textAdapter";
+import { defaultRun } from "./templates";
+import { CanvasGuides } from "./editor/CanvasGuides";
 import {
   useEffect,
   useLayoutEffect,
@@ -20,7 +24,12 @@ import {
 import { LayoutGuides } from "./LayoutGuides";
 import { SlideSurface } from "./SlideSurface";
 import { SlideTextEditor } from "./SlideTextEditor";
-import type { Slide, SlideElement } from "./types";
+import {
+  defaultPageSize,
+  type PageSize,
+  type Slide,
+  type SlideElement,
+} from "./types";
 import type { Connection } from "./scene/model";
 import { selectionIds, updateScene } from "./scene/model";
 import { useConnectionDrag } from "./scene/useConnectionDrag";
@@ -67,7 +76,19 @@ export function SlideCanvas({
   referenceOverlay,
   onCanvasInteract,
   previewConnection,
+  size = defaultPageSize,
+  grid = false,
+  rulers = false,
+  drawMode,
+  onDrawFinish,
+  onDrawCancel,
 }: {
+  size?: PageSize;
+  grid?: boolean;
+  rulers?: boolean;
+  drawMode?: "pen" | "polygon" | null;
+  onDrawFinish?: (element: SlideElement) => void;
+  onDrawCancel?: () => void;
   slide: Slide;
   onCanvasInteract?: () => void;
   previewConnection?: Connection;
@@ -80,6 +101,7 @@ export function SlideCanvas({
     id: string,
     paragraphs: SlideElement["paragraphs"],
     format?: boolean,
+    height?: number,
   ) => void;
   readOnly: boolean;
   zoom: number | null;
@@ -99,6 +121,7 @@ export function SlideCanvas({
   const host = useRef<HTMLDivElement>(null),
     canvas = useRef<HTMLDivElement>(null),
     gesture = useRef<Gesture | null>(null);
+  const sketchCancel = useRef<(() => boolean) | null>(null);
   const preview = useRef<Slide | null>(null);
   const rawPreview = useRef<Slide | null>(null);
   const snapMemory = useRef<SnapMemory>([]);
@@ -159,6 +182,7 @@ export function SlideCanvas({
     host,
     canvas,
     zoom,
+    size,
     onZoomChange,
     isZoomBlocked: () =>
       !!press.current ||
@@ -186,7 +210,9 @@ export function SlideCanvas({
   useLayoutEffect(() => {
     onScaleChange?.(scale);
   }, [scale, onScaleChange]);
-  const chosen = display.elements.filter((e) => selected.includes(e.id));
+  const chosen = display.elements.filter(
+    (e) => selected.includes(e.id) && !e.hidden,
+  );
   const movable = chosen.filter((e) => !e.locked);
   const box =
     movable.length > 1
@@ -241,7 +267,8 @@ export function SlideCanvas({
         !mode &&
         !additive &&
         !readOnly &&
-        element?.kind === "text" &&
+        !!element &&
+        canContainText(element.kind) &&
         !element.locked &&
         (!grouped ||
           (selected.length === 1 &&
@@ -273,7 +300,7 @@ export function SlideCanvas({
       startX: p.x,
       startY: p.y,
       base: slide,
-      context: layoutContext(slide, ids, mode ? groupScope : hit.scope),
+      context: layoutContext(slide, ids, mode ? groupScope : hit.scope, size),
       ids: elements.map((e) => e.id),
       mode: mode ?? (element ? "move" : "marquee"),
       box: elements.length
@@ -311,6 +338,7 @@ export function SlideCanvas({
           g.base.elements
             .filter(
               (e) =>
+                !e.hidden &&
                 e.x >= area.x &&
                 e.y >= area.y &&
                 e.x + e.width <= area.x + area.width &&
@@ -454,6 +482,7 @@ export function SlideCanvas({
   useLayoutEffect(() => {
     if (!historyGesture) return;
     historyGesture.current = () => {
+      if (sketchCancel.current?.()) return true;
       if (connectionDrag.cancel()) return true;
       if (!press.current && !gesture.current) return false;
       finish(true);
@@ -464,7 +493,7 @@ export function SlideCanvas({
     };
   });
   const active = display.elements.find(
-    (e) => e.id === editing && e.kind === "text" && !e.locked,
+    (e) => e.id === editing && canContainText(e.kind) && !e.locked,
   );
   return (
     <div
@@ -483,7 +512,7 @@ export function SlideCanvas({
     >
       <div
         className="presentation-canvas-viewport"
-        style={{ width: 1280 * scale, height: 720 * scale }}
+        style={{ width: size.width * scale, height: size.height * scale }}
       >
         <div
           ref={canvas}
@@ -491,7 +520,11 @@ export function SlideCanvas({
           role="group"
           aria-label="幻灯片画布"
           tabIndex={0}
-          style={{ transform: `scale(${scale})`, width: 1280, height: 720 }}
+          style={{
+            transform: `scale(${scale})`,
+            width: size.width,
+            height: size.height,
+          }}
           onPointerDown={start}
           onPointerMove={(event) => {
             if (!connectionDrag.move(event)) move(event);
@@ -518,6 +551,12 @@ export function SlideCanvas({
               };
           }}
           onKeyDown={(e) => {
+            if (e.key === "Escape" && drawMode) {
+              e.preventDefault();
+              e.stopPropagation();
+              onDrawCancel?.();
+              return;
+            }
             if (e.key === "Escape" && connectionDrag.active()) {
               e.preventDefault();
               e.stopPropagation();
@@ -551,13 +590,30 @@ export function SlideCanvas({
               selected[0] === id &&
               !groupAtHit(slide, id, groupScope) &&
               slide.elements.some(
-                (e) => e.id === id && e.kind === "text" && !e.locked,
+                (e) => e.id === id && canContainText(e.kind) && !e.locked,
               )
-            )
+            ) {
+              if (!slide.elements.find((e) => e.id === id)?.paragraphs.length)
+                onText(
+                  id,
+                  [
+                    {
+                      align: "left",
+                      line_height: 1.3,
+                      bullet: false,
+                      numbered: false,
+                      runs: [defaultRun("")],
+                    },
+                  ],
+                  true,
+                );
               setEditing(id);
+            }
           }}
         >
+          <CanvasGuides size={size} scale={scale} grid={grid} rulers={rulers} />
           <SlideSurface
+            size={size}
             slide={
               previewConnection
                 ? {
@@ -584,7 +640,9 @@ export function SlideCanvas({
               <SlideTextEditor
                 key={active.id}
                 element={active}
-                onChange={(p, format) => onText(active.id, p, format)}
+                onChange={(p, format, height) =>
+                  onText(active.id, p, format, height)
+                }
                 onComposition={onComposition}
                 onReady={onReady}
                 onExit={() => {
@@ -627,6 +685,15 @@ export function SlideCanvas({
                 />
               )}
           </SlideSurface>
+          {drawMode && !readOnly && onDrawFinish && onDrawCancel && (
+            <CanvasSketch
+              mode={drawMode}
+              size={size}
+              onFinish={onDrawFinish}
+              onCancel={onDrawCancel}
+              cancelRef={sketchCancel}
+            />
+          )}
         </div>
       </div>
       {(routeError || connectionDrag.error) && (

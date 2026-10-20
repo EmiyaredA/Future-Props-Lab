@@ -11,6 +11,14 @@ class Presentation:
     def __init__(self, client):
         self._client = client
 
+    def import_project(self, *, body: models.Body_create_import_v1_presentation_workshop_imports_post | dict, files: dict | list | None = None) -> models.PresentationProjectOut:
+        'Create Import. POST /v1/presentation-workshop/imports'
+        return self._client._call('POST', '/v1/presentation-workshop/imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.PresentationProjectOut)
+
+    def preview_import(self, *, body: models.Body_preview_import_v1_presentation_workshop_imports_preview_post | dict, files: dict | list | None = None) -> models.ImportPreview:
+        'Preview Import. POST /v1/presentation-workshop/imports/preview'
+        return self._client._call('POST', '/v1/presentation-workshop/imports/preview', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.ImportPreview)
+
     def list_projects(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.PresentationProjectList:
         'List Projects. GET /v1/presentation-workshop/projects'
         return self._client._call('GET', '/v1/presentation-workshop/projects', parameters=[('query', 'query', query), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=models.PresentationProjectList)
@@ -35,6 +43,14 @@ class Presentation:
         'Export Pptx. POST /v1/presentation-workshop/projects/{project_id}/export'
         return self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/export', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=Any)
 
+    def preview_export(self, *, project_id: str, body: models.PresentationExportIn | dict) -> models.ExportPreview:
+        'Preview Export. POST /v1/presentation-workshop/projects/{project_id}/export/preview'
+        return self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/export/preview', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ExportPreview)
+
+    def export_file(self, *, project_id: str, format: Literal['json', 'fplppt'], body: models.PresentationExportIn | dict) -> Download:
+        'Export File. POST /v1/presentation-workshop/projects/{project_id}/export/{format}'
+        return self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/export/{format}', parameters=[('project_id', 'path', project_id), ('format', 'path', format)], body=body, media_type='application/json', response_type=Any)
+
     def apply_presentation_operations(self, *, project_id: str, body: models.PresentationOperationsIn | dict) -> models.PresentationProjectOut:
         'Apply Presentation Operations. POST /v1/presentation-workshop/projects/{project_id}/operations'
         return self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
@@ -42,6 +58,14 @@ class Presentation:
 class AsyncPresentation:
     def __init__(self, client):
         self._client = client
+
+    async def import_project(self, *, body: models.Body_create_import_v1_presentation_workshop_imports_post | dict, files: dict | list | None = None) -> models.PresentationProjectOut:
+        'Create Import. POST /v1/presentation-workshop/imports'
+        return await self._client._call('POST', '/v1/presentation-workshop/imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.PresentationProjectOut)
+
+    async def preview_import(self, *, body: models.Body_preview_import_v1_presentation_workshop_imports_preview_post | dict, files: dict | list | None = None) -> models.ImportPreview:
+        'Preview Import. POST /v1/presentation-workshop/imports/preview'
+        return await self._client._call('POST', '/v1/presentation-workshop/imports/preview', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.ImportPreview)
 
     async def list_projects(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.PresentationProjectList:
         'List Projects. GET /v1/presentation-workshop/projects'
@@ -66,6 +90,14 @@ class AsyncPresentation:
     async def export_pptx(self, *, project_id: str, body: models.PresentationExportIn | dict) -> AsyncDownload:
         'Export Pptx. POST /v1/presentation-workshop/projects/{project_id}/export'
         return await self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/export', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=Any)
+
+    async def preview_export(self, *, project_id: str, body: models.PresentationExportIn | dict) -> models.ExportPreview:
+        'Preview Export. POST /v1/presentation-workshop/projects/{project_id}/export/preview'
+        return await self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/export/preview', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ExportPreview)
+
+    async def export_file(self, *, project_id: str, format: Literal['json', 'fplppt'], body: models.PresentationExportIn | dict) -> AsyncDownload:
+        'Export File. POST /v1/presentation-workshop/projects/{project_id}/export/{format}'
+        return await self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/export/{format}', parameters=[('project_id', 'path', project_id), ('format', 'path', format)], body=body, media_type='application/json', response_type=Any)
 
     async def apply_presentation_operations(self, *, project_id: str, body: models.PresentationOperationsIn | dict) -> models.PresentationProjectOut:
         'Apply Presentation Operations. POST /v1/presentation-workshop/projects/{project_id}/operations'

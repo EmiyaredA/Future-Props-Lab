@@ -167,7 +167,9 @@ def _midpoint(points):
 
 def _connection_sites(shape, item):
     """Give custom outlines the same four explicit ports as the editor."""
-    properties = shape._element.spPr
+    properties = getattr(shape._element, "spPr", None)
+    if properties is None:
+        return
     geometry = properties.find(qn("a:custGeom"))
     if geometry is None and item.kind in {"triangle", "diamond", "arrow"}:
         w, h = item.width, item.height

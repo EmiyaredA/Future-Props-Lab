@@ -1,3 +1,4 @@
+import { containDialogComposition } from "./dialogKeyboard";
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -64,8 +65,9 @@ export default function CodeHighlightDialog({
   return createPortal(
     <div className="presentation-modal-backdrop">
       <div
+        onKeyDownCapture={containDialogComposition}
         ref={root}
-        className="presentation-code-dialog"
+        className="presentation-dialog presentation-dialog-large presentation-code-dialog"
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -80,88 +82,90 @@ export default function CodeHighlightDialog({
             <X size={18} />
           </button>
         </header>
-        <div className="presentation-code-settings">
-          <label>
-            代码语言
-            <CustomSelect
-              ariaLabel="高亮语言"
-              value={language}
-              options={codeLanguages}
-              onChange={setLanguage}
-            />
-          </label>
-          {!element && (
+        <div className="presentation-dialog-body">
+          <div className="presentation-code-settings">
             <label>
-              代码字号
+              代码语言
               <CustomSelect
-                ariaLabel="代码字号"
-                value={insertSize}
-                options={[14, 16, 18, 20, 24, 28].map((value) => ({
-                  value: String(value),
-                  label: `${value} px`,
-                }))}
-                onChange={setInsertSize}
+                ariaLabel="高亮语言"
+                value={language}
+                options={codeLanguages}
+                onChange={setLanguage}
               />
             </label>
-          )}
-          <label>
-            文字配色
-            <CustomSelect
-              ariaLabel="高亮配色"
-              value={palette}
-              options={[
-                { value: "light", label: "适合浅色背景" },
-                { value: "dark", label: "适合深色背景" },
-              ]}
-              onChange={(value) => setPalette(value as CodePalette)}
-            />
-          </label>
-        </div>
-        <p>
-          {element
-            ? "按代码所在区域的底色选择配色。应用后仍可编辑文字，修改代码后可再次应用高亮。背景和文本框尺寸保持原样。"
-            : "插入包含背景、语言标签和高亮代码的可编辑内容块。可整体移动，进入分组后分别编辑文字和外观。"}
-        </p>
-        <div className="presentation-code-columns">
-          <label>
-            代码内容
-            <textarea
-              aria-label="代码内容"
-              spellCheck={false}
-              value={source}
-              onChange={(event) => setSource(event.target.value)}
-            />
-          </label>
-          <div>
-            <h4>高亮预览</h4>
-            <div
-              className="presentation-code-preview"
-              aria-label="代码高亮预览"
-              style={{
-                background: codePalettes[palette].background,
-                color: codePalettes[palette].text,
-              }}
-            >
-              {result.paragraphs?.map((p, index) => (
-                <div key={index}>
-                  {p.runs.map((run, j) => (
-                    <span key={j} style={{ color: run.color }}>
-                      {run.text}
-                    </span>
-                  ))}
-                  {p.runs.every((r) => !r.text) ? <br /> : null}
-                </div>
-              ))}
+            {!element && (
+              <label>
+                代码字号
+                <CustomSelect
+                  ariaLabel="代码字号"
+                  value={insertSize}
+                  options={[14, 16, 18, 20, 24, 28].map((value) => ({
+                    value: String(value),
+                    label: `${value} px`,
+                  }))}
+                  onChange={setInsertSize}
+                />
+              </label>
+            )}
+            <label>
+              文字配色
+              <CustomSelect
+                ariaLabel="高亮配色"
+                value={palette}
+                options={[
+                  { value: "light", label: "适合浅色背景" },
+                  { value: "dark", label: "适合深色背景" },
+                ]}
+                onChange={(value) => setPalette(value as CodePalette)}
+              />
+            </label>
+          </div>
+          <p>
+            {element
+              ? "按代码所在区域的底色选择配色。应用后仍可编辑文字，修改代码后可再次应用高亮。背景和文本框尺寸保持原样。"
+              : "插入包含背景、语言标签和高亮代码的可编辑内容块。可整体移动，进入分组后分别编辑文字和外观。"}
+          </p>
+          <div className="presentation-code-columns">
+            <label>
+              代码内容
+              <textarea
+                aria-label="代码内容"
+                spellCheck={false}
+                value={source}
+                onChange={(event) => setSource(event.target.value)}
+              />
+            </label>
+            <div>
+              <h4>高亮预览</h4>
+              <div
+                className="presentation-code-preview"
+                aria-label="代码高亮预览"
+                style={{
+                  background: codePalettes[palette].background,
+                  color: codePalettes[palette].text,
+                }}
+              >
+                {result.paragraphs?.map((p, index) => (
+                  <div key={index}>
+                    {p.runs.map((run, j) => (
+                      <span key={j} style={{ color: run.color }}>
+                        {run.text}
+                      </span>
+                    ))}
+                    {p.runs.every((r) => !r.text) ? <br /> : null}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+          {result.error && <p role="alert">{result.error}</p>}
+          {!result.error && element && neededHeight > element.height + 1 && (
+            <p role="status">
+              当前字号需要约 {Math.ceil(neededHeight)} px
+              高度；应用后请加高文本框或拆分代码，并检查长行是否越界。
+            </p>
+          )}
         </div>
-        {result.error && <p role="alert">{result.error}</p>}
-        {!result.error && element && neededHeight > element.height + 1 && (
-          <p role="status">
-            当前字号需要约 {Math.ceil(neededHeight)} px
-            高度；应用后请加高文本框或拆分代码，并检查长行是否越界。
-          </p>
-        )}
         <footer>
           <button className="btn" onClick={onClose}>
             取消

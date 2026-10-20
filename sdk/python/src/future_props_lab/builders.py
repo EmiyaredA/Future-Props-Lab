@@ -51,7 +51,7 @@ def note_document(*paragraphs: str) -> dict:
 
 def presentation_document(*slides: dict) -> dict:
     return {
-        "version": 1,
+        "version": 3,
         "width": 1280,
         "height": 720,
         "slides": deepcopy(list(slides))

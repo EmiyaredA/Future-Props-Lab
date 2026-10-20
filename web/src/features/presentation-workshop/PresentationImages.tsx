@@ -1,3 +1,4 @@
+import { containDialogComposition } from "./dialogKeyboard";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Search, Upload } from "lucide-react";
@@ -49,8 +50,9 @@ export function PresentationImages({
       }}
     >
       <div
+        onKeyDownCapture={containDialogComposition}
         ref={root}
-        className="presentation-image-library presentation-media-picker"
+        className="presentation-dialog presentation-dialog-large presentation-image-library presentation-media-picker"
         role="dialog"
         aria-modal="true"
         aria-label={title === "图片与矢量素材" ? "选择文件库图片" : title}
@@ -106,7 +108,7 @@ export function PresentationImages({
                 </button>
               </p>
             ) : null}
-            <div className="presentation-image-grid">
+            <div className="presentation-image-grid presentation-dialog-body">
               {items.slice(page * 24, (page + 1) * 24).map((image) => (
                 <button
                   key={image.id}
@@ -166,9 +168,18 @@ export function PresentationImages({
             }}
           />
         ) : (
-          <div className="presentation-upload-zone">
+          <div className="presentation-upload-zone presentation-dialog-body">
             <Upload size={32} />
             <p>{uploadHint}</p>
+            {initialFile && (
+              <button
+                className="btn primary"
+                disabled={busy}
+                onClick={() => void onUpload?.(initialFile)}
+              >
+                插入{initialFile.name || "图片"}
+              </button>
+            )}
             <label className="btn presentation-file-input">
               选择图片
               <input

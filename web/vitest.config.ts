@@ -8,6 +8,10 @@ export default defineConfig({
   resolve: {
     dedupe: ["react", "react-dom"],
     alias: {
+      "#default-font/svg/default.js": resolve(
+        __dirname,
+        "../node_modules/@mathjax/mathjax-tex-font/mjs/svg/default.js",
+      ),
       "@app": resolve(__dirname, "src/app"),
       "@features": resolve(__dirname, "src/features"),
       "@generated": resolve(__dirname, "src/generated"),

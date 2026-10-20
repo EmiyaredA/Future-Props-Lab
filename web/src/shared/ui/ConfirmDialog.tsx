@@ -5,6 +5,7 @@ import "@shared/ui/confirm-dialog.css";
 
 export function ConfirmDialog({
   open,
+  className = "",
   title,
   description,
   confirmLabel = "确认",
@@ -16,6 +17,7 @@ export function ConfirmDialog({
   onConfirm,
 }: {
   open: boolean;
+  className?: string;
   title: string;
   description: ReactNode;
   confirmLabel?: string;
@@ -99,7 +101,7 @@ export function ConfirmDialog({
     >
       <div
         ref={dialogRef}
-        className="modal-card confirm-dialog"
+        className={`modal-card confirm-dialog ${className}`}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={titleId}

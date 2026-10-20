@@ -1,3 +1,4 @@
+import { canContainText } from "./textAdapter";
 import type { Editor } from "@tiptap/react";
 import { Ellipsis, LockKeyhole, SlidersHorizontal, Layers } from "lucide-react";
 import { PresentationMenu } from "./PresentationMenu";
@@ -103,7 +104,9 @@ export function SelectionToolbar({
         </button>
       ) : (
         <>
-          {element?.kind === "text" ? (
+          {element &&
+          (element.kind === "text" ||
+            (editor && canContainText(element.kind))) ? (
             <SelectionTextTools
               element={element}
               editor={editor}

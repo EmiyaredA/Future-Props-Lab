@@ -1,4 +1,8 @@
 import {
+  installPresentationWindows,
+  studioPathForNewWindow,
+} from "./presentation-windows";
+import {
   app,
   BrowserWindow,
   ipcMain,
@@ -356,20 +360,6 @@ function isTrustedStudioSender(event: {
   );
 }
 
-function studioPathForNewWindow(source?: BrowserWindow): string {
-  const current = source?.webContents.getURL();
-  if (current && pageOrigin() && isServiceUrl(current, pageOrigin())) {
-    try {
-      const url = new URL(current);
-      if (url.pathname && url.pathname !== "/docs.html")
-        return url.pathname + url.search + url.hash;
-    } catch {
-      /* fall through */
-    }
-  }
-  return "/";
-}
-
 async function openStudioWindow(pathname = "/"): Promise<BrowserWindow> {
   const win = makeWindow(false);
   if (state.phase === "ready" && pageOrigin())
@@ -394,7 +384,12 @@ function installApplicationMenu() {
       visible: false,
       click: () => {
         if (state.phase !== "ready" || quitting) return;
-        void openStudioWindow(studioPathForNewWindow(activeStudio()));
+        void openStudioWindow(
+          studioPathForNewWindow(
+            activeStudio()?.webContents.getURL(),
+            pageOrigin(),
+          ),
+        );
       },
     },
     ...(development
@@ -781,7 +776,9 @@ else {
       close: (win) => win.close(),
       "open-new-window": (win) => {
         if (state.phase !== "ready" || quitting) return;
-        openStudioWindow(studioPathForNewWindow(win));
+        openStudioWindow(
+          studioPathForNewWindow(win.webContents.getURL(), pageOrigin()),
+        );
       },
       "agent-status": () => agent?.status(),
       "agent-enable": () => agent?.setEnabled(true),
@@ -802,6 +799,16 @@ else {
         return action(win);
       });
     petController.installIpc();
+    installPresentationWindows({
+      trusted: isTrustedStudioSender,
+      create: () => makeWindow(true),
+      origin: pageOrigin,
+      track: trackStudio,
+      untrack: (window) => {
+        studioWindows.delete(window);
+        studioContexts.delete(window.webContents.id);
+      },
+    });
     ipcMain.handle("desktop:amadeus-open", (event) => {
       if (!isTrustedStudioSender(event)) throw new Error("拒绝非应用页面请求");
       return showAmadeus();

@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
-import { Extension } from "@tiptap/core";
+import { ParagraphStyle, ScriptMark } from "./editor/textExtensions";
+import Highlight from "@tiptap/extension-highlight";
 import StarterKit from "@tiptap/starter-kit";
 import {
   TextStyle,
@@ -14,47 +15,21 @@ import { fontFamily, fromEditor, toEditor } from "./textAdapter";
 import type { SlideElement, Paragraph } from "./types";
 import { elementStyle } from "./geometry";
 
-const ParagraphStyle = Extension.create({
-  name: "presentationParagraphStyle",
-  addGlobalAttributes() {
-    return [
-      {
-        types: ["paragraph"],
-        attributes: {
-          lineHeight: {
-            default: 1.3,
-            parseHTML: (el) => Number(el.dataset.lineHeight) || 1.3,
-            renderHTML: (attrs) => ({
-              "data-line-height": attrs.lineHeight,
-              style: `line-height: ${attrs.lineHeight}`,
-            }),
-          },
-          bullet: {
-            default: false,
-            parseHTML: (el) => el.dataset.bullet === "true",
-            renderHTML: (attrs) => ({ "data-bullet": String(attrs.bullet) }),
-          },
-          numbered: {
-            default: false,
-            parseHTML: (el) => el.dataset.numbered === "true",
-            renderHTML: (attrs) => ({
-              "data-numbered": String(attrs.numbered),
-            }),
-          },
-        },
-      },
-    ];
-  },
-});
 export function SlideTextEditor({
   element,
   onChange,
   onComposition,
   onReady,
   onExit,
+  localHistory = false,
 }: {
+  localHistory?: boolean;
   element: SlideElement;
-  onChange: (paragraphs: Paragraph[], format?: boolean) => void;
+  onChange: (
+    paragraphs: Paragraph[],
+    format?: boolean,
+    height?: number,
+  ) => void;
   onComposition: (active: boolean) => void;
   onReady: (editor: Editor | null) => void;
   onExit: () => void;
@@ -64,23 +39,26 @@ export function SlideTextEditor({
     onComposition,
     onReady,
     onExit,
+    element,
   });
-  callbacks.current = { onChange, onComposition, onReady, onExit };
+  callbacks.current = { onChange, onComposition, onReady, onExit, element };
   const fallback = element.paragraphs[0]?.runs[0] ?? defaultRun();
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        undoRedo: false,
+        undoRedo: localHistory ? {} : false,
         heading: false,
         blockquote: false,
         codeBlock: false,
-        code: false,
+        code: {},
         horizontalRule: false,
         bulletList: false,
         orderedList: false,
         listItem: false,
         link: false,
       }),
+      Highlight.configure({ multicolor: true }),
+      ScriptMark,
       TextStyle,
       Color,
       FontSize,
@@ -147,6 +125,17 @@ export function SlideTextEditor({
       callbacks.current.onChange(
         fromEditor(editor.getJSON(), fallback),
         !!transaction.getMeta("presentationFormat"),
+        callbacks.current.element.text_layout?.auto_fit &&
+          !callbacks.current.element.text_layout.vertical
+          ? Math.max(
+              1,
+              Math.min(
+                10000,
+                editor.view.dom.scrollHeight +
+                  2 * (callbacks.current.element.text_layout.padding ?? 8),
+              ),
+            )
+          : undefined,
       ),
   });
   useEffect(() => {
@@ -168,11 +157,33 @@ export function SlideTextEditor({
     )
       editor.commands.setContent(json, { emitUpdate: false });
   }, [editor, element.paragraphs, fallback]);
+  useLayoutEffect(() => {
+    if (
+      !editor ||
+      !element.text_layout?.auto_fit ||
+      element.text_layout.vertical ||
+      editor.view.composing
+    )
+      return;
+    const height = Math.max(
+      1,
+      Math.min(
+        10000,
+        editor.view.dom.scrollHeight + 2 * element.text_layout.padding,
+      ),
+    );
+    if (Math.abs(height - element.height) > 1)
+      callbacks.current.onChange(element.paragraphs, false, height);
+  }, [editor, element.text_layout, element.height, element.paragraphs]);
   return (
     <div
       className="presentation-text-editor"
+      data-auto-fit={!!element.text_layout?.auto_fit}
       style={{
         ...elementStyle(element),
+        padding: element.text_layout?.padding ?? 8,
+        letterSpacing: element.text_layout?.letter_spacing ?? 0,
+        writingMode: element.text_layout?.vertical ? "vertical-rl" : undefined,
         fontSize: fallback.size,
         color: fallback.color,
         fontFamily: fontFamily(fallback.font),

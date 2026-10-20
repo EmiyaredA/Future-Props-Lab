@@ -26,6 +26,10 @@ export type DesktopBridge = {
   minimize: () => Promise<void>;
   close: () => Promise<void>;
   openNewWindow: () => Promise<void>;
+  openPresentationAudience?: (
+    projectId: string,
+    sessionId: string,
+  ) => Promise<void>;
   openPet?: (projectId: string) => Promise<void>;
   closePet?: () => Promise<void>;
   petStatus?: () => Promise<{ projectId: string | null; visible: boolean }>;

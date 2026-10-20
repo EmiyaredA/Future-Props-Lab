@@ -33,6 +33,8 @@ const summary = () => ({
   id: "project",
   title: "测试文稿",
   slide_count: 1,
+  width: 1280,
+  height: 720,
   first_slide: newSlide("cover"),
   updated_at: "2026-09-10T00:00:00Z",
   revision: 1,

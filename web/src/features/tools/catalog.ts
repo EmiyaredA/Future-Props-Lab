@@ -5,6 +5,7 @@ import {
   Calculator,
   Clock3,
   Diff,
+  Download,
   Film,
   MessageSquareText,
   Palette,
@@ -61,6 +62,15 @@ export const TOOLS: ToolDefinition[] = [
     tags: ["视频", "截帧", "图片", "格式", "转换"],
     icon: Film,
     target: { kind: "internal", path: "/tools/video-frame-exporter" },
+  },
+  {
+    id: "video-downloader",
+    name: "视频下载",
+    description: "从抖音或哔哩哔哩链接下载视频到本机或文件库",
+    category: "data",
+    tags: ["视频", "下载", "抖音", "B站", "转换"],
+    icon: Download,
+    target: { kind: "internal", path: "/tools/video-downloader" },
   },
   {
     id: "json-formatter",

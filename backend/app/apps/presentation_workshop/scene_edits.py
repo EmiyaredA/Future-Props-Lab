@@ -17,6 +17,10 @@ def group_members(slide, root):
 
 
 def prune(slide, removed):
+    slide["animations"] = [a for a in slide.get("animations", []) if a["element_id"] not in removed]
+    for annotation in slide.get("annotations", []):
+        if annotation.get("element_id") in removed:
+            annotation["element_id"] = None
     slide["connections"] = [
         c
         for c in slide["connections"]
@@ -69,6 +73,14 @@ def remap(slide, namespace, *, offset=0):
             point["y"] += offset
     for info in result["infographics"]:
         info["group_id"] = mapping[info["group_id"]]
+    for index, animation in enumerate(result.get("animations", [])):
+        animation["id"] = f"{namespace[:40]}-a{index}"
+        animation["element_id"] = mapping[animation["element_id"]]
+    for index, annotation in enumerate(result.get("annotations", [])):
+        annotation["id"] = f"{namespace[:36]}-n{index}"
+        annotation["element_id"] = mapping.get(annotation.get("element_id"))
+        for reply_index, reply in enumerate(annotation["replies"]):
+            reply["id"] = f"{namespace[:30]}-n{index}r{reply_index}"
     return result
 
 
@@ -79,7 +91,15 @@ def apply_fragment(slide, op):
     if op.action not in {"insert", "update"} or op.fragment is None:
         raise OperationError("信息图片段需要 insert/update 和 fragment", "invalid_fragment")
     fragment = op.fragment.model_dump(mode="json")
-    if fragment["reference"] or fragment["image_asset_id"] or fragment["id"] != op.id:
+    if (
+        fragment["reference"]
+        or fragment["image_asset_id"]
+        or fragment["id"] != op.id
+        or fragment.get("background_style")
+        or fragment.get("transition")
+        or fragment.get("section")
+        or fragment.get("notes_rich")
+    ):
         raise OperationError("片段 ID 无效或包含页面参考图／图像版本", "invalid_fragment")
     roots = [g for g in fragment["groups"] if g["parent_id"] is None]
     if len(roots) != 1 or roots[0]["id"] != op.id:
@@ -93,5 +113,5 @@ def apply_fragment(slide, op):
         edge["layer"] = len(slide["elements"]) + min(
             len(fragment["elements"]), edge.get("layer", 0)
         )
-    for kind in COLLECTIONS:
-        slide[kind].extend(fragment[kind])
+    for kind in (*COLLECTIONS, "animations", "annotations"):
+        slide.setdefault(kind, []).extend(fragment.get(kind, []))

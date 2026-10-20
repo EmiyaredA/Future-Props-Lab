@@ -1,3 +1,4 @@
+import { mathFontData } from "./mathFontData";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "node:path";
@@ -16,10 +17,14 @@ export default defineConfig(({ mode }) => ({
     mode === "desktop"
       ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
       : undefined,
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), mathFontData()],
   resolve: {
     dedupe: ["react", "react-dom"],
     alias: {
+      "#default-font/svg/default.js": resolve(
+        __dirname,
+        "../node_modules/@mathjax/mathjax-tex-font/mjs/svg/default.js",
+      ),
       "@app": resolve(__dirname, "src/app"),
       "@features": resolve(__dirname, "src/features"),
       "@generated": resolve(__dirname, "src/generated"),
@@ -33,6 +38,11 @@ export default defineConfig(({ mode }) => ({
   // Desktop defers full reloads for unsaved drafts. A late optimizer rebuild would
   // otherwise mix React generations and crash newly loaded NodeViews.
   optimizeDeps: {
+    exclude: [
+      "@mathjax/src",
+      "@mathjax/mathjax-newcm-font",
+      "@mathjax/mathjax-tex-font",
+    ],
     include: [
       "react",
       "react-dom/client",
@@ -40,6 +50,11 @@ export default defineConfig(({ mode }) => ({
       "ag-psd",
       "@tiptap/extension-code-block",
       "lowlight",
+      "echarts/core",
+      "echarts/charts",
+      "echarts/renderers",
+      "echarts/components",
+      "html-to-image",
     ],
   },
   build: {
@@ -54,6 +69,15 @@ export default defineConfig(({ mode }) => ({
       },
       output: {
         manualChunks(id) {
+          if (id.includes("/node_modules/@mathjax/mathjax-tex-font/")) {
+            if (/\/mjs\/svg\/(?!(?:default|delimiters)\.js)[^/]+\.js$/.test(id))
+              return `formula-glyph-${id.split("/").at(-1)!.replace(".js", "")}`;
+            return "formula-engine";
+          }
+          if (id.includes("/node_modules/@mathjax/src/mjs/"))
+            return "formula-engine";
+          if (id.includes("/node_modules/echarts/")) return "chart-engine";
+          if (id.includes("/node_modules/zrender/")) return "chart-svg";
           if (
             id.includes(
               "/node_modules/@antv/infographic/esm/designs/structures/",

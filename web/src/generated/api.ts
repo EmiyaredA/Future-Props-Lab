@@ -5284,6 +5284,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/presentation-workshop/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Import */
+        post: operations["create_import_v1_presentation_workshop_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Import */
+        post: operations["preview_import_v1_presentation_workshop_imports_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/presentation-workshop/projects": {
         parameters: {
             query?: never;
@@ -5332,6 +5366,40 @@ export interface paths {
         put?: never;
         /** Export Pptx */
         post: operations["export_pptx_v1_presentation_workshop_projects__project_id__export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/projects/{project_id}/export/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Export */
+        post: operations["preview_export_v1_presentation_workshop_projects__project_id__export_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/projects/{project_id}/export/{format}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export File */
+        post: operations["export_file_v1_presentation_workshop_projects__project_id__export__format__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6779,6 +6847,74 @@ export interface paths {
         put?: never;
         /** Record Use */
         post: operations["record_use_v1_tool_navigation_tools__tool_id__use_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/video-download/deps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Video Download Deps */
+        get: operations["get_video_download_deps_v1_tool_navigation_video_download_deps_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/video-download/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Video Download Job */
+        post: operations["post_video_download_job_v1_tool_navigation_video_download_jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/video-download/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Video Download Job */
+        get: operations["get_video_download_job_v1_tool_navigation_video_download_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/video-download/jobs/{job_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Video Download File */
+        get: operations["download_video_download_file_v1_tool_navigation_video_download_jobs__job_id__file_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8737,6 +8873,19 @@ export interface components {
             };
             structure: components["schemas"]["Structure"];
         };
+        /** BinaryStatus */
+        BinaryStatus: {
+            /** Hint */
+            hint?: string | null;
+            /** Name */
+            name: string;
+            /** Ok */
+            ok: boolean;
+            /** Path */
+            path?: string | null;
+            /** Version */
+            version?: string | null;
+        };
         /** Body_add_skill_version_v1_integrations_skills__skill_id__versions_post */
         Body_add_skill_version_v1_integrations_skills__skill_id__versions_post: {
             /** Expected Revision */
@@ -8779,6 +8928,16 @@ export interface components {
              * @default {}
              */
             stateBindings: string;
+        };
+        /** Body_create_import_v1_presentation_workshop_imports_post */
+        Body_create_import_v1_presentation_workshop_imports_post: {
+            /**
+             * Allow Lossy
+             * @default false
+             */
+            allow_lossy: boolean;
+            /** Upload */
+            upload: string;
         };
         /** Body_create_skill_v1_integrations_skills_post */
         Body_create_skill_v1_integrations_skills_post: {
@@ -8859,6 +9018,11 @@ export interface components {
         Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post: {
             /** File */
             file: string;
+        };
+        /** Body_preview_import_v1_presentation_workshop_imports_preview_post */
+        Body_preview_import_v1_presentation_workshop_imports_preview_post: {
+            /** Upload */
+            upload: string;
         };
         /** Body_put_avatar_v1_account_profile_avatar_put */
         Body_put_avatar_v1_account_profile_avatar_put: {
@@ -9829,6 +9993,17 @@ export interface components {
         ConversionIn: {
             table: components["schemas"]["TableSpec"];
         };
+        /** ConversionIssue */
+        ConversionIssue: {
+            /** Code */
+            code: string;
+            /** Element Id */
+            element_id?: string | null;
+            /** Message */
+            message: string;
+            /** Slide Id */
+            slide_id?: string | null;
+        };
         /** ConversionOut */
         ConversionOut: {
             /** Affected Records */
@@ -10644,6 +10819,13 @@ export interface components {
              * @enum {string}
              */
             status: "queued" | "running" | "completed" | "failed" | "cancelled";
+        };
+        /** ExportPreview */
+        ExportPreview: {
+            /** Issues */
+            issues: components["schemas"]["ConversionIssue"][];
+            /** Revision */
+            revision: number;
         };
         /** ExternalConnectionInput */
         ExternalConnectionInput: {
@@ -14487,6 +14669,18 @@ export interface components {
              */
             size: string;
         };
+        /** ImportPreview */
+        ImportPreview: {
+            document: components["schemas"]["PresentationDocument"];
+            /** Issues */
+            issues?: components["schemas"]["ConversionIssue"][];
+            /** Preview Assets */
+            preview_assets?: {
+                [key: string]: string;
+            };
+            /** Title */
+            title: string;
+        };
         /** ImportSourceListOut */
         ImportSourceListOut: {
             /** Items */
@@ -17016,6 +17210,163 @@ export interface components {
             /** Y */
             y: number;
         };
+        /** PresentationAnimation */
+        PresentationAnimation: {
+            /**
+             * Delay
+             * @default 0
+             */
+            delay: number;
+            /**
+             * Direction
+             * @default none
+             * @enum {string}
+             */
+            direction: "none" | "left" | "right" | "top" | "bottom";
+            /**
+             * Duration
+             * @default 800
+             */
+            duration: number;
+            /**
+             * Effect
+             * @default fade
+             * @enum {string}
+             */
+            effect: "fade" | "slide" | "zoom" | "rotate" | "bounce" | "flip" | "back" | "lightSpeed" | "pulse" | "shake" | "swing" | "tada" | "wobble" | "heartBeat";
+            /** Element Id */
+            element_id: string;
+            /** Id */
+            id: string;
+            /**
+             * Trigger
+             * @default click
+             * @enum {string}
+             */
+            trigger: "click" | "with_previous" | "after_previous";
+            /**
+             * Type
+             * @default in
+             * @enum {string}
+             */
+            type: "in" | "out" | "emphasis";
+        };
+        /** PresentationAnnotation */
+        PresentationAnnotation: {
+            /** Element Id */
+            element_id?: string | null;
+            /** Id */
+            id: string;
+            /** Replies */
+            replies?: components["schemas"]["PresentationReply"][];
+            /**
+             * Resolved
+             * @default false
+             */
+            resolved: boolean;
+            /** Text */
+            text: string;
+        };
+        /** PresentationCell */
+        PresentationCell: {
+            /**
+             * Align
+             * @default left
+             * @enum {string}
+             */
+            align: "left" | "center" | "right";
+            /**
+             * Bold
+             * @default false
+             */
+            bold: boolean;
+            /**
+             * Col Span
+             * @default 1
+             */
+            col_span: number;
+            /**
+             * Color
+             * @default #17334A
+             */
+            color: string;
+            /**
+             * Covered
+             * @default false
+             */
+            covered: boolean;
+            /**
+             * Fill
+             * @default #FFFFFF
+             */
+            fill: string;
+            /**
+             * Italic
+             * @default false
+             */
+            italic: boolean;
+            /**
+             * Row Span
+             * @default 1
+             */
+            row_span: number;
+            /**
+             * Strike
+             * @default false
+             */
+            strike: boolean;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Underline
+             * @default false
+             */
+            underline: boolean;
+        };
+        /** PresentationChart */
+        PresentationChart: {
+            /**
+             * Axis Color
+             * @default #56677A
+             */
+            axis_color: string;
+            /** Categories */
+            categories: string[];
+            /**
+             * Colors
+             * @default [
+             *       "#5474E5",
+             *       "#18A999",
+             *       "#F0AD4E"
+             *     ]
+             */
+            colors: string[];
+            /**
+             * Grid Color
+             * @default #DDE4EB
+             */
+            grid_color: string;
+            /** Series */
+            series: components["schemas"]["PresentationSeries"][];
+            /**
+             * Smooth
+             * @default false
+             */
+            smooth: boolean;
+            /**
+             * Stacked
+             * @default false
+             */
+            stacked: boolean;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "column" | "bar" | "line" | "area" | "scatter" | "pie" | "ring" | "radar";
+        };
         /** PresentationConnection */
         PresentationConnection: {
             /**
@@ -17095,28 +17446,23 @@ export interface components {
         };
         /** PresentationDocument */
         PresentationDocument: {
-            /**
-             * Height
-             * @constant
-             */
-            height: 720;
+            /** Height */
+            height: number;
             /** Slides */
             slides: components["schemas"]["PresentationSlide"][];
             /**
              * Version
-             * @constant
+             * @enum {integer}
              */
-            version: 2;
-            /**
-             * Width
-             * @constant
-             */
-            width: 1280;
+            version: 2 | 3;
+            /** Width */
+            width: number;
         };
         /** PresentationElement */
         PresentationElement: {
             /** Asset Id */
             asset_id: string | null;
+            chart?: components["schemas"]["PresentationChart"] | null;
             /** Corner Radius */
             corner_radius?: number | null;
             crop: components["schemas"]["PresentationCrop"];
@@ -17143,8 +17489,14 @@ export interface components {
              * @default false
              */
             flip_y: boolean;
+            formula?: components["schemas"]["PresentationFormula"] | null;
             /** Height */
             height: number;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
             /** Id */
             id: string;
             /**
@@ -17152,22 +17504,33 @@ export interface components {
              * @default false
              */
             image_border: boolean;
+            image_effects?: components["schemas"]["PresentationImageEffects"] | null;
             /**
              * Kind
              * @enum {string}
              */
-            kind: "text" | "image" | "vector" | "rect" | "roundRect" | "ellipse" | "triangle" | "diamond" | "arrow" | "line" | "rightTriangle" | "pentagon" | "hexagon" | "star" | "parallelogram" | "trapezoid" | "leftArrow" | "upArrow" | "downArrow" | "doubleArrow" | "callout" | "roundCallout" | "ellipseCallout";
+            kind: "text" | "image" | "vector" | "rect" | "roundRect" | "ellipse" | "triangle" | "diamond" | "arrow" | "line" | "rightTriangle" | "pentagon" | "hexagon" | "star" | "parallelogram" | "trapezoid" | "leftArrow" | "upArrow" | "downArrow" | "doubleArrow" | "callout" | "roundCallout" | "ellipseCallout" | "table" | "chart" | "formula" | "video" | "audio" | "path";
+            link?: components["schemas"]["PresentationLink"] | null;
             /** Locked */
             locked: boolean;
+            media?: components["schemas"]["PresentationMedia"] | null;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
             /**
              * Opacity
              * @default 1
              */
             opacity: number;
+            paint?: components["schemas"]["PresentationPaint"] | null;
             /** Paragraphs */
             paragraphs: components["schemas"]["PresentationParagraph"][];
+            path?: components["schemas"]["PresentationPath"] | null;
             /** Rotation */
             rotation: number;
+            shadow?: components["schemas"]["PresentationShadow"] | null;
             /**
              * Start Arrow
              * @default none
@@ -17184,6 +17547,8 @@ export interface components {
             stroke_dash: "solid" | "dash" | "dot";
             /** Stroke Width */
             stroke_width: number;
+            table?: components["schemas"]["PresentationTable"] | null;
+            text_layout?: components["schemas"]["PresentationTextLayout"] | null;
             /** Vector Color */
             vector_color?: string | null;
             /** Width */
@@ -17222,16 +17587,36 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
         };
+        /** PresentationFormula */
+        PresentationFormula: {
+            /**
+             * Color
+             * @default #17334A
+             */
+            color: string;
+            /** Latex */
+            latex: string;
+            /**
+             * Size
+             * @default 36
+             */
+            size: number;
+        };
         /**
          * PresentationFragment
          * @description Native fragment rooted at id; reference and archived slide image must be empty.
          */
         PresentationFragment: {
+            /** Animations */
+            animations?: components["schemas"]["PresentationAnimation"][];
+            /** Annotations */
+            annotations?: components["schemas"]["PresentationAnnotation"][];
             /**
              * Background
              * @default #FFFFFF
              */
             background: string;
+            background_style?: components["schemas"]["PresentationPaint"] | null;
             /** Connections */
             connections?: components["schemas"]["PresentationConnection"][];
             /** Elements */
@@ -17252,7 +17637,12 @@ export interface components {
              * @default
              */
             notes: string;
+            /** Notes Rich */
+            notes_rich?: components["schemas"]["PresentationParagraph"][] | null;
             reference?: components["schemas"]["PresentationReference"] | null;
+            /** Section */
+            section?: string;
+            transition?: components["schemas"]["PresentationTransition"] | null;
         };
         /** PresentationGroup */
         PresentationGroup: {
@@ -17267,6 +17657,42 @@ export interface components {
             name: string;
             /** Parent Id */
             parent_id?: string | null;
+        };
+        /** PresentationImageEffects */
+        PresentationImageEffects: {
+            /**
+             * Blur
+             * @default 0
+             */
+            blur: number;
+            /**
+             * Brightness
+             * @default 1
+             */
+            brightness: number;
+            /**
+             * Contrast
+             * @default 1
+             */
+            contrast: number;
+            /**
+             * Crop Shape
+             * @default rect
+             * @enum {string}
+             */
+            crop_shape: "rect" | "ellipse" | "triangle" | "diamond";
+            /**
+             * Grayscale
+             * @default 0
+             */
+            grayscale: number;
+            /**
+             * Saturation
+             * @default 1
+             */
+            saturation: number;
+            /** Tint */
+            tint?: string | null;
         };
         /** PresentationInfographic */
         PresentationInfographic: {
@@ -17287,6 +17713,36 @@ export interface components {
              */
             template: string;
         };
+        /** PresentationLink */
+        PresentationLink: {
+            /** Target */
+            target: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "web" | "slide";
+        };
+        /** PresentationMedia */
+        PresentationMedia: {
+            /**
+             * Autoplay
+             * @default false
+             */
+            autoplay: boolean;
+            /**
+             * Icon Color
+             * @default #5474E5
+             */
+            icon_color: string;
+            /**
+             * Loop
+             * @default false
+             */
+            loop: boolean;
+            /** Poster Asset Id */
+            poster_asset_id?: string | null;
+        };
         /** PresentationOperationsIn */
         PresentationOperationsIn: {
             /** Expected Revision */
@@ -17295,6 +17751,38 @@ export interface components {
             operations: components["schemas"]["PresentationEntityOperation"][];
             /** Request Id */
             request_id: string;
+        };
+        /** PresentationPaint */
+        PresentationPaint: {
+            /**
+             * Angle
+             * @default 90
+             */
+            angle: number;
+            /** Asset Id */
+            asset_id?: string | null;
+            /**
+             * Color
+             * @default #FFFFFF
+             */
+            color: string;
+            /**
+             * End Color
+             * @default #5474E5
+             */
+            end_color: string;
+            /**
+             * Fit
+             * @default cover
+             * @enum {string}
+             */
+            fit: "cover" | "contain" | "repeat";
+            /**
+             * Type
+             * @default solid
+             * @enum {string}
+             */
+            type: "solid" | "linear" | "radial" | "image";
         };
         /** PresentationParagraph */
         PresentationParagraph: {
@@ -17305,6 +17793,10 @@ export interface components {
             align: "left" | "center" | "right";
             /** Bullet */
             bullet: boolean;
+            /** First Line Indent */
+            first_line_indent?: number;
+            /** Indent */
+            indent?: number;
             /** Line Height */
             line_height: number;
             /**
@@ -17315,6 +17807,32 @@ export interface components {
             numbered: boolean;
             /** Runs */
             runs: components["schemas"]["PresentationRun"][];
+            /** Space After */
+            space_after?: number;
+            /** Space Before */
+            space_before?: number;
+        };
+        /** PresentationPath */
+        PresentationPath: {
+            /**
+             * Closed
+             * @default false
+             */
+            closed: boolean;
+            /** Points */
+            points: components["schemas"]["PresentationPathPoint"][];
+            /**
+             * Smooth
+             * @default false
+             */
+            smooth: boolean;
+        };
+        /** PresentationPathPoint */
+        PresentationPathPoint: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /** PresentationPoint */
         PresentationPoint: {
@@ -17367,6 +17885,11 @@ export interface components {
         /** PresentationProjectSummary */
         PresentationProjectSummary: {
             first_slide: components["schemas"]["PresentationSlide"];
+            /**
+             * Height
+             * @default 720
+             */
+            height: number;
             /** Id */
             id: string;
             /** Revision */
@@ -17380,6 +17903,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Width
+             * @default 1280
+             */
+            width: number;
         };
         /** PresentationReference */
         PresentationReference: {
@@ -17402,10 +17930,19 @@ export interface components {
              */
             visible: boolean;
         };
+        /** PresentationReply */
+        PresentationReply: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+        };
         /** PresentationRun */
         PresentationRun: {
             /** Bold */
             bold: boolean;
+            /** Code */
+            code?: boolean;
             /** Color */
             color: string;
             /**
@@ -17413,19 +17950,68 @@ export interface components {
              * @enum {string}
              */
             font: "Microsoft YaHei" | "Arial" | "Consolas";
+            /** Highlight */
+            highlight?: string | null;
             /** Italic */
             italic: boolean;
+            /**
+             * Script
+             * @enum {string}
+             */
+            script?: "normal" | "sup" | "sub";
             /** Size */
             size: number;
+            /** Strike */
+            strike?: boolean;
             /** Text */
             text: string;
             /** Underline */
             underline: boolean;
         };
+        /** PresentationSeries */
+        PresentationSeries: {
+            /** Name */
+            name: string;
+            /** Values */
+            values: number[];
+        };
+        /** PresentationShadow */
+        PresentationShadow: {
+            /**
+             * Blur
+             * @default 8
+             */
+            blur: number;
+            /**
+             * Color
+             * @default #000000
+             */
+            color: string;
+            /**
+             * Opacity
+             * @default 0.25
+             */
+            opacity: number;
+            /**
+             * X
+             * @default 4
+             */
+            x: number;
+            /**
+             * Y
+             * @default 4
+             */
+            y: number;
+        };
         /** PresentationSlide */
         PresentationSlide: {
+            /** Animations */
+            animations?: components["schemas"]["PresentationAnimation"][];
+            /** Annotations */
+            annotations?: components["schemas"]["PresentationAnnotation"][];
             /** Background */
             background: string;
+            background_style?: components["schemas"]["PresentationPaint"] | null;
             /** Connections */
             connections?: components["schemas"]["PresentationConnection"][];
             /** Elements */
@@ -17443,7 +18029,79 @@ export interface components {
             infographics?: components["schemas"]["PresentationInfographic"][];
             /** Notes */
             notes: string;
+            /** Notes Rich */
+            notes_rich?: components["schemas"]["PresentationParagraph"][] | null;
             reference?: components["schemas"]["PresentationReference"] | null;
+            /** Section */
+            section?: string;
+            transition?: components["schemas"]["PresentationTransition"] | null;
+        };
+        /** PresentationTable */
+        PresentationTable: {
+            /**
+             * Border Color
+             * @default #CDD5DE
+             */
+            border_color: string;
+            /**
+             * Border Width
+             * @default 1
+             */
+            border_width: number;
+            /** Column Widths */
+            column_widths: number[];
+            /**
+             * Font Size
+             * @default 20
+             */
+            font_size: number;
+            /** Rows */
+            rows: components["schemas"]["PresentationCell"][][];
+        };
+        /** PresentationTextLayout */
+        PresentationTextLayout: {
+            /**
+             * Align
+             * @default top
+             * @enum {string}
+             */
+            align: "top" | "middle" | "bottom";
+            /**
+             * Auto Fit
+             * @default false
+             */
+            auto_fit: boolean;
+            /**
+             * Letter Spacing
+             * @default 0
+             */
+            letter_spacing: number;
+            /**
+             * Padding
+             * @default 8
+             */
+            padding: number;
+            /**
+             * Vertical
+             * @default false
+             */
+            vertical: boolean;
+        };
+        /** PresentationTransition */
+        PresentationTransition: {
+            /** Advance After */
+            advance_after?: number | null;
+            /**
+             * Duration
+             * @default 600
+             */
+            duration: number;
+            /**
+             * Effect
+             * @default none
+             * @enum {string}
+             */
+            effect: "none" | "fade" | "slideX" | "slideY" | "slideX3D" | "slideY3D" | "rotate" | "scaleX" | "scaleY" | "scale" | "scaleReverse" | "random";
         };
         /** ProjectCreateIn */
         ProjectCreateIn: {
@@ -20218,6 +20876,90 @@ export interface components {
              * @default true
              */
             supports_auto_duration: boolean;
+        };
+        /** VideoDownloadAssetOut */
+        VideoDownloadAssetOut: {
+            /** Byte Size */
+            byte_size: number;
+            /** Display Name */
+            display_name: string;
+            /** Id */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Original Filename */
+            original_filename: string;
+        };
+        /** VideoDownloadDepsOut */
+        VideoDownloadDepsOut: {
+            ffmpeg: components["schemas"]["BinaryStatus"];
+            /** Ready */
+            ready: boolean;
+            yt_dlp: components["schemas"]["BinaryStatus"];
+        };
+        /** VideoDownloadJobCreate */
+        VideoDownloadJobCreate: {
+            /**
+             * Cookies From Browser
+             * @default chrome
+             */
+            cookies_from_browser: string;
+            /** Folder Id */
+            folder_id?: string | null;
+            /**
+             * Quality
+             * @default best
+             */
+            quality: string;
+            /**
+             * Save To Disk
+             * @default true
+             */
+            save_to_disk: boolean;
+            /**
+             * Save To Library
+             * @default true
+             */
+            save_to_library: boolean;
+            /** Url */
+            url: string;
+            /**
+             * Use Browser Cookies
+             * @default false
+             */
+            use_browser_cookies: boolean;
+        };
+        /** VideoDownloadJobOut */
+        VideoDownloadJobOut: {
+            asset?: components["schemas"]["VideoDownloadAssetOut"] | null;
+            /** Byte Size */
+            byte_size?: number | null;
+            /** Cookies From Browser */
+            cookies_from_browser: string | null;
+            /** Created At */
+            created_at: string;
+            /** Error */
+            error?: string | null;
+            /** Filename */
+            filename?: string | null;
+            /** Id */
+            id: string;
+            /** Quality */
+            quality: string;
+            /** Save To Disk */
+            save_to_disk: boolean;
+            /** Save To Library */
+            save_to_library: boolean;
+            /** Status */
+            status: string;
+            /** Title */
+            title?: string | null;
+            /** Updated At */
+            updated_at: string;
+            /** Url */
+            url: string;
+            /** Use Browser Cookies */
+            use_browser_cookies: boolean;
         };
         /** VideoEditorAssetBakeCreateIn */
         VideoEditorAssetBakeCreateIn: {
@@ -34988,6 +35730,72 @@ export interface operations {
             };
         };
     };
+    create_import_v1_presentation_workshop_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_import_v1_presentation_workshop_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_import_v1_presentation_workshop_imports_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_preview_import_v1_presentation_workshop_imports_preview_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_projects_v1_presentation_workshop_projects_get: {
         parameters: {
             query?: {
@@ -35177,6 +35985,78 @@ export interface operations {
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_export_v1_presentation_workshop_projects__project_id__export_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationExportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_file_v1_presentation_workshop_projects__project_id__export__format__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                format: "json" | "fplppt";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationExportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "application/zip": string;
                 };
             };
             /** @description Validation Error */
@@ -38545,6 +39425,121 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolNavigationItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_video_download_deps_v1_tool_navigation_video_download_deps_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoDownloadDepsOut"];
+                };
+            };
+        };
+    };
+    post_video_download_job_v1_tool_navigation_video_download_jobs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoDownloadJobCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoDownloadJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_video_download_job_v1_tool_navigation_video_download_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoDownloadJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_video_download_file_v1_tool_navigation_video_download_jobs__job_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
                 };
             };
             /** @description Validation Error */

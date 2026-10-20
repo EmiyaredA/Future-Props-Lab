@@ -9,6 +9,7 @@ from threading import BoundedSemaphore
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from app.apps.presentation_workshop.asset_references import document_references, rendered_asset_ids
 from app.apps.presentation_workshop.pptx_export import write_pptx
 from app.apps.presentation_workshop.projects import PresentationError, Presentations
 from app.apps.presentation_workshop.schemas.document import PresentationProjectOut
@@ -30,7 +31,9 @@ class PresentationExport:
         shutil.rmtree(self.root, ignore_errors=True)
 
 
-def build_export(snapshot: PresentationProjectOut, assets: dict[str, Path]) -> PresentationExport:
+def build_export(
+    snapshot: PresentationProjectOut, assets: dict[str, Path], media_types=None
+) -> PresentationExport:
     if not EXPORT_SLOTS.acquire(blocking=False):
         raise PresentationError("导出繁忙，请稍后重试", 429, "export_busy")
     try:
@@ -44,18 +47,37 @@ def build_export(snapshot: PresentationProjectOut, assets: dict[str, Path]) -> P
         snapshot.title.replace("/", "_").replace("\\", "_") + ".pptx",
     )
     try:
-        vectors = [e for s in snapshot.document.slides for e in s.elements if e.kind == "vector"]
+        vectors = [
+            e
+            for s in snapshot.document.slides
+            for e in s.elements
+            if not e.hidden and e.kind in {"vector", "formula"}
+        ]
         pixels = sum(
             e.width * e.height * min(2, 4096 / max(e.width, e.height)) ** 2 for e in vectors
         )
         if len(vectors) > 512 or pixels > 64_000_000:
             raise PresentationError("导出矢量兼容图总量过大，请拆分文稿", 413, "export_too_large")
         total = normalized_total = 0
+        media_types = media_types or {}
+        media_ids = {
+            e.asset_id
+            for s in snapshot.document.slides
+            for e in s.elements
+            if e.kind in {"audio", "video"}
+        }
         images = {}
+        rendered_ids = rendered_asset_ids(snapshot.document)
+        excluded_ids = set(document_references(snapshot.document)) - rendered_ids
         for asset_id, source in assets.items():
+            if asset_id in excluded_ids:
+                continue
             # Copy a bounded private snapshot, so concurrent library changes cannot
             # alter a file while Pillow or the PPTX writer is reading it.
-            private = root / f"{asset_id}.source"
+            import mimetypes
+
+            suffix = mimetypes.guess_extension(media_types.get(asset_id, "")) or ".source"
+            private = root / f"{asset_id}{suffix}"
             with source.open("rb") as incoming, private.open("wb") as output:
                 while chunk := incoming.read(1024 * 1024):
                     total += len(chunk)
@@ -64,7 +86,12 @@ def build_export(snapshot: PresentationProjectOut, assets: dict[str, Path]) -> P
                             "导出图片总量不能超过 100 MiB", 413, "export_too_large"
                         )
                     output.write(chunk)
-            if private.read_bytes()[:128].lstrip().startswith(b"<"):
+            if asset_id in media_ids:
+                images[asset_id] = private
+                continue
+            with private.open("rb") as head:
+                is_svg = head.read(128).lstrip().startswith(b"<")
+            if is_svg:
                 import resvg_py
 
                 vector = normalize_svg(private.read_text())
@@ -93,7 +120,7 @@ def build_export(snapshot: PresentationProjectOut, assets: dict[str, Path]) -> P
             normalized_total += images[asset_id].stat().st_size
             if normalized_total > MAX_EXPORT_BYTES:
                 raise PresentationError("转换后的图片总量不能超过 100 MiB", 413, "export_too_large")
-        write_pptx(snapshot.document, images, result.path)
+        write_pptx(snapshot.document, images, result.path, media_types=media_types)
         return result
     except PresentationError:
         result.cleanup()
@@ -117,13 +144,14 @@ async def export_project(
     if snapshot.revision != revision:
         raise RevisionConflictError(revision, snapshot.revision, snapshot.model_dump(mode="json"))
     rows = await projects.assets(snapshot.document)
-    rendered_ids = {e.asset_id for slide in snapshot.document.slides for e in slide.elements}
+    rendered_ids = rendered_asset_ids(snapshot.document)
     rows = [row for row in rows if row.id in rendered_ids]
     if sum(row.byte_size for row in rows) > MAX_EXPORT_BYTES:
         raise PresentationError("导出图片总量不能超过 100 MiB", 413, "export_too_large")
     paths = {row.id: storage.path_for(row) for row in rows}
+    media_types = {row.id: row.mime_type for row in rows}
     await projects.session.rollback()
-    work = asyncio.create_task(asyncio.to_thread(build_export, snapshot, paths))
+    work = asyncio.create_task(asyncio.to_thread(build_export, snapshot, paths, media_types))
     try:
         return await asyncio.shield(work)
     except asyncio.CancelledError:

@@ -1,3 +1,4 @@
+import { ImportButton } from "./exchange/ImportButton";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -78,14 +79,17 @@ export function PresentationLibrary({
         description="把想法整理成清晰的表达。"
         actions={
           !readOnly ? (
-            <button
-              className="workshop-primary"
-              disabled={busy}
-              onClick={() => startNew()}
-            >
-              <Plus aria-hidden />
-              新建演示文稿
-            </button>
+            <>
+              <ImportButton onOpen={onOpen} />
+              <button
+                className="workshop-primary"
+                disabled={busy}
+                onClick={() => startNew()}
+              >
+                <Plus aria-hidden />
+                新建演示文稿
+              </button>
+            </>
           ) : null
         }
       />
@@ -167,6 +171,10 @@ export function PresentationLibrary({
               <PresentationPreviewCard
                 title={project.title}
                 firstSlide={project.first_slide}
+                size={{
+                  width: project.width ?? 1280,
+                  height: project.height ?? 720,
+                }}
                 projectId={project.id}
                 actionLabel="打开文稿"
                 onUse={() => onOpen(project.id)}
@@ -267,6 +275,7 @@ export function PresentationLibrary({
         ) : null}
       </div>
       <TextInputDialog
+        className="presentation-dialog presentation-dialog-small"
         open={rename !== null}
         title={rename === "new" ? "新建演示文稿" : "重命名文稿"}
         label="文稿名称"
@@ -294,6 +303,7 @@ export function PresentationLibrary({
         }}
       />
       <ConfirmDialog
+        className="presentation-dialog presentation-dialog-small"
         open={!!remove}
         title="删除演示文稿"
         description={`确定删除“${remove?.title ?? ""}”？文稿将永久删除，公共文件库中的图片会保留。`}

@@ -1,17 +1,22 @@
 import { useState } from "react";
-import type { Slide } from "../types";
+import { defaultPageSize, type PageSize, type Slide } from "../types";
 import { rotatedBounds } from "../selectionGeometry";
 
 type Issue = { id: string; message: string };
-function inspectScene(slide: Slide, root: ParentNode = document): Issue[] {
+function inspectScene(
+  slide: Slide,
+  size: PageSize = defaultPageSize,
+  root: ParentNode = document,
+): Issue[] {
   const issues: Issue[] = [];
   for (const element of slide.elements) {
+    if (element.hidden) continue;
     const box = rotatedBounds([element]);
     if (
       box.x < 0 ||
       box.y < 0 ||
-      box.x + box.width > 1280 ||
-      box.y + box.height > 720
+      box.x + box.width > size.width ||
+      box.y + box.height > size.height
     )
       issues.push({ id: element.id, message: "元素超出页面边界" });
     const node = [
@@ -69,19 +74,24 @@ function fontAvailable(font: string) {
 
 export function SceneChecks({
   slide,
+  size,
   select,
   onClose,
 }: {
   slide: Slide;
+  size?: PageSize;
   select: (ids: string[]) => void;
   onClose: () => void;
 }) {
-  const [issues, setIssues] = useState(() => inspectScene(slide));
+  const [issues, setIssues] = useState(() => inspectScene(slide, size));
   return (
     <section className="presentation-scene-checks" aria-label="页面检查">
       <header>
         <strong>页面检查</strong>
-        <button className="btn" onClick={() => setIssues(inspectScene(slide))}>
+        <button
+          className="btn"
+          onClick={() => setIssues(inspectScene(slide, size))}
+        >
           重新检查
         </button>
         <button className="btn" onClick={onClose}>

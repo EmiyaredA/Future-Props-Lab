@@ -8,7 +8,7 @@ export type Infographic = NonNullable<Slide["infographics"]>[number];
 export type Anchor = Connection["source_anchor"];
 export type Fragment = Pick<
   Slide,
-  "elements" | "groups" | "connections" | "infographics"
+  "elements" | "groups" | "connections" | "infographics" | "animations"
 >;
 
 export function completeScene(slide: Slide): Slide {
@@ -150,6 +150,10 @@ export function cleanScene(slide: Slide): Slide {
   }
   return {
     ...slide,
+    animations: (slide.animations ?? []).filter((a) => ids.has(a.element_id)),
+    annotations: (slide.annotations ?? []).map((a) =>
+      a.element_id && !ids.has(a.element_id) ? { ...a, element_id: null } : a,
+    ),
     groups: groups.filter((g) => active.has(g.id)),
     connections: (slide.connections ?? []).filter(
       (c) => ids.has(c.source_id) && ids.has(c.target_id),
@@ -211,6 +215,17 @@ export function cloneFragment(
   );
   const remap = (id: string) => mapping.get(id)!;
   return {
+    ...((slide.animations?.length ?? 0) > 0
+      ? {
+          animations: (slide.animations ?? [])
+            .filter((a) => selected.has(a.element_id))
+            .map((a) => ({
+              ...a,
+              id: makeId(),
+              element_id: remap(a.element_id),
+            })),
+        }
+      : {}),
     elements: slide.elements
       .filter((e) => selected.has(e.id))
       .map((e) => ({
@@ -253,6 +268,7 @@ export function appendFragment(slide: Slide, fragment: Fragment): Slide {
   return {
     ...slide,
     elements: [...slide.elements, ...fragment.elements],
+    animations: [...(slide.animations ?? []), ...(fragment.animations ?? [])],
     groups: [...(slide.groups ?? []), ...(fragment.groups ?? [])],
     connections: [
       ...(slide.connections ?? []),

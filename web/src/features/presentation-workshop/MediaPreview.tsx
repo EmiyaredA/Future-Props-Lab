@@ -1,3 +1,4 @@
+import { containDialogComposition } from "./dialogKeyboard";
 import { X, Download } from "lucide-react";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
@@ -22,11 +23,12 @@ export function MediaPreview({
       }}
     >
       <div
+        onKeyDownCapture={containDialogComposition}
         ref={ref}
         role="dialog"
         aria-label="原图预览"
         aria-modal="true"
-        className="presentation-original-preview"
+        className="presentation-dialog presentation-original-preview"
       >
         <header>
           <h3>原图预览</h3>
@@ -42,13 +44,15 @@ export function MediaPreview({
             <X size={18} />
           </button>
         </header>
-        {error ? (
-          <p role="alert">原图加载失败</p>
-        ) : url ? (
-          <img src={url} alt="原始素材" />
-        ) : (
-          <p role="status">加载中…</p>
-        )}
+        <div className="presentation-dialog-body">
+          {error ? (
+            <p role="alert">原图加载失败</p>
+          ) : url ? (
+            <img src={url} alt="原始素材" />
+          ) : (
+            <p role="status">加载中…</p>
+          )}
+        </div>
       </div>
     </div>
   );

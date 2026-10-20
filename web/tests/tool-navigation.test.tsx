@@ -126,6 +126,16 @@ test("opens the internal video frame exporter and records usage", async () => {
   expect(recordToolUse).toHaveBeenCalledWith("video-frame-exporter");
 });
 
+test("opens the internal video downloader and records usage", async () => {
+  const user = userEvent.setup();
+  const { onOpenInternal } = renderPage();
+  await screen.findByText("还没有收藏工具");
+
+  await user.click(screen.getByRole("button", { name: "打开视频下载" }));
+  expect(onOpenInternal).toHaveBeenCalledWith("/tools/video-downloader");
+  expect(recordToolUse).toHaveBeenCalledWith("video-downloader");
+});
+
 test("shows the Codex model source only to desktop administrators", async () => {
   const user = userEvent.setup();
   const onOpenInternal = vi.fn();

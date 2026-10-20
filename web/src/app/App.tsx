@@ -90,6 +90,11 @@ const CodexModelSourcePage = lazy(() =>
     default: module.CodexModelSourcePage,
   })),
 );
+const VideoDownloaderPage = lazy(() =>
+  import("@features/tools/VideoDownloaderPage").then((module) => ({
+    default: module.VideoDownloaderPage,
+  })),
+);
 const AudioAnnotationProjectsPage = lazy(
   AUDIO_ANNOTATION_MODULE.pages.projects,
 );
@@ -893,6 +898,8 @@ export default function App() {
           />
         ) : page === "video-frame-exporter" ? (
           <VideoFrameExporterPage onBack={() => navigate("tools")} />
+        ) : page === "video-downloader" ? (
+          <VideoDownloaderPage onBack={() => navigate("tools")} />
         ) : page === "codex-model-source" ? (
           <CodexModelSourcePage onBack={() => navigate("tools")} />
         ) : page === "model-test" ? (

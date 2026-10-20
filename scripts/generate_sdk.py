@@ -209,7 +209,7 @@ def method_source(path, method, operation, entry, asynchronous):
     elif "text/event-stream" in success_content or path.endswith("/stream"):
         returned = "AsyncEventStream" if asynchronous else "EventStream"
         result = "Any"
-    elif "application/json" not in success_content:
+    elif "application/json" not in success_content or response_schema.get("format") == "binary":
         returned = "AsyncDownload" if asynchronous else "Download"
         result = "Any"
     sig = ", *, " + ", ".join(signature) if signature else ""

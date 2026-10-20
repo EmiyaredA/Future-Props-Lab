@@ -47,7 +47,7 @@ Future-Props-Lab/
 │   │   └── creative_workshop/ # 跨 Workspace 公开创作版本、草稿、安装事务与文件校验
 │   ├── apps/          # 已垂直切片的产品 App（含 live2d_workshop / desktop_pet）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
-│   ├── tool_navigation/ # 工具目录状态与桌面 Codex 模型源配置；自有 models/schemas/routes
+│   ├── tool_navigation/ # 工具目录状态、桌面 Codex 模型源与抖音/B站视频下载；自有 models/schemas/routes
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
 │   └── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 ├── db/migrations/
@@ -171,7 +171,8 @@ Future-Props-Lab/
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。其 Codex 模型源用例仅在桌面私有传输内
-  读取和修改当前用户的 `CODEX_HOME/config.toml`，不进入 Workspace 数据库。
+  读取和修改当前用户的 `CODEX_HOME/config.toml`，不进入 Workspace 数据库。视频下载用例调用本机
+  `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
 - `integrations/` 拥有独立于工具导航的 Workspace 集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
@@ -467,6 +468,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `web/src/features/presentation-workshop/` 拥有项目列表、五种版式、DOM/SVG 页面渲染、
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
+`presentation-dialog.css` 统一工坊弹窗尺寸、控件密度和固定标题／操作栏；内容区局部滚动，各编辑器继续独立拥有草稿与焦点生命周期。
 `presentationHistory.ts` 解析历史快照的页面与元素定位；`usePresentationDraft` 持有本次会话的 100 步历史与保存队列，`usePresentationHistory` 统一键盘、按钮、字段合并边界、输入法与未提交手势取消。历史定位和分组提示只存在内存，不进入文稿、HTTP 或 SDK 契约。
 `codeHighlight.ts` 将 lowlight 语法树解析为现有原生段落与显式 run 颜色；`CodeHighlightDialog`
 按需加载源码与预览，用户应用才更新当前文本框，保存和 PPTX 导出不依赖高亮 CSS。
@@ -476,7 +478,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `scene/selection.ts` 解析命中元素与分组选择，`useSceneTools` 唯一持有组内层级；画布在点击松手时请求下钻，拖动保留原选区。这些选择状态不进入文稿持久化。
 `scene/connectionGeometry.ts` 拥有沿边比例端点、旋转边缘投影、路径编辑与节点跟随；`ConnectionHandles` 展示画布覆盖层，`useConnectionDrag` 只持有可取消预览，松手经统一草稿提交一次。直线拖动保持直线，折线才编辑走线。后端 `connection_routes.py` 与 Web 共用测试向量，operations 合并整批节点变换后调整路径，显式路径优先。连接 `source_offset`、`target_offset` 为 0–1，迁移 `0100_presentation_connection_offsets` 为旧连接补 0.5，保留路径与 revision；PPTX 将非中点连接导出为自由形状以保留几何。
 `scene/stacking.ts` 解析并调整元素与连接的统一前后顺序；连接 `layer` 保存下方元素数量，同层按连接数组顺序。迁移 `0098_presentation_connection_layers` 为缺失层级补 0，保留旧画面与 revision。`SlideSurface` 与 `pptx_scene.py` 消费相同顺序；PPTX 仅保留连续叠放的原生组，交错组在导出时展开以保持遮挡，源分组不变。
-后端 `schemas/scene.py` 校验文稿 v2 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
+后端 `schemas/scene.py` 校验文稿 v3 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
 `slideTheme.ts` 拥有新建色板、可修改颜色收集与单页换肤纯函数，`SlideThemeDialog` 只维护预览替换表；用户应用才进入原草稿历史与 CAS 保存，不追加持久化字段。`useSceneTools` 返回动作描述与独立弹窗，`PresentationToolbar` 统一展示信息图与“更多”菜单，不再增加整排场景工具。`slide-theme.css` 仅维护换肤弹窗布局。
 `pptx_scene.py` 拥有原生分组与端点绑定导出。迁移 `0096_presentation_scene` 为旧文稿追加空场景字段，
 不改变原内容或 revision；参考图纳入 Workspace 素材保护但不参与放映与 PPTX。
@@ -501,6 +503,10 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 只绘制临时辅助线。面板和悬浮菜单共用排列描述与提交入口，手势预览不持久化，提交沿用 `updateScene`、草稿历史和 CAS 保存。
 首页基础版式创建复用 `templates.ts`；画布报告实际缩放比例，缩略图按容器宽度等比适配。
 新增路由由响应式清单登记，浏览器流程位于 `presentation-workshop.spec.ts`。
+
+演示工坊 v3 扩展按职责组织：`schemas/appearance.py`、`objects.py`、`paths.py`、`annotations.py` 与 `playback.py` 拥有专属结构；`asset_references.py` 收集背景、填充、封面和媒体等实际引用。迁移 `0101_presentation_editor_v3` 保留内容、身份、revision 与更新时间，仅升级版本并补元素元数据；已有新能力的文稿拒绝旧格式降级覆盖。
+`exchange/` 拥有有界 ZIP 文稿包、无写入预检、PPTX 解析、转换报告、素材准备与重映射；`routes/exchange.py` 只适配 HTTP。`pptx_objects.py`、`pptx_paths.py`、`pptx_playback.py` 与 `pptx_appearance.py` 分别映射原生表格图表、路径、媒体与样式；`visible_scene.py` 统一排除隐藏对象及关联连接。
+Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替换、图层与面板；`objects/` 拥有原生元素内容编辑、ECharts SVG、KaTeX 预览及本地公式矢量生成；`exchange/` 拥有预检和静态图片／打印输出；`playback/` 拥有动画步骤、标注与同源观众同步。`web/mathFontData.ts` 在构建前将第三方字形轮廓发布为本地 JSON 数据资源，不改写构建产物或提高代码预算。`desktop/src/presentation-windows.ts` 校验并管理受控观众窗口，退出与父窗口关闭时终止会话。
 
 ## 导演台
 

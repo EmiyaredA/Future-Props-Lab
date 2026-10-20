@@ -86,8 +86,8 @@ export function ConnectionHandles({
       {ghost.length > 0 && (
         <svg
           className="presentation-connection-ghost"
-          width="1280"
-          height="720"
+          width="100%"
+          height="100%"
           aria-hidden="true"
         >
           {slide.elements

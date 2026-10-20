@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.presentation_workshop.asset_references import document_references
 from app.apps.presentation_workshop.models import PresentationAssetReference, PresentationProject
 from app.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
@@ -71,6 +72,8 @@ class Presentations:
                 PresentationProject.updated_at,
                 func.json_array_length(PresentationProject.document["slides"]).label("slide_count"),
                 PresentationProject.document["slides"][0].label("first_slide"),
+                PresentationProject.document["width"].label("width"),
+                PresentationProject.document["height"].label("height"),
             )
             .where(*filters)
             .order_by(PresentationProject.updated_at.desc(), PresentationProject.id)
@@ -87,15 +90,16 @@ class Presentations:
                     updated_at=row.updated_at,
                     slide_count=row.slide_count,
                     first_slide=row.first_slide,
+                    width=row.width,
+                    height=row.height,
                 )
                 for row in rows
             ],
         )
 
     async def assets(self, document: PresentationDocument) -> list[VisualAsset]:
-        ids = {e.asset_id for slide in document.slides for e in slide.elements if e.asset_id}
-        ids.update(slide.reference.asset_id for slide in document.slides if slide.reference)
-        ids.update(slide.image_asset_id for slide in document.slides if slide.image_asset_id)
+        references = document_references(document)
+        ids = set(references)
         if not ids:
             return []
         rows = list(
@@ -106,18 +110,28 @@ class Presentations:
                     VisualAsset.project_id.is_(None),
                     VisualAsset.galgame_project_id.is_(None),
                     VisualAsset.video_editor_project_id.is_(None),
-                    VisualAsset.media_kind == "image",
+                    VisualAsset.motion_compositor_project_id.is_(None),
+                    VisualAsset.media_kind.in_(["image", "audio", "video"]),
                 )
             )
         )
         if {row.id for row in rows} != ids:
             raise PresentationError("图片不存在或不属于当前空间的公共文件库", 404, "not_found")
+        by_id = {row.id: row for row in rows}
+        for row in rows:
+            if references[row.id] != {row.media_kind}:
+                raise PresentationError("素材类型与引用用途不匹配", 422, "invalid_asset_type")
         for slide in document.slides:
             for element in slide.elements:
                 if not element.asset_id:
                     continue
-                row = next(r for r in rows if r.id == element.asset_id)
-                if (element.kind == "vector") != (row.mime_type == "image/svg+xml"):
+                row = by_id[element.asset_id]
+                expected_kind = element.kind if element.kind in {"audio", "video"} else "image"
+                if row.media_kind != expected_kind or (
+                    expected_kind == "image"
+                    and (element.kind in {"vector", "formula"})
+                    != (row.mime_type == "image/svg+xml")
+                ):
                     raise PresentationError(
                         "素材类型与图片／矢量元素不匹配", 422, "invalid_asset_type"
                     )
@@ -154,7 +168,14 @@ class Presentations:
     async def put(
         self, project_id: str, body: PresentationProjectPut, *, commit: bool = True
     ) -> PresentationProjectOut:
-        await self.row(project_id)
+        current = await self.row(project_id)
+        if (
+            body.document.source_version < 3
+            and PresentationDocument.model_validate(current.document).needs_v3()
+        ):
+            raise PresentationError(
+                "当前文稿包含新版内容，请更新客户端后保存", 422, "document_downgrade"
+            )
         await patch_revisioned_project(
             self.session,
             PresentationProject,

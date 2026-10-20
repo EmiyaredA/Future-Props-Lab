@@ -70,69 +70,75 @@ export function SvgImport({
   };
   return (
     <div className="presentation-svg-import">
-      <label className="btn presentation-file-input">
-        选择 SVG 文件
-        <input
-          type="file"
-          accept=".svg,image/svg+xml"
-          disabled={busy}
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              const sequence = ++fileRequest.current;
-              controller.current?.abort();
-              setPending(false);
-              setResult(null);
-              setError("");
-              setSource("");
-              setName(file.name);
-              if (file.size > 2 * 1024 * 1024) {
-                setError("SVG 不能超过 2 MiB");
-                return;
+      <div className="presentation-dialog-body">
+        <label className="btn presentation-file-input">
+          选择 SVG 文件
+          <input
+            type="file"
+            accept=".svg,image/svg+xml"
+            disabled={busy}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const sequence = ++fileRequest.current;
+                controller.current?.abort();
+                setPending(false);
+                setResult(null);
+                setError("");
+                setSource("");
+                setName(file.name);
+                if (file.size > 2 * 1024 * 1024) {
+                  setError("SVG 不能超过 2 MiB");
+                  return;
+                }
+                try {
+                  const text = await file.text();
+                  if (sequence === fileRequest.current) setSource(text);
+                } catch {
+                  setError("读取 SVG 文件失败");
+                }
               }
-              try {
-                const text = await file.text();
-                if (sequence === fileRequest.current) setSource(text);
-              } catch {
-                setError("读取 SVG 文件失败");
-              }
-            }
+            }}
+          />
+        </label>
+        <textarea
+          aria-label="SVG 代码"
+          placeholder="粘贴 <svg>…</svg> 代码，或选择文件"
+          value={source}
+          maxLength={2 * 1024 * 1024}
+          onChange={(e) => {
+            fileRequest.current++;
+            controller.current?.abort();
+            setPending(false);
+            setResult(null);
+            setSource(e.target.value);
           }}
         />
-      </label>
-      <textarea
-        aria-label="SVG 代码"
-        placeholder="粘贴 <svg>…</svg> 代码，或选择文件"
-        value={source}
-        maxLength={2 * 1024 * 1024}
-        onChange={(e) => {
-          fileRequest.current++;
-          controller.current?.abort();
-          setPending(false);
-          setResult(null);
-          setSource(e.target.value);
-        }}
-      />
-      <p className="muted">
-        支持路径、形状、渐变与蒙版。文字请先转路径，不支持外部资源、滤镜或动画。
-      </p>
-      <button
-        className="btn"
-        disabled={!source || pending || busy}
-        onClick={() => void preview()}
-      >
-        {pending ? "检查中…" : "检查并预览"}
-      </button>
-      {error && <p role="alert">{error}</p>}
-      {result && (
-        <>
-          <div className="presentation-svg-preview">
-            <img src={url} alt="SVG 导入预览" />
-          </div>
-          <p>
-            {result.width} × {result.height} ·{" "}
-            {result.monochrome ? "单色，可改色" : "保留原始配色"}
-          </p>
+        <p className="muted">
+          支持路径、形状、渐变与蒙版。文字请先转路径，不支持外部资源、滤镜或动画。
+        </p>
+        {error && <p role="alert">{error}</p>}
+        {result && (
+          <>
+            <div className="presentation-svg-preview">
+              <img src={url} alt="SVG 导入预览" />
+            </div>
+            <p>
+              {result.width} × {result.height} ·{" "}
+              {result.monochrome ? "单色，可改色" : "保留原始配色"}
+            </p>
+          </>
+        )}
+      </div>
+      <footer>
+        <button
+          className="btn"
+          disabled={!source || pending || busy}
+          onClick={() => void preview()}
+        >
+          {pending ? "检查中…" : "检查并预览"}
+        </button>
+        {result && (
           <button
             className="btn primary"
             disabled={busy}
@@ -148,8 +154,8 @@ export function SvgImport({
           >
             {busy ? "正在导入…" : "确认导入"}
           </button>
-        </>
-      )}
+        )}
+      </footer>
     </div>
   );
 }

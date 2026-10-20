@@ -35,6 +35,22 @@ class Tools:
         'Record Use. POST /v1/tool-navigation/tools/{tool_id}/use'
         return self._client._call('POST', '/v1/tool-navigation/tools/{tool_id}/use', parameters=[('tool_id', 'path', tool_id)], response_type=models.ToolNavigationItemOut)
 
+    def get_video_download_deps(self) -> models.VideoDownloadDepsOut:
+        'Get Video Download Deps. GET /v1/tool-navigation/video-download/deps'
+        return self._client._call('GET', '/v1/tool-navigation/video-download/deps', parameters=[], response_type=models.VideoDownloadDepsOut)
+
+    def post_video_download_job(self, *, body: models.VideoDownloadJobCreate | dict) -> models.VideoDownloadJobOut:
+        'Post Video Download Job. POST /v1/tool-navigation/video-download/jobs'
+        return self._client._call('POST', '/v1/tool-navigation/video-download/jobs', parameters=[], body=body, media_type='application/json', response_type=models.VideoDownloadJobOut)
+
+    def get_video_download_job(self, *, job_id: str) -> models.VideoDownloadJobOut:
+        'Get Video Download Job. GET /v1/tool-navigation/video-download/jobs/{job_id}'
+        return self._client._call('GET', '/v1/tool-navigation/video-download/jobs/{job_id}', parameters=[('job_id', 'path', job_id)], response_type=models.VideoDownloadJobOut)
+
+    def download_video_download_file(self, *, job_id: str) -> Download:
+        'Download Video Download File. GET /v1/tool-navigation/video-download/jobs/{job_id}/file'
+        return self._client._call('GET', '/v1/tool-navigation/video-download/jobs/{job_id}/file', parameters=[('job_id', 'path', job_id)], response_type=Any)
+
 class AsyncTools:
     def __init__(self, client):
         self._client = client
@@ -62,3 +78,19 @@ class AsyncTools:
     async def record_use(self, *, tool_id: str) -> models.ToolNavigationItemOut:
         'Record Use. POST /v1/tool-navigation/tools/{tool_id}/use'
         return await self._client._call('POST', '/v1/tool-navigation/tools/{tool_id}/use', parameters=[('tool_id', 'path', tool_id)], response_type=models.ToolNavigationItemOut)
+
+    async def get_video_download_deps(self) -> models.VideoDownloadDepsOut:
+        'Get Video Download Deps. GET /v1/tool-navigation/video-download/deps'
+        return await self._client._call('GET', '/v1/tool-navigation/video-download/deps', parameters=[], response_type=models.VideoDownloadDepsOut)
+
+    async def post_video_download_job(self, *, body: models.VideoDownloadJobCreate | dict) -> models.VideoDownloadJobOut:
+        'Post Video Download Job. POST /v1/tool-navigation/video-download/jobs'
+        return await self._client._call('POST', '/v1/tool-navigation/video-download/jobs', parameters=[], body=body, media_type='application/json', response_type=models.VideoDownloadJobOut)
+
+    async def get_video_download_job(self, *, job_id: str) -> models.VideoDownloadJobOut:
+        'Get Video Download Job. GET /v1/tool-navigation/video-download/jobs/{job_id}'
+        return await self._client._call('GET', '/v1/tool-navigation/video-download/jobs/{job_id}', parameters=[('job_id', 'path', job_id)], response_type=models.VideoDownloadJobOut)
+
+    async def download_video_download_file(self, *, job_id: str) -> AsyncDownload:
+        'Download Video Download File. GET /v1/tool-navigation/video-download/jobs/{job_id}/file'
+        return await self._client._call('GET', '/v1/tool-navigation/video-download/jobs/{job_id}/file', parameters=[('job_id', 'path', job_id)], response_type=Any)

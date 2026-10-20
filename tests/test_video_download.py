@@ -1,0 +1,154 @@
+from __future__ import annotations
+
+import asyncio
+from pathlib import Path
+
+import httpx
+import pytest
+
+from app.main import app
+from app.tool_navigation import video_download as vd
+
+
+@pytest.fixture(autouse=True)
+def _reset_jobs():
+    vd.reset_jobs_for_tests()
+    yield
+    vd.reset_jobs_for_tests()
+
+
+def test_validate_video_url_accepts_douyin_and_bilibili() -> None:
+    assert vd.validate_video_url("https://www.bilibili.com/video/BV1xx411c7mD").endswith(
+        "BV1xx411c7mD"
+    )
+    assert vd.validate_video_url("https://b23.tv/abcd1234").startswith("https://")
+    assert vd.validate_video_url("https://www.douyin.com/video/7123456789").endswith("7123456789")
+    assert vd.validate_video_url("https://v.douyin.com/abc123/").startswith("https://")
+
+
+def test_validate_video_url_rejects_other_hosts() -> None:
+    with pytest.raises(vd.VideoDownloadError, match="仅支持"):
+        vd.validate_video_url("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    with pytest.raises(vd.VideoDownloadError, match="有效"):
+        vd.validate_video_url("ftp://www.bilibili.com/video/BV1")
+
+
+def test_job_create_requires_destination() -> None:
+    with pytest.raises(ValueError, match="至少选择"):
+        vd.VideoDownloadJobCreate(
+            url="https://www.bilibili.com/video/BV1xx411c7mD",
+            save_to_disk=False,
+            save_to_library=False,
+        )
+
+
+@pytest.mark.asyncio
+async def test_deps_and_job_lifecycle(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(vd, "_jobs_root", lambda settings=None: tmp_path)
+
+    def fake_probe() -> vd.VideoDownloadDepsOut:
+        return vd.VideoDownloadDepsOut(
+            ready=True,
+            yt_dlp=vd.BinaryStatus(name="yt-dlp", ok=True, path="/bin/yt-dlp", version="2026.01.01"),
+            ffmpeg=vd.BinaryStatus(name="ffmpeg", ok=True, path="/bin/ffmpeg", version="ffmpeg 7"),
+        )
+
+    def fake_run(*, url: str, quality: str, work_dir: Path, cookies_from_browser: str | None) -> None:
+        assert "bilibili.com" in url
+        assert quality == "720"
+        assert cookies_from_browser == "chrome"
+        media = work_dir / "clip.mp4"
+        # Minimal ISO BMFF so looks_like accepts .mp4 when library path is used.
+        media.write_bytes(b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom" + b"\x00" * 64)
+        (work_dir / "clip.info.json").write_text(
+            '{"title": "测试视频", "webpage_url": "%s"}' % url,
+            encoding="utf-8",
+        )
+
+    async def fake_ingest(job: vd.VideoDownloadJob, media: Path) -> vd.VideoDownloadAssetOut:
+        assert media.is_file()
+        return vd.VideoDownloadAssetOut(
+            id="asset-1",
+            display_name="测试视频",
+            original_filename=media.name,
+            mime_type="video/mp4",
+            byte_size=media.stat().st_size,
+        )
+
+    monkeypatch.setattr(vd, "probe_deps", fake_probe)
+    monkeypatch.setattr(vd, "_run_yt_dlp", fake_run)
+    monkeypatch.setattr(vd, "_ingest_library", fake_ingest)
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        deps = await client.get("/v1/tool-navigation/video-download/deps")
+        assert deps.status_code == 200
+        assert deps.json()["ready"] is True
+
+        created = await client.post(
+            "/v1/tool-navigation/video-download/jobs",
+            json={
+                "url": "https://www.bilibili.com/video/BV1xx411c7mD",
+                "quality": "720",
+                "use_browser_cookies": True,
+                "cookies_from_browser": "chrome",
+                "save_to_disk": True,
+                "save_to_library": True,
+            },
+        )
+        assert created.status_code == 200, created.text
+        job_id = created.json()["id"]
+
+        for _ in range(40):
+            status = await client.get(f"/v1/tool-navigation/video-download/jobs/{job_id}")
+            assert status.status_code == 200
+            payload = status.json()
+            if payload["status"] in {"succeeded", "failed"}:
+                break
+            await asyncio.sleep(0.05)
+        else:
+            pytest.fail("job did not finish")
+
+        assert payload["status"] == "succeeded"
+        assert payload["title"] == "测试视频"
+        assert payload["asset"]["id"] == "asset-1"
+        assert payload["filename"].endswith(".mp4")
+
+        download = await client.get(f"/v1/tool-navigation/video-download/jobs/{job_id}/file")
+        assert download.status_code == 200
+        assert download.content.startswith(b"\x00\x00\x00\x18ftyp")
+
+        rejected = await client.post(
+            "/v1/tool-navigation/video-download/jobs",
+            json={
+                "url": "https://example.com/video",
+                "save_to_disk": True,
+                "save_to_library": False,
+            },
+        )
+        assert rejected.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_missing_deps_block_job_creation(monkeypatch) -> None:
+    monkeypatch.setattr(
+        vd,
+        "probe_deps",
+        lambda: vd.VideoDownloadDepsOut(
+            ready=False,
+            yt_dlp=vd.BinaryStatus(name="yt-dlp", ok=False, hint="安装 yt-dlp"),
+            ffmpeg=vd.BinaryStatus(name="ffmpeg", ok=True, path="/bin/ffmpeg", version="ok"),
+        ),
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/v1/tool-navigation/video-download/jobs",
+            json={
+                "url": "https://www.bilibili.com/video/BV1xx411c7mD",
+                "save_to_disk": True,
+                "save_to_library": False,
+            },
+        )
+        assert response.status_code == 422
+        assert "yt-dlp" in response.json()["detail"]["message"]

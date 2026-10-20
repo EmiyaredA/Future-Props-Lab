@@ -36,52 +36,24 @@
   background: #0009;
 }
 .presentation-preview-dialog {
-  position: fixed;
-  z-index: 1201;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(1120px, calc(100vw - 40px));
-  max-height: calc(100dvh - 40px);
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 24px 80px #0005;
-  padding: 20px;
+  --presentation-dialog-width: 1100px;
+  --presentation-dialog-z: 1201;
 }
-.presentation-preview-dialog header,
-.presentation-preview-dialog footer,
 .presentation-preview-dialog footer nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.presentation-preview-dialog h2 {
-  margin: 0;
-  font-size: 18px;
-  overflow-wrap: anywhere;
-}
-.presentation-preview-dialog header p {
-  color: var(--muted);
-  font-size: 12px;
-  margin: 6px 0 0;
-}
-.presentation-preview-dialog header > button {
-  flex-shrink: 0;
+  gap: 8px;
 }
 .presentation-preview-stage {
-  width: min(100%, calc((100dvh - 300px) * 16 / 9));
-  margin: 20px auto 16px;
+  width: min(100%, 800px, calc((100dvh - 260px) * 16 / 9));
+  margin: 0 auto;
 }
 .presentation-preview-filmstrip {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
   padding: 4px 3px 10px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 .presentation-preview-filmstrip button {
   flex: 0 0 100px;
@@ -104,7 +76,7 @@
 }
 .presentation-preview-dialog footer {
   border-top: 1px solid var(--border);
-  padding-top: 14px;
+  padding-top: 10px;
 }
 .presentation-preview-dialog footer nav span {
   min-width: 55px;
@@ -122,14 +94,6 @@
   color: var(--muted);
 }
 @media (max-width: 600px) {
-  .presentation-preview-dialog {
-    width: calc(100vw - 24px);
-    max-height: calc(100dvh - 24px);
-    padding: 14px;
-  }
-  .presentation-preview-dialog h2 {
-    font-size: 16px;
-  }
   .presentation-preview-stage {
     width: 100%;
   }

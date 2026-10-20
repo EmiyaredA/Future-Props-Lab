@@ -1,5 +1,5 @@
 import { ArrowUp, ArrowDown, Copy, Trash2, Plus } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { SlidePreview } from "./SlideSurface";
 import type { Deck } from "./types";
 
@@ -12,6 +12,9 @@ export function PresentationFilmstrip({
   onAdd,
   onDelete,
   readOnly,
+  onBatchDelete,
+  onBatchCopy,
+  onBatchMove,
 }: {
   deck: Deck;
   active: string;
@@ -21,10 +24,61 @@ export function PresentationFilmstrip({
   onAdd: () => void;
   onDelete: (id: string) => void;
   readOnly: boolean;
+  onBatchDelete?: (ids: string[]) => void;
+  onBatchCopy?: (ids: string[]) => void;
+  onBatchMove?: (ids: string[], index: number) => void;
 }) {
   const dragged = useRef<string | null>(null);
+  const [pageSelection, setPageSelection] = useState<string[]>([]);
+  const anchor = useRef(active);
+  const chosen = pageSelection.filter((id) =>
+    deck.slides.some((s) => s.id === id),
+  );
+  const choose = (id: string, event: React.MouseEvent) => {
+    if (event.shiftKey) {
+      const from = deck.slides.findIndex((s) => s.id === anchor.current),
+        to = deck.slides.findIndex((s) => s.id === id);
+      setPageSelection(
+        deck.slides
+          .slice(Math.min(from, to), Math.max(from, to) + 1)
+          .map((s) => s.id),
+      );
+    } else if (event.metaKey || event.ctrlKey)
+      setPageSelection(
+        chosen.includes(id)
+          ? chosen.filter((item) => item !== id)
+          : [...chosen, id],
+      );
+    else {
+      setPageSelection([id]);
+      anchor.current = id;
+    }
+    onSelect(id);
+  };
   return (
-    <aside className="presentation-filmstrip" aria-label="幻灯片列表">
+    <aside
+      className="presentation-filmstrip"
+      aria-label="幻灯片列表"
+      onKeyDown={(event) => {
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          event.key.toLowerCase() === "a"
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          setPageSelection(deck.slides.map((s) => s.id));
+        }
+        if (
+          !readOnly &&
+          ["Delete", "Backspace"].includes(event.key) &&
+          onBatchDelete
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          onBatchDelete(chosen.length ? chosen : [active]);
+        }
+      }}
+    >
       <div className="presentation-filmstrip-heading">
         <span>
           幻灯片 <small>{deck.slides.length}</small>
@@ -40,10 +94,32 @@ export function PresentationFilmstrip({
           </button>
         )}
       </div>
+      {!readOnly && chosen.length > 1 && (
+        <div className="presentation-filmstrip-batch">
+          <span>已选 {chosen.length} 页</span>
+          <button
+            className="btn"
+            aria-label="复制所选幻灯片"
+            disabled={deck.slides.length + chosen.length > 100}
+            onClick={() => onBatchCopy?.(chosen)}
+          >
+            复制
+          </button>
+          <button
+            className="btn"
+            aria-label="删除所选幻灯片"
+            disabled={chosen.length >= deck.slides.length}
+            onClick={() => onBatchDelete?.(chosen)}
+          >
+            删除
+          </button>
+        </div>
+      )}
       {deck.slides.map((slide, index) => (
         <div
           key={slide.id}
           className={`presentation-filmstrip-item${slide.id === active ? " active" : ""}`}
+          data-page-selected={chosen.includes(slide.id)}
           draggable={!readOnly}
           onDragStart={(e) => {
             dragged.current = slide.id;
@@ -57,18 +133,29 @@ export function PresentationFilmstrip({
           }}
           onDrop={(e) => {
             e.preventDefault();
-            if (dragged.current && !readOnly) onMove(dragged.current, index);
+            if (dragged.current && !readOnly) {
+              if (onBatchMove && chosen.includes(dragged.current))
+                onBatchMove(chosen, index);
+              else onMove(dragged.current, index);
+            }
             dragged.current = null;
           }}
         >
+          {!!slide.section &&
+            (index === 0 ||
+              deck.slides[index - 1].section !== slide.section) && (
+              <div className="presentation-section-heading">
+                {slide.section}
+              </div>
+            )}
           <span className="presentation-slide-number">{index + 1}</span>
           <button
             className="presentation-slide-select"
             aria-label={`幻灯片 ${index + 1}`}
             aria-current={slide.id === active ? "true" : undefined}
-            onClick={() => onSelect(slide.id)}
+            onClick={(event) => choose(slide.id, event)}
           >
-            <SlidePreview slide={slide} />
+            <SlidePreview slide={slide} size={deck} />
           </button>
           {!readOnly && slide.id === active ? (
             <div className="presentation-slide-actions">

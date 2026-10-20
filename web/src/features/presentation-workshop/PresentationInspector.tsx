@@ -1,3 +1,4 @@
+import { canContainText } from "./textAdapter";
 import { slideTheme } from "./slideTheme";
 import { lazy, Suspense, useId, useState, type ReactNode } from "react";
 import { LockKeyhole, UnlockKeyhole, RotateCcw } from "lucide-react";
@@ -35,6 +36,12 @@ export function PresentationInspector({
   imageVersionPanel,
   onStyle,
   styleDisabled = false,
+  selectionPanel,
+  pageControls,
+  onObjectEdit,
+  animationPanel,
+  appearancePanel,
+  annotationsPanel,
 }: {
   slide: Slide;
   selected: string[];
@@ -49,6 +56,12 @@ export function PresentationInspector({
   imageVersionPanel?: ReactNode;
   onStyle?: () => void;
   styleDisabled?: boolean;
+  selectionPanel?: ReactNode;
+  pageControls?: ReactNode;
+  onObjectEdit?: (element: SlideElement) => void;
+  animationPanel?: ReactNode;
+  appearancePanel?: ReactNode;
+  annotationsPanel?: ReactNode;
 }) {
   const resize = useInspectorResize();
   const elements = slide.elements.filter((e) => selected.includes(e.id));
@@ -68,6 +81,13 @@ export function PresentationInspector({
     setTabState({ selectionKey, tab });
   }
   const tabId = useId();
+  const tabs = [
+    "page",
+    "elements",
+    ...(selectionPanel ? ["layers"] : []),
+    ...(animationPanel ? ["animation"] : []),
+    ...(annotationsPanel ? ["annotations"] : []),
+  ];
   const colors = [
     slideTheme.navy,
     slideTheme.white,
@@ -102,7 +122,7 @@ export function PresentationInspector({
           role="tablist"
           aria-label="设置分类"
         >
-          {["page", "elements"].map((value, index) => (
+          {tabs.map((value, index) => (
             <button
               key={value}
               id={`${tabId}-${value}`}
@@ -117,19 +137,30 @@ export function PresentationInspector({
                 ) {
                   event.preventDefault();
                   const next =
-                    event.key === "Home"
-                      ? "page"
-                      : event.key === "End"
-                        ? "elements"
-                        : value === "page"
-                          ? "elements"
-                          : "page";
+                    tabs[
+                      event.key === "Home"
+                        ? 0
+                        : event.key === "End"
+                          ? tabs.length - 1
+                          : (index +
+                              (event.key === "ArrowLeft" ? -1 : 1) +
+                              tabs.length) %
+                            tabs.length
+                    ];
                   setTabState({ selectionKey, tab: next });
                   document.getElementById(`${tabId}-${next}`)?.focus();
                 }
               }}
             >
-              {index === 0 ? "页面" : "元素"}
+              {
+                {
+                  page: "页面",
+                  elements: "元素",
+                  layers: "图层",
+                  animation: "动画",
+                  annotations: "批注",
+                }[value]
+              }
             </button>
           ))}
         </div>
@@ -158,7 +189,13 @@ export function PresentationInspector({
                   : "元素格式"
               : tab === "page"
                 ? "页面设置"
-                : "元素设置"}
+                : tab === "layers"
+                  ? "选择面板"
+                  : tab === "animation"
+                    ? "动画与切换"
+                    : tab === "annotations"
+                      ? "页面批注"
+                      : "元素设置"}
           </h3>
           {tab === "elements" && elements.length > 0 && (
             <button
@@ -181,12 +218,18 @@ export function PresentationInspector({
             </button>
           )}
         </div>
+        {tab === "layers" && selectionPanel}
+        {tab === "animation" && animationPanel}
+        {tab === "annotations" && annotationsPanel}
         {tab === "page" ? (
           <>
-            <div className="presentation-field">
-              <span>页面比例</span>
-              <span className="presentation-page-ratio">16:9 宽屏</span>
-            </div>
+            {pageControls}
+            {!pageControls && (
+              <div className="presentation-field">
+                <span>页面比例</span>
+                <span className="presentation-page-ratio">16:9 宽屏</span>
+              </div>
+            )}
             <label className="presentation-field">
               页面背景
               <CustomColorPicker
@@ -223,6 +266,7 @@ export function PresentationInspector({
         {tab === "elements" && !elements.length && (
           <p className="muted">选择元素调整样式，双击文本框编辑文字。</p>
         )}
+        {tab === "elements" && appearancePanel}
         {tab === "elements" && (
           <>
             {element ? (
@@ -401,13 +445,34 @@ export function PresentationInspector({
                     patch={patch}
                     disabled={disabled}
                   />
+                ) : ["table", "chart", "formula", "video", "audio"].includes(
+                    element.kind,
+                  ) ? (
+                  <button
+                    className="btn"
+                    disabled={disabled || !onObjectEdit}
+                    onClick={() => onObjectEdit?.(element)}
+                  >
+                    编辑内容与数据
+                  </button>
                 ) : (
-                  <PresentationShapeSettings
-                    element={element}
-                    advancedOnly
-                    patch={patch}
-                    disabled={disabled}
-                  />
+                  <>
+                    <PresentationShapeSettings
+                      element={element}
+                      advancedOnly
+                      patch={patch}
+                      disabled={disabled}
+                    />
+                    {canContainText(element.kind) && (
+                      <button
+                        className="btn"
+                        disabled={disabled}
+                        onClick={editText}
+                      >
+                        编辑形状文字
+                      </button>
+                    )}
+                  </>
                 )}
               </>
             ) : null}

@@ -12,8 +12,12 @@
 | [delete_project](#delete-project) | `DELETE /v1/presentation-workshop/projects/{project_id}` |
 | [list_projects](#list-projects) | `GET /v1/presentation-workshop/projects` |
 | [get_project](#get-project) | `GET /v1/presentation-workshop/projects/{project_id}` |
+| [import_project](#import-project) | `POST /v1/presentation-workshop/imports` |
+| [preview_import](#preview-import) | `POST /v1/presentation-workshop/imports/preview` |
 | [create_project](#create-project) | `POST /v1/presentation-workshop/projects` |
 | [export_pptx](#export-pptx) | `POST /v1/presentation-workshop/projects/{project_id}/export` |
+| [preview_export](#preview-export) | `POST /v1/presentation-workshop/projects/{project_id}/export/preview` |
+| [export_file](#export-file) | `POST /v1/presentation-workshop/projects/{project_id}/export/{format}` |
 | [apply_presentation_operations](#apply-presentation-operations) | `POST /v1/presentation-workshop/projects/{project_id}/operations` |
 | [put_project](#put-project) | `PUT /v1/presentation-workshop/projects/{project_id}` |
 
@@ -77,6 +81,51 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## import_project {#import-project}
+
+`client.presentation.import_project(...)`
+
+**接口**：`POST /v1/presentation-workshop/imports`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | multipart/form-data | Body_create_import_v1_presentation_workshop_imports_post | 是 |
+| `body.allow_lossy` | 请求体 | boolean | 否 |
+| `body.upload` | 请求体 | string | 是 |
+
+文件通过 `files={字段名: (文件名, 二进制文件对象, MIME)}` 传入；其他表单字段放在 `body`。
+
+**响应**：
+- `200` · `application/json` · `PresentationProjectOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## preview_import {#preview-import}
+
+`client.presentation.preview_import(...)`
+
+**接口**：`POST /v1/presentation-workshop/imports/preview`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | multipart/form-data | Body_preview_import_v1_presentation_workshop_imports_preview_post | 是 |
+| `body.upload` | 请求体 | string | 是 |
+
+文件通过 `files={字段名: (文件名, 二进制文件对象, MIME)}` 传入；其他表单字段放在 `body`。
+
+**响应**：
+- `200` · `application/json` · `ImportPreview`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## create_project {#create-project}
 
 `client.presentation.create_project(...)`
@@ -116,6 +165,50 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/vnd.openxmlformats-officedocument.presentationml.presentation` · `string`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## preview_export {#preview-export}
+
+`client.presentation.preview_export(...)`
+
+**接口**：`POST /v1/presentation-workshop/projects/{project_id}/export/preview`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | PresentationExportIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `ExportPreview`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## export_file {#export-file}
+
+`client.presentation.export_file(...)`
+
+**接口**：`POST /v1/presentation-workshop/projects/{project_id}/export/{format}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `format` | path | json / fplppt | 是 |
+| `body` | application/json | PresentationExportIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `string`
+- `200` · `application/zip` · `string`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

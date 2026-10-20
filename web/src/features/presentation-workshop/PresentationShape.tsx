@@ -1,12 +1,29 @@
+import { pathData } from "./objects/pathGeometry";
 import { polygonFor } from "./shapeCatalog";
 import { useId } from "react";
 import type { SlideElement } from "./types";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 
-export function PresentationShape({ element }: { element: SlideElement }) {
+export function PresentationShape({
+  element,
+  assetUrls,
+}: {
+  element: SlideElement;
+  assetUrls?: Record<string, string>;
+}) {
   const { width: w, height: h, stroke_width: s } = element;
   const inset = s / 2;
   const polygon = polygonFor(element.kind, w, h);
   const markerId = useId().replace(/:/g, "");
+  const paint = element.paint;
+  const override = paint?.asset_id ? assetUrls?.[paint.asset_id] : undefined;
+  const asset = useApiBlobUrl(
+    paint?.asset_id && !override
+      ? `/v1/files/${encodeURIComponent(paint.asset_id)}/content`
+      : null,
+  );
+  const paintId = `${markerId}-paint`;
+  const radians = ((paint?.angle ?? 90) * Math.PI) / 180;
   return (
     <svg
       width="100%"
@@ -21,6 +38,42 @@ export function PresentationShape({ element }: { element: SlideElement }) {
       aria-hidden
     >
       <defs>
+        {paint?.type === "linear" && (
+          <linearGradient
+            id={paintId}
+            x1={0.5 - Math.sin(radians) / 2}
+            y1={0.5 + Math.cos(radians) / 2}
+            x2={0.5 + Math.sin(radians) / 2}
+            y2={0.5 - Math.cos(radians) / 2}
+          >
+            <stop stopColor={paint.color} />
+            <stop offset="1" stopColor={paint.end_color} />
+          </linearGradient>
+        )}
+        {paint?.type === "radial" && (
+          <radialGradient id={paintId}>
+            <stop stopColor={paint.color} />
+            <stop offset="1" stopColor={paint.end_color} />
+          </radialGradient>
+        )}
+        {paint?.type === "image" && (
+          <pattern
+            id={paintId}
+            patternUnits="userSpaceOnUse"
+            width={paint.fit === "repeat" ? 256 : w}
+            height={paint.fit === "repeat" ? 256 : h}
+          >
+            <rect width="100%" height="100%" fill={paint.color} />
+            <image
+              href={override ?? asset.url ?? undefined}
+              width={paint.fit === "repeat" ? 256 : w}
+              height={paint.fit === "repeat" ? 256 : h}
+              preserveAspectRatio={
+                paint.fit === "contain" ? "xMidYMid meet" : "xMidYMid slice"
+              }
+            />
+          </pattern>
+        )}
         {(["triangle", "open", "circle"] as const).map((type) => (
           <marker
             key={type}
@@ -45,8 +98,19 @@ export function PresentationShape({ element }: { element: SlideElement }) {
           </marker>
         ))}
       </defs>
+      {paint?.type === "image" && !override && !asset.url && (
+        <text role="status" x={4} y={20}>
+          {asset.error ? "图片加载失败" : "加载图片…"}
+        </text>
+      )}
       <g
-        fill={element.fill}
+        fill={
+          !paint
+            ? element.fill
+            : paint.type === "solid"
+              ? paint.color
+              : `url(#${paintId})`
+        }
         fillOpacity={element.fill_opacity ?? 1}
         strokeDasharray={
           element.stroke_dash === "dash"
@@ -59,6 +123,9 @@ export function PresentationShape({ element }: { element: SlideElement }) {
         strokeWidth={s}
         strokeLinejoin="round"
       >
+        {element.kind === "path" && element.path && (
+          <path d={pathData(element.path, w, h)} />
+        )}
         {element.kind === "rect" || element.kind === "roundRect" ? (
           <rect
             x={inset}

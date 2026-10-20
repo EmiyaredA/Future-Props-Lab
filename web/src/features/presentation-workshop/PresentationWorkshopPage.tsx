@@ -1,3 +1,4 @@
+import { Audience } from "./playback/Audience";
 import { useQuery } from "@tanstack/react-query";
 import { getProject } from "./api";
 import { presentationKeys } from "./queryKeys";
@@ -8,6 +9,7 @@ import "./presentation-workshop.css";
 import "./presentation-library.css";
 import "./presentation-canvas.css";
 import "./presentation-controls.css";
+import "./presentation-dialog.css";
 
 export function PresentationWorkshopPage({
   projectId,
@@ -22,11 +24,16 @@ export function PresentationWorkshopPage({
   readOnly?: boolean;
   registerNavigationGuard?: NavigationGuard;
 }) {
+  const audience = new URLSearchParams(window.location.search).get(
+    "presentationAudience",
+  );
   const project = useQuery({
     queryKey: presentationKeys.project(projectId ?? ""),
     queryFn: ({ signal }) => getProject(projectId!, signal),
-    enabled: !!projectId,
+    enabled: !!projectId && !audience,
   });
+  if (audience && projectId)
+    return <Audience sessionId={audience} projectId={projectId} />;
   if (!projectId)
     return <PresentationLibrary onOpen={onOpen} readOnly={readOnly} />;
   if (project.isPending)

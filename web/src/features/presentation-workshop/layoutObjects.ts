@@ -1,3 +1,4 @@
+import { defaultPageSize, type PageSize } from "./types";
 import type { Slide, SlideElement } from "./types";
 import { members } from "./scene/model";
 import { rotatedBounds, type Rect } from "./selectionGeometry";
@@ -111,6 +112,7 @@ export function layoutContext(
   slide: Slide,
   ids: string[],
   scope: string | null,
+  size: PageSize = defaultPageSize,
 ) {
   const objects = layoutObjects(slide, scope);
   const chosen = new Set(ids);
@@ -126,7 +128,7 @@ export function layoutContext(
   const scopedElements = slide.elements.filter((e) => scopeIds.has(e.id));
   const container = scopedElements.length
     ? rotatedBounds(scopedElements)
-    : { x: 0, y: 0, width: 1280, height: 720 };
+    : { x: 0, y: 0, ...size };
   return {
     selected,
     others: objects.filter((o) => !o.elements.some((e) => chosen.has(e.id))),
@@ -139,8 +141,9 @@ export function layoutControls(
   ids: string[],
   scope: string | null = null,
   readOnly = false,
+  size: PageSize = defaultPageSize,
 ) {
-  const { selected } = layoutContext(slide, ids, scope);
+  const { selected } = layoutContext(slide, ids, scope, size);
   const reference = selected[0];
   const reason = (mode: LayoutCommand) => {
     if (readOnly) return "只读文稿不可修改";
@@ -210,13 +213,15 @@ export function applyLayout(
   ids: string[],
   scope: string | null,
   mode: LayoutCommand,
+  pageSize: PageSize = defaultPageSize,
 ): Slide {
   if (
-    layoutControls(slide, ids, scope).commands.find((c) => c.mode === mode)
-      ?.reason
+    layoutControls(slide, ids, scope, false, pageSize).commands.find(
+      (c) => c.mode === mode,
+    )?.reason
   )
     return slide;
-  const { selected, container } = layoutContext(slide, ids, scope);
+  const { selected, container } = layoutContext(slide, ids, scope, pageSize);
   if (!selected.length) return slide;
   const box =
     selected.length === 1

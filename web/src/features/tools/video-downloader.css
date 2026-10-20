@@ -1,0 +1,352 @@
+.video-download-page {
+  max-width: 1220px;
+}
+
+.video-download-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.video-download-back svg {
+  width: 17px;
+  height: 17px;
+}
+
+.video-download-back:hover {
+  color: var(--accent);
+}
+
+.video-download-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 22px 0 28px;
+}
+
+.video-download-header h1 {
+  margin: 0 0 7px;
+  color: var(--text-strong);
+  font-size: 30px;
+}
+
+.video-download-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.video-download-mark {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.video-download-mark svg {
+  width: 27px;
+  height: 27px;
+}
+
+.video-download-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.video-download-panel {
+  min-width: 0;
+  padding: 25px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.video-download-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.video-download-panel-head h2,
+.video-download-status h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 19px;
+}
+
+.video-download-panel-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.video-download-panel-head svg {
+  width: 17px;
+  height: 17px;
+}
+
+.video-download-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.video-download-fields > label,
+.video-download-destinations legend {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.video-download-url {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  margin-bottom: 9px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.video-download-url svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.video-download-url input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+
+.video-download-fields .custom-select {
+  margin-bottom: 9px;
+}
+
+.video-download-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.video-download-check input {
+  margin-top: 3px;
+}
+
+.video-download-destinations {
+  margin: 8px 0 0;
+  padding: 14px 14px 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.video-download-destinations legend {
+  padding: 0 6px;
+}
+
+.video-download-hint {
+  margin: 4px 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.video-download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.video-download-actions button,
+.video-download-result-actions button {
+  min-height: 41px;
+  padding: 0 17px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.video-download-actions button.primary,
+.video-download-result-actions button.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+}
+
+.video-download-actions button:disabled,
+.video-download-result-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.video-download-message {
+  margin-top: 16px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.video-download-message.error {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.video-download-message.success {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.video-download-result {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.video-download-result-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text-strong);
+}
+
+.video-download-result-head svg {
+  width: 18px;
+  height: 18px;
+  color: var(--ok);
+}
+
+.video-download-result dl,
+.video-download-status dl {
+  margin: 0;
+}
+
+.video-download-result dl div,
+.video-download-status dl div {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.video-download-result dt,
+.video-download-status dt {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.video-download-result dd,
+.video-download-status dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.video-download-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.video-download-library-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 41px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.video-download-library-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.video-download-ready {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.video-download-ready svg {
+  width: 16px;
+  height: 16px;
+}
+
+.video-download-ready.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.video-download-ready.warn {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.video-download-page button:focus-visible,
+.video-download-page a:focus-visible,
+.video-download-page input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 800px) {
+  .video-download-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-download-panel {
+    padding: 18px;
+  }
+
+  .video-download-header h1 {
+    font-size: 25px;
+  }
+}

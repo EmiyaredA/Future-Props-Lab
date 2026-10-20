@@ -6,4 +6,6 @@ export const presentationKeys = {
   imageSearch: (query = "") =>
     ["presentation-workshop", "images", query] as const,
   images: ["presentation-workshop", "images"] as const,
+  mediaSearch: (kind: string, query = "") =>
+    ["presentation-workshop", "media", kind, query] as const,
 };

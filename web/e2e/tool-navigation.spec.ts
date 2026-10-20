@@ -140,6 +140,46 @@ test("opens the local video frame exporter", async ({ page }) => {
   await expect(page).toHaveURL(/\/tools$/);
 });
 
+test("opens the local video downloader", async ({ page }) => {
+  await page.route("**/v1/tool-navigation/video-download/deps", async (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ready: true,
+        yt_dlp: {
+          name: "yt-dlp",
+          ok: true,
+          path: "/usr/bin/yt-dlp",
+          version: "2026.08.19",
+          hint: null,
+        },
+        ffmpeg: {
+          name: "ffmpeg",
+          ok: true,
+          path: "/usr/bin/ffmpeg",
+          version: "ffmpeg version 7",
+          hint: null,
+        },
+      }),
+    }),
+  );
+  await page.goto("/tools");
+  const usage = page.waitForRequest(
+    "**/v1/tool-navigation/tools/video-downloader/use",
+  );
+  await page.getByRole("button", { name: "打开视频下载" }).click();
+  await usage;
+
+  await expect(page).toHaveURL(/\/tools\/video-downloader$/);
+  await expect(page.getByRole("heading", { name: "视频下载" })).toBeVisible();
+  await expect(page.getByText("yt-dlp 与 ffmpeg 已就绪")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "工具导航", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await page.getByRole("button", { name: "返回工具" }).click();
+  await expect(page).toHaveURL(/\/tools$/);
+});
+
 test("creates and edits an audio annotation task", async ({
   page,
 }, testInfo) => {

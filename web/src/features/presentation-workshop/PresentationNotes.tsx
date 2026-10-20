@@ -5,10 +5,14 @@ export function PresentationNotes({
   notes,
   readOnly,
   onChange,
+  onRichEdit,
+  rich = false,
 }: {
   notes: string;
   readOnly: boolean;
   onChange: (notes: string) => void;
+  onRichEdit?: () => void;
+  rich?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -24,6 +28,16 @@ export function PresentationNotes({
         <span>演示者备注</span>
         <small>{notes ? "已添加备注" : "点击添加演示者备注…"}</small>
       </button>
+      {open && onRichEdit && !readOnly && (
+        <button className="btn" onClick={onRichEdit}>
+          {rich ? "编辑富文本备注" : "富文本备注"}
+        </button>
+      )}
+      {open && rich && (
+        <small>
+          直接修改下方纯文本会移除备注格式；保留格式请使用“编辑富文本备注”。
+        </small>
+      )}
       <textarea
         id={id}
         hidden={!open}

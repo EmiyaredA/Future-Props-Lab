@@ -128,6 +128,23 @@ export function useSelectionFormat(
         if (values.underline) commands.setUnderline();
         else commands.unsetUnderline();
       }
+      if (values.strike !== undefined) {
+        if (values.strike) commands.setStrike();
+        else commands.unsetStrike();
+      }
+      if (values.code !== undefined) {
+        if (values.code) commands.setCode();
+        else commands.unsetCode();
+      }
+      if (values.highlight !== undefined) {
+        if (values.highlight)
+          commands.setHighlight({ color: values.highlight });
+        else commands.unsetHighlight();
+      }
+      if (values.script !== undefined) {
+        if (values.script === "normal") commands.unsetMark("script");
+        else commands.setMark("script", { kind: values.script });
+      }
       commands.run();
     } else
       patch({
@@ -147,6 +164,18 @@ export function useSelectionFormat(
         commands.updateAttributes("paragraph", {
           lineHeight: values.line_height,
         });
+      const fields = {
+        indent: values.indent,
+        firstLineIndent: values.first_line_indent,
+        spaceBefore: values.space_before,
+        spaceAfter: values.space_after,
+      };
+      commands.updateAttributes(
+        "paragraph",
+        Object.fromEntries(
+          Object.entries(fields).filter(([, v]) => v !== undefined),
+        ),
+      );
       if (values.bullet !== undefined)
         commands.updateAttributes("paragraph", { bullet: values.bullet });
       if (values.numbered !== undefined)

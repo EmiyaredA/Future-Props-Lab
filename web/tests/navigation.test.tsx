@@ -123,6 +123,7 @@ test("uses home as the default and parses deep application routes", () => {
   expect(parsePage("/files")).toBe("files");
   expect(parsePage("/tools")).toBe("tools");
   expect(parsePage("/tools/video-frame-exporter")).toBe("video-frame-exporter");
+  expect(parsePage("/tools/video-downloader")).toBe("video-downloader");
   expect(parsePage("/tools/codex-model-source")).toBe("codex-model-source");
   expect(parsePage("/apps/audio-annotation")).toBe("audio-annotation-projects");
   expect(parsePage("/apps/audio-annotation/projects/project-1")).toBe(
@@ -141,6 +142,7 @@ test("uses home as the default and parses deep application routes", () => {
   expect(pathFor("home")).toBe("/home");
   expect(pathFor("tools")).toBe("/tools");
   expect(pathFor("video-frame-exporter")).toBe("/tools/video-frame-exporter");
+  expect(pathFor("video-downloader")).toBe("/tools/video-downloader");
   expect(pathFor("codex-model-source")).toBe("/tools/codex-model-source");
   expect(pathFor("audio-annotation-projects")).toBe("/apps/audio-annotation");
   expect(pathFor("audio-annotation-editor", "project-1")).toBe(
@@ -174,6 +176,14 @@ test("uses home as the default and parses deep application routes", () => {
 
 test("keeps tool navigation active on the video frame exporter", () => {
   render(<StudioSidebar page="video-frame-exporter" navigate={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "工具导航" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+});
+
+test("keeps tool navigation active on the video downloader", () => {
+  render(<StudioSidebar page="video-downloader" navigate={vi.fn()} />);
   expect(screen.getByRole("button", { name: "工具导航" })).toHaveAttribute(
     "aria-current",
     "page",

@@ -757,12 +757,28 @@
       "method": "stream_text",
       "resource": "inference"
     },
+    "POST /v1/presentation-workshop/imports": {
+      "method": "import_project",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/imports/preview": {
+      "method": "preview_import",
+      "resource": "presentation"
+    },
     "POST /v1/presentation-workshop/projects": {
       "method": "create_project",
       "resource": "presentation"
     },
     "POST /v1/presentation-workshop/projects/{project_id}/export": {
       "method": "export_pptx",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/projects/{project_id}/export/preview": {
+      "method": "preview_export",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/projects/{project_id}/export/{format}": {
+      "method": "export_file",
       "resource": "presentation"
     },
     "POST /v1/presentation-workshop/projects/{project_id}/operations": {

@@ -1,0 +1,158 @@
+.presentation-editor .presentation-topbar {
+  min-height: 44px;
+  padding: 4px 12px;
+  gap: 8px;
+}
+.presentation-editor .presentation-workspace {
+  grid-template-columns: 176px minmax(0, 1fr) auto;
+}
+.presentation-center > .presentation-toolbar {
+  min-height: 40px;
+  padding: 4px 10px;
+  gap: 8px;
+}
+.presentation-center > .presentation-toolbar .btn {
+  padding: 5px 8px;
+}
+.presentation-center
+  > .presentation-toolbar
+  .presentation-toolbar-group
+  + .presentation-toolbar-group {
+  padding-left: 8px;
+}
+.presentation-action-menu kbd {
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+}
+.presentation-context-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  z-index: 100;
+}
+.presentation-layers ol {
+  padding: 0;
+  margin: 12px 0;
+  list-style: none;
+}
+.presentation-layers li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  border-bottom-color: var(--border);
+  border-radius: 4px;
+}
+.presentation-layers li.is-selected {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border-color: var(--accent);
+}
+.presentation-layers input {
+  min-width: 0;
+  width: 100%;
+  flex: 1;
+  border: 1px solid transparent;
+  padding: 5px 2px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+}
+.presentation-layers input:focus-visible,
+.presentation-layers button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.presentation-layers .icon-btn,
+.presentation-layer-select {
+  width: 23px;
+  height: 26px;
+  border: 0;
+  padding: 0;
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.presentation-layer-order {
+  display: flex;
+  flex-direction: column;
+}
+.presentation-layer-order .icon-btn {
+  height: 15px;
+}
+.presentation-layers button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.presentation-layers .presentation-layer-connection {
+  padding-left: 24px;
+}
+@media (max-width: 767px) {
+  .presentation-editor .presentation-workspace {
+    display: flex;
+  }
+  .presentation-center > .presentation-toolbar {
+    order: -1;
+    max-width: 100%;
+  }
+  .presentation-editor .presentation-topbar {
+    flex-wrap: wrap;
+  }
+}
+
+.presentation-filmstrip-item[data-page-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.presentation-filmstrip-batch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 11px;
+}
+.presentation-section-heading {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 8px 0;
+  overflow-wrap: anywhere;
+}
+.presentation-rich-notes-editor {
+  position: relative;
+  height: 220px;
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid var(--border);
+  margin: 0;
+  background: #fff;
+  color: #17334a;
+}
+.presentation-annotation {
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+  overflow-wrap: anywhere;
+}
+.presentation-annotation p {
+  white-space: pre-wrap;
+}
+.presentation-path-points {
+  max-height: 240px;
+  overflow: auto;
+}
+.presentation-appearance-panel .presentation-object-actions {
+  gap: 4px;
+}
+
+.presentation-text-editor[data-auto-fit="true"] > div,
+.presentation-text-editor[data-auto-fit="true"] .tiptap {
+  height: auto;
+  min-height: 0;
+}

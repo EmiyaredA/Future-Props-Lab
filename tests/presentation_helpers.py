@@ -4,6 +4,18 @@ from app.apps.presentation_workshop.schemas.document import PresentationDocument
 def element(kind="text", **overrides):
     return {
         "id": "text-one",
+        "name": "",
+        "hidden": False,
+        "table": None,
+        "chart": None,
+        "formula": None,
+        "media": None,
+        "paint": None,
+        "shadow": None,
+        "text_layout": None,
+        "image_effects": None,
+        "path": None,
+        "link": None,
         "kind": kind,
         "x": 80,
         "y": 100,
@@ -31,6 +43,10 @@ def element(kind="text", **overrides):
                 "align": "left",
                 "line_height": 1.3,
                 "bullet": False,
+                "indent": 0,
+                "first_line_indent": 0,
+                "space_before": 0,
+                "space_after": 0,
                 "runs": [
                     {
                         "text": "中文标题 Native PPTX",
@@ -40,6 +56,10 @@ def element(kind="text", **overrides):
                         "bold": True,
                         "italic": False,
                         "underline": False,
+                        "strike": False,
+                        "highlight": None,
+                        "script": "normal",
+                        "code": False,
                     }
                 ],
             }

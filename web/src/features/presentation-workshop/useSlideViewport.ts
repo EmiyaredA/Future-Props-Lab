@@ -1,3 +1,4 @@
+import { defaultPageSize, type PageSize } from "./types";
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 type Anchor = { x: number; y: number; slideX: number; slideY: number };
@@ -9,7 +10,9 @@ export function useSlideViewport({
   zoom,
   onZoomChange,
   isZoomBlocked,
+  size: pageSize = defaultPageSize,
 }: {
+  size?: PageSize;
   host: RefObject<HTMLDivElement | null>;
   canvas: RefObject<HTMLDivElement | null>;
   zoom: number | null;
@@ -64,8 +67,10 @@ export function useSlideViewport({
         fit: Math.max(
           0.08,
           Math.min(
-            (width - padding("paddingLeft") - padding("paddingRight")) / 1280,
-            (height - padding("paddingTop") - padding("paddingBottom")) / 720,
+            (width - padding("paddingLeft") - padding("paddingRight")) /
+              pageSize.width,
+            (height - padding("paddingTop") - padding("paddingBottom")) /
+              pageSize.height,
           ),
         ),
       });
@@ -115,7 +120,7 @@ export function useSlideViewport({
       area.removeEventListener("wheel", wheel);
       area.removeEventListener("scroll", rememberCenter);
     };
-  }, [host, canvas]);
+  }, [host, canvas, pageSize.width, pageSize.height]);
 
   useLayoutEffect(() => {
     const area = host.current;

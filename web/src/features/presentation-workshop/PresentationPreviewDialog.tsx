@@ -1,10 +1,12 @@
+import { keepDialogEscapeLocal } from "./dialogKeyboard";
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { SlidePreview } from "./SlideSurface";
-import type { Slide } from "./types";
+import type { PageSize, Slide } from "./types";
 
 export function PresentationPreviewDialog({
+  size,
   title,
   slides,
   loading,
@@ -15,6 +17,7 @@ export function PresentationPreviewDialog({
   onClose,
   returnFocus,
 }: {
+  size?: PageSize;
   title: string;
   slides?: Slide[];
   loading: boolean;
@@ -68,7 +71,8 @@ export function PresentationPreviewDialog({
       <Dialog.Portal>
         <Dialog.Overlay className="presentation-preview-backdrop" />
         <Dialog.Content
-          className="presentation-preview-dialog"
+          onEscapeKeyDown={keepDialogEscapeLocal}
+          className="presentation-dialog presentation-preview-dialog presentation-dialog-floating"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             returnFocus();
@@ -85,43 +89,45 @@ export function PresentationPreviewDialog({
               <X size={20} aria-hidden />
             </Dialog.Close>
           </header>
-          {failed ? (
-            <div className="presentation-preview-status" role="alert">
-              <p>预览加载失败，请重试。</p>
-              <button className="btn" onClick={retry}>
-                重试
-              </button>
-            </div>
-          ) : loading || !slides?.length ? (
-            <p className="presentation-preview-status" role="status">
-              正在加载预览…
-            </p>
-          ) : (
-            <>
-              <div
-                className="presentation-preview-stage"
-                aria-label={`第 ${current + 1} 页完整预览`}
-              >
-                <SlidePreview slide={slides[current]} />
+          <div className="presentation-dialog-body">
+            {failed ? (
+              <div className="presentation-preview-status" role="alert">
+                <p>预览加载失败，请重试。</p>
+                <button className="btn" onClick={retry}>
+                  重试
+                </button>
               </div>
-              <nav
-                className="presentation-preview-filmstrip"
-                aria-label="预览页面"
-              >
-                {slides.map((slide, page) => (
-                  <button
-                    key={slide.id}
-                    aria-label={`查看第 ${page + 1} 页`}
-                    aria-current={page === current ? "page" : undefined}
-                    onClick={() => setIndex(page)}
-                  >
-                    <SlidePreview slide={slide} />
-                    <span>{page + 1}</span>
-                  </button>
-                ))}
-              </nav>
-            </>
-          )}
+            ) : loading || !slides?.length ? (
+              <p className="presentation-preview-status" role="status">
+                正在加载预览…
+              </p>
+            ) : (
+              <>
+                <div
+                  className="presentation-preview-stage"
+                  aria-label={`第 ${current + 1} 页完整预览`}
+                >
+                  <SlidePreview slide={slides[current]} size={size} />
+                </div>
+                <nav
+                  className="presentation-preview-filmstrip"
+                  aria-label="预览页面"
+                >
+                  {slides.map((slide, page) => (
+                    <button
+                      key={slide.id}
+                      aria-label={`查看第 ${page + 1} 页`}
+                      aria-current={page === current ? "page" : undefined}
+                      onClick={() => setIndex(page)}
+                    >
+                      <SlidePreview slide={slide} size={size} />
+                      <span>{page + 1}</span>
+                    </button>
+                  ))}
+                </nav>
+              </>
+            )}
+          </div>
           <footer>
             <nav aria-label="预览翻页">
               <button
