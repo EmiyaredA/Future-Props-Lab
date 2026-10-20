@@ -3,13 +3,21 @@
   inset: auto 10px 10px auto;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   border-radius: 6px;
-  padding: 6px 9px;
+  padding: 5px 9px;
+  min-height: 28px;
+  box-sizing: border-box;
   background: #132338d9;
   color: #fff;
   font-size: 12px;
+  line-height: 1;
   border: 0;
+}
+.presentation-preview-hint svg {
+  display: block;
+  flex-shrink: 0;
 }
 .presentation-project-cover {
   position: relative;

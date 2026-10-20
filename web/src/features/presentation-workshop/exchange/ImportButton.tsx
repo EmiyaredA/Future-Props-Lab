@@ -6,8 +6,12 @@ export function ImportButton({ onOpen }: { onOpen: (id: string) => void }) {
     [file, setFile] = useState<File | null>(null);
   return (
     <>
-      <button className="btn" onClick={() => input.current?.click()}>
-        <Upload size={16} />
+      <button
+        type="button"
+        className="workshop-secondary"
+        onClick={() => input.current?.click()}
+      >
+        <Upload aria-hidden />
         导入文稿
       </button>
       <input

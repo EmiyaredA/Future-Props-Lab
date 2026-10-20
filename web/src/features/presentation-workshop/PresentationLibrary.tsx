@@ -82,6 +82,7 @@ export function PresentationLibrary({
             <>
               <ImportButton onOpen={onOpen} />
               <button
+                type="button"
                 className="workshop-primary"
                 disabled={busy}
                 onClick={() => startNew()}
@@ -105,14 +106,21 @@ export function PresentationLibrary({
               {starters.map((starter) =>
                 starter.value === "blank" ? (
                   <button
+                    type="button"
                     key={starter.value}
+                    className="presentation-starter-blank"
                     aria-label="从空白新建文稿"
                     disabled={busy}
                     onClick={() => startNew("blank")}
                   >
                     <div className="presentation-starter-preview">
                       <SlidePreview slide={starter.slide} />
-                      <Plus size={26} />
+                      <span
+                        className="presentation-starter-blank-mark"
+                        aria-hidden
+                      >
+                        <Plus size={22} />
+                      </span>
                     </div>
                     <span>{starter.label}</span>
                   </button>
@@ -138,7 +146,7 @@ export function PresentationLibrary({
             我的文稿 <span>{query.data?.total ?? 0}</span>
           </h3>
           <label className="presentation-search">
-            <Search size={17} />
+            <Search size={16} aria-hidden />
             <input
               placeholder="搜索文稿"
               aria-label="搜索文稿"
@@ -180,63 +188,69 @@ export function PresentationLibrary({
                 onUse={() => onOpen(project.id)}
                 className="presentation-project-open"
               />
-              <div className="presentation-project-info">
-                <button
-                  onClick={() => onOpen(project.id)}
-                  aria-label={`打开 ${project.title}`}
-                  title={project.title}
-                >
-                  {project.title}
-                </button>
-                <p>
-                  {project.slide_count} 页 ·{" "}
-                  {new Date(project.updated_at).toLocaleDateString("zh-CN")}
-                </p>
+              <div className="presentation-project-footer">
+                <div className="presentation-project-info">
+                  <button
+                    type="button"
+                    onClick={() => onOpen(project.id)}
+                    aria-label={`打开 ${project.title}`}
+                    title={project.title}
+                  >
+                    {project.title}
+                  </button>
+                  <p>
+                    {project.slide_count} 页 ·{" "}
+                    {new Date(project.updated_at).toLocaleDateString("zh-CN")}
+                  </p>
+                </div>
+                {!readOnly ? (
+                  <PresentationMenu
+                    className="presentation-project-actions"
+                    label={`文稿操作 ${project.title}`}
+                    disabled={busy}
+                    actions={[
+                      {
+                        label: `重命名 ${project.title}`,
+                        icon: <Pencil size={15} aria-hidden />,
+                        onSelect: () => setRename(project),
+                      },
+                      {
+                        label: `复制 ${project.title}`,
+                        icon: <Copy size={15} aria-hidden />,
+                        onSelect: () =>
+                          void perform(async () => {
+                            const p = await getProject(project.id);
+                            const copy = await createProject({
+                              title: p.title.slice(0, 110) + "（副本）",
+                              document: p.document,
+                            });
+                            onOpen(copy.id);
+                          }),
+                      },
+                      {
+                        label: `删除 ${project.title}`,
+                        icon: <Trash2 size={15} aria-hidden />,
+                        danger: true,
+                        onSelect: () => setRemove(project),
+                      },
+                    ]}
+                  >
+                    <MoreHorizontal size={16} aria-hidden />
+                  </PresentationMenu>
+                ) : null}
               </div>
-              {!readOnly ? (
-                <PresentationMenu
-                  className="presentation-project-actions"
-                  label={`文稿操作 ${project.title}`}
-                  disabled={busy}
-                  actions={[
-                    {
-                      label: `重命名 ${project.title}`,
-                      icon: <Pencil size={15} />,
-                      onSelect: () => setRename(project),
-                    },
-                    {
-                      label: `复制 ${project.title}`,
-                      icon: <Copy size={15} />,
-                      onSelect: () =>
-                        void perform(async () => {
-                          const p = await getProject(project.id);
-                          const copy = await createProject({
-                            title: p.title.slice(0, 110) + "（副本）",
-                            document: p.document,
-                          });
-                          onOpen(copy.id);
-                        }),
-                    },
-                    {
-                      label: `删除 ${project.title}`,
-                      icon: <Trash2 size={15} />,
-                      danger: true,
-                      onSelect: () => setRemove(project),
-                    },
-                  ]}
-                >
-                  <MoreHorizontal size={19} />
-                </PresentationMenu>
-              ) : null}
             </article>
           ))}
           {!readOnly && query.isSuccess && !search && (
             <button
+              type="button"
               className="presentation-create-card"
               disabled={busy}
               onClick={() => startNew()}
             >
-              <Plus size={28} />
+              <span className="presentation-create-card-mark" aria-hidden>
+                <Plus size={20} />
+              </span>
               <span>新建演示</span>
             </button>
           )}

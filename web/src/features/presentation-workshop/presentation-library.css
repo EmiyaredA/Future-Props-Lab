@@ -56,21 +56,33 @@
     border-color 160ms,
     box-shadow 160ms;
 }
-.presentation-starter-preview > svg {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  color: #6b7178;
+.presentation-starter-preview > .presentation-preview {
+  display: block;
+  width: 100%;
 }
-.presentation-starter-grid > button > span {
+.presentation-starter-blank-mark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #6b7178;
+  pointer-events: none;
+}
+.presentation-starter-blank-mark svg {
+  display: block;
+}
+.presentation-starter-grid > button > span:last-child {
   display: block;
   padding-top: 10px;
   font-size: 13px;
+  line-height: 1.35;
 }
 .presentation-starter-grid > button:hover .presentation-starter-preview {
   border-color: var(--accent);
   box-shadow: 0 3px 12px #0000000a;
+}
+.presentation-starter-blank:hover .presentation-starter-blank-mark {
+  color: var(--accent);
 }
 .presentation-library-tools {
   display: flex;
@@ -86,14 +98,20 @@
   font-weight: 400;
 }
 .presentation-search {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 10px 12px;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   color: var(--muted);
+  box-sizing: border-box;
+}
+.presentation-search svg {
+  flex-shrink: 0;
+  display: block;
 }
 .presentation-search:focus-within {
   outline: 2px solid var(--accent);
@@ -107,14 +125,18 @@
   min-width: 0;
   outline: none;
   font-size: 13px;
+  line-height: 1.3;
 }
 .presentation-project-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
+  align-items: stretch;
 }
 .presentation-project-card {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--surface);
@@ -137,18 +159,30 @@
   background: var(--surface);
   cursor: pointer;
 }
+.presentation-project-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 8px 12px 14px;
+  min-height: 64px;
+  box-sizing: border-box;
+}
 .presentation-project-info {
-  padding: 14px 48px 15px 15px;
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0 0;
 }
 .presentation-project-info > button {
+  display: block;
+  width: 100%;
   font-weight: 600;
   background: none;
   border: 0;
   padding: 0;
   color: var(--text);
   font-size: 14px;
+  line-height: 1.35;
   text-align: left;
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -157,31 +191,69 @@
 .presentation-project-info p {
   color: var(--muted);
   font-size: 11px;
-  margin: 7px 0 0;
+  line-height: 1.35;
+  margin: 6px 0 0;
 }
 .presentation-project-actions {
-  position: absolute;
-  bottom: 23px;
-  right: 10px;
+  flex: none;
+  margin-top: 0;
+}
+.presentation-library .presentation-project-actions > button {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+}
+.presentation-library .presentation-project-actions > button svg {
+  display: block;
+}
+.presentation-library
+  .presentation-project-actions
+  > button:hover:not(:disabled) {
+  background: var(
+    --surface-hover,
+    color-mix(in srgb, var(--text) 6%, transparent)
+  );
+  color: var(--text);
 }
 .presentation-create-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   border: 1px dashed var(--border);
   border-radius: 9px;
   background: transparent;
   color: var(--muted);
-  min-height: 160px;
+  min-height: 100%;
   cursor: pointer;
   font-size: 13px;
+  line-height: 1.35;
+}
+.presentation-create-card-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.presentation-create-card-mark svg {
+  display: block;
 }
 .presentation-create-card:hover {
   border-color: var(--accent);
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 3%, var(--bg));
+}
+.presentation-create-card:hover .presentation-create-card-mark {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 .presentation-library-empty,
 .presentation-loading {
