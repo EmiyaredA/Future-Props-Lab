@@ -124,8 +124,10 @@
 }
 .presentation-marquee {
   position: absolute;
-  border: 1px solid #6274d2;
-  background: #6274d222;
+  z-index: 9;
+  box-sizing: border-box;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   pointer-events: none;
 }
 .presentation-canvas-scale {
@@ -251,4 +253,17 @@
 
 .presentation-text-editor [style*="Consolas"] {
   font-family: Consolas, "Courier New", monospace !important;
+}
+
+.presentation-marquee-capture {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  cursor: crosshair;
+  touch-action: none;
+}
+.presentation-toolbar button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }

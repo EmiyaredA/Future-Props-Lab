@@ -74,6 +74,7 @@ export function usePresentationSession({
   const [brush, setBrush] = useState<SlideElement | null>(null);
   const [richNotes, setRichNotes] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [boxSelect, setBoxSelect] = useState(false);
   const [drawMode, setDrawMode] = useState<"pen" | "polygon" | null>(null);
   const [grid, setGrid] = useState(false),
     [rulers, setRulers] = useState(false);
@@ -217,6 +218,9 @@ export function usePresentationSession({
     slide.elements.some((e) => e.id === crop.session!.base.id && !e.locked)
       ? crop.session
       : null;
+  useEffect(() => {
+    if (readOnly || cropSession || drawMode) setBoxSelect(false);
+  }, [readOnly, cropSession, drawMode]);
   const history = usePresentationHistory({
     draft,
     scopeKey: `${slide.id}:${selected.join(",")}:${editing ?? ""}`,
@@ -290,6 +294,7 @@ export function usePresentationSession({
     if (editor?.view.composing) return;
     draft.endGroup();
     setDrawMode(null);
+    setBoxSelect(false);
     setEditing(null);
     select([]);
     crop.cancel();
@@ -298,6 +303,7 @@ export function usePresentationSession({
     setActive(id);
   };
   const insert = (elements: SlideElement[]) => {
+    setBoxSelect(false);
     if (slide.elements.length + elements.length > 200) {
       setError("每页最多 200 个元素");
       return;
@@ -315,6 +321,7 @@ export function usePresentationSession({
     setEditing(null);
   };
   const insertFragment = (fragment: Fragment) => {
+    setBoxSelect(false);
     try {
       changeSlide((s) => appendFragment(s, fragment));
       select(fragment.elements.map((e) => e.id));
@@ -534,6 +541,8 @@ export function usePresentationSession({
     setSearchOpen,
     drawMode,
     setDrawMode,
+    boxSelect,
+    setBoxSelect,
     exportFormat,
     setExportFormat,
     grid,

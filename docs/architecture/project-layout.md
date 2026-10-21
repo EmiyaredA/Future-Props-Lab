@@ -481,7 +481,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `codeBlock.ts` 生成原生代码背景、语言标签和文本分组，工具栏插入复用现有片段、撤销与保存链路。
 `scene/` 拥有原生分组、节点连接、参考图对照和页面检查；`infographics/` 拥有 AntV
 声明式输入、受控模板原生转换与 ELK 布局，不持有另一套保存或导出状态。`elkLayout.ts` 按需创建并销毁独立布局 Worker，`validation.ts` 在原生片段预览前校验结构，装饰 SVG 复用正式素材预览校验。
-`scene/selection.ts` 解析命中元素与分组选择，`useSceneTools` 唯一持有组内层级；画布在点击松手时请求下钻，拖动保留原选区。这些选择状态不进入文稿持久化。
+`scene/selection.ts` 解析命中元素、完整逻辑对象框选与分组选择，`useSceneTools` 唯一持有组内层级；画布在点击松手时请求下钻，拖动保留原选区。这些选择状态不进入文稿持久化。
 `scene/ConnectionPanel.tsx` 将连接属性停靠到右侧 `PresentationInspector` 元素页，连接选择与新建预览仍由 `useSceneTools` 拥有；不再持有浮层定位状态。
 `scene/connectionGeometry.ts` 拥有沿边比例端点、旋转边缘投影、路径编辑与节点跟随；`ConnectionHandles` 展示画布覆盖层，`useConnectionDrag` 只持有可取消预览，松手经统一草稿提交一次。线身拖动解除两端绑定并平移全路径，端点拖动可自由放置或重新吸附；直线拖动保持直线，折线手柄编辑局部走线。自由端点以互斥的 ID／point 表达，`0104_presentation_free_connections` 为旧连接补 null 坐标，复制、可见性、批量操作和 PPTX 共享端点语义。后端 `connection_routes.py` 与 Web 共用测试向量，operations 合并整批节点变换后调整路径，显式路径优先。连接 `source_offset`、`target_offset` 为 0–1，迁移 `0100_presentation_connection_offsets` 为旧连接补 0.5，保留路径与 revision；PPTX 将非中点连接导出为自由形状以保留几何。
 `scene/stacking.ts` 解析并调整元素与连接的统一前后顺序；连接 `layer` 保存下方元素数量，同层按连接数组顺序。迁移 `0098_presentation_connection_layers` 为缺失层级补 0，保留旧画面与 revision。`SlideSurface` 与 `pptx_scene.py` 消费相同顺序；PPTX 仅保留连续叠放的原生组，交错组在导出时展开以保持遮挡，源分组不变。

@@ -148,6 +148,16 @@ export function PresentationEditor(props: EditorProps) {
             onAdd={(layout) => addSlide(undefined, layout)}
             onUndo={commands.get("undo").onSelect}
             onRedo={commands.get("redo").onSelect}
+            boxSelect={session.boxSelect && !session.drawMode}
+            onBoxSelect={() => {
+              setEditing(null);
+              session.setDrawMode(null);
+              scene.closeConnection();
+              session.setBoxSelect(!session.boxSelect);
+              session.history.root.current
+                ?.querySelector<HTMLElement>(".presentation-canvas")
+                ?.focus({ preventScroll: true });
+            }}
             onText={() => insert([newElement("text")])}
             onCode={() => {
               setEditing(null);
@@ -172,6 +182,7 @@ export function PresentationEditor(props: EditorProps) {
                 label: "自由绘制",
                 onSelect: () => {
                   setEditing(null);
+                  session.setBoxSelect(false);
                   session.setDrawMode("pen");
                 },
               },
@@ -179,6 +190,7 @@ export function PresentationEditor(props: EditorProps) {
                 label: "绘制多边形",
                 onSelect: () => {
                   setEditing(null);
+                  session.setBoxSelect(false);
                   session.setDrawMode("polygon");
                 },
               },

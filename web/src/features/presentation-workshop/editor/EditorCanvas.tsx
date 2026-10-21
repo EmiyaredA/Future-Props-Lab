@@ -130,6 +130,8 @@ export function EditorCanvas({
           <SlideCanvas
             onFormulaEdit={cropSession ? undefined : onFormulaEdit}
             size={draft.draft.document}
+            boxSelect={session.boxSelect && !session.drawMode && !cropSession}
+            onBoxSelectEnd={() => session.setBoxSelect(false)}
             drawMode={session.drawMode}
             onDrawCancel={() => session.setDrawMode(null)}
             onDrawFinish={(element) => {

@@ -31,10 +31,14 @@ import {
   type SlideElement,
 } from "./types";
 import type { Connection } from "./scene/model";
-import { selectionIds, updateScene } from "./scene/model";
+import { updateScene } from "./scene/model";
 import { useConnectionDrag } from "./scene/useConnectionDrag";
 import { ConnectionHandles } from "./scene/ConnectionHandles";
-import { groupAtHit, selectionAtHit } from "./scene/selection";
+import {
+  groupAtHit,
+  selectionAtHit,
+  marqueeSelection,
+} from "./scene/selection";
 import { useSlideViewport } from "./useSlideViewport";
 
 import { SelectionOverlay } from "./SelectionOverlay";
@@ -48,6 +52,10 @@ type Gesture = {
   startY: number;
   base: Slide;
   ids: string[];
+  selectedBefore: string[];
+  scopeBefore: string | null;
+  scope: string | null;
+  additive: boolean;
   mode: "move" | "resize" | "rotate" | "marquee";
   box: ReturnType<typeof bounds>;
   context: ReturnType<typeof layoutContext>;
@@ -83,6 +91,8 @@ export function SlideCanvas({
   onDrawFinish,
   onDrawCancel,
   onFormulaEdit,
+  boxSelect = false,
+  onBoxSelectEnd,
 }: {
   size?: PageSize;
   grid?: boolean;
@@ -91,6 +101,8 @@ export function SlideCanvas({
   onDrawFinish?: (element: SlideElement) => void;
   onDrawCancel?: () => void;
   onFormulaEdit?: (element: SlideElement) => void;
+  boxSelect?: boolean;
+  onBoxSelectEnd?: () => void;
   slide: Slide;
   onCanvasInteract?: () => void;
   previewConnection?: Connection;
@@ -229,33 +241,41 @@ export function SlideCanvas({
       y: (event.clientY - rect.top) / scale,
     };
   };
-  const start = (event: PointerEvent<HTMLDivElement>) => {
+  const start = (event: PointerEvent<HTMLDivElement>, forceMarquee = false) => {
     if (
       event.button !== 0 ||
       connectionDrag.active() ||
       (event.target as HTMLElement).closest(".presentation-text-editor")
     )
       return;
-    const element = slide.elements.find(
-      (e) =>
-        e.id ===
-        (event.target as HTMLElement).closest<HTMLElement>("[data-element-id]")
-          ?.dataset.elementId,
-    );
+    const element =
+      forceMarquee || boxSelect
+        ? undefined
+        : slide.elements.find(
+            (e) =>
+              e.id ===
+              (event.target as HTMLElement).closest<HTMLElement>(
+                "[data-element-id]",
+              )?.dataset.elementId,
+          );
     lastHit.current = element?.id ?? null;
-    const mode = (event.target as HTMLElement).closest<HTMLElement>(
-      "[data-handle]",
-    )?.dataset.handle as Gesture["mode"] | undefined;
+    const mode =
+      forceMarquee || boxSelect
+        ? undefined
+        : ((event.target as HTMLElement).closest<HTMLElement>("[data-handle]")
+            ?.dataset.handle as Gesture["mode"] | undefined);
     setEditing(null);
     setRouteError("");
     const additive = event.shiftKey || event.metaKey || event.ctrlKey;
-    const hit = selectionAtHit(
-      slide,
-      selected,
-      element?.id ?? null,
-      groupScope,
-      additive,
-    );
+    const hit = boxSelect
+      ? { scope: groupScope, ids: additive ? selected : [], drill: null }
+      : selectionAtHit(
+          slide,
+          selected,
+          element?.id ?? null,
+          groupScope,
+          additive,
+        );
     const ids = mode ? selected : hit.ids;
     const grouped =
       element &&
@@ -281,18 +301,22 @@ export function SlideCanvas({
     if (!mode && hit.scope !== groupScope && !readOnly && onGroupScopeChange)
       onGroupScopeChange(hit.scope, ids);
     else select(ids);
-    if (readOnly || window.matchMedia("(max-width: 767px)").matches) return;
+    if (
+      readOnly ||
+      (!boxSelect && window.matchMedia("(max-width: 767px)").matches)
+    )
+      return;
     const elements = slide.elements.filter(
       (e) => ids.includes(e.id) && !e.locked,
     );
     if (
       element?.locked ||
-      slide.elements.some((e) => ids.includes(e.id) && e.locked) ||
+      (element && slide.elements.some((e) => ids.includes(e.id) && e.locked)) ||
       (element && !elements.length)
     )
       return;
     event.preventDefault();
-    event.currentTarget.focus();
+    canvas.current?.focus({ preventScroll: true });
     const p = point(event);
     gesture.current = {
       handle: ((event.target as HTMLElement).closest<HTMLElement>(
@@ -304,6 +328,10 @@ export function SlideCanvas({
       base: slide,
       context: layoutContext(slide, ids, mode ? groupScope : hit.scope, size),
       ids: elements.map((e) => e.id),
+      selectedBefore: selected,
+      scopeBefore: groupScope,
+      scope: mode ? groupScope : hit.scope,
+      additive,
       mode: mode ?? (element ? "move" : "marquee"),
       box: elements.length
         ? elements.length > 1
@@ -311,7 +339,7 @@ export function SlideCanvas({
           : bounds(elements)
         : { x: p.x, y: p.y, width: 0, height: 0 },
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
+    canvas.current?.setPointerCapture(event.pointerId);
   };
   const move = (event: PointerEvent<HTMLDivElement>) => {
     const pending = press.current;
@@ -335,20 +363,10 @@ export function SlideCanvas({
         height: Math.abs(dy),
       };
       setMarquee(area);
-      select([
-        ...new Set(
-          g.base.elements
-            .filter(
-              (e) =>
-                !e.hidden &&
-                e.x >= area.x &&
-                e.y >= area.y &&
-                e.x + e.width <= area.x + area.width &&
-                e.y + e.height <= area.y + area.height,
-            )
-            .flatMap((e) => selectionIds(g.base, e.id, groupScope)),
-        ),
-      ]);
+      const found = marqueeSelection(g.base, area, g.scope);
+      select(
+        g.additive ? [...new Set([...g.selectedBefore, ...found])] : found,
+      );
       return;
     }
     const selectedElements = g.base.elements.filter((e) =>
@@ -451,6 +469,13 @@ export function SlideCanvas({
     }
   };
   const finish = (cancel = false) => {
+    const current = gesture.current;
+    if (cancel && current?.mode === "marquee" && current.base.id === slide.id) {
+      if (current.scopeBefore !== groupScope && onGroupScopeChange)
+        onGroupScopeChange(current.scopeBefore, current.selectedBefore);
+      else select(current.selectedBefore);
+    }
+    if (current?.mode === "marquee") onBoxSelectEnd?.();
     if (
       !cancel &&
       preview.current &&
@@ -473,6 +498,8 @@ export function SlideCanvas({
       onGroupScopeChange?.(pending.drill.scope, pending.drill.ids);
     press.current = null;
     gesture.current = null;
+    if (pending && canvas.current?.hasPointerCapture?.(pending.pointer))
+      canvas.current.releasePointerCapture(pending.pointer);
     setGesturing(false);
     preview.current = null;
     setTransient(null);
@@ -486,13 +513,26 @@ export function SlideCanvas({
     historyGesture.current = () => {
       if (sketchCancel.current?.()) return true;
       if (connectionDrag.cancel()) return true;
-      if (!press.current && !gesture.current) return false;
+      if (!press.current && !gesture.current) {
+        if (boxSelect) {
+          onBoxSelectEnd?.();
+          return true;
+        }
+        return false;
+      }
       finish(true);
       return true;
     };
     return () => {
       historyGesture.current = null;
     };
+  });
+  useEffect(() => {
+    const cancelOnBlur = () => {
+      if (press.current || gesture.current) finish(true);
+    };
+    window.addEventListener("blur", cancelOnBlur);
+    return () => window.removeEventListener("blur", cancelOnBlur);
   });
   const active = display.elements.find(
     (e) => e.id === editing && canContainText(e.kind) && !e.locked,
@@ -503,6 +543,15 @@ export function SlideCanvas({
       data-popover-boundary
       ref={host}
       onPointerDown={(event) => {
+        if (event.target === event.currentTarget && !drawMode && !cropOverlay) {
+          const rect = event.currentTarget.getBoundingClientRect();
+          const inside =
+            event.clientX <
+              rect.left + (event.currentTarget.clientWidth || rect.width) &&
+            event.clientY <
+              rect.top + (event.currentTarget.clientHeight || rect.height);
+          if (inside) start(event, true);
+        }
         if (
           event.button === 0 &&
           !(event.target as Element).closest(
@@ -527,7 +576,7 @@ export function SlideCanvas({
             width: size.width,
             height: size.height,
           }}
-          onPointerDown={start}
+          onPointerDown={(event) => start(event)}
           onPointerMove={(event) => {
             if (!connectionDrag.move(event)) move(event);
           }}
@@ -553,6 +602,13 @@ export function SlideCanvas({
               };
           }}
           onKeyDown={(e) => {
+            if (e.key === "Escape" && boxSelect) {
+              e.preventDefault();
+              e.stopPropagation();
+              if (gesture.current) finish(true);
+              else onBoxSelectEnd?.();
+              return;
+            }
             if (e.key === "Escape" && drawMode) {
               e.preventDefault();
               e.stopPropagation();
@@ -678,7 +734,7 @@ export function SlideCanvas({
                 onReady={onReady}
                 onExit={() => {
                   setEditing(null);
-                  canvas.current?.focus();
+                  canvas.current?.focus({ preventScroll: true });
                 }}
               />
             ) : null}
@@ -690,17 +746,6 @@ export function SlideCanvas({
               />
             ) : null}
             <LayoutGuides guides={guides} scale={scale} />
-            {marquee ? (
-              <div
-                className="presentation-marquee"
-                style={{
-                  left: marquee.x,
-                  top: marquee.y,
-                  width: marquee.width,
-                  height: marquee.height,
-                }}
-              />
-            ) : null}
             {cropOverlay}
             {!readOnly &&
               selectedConnection &&
@@ -716,6 +761,29 @@ export function SlideCanvas({
                 />
               )}
           </SlideSurface>
+          {boxSelect && !readOnly && !drawMode && !cropOverlay && (
+            <div
+              className="presentation-marquee-capture"
+              aria-label="框选区域"
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                onCanvasInteract?.();
+                start(event, true);
+              }}
+            />
+          )}
+          {marquee && (
+            <div
+              className="presentation-marquee"
+              aria-hidden="true"
+              style={{
+                ...marquee,
+                left: marquee.x,
+                top: marquee.y,
+                borderWidth: 1 / scale,
+              }}
+            />
+          )}
           {drawMode && !readOnly && onDrawFinish && onDrawCancel && (
             <CanvasSketch
               mode={drawMode}
