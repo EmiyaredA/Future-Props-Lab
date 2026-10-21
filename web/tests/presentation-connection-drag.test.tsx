@@ -111,7 +111,7 @@ describe("connection drag lifetime", () => {
     expect(h.result.current.active()).toBe(false);
     expect(h.commit).not.toHaveBeenCalled();
   });
-  it("requires a valid edge projection and never binds to the other endpoint's node", () => {
+  it("allows a free endpoint without binding to the other endpoint's node", () => {
     const h = setup();
     act(() =>
       h.result.current.start(
@@ -124,9 +124,51 @@ describe("connection drag lifetime", () => {
     act(() => h.result.current.move(h.event(700, 340)));
     expect(h.result.current.preview?.target_offset).toBe(0.2);
     act(() => h.result.current.move(h.event(100, 200)));
-    expect(h.result.current.preview).toBeNull();
+    expect(h.result.current.preview).toMatchObject({
+      target_id: null,
+      target_point: { x: 100, y: 200 },
+    });
     act(() => h.result.current.finish(h.event(100, 200)));
-    expect(h.commit).not.toHaveBeenCalled();
+    expect(h.commit).toHaveBeenCalledOnce();
+  });
+  it("Shift keeps whole-line movement on the dominant axis and free endpoints align to the other end", () => {
+    const h = setup();
+    act(() =>
+      h.result.current.start(
+        h.event(490, 325),
+        h.edge,
+        { kind: "move", index: 0 },
+        { x: 0, y: 0 },
+      ),
+    );
+    act(() =>
+      h.result.current.move({
+        ...h.event(550, 345),
+        shiftKey: true,
+      } as PointerEvent),
+    );
+    expect(h.result.current.preview).toMatchObject({
+      source_id: null,
+      target_id: null,
+      source_point: { x: 340, y: 250 },
+      target_point: { x: 760, y: 400 },
+    });
+    act(() => h.result.current.cancel());
+    act(() =>
+      h.result.current.start(
+        h.event(700, 400),
+        h.edge,
+        { kind: "target", index: 3 },
+        { x: 700, y: 400 },
+      ),
+    );
+    act(() => h.result.current.move(h.event(520, 257)));
+    expect(h.result.current.preview).toMatchObject({
+      target_id: null,
+      target_point: { x: 520, y: 250 },
+    });
+    act(() => h.result.current.finish(h.event(520, 257)));
+    expect(h.commit).toHaveBeenCalledOnce();
   });
   it("uses keyboard steps along a side and cycles connections across it", () => {
     const h = setup();

@@ -154,6 +154,10 @@ export function PresentationEditor(props: EditorProps) {
               setCodeSlide(slide.id);
             }}
             onShape={(kind, values) => insert([newElement(kind, values)])}
+            onFormula={() => {
+              setEditing(null);
+              objects.insertFormula();
+            }}
             onIcon={media.icon}
             onSvg={() => media.open("SVG")}
             onUpload={() => media.open("上传图片")}
@@ -182,7 +186,11 @@ export function PresentationEditor(props: EditorProps) {
             ]}
           />
 
-          <EditorCanvas session={session} readOnly={readOnly} />
+          <EditorCanvas
+            session={session}
+            readOnly={readOnly}
+            onFormulaEdit={objects.edit}
+          />
           {scene.checks}
           <PresentationNotes
             rich={!!slide.notes_rich}
@@ -198,6 +206,9 @@ export function PresentationEditor(props: EditorProps) {
           />
         </main>
         <PresentationInspector
+          connectionPanel={scene.connectionPanel}
+          connectionId={scene.edgeId}
+          connectionSelectionVersion={scene.connectionSelectionVersion}
           annotationsPanel={
             <AnnotationsPanel
               key={slide.id}

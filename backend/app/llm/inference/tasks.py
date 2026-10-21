@@ -9,6 +9,7 @@ from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, LocalInput, root
 from app.llm.inference.catalog import get_model, normalize_parameters
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
+from app.llm.providers.local_qwen import MAX_REFERENCE_BYTES, inspect_reference
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
 from app.runtime.config import get_settings
@@ -114,6 +115,13 @@ class InferenceTasks:
                 )
             except ValueError as exc:
                 raise OperationError(str(exc)) from None
+        if body.kind == "speech_synthesis":
+            reference = assets[0]
+            if reference.byte_size > MAX_REFERENCE_BYTES or Path(
+                reference.filename
+            ).suffix.lower() not in {".wav", ".mp3", ".m4a", ".ogg"}:
+                raise OperationError("参考录音仅支持 20MB 以内的 WAV、MP3、M4A、OGG")
+            await inspect_reference(root(self.workspace_id) / "inputs" / reference.storage_key)
         payload["asset_ids"] = body.asset_ids
         snap = credential or CredentialSnapshot()
         row = ModelInferenceTask(

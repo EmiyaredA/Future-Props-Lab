@@ -1,3 +1,4 @@
+import { SpeechSynthesisTestPanel } from "@features/models/generation/SpeechSynthesisTestPanel";
 import { ModelGenerationTestPanel } from "@features/models/generation/ModelGenerationTestPanel";
 import { modelGenerationKind } from "@features/models/generation/modelGenerationOptions";
 import { ModelTranscriptionTestPanel } from "@features/models/generation/ModelTranscriptionTestPanel";
@@ -29,6 +30,16 @@ export function ModelTestCapabilityPanel({
   onOpenAudioAnnotation: (projectId: string) => void;
 }) {
   const model = models.find((item) => item.value === modelId);
+  if (model?.capabilities.includes("speech_synthesis")) {
+    return (
+      <SpeechSynthesisTestPanel
+        models={models}
+        modelId={modelId}
+        onSelectMode={onSelectMode}
+        onSelectModel={(id) => onSelectModel(id, "synthesis")}
+      />
+    );
+  }
   if (model?.capabilities.includes("voice")) {
     return (
       <ModelRealtimeVoiceTestPanel

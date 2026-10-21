@@ -2843,7 +2843,7 @@ class InferenceRevisionIn(WireModel):
 
 class InferenceTaskIn(WireModel):
     asset_ids: list[str] | None = Field(default=None, alias='asset_ids', max_length=50)
-    kind: Literal['image', 'video', 'music', 'sound_effect', 'transcription'] = Field(default=..., alias='kind')
+    kind: Literal['image', 'video', 'music', 'sound_effect', 'transcription', 'speech_synthesis'] = Field(default=..., alias='kind')
     model_id: str = Field(default=..., alias='model_id')
     parameters: dict[str, Any] | None = Field(default=None, alias='parameters')
     request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
@@ -2854,7 +2854,7 @@ class InferenceTaskOut(WireModel):
     error_message: str | None = Field(default=..., alias='error_message')
     execution_info: TaskExecutionInfo | None = Field(default=None, alias='execution_info')
     id: str = Field(default=..., alias='id')
-    kind: Literal['image', 'video', 'music', 'sound_effect', 'transcription'] = Field(default=..., alias='kind')
+    kind: Literal['image', 'video', 'music', 'sound_effect', 'transcription', 'speech_synthesis'] = Field(default=..., alias='kind')
     log_id: str | None = Field(default=..., alias='log_id')
     model_id: str | None = Field(default=..., alias='model_id')
     model_slug: str = Field(default=..., alias='model_slug')
@@ -3057,6 +3057,36 @@ class Live2DSave(WireModel):
     document: CharacterDocument = Field(default=..., alias='document')
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
 
+class LocalModelActionIn(WireModel):
+    action: Literal['install', 'cancel', 'enable', 'stop', 'uninstall'] = Field(default=..., alias='action')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
+
+class LocalModelAttachIn(WireModel):
+    expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
+    model_id: str = Field(default=..., alias='model_id')
+
+class LocalModelOut(WireModel):
+    busy: bool = Field(default=..., alias='busy')
+    compatible: bool = Field(default=..., alias='compatible')
+    download_bytes: int = Field(default=..., alias='download_bytes')
+    enabled: bool = Field(default=..., alias='enabled')
+    error_message: str | None = Field(default=None, alias='error_message')
+    id: str = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label')
+    license: str = Field(default=..., alias='license')
+    loaded: bool = Field(default=..., alias='loaded')
+    model_revision: str = Field(default=..., alias='model_revision')
+    progress: int = Field(default=..., alias='progress')
+    repository: str = Field(default=..., alias='repository')
+    required_disk_bytes: int = Field(default=..., alias='required_disk_bytes')
+    revision: int = Field(default=..., alias='revision')
+    status: str = Field(default=..., alias='status')
+
+class LocalModelsOut(WireModel):
+    can_manage: bool = Field(default=..., alias='can_manage')
+    items: list[LocalModelOut] = Field(default=..., alias='items')
+
 class LogWorkspaceOut(WireModel):
     id: str = Field(default=..., alias='id')
     name: str = Field(default=..., alias='name')
@@ -3188,7 +3218,7 @@ class ModelDefaultsIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
 class ModelEntryIn(WireModel):
-    capabilities: list[Literal['chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
+    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
     categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'image_generation', 'end_to_end_speech']] | None = Field(default=None, alias='categories')
     description: str = Field(default='', alias='description', max_length=255)
     enabled: bool = Field(default=True, alias='enabled')
@@ -3197,7 +3227,8 @@ class ModelEntryIn(WireModel):
     slug: str = Field(default=..., alias='slug', min_length=1, max_length=160)
 
 class ModelEntryOut(WireModel):
-    capabilities: list[Literal['chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] = Field(default=..., alias='capabilities')
+    availability: Literal['ready', 'not_installed', 'stopped', 'unsupported_platform'] = Field(default='ready', alias='availability')
+    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] = Field(default=..., alias='capabilities')
     categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'image_generation', 'end_to_end_speech']] = Field(default=..., alias='categories')
     description: str = Field(default=..., alias='description')
     enabled: bool = Field(default=..., alias='enabled')
@@ -3915,12 +3946,14 @@ class PresentationConnection(WireModel):
     label: str = Field(default='', alias='label', max_length=500)
     layer: int = Field(default=0, alias='layer', ge=0.0, le=200.0)
     source_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='right', alias='source_anchor')
-    source_id: str = Field(default=..., alias='source_id', min_length=1, max_length=64)
+    source_id: str | None = Field(default=None, alias='source_id')
     source_offset: float = Field(default=0.5, alias='source_offset', ge=0.0, le=1.0)
+    source_point: PresentationPoint | None = Field(default=None, alias='source_point')
     style: Literal['straight', 'step'] = Field(default='step', alias='style')
     target_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='left', alias='target_anchor')
-    target_id: str = Field(default=..., alias='target_id', min_length=1, max_length=64)
+    target_id: str | None = Field(default=None, alias='target_id')
     target_offset: float = Field(default=0.5, alias='target_offset', ge=0.0, le=1.0)
+    target_point: PresentationPoint | None = Field(default=None, alias='target_point')
     waypoints: list[PresentationPoint] | None = Field(default=None, alias='waypoints', max_length=32)
     width: float = Field(default=2, alias='width', ge=0.5, le=30.0)
 
@@ -4215,7 +4248,7 @@ class ProviderIn(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
-    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_id: str | None = Field(default=None, alias='supplier_id')
 
@@ -4229,7 +4262,7 @@ class ProviderOut(WireModel):
     enabled: bool = Field(default=..., alias='enabled')
     has_api_key: bool = Field(default=..., alias='has_api_key', repr=False)
     id: str = Field(default=..., alias='id')
-    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     managed_fields: list[str] | None = Field(default=None, alias='managed_fields')
     models: list[ModelEntryOut] = Field(default=..., alias='models')
     name: str = Field(default=..., alias='name')
@@ -4380,7 +4413,7 @@ class RealtimeVoiceModelOut(WireModel):
     output_sample_rate: int = Field(default=..., alias='output_sample_rate')
     playback: RealtimeVoicePlaybackOut = Field(default=..., alias='playback')
     provider_id: str = Field(default=..., alias='provider_id')
-    provider_kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     slug: str = Field(default=..., alias='slug')
     supports_interruption: bool = Field(default=..., alias='supports_interruption')
@@ -4833,6 +4866,18 @@ class SplitClipOperation(WireModel):
     new_link_group_id: str | None = Field(default=None, alias='newLinkGroupId')
     type: Literal['splitClip'] = Field(default=..., alias='type')
 
+class StorageAnalyzer(WireModel):
+    installed: bool = Field(default=..., alias='installed')
+    version: str | None = Field(default=None, alias='version')
+
+class StorageCapacity(WireModel):
+    free_bytes: int = Field(default=..., alias='free_bytes')
+    total_bytes: int = Field(default=..., alias='total_bytes')
+    used_bytes: int = Field(default=..., alias='used_bytes')
+
+class StorageDirectoryIn(WireModel):
+    directory: str = Field(default=..., alias='directory', min_length=1, max_length=4096)
+
 class StorageLayoutIssueOut(WireModel):
     asset_id: str = Field(default=..., alias='asset_id')
     code: Literal['source_missing', 'target_conflict', 'copy_failed'] = Field(default=..., alias='code')
@@ -4859,6 +4904,22 @@ class StorageLayoutStatusOut(WireModel):
     pending_bytes: int = Field(default=..., alias='pending_bytes')
     pending_projects: int = Field(default=..., alias='pending_projects')
     target_version: Literal[2] = Field(default=2, alias='target_version')
+
+class StorageOpenReceipt(WireModel):
+    directory: str = Field(default=..., alias='directory')
+    submitted: bool = Field(default=True, alias='submitted')
+
+class StorageShortcut(WireModel):
+    available: bool = Field(default=..., alias='available')
+    directory: str = Field(default=..., alias='directory')
+    id: str = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label')
+
+class StorageUsageState(WireModel):
+    analyzer: StorageAnalyzer = Field(default=..., alias='analyzer')
+    capacity: StorageCapacity = Field(default=..., alias='capacity')
+    directory: str = Field(default=..., alias='directory')
+    shortcuts: list[StorageShortcut] = Field(default=..., alias='shortcuts')
 
 class Structure(WireModel):
     can_edit: bool = Field(default=True, alias='can_edit')
@@ -4923,7 +4984,7 @@ class TemplateIn(WireModel):
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
 
 class TemplateModel(WireModel):
-    capabilities: list[Literal['chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
+    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
     categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'image_generation', 'end_to_end_speech']] | None = Field(default=None, alias='categories')
     description: str = Field(default='', alias='description', max_length=255)
     enabled: bool = Field(default=True, alias='enabled')
@@ -4954,7 +5015,7 @@ class TemplateProvider_Input(WireModel):
     clear_api_key: bool = Field(default=False, alias='clear_api_key', repr=False)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -4965,7 +5026,7 @@ class TemplateProvider_Output(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -5329,7 +5390,7 @@ class VideoDownloadJobCreate(WireModel):
     quality: str = Field(default='best', alias='quality')
     save_to_disk: bool = Field(default=True, alias='save_to_disk')
     save_to_library: bool = Field(default=True, alias='save_to_library')
-    url: str = Field(default=..., alias='url', min_length=8, max_length=2048)
+    url: str = Field(default=..., alias='url', min_length=8, max_length=4096)
     use_browser_cookies: bool = Field(default=False, alias='use_browser_cookies', repr=False)
 
 class VideoDownloadJobOut(WireModel):
@@ -6604,6 +6665,10 @@ Live2DPreflight.model_rebuild()
 Live2DProjectOut.model_rebuild()
 Live2DProjects.model_rebuild()
 Live2DSave.model_rebuild()
+LocalModelActionIn.model_rebuild()
+LocalModelAttachIn.model_rebuild()
+LocalModelOut.model_rebuild()
+LocalModelsOut.model_rebuild()
 LogWorkspaceOut.model_rebuild()
 LoginIn.model_rebuild()
 McpCatalogOut.model_rebuild()
@@ -6851,9 +6916,15 @@ SnapshotBlock.model_rebuild()
 SnapshotRun.model_rebuild()
 Sort.model_rebuild()
 SplitClipOperation.model_rebuild()
+StorageAnalyzer.model_rebuild()
+StorageCapacity.model_rebuild()
+StorageDirectoryIn.model_rebuild()
 StorageLayoutIssueOut.model_rebuild()
 StorageLayoutMigrationOut.model_rebuild()
 StorageLayoutStatusOut.model_rebuild()
+StorageOpenReceipt.model_rebuild()
+StorageShortcut.model_rebuild()
+StorageUsageState.model_rebuild()
 Structure.model_rebuild()
 SvgPreviewIn.model_rebuild()
 SvgPreviewOut.model_rebuild()

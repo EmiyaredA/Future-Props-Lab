@@ -12,16 +12,19 @@
 | [delete_model](#delete-model) | `DELETE /v1/model-entries/{model_id}` |
 | [delete_provider](#delete-provider) | `DELETE /v1/model-providers/{provider_id}` |
 | [delete_supplier](#delete-supplier) | `DELETE /v1/model-suppliers/{supplier_id}` |
+| [list_local_models](#list-local-models) | `GET /v1/local-models` |
 | [list_model_categories](#list-model-categories) | `GET /v1/model-categories` |
 | [list_providers](#list-providers) | `GET /v1/model-providers` |
 | [update_model](#update-model) | `PATCH /v1/model-entries/{model_id}` |
 | [update_provider](#update-provider) | `PATCH /v1/model-providers/{provider_id}` |
 | [update_supplier](#update-supplier) | `PATCH /v1/model-suppliers/{supplier_id}` |
+| [attach_local_model](#attach-local-model) | `POST /v1/local-models/attach` |
 | [run_model_test](#run-model-test) | `POST /v1/model-entries/{model_id}/test` |
 | [create_provider](#create-provider) | `POST /v1/model-providers` |
 | [set_provider_enabled](#set-provider-enabled) | `POST /v1/model-providers/{provider_id}/enabled` |
 | [add_model](#add-model) | `POST /v1/model-providers/{provider_id}/models` |
 | [create_supplier](#create-supplier) | `POST /v1/model-suppliers` |
+| [local_model_action](#local-model-action) | `POST /v1/platform/local-models/{model_id}/actions` |
 | [defaults](#defaults) | `PUT /v1/model-catalog/defaults` |
 
 ## delete_model {#delete-model}
@@ -81,6 +84,24 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `DeleteMutationOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_local_models {#list-local-models}
+
+`client.models.list_local_models(...)`
+
+**接口**：`GET /v1/local-models`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `LocalModelsOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -165,7 +186,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.base_url` | 请求体 | string | 否 |
 | `body.enabled` | 请求体 | boolean | 否 |
 | `body.expected_catalog_revision` | 请求体 | integer | 是 |
-| `body.kind` | 请求体 | volcengine_image / openai / anthropic / senseaudio_image / volcengine_video / senseaudio_video / zealman_video / senseaudio_asr / senseaudio_asr_pro / senseaudio_realtime / senseaudio_music / senseaudio_sfx | 是 |
+| `body.kind` | 请求体 | local_qwen_tts / volcengine_image / openai / anthropic / senseaudio_image / volcengine_video / senseaudio_video / zealman_video / senseaudio_asr / senseaudio_asr_pro / senseaudio_realtime / senseaudio_music / senseaudio_sfx | 是 |
 | `body.name` | 请求体 | string | 是 |
 | `body.supplier_id` | 请求体 | string / null | 否 |
 
@@ -193,6 +214,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ModelSupplierMutationOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## attach_local_model {#attach-local-model}
+
+`client.models.attach_local_model(...)`
+
+**接口**：`POST /v1/local-models/attach`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`configuration.manage`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | LocalModelAttachIn | 是 |
+| `body.expected_catalog_revision` | 请求体 | integer | 是 |
+| `body.model_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ModelCatalogOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -232,7 +274,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.base_url` | 请求体 | string | 否 |
 | `body.enabled` | 请求体 | boolean | 否 |
 | `body.expected_catalog_revision` | 请求体 | integer | 是 |
-| `body.kind` | 请求体 | volcengine_image / openai / anthropic / senseaudio_image / volcengine_video / senseaudio_video / zealman_video / senseaudio_asr / senseaudio_asr_pro / senseaudio_realtime / senseaudio_music / senseaudio_sfx | 是 |
+| `body.kind` | 请求体 | local_qwen_tts / volcengine_image / openai / anthropic / senseaudio_image / volcengine_video / senseaudio_video / zealman_video / senseaudio_asr / senseaudio_asr_pro / senseaudio_realtime / senseaudio_music / senseaudio_sfx | 是 |
 | `body.name` | 请求体 | string | 是 |
 | `body.supplier_id` | 请求体 | string / null | 否 |
 
@@ -308,6 +350,29 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ModelSupplierMutationOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## local_model_action {#local-model-action}
+
+`client.models.local_model_action(...)`
+
+**接口**：`POST /v1/platform/local-models/{model_id}/actions`。**鉴权**：Session；敏感操作需要二次验证。
+**权限**：`configuration.manage`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `model_id` | path | string | 是 |
+| `body` | application/json | LocalModelActionIn | 是 |
+| `body.action` | 请求体 | install / cancel / enable / stop / uninstall | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.request_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `LocalModelOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

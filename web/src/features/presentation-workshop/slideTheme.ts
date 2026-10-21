@@ -105,7 +105,8 @@ export function applySlideTheme(
       };
     }),
     connections: slide.connections?.map((c) =>
-      locked.has(c.source_id) || locked.has(c.target_id)
+      (c.source_id != null && locked.has(c.source_id)) ||
+      (c.target_id != null && locked.has(c.target_id))
         ? c
         : { ...c, color: color(c.color) },
     ),

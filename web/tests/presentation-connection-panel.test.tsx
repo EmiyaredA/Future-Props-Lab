@@ -1,5 +1,6 @@
+import { PresentationInspector } from "@features/presentation-workshop/PresentationInspector";
 import { useState } from "react";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useSceneTools } from "@features/presentation-workshop/scene/SceneTools";
@@ -16,14 +17,10 @@ vi.mock("@features/presentation-workshop/api", () => ({
   saveProject: vi.fn(),
   createProject: vi.fn(),
 }));
-let resize: () => void;
 beforeEach(() =>
   vi.stubGlobal(
     "ResizeObserver",
     class {
-      constructor(callback: () => void) {
-        resize = callback;
-      }
       observe() {}
       disconnect() {}
     },
@@ -100,7 +97,7 @@ function Harness({ readOnly = false }: { readOnly?: boolean }) {
       ),
   });
   return (
-    <div>
+    <div className="presentation-workspace">
       <button onClick={() => tools.onSelectEdge("ab")}>第一条</button>
       <button onClick={() => tools.onSelectEdge("bc")}>第二条</button>
       <button
@@ -123,7 +120,20 @@ function Harness({ readOnly = false }: { readOnly?: boolean }) {
       </output>
       <div>
         <div className="presentation-canvas" tabIndex={0} />
-        {tools.connectionPanel}
+        <PresentationInspector
+          slide={draft.draft.document.slides[0]}
+          selected={selected}
+          connectionId={tools.edgeId}
+          connectionSelectionVersion={tools.connectionSelectionVersion}
+          connectionPanel={tools.connectionPanel}
+          patch={vi.fn()}
+          background={vi.fn()}
+          editor={null}
+          arrange={vi.fn()}
+          order={vi.fn()}
+          editText={vi.fn()}
+          readOnly={readOnly}
+        />
       </div>
       <Connections
         slide={draft.draft.document.slides[0]}
@@ -135,7 +145,46 @@ function Harness({ readOnly = false }: { readOnly?: boolean }) {
 const data = () => JSON.parse(screen.getByLabelText("文稿").textContent!);
 const panel = () => screen.getByRole("region", { name: "连接线调节" });
 
-describe("连接浮动面板", () => {
+describe("连接属性面板", () => {
+  it("选中连接自动打开右侧元素属性，切换页面后可切回，选择普通元素不残留连接控件", async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByRole("button", { name: "第一条" }));
+    expect(panel().closest("aside")).toHaveAttribute("aria-label", "格式面板");
+    expect(screen.getByRole("tab", { name: "元素" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.queryByRole("button", { name: "移动连接调节面板" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "页面" }));
+    expect(
+      screen.queryByRole("region", { name: "连接线调节" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "第一条" }));
+    expect(screen.getByRole("tab", { name: "元素" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "脱离节点，自由移动" }),
+    );
+    expect(data().connections[0]).toMatchObject({
+      source_id: null,
+      target_id: null,
+    });
+    await userEvent.click(screen.getByRole("button", { name: /^连接端点/ }));
+    fireEvent.change(screen.getByRole("spinbutton", { name: "起点 X" }), {
+      target: { value: "123" },
+    });
+    expect(data().connections[0].source_point.x).toBe(123);
+    await userEvent.click(screen.getByRole("button", { name: "选元素" }));
+    expect(
+      screen.queryByRole("region", { name: "连接线调节" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("位置与大小")).toBeInTheDocument();
+  });
+
   it("连接层级可逐层调整、置顶置底并撤销重做，路径保持不变", async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole("button", { name: "第一条" }));
@@ -268,44 +317,6 @@ describe("连接浮动面板", () => {
     expect(data().connections[0].label).toBe("关系说明");
     await userEvent.keyboard("{Escape}");
     expect(document.querySelector(".presentation-canvas")).toHaveFocus();
-  });
-
-  it("位置随键盘移动、展开与窗口改变限幅，重开记住位置", async () => {
-    render(<Harness />);
-    await userEvent.click(screen.getByRole("button", { name: "第一条" }));
-    const root = panel(),
-      host = root.parentElement!;
-    let width = 800;
-    vi.spyOn(host, "getBoundingClientRect").mockImplementation(
-      () => ({ width, height: 700, left: 0, top: 0 }) as DOMRect,
-    );
-    Object.defineProperties(root, {
-      offsetWidth: { value: 300 },
-      offsetHeight: { value: 400 },
-    });
-    act(() => resize());
-    expect(root.style.left).toBe("488px");
-    const grip = screen.getByRole("button", { name: "移动连接调节面板" });
-    grip.focus();
-    await userEvent.keyboard("{Shift>}{ArrowLeft}{/Shift}");
-    expect(root.style.left).toBe("478px");
-    await userEvent.click(screen.getByRole("button", { name: "关闭连接设置" }));
-    await userEvent.click(screen.getByRole("button", { name: "第一条" }));
-    width = 390;
-    const reopened = panel();
-    vi.spyOn(
-      reopened.parentElement!,
-      "getBoundingClientRect",
-    ).mockImplementation(
-      () => ({ width, height: 700, left: 0, top: 0 }) as DOMRect,
-    );
-    Object.defineProperties(reopened, {
-      offsetWidth: { value: 300 },
-      offsetHeight: { value: 600 },
-    });
-    act(() => resize());
-    expect(reopened.style.left).toBe("78px");
-    expect(reopened.style.maxWidth).toBe("366px");
   });
 });
 

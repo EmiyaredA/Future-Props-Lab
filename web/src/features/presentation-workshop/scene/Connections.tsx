@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type PointerEvent, type KeyboardEvent } from "react";
 import type { Slide } from "../types";
 import { connectionPoints } from "./model";
 import type { Connection } from "./model";
@@ -7,12 +7,16 @@ export function Connections({
   slide,
   selected,
   onSelect,
+  onMoveStart,
+  onMoveKey,
   edges = slide.connections ?? [],
 }: {
   slide: Slide;
   selected?: string | null;
   onSelect?: (id: string) => void;
   edges?: Connection[];
+  onMoveStart?: (event: PointerEvent, edge: Connection) => void;
+  onMoveKey?: (event: KeyboardEvent, edge: Connection) => void;
 }) {
   const prefix = useId().replace(/:/g, "");
   return (
@@ -95,15 +99,17 @@ export function Connections({
                 fill="none"
                 stroke="transparent"
                 strokeWidth="16"
-                style={{ pointerEvents: "stroke", cursor: "pointer" }}
+                style={{ pointerEvents: "stroke", cursor: "move" }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   onSelect(edge.id);
+                  onMoveStart?.(e, edge);
                 }}
                 role="button"
                 tabIndex={0}
                 aria-label={`编辑连接${edge.label || edge.id}`}
                 onKeyDown={(e) => {
+                  onMoveKey?.(e, edge);
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     onSelect(edge.id);

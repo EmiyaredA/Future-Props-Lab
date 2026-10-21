@@ -278,3 +278,42 @@ describe("connection routes", () => {
     ).toThrow();
   });
 });
+
+describe("自由端点", () => {
+  it("整体平移会脱离绑定并平移完整路径，复制页面保留自由线", async () => {
+    const { translateConnection, freeConnectionEnd } =
+      await import("@features/presentation-workshop/scene/connectionGeometry");
+    const { copySlide } =
+      await import("@features/presentation-workshop/templates");
+    const { validConnection, patchConnection } =
+      await import("@features/presentation-workshop/scene/connectionEditing");
+    const s = fixture();
+    const original = connectionPoints(s, s.connections![0]);
+    const moved = translateConnection(s, s.connections![0], { x: 30, y: 40 });
+    expect(moved).toMatchObject({ source_id: null, target_id: null });
+    expect(connectionPoints(s, moved)).toEqual(
+      original.map((p) => ({ x: p.x + 30, y: p.y + 40 })),
+    );
+    expect(validConnection(s, moved)).toBe(true);
+    expect(patchConnection(s.connections![0], moved).waypoints).toEqual(
+      moved.waypoints,
+    );
+    s.connections = [moved];
+    const copied = copySlide(s);
+    expect(connectionPoints(copied, copied.connections![0])).toEqual(
+      connectionPoints(s, moved),
+    );
+    const mixed = reconnect(moved, "source", {
+      id: "a",
+      side: "right",
+      offset: 0.5,
+      point: { x: 300, y: 150 },
+    });
+    expect(mixed.source_point).toBeNull();
+    expect(validConnection(s, mixed)).toBe(true);
+    expect(
+      freeConnectionEnd(mixed, "source", { x: 250, y: 300 }).source_id,
+    ).toBeNull();
+    expect(() => translateConnection(s, moved, { x: 10001, y: 0 })).toThrow();
+  });
+});

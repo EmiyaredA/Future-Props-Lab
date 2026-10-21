@@ -85,24 +85,36 @@ def follow_connection(before, after, edge):
     if not points or old is None or edge["style"] == "straight":
         return edge
     bindings = ("source_id", "target_id", "source_anchor", "target_anchor")
+    if any(old.get(k) != edge.get(k) for k in ("source_point", "target_point")):
+        return edge
     if any(old[k] != edge[k] for k in bindings):
         return edge
     if any(old.get(k, 0.5) != edge.get(k, 0.5) for k in ("source_offset", "target_offset")):
         return edge
     previous = {e["id"]: e for e in before["elements"]}
     current = {e["id"]: e for e in after["elements"]}
-    if any(edge[k] not in previous or edge[k] not in current for k in ("source_id", "target_id")):
+
+    def endpoint(elements, end):
+        point = edge.get(f"{end}_point")
+        if point is not None:
+            return point
+        element = elements.get(edge[f"{end}_id"])
+        return (
+            anchor(element, edge[f"{end}_anchor"], edge.get(f"{end}_offset", 0.5))
+            if element
+            else None
+        )
+
+    a, b = endpoint(previous, "source"), endpoint(previous, "target")
+    c, d = endpoint(current, "source"), endpoint(current, "target")
+    if any(p is None for p in (a, b, c, d)):
         return edge
-    a = anchor(previous[edge["source_id"]], edge["source_anchor"], edge.get("source_offset", 0.5))
-    b = anchor(previous[edge["target_id"]], edge["target_anchor"], edge.get("target_offset", 0.5))
-    c = anchor(current[edge["source_id"]], edge["source_anchor"], edge.get("source_offset", 0.5))
-    d = anchor(current[edge["target_id"]], edge["target_anchor"], edge.get("target_offset", 0.5))
     if same(a, c) and same(b, d):
         return edge
     dx, dy = c["x"] - a["x"], c["y"] - a["y"]
     inner = [dict(p) for p in points]
     translation = all(
-        previous[edge[k]][field] == current[edge[k]][field]
+        edge[k] is None or previous[edge[k]][field] == current[edge[k]][field]
         for k in ("source_id", "target_id")
         for field in ("width", "height", "rotation")
     )
@@ -131,8 +143,16 @@ def follow_batch(before, after, explicit_paths):
             if (
                 previous
                 and any(
-                    previous[k] != edge[k]
-                    for k in ("source_id", "target_id", "source_anchor", "target_anchor", "style")
+                    previous.get(k) != edge.get(k)
+                    for k in (
+                        "source_id",
+                        "target_id",
+                        "source_anchor",
+                        "target_anchor",
+                        "style",
+                        "source_point",
+                        "target_point",
+                    )
                 )
                 or (
                     previous

@@ -285,7 +285,11 @@ export function CatalogConnections({
                   <div>
                     <dt>服务地址</dt>
                     <dd>
-                      <code>{selected.base_url || "使用默认地址"}</code>
+                      <code>
+                        {selected.kind === "local_qwen_tts"
+                          ? "本机托管"
+                          : selected.base_url || "使用默认地址"}
+                      </code>
                     </dd>
                   </div>
                   <div>
@@ -293,7 +297,9 @@ export function CatalogConnections({
                     <dd>
                       {selected.has_api_key
                         ? `已配置 ···· ${selected.api_key_hint}`
-                        : selected.kind === "zealman_video"
+                        : ["zealman_video", "local_qwen_tts"].includes(
+                              selected.kind,
+                            )
                           ? "无需密钥"
                           : "未配置"}
                     </dd>

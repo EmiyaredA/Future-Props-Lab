@@ -11,7 +11,11 @@ export async function layoutScene(
     groupId ? members(slide, groupId) : slide.elements.map((e) => e.id),
   );
   const edges = (slide.connections ?? []).filter(
-    (c) => allowed.has(c.source_id) && allowed.has(c.target_id),
+    (c) =>
+      !!c.source_id &&
+      !!c.target_id &&
+      allowed.has(c.source_id) &&
+      allowed.has(c.target_id),
   );
   if (!edges.length) throw new Error("此区域没有节点连接，无法自动布局");
   const nodeIds = new Set(edges.flatMap((c) => [c.source_id, c.target_id]));

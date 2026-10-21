@@ -23,7 +23,7 @@ import {
   initialAmadeusBounds,
 } from "./amadeus-window-geometry";
 import { PetWindowController } from "./pet-window";
-
+import { installStorageDirectoryPicker } from "./storage-directory-picker";
 const isDevelopment =
   !app.isPackaged &&
   process.env.FPL_DEV_SESSION === "1" &&
@@ -799,6 +799,7 @@ else {
         return action(win);
       });
     petController.installIpc();
+    installStorageDirectoryPicker(isTrustedStudioSender);
     installPresentationWindows({
       trusted: isTrustedStudioSender,
       create: () => makeWindow(true),

@@ -164,6 +164,7 @@
     margin: 0;
     padding: 6px 10px;
     gap: 8px;
+    flex-wrap: wrap;
   }
   .studio-header-theme > span,
   .studio-docs-link span,
@@ -176,6 +177,9 @@
   }
   .studio-header-actions {
     gap: 6px;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   .studio-header-theme .theme-toggle button {
     padding: 3px 7px;

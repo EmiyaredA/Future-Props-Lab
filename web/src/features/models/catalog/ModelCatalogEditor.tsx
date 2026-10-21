@@ -50,7 +50,9 @@ type Modal =
 export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
   const { value, actions, permissions, categories, onTestModel, advancedInfo } =
     props;
-  const [view, setView] = useState<"directory" | "connections">("directory");
+  const [view, setView] = useState<"directory" | "connections" | "local">(
+    "directory",
+  );
   const [tab, setTab] = useState<CatalogTab>("all");
   const [search, setSearch] = useState("");
   const [protocol, setProtocol] = useState("");
@@ -130,7 +132,10 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
     onClose: () => setModal(null),
   };
   return (
-    <div className="mc-editor" aria-busy={busy}>
+    <div
+      className={`mc-editor${view === "local" ? " mc-local-view" : ""}`}
+      aria-busy={busy}
+    >
       <div className="mc-view-toolbar">
         <div
           className="mc-tabs"
@@ -142,6 +147,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
             type="button"
             role="tab"
             aria-selected={view === "directory"}
+            tabIndex={view === "directory" ? 0 : -1}
             onClick={() => setView("directory")}
           >
             模型目录
@@ -150,12 +156,24 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
             type="button"
             role="tab"
             aria-selected={view === "connections"}
+            tabIndex={view === "connections" ? 0 : -1}
             onClick={() => setView("connections")}
           >
             接入管理
           </button>
+          {props.renderLocalModels && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "local"}
+              tabIndex={view === "local" ? 0 : -1}
+              onClick={() => setView("local")}
+            >
+              本地模型
+            </button>
+          )}
         </div>
-        {permissions.canWrite && (
+        {permissions.canWrite && view !== "local" && (
           <button
             type="button"
             className="btn primary"
@@ -176,12 +194,17 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
           {error}
         </p>
       )}
-      {!permissions.canWrite && (
+      {!permissions.canWrite && view !== "local" && (
         <p className="mc-help">
           当前角色可以查看配置，修改配置需要工作区管理员权限。
         </p>
       )}
-      {view === "directory" ? (
+      {view === "local" ? (
+        props.renderLocalModels?.((providerId) => {
+          setSelectedId(providerId);
+          setView("connections");
+        })
+      ) : view === "directory" ? (
         <>
           <div className="mc-provider-strip" aria-label="接入连接概览">
             {value.providers.slice(0, 6).map((provider) => (

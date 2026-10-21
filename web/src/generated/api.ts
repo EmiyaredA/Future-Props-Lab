@@ -3846,6 +3846,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/local-models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Models */
+        get: operations["list_models_v1_local_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/local-models/attach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach Model */
+        post: operations["attach_model_v1_local_models_attach_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/model-catalog/defaults": {
         parameters: {
             query?: never;
@@ -5035,6 +5069,23 @@ export interface paths {
         put?: never;
         /** Action */
         post: operations["action_v1_platform_demo_services__service_id__actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/local-models/{model_id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Model Action */
+        post: operations["model_action_v1_platform_local_models__model_id__actions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6813,6 +6864,57 @@ export interface paths {
         get: operations["get_state_v1_tool_navigation_state_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/storage-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Storage Usage */
+        get: operations["get_storage_usage_v1_tool_navigation_storage_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/storage-usage/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Analyze Storage Directory */
+        post: operations["analyze_storage_directory_v1_tool_navigation_storage_usage_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/storage-usage/open-directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open Directory */
+        post: operations["open_directory_v1_tool_navigation_storage_usage_open_directory_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14758,7 +14860,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "image" | "video" | "music" | "sound_effect" | "transcription";
+            kind: "image" | "video" | "music" | "sound_effect" | "transcription" | "speech_synthesis";
             /** Model Id */
             model_id: string;
             /** Parameters */
@@ -14786,7 +14888,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "image" | "video" | "music" | "sound_effect" | "transcription";
+            kind: "image" | "video" | "music" | "sound_effect" | "transcription" | "speech_synthesis";
             /** Log Id */
             log_id: string | null;
             /** Model Id */
@@ -15244,6 +15346,65 @@ export interface components {
             /** Expectedrevision */
             expectedRevision: number;
         };
+        /** LocalModelActionIn */
+        LocalModelActionIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "install" | "cancel" | "enable" | "stop" | "uninstall";
+            /** Expected Revision */
+            expected_revision: number;
+            /** Request Id */
+            request_id: string;
+        };
+        /** LocalModelAttachIn */
+        LocalModelAttachIn: {
+            /** Expected Catalog Revision */
+            expected_catalog_revision: number;
+            /** Model Id */
+            model_id: string;
+        };
+        /** LocalModelOut */
+        LocalModelOut: {
+            /** Busy */
+            busy: boolean;
+            /** Compatible */
+            compatible: boolean;
+            /** Download Bytes */
+            download_bytes: number;
+            /** Enabled */
+            enabled: boolean;
+            /** Error Message */
+            error_message?: string | null;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** License */
+            license: string;
+            /** Loaded */
+            loaded: boolean;
+            /** Model Revision */
+            model_revision: string;
+            /** Progress */
+            progress: number;
+            /** Repository */
+            repository: string;
+            /** Required Disk Bytes */
+            required_disk_bytes: number;
+            /** Revision */
+            revision: number;
+            /** Status */
+            status: string;
+        };
+        /** LocalModelsOut */
+        LocalModelsOut: {
+            /** Can Manage */
+            can_manage: boolean;
+            /** Items */
+            items: components["schemas"]["LocalModelOut"][];
+        };
         /** LogWorkspaceOut */
         LogWorkspaceOut: {
             /** Id */
@@ -15595,7 +15756,7 @@ export interface components {
         /** ModelEntryIn */
         ModelEntryIn: {
             /** Capabilities */
-            capabilities?: ("chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
+            capabilities?: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
             /** Categories */
             categories?: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
             /**
@@ -15620,8 +15781,14 @@ export interface components {
         };
         /** ModelEntryOut */
         ModelEntryOut: {
+            /**
+             * Availability
+             * @default ready
+             * @enum {string}
+             */
+            availability: "ready" | "not_installed" | "stopped" | "unsupported_platform";
             /** Capabilities */
-            capabilities: ("chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
+            capabilities: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
             /** Categories */
             categories: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
             /** Description */
@@ -17398,13 +17565,14 @@ export interface components {
              */
             source_anchor: "left" | "right" | "top" | "bottom";
             /** Source Id */
-            source_id: string;
+            source_id?: string | null;
             /**
              * Source Offset
              * @description 沿起点所在边的位置比例；左右边从上到下，上下边从左到右
              * @default 0.5
              */
             source_offset: number;
+            source_point?: components["schemas"]["PresentationPoint"] | null;
             /**
              * Style
              * @default step
@@ -17418,13 +17586,14 @@ export interface components {
              */
             target_anchor: "left" | "right" | "top" | "bottom";
             /** Target Id */
-            target_id: string;
+            target_id?: string | null;
             /**
              * Target Offset
              * @description 沿终点所在边的位置比例；左右边从上到下，上下边从左到右
              * @default 0.5
              */
             target_offset: number;
+            target_point?: components["schemas"]["PresentationPoint"] | null;
             /** Waypoints */
             waypoints?: components["schemas"]["PresentationPoint"][];
             /**
@@ -18202,7 +18371,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
             /** Supplier Id */
@@ -18230,7 +18399,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Managed Fields */
             managed_fields?: string[];
             /** Models */
@@ -18596,7 +18765,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "local_qwen_tts" | "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -19642,6 +19811,27 @@ export interface components {
              */
             type: "splitClip";
         };
+        /** StorageAnalyzer */
+        StorageAnalyzer: {
+            /** Installed */
+            installed: boolean;
+            /** Version */
+            version?: string | null;
+        };
+        /** StorageCapacity */
+        StorageCapacity: {
+            /** Free Bytes */
+            free_bytes: number;
+            /** Total Bytes */
+            total_bytes: number;
+            /** Used Bytes */
+            used_bytes: number;
+        };
+        /** StorageDirectoryIn */
+        StorageDirectoryIn: {
+            /** Directory */
+            directory: string;
+        };
         /** StorageLayoutIssueOut */
         StorageLayoutIssueOut: {
             /** Asset Id */
@@ -19699,6 +19889,36 @@ export interface components {
              * @constant
              */
             target_version: 2;
+        };
+        /** StorageOpenReceipt */
+        StorageOpenReceipt: {
+            /** Directory */
+            directory: string;
+            /**
+             * Submitted
+             * @default true
+             */
+            submitted: boolean;
+        };
+        /** StorageShortcut */
+        StorageShortcut: {
+            /** Available */
+            available: boolean;
+            /** Directory */
+            directory: string;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /** StorageUsageState */
+        StorageUsageState: {
+            analyzer: components["schemas"]["StorageAnalyzer"];
+            capacity: components["schemas"]["StorageCapacity"];
+            /** Directory */
+            directory: string;
+            /** Shortcuts */
+            shortcuts: components["schemas"]["StorageShortcut"][];
         };
         /** Structure */
         Structure: {
@@ -19855,7 +20075,7 @@ export interface components {
         /** TemplateModel */
         TemplateModel: {
             /** Capabilities */
-            capabilities?: ("chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
+            capabilities?: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
             /** Categories */
             categories?: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
             /**
@@ -19961,7 +20181,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -19997,7 +20217,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -32234,6 +32454,59 @@ export interface operations {
             };
         };
     };
+    list_models_v1_local_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocalModelsOut"];
+                };
+            };
+        };
+    };
+    attach_model_v1_local_models_attach_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocalModelAttachIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     defaults_v1_model_catalog_defaults_put: {
         parameters: {
             query?: never;
@@ -35106,6 +35379,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DemoServiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    model_action_v1_platform_local_models__model_id__actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                model_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocalModelActionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocalModelOut"];
                 };
             };
             /** @description Validation Error */
@@ -39368,6 +39676,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolNavigationStateOut"];
+                };
+            };
+        };
+    };
+    get_storage_usage_v1_tool_navigation_storage_usage_get: {
+        parameters: {
+            query?: {
+                directory?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageUsageState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_storage_directory_v1_tool_navigation_storage_usage_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageDirectoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageOpenReceipt"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_directory_v1_tool_navigation_storage_usage_open_directory_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageDirectoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageOpenReceipt"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

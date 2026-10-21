@@ -38,6 +38,7 @@ from app.demo_runtime.routes import router as demo_runtime_router
 from app.deps import require_studio_auth
 from app.integrations.external.routes import router as external_connections_router
 from app.integrations.routes import router as integrations_router
+from app.llm.routes.local_models import router as local_models_router
 from app.llm.routes.model_capacity import ModelCapacity
 from app.llm.routes.model_inference import router as model_inference_router
 from app.llm.routes.model_templates import router as model_templates_router
@@ -53,11 +54,13 @@ from app.llm.routes.models import (
 )
 from app.tool_navigation.codex_source_routes import router as codex_source_router
 from app.tool_navigation.routes import router as tool_navigation_router
+from app.tool_navigation.storage_usage_routes import router as storage_usage_router
 from app.tool_navigation.video_download_routes import router as video_download_router
 
 register_video_executor(apply_assistant_timeline_batch)
 
 api_router = APIRouter(prefix="/v1")
+api_router.include_router(local_models_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(article_sync_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(
@@ -100,6 +103,7 @@ api_router.include_router(
     tool_navigation_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 api_router.include_router(codex_source_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(storage_usage_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(
     video_download_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )

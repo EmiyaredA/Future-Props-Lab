@@ -104,6 +104,8 @@ from db.migrations.versions import (
     r0100_presentation_connection_offsets,
     r0101_presentation_editor_v3,
     r0102_skill_description,
+    r0103_local_models,
+    r0104_presentation_free_connections,
 )
 
 
@@ -470,6 +472,17 @@ MIGRATIONS += (
 MIGRATIONS += (
     Migration(
         r0102_skill_description.MIGRATION_ID, r0102_skill_description.SQL, foreign_keys_off=True
+    ),
+)
+
+
+MIGRATIONS += (
+    Migration(r0103_local_models.MIGRATION_ID, r0103_local_models.SQL, foreign_keys_off=True),
+)
+
+MIGRATIONS += (
+    Migration(
+        r0104_presentation_free_connections.MIGRATION_ID, r0104_presentation_free_connections.SQL
     ),
 )
 

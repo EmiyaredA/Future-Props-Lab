@@ -1,6 +1,10 @@
 import type { ProviderInput } from "@features/models/api";
 
 export const providerMetadata = {
+  local_qwen_tts: {
+    label: "本地 Qwen 语音",
+    optionLabel: "本地 Qwen · MLX 托管",
+  },
   volcengine_video: {
     label: "火山方舟视频",
     optionLabel: "火山方舟 · Seedance 2.0 / 2.5",
@@ -51,6 +55,7 @@ export const providerMetadata = {
 export type ProviderKind = keyof typeof providerMetadata;
 
 export const capabilityMetadata = {
+  speech_synthesis: { label: "语音合成" },
   chat: { label: "对话" },
   vision: { label: "图像理解" },
   tools: { label: "工具" },

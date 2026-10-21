@@ -43,7 +43,7 @@ class InferenceTaskIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     request_id: str = Field(min_length=1, max_length=64)
     model_id: str
-    kind: Literal["image", "video", "music", "sound_effect", "transcription"]
+    kind: Literal["image", "video", "music", "sound_effect", "transcription", "speech_synthesis"]
     parameters: dict = Field(default_factory=dict)
     asset_ids: list[str] = Field(default_factory=list, max_length=50)
 
@@ -52,7 +52,7 @@ class InferenceTaskOut(BaseModel):
     id: str
     model_id: str | None
     model_slug: str
-    kind: Literal["image", "video", "music", "sound_effect", "transcription"]
+    kind: Literal["image", "video", "music", "sound_effect", "transcription", "speech_synthesis"]
     status: Literal[
         "queued", "submitting", "pending", "processing", "running", "completed", "failed"
     ]

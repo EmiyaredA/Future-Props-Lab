@@ -23,7 +23,8 @@
   border-radius: 50%;
   cursor: crosshair;
 }
-.presentation-connection-handle.segment {
+.presentation-connection-handle.segment,
+.presentation-connection-handle.move {
   width: 10px;
   height: 10px;
   background: var(--accent);

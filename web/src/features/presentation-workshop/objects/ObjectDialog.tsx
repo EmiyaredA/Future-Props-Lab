@@ -1,11 +1,7 @@
 import { keepDialogEscapeLocal, useDialogReturnFocus } from "../dialogKeyboard";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import katex from "katex";
-import "katex/dist/katex.min.css";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
-import { NumberField } from "../PresentationNumberField";
-import { uploadImage } from "../api";
 import type { SlideElement } from "../types";
 import { TableEditor } from "./TableEditor";
 import { ChartEditor } from "./ChartEditor";
@@ -50,7 +46,7 @@ export default function ObjectDialog({
     setError("");
     setBusy(true);
     try {
-      let result = element;
+      const result = element;
       if (
         kind === "chart" &&
         element.chart?.type === "scatter" &&
@@ -59,18 +55,6 @@ export default function ObjectDialog({
         )
       )
         throw new Error("散点图的 X 坐标必须为有效数字");
-      if (kind === "formula" && element.formula) {
-        katex.renderToString(element.formula.latex, {
-          throwOnError: true,
-          trust: false,
-        });
-        const { formulaSvg } = await import("./formulaSvg");
-        const svg = await formulaSvg(element.formula);
-        const asset = await uploadImage(
-          new File([svg], "公式.svg", { type: "image/svg+xml" }),
-        );
-        result = { ...element, asset_id: asset.id };
-      }
       if ((kind === "audio" || kind === "video") && !result.asset_id)
         throw new Error("请先选择或上传媒体文件");
       if (!cancelled.current) {
@@ -84,18 +68,6 @@ export default function ObjectDialog({
       if (!cancelled.current) setBusy(false);
     }
   };
-  let formulaPreview = "";
-  if (element.formula) {
-    try {
-      formulaPreview = katex.renderToString(element.formula.latex, {
-        throwOnError: true,
-        trust: false,
-        displayMode: true,
-      });
-    } catch {
-      formulaPreview = "";
-    }
-  }
   return (
     <Dialog.Root
       open
@@ -156,59 +128,6 @@ export default function ObjectDialog({
                     />
                   </div>
                 </div>
-              )}
-              {element.formula && (
-                <>
-                  <label>
-                    LaTeX 公式
-                    <textarea
-                      aria-label="LaTeX 公式"
-                      value={element.formula.latex}
-                      maxLength={20000}
-                      onChange={(e) =>
-                        patch({
-                          formula: {
-                            ...element.formula!,
-                            latex: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </label>
-                  <div
-                    className="presentation-object-preview"
-                    style={{
-                      color: element.formula.color,
-                      fontSize: element.formula.size,
-                    }}
-                  >
-                    {formulaPreview ? (
-                      <div
-                        dangerouslySetInnerHTML={{ __html: formulaPreview }}
-                      />
-                    ) : (
-                      <span role="status">请检查 LaTeX 语法</span>
-                    )}
-                  </div>
-                  <div className="presentation-object-actions">
-                    <CustomColorPicker
-                      ariaLabel="公式颜色"
-                      value={element.formula.color}
-                      onChange={(color) =>
-                        patch({ formula: { ...element.formula!, color } })
-                      }
-                    />
-                    <NumberField
-                      label="公式字号"
-                      value={element.formula.size}
-                      min={6}
-                      max={240}
-                      onChange={(size) =>
-                        patch({ formula: { ...element.formula!, size } })
-                      }
-                    />
-                  </div>
-                </>
               )}
               {element.media && (
                 <>

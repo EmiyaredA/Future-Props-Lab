@@ -62,9 +62,16 @@ export function catalogModelStatus(
   provider: CatalogProvider,
 ) {
   if (!provider.enabled) return "连接已停用";
+  if (model.availability && model.availability !== "ready")
+    return {
+      not_installed: "本地模型未安装",
+      stopped: "本地服务已停止",
+      unsupported_platform: "当前平台不支持",
+    }[model.availability];
   return model.enabled ? "已启用" : "模型已停用";
 }
 export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
+  if (model.availability && model.availability !== "ready") return null;
   if (
     ["openai", "anthropic"].includes(provider.kind) &&
     model.capabilities.includes("chat")
@@ -85,6 +92,11 @@ export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
     model.capabilities.includes("speech_recognition")
   )
     return "speech";
+  if (
+    provider.kind === "local_qwen_tts" &&
+    model.capabilities.includes("speech_synthesis")
+  )
+    return "synthesis";
   if (provider.kind === "senseaudio_realtime") return "realtime_voice";
   return null;
 }

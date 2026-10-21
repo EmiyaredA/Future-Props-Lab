@@ -19,8 +19,10 @@ class PresentationPoint(SlideModel):
 
 class PresentationConnection(SlideModel):
     id: Identifier
-    source_id: Identifier
-    target_id: Identifier
+    source_id: Identifier | None = None
+    target_id: Identifier | None = None
+    source_point: PresentationPoint | None = None
+    target_point: PresentationPoint | None = None
     source_anchor: Literal["left", "right", "top", "bottom"] = "right"
     target_anchor: Literal["left", "right", "top", "bottom"] = "left"
     source_offset: float = Field(
@@ -46,7 +48,10 @@ class PresentationConnection(SlideModel):
 
     @model_validator(mode="after")
     def distinct_ends(self):
-        if self.source_id == self.target_id:
+        for end in ("source", "target"):
+            if (getattr(self, f"{end}_id") is None) == (getattr(self, f"{end}_point") is None):
+                raise ValueError("每个连接端点必须且只能指定节点或自由坐标")
+        if self.source_id is not None and self.source_id == self.target_id:
             raise ValueError("连接的两个节点必须不同")
         return self
 
@@ -90,7 +95,9 @@ def validate_scene(slide):
             parent = groups[parent].parent_id
     for connection in slide.connections:
         for identity in (connection.source_id, connection.target_id):
-            if identity not in elements or elements[identity].kind == "line":
+            if identity is not None and (
+                identity not in elements or elements[identity].kind == "line"
+            ):
                 raise ValueError("连接节点不存在或不是可连接元素")
     provenance_groups = [i.group_id for i in slide.infographics]
     if len(provenance_groups) != len(set(provenance_groups)):

@@ -22,6 +22,7 @@ from app.llm.inference.assets import root
 from app.llm.inference.tasks import ACTIVE
 from app.llm.models import LlmCallLog
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
+from app.llm.providers.local_qwen import synthesize
 from app.llm.providers.transcription import transcribe_model_audio
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
@@ -55,9 +56,10 @@ def add_log(session, row):
 class InferenceRunner(PollingTaskRunner):
     runner_name = "model-inference"
 
-    def __init__(self, session_factory=SessionLocal, transport=None):
+    def __init__(self, session_factory=SessionLocal, transport=None, local_runtime=None):
         super().__init__()
         self.session_factory, self.transport = session_factory, transport
+        self.local_runtime = local_runtime
         self.store = GenerationTaskStore(
             session_factory=session_factory,
             task_type=ModelInferenceTask,
@@ -114,7 +116,9 @@ class InferenceRunner(PollingTaskRunner):
         async with self.session_factory() as session:
             row = await self.store.load(session, task_id)
             kind = row.kind if row else None
-        if kind == "transcription":
+        if kind == "speech_synthesis":
+            await self.synthesize(task_id)
+        elif kind == "transcription":
             await self.transcribe(task_id)
         elif kind:
             await self.driver.process(task_id)
@@ -305,4 +309,36 @@ class InferenceRunner(PollingTaskRunner):
         except asyncio.CancelledError:
             raise
         except Exception as exc:
+            await self.store.fail(task_id, safe_generation_error(exc))
+
+    async def synthesize(self, task_id):
+        output = None
+        try:
+            task = await self.store.claim(task_id)
+            if task is None or task.status != "queued":
+                return
+            if self.local_runtime is None:
+                raise ValueError("本地语音运行环境不可用")
+            inputs = await self.inputs(task)
+            source = inputs[task.payload["reference_asset_id"]][0]
+            key = uuid4().hex
+            output = root(task.workspace_id) / "outputs" / key
+            output.parent.mkdir(parents=True, exist_ok=True)
+            result = await synthesize(
+                self.local_runtime, self.session_factory, task, source, output
+            )
+            if (
+                not output.is_file()
+                or output.stat().st_size > get_settings().fpl_visual_asset_max_bytes
+            ):
+                raise ValueError("本地语音输出无效或超过大小限制")
+            if not await self.finish(
+                task_id, key, f"{task_id}.wav", "audio/wav", output.stat().st_size, result
+            ):
+                output.unlink(missing_ok=True)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            if output:
+                output.unlink(missing_ok=True)
             await self.store.fail(task_id, safe_generation_error(exc))

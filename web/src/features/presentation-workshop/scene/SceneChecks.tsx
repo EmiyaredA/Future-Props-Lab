@@ -1,3 +1,4 @@
+import { validConnection } from "./connectionEditing";
 import { useState } from "react";
 import { defaultPageSize, type PageSize, type Slide } from "../types";
 import { rotatedBounds } from "../selectionGeometry";
@@ -51,11 +52,7 @@ function inspectScene(
     }
   }
   for (const edge of slide.connections ?? [])
-    if (
-      ![edge.source_id, edge.target_id].every((id) =>
-        slide.elements.some((e) => e.id === id),
-      )
-    )
+    if (!validConnection(slide, edge))
       issues.push({ id: edge.id, message: "连接的节点不存在" });
   return issues;
 }

@@ -7,6 +7,10 @@ import {
   resizeTable,
 } from "@features/presentation-workshop/objects/tableEditing";
 import { NativeTable } from "@features/presentation-workshop/objects/NativeTable";
+import {
+  cosineFormula,
+  formulaTemplates,
+} from "@features/presentation-workshop/objects/formula/formulaTemplates";
 import { formulaSvg } from "@features/presentation-workshop/objects/formulaSvg";
 
 it("merged cells retain content and remain valid after splitting and resizing", () => {
@@ -40,6 +44,8 @@ it("native table render honors merged ranges and cell typography", () => {
 });
 
 it.each([
+  ...formulaTemplates.map((template) => template.sample),
+  cosineFormula,
   String.raw`E=mc^2`,
   String.raw`\frac{1}{x^2+1}`,
   String.raw`\sum_{i=1}^{n} i = \frac{n(n+1)}2`,

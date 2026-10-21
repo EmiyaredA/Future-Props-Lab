@@ -82,6 +82,7 @@ export function SlideCanvas({
   drawMode,
   onDrawFinish,
   onDrawCancel,
+  onFormulaEdit,
 }: {
   size?: PageSize;
   grid?: boolean;
@@ -89,6 +90,7 @@ export function SlideCanvas({
   drawMode?: "pen" | "polygon" | null;
   onDrawFinish?: (element: SlideElement) => void;
   onDrawCancel?: () => void;
+  onFormulaEdit?: (element: SlideElement) => void;
   slide: Slide;
   onCanvasInteract?: () => void;
   previewConnection?: Connection;
@@ -268,7 +270,7 @@ export function SlideCanvas({
         !additive &&
         !readOnly &&
         !!element &&
-        canContainText(element.kind) &&
+        (canContainText(element.kind) || element.kind === "formula") &&
         !element.locked &&
         (!grouped ||
           (selected.length === 1 &&
@@ -580,6 +582,7 @@ export function SlideCanvas({
               (event.target as HTMLElement).closest<HTMLElement>(
                 "[data-element-id]",
               )?.dataset.elementId ?? lastHit.current;
+            const element = slide.elements.find((e) => e.id === id);
             if (
               !readOnly &&
               id &&
@@ -589,10 +592,14 @@ export function SlideCanvas({
               selected.length === 1 &&
               selected[0] === id &&
               !groupAtHit(slide, id, groupScope) &&
-              slide.elements.some(
-                (e) => e.id === id && canContainText(e.kind) && !e.locked,
-              )
+              element &&
+              !element.locked &&
+              (canContainText(element.kind) || element.kind === "formula")
             ) {
+              if (element.kind === "formula") {
+                onFormulaEdit?.(element);
+                return;
+              }
               if (!slide.elements.find((e) => e.id === id)?.paragraphs.length)
                 onText(
                   id,
@@ -624,6 +631,30 @@ export function SlideCanvas({
                     ],
                   }
                 : display
+            }
+            onMoveConnection={
+              readOnly
+                ? undefined
+                : (event, edge) => {
+                    if (edge.id !== previewConnection?.id)
+                      connectionDrag.start(
+                        event,
+                        edge,
+                        { kind: "move", index: 0 },
+                        { x: 0, y: 0 },
+                      );
+                  }
+            }
+            onMoveConnectionKey={
+              readOnly
+                ? undefined
+                : (event, edge) =>
+                    connectionDrag.key(
+                      event,
+                      edge,
+                      { kind: "move", index: 0 },
+                      { x: 0, y: 0 },
+                    )
             }
             editingId={editing}
             selectedConnection={selectedConnection}

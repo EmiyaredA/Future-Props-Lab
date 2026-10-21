@@ -76,7 +76,12 @@ test("新元素创建、公式上传、保存重开与文稿包交付", async ({
       await dialog
         .getByRole("textbox", { name: "LaTeX 公式" })
         .fill("\\frac{a}{b}+\\sqrt{x}");
-    await dialog.getByRole("button", { name: "应用", exact: true }).click();
+    await dialog
+      .getByRole("button", {
+        name: kind === "公式" ? "插入公式" : "应用",
+        exact: true,
+      })
+      .click();
     await expect(dialog).toHaveCount(0, { timeout: 30000 });
   }
   await expect(

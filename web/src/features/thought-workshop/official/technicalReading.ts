@@ -133,7 +133,8 @@ export const TECHNICAL_READING: Record<
     ],
   },
   providers: {
-    summary: "跟踪一段流式回答，区分供应商协议、公共增量事件和最终调用状态。",
+    summary:
+      "跟踪供应商协议与公共调用事件，并完成本地语音模型的安装、空间接入和测试。",
     related: [
       {
         libraryId: "technical",
@@ -258,7 +259,7 @@ export const TECHNICAL_READING: Record<
   },
   "presentation-workshop": {
     summary:
-      "理解版本 2 文稿、选择与缩放、连接拖拽、边缘比例端点和前后层级，以及统一保存、图像归档和 PPTX 连接转换。",
+      "理解 v3 文稿、公式草稿与矢量预览、选择与连接层级，以及统一历史、CAS 保存和 PPTX 交付边界。",
     related: [
       {
         libraryId: "technical",

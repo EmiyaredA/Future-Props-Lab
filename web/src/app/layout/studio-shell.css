@@ -161,6 +161,7 @@
 
 .studio-stage {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--studio-shell-gutter);
   min-width: 0;

@@ -90,6 +90,11 @@ const CodexModelSourcePage = lazy(() =>
     default: module.CodexModelSourcePage,
   })),
 );
+const StorageUsagePage = lazy(() =>
+  import("@features/tools/StorageUsagePage").then((module) => ({
+    default: module.StorageUsagePage,
+  })),
+);
 const VideoDownloaderPage = lazy(() =>
   import("@features/tools/VideoDownloaderPage").then((module) => ({
     default: module.VideoDownloaderPage,
@@ -870,6 +875,10 @@ export default function App() {
             canManageCodex={
               Boolean(window.futurePropsDesktop) && me.user.is_platform_admin
             }
+            canManageStorage={
+              Boolean(window.futurePropsDesktop?.pickStorageDirectory) &&
+              me.user.is_platform_admin
+            }
           />
         ) : page.startsWith("integrations-") ? (
           <IntegrationCenterPage
@@ -902,6 +911,11 @@ export default function App() {
           <VideoDownloaderPage onBack={() => navigate("tools")} />
         ) : page === "codex-model-source" ? (
           <CodexModelSourcePage onBack={() => navigate("tools")} />
+        ) : page === "storage-usage" ? (
+          <StorageUsagePage
+            onBack={() => navigate("tools")}
+            allowed={me.user.is_platform_admin}
+          />
         ) : page === "model-test" ? (
           <ModelTestPage
             initialModelId={catalogTestModel}

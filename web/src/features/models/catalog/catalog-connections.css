@@ -221,8 +221,10 @@
   border-bottom: 1px solid var(--border);
 }
 .mc-detail-toolbar > .mc-tabs {
-  flex: 1;
+  flex: 1 0 auto;
   min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
   border-bottom: 0;
   gap: 20px;
 }

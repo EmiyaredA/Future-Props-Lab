@@ -180,6 +180,30 @@ def test_setup_concurrency_session_and_restart(desktop):
         restarted.close()
 
 
+def test_optional_local_models_remain_absent_after_start_and_restart(desktop):
+    assert initialize(desktop).status_code == 200
+    login(desktop)
+
+    def check(server):
+        response = server.client.get("/v1/local-models")
+        assert response.status_code == 200, response.text
+        models = response.json()
+        assert models["can_manage"]
+        assert len(models["items"]) == 2
+        assert all(item["status"] == "not_installed" for item in models["items"])
+        assert not (server.directory / "data/local-models").exists()
+
+    check(desktop)
+    cookies = dict(desktop.client.cookies)
+    desktop.close()
+    restarted = DesktopServer(desktop.directory)
+    try:
+        restarted.client.cookies.update(cookies)
+        check(restarted)
+    finally:
+        restarted.close()
+
+
 def test_transport_routing_and_csrf(desktop):
     assert httpx.get(desktop.origin + "/ready").status_code == 403
     assert desktop.client.get("/v1/auth/me").status_code == 401

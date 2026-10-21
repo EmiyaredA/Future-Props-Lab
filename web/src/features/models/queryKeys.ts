@@ -1,4 +1,8 @@
 export const modelQueryKeys = {
+  localModels: ["model-local-models"] as const,
+  localModelActions: ["model-local-model-actions"] as const,
+  inferenceOptions: ["model-inference-options"] as const,
+  inferenceTasks: ["model-inference-tasks"] as const,
   catalog: ["model-catalog"] as const,
   catalogFor: (consumer: string) => ["model-catalog", consumer] as const,
   categories: ["model-categories"] as const,

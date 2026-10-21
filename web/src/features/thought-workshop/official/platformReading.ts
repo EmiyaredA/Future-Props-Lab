@@ -166,7 +166,8 @@ export const PLATFORM_READING: Record<
     ],
   },
   "general/tools": {
-    summary: "区分内置与外部工具，并从视频定位、下载一帧到重新用于作品。",
+    summary:
+      "使用 GrandPerspective 定位占空间的目录，区分工具运行位置，并从视频导出一帧用于作品。",
     related: [
       {
         libraryId: "visual-workshop",
@@ -237,7 +238,7 @@ export const PLATFORM_READING: Record<
   },
   "presentation-workshop/workflow": {
     summary:
-      "使用紧凑编辑器、页面设计、图层、表格图表与媒体，调节样式、动画和双窗口放映，保留信息图与统一历史。",
+      "使用紧凑编辑器、公式模板、表格图表与媒体，调节页面、样式、动画和双窗口放映，保留统一历史。",
     related: [
       {
         libraryId: "presentation-workshop",

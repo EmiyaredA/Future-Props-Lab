@@ -193,7 +193,11 @@ test("简单表单、媒体、代码、信息图、主题、备注和导出使�
     const dialog = await insert(page, kind);
     for (const width of [1440, 360]) {
       await page.setViewportSize({ width, height: 800 });
-      await bounded(page, dialog, kind === "表格" ? 840 : 600);
+      await bounded(
+        page,
+        dialog,
+        kind === "表格" ? 840 : kind === "公式" ? 1080 : 600,
+      );
     }
     await dialog.getByRole("button", { name: "取消", exact: true }).click();
   }

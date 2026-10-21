@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import {
   AudioLines,
   Image,
@@ -9,7 +9,7 @@ import {
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 
 export type ModelTestMode =
-  "chat" | "image" | "video" | "speech" | "realtime_voice";
+  "chat" | "image" | "video" | "speech" | "synthesis" | "realtime_voice";
 
 const modes: Array<{
   id: ModelTestMode;
@@ -19,6 +19,7 @@ const modes: Array<{
   { id: "chat", label: "文本对话", icon: MessageSquareText },
   { id: "image", label: "图像生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
+  { id: "synthesis", label: "语音合成", icon: AudioLines },
   { id: "speech", label: "语音识别", icon: Mic2 },
   { id: "realtime_voice", label: "实时语音", icon: AudioLines },
 ];
@@ -34,7 +35,7 @@ export function ModelTestWorkspaceHeader({
   actions,
 }: {
   activeMode: ModelTestMode;
-  availableModes: Record<ModelTestMode, boolean>;
+  availableModes: Partial<Record<ModelTestMode, boolean>>;
   onSelectMode: (mode: ModelTestMode) => void;
   modelId: string;
   modelOptions: SelectOption[];
@@ -42,6 +43,27 @@ export function ModelTestWorkspaceHeader({
   modelDisabled?: boolean;
   actions?: ReactNode;
 }) {
+  const modeTabs = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const list = modeTabs.current;
+    if (!list) return;
+    const revealSelected = () => {
+      const selected = list.querySelector<HTMLElement>(
+        '[aria-selected="true"]',
+      );
+      if (!selected || list.scrollWidth <= list.clientWidth) return;
+      const bounds = list.getBoundingClientRect();
+      const item = selected.getBoundingClientRect();
+      if (item.left < bounds.left) list.scrollLeft += item.left - bounds.left;
+      else if (item.right > bounds.right)
+        list.scrollLeft += item.right - bounds.right;
+    };
+    revealSelected();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(revealSelected);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [activeMode]);
   return (
     <header className="model-test-workspace-header">
       <div className="model-test-workspace-title">
@@ -50,6 +72,7 @@ export function ModelTestWorkspaceHeader({
       </div>
       <div
         className="model-test-mode-tabs"
+        ref={modeTabs}
         role="tablist"
         aria-label="测试类型"
       >

@@ -31,16 +31,63 @@ export function anchor(element: SlideElement, side: Side, offset = 0.5) {
   };
 }
 
+export function connectionEnd(
+  slide: Slide,
+  edge: Connection,
+  end: "source" | "target",
+): Point | null {
+  const point = edge[`${end}_point`];
+  if (point) return point;
+  const element = slide.elements.find((e) => e.id === edge[`${end}_id`]);
+  return element
+    ? anchor(
+        element,
+        edge[`${end}_anchor`] ?? (end === "source" ? "right" : "left"),
+        edge[`${end}_offset`] ?? 0.5,
+      )
+    : null;
+}
+
+/** Translate the complete route, detaching both ends from their nodes. */
+export function translateConnection(
+  slide: Slide,
+  edge: Connection,
+  delta: Point,
+): Connection {
+  const points = connectionPoints(slide, edge).map((p) => ({
+    x: p.x + delta.x,
+    y: p.y + delta.y,
+  }));
+  if (points.length < 2) return edge;
+  const waypoints = checkedWaypoints(points);
+  return {
+    ...edge,
+    source_id: null,
+    target_id: null,
+    source_point: points[0],
+    target_point: points.at(-1)!,
+    waypoints: edge.style === "straight" ? [] : waypoints,
+  };
+}
+
+export function freeConnectionEnd(
+  edge: Connection,
+  end: "source" | "target",
+  point: Point,
+): Connection {
+  checkedWaypoints([point, point]);
+  return {
+    ...edge,
+    [`${end}_id`]: null,
+    [`${end}_point`]: point,
+    waypoints: [],
+  };
+}
+
 export function connectionPoints(slide: Slide, edge: Connection): Point[] {
-  const source = slide.elements.find((e) => e.id === edge.source_id);
-  const target = slide.elements.find((e) => e.id === edge.target_id);
-  if (!source || !target) return [];
-  const a = anchor(
-      source,
-      edge.source_anchor ?? "right",
-      edge.source_offset ?? 0.5,
-    ),
-    b = anchor(target, edge.target_anchor ?? "left", edge.target_offset ?? 0.5);
+  const a = connectionEnd(slide, edge, "source"),
+    b = connectionEnd(slide, edge, "target");
+  if (!a || !b) return [];
   if (edge.style === "straight") return [a, b];
   if (edge.waypoints?.length) return [a, ...edge.waypoints, b];
   return edge.source_anchor === "top" || edge.source_anchor === "bottom"
@@ -121,6 +168,8 @@ export function followConnection(
   const old = before.connections?.find((c) => c.id === edge.id);
   if (
     !old ||
+    JSON.stringify(old.source_point) !== JSON.stringify(edge.source_point) ||
+    JSON.stringify(old.target_point) !== JSON.stringify(edge.target_point) ||
     old.source_id !== edge.source_id ||
     old.target_id !== edge.target_id ||
     old.source_anchor !== edge.source_anchor ||
@@ -141,6 +190,7 @@ export function followConnection(
     dy = c.y - a.y;
   const inner = edge.waypoints.map((p) => ({ ...p }));
   const translation = [edge.source_id, edge.target_id].every((id) => {
+    if (!id) return true;
     const previous = before.elements.find((e) => e.id === id)!;
     const current = after.elements.find((e) => e.id === id)!;
     return (
@@ -163,7 +213,7 @@ export function followConnection(
 }
 
 export type RouteHandle = {
-  kind: "source" | "target" | "corner" | "segment";
+  kind: "source" | "target" | "corner" | "segment" | "move";
   index: number;
 };
 
@@ -176,11 +226,14 @@ export function dragRoute(
   const points = connectionPoints(slide, edge).map((p) => ({ ...p }));
   if (points.length < 2) return edge;
   const i = handle.index;
+  if (handle.kind === "move") return translateConnection(slide, edge, point);
   if (edge.style === "straight") {
     const a = points[0],
       b = points[points.length - 1];
     const dx = point.x - (a.x + b.x) / 2,
       dy = point.y - (a.y + b.y) / 2;
+    if (!edge.source_id || !edge.target_id)
+      return translateConnection(slide, edge, { x: dx, y: dy });
     const offset = (id: string, side: Side, endpoint: Point) => {
       const element = slide.elements.find((e) => e.id === id)!;
       return projectedOffset(element, side, {
@@ -336,11 +389,13 @@ export function reconnect(
     ...(end === "source"
       ? {
           source_id: port.id,
+          source_point: null,
           source_anchor: port.side,
           source_offset: port.offset,
         }
       : {
           target_id: port.id,
+          target_point: null,
           target_anchor: port.side,
           target_offset: port.offset,
         }),

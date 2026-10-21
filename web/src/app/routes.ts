@@ -25,6 +25,7 @@ export type StudioPage =
   | "video-frame-exporter"
   | "video-downloader"
   | "codex-model-source"
+  | "storage-usage"
   | "model-test"
   | "model-test-tools"
   | "model-service"
@@ -206,6 +207,8 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
     return { page: "video-downloader" };
   if (pathname.startsWith("/tools/codex-model-source"))
     return { page: "codex-model-source" };
+  if (pathname.startsWith("/tools/storage-usage"))
+    return { page: "storage-usage" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
   const modelTestTool = pathname.match(/^\/model-test-tools\/([^/]+)\/?$/);
   if (modelTestTool)
@@ -263,6 +266,7 @@ export function pathFor(
     "video-frame-exporter": "/tools/video-frame-exporter",
     "video-downloader": "/tools/video-downloader",
     "codex-model-source": "/tools/codex-model-source",
+    "storage-usage": "/tools/storage-usage",
     "model-test": "/model-test",
     "model-test-tools": projectId
       ? `/model-test-tools/${encodeURIComponent(projectId)}`

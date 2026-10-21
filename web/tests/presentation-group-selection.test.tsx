@@ -10,6 +10,10 @@ import {
 } from "@features/presentation-workshop/templates";
 import type { Slide } from "@features/presentation-workshop/types";
 
+vi.mock("@platform/api/useApiBlobUrl", () => ({
+  useApiBlobUrl: () => ({ url: "", loading: false, error: null }),
+}));
+
 vi.mock("@features/presentation-workshop/SlideTextEditor", () => ({
   SlideTextEditor: ({ onExit }: { onExit: () => void }) => (
     <textarea
@@ -53,6 +57,7 @@ function fixture(): Slide {
 }
 
 const replace = vi.fn();
+const formulaEdit = vi.fn();
 function Harness({
   initial = fixture(),
   readOnly = false,
@@ -96,6 +101,7 @@ function Harness({
         切页
       </button>
       <SlideCanvas
+        onFormulaEdit={formulaEdit}
         slide={slide}
         selected={selected}
         select={select}
@@ -153,6 +159,7 @@ function scope() {
 
 beforeEach(() => {
   replace.mockClear();
+  formulaEdit.mockClear();
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -174,6 +181,49 @@ beforeEach(() => {
     configurable: true,
     value: vi.fn(),
   });
+});
+
+describe("公式双击编辑的选择边界", () => {
+  function formulaFixture() {
+    const slide = fixture();
+    Object.assign(slide.elements[0], {
+      kind: "formula",
+      asset_id: "formula-svg",
+      formula: { latex: "x^2", color: "#17334A", size: 36 },
+    });
+    return slide;
+  }
+  it("逐层进入分组后，只有单选的公式可以打开编辑器", () => {
+    render(<Harness initial={formulaFixture()} />);
+    tap("a");
+    tap("a", 2);
+    fireEvent.doubleClick(element("a"));
+    expect(formulaEdit).not.toHaveBeenCalled();
+    tap("a");
+    expect(selected()).toEqual(["a"]);
+    expect(scope()).toBe("child");
+    tap("a");
+    tap("a", 2);
+    fireEvent.doubleClick(element("a"));
+    expect(formulaEdit).toHaveBeenCalledOnce();
+    expect(formulaEdit.mock.calls[0][0].id).toBe("a");
+    expect(replace).not.toHaveBeenCalled();
+  });
+  it.each(["readonly", "locked", "multiple"])(
+    "%s 状态不打开公式编辑器",
+    (state) => {
+      const slide = formulaFixture();
+      slide.groups = [];
+      slide.elements[0].locked = state === "locked";
+      render(<Harness initial={slide} readOnly={state === "readonly"} />);
+      tap("a");
+      if (state === "multiple") tap("label", 1, { shiftKey: true });
+      tap("a", 1, state === "multiple" ? { shiftKey: true } : {});
+      tap("a", 2, state === "multiple" ? { shiftKey: true } : {});
+      fireEvent.doubleClick(element("a"));
+      expect(formulaEdit).not.toHaveBeenCalled();
+    },
+  );
 });
 afterEach(() => {
   Reflect.deleteProperty(HTMLElement.prototype, "setPointerCapture");

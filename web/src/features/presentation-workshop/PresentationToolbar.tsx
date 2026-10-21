@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   Code2,
+  Sigma,
   Copy,
   Ellipsis,
   Workflow,
@@ -29,6 +30,7 @@ export function PresentationToolbar({
   onRedo,
   onText,
   onCode,
+  onFormula,
   onShape,
   onIcon,
   onSvg,
@@ -50,6 +52,7 @@ export function PresentationToolbar({
   onRedo: () => void;
   onText: () => void;
   onCode?: () => void;
+  onFormula?: () => void;
   onShape: (kind: SlideElement["kind"], patch?: Partial<SlideElement>) => void;
   onIcon?: (svg: string, name: string) => void;
   onSvg?: () => void;
@@ -126,6 +129,12 @@ export function PresentationToolbar({
           <button className="btn" onClick={onCode}>
             <Code2 size={18} />
             代码块
+          </button>
+        )}
+        {onFormula && (
+          <button className="btn" onClick={onFormula}>
+            <Sigma size={18} />
+            公式
           </button>
         )}
         <PresentationShapePicker

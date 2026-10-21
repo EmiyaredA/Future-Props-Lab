@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type {
   ModelCategory,
   ModelEntry,
@@ -12,8 +13,12 @@ export type CatalogOrigin = {
   managed_fields?: string[];
 };
 export type CatalogSupplier = CatalogOrigin & { id: string; name: string };
-export type CatalogModel = Omit<ModelEntry, keyof CatalogOrigin> &
-  CatalogOrigin;
+export type CatalogModel = Omit<
+  ModelEntry,
+  keyof CatalogOrigin | "availability"
+> &
+  CatalogOrigin &
+  Partial<Pick<ModelEntry, "availability">>;
 export type CatalogProvider = Omit<Provider, "models" | keyof CatalogOrigin> &
   CatalogOrigin & {
     supplier_id?: string | null;
@@ -61,6 +66,9 @@ export type ModelCatalogEditorProps = {
   onTestModel?: (model: CatalogModel, provider: CatalogProvider) => void;
   advancedInfo?: string;
   onRefresh?: () => void | Promise<void>;
+  renderLocalModels?: (
+    onOpenConnection: (providerId: string) => void,
+  ) => ReactNode;
 };
 
 export function canEditField(

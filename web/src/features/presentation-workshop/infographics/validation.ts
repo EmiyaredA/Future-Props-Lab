@@ -1,3 +1,4 @@
+import { validConnection } from "../scene/connectionEditing";
 import type { Fragment } from "../scene/model";
 import { members } from "../scene/model";
 import { newElement } from "../templates";
@@ -203,6 +204,8 @@ export function validateFragment(fragment: Fragment): void {
           ![
             "id",
             "source_id",
+            "source_point",
+            "target_point",
             "target_id",
             "source_anchor",
             "target_anchor",
@@ -219,14 +222,7 @@ export function validateFragment(fragment: Fragment): void {
       )
     )
       invalid("连接字段无效");
-    if (
-      !elements.has(edge.source_id) ||
-      !elements.has(edge.target_id) ||
-      edge.source_id === edge.target_id ||
-      [edge.source_id, edge.target_id].some(
-        (v) => elements.get(v)!.kind === "line",
-      )
-    )
+    if (!validConnection(fragment as Slide, edge))
       invalid("连接引用了无效节点");
     if (
       (edge.source_anchor && !sides.includes(edge.source_anchor)) ||

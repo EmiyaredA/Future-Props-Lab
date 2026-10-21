@@ -15,7 +15,6 @@ import {
 } from "./model";
 import { ReferenceDialog, ReferenceView } from "./SceneDialogs";
 import { ConnectionPanel } from "./ConnectionPanel";
-import type { PanelPosition } from "./useConnectionPanelPosition";
 import {
   newConnection,
   patchConnection,
@@ -54,11 +53,12 @@ export function useSceneTools({
       id: null as string | null,
     }),
     [edgeId, setEdgeId] = useState<string | null>(null);
+  const [connectionSelectionVersion, setConnectionSelectionVersion] =
+    useState(0);
   const [pending, setPending] = useState<Connection | null>(null);
   const [connectionSlideId, setConnectionSlideId] = useState<string | null>(
     null,
   );
-  const [position, setPosition] = useState<PanelPosition | null>(null);
   const closeConnection = () => {
     setEdgeId(null);
     setPending(null);
@@ -67,6 +67,7 @@ export function useSceneTools({
   const openConnection = (id: string) => {
     if (readOnly) return;
     select([]);
+    setConnectionSelectionVersion((v) => v + 1);
     setPending(null);
     setEdgeId(id);
     setConnectionSlideId(slide.id);
@@ -186,8 +187,8 @@ export function useSceneTools({
   const actions: PresentationAction[] = [
     {
       label: "连接节点",
-      disabled: slide.elements.filter((e) => e.kind !== "line").length < 2,
       onSelect: () => {
+        setConnectionSelectionVersion((v) => v + 1);
         setPending(newConnection(slide, selected));
         setEdgeId(null);
         setConnectionSlideId(slide.id);
@@ -270,6 +271,7 @@ export function useSceneTools({
     edgeId: connectionValue?.id ?? null,
     closeConnection,
     connectionOpen: !!connectionValue,
+    connectionSelectionVersion,
     previewConnection: preview,
     connectionPanel: connectionValue ? (
       <ConnectionPanel
@@ -277,8 +279,6 @@ export function useSceneTools({
         slide={slide}
         value={connectionValue}
         creating={!!pending}
-        position={position}
-        onMove={setPosition}
         onComposition={onComposition}
         restoreVersion={restoreVersion}
         onChange={updateConnection}

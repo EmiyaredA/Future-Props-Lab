@@ -213,6 +213,7 @@ export function copySlide(slide: Slide): Slide {
       slide.elements.map((e) => e.id),
       newId,
       0,
+      true,
     ),
   };
   const mapping = new Map(

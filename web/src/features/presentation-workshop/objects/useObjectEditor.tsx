@@ -2,6 +2,7 @@ import { lazy, Suspense, useRef, useState } from "react";
 import type { Draft, SlideElement } from "../types";
 import { objectLabels, type ObjectKind } from "./objectDefaults";
 
+const FormulaDialog = lazy(() => import("./formula/FormulaDialog"));
 const ObjectDialog = lazy(() => import("./ObjectDialog"));
 type Request = { kind: ObjectKind; slideId: string; initial?: SlideElement };
 export function useObjectEditor({
@@ -23,7 +24,50 @@ export function useObjectEditor({
   const open = (kind: ObjectKind, initial?: SlideElement) => {
     if (!readOnly) setRequest({ slideId, kind, initial });
   };
+  const apply = (element: SlideElement) => {
+    if (!request) return;
+
+    if (allowed.current.readOnly || allowed.current.slideId !== request.slideId)
+      return;
+    const slide = current().document.slides.find(
+      (s) => s.id === request.slideId,
+    );
+    const existing = slide?.elements.find((e) => e.id === element.id);
+    if (
+      !slide ||
+      (request.initial &&
+        (!existing ||
+          JSON.stringify(existing) !== JSON.stringify(request.initial)))
+    )
+      throw new Error("内容已发生变化，请重新打开编辑");
+    if (!existing && slide.elements.length >= 200)
+      throw new Error("每页最多 200 个元素");
+    commit((draft) => ({
+      ...draft,
+      document: {
+        ...draft.document,
+        version: 3,
+        slides: draft.document.slides.map((s) =>
+          s.id === request.slideId
+            ? {
+                ...s,
+                elements: existing
+                  ? s.elements.map((e) => (e.id === element.id ? element : e))
+                  : [...s.elements, element],
+              }
+            : s,
+        ),
+      },
+    }));
+    select([element.id]);
+  };
+  const dialogProps = {
+    initial: request?.initial,
+    onClose: () => setRequest(null),
+    onApply: apply,
+  };
   return {
+    insertFormula: () => open("formula"),
     actions: (
       ["table", "chart", "formula", "video", "audio"] as ObjectKind[]
     ).map((kind) => ({
@@ -37,53 +81,19 @@ export function useObjectEditor({
     dialog:
       request && request.slideId === slideId && !readOnly ? (
         <Suspense fallback={<p role="status">正在加载内容编辑…</p>}>
-          <ObjectDialog
-            key={`${request.slideId}:${request.initial?.id ?? request.kind}`}
-            kind={request.kind}
-            initial={request.initial}
-            onClose={() => setRequest(null)}
-            onApply={(element) => {
-              if (
-                allowed.current.readOnly ||
-                allowed.current.slideId !== request.slideId
-              )
-                return;
-              const slide = current().document.slides.find(
-                (s) => s.id === request.slideId,
-              );
-              const existing = slide?.elements.find((e) => e.id === element.id);
-              if (
-                !slide ||
-                (request.initial &&
-                  (!existing ||
-                    JSON.stringify(existing) !==
-                      JSON.stringify(request.initial)))
-              )
-                throw new Error("内容已发生变化，请重新打开编辑");
-              if (!existing && slide.elements.length >= 200)
-                throw new Error("每页最多 200 个元素");
-              commit((draft) => ({
-                ...draft,
-                document: {
-                  ...draft.document,
-                  version: 3,
-                  slides: draft.document.slides.map((s) =>
-                    s.id === request.slideId
-                      ? {
-                          ...s,
-                          elements: existing
-                            ? s.elements.map((e) =>
-                                e.id === element.id ? element : e,
-                              )
-                            : [...s.elements, element],
-                        }
-                      : s,
-                  ),
-                },
-              }));
-              select([element.id]);
-            }}
-          />
+          {request.kind === "formula" ? (
+            <FormulaDialog
+              key={`${request.slideId}:${request.initial?.id ?? request.kind}`}
+              {...dialogProps}
+              pageSize={current().document}
+            />
+          ) : (
+            <ObjectDialog
+              key={`${request.slideId}:${request.initial?.id ?? request.kind}`}
+              {...dialogProps}
+              kind={request.kind}
+            />
+          )}
         </Suspense>
       ) : null,
   };

@@ -26,8 +26,16 @@ def add_scene(slide, page, shapes):
     elements = {e.id: e for e in page.elements}
     connection_shapes = {}
     for edge in page.connections:
-        start = anchor(elements[edge.source_id], edge.source_anchor, edge.source_offset)
-        end = anchor(elements[edge.target_id], edge.target_anchor, edge.target_offset)
+        start = (
+            (edge.source_point.x, edge.source_point.y)
+            if edge.source_point
+            else anchor(elements[edge.source_id], edge.source_anchor, edge.source_offset)
+        )
+        end = (
+            (edge.target_point.x, edge.target_point.y)
+            if edge.target_point
+            else anchor(elements[edge.target_id], edge.target_anchor, edge.target_offset)
+        )
         points = [start, *((p.x, p.y) for p in edge.waypoints if edge.style != "straight"), end]
         if edge.style == "step" and not edge.waypoints:
             if edge.source_anchor in {"top", "bottom"}:
@@ -60,6 +68,8 @@ def add_scene(slide, page, shapes):
                 ("stCxn", edge.source_id, edge.source_anchor),
                 ("endCxn", edge.target_id, edge.target_anchor),
             ):
+                if identity is None:
+                    continue
                 target = elements[identity]
                 shape = shapes[identity]
                 _connection_sites(shape, target)

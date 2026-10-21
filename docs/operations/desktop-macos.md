@@ -112,3 +112,16 @@ Forge 签名后会再次校验整个 App，最终签名文件的摘要以包外
 
 `.github/workflows/desktop-macos.yml` 只允许手动触发，在 macOS arm64 构建验证并保存产物，
 不会创建 Release。真实模型调用不属于无凭证验收，使用现有确定性模型测试替身。
+
+## 可选本地 Qwen 语音
+
+模型服务的“本地语音模型”入口提供 0.6B/1.7B Base。默认安装包只携带固定清单、
+依赖锁和工作进程源码，不携带推理环境与权重；普通安装、启动和升级不下载它们。
+平台管理员主动安装时才下载固定 uv、Python、锁定依赖和权重，校验后启用。
+不要求系统 Python、uv、Homebrew 或管理员系统权限。
+
+桌面缓存目录为 `~/Library/Application Support/Future Props Lab/local-models/`，隔离开发版使用
+自身数据根。完整备份如需离线恢复推理环境，可额外保存此目录；否则恢复数据库后主动重新安装。
+参考录音和结果仍在 `runtime/workspaces/<workspace-id>/model-inference/`，必须随空间数据备份。
+单次仅一个模型执行；空闲五分钟释放模型内存；主动停止后需再次启用。
+卸载仅删除所选模型文件，不删除生成记录和音频；共享 Python 环境留待其他本地模型使用。

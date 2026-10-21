@@ -26,6 +26,7 @@ export type DesktopBridge = {
   minimize: () => Promise<void>;
   close: () => Promise<void>;
   openNewWindow: () => Promise<void>;
+  pickStorageDirectory?: () => Promise<string | null>;
   openPresentationAudience?: (
     projectId: string,
     sessionId: string,

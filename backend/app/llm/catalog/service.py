@@ -7,13 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.console.models.platform_governance import PlatformSetting
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.catalog.supplier_records import get_supplier, list_suppliers
+from app.llm.local_models.catalog import compatible, definition, require_ready
 from app.llm.models import (
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
     ModelTestGenerationTask,
 )
+from app.llm.models.local_models import LocalModelInstallation
 from app.llm.models.model_inference import ModelInferenceTask
+from app.llm.models.model_supplier import ModelSupplier
 from app.llm.schemas.model_service import (
     ModelCatalogOut,
     ModelCategoryListOut,
@@ -70,6 +73,8 @@ MODEL_CATEGORIES = (
 
 def _default_categories(row: ModelEntry) -> list[str]:
     capabilities = list(row.capabilities or [])
+    if "speech_synthesis" in capabilities:
+        return ["speech_synthesis"]
     if "image_generation" in capabilities:
         return ["image_generation"]
     if "video_generation" in capabilities:
@@ -134,16 +139,35 @@ class ModelCatalogService:
             .scalars()
             .all()
         )
+        installations = {
+            item.id: item for item in await self.session.scalars(select(LocalModelInstallation))
+        }
         grouped: dict[str, list[ModelEntry]] = {}
         for entry in entries:
             grouped.setdefault(entry.provider_id, []).append(entry)
+
+        def provider_out(provider):
+            result = self._provider_out(provider, grouped.get(provider.id, []))
+            if provider.kind == "local_qwen_tts":
+                for model in result.models:
+                    installation = installations.get(model.slug)
+                    model.availability = (
+                        "unsupported_platform"
+                        if not compatible()
+                        else "not_installed"
+                        if not installation or installation.status != "installed"
+                        else "stopped"
+                        if not installation.enabled
+                        else "ready"
+                    )
+            return result
 
         defaults = await self.session.get(PlatformSetting, f"workspace_defaults:{workspace_id}")
         return ModelCatalogOut(
             revision=revision,
             default_model_ids=dict(defaults.payload) if defaults else {},
             suppliers=await list_suppliers(self.session, workspace_id),
-            providers=[self._provider_out(row, grouped.get(row.id, [])) for row in providers],
+            providers=[provider_out(row) for row in providers],
         )
 
     def _provider_out(self, row: ModelProvider, models: list[ModelEntry]) -> ProviderOut:
@@ -236,7 +260,9 @@ class ModelCatalogService:
         row.kind = body.kind
         row.base_url = body.base_url
         row.enabled = body.enabled
-        if body.api_key.strip():
+        if body.kind == "local_qwen_tts":
+            row.api_key_ciphertext = ""
+        elif body.api_key.strip():
             row.api_key_ciphertext = encrypt_secret(body.api_key)
         entries = (
             (
@@ -420,3 +446,61 @@ class ModelCatalogService:
             )
         )
         return bool(count or test_count or asr_count or inference_count)
+
+    async def attach_local_model(self, body):
+        model = definition(body.model_id)
+        await require_ready(self.session, body.model_id)
+        await self._bump(body.expected_catalog_revision)
+        workspace_id = self._workspace_id()
+        provider = await self.session.scalar(
+            select(ModelProvider)
+            .where(
+                ModelProvider.workspace_id == workspace_id,
+                ModelProvider.kind == "local_qwen_tts",
+                ModelProvider.origin == "user",
+            )
+            .order_by(ModelProvider.id)
+        )
+        if provider is None:
+            supplier = await self.session.scalar(
+                select(ModelSupplier).where(
+                    ModelSupplier.workspace_id == workspace_id, ModelSupplier.name == "Qwen 本地"
+                )
+            )
+            if supplier is None:
+                supplier = ModelSupplier(workspace_id=workspace_id, name="Qwen 本地")
+                self.session.add(supplier)
+                await self.session.flush()
+            provider = ModelProvider(
+                workspace_id=workspace_id,
+                name="本地 Qwen 语音",
+                kind="local_qwen_tts",
+                supplier_id=supplier.id,
+                base_url="",
+                api_key_ciphertext="",
+                enabled=True,
+            )
+            self.session.add(provider)
+            await self.session.flush()
+        entry = await self.session.scalar(
+            select(ModelEntry).where(
+                ModelEntry.workspace_id == workspace_id,
+                ModelEntry.provider_id == provider.id,
+                ModelEntry.slug == body.model_id,
+            )
+        )
+        if entry is None:
+            self.session.add(
+                ModelEntry(
+                    workspace_id=workspace_id,
+                    provider_id=provider.id,
+                    slug=body.model_id,
+                    label=model["label"],
+                    description="本机 MLX 参考录音音色克隆",
+                    capabilities=["speech_synthesis"],
+                    categories=["speech_synthesis"],
+                    enabled=True,
+                )
+            )
+        await self.session.commit()
+        return await self.catalog()

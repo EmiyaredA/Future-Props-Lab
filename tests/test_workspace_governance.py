@@ -207,7 +207,9 @@ def test_every_business_operation_has_an_explicit_policy():
         ("GET", "/v1/account/cross-workspace-call-logs"),
         ("GET", "/v1/account/cross-workspace-call-logs/stats"),
     }
-    assert actual | account_logs == set(ROUTE_PERMISSIONS)
+    local_management = {("POST", "/v1/platform/local-models/{model_id}/actions")}
+    assert actual | account_logs | local_management == set(ROUTE_PERMISSIONS)
+    assert all(ROUTE_PERMISSIONS[route] == "configuration.manage" for route in local_management)
     assert all(ROUTE_PERMISSIONS[route] == "logs.cross_workspace" for route in account_logs)
     assert all(path in paths for _, path in account_logs)
 

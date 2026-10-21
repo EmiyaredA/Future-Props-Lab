@@ -224,6 +224,9 @@ export function ModelRealtimeVoiceTestPanel({
       video: models.some((model) =>
         model.capabilities.includes("video_generation"),
       ),
+      synthesis: models.some((model) =>
+        model.capabilities.includes("speech_synthesis"),
+      ),
       speech: models.some((model) =>
         model.capabilities.includes("speech_recognition"),
       ),

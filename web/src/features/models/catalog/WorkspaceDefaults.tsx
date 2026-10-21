@@ -11,6 +11,7 @@ const purposes = [
   ["image_generation", "图像生成"],
   ["video_generation", "视频生成"],
   ["voice", "实时语音"],
+  ["speech_synthesis", "语音合成"],
   ["speech_recognition", "语音识别"],
   ["audio_generation", "音频生成"],
 ] as const;

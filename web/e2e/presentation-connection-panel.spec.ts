@@ -47,7 +47,7 @@ async function create(page: Page) {
     "/v1/presentation-workshop/projects",
     {
       headers: { "X-CSRF-Token": csrf, Origin: new URL(page.url()).origin },
-      data: { title: "连接浮动面板验收", document },
+      data: { title: "连接侧栏验收", document },
     },
   );
   expect(response.ok()).toBeTruthy();
@@ -65,16 +65,21 @@ async function open(page: Page, id = "ab") {
   await edge.press("Enter");
   await expect(panel(page)).toBeVisible();
 }
-async function insideHost(page: Page) {
+async function insideInspector(page: Page) {
   await expect(async () => {
     const box = (await panel(page).boundingBox())!;
     const host = (await page
-      .locator(".presentation-connection-host")
+      .getByRole("complementary", { name: "格式面板" })
       .boundingBox())!;
-    expect(box.x).toBeGreaterThanOrEqual(host.x + 11);
-    expect(box.y).toBeGreaterThanOrEqual(host.y + 11);
-    expect(box.x + box.width).toBeLessThanOrEqual(host.x + host.width - 11);
-    expect(box.y + box.height).toBeLessThanOrEqual(host.y + host.height - 11);
+    expect(box.x).toBeGreaterThanOrEqual(host.x);
+    expect(box.x + box.width).toBeLessThanOrEqual(host.x + host.width);
+    expect(
+      await panel(page).evaluate(
+        (el) =>
+          !!el.closest(".presentation-inspector") &&
+          getComputedStyle(el).position === "static",
+      ),
+    ).toBe(true);
   }).toPass({ timeout: 3000 });
 }
 
@@ -137,25 +142,16 @@ test("连接实时调整、路径保留、切换、撤销重做、保存重开�
   await expect(panel(page)).toHaveCount(0);
 });
 
-test("拖动与键盘移动限幅，缩放滚动不移动面板，窄屏明暗主题与分层 Escape", async ({
+test("属性停靠右侧、缩放滚动不移动面板，窄屏明暗主题与分层 Escape", async ({
   page,
 }, info) => {
+  test.setTimeout(60_000);
   await create(page);
   await open(page);
-  await insideHost(page);
-  const grip = page.getByRole("button", { name: "移动连接调节面板" });
-  const before = (await panel(page).boundingBox())!;
-  const handle = (await grip.boundingBox())!;
-  await page.mouse.move(handle.x + 30, handle.y + 12);
-  await page.mouse.down();
-  await page.mouse.move(handle.x - 120, handle.y + 80, { steps: 6 });
-  await page.mouse.up();
-  const moved = (await panel(page).boundingBox())!;
-  expect(moved.x).toBeLessThan(before.x - 100);
-  expect(moved.y).toBeGreaterThan(before.y + 50);
-  await grip.focus();
-  await page.keyboard.press("Shift+ArrowLeft");
-  expect((await panel(page).boundingBox())!.x).toBeCloseTo(moved.x - 10, 0);
+  await insideInspector(page);
+  await expect(
+    page.getByRole("button", { name: "移动连接调节面板" }),
+  ).toHaveCount(0);
   const fixed = await panel(page).boundingBox();
   await page.getByRole("slider", { name: "画布缩放", exact: true }).fill("150");
   await page.locator(".presentation-canvas-area").evaluate((area) => {
@@ -166,31 +162,24 @@ test("拖动与键盘移动限幅，缩放滚动不移动面板，窄屏明暗�
   await page.getByRole("button", { name: "关闭连接设置" }).click();
   await open(page);
   expect(await panel(page).boundingBox()).toEqual(fixed);
-  for (const target of [
-    { x: 0, y: 0 },
-    { x: 1675, y: 1045 },
-  ]) {
-    const handle = (await grip.boundingBox())!;
-    await page.mouse.move(handle.x + 20, handle.y + 12);
-    await page.mouse.down();
-    await page.mouse.move(target.x, target.y, { steps: 6 });
-    await page.mouse.up();
-    await insideHost(page);
-  }
   for (const width of [768, 390]) {
     await page.setViewportSize({ width, height: 900 });
+    if (width < 768)
+      await page
+        .getByRole("button", { name: "文字与格式", exact: true })
+        .click();
     for (const theme of ["light", "dark"]) {
-      await page.evaluate((theme) => {
-        document.documentElement.dataset.theme = theme;
-      }, theme);
-      await insideHost(page);
+      await page.evaluate(
+        (theme) => (document.documentElement.dataset.theme = theme),
+        theme,
+      );
+      await insideInspector(page);
       const disclosure = page.getByRole("button", {
         name: "连接端点",
         exact: false,
       });
       if ((await disclosure.getAttribute("aria-expanded")) === "false")
         await disclosure.click();
-      await insideHost(page);
       await page.getByRole("combobox", { name: "连接起点" }).click();
       await expect(
         page.getByRole("option").filter({ hasText: "rect 2" }),

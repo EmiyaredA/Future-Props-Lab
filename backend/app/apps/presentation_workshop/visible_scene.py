@@ -15,7 +15,7 @@ def visible_scene(page: PresentationSlide) -> PresentationSlide:
                     update={"layer": sum(e.id in visible for e in page.elements[: c.layer])}
                 )
                 for c in page.connections
-                if c.source_id in visible and c.target_id in visible
+                if all(i is None or i in visible for i in (c.source_id, c.target_id))
             ],
             "groups": [
                 g.model_copy(update={"element_ids": [i for i in g.element_ids if i in visible]})

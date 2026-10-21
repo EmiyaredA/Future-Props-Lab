@@ -89,42 +89,55 @@ export function ProviderForm({
           value={kind}
           disabled={!editable("kind")}
           options={providerKindOptions}
-          onChange={(next) => setKind(next as typeof kind)}
+          onChange={(next) => {
+            setKind(next as typeof kind);
+            if (next === "local_qwen_tts") {
+              setBaseUrl("");
+              setApiKey("");
+            }
+          }}
         />
       </label>
-      <label>
-        <span>服务地址</span>
-        <input
-          type="text"
-          inputMode="url"
-          autoComplete="off"
-          spellCheck={false}
-          aria-label="服务地址"
-          maxLength={512}
-          value={baseUrl}
-          disabled={!editable("base_url")}
-          placeholder={providerBaseUrlPlaceholder(kind)}
-          onChange={(event) => setBaseUrl(event.target.value)}
-        />
-        <small>
-          {kind === "zealman_video"
-            ? "填写 ZEALMAN 面板根地址，页面查询参数会自动移除。"
-            : "留空使用该协议的默认地址。"}
-        </small>
-      </label>
-      <label>
-        <span>API Key{kind === "zealman_video" ? "（可选）" : ""}</span>
-        <input
-          type="password"
-          autoComplete="new-password"
-          value={apiKey}
-          disabled={!editable("api_key")}
-          placeholder={
-            initial?.has_api_key ? "已配置，留空保留" : "输入 API Key"
-          }
-          onChange={(event) => setApiKey(event.target.value)}
-        />
-      </label>
+      {kind !== "local_qwen_tts" && (
+        <>
+          <label>
+            <span>服务地址</span>
+            <input
+              type="text"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              aria-label="服务地址"
+              maxLength={512}
+              value={baseUrl}
+              disabled={!editable("base_url")}
+              placeholder={providerBaseUrlPlaceholder(kind)}
+              onChange={(event) => setBaseUrl(event.target.value)}
+            />
+            <small>
+              {kind === "zealman_video"
+                ? "填写 ZEALMAN 面板根地址，页面查询参数会自动移除。"
+                : "留空使用该协议的默认地址。"}
+            </small>
+          </label>
+          <label>
+            <span>API Key{kind === "zealman_video" ? "（可选）" : ""}</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={apiKey}
+              disabled={!editable("api_key")}
+              placeholder={
+                initial?.has_api_key ? "已配置，留空保留" : "输入 API Key"
+              }
+              onChange={(event) => setApiKey(event.target.value)}
+            />
+          </label>
+        </>
+      )}
+      {kind === "local_qwen_tts" && (
+        <p>本机托管连接，由“本地语音模型”管理安装和运行，无需 API Key。</p>
+      )}
       {initial?.origin === "role_template" && (
         <p className="mc-help">平台模板管理的字段在当前工作区只读。</p>
       )}
@@ -179,6 +192,7 @@ export function ModelForm({
     senseaudio_video: ["video_generation"],
     volcengine_video: ["video_generation"],
     zealman_video: ["video_generation"],
+    local_qwen_tts: ["speech_synthesis"],
     senseaudio_asr: ["speech_recognition"],
     senseaudio_asr_pro: ["speech_recognition"],
     senseaudio_realtime: ["voice"],

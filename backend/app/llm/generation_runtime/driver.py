@@ -8,6 +8,7 @@ from typing import Any, Protocol
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
 from app.orm import bind_workspace, require_workspace_id
@@ -129,11 +130,7 @@ class GenerationTaskStore:
             provider = (
                 await session.get(ModelProvider, task.provider_id) if task.provider_id else None
             )
-            if (
-                provider is None
-                or not provider.enabled
-                or (provider.kind != "zealman_video" and not provider.api_key_ciphertext)
-            ):
+            if provider is None or not provider.enabled or not credential_ready(provider):
                 await session.rollback()
                 raise ValueError("供应商已停用、删除或缺少 API Key")
             context = self._context(

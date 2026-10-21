@@ -11,6 +11,14 @@ class Models:
     def __init__(self, client):
         self._client = client
 
+    def list_local_models(self) -> models.LocalModelsOut:
+        'List Models. GET /v1/local-models'
+        return self._client._call('GET', '/v1/local-models', parameters=[], response_type=models.LocalModelsOut)
+
+    def attach_local_model(self, *, body: models.LocalModelAttachIn | dict) -> models.ModelCatalogOut:
+        'Attach Model. POST /v1/local-models/attach'
+        return self._client._call('POST', '/v1/local-models/attach', parameters=[], body=body, media_type='application/json', response_type=models.ModelCatalogOut)
+
     def defaults(self, *, body: models.ModelDefaultsIn | dict) -> models.ModelCatalogOut:
         'Defaults. PUT /v1/model-catalog/defaults'
         return self._client._call('PUT', '/v1/model-catalog/defaults', parameters=[], body=body, media_type='application/json', response_type=models.ModelCatalogOut)
@@ -67,9 +75,21 @@ class Models:
         'Update Supplier. PATCH /v1/model-suppliers/{supplier_id}'
         return self._client._call('PATCH', '/v1/model-suppliers/{supplier_id}', parameters=[('supplier_id', 'path', supplier_id)], body=body, media_type='application/json', response_type=models.ModelSupplierMutationOut)
 
+    def local_model_action(self, *, model_id: str, body: models.LocalModelActionIn | dict) -> models.LocalModelOut:
+        'Model Action. POST /v1/platform/local-models/{model_id}/actions'
+        return self._client._call('POST', '/v1/platform/local-models/{model_id}/actions', parameters=[('model_id', 'path', model_id)], body=body, media_type='application/json', response_type=models.LocalModelOut)
+
 class AsyncModels:
     def __init__(self, client):
         self._client = client
+
+    async def list_local_models(self) -> models.LocalModelsOut:
+        'List Models. GET /v1/local-models'
+        return await self._client._call('GET', '/v1/local-models', parameters=[], response_type=models.LocalModelsOut)
+
+    async def attach_local_model(self, *, body: models.LocalModelAttachIn | dict) -> models.ModelCatalogOut:
+        'Attach Model. POST /v1/local-models/attach'
+        return await self._client._call('POST', '/v1/local-models/attach', parameters=[], body=body, media_type='application/json', response_type=models.ModelCatalogOut)
 
     async def defaults(self, *, body: models.ModelDefaultsIn | dict) -> models.ModelCatalogOut:
         'Defaults. PUT /v1/model-catalog/defaults'
@@ -126,3 +146,7 @@ class AsyncModels:
     async def update_supplier(self, *, supplier_id: str, body: models.ModelSupplierIn | dict) -> models.ModelSupplierMutationOut:
         'Update Supplier. PATCH /v1/model-suppliers/{supplier_id}'
         return await self._client._call('PATCH', '/v1/model-suppliers/{supplier_id}', parameters=[('supplier_id', 'path', supplier_id)], body=body, media_type='application/json', response_type=models.ModelSupplierMutationOut)
+
+    async def local_model_action(self, *, model_id: str, body: models.LocalModelActionIn | dict) -> models.LocalModelOut:
+        'Model Action. POST /v1/platform/local-models/{model_id}/actions'
+        return await self._client._call('POST', '/v1/platform/local-models/{model_id}/actions', parameters=[('model_id', 'path', model_id)], body=body, media_type='application/json', response_type=models.LocalModelOut)

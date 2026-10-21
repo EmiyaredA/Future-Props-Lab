@@ -50,7 +50,9 @@ async def test_model(
     if "chat" not in list(model.capabilities or []):
         raise DiagnosticCallError(
             status_code=409,
-            message="生成模型请在视觉创作工坊中使用",
+            message="请在模型测试的语音合成中提供参考录音"
+            if provider.kind == "local_qwen_tts"
+            else "生成模型请在视觉创作工坊中使用",
             log_id="",
         )
     key = decrypt_secret(provider.api_key_ciphertext) if provider.api_key_ciphertext else ""

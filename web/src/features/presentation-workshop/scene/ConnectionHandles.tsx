@@ -45,14 +45,21 @@ export function ConnectionHandles({
     if (Math.hypot(a.x - b.x, a.y - b.y) * scale < 24 && points.length > 2)
       return;
     handles.push({
-      handle: { kind: "segment", index: i },
+      handle: {
+        kind: edge.style === "straight" ? "move" : "segment",
+        index: i,
+      },
       point: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-      label: `调整连接线段 ${i + 1}`,
-      cursor: near(a.x, b.x)
-        ? "ew-resize"
-        : near(a.y, b.y)
-          ? "ns-resize"
-          : "move",
+      label:
+        edge.style === "straight" ? "移动整条连接线" : `调整连接线段 ${i + 1}`,
+      cursor:
+        edge.style === "straight"
+          ? "move"
+          : near(a.x, b.x)
+            ? "ew-resize"
+            : near(a.y, b.y)
+              ? "ns-resize"
+              : "move",
     });
   });
   // Endpoints are last so coincident and zero-length routes remain reconnectable.
@@ -160,7 +167,7 @@ export function ConnectionHandles({
           data-connection-handle={handle.kind}
           data-route-index={handle.index}
           aria-label={label}
-          title={`${label}；方向键沿边微调，Shift 加速；垂直于边的方向键切换连接点`}
+          title={`${label}；方向键微调，Shift 加速；端点靠近元素边缘时吸附`}
           style={{
             left: point.x,
             top: point.y,

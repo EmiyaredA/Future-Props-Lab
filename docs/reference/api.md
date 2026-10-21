@@ -1043,6 +1043,12 @@ CAS 缺失返回 422，冲突返回 409 与当前快照。图片复用 `/v1/file
 去重图片输入超过 100 MiB 返回 413，缺失或损坏图片返回 422，不静默遗漏对象。
 导出文件仅作请求临时附件，完成或失败后清理，不建立后台任务记录。
 
+连接的每个端点二选一：`source_id` / `target_id` 绑定非直线元素，或将 ID 置为 null 并提供
+`source_point` / `target_point`（`{x,y}`，各坐标 −10000 至 10000）。同一端同时提供节点与坐标或二者均无效返回 422；
+两个绑定端不能指向同一节点。自由端与节点无依赖，删除或隐藏无关元素不会移除自由线。旧绑定文稿保持兼容，
+登记迁移 `0104_presentation_free_connections` 为历史连接补齐 null 坐标，不移动路径、不改变 revision。
+整线平移同时更新两端坐标与 waypoints，保留线型、层级和标签；PPTX 保留可编辑路径，仅为仍绑定的端点写连接关系。
+
 连接的 `layer` 为 0–200 整数，默认 0，表示下方元素的数量；大于当前元素数量时按顶层显示。
 同层连接按 `connections` 数组顺序叠放，连线和标签一起排列。批量 `connection/update` 可写入
 `{"layer":2}`；整体保存可同时调整元素、连接顺序。片段中的 layer 相对片段元素，插入时换算为目标页层级。
@@ -1139,3 +1145,43 @@ ID 集合使用 `insert/update/remove/move/duplicate`，`value` 字段采用对�
 `POST /v1/files/{asset_id}/crop` 接受整数 `x`、`y`、`width`、`height`，坐标以 EXIF 方向修正后的原图为准。
 需要 `content.read`；跨工作区 ID 返回 404，越界返回 422。响应为保留透明度的 PNG，不修改源素材。
 SVG 先通过已有预览转换；动画图片读取第一帧。需要公共文件副本时显式上传返回内容。
+
+### 可选本地语音模型
+
+`GET /v1/local-models` 返回固定支持型号、兼容性、许可、模型文件下载量、安装磁盘需求、
+安装状态、进度、revision，以及当前浏览器身份能否管理。查询与应用启动不触发下载。
+
+`POST /v1/platform/local-models/{model_id}/actions` 接收 `request_id`、`expected_revision`、
+`action`（`install/cancel/enable/stop/uninstall`）。仅平台 admin/super_admin 的浏览器 Session
+可管理共享主机资源；同请求重放返回原回执，revision 冲突返回 409。安装是异步操作；
+中断后需主动重试；进行中的推理禁止停止和卸载。全局管理不对桌面 Agent 通道开放。
+
+`POST /v1/local-models/attach` 接收 `model_id` 与 `expected_catalog_revision`，原子创建或复用
+当前空间的供应商、连接和模型；不改默认模型。连接类型为 `local_qwen_tts`，地址和 API Key
+必须为空。模型标识为 `qwen3-tts-0.6b-base` 或 `qwen3-tts-1.7b-base`，能力为 `speech_synthesis`。
+
+`POST /v1/model-inference/tasks` 新增 `kind=speech_synthesis`；`parameters` 包含 `text`、
+`language`、`reference_asset_id`、`reference_text`；`asset_ids` 必须仅包含该参考录音 ID。
+文字与录音文字均为 1–2000 字符，语言默认 Chinese；支持语言和限制见 options 返回值。
+录音支持 WAV/MP3/M4A/OGG，最多 20 MiB、3–30 秒。录音通过现有素材上传或文件库导入 API
+创建，不接受客户端路径。结果为 WAV，沿用任务查询、下载、日志及保存到文件库接口。
+提交中断失败，不自动重提或回退云端；安装缺失和停用返回 409。
+
+## 空间占用工具
+
+`/v1/tool-navigation/storage-usage` 仅支持 macOS 桌面私有传输、平台超级管理员
+浏览器 Session；非桌面环境返回 404，其他身份返回 403，不开放 Management API Key 或 Agent 通道。
+
+- `GET /v1/tool-navigation/storage-usage?directory=绝对目录路径`：省略目录时使用当前系统用户主目录。
+  返回 `analyzer`（`installed`、`version`）、规范化 `directory`、`capacity`
+  （`total_bytes`、`used_bytes`、`free_bytes`）及 `shortcuts`。容量属于目录所在文件系统，
+  不代表目录大小或 macOS 分类统计，不递归扫描。目录失效、不可读及容量读取失败返回 422。
+- `POST /v1/tool-navigation/storage-usage/analyze`：请求体 `{ "directory": "/absolute/path" }`，
+  由已安装且 bundle 标识有效的 GrandPerspective 打开目录并分析。
+- `POST /v1/tool-navigation/storage-usage/open-directory`：同一请求体，在 Finder 打开目录。
+  两个打开接口均返回 `{ "directory": "/absolute/path", "submitted": true }`，仅代表打开请求已发送。
+  安装缺失、目录无效、调用失败或超时返回 422；超时可能已打开应用，需要用户检查后手动重试。
+
+路径、容量和扫描内容不持久化。快捷入口为主目录、下载、应用程序与启动磁盘；目录选择器支持外接磁盘。
+SDK 的 `client.tools.get_storage_usage`、`client.tools.analyze_storage_directory` 与
+`client.tools.open_storage_directory` 保留相同接口与身份限制，通常的 API Key 连接不能调用。

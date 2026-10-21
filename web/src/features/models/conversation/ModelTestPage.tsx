@@ -97,7 +97,12 @@ export function ModelTestPage({
     null,
   );
   const lastGenerationModelByMode = useRef<
-    Partial<Record<"image" | "video" | "speech" | "realtime_voice", string>>
+    Partial<
+      Record<
+        "image" | "video" | "speech" | "synthesis" | "realtime_voice",
+        string
+      >
+    >
   >({});
   const abortRef = useRef<AbortController | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -470,6 +475,9 @@ export function ModelTestPage({
     (model) => model.value === generationModelId,
   );
   const availableModes: Record<ModelTestMode, boolean> = {
+    synthesis: availableModels.some((model) =>
+      model.capabilities.includes("speech_synthesis"),
+    ),
     chat: Boolean(textModels.length),
     image: availableModels.some(
       (model) => model.providerKind === "senseaudio_image",

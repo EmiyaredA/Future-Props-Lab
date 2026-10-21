@@ -7,6 +7,7 @@ import {
   Diff,
   Download,
   Film,
+  HardDrive,
   MessageSquareText,
   Palette,
   PlugZap,
@@ -45,6 +46,16 @@ export const TOOL_CATEGORIES: Array<{
 export const POPULAR_TAGS = ["JSON", "接口", "Token", "编码", "转换"];
 
 export const TOOLS: ToolDefinition[] = [
+  {
+    id: "storage-usage",
+    name: "空间占用",
+    description:
+      "通过 GrandPerspective 查看磁盘占用，在 Finder 中定位目录并手动整理",
+    category: "productivity",
+    tags: ["磁盘", "空间", "目录", "存储", "GrandPerspective", "清理"],
+    icon: HardDrive,
+    target: { kind: "internal", path: "/tools/storage-usage" },
+  },
   {
     id: "codex-model-source",
     name: "Codex 模型源",

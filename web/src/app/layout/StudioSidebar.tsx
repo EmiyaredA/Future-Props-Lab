@@ -203,7 +203,8 @@ function StudioChrome({
     page === "tools" ||
     page === "video-frame-exporter" ||
     page === "video-downloader" ||
-    page === "codex-model-source";
+    page === "codex-model-source" ||
+    page === "storage-usage";
   const integrationsActive = page.startsWith("integrations-");
   const infrastructurePages: StudioPage[] = [
     "model-test",

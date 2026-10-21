@@ -114,3 +114,10 @@ Python 3.11+ 的独立包位于 [`sdk/python`](sdk/python/README.md)，发行名
 
 六个工坊的可执行完整样例位于 `future_props_lab.workshop_examples`，文档会从源码提取。
 [自动化覆盖与验收记录](docs/architecture/sdk-automation-coverage.md) 区分具名方法、业务流程证据和未完成验收项。
+
+### 可选本地语音
+
+Apple Silicon Mac（macOS 15+）可在模型服务中按需安装 Qwen3-TTS Base 0.6B/1.7B，
+使用参考录音克隆音色。默认安装、启动及升级不下载模型或 MLX 环境；平台管理员安装后，
+各 Workspace 主动接入并在模型测试中使用。无需系统 Python/uv；详见
+[桌面运行说明](docs/operations/desktop-macos.md#可选本地-qwen-语音)。

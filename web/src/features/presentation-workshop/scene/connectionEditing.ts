@@ -13,8 +13,10 @@ export function newConnection(slide: Slide, selected: string[]): Connection {
     "";
   return {
     id: newId(),
-    source_id: source,
-    target_id: target,
+    source_id: source || null,
+    target_id: target || null,
+    ...(!source ? { source_point: { x: 300, y: 300 } } : {}),
+    ...(!target ? { target_point: { x: 600, y: 300 } } : {}),
     source_anchor: "right",
     target_anchor: "left",
     source_offset: 0.5,
@@ -31,10 +33,17 @@ export function newConnection(slide: Slide, selected: string[]): Connection {
 
 export function validConnection(slide: Slide, edge: Connection): boolean {
   return (
-    edge.source_id !== edge.target_id &&
-    [edge.source_id, edge.target_id].every((id) =>
-      slide.elements.some((e) => e.id === id && e.kind !== "line"),
-    )
+    (edge.source_id == null || edge.source_id !== edge.target_id) &&
+    (["source", "target"] as const).every((end) => {
+      const id = edge[`${end}_id`],
+        point = edge[`${end}_point`];
+      return id != null
+        ? !point && slide.elements.some((e) => e.id === id && e.kind !== "line")
+        : !!point &&
+            [point.x, point.y].every(
+              (v) => Number.isFinite(v) && Math.abs(v) <= 10000,
+            );
+    })
   );
 }
 
@@ -45,6 +54,8 @@ export function patchConnection(
   const reroute = (
     [
       "source_id",
+      "source_point",
+      "target_point",
       "target_id",
       "source_anchor",
       "target_anchor",
@@ -53,5 +64,9 @@ export function patchConnection(
       "style",
     ] as const
   ).some((key) => key in patch && patch[key] !== edge[key]);
-  return { ...edge, ...patch, ...(reroute ? { waypoints: [] } : {}) };
+  return {
+    ...edge,
+    ...patch,
+    ...(reroute && !("waypoints" in patch) ? { waypoints: [] } : {}),
+  };
 }

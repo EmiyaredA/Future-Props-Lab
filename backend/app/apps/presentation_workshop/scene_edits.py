@@ -66,8 +66,13 @@ def remap(slide, namespace, *, offset=0):
         group["element_ids"] = [mapping[i] for i in group["element_ids"]]
         group["parent_id"] = mapping.get(group["parent_id"])
     for connection in result["connections"]:
-        connection["source_id"] = mapping[connection["source_id"]]
-        connection["target_id"] = mapping[connection["target_id"]]
+        for end in ("source", "target"):
+            identity = connection[f"{end}_id"]
+            connection[f"{end}_id"] = mapping[identity] if identity is not None else None
+            point = connection.get(f"{end}_point")
+            if point is not None:
+                point["x"] += offset
+                point["y"] += offset
         for point in connection["waypoints"]:
             point["x"] += offset
             point["y"] += offset

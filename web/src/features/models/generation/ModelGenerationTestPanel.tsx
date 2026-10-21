@@ -109,6 +109,9 @@ export function ModelGenerationTestPanel({
     ),
     image: models.some((model) => modelGenerationKind(model) === "image"),
     video: models.some((model) => modelGenerationKind(model) === "video"),
+    synthesis: models.some(
+      (model) => model.capabilities?.includes("speech_synthesis") === true,
+    ),
     speech: models.some(
       (model) =>
         ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(

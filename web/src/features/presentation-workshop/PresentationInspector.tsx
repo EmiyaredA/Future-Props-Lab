@@ -42,6 +42,9 @@ export function PresentationInspector({
   animationPanel,
   appearancePanel,
   annotationsPanel,
+  connectionPanel,
+  connectionId,
+  connectionSelectionVersion = 0,
 }: {
   slide: Slide;
   selected: string[];
@@ -62,19 +65,22 @@ export function PresentationInspector({
   animationPanel?: ReactNode;
   appearancePanel?: ReactNode;
   annotationsPanel?: ReactNode;
+  connectionPanel?: ReactNode;
+  connectionId?: string | null;
+  connectionSelectionVersion?: number;
 }) {
   const resize = useInspectorResize();
   const elements = slide.elements.filter((e) => selected.includes(e.id));
   const element = elements.length === 1 ? elements[0] : null;
-  const selectionKey = `${slide.id}:${selected.join(",")}`;
+  const selectionKey = `${slide.id}:${connectionId ?? ""}:${connectionSelectionVersion}:${selected.join(",")}`;
   const [tabState, setTabState] = useState({
     selectionKey,
-    tab: selected.length ? "elements" : "page",
+    tab: selected.length || connectionId ? "elements" : "page",
   });
   const tab =
     tabState.selectionKey === selectionKey
       ? tabState.tab
-      : selected.length
+      : selected.length || connectionId
         ? "elements"
         : "page";
   if (tabState.selectionKey !== selectionKey) {
@@ -181,21 +187,23 @@ export function PresentationInspector({
       >
         <div className="presentation-inspector-heading">
           <h3>
-            {tab === "elements" && elements.length
-              ? elements.length > 1
-                ? `${elements.length} 个元素`
-                : element?.kind === "text"
-                  ? "文本格式"
-                  : "元素格式"
-              : tab === "page"
-                ? "页面设置"
-                : tab === "layers"
-                  ? "选择面板"
-                  : tab === "animation"
-                    ? "动画与切换"
-                    : tab === "annotations"
-                      ? "页面批注"
-                      : "元素设置"}
+            {tab === "elements" && connectionId
+              ? "连接线格式"
+              : tab === "elements" && elements.length
+                ? elements.length > 1
+                  ? `${elements.length} 个元素`
+                  : element?.kind === "text"
+                    ? "文本格式"
+                    : "元素格式"
+                : tab === "page"
+                  ? "页面设置"
+                  : tab === "layers"
+                    ? "选择面板"
+                    : tab === "animation"
+                      ? "动画与切换"
+                      : tab === "annotations"
+                        ? "页面批注"
+                        : "元素设置"}
           </h3>
           {tab === "elements" && elements.length > 0 && (
             <button
@@ -263,11 +271,12 @@ export function PresentationInspector({
             {imageVersionPanel}
           </>
         ) : null}
-        {tab === "elements" && !elements.length && (
+        {tab === "elements" && connectionPanel}
+        {tab === "elements" && !connectionPanel && !elements.length && (
           <p className="muted">选择元素调整样式，双击文本框编辑文字。</p>
         )}
-        {tab === "elements" && appearancePanel}
-        {tab === "elements" && (
+        {tab === "elements" && !connectionPanel && appearancePanel}
+        {tab === "elements" && !connectionPanel && (
           <>
             {element ? (
               <>

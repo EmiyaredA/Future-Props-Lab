@@ -6,7 +6,9 @@ from app.capabilities.transcription import (
     resolve_parameters,
 )
 from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
+from app.llm.local_models.catalog import credential_ready, require_ready
 from app.llm.models import ModelEntry, ModelProvider
+from app.llm.providers.local_qwen import speech_parameters
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
@@ -15,6 +17,7 @@ from app.llm.schemas.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
+from app.llm.schemas.local_models import SpeechSynthesisParameters
 from app.llm.schemas.model_inference import InferenceModelOut, InferenceOptionsOut, InferenceTextIn
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
@@ -31,6 +34,8 @@ GENERATION_KINDS = {
 
 def modalities(model, provider):
     result = []
+    if provider.kind == "local_qwen_tts" and "speech_synthesis" in model.capabilities:
+        result.append("speech_synthesis")
     if provider.kind in {"openai", "anthropic"} and "chat" in model.capabilities:
         result.append("text")
     kind = GENERATION_KINDS.get(provider.kind)
@@ -60,8 +65,10 @@ async def get_model(session, workspace_id, model_id, kind):
     if row is None:
         raise OperationError("模型不存在", "not_found", 404)
     model, provider = row
-    if not model.enabled or not provider.enabled or not provider.api_key_ciphertext:
+    if not model.enabled or not provider.enabled or not credential_ready(provider):
         raise OperationError("模型未启用或缺少凭证", "model_unavailable", 409)
+    if provider.kind == "local_qwen_tts":
+        await require_ready(session, model.slug)
     if kind not in modalities(model, provider):
         raise OperationError("模型不支持所选调用方式", "unsupported_modality")
     if provider.kind == "volcengine_image" and model.slug != SEEDREAM_MODEL:
@@ -88,9 +95,16 @@ async def options(session, workspace_id):
     items = []
     for model, provider in rows:
         kinds = modalities(model, provider)
-        if not kinds or not provider.api_key_ciphertext:
+        if not kinds or not credential_ready(provider):
             continue
+        if provider.kind == "local_qwen_tts":
+            try:
+                await require_ready(session, model.slug)
+            except OperationError:
+                continue
         parameters = {}
+        if "speech_synthesis" in kinds:
+            parameters["speech_synthesis"] = speech_parameters()
         if "video" in kinds and provider.kind == "volcengine_video":
             try:
                 caps = video_capabilities(
@@ -154,6 +168,15 @@ async def options(session, workspace_id):
 
 def normalize_parameters(body, model, provider, assets):
     params = dict(body.parameters)
+    if body.kind == "speech_synthesis":
+        payload = SpeechSynthesisParameters.model_validate(params).model_dump()
+        if (
+            body.asset_ids != [payload["reference_asset_id"]]
+            or len(assets) != 1
+            or assets[0].media_kind != "audio"
+        ):
+            raise OperationError("语音合成需要一份已上传的参考录音")
+        return payload
     if body.kind == "transcription":
         cls = ModelTestTranscriptionParametersIn
     else:

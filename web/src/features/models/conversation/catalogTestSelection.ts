@@ -7,7 +7,11 @@ export function availableCatalogModels(catalog?: Catalog) {
   return (catalog?.providers ?? []).flatMap((provider) =>
     provider.enabled
       ? provider.models
-          .filter((model) => model.enabled)
+          .filter(
+            (model) =>
+              model.enabled &&
+              (!model.availability || model.availability === "ready"),
+          )
           .map((model) => ({
             value: model.id,
             label: model.label || model.slug,
@@ -40,10 +44,16 @@ export function preferredModeModel(
   const capabilities = {
     image: "image_generation",
     video: "video_generation",
+    synthesis: "speech_synthesis",
     speech: "speech_recognition",
     realtime_voice: "voice",
   };
   const candidates = models.filter((model) => {
+    if (mode === "synthesis")
+      return (
+        model.providerKind === "local_qwen_tts" &&
+        model.capabilities.includes("speech_synthesis")
+      );
     if (mode === "speech")
       return (
         ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(

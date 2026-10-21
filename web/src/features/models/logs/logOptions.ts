@@ -8,6 +8,7 @@ export const providerLabels: Record<string, string> = providerKindLabel;
 const LOG_PROVIDER_KINDS: ProviderKind[] = [
   "openai",
   "anthropic",
+  "local_qwen_tts",
   "senseaudio_asr",
   "senseaudio_asr_pro",
   "senseaudio_realtime",

@@ -155,8 +155,8 @@ export function cleanScene(slide: Slide): Slide {
       a.element_id && !ids.has(a.element_id) ? { ...a, element_id: null } : a,
     ),
     groups: groups.filter((g) => active.has(g.id)),
-    connections: (slide.connections ?? []).filter(
-      (c) => ids.has(c.source_id) && ids.has(c.target_id),
+    connections: (slide.connections ?? []).filter((c) =>
+      [c.source_id, c.target_id].every((id) => id == null || ids.has(id)),
     ),
     infographics: (slide.infographics ?? []).filter((i) =>
       active.has(i.group_id),
@@ -191,6 +191,7 @@ export function cloneFragment(
   ids: string[],
   makeId: () => string,
   offset = 24,
+  wholeSlide = false,
 ): Fragment {
   const selected = new Set(ids);
   const groups = (slide.groups ?? []).filter(
@@ -200,7 +201,9 @@ export function cloneFragment(
   );
   const groupIds = new Set(groups.map((g) => g.id));
   const edges = (slide.connections ?? []).filter(
-    (c) => selected.has(c.source_id) && selected.has(c.target_id),
+    (c) =>
+      (wholeSlide || !!c.source_id || !!c.target_id) &&
+      [c.source_id, c.target_id].every((id) => id == null || selected.has(id)),
   );
   const infos = (slide.infographics ?? []).filter((i) =>
     groupIds.has(i.group_id),
@@ -247,8 +250,14 @@ export function cloneFragment(
         .slice(0, c.layer ?? 0)
         .filter((e) => selected.has(e.id)).length,
       id: remap(c.id),
-      source_id: remap(c.source_id),
-      target_id: remap(c.target_id),
+      source_id: c.source_id ? remap(c.source_id) : null,
+      source_point: c.source_point
+        ? { x: c.source_point.x + offset, y: c.source_point.y + offset }
+        : null,
+      target_point: c.target_point
+        ? { x: c.target_point.x + offset, y: c.target_point.y + offset }
+        : null,
+      target_id: c.target_id ? remap(c.target_id) : null,
       waypoints: (c.waypoints ?? []).map((p) => ({
         x: p.x + offset,
         y: p.y + offset,

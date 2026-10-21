@@ -194,7 +194,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `body` | application/json | InferenceTaskIn | 是 |
 | `body.asset_ids` | 请求体 | array | 否 |
-| `body.kind` | 请求体 | image / video / music / sound_effect / transcription | 是 |
+| `body.kind` | 请求体 | image / video / music / sound_effect / transcription / speech_synthesis | 是 |
 | `body.model_id` | 请求体 | string | 是 |
 | `body.parameters` | 请求体 | object | 否 |
 | `body.request_id` | 请求体 | string | 是 |

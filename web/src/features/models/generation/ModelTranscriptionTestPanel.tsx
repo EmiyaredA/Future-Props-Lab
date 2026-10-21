@@ -125,6 +125,9 @@ export function ModelTranscriptionTestPanel({
     ),
     image: models.some((model) => modelGenerationKind(model) === "image"),
     video: models.some((model) => modelGenerationKind(model) === "video"),
+    synthesis: models.some((model) =>
+      model.capabilities.includes("speech_synthesis"),
+    ),
     speech: Boolean(speechModels.length),
     realtime_voice: models.some((model) =>
       model.capabilities.includes("voice"),

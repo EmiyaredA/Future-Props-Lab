@@ -37,6 +37,10 @@ from app.console.governance.runtime_quotas import recover_admissions
 from app.console.governance.service import AccountError
 from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.inference.runner import InferenceRunner
+from app.llm.local_models.catalog import local_root
+from app.llm.local_models.installer import Installer
+from app.llm.local_models.management import LocalModels
+from app.llm.local_models.runtime import LocalRuntime
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
 from app.llm.playground.tool_stream import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
@@ -71,13 +75,18 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs()
     await recover_interrupted_amadeus_runs()
+    installer = Installer(local_root(settings))
+    local_runtime = LocalRuntime(installer)
+    local_models = LocalModels(SessionLocal, installer, local_runtime)
+    lifespan_app.state.local_models = local_models
+    await local_models.recover()
     supervisor = RunnerSupervisor(
         (
             ArticleSyncRunner(external_sync_actor_allowed),
             ModelTemplateSyncRunner(),
             VisualGenerationRunner(),
             ModelTestGenerationRunner(),
-            InferenceRunner(),
+            InferenceRunner(local_runtime=local_runtime),
             ModelTestTranscriptionRunner(),
             GalgameAsrRunner(),
             GalgameAnnotationImportRunner(),
@@ -95,6 +104,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         await supervisor.stop()
+        await local_models.close()
         lifespan_app.state.runner_supervisor = None
         await engine.dispose()
 

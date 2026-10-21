@@ -33,8 +33,6 @@ describe("原生场景控件", () => {
         slide={slide}
         value={newConnection(slide, ["b"])}
         creating
-        position={null}
-        onMove={vi.fn()}
         onChange={vi.fn()}
         onOrder={vi.fn()}
         onCreate={apply}

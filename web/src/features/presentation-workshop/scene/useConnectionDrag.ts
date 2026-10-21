@@ -11,7 +11,10 @@ import type { Slide } from "../types";
 import type { Connection } from "./model";
 import {
   connectionPorts,
+  connectionEnd,
   dragRoute,
+  translateConnection,
+  freeConnectionEnd,
   reconnect,
   nearestConnectionPort,
   anchor,
@@ -69,7 +72,7 @@ export function useConnectionDrag({
       drag.current &&
       (readOnly ||
         drag.current.base !== slide ||
-        drag.current.edge.id !== selected)
+        (selected != null && drag.current.edge.id !== selected))
     )
       clear();
   }, [slide, selected, readOnly, clear]);
@@ -136,8 +139,28 @@ export function useConnectionDrag({
       if (g.handle.kind === "source" || g.handle.kind === "target") {
         const end = g.handle.kind;
         const port = nearestConnectionPort(g.base, g.edge, end, p, scale);
-        setEndpoint({ end, point: port?.point ?? p, port });
-        g.next = port ? reconnect(g.edge, end, port) : null;
+        const opposite = connectionEnd(
+          g.base,
+          g.edge,
+          end === "source" ? "target" : "source",
+        );
+        const aligned = opposite
+          ? {
+              x: Math.abs(p.x - opposite.x) * scale <= 8 ? opposite.x : p.x,
+              y: Math.abs(p.y - opposite.y) * scale <= 8 ? opposite.y : p.y,
+            }
+          : p;
+        setEndpoint({ end, point: port?.point ?? aligned, port });
+        g.next = port
+          ? reconnect(g.edge, end, port)
+          : freeConnectionEnd(g.edge, end, aligned);
+      } else if (g.handle.kind === "move") {
+        const dx = cursor.x - g.start.x,
+          dy = cursor.y - g.start.y;
+        g.next = translateConnection(g.base, g.edge, {
+          x: event.shiftKey && Math.abs(dy) > Math.abs(dx) ? 0 : dx,
+          y: event.shiftKey && Math.abs(dx) >= Math.abs(dy) ? 0 : dy,
+        });
       } else g.next = dragRoute(g.base, g.edge, g.handle, p);
       setPreview(g.next);
       setError("");
@@ -191,7 +214,25 @@ export function useConnectionDrag({
           side === "left" || side === "right"
             ? ["ArrowUp", "ArrowDown"]
             : ["ArrowLeft", "ArrowRight"];
-        if (along.includes(event.key)) {
+        if (!id) {
+          const delta = event.shiftKey ? 10 : 1;
+          next = freeConnectionEnd(edge, handle.kind, {
+            x:
+              origin.x +
+              (event.key === "ArrowLeft"
+                ? -delta
+                : event.key === "ArrowRight"
+                  ? delta
+                  : 0),
+            y:
+              origin.y +
+              (event.key === "ArrowUp"
+                ? -delta
+                : event.key === "ArrowDown"
+                  ? delta
+                  : 0),
+          });
+        } else if (along.includes(event.key)) {
           const delta =
             (event.key === along[0] ? -1 : 1) * (event.shiftKey ? 0.1 : 0.01);
           const position = Math.max(
@@ -216,22 +257,38 @@ export function useConnectionDrag({
         }
       } else {
         const delta = event.shiftKey ? 10 : 1;
-        next = dragRoute(slide, edge, handle, {
-          x:
-            origin.x +
-            (event.key === "ArrowLeft"
-              ? -delta
-              : event.key === "ArrowRight"
-                ? delta
-                : 0),
-          y:
-            origin.y +
-            (event.key === "ArrowUp"
-              ? -delta
-              : event.key === "ArrowDown"
-                ? delta
-                : 0),
-        });
+        next =
+          handle.kind === "move"
+            ? translateConnection(slide, edge, {
+                x:
+                  event.key === "ArrowLeft"
+                    ? -delta
+                    : event.key === "ArrowRight"
+                      ? delta
+                      : 0,
+                y:
+                  event.key === "ArrowUp"
+                    ? -delta
+                    : event.key === "ArrowDown"
+                      ? delta
+                      : 0,
+              })
+            : dragRoute(slide, edge, handle, {
+                x:
+                  origin.x +
+                  (event.key === "ArrowLeft"
+                    ? -delta
+                    : event.key === "ArrowRight"
+                      ? delta
+                      : 0),
+                y:
+                  origin.y +
+                  (event.key === "ArrowUp"
+                    ? -delta
+                    : event.key === "ArrowDown"
+                      ? delta
+                      : 0),
+              });
       }
       if (JSON.stringify(next) !== JSON.stringify(edge))
         commit(replaceEdge(slide, next));

@@ -647,6 +647,10 @@
     "method": "reproduction_bundle",
     "resource": "logs"
   },
+  "GET /v1/local-models": {
+    "method": "list_local_models",
+    "resource": "models"
+  },
   "GET /v1/model-categories": {
     "method": "list_model_categories",
     "resource": "models"
@@ -945,6 +949,10 @@
   },
   "GET /v1/tool-navigation/state": {
     "method": "get_state",
+    "resource": "tools"
+  },
+  "GET /v1/tool-navigation/storage-usage": {
+    "method": "get_storage_usage",
     "resource": "tools"
   },
   "GET /v1/tool-navigation/video-download/deps": {
@@ -1711,6 +1719,10 @@
     "method": "batch_delete",
     "resource": "logs"
   },
+  "POST /v1/local-models/attach": {
+    "method": "attach_local_model",
+    "resource": "models"
+  },
   "POST /v1/model-entries/{model_id}/test": {
     "method": "run_model_test",
     "resource": "models"
@@ -1854,6 +1866,10 @@
   "POST /v1/platform/demo-services/{service_id}/actions": {
     "method": "action",
     "resource": "demo"
+  },
+  "POST /v1/platform/local-models/{model_id}/actions": {
+    "method": "local_model_action",
+    "resource": "models"
   },
   "POST /v1/platform/model-service-templates/sync-jobs/{job_id}/start": {
     "method": "start",
@@ -2029,6 +2045,14 @@
   },
   "POST /v1/tool-navigation/codex-source/restore": {
     "method": "post_codex_source_restore",
+    "resource": "tools"
+  },
+  "POST /v1/tool-navigation/storage-usage/analyze": {
+    "method": "analyze_storage_directory",
+    "resource": "tools"
+  },
+  "POST /v1/tool-navigation/storage-usage/open-directory": {
+    "method": "open_storage_directory",
     "resource": "tools"
   },
   "POST /v1/tool-navigation/tools/{tool_id}/use": {

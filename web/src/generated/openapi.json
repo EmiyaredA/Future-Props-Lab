@@ -18411,7 +18411,8 @@
               "video",
               "music",
               "sound_effect",
-              "transcription"
+              "transcription",
+              "speech_synthesis"
             ],
             "title": "Kind",
             "type": "string"
@@ -18482,7 +18483,8 @@
               "video",
               "music",
               "sound_effect",
-              "transcription"
+              "transcription",
+              "speech_synthesis"
             ],
             "title": "Kind",
             "type": "string"
@@ -19742,6 +19744,169 @@
         "title": "Live2DSave",
         "type": "object"
       },
+      "LocalModelActionIn": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "install",
+              "cancel",
+              "enable",
+              "stop",
+              "uninstall"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "action"
+        ],
+        "title": "LocalModelActionIn",
+        "type": "object"
+      },
+      "LocalModelAttachIn": {
+        "properties": {
+          "expected_catalog_revision": {
+            "minimum": 0.0,
+            "title": "Expected Catalog Revision",
+            "type": "integer"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_catalog_revision",
+          "model_id"
+        ],
+        "title": "LocalModelAttachIn",
+        "type": "object"
+      },
+      "LocalModelOut": {
+        "properties": {
+          "busy": {
+            "title": "Busy",
+            "type": "boolean"
+          },
+          "compatible": {
+            "title": "Compatible",
+            "type": "boolean"
+          },
+          "download_bytes": {
+            "title": "Download Bytes",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "license": {
+            "title": "License",
+            "type": "string"
+          },
+          "loaded": {
+            "title": "Loaded",
+            "type": "boolean"
+          },
+          "model_revision": {
+            "title": "Model Revision",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "repository": {
+            "title": "Repository",
+            "type": "string"
+          },
+          "required_disk_bytes": {
+            "title": "Required Disk Bytes",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "repository",
+          "license",
+          "model_revision",
+          "download_bytes",
+          "required_disk_bytes",
+          "compatible",
+          "status",
+          "enabled",
+          "loaded",
+          "busy",
+          "progress",
+          "revision"
+        ],
+        "title": "LocalModelOut",
+        "type": "object"
+      },
+      "LocalModelsOut": {
+        "properties": {
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LocalModelOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "can_manage"
+        ],
+        "title": "LocalModelsOut",
+        "type": "object"
+      },
       "LogWorkspaceOut": {
         "properties": {
           "id": {
@@ -20501,6 +20666,7 @@
             },
             "propertyNames": {
               "enum": [
+                "speech_synthesis",
                 "chat",
                 "vision",
                 "tools",
@@ -20532,6 +20698,7 @@
           "capabilities": {
             "items": {
               "enum": [
+                "speech_synthesis",
                 "chat",
                 "vision",
                 "tools",
@@ -20601,9 +20768,21 @@
       },
       "ModelEntryOut": {
         "properties": {
+          "availability": {
+            "default": "ready",
+            "enum": [
+              "ready",
+              "not_installed",
+              "stopped",
+              "unsupported_platform"
+            ],
+            "title": "Availability",
+            "type": "string"
+          },
           "capabilities": {
             "items": {
               "enum": [
+                "speech_synthesis",
                 "chat",
                 "vision",
                 "tools",
@@ -25290,10 +25469,17 @@
             "type": "string"
           },
           "source_id": {
-            "maxLength": 64,
-            "minLength": 1,
-            "title": "Source Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
           },
           "source_offset": {
             "default": 0.5,
@@ -25302,6 +25488,16 @@
             "minimum": 0.0,
             "title": "Source Offset",
             "type": "number"
+          },
+          "source_point": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "style": {
             "default": "step",
@@ -25324,10 +25520,17 @@
             "type": "string"
           },
           "target_id": {
-            "maxLength": 64,
-            "minLength": 1,
-            "title": "Target Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
           },
           "target_offset": {
             "default": 0.5,
@@ -25336,6 +25539,16 @@
             "minimum": 0.0,
             "title": "Target Offset",
             "type": "number"
+          },
+          "target_point": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "waypoints": {
             "items": {
@@ -25354,9 +25567,7 @@
           }
         },
         "required": [
-          "id",
-          "source_id",
-          "target_id"
+          "id"
         ],
         "title": "PresentationConnection",
         "type": "object"
@@ -27332,6 +27543,7 @@
           },
           "kind": {
             "enum": [
+              "local_qwen_tts",
               "volcengine_image",
               "openai",
               "anthropic",
@@ -27415,6 +27627,7 @@
           },
           "kind": {
             "enum": [
+              "local_qwen_tts",
               "volcengine_image",
               "openai",
               "anthropic",
@@ -28265,6 +28478,7 @@
           },
           "provider_kind": {
             "enum": [
+              "local_qwen_tts",
               "volcengine_image",
               "openai",
               "anthropic",
@@ -29192,6 +29406,7 @@
             },
             "propertyNames": {
               "enum": [
+                "speech_synthesis",
                 "chat",
                 "vision",
                 "tools",
@@ -29231,6 +29446,7 @@
             },
             "propertyNames": {
               "enum": [
+                "speech_synthesis",
                 "chat",
                 "vision",
                 "tools",
@@ -30940,6 +31156,68 @@
         "title": "SplitClipOperation",
         "type": "object"
       },
+      "StorageAnalyzer": {
+        "properties": {
+          "installed": {
+            "title": "Installed",
+            "type": "boolean"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "installed"
+        ],
+        "title": "StorageAnalyzer",
+        "type": "object"
+      },
+      "StorageCapacity": {
+        "properties": {
+          "free_bytes": {
+            "title": "Free Bytes",
+            "type": "integer"
+          },
+          "total_bytes": {
+            "title": "Total Bytes",
+            "type": "integer"
+          },
+          "used_bytes": {
+            "title": "Used Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_bytes",
+          "used_bytes",
+          "free_bytes"
+        ],
+        "title": "StorageCapacity",
+        "type": "object"
+      },
+      "StorageDirectoryIn": {
+        "properties": {
+          "directory": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Directory",
+            "type": "string"
+          }
+        },
+        "required": [
+          "directory"
+        ],
+        "title": "StorageDirectoryIn",
+        "type": "object"
+      },
       "StorageLayoutIssueOut": {
         "properties": {
           "asset_id": {
@@ -31076,6 +31354,81 @@
           "complete"
         ],
         "title": "StorageLayoutStatusOut",
+        "type": "object"
+      },
+      "StorageOpenReceipt": {
+        "properties": {
+          "directory": {
+            "title": "Directory",
+            "type": "string"
+          },
+          "submitted": {
+            "default": true,
+            "title": "Submitted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "directory"
+        ],
+        "title": "StorageOpenReceipt",
+        "type": "object"
+      },
+      "StorageShortcut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "directory": {
+            "title": "Directory",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "directory",
+          "available"
+        ],
+        "title": "StorageShortcut",
+        "type": "object"
+      },
+      "StorageUsageState": {
+        "properties": {
+          "analyzer": {
+            "$ref": "#/components/schemas/StorageAnalyzer"
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/StorageCapacity"
+          },
+          "directory": {
+            "title": "Directory",
+            "type": "string"
+          },
+          "shortcuts": {
+            "items": {
+              "$ref": "#/components/schemas/StorageShortcut"
+            },
+            "title": "Shortcuts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "analyzer",
+          "directory",
+          "capacity",
+          "shortcuts"
+        ],
+        "title": "StorageUsageState",
         "type": "object"
       },
       "Structure": {
@@ -31509,6 +31862,7 @@
           "capabilities": {
             "items": {
               "enum": [
+                "speech_synthesis",
                 "chat",
                 "vision",
                 "tools",
@@ -31712,6 +32066,7 @@
           },
           "kind": {
             "enum": [
+              "local_qwen_tts",
               "volcengine_image",
               "openai",
               "anthropic",
@@ -31792,6 +32147,7 @@
           },
           "kind": {
             "enum": [
+              "local_qwen_tts",
               "volcengine_image",
               "openai",
               "anthropic",
@@ -33968,7 +34324,7 @@
             "type": "boolean"
           },
           "url": {
-            "maxLength": 2048,
+            "maxLength": 4096,
             "minLength": 8,
             "title": "Url",
             "type": "string"
@@ -53728,6 +54084,68 @@
         ]
       }
     },
+    "/v1/local-models": {
+      "get": {
+        "operationId": "list_models_v1_local_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalModelsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Models",
+        "tags": [
+          "local-models"
+        ]
+      }
+    },
+    "/v1/local-models/attach": {
+      "post": {
+        "operationId": "attach_model_v1_local_models_attach_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalModelAttachIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Attach Model",
+        "tags": [
+          "local-models"
+        ]
+      }
+    },
     "/v1/model-catalog/defaults": {
       "put": {
         "operationId": "defaults_v1_model_catalog_defaults_put",
@@ -57908,6 +58326,58 @@
         "summary": "Action",
         "tags": [
           "demo-services"
+        ]
+      }
+    },
+    "/v1/platform/local-models/{model_id}/actions": {
+      "post": {
+        "operationId": "model_action_v1_platform_local_models__model_id__actions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "title": "Model Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalModelActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalModelOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Model Action",
+        "tags": [
+          "local-models"
         ]
       }
     },
@@ -64644,6 +65114,139 @@
           }
         },
         "summary": "Get State",
+        "tags": [
+          "tool-navigation"
+        ]
+      }
+    },
+    "/v1/tool-navigation/storage-usage": {
+      "get": {
+        "operationId": "get_storage_usage_v1_tool_navigation_storage_usage_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Directory"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUsageState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Storage Usage",
+        "tags": [
+          "tool-navigation"
+        ]
+      }
+    },
+    "/v1/tool-navigation/storage-usage/analyze": {
+      "post": {
+        "operationId": "analyze_storage_directory_v1_tool_navigation_storage_usage_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageDirectoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageOpenReceipt"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analyze Storage Directory",
+        "tags": [
+          "tool-navigation"
+        ]
+      }
+    },
+    "/v1/tool-navigation/storage-usage/open-directory": {
+      "post": {
+        "operationId": "open_directory_v1_tool_navigation_storage_usage_open_directory_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageDirectoryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageOpenReceipt"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Directory",
         "tags": [
           "tool-navigation"
         ]

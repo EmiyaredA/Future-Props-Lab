@@ -237,6 +237,13 @@ def main() -> None:
             ),
         ]
     )
+    for resource in ("manifest.json", "requirements.txt", "worker.py"):
+        args.extend(
+            [
+                "--add-data",
+                f"{ROOT / 'backend/app/llm/local_models' / resource}:app/llm/local_models",
+            ]
+        )
     docs = [ROOT / "README.md", ROOT / "CONTRIBUTING.md", ROOT / "docs/assets/MANIFEST.md"]
     for folder in ("architecture", "operations", "reference"):
         docs.extend(sorted((ROOT / "docs" / folder).glob("*.md")))

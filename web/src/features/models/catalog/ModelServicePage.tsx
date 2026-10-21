@@ -1,3 +1,5 @@
+import { LocalModelsPanel } from "./LocalModelsPanel";
+import "./local-models.css";
 import { WorkspaceDefaults } from "./WorkspaceDefaults";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
@@ -142,6 +144,17 @@ export function ModelServicePage({
             actions={actions}
             permissions={{ canWrite, canTest }}
             onTestModel={onTestModel}
+            renderLocalModels={(onOpenConnection) =>
+              catalog.data && (
+                <LocalModelsPanel
+                  catalog={catalog.data}
+                  canWrite={canWrite}
+                  canTest={canTest}
+                  onTestModel={onTestModel}
+                  onOpenConnection={onOpenConnection}
+                />
+              )
+            }
             advancedInfo={`目录版本 ${catalog.data.revision}`}
             onRefresh={async () => {
               await catalog.refetch({ throwOnError: true });

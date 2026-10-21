@@ -289,6 +289,8 @@ export const SlideSurface = memo(function SlideSurface({
   editingId,
   selectedConnection,
   onSelectConnection,
+  onMoveConnection,
+  onMoveConnectionKey,
   size = defaultPageSize,
   playMedia = false,
   assetUrls,
@@ -303,6 +305,8 @@ export const SlideSurface = memo(function SlideSurface({
   editingId?: string | null;
   selectedConnection?: string | null;
   onSelectConnection?: (id: string) => void;
+  onMoveConnection?: React.ComponentProps<typeof Connections>["onMoveStart"];
+  onMoveConnectionKey?: React.ComponentProps<typeof Connections>["onMoveKey"];
 }) {
   const elements = new Map(
     slide.elements.map((element) => [element.id, element]),
@@ -323,7 +327,7 @@ export const SlideSurface = memo(function SlideSurface({
         if (item.kind === "connection") {
           if (
             [item.edge.source_id, item.edge.target_id].some(
-              (id) => elements.get(id)?.hidden,
+              (id) => id != null && elements.get(id)?.hidden,
             )
           )
             return null;
@@ -334,6 +338,8 @@ export const SlideSurface = memo(function SlideSurface({
               edges={[item.edge]}
               selected={selectedConnection}
               onSelect={onSelectConnection}
+              onMoveStart={onMoveConnection}
+              onMoveKey={onMoveConnectionKey}
             />
           );
         }

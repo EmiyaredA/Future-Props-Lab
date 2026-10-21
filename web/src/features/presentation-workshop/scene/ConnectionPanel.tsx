@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  GripHorizontal,
   X,
   BringToFront,
   ArrowUpToLine,
@@ -11,12 +10,10 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import type { Slide } from "../types";
 import type { Connection } from "./model";
+import { NumberField } from "../PresentationNumberField";
+import { connectionEnd, translateConnection } from "./connectionGeometry";
 import { validConnection } from "./connectionEditing";
 import { sceneOrder, type OrderMode } from "./stacking";
-import {
-  useConnectionPanelPosition,
-  type PanelPosition,
-} from "./useConnectionPanelPosition";
 import "./connection-panel.css";
 
 const sides = [
@@ -30,8 +27,6 @@ export function ConnectionPanel({
   slide,
   value,
   creating,
-  position,
-  onMove,
   onChange,
   onOrder,
   onCreate,
@@ -43,8 +38,6 @@ export function ConnectionPanel({
   slide: Slide;
   value: Connection;
   creating: boolean;
-  position: PanelPosition | null;
-  onMove: (position: PanelPosition) => void;
   onChange: (patch: Partial<Connection>, group?: string) => void;
   onOrder: (mode: OrderMode) => void;
   onCreate: () => void;
@@ -64,7 +57,6 @@ export function ConnectionPanel({
     },
     [onComposition],
   );
-  const move = useConnectionPanelPosition(root, position, onMove);
   const order = sceneOrder(slide);
   const index = order.findIndex((item) => item.id === value.id);
   const choices = slide.elements
@@ -78,9 +70,9 @@ export function ConnectionPanel({
           .slice(0, 22) || `${e.kind} ${i + 1}`,
     }));
   const close = () => {
-    const canvas = root.current?.parentElement?.querySelector<HTMLElement>(
-      ".presentation-canvas",
-    );
+    const canvas = root.current
+      ?.closest(".presentation-workspace")
+      ?.querySelector<HTMLElement>(".presentation-canvas");
     onClose();
     canvas?.focus();
   };
@@ -91,7 +83,6 @@ export function ConnectionPanel({
       data-presentation-history={creating ? "local" : "document"}
       role="region"
       aria-label="连接线调节"
-      style={{ visibility: "hidden" }}
       onKeyDown={(event) => {
         if (event.defaultPrevented || event.nativeEvent.isComposing) return;
         if (event.key === "Escape") {
@@ -106,16 +97,7 @@ export function ConnectionPanel({
       }}
     >
       <header>
-        <button
-          type="button"
-          className="presentation-connection-grip"
-          aria-label="移动连接调节面板"
-          title="拖动移动，方向键微调，Shift 加速"
-          {...move}
-        >
-          <GripHorizontal size={16} aria-hidden="true" />
-          <span>{creating ? "新建连接" : "连接线"}</span>
-        </button>
+        <strong>{creating ? "新建连接" : "连接线"}</strong>
         <button
           type="button"
           className="icon-btn"
@@ -163,6 +145,20 @@ export function ConnectionPanel({
             onChange={(color) => onChange({ color }, "color")}
           />
         </div>
+        <button
+          type="button"
+          className="btn"
+          disabled={!value.source_id && !value.target_id}
+          onClick={() =>
+            onChange(translateConnection(slide, value, { x: 0, y: 0 }))
+          }
+        >
+          脱离节点，自由移动
+        </button>
+        <p className="muted">
+          拖动线身可整体移动，Shift
+          限定水平或垂直方向；自由端点会对齐另一端，靠近元素边缘时吸附。
+        </p>
         <button
           type="button"
           className="btn"
@@ -277,68 +273,115 @@ export function ConnectionPanel({
                   <span>{source ? "起点" : "终点"}</span>
                   <CustomSelect
                     ariaLabel={source ? "连接起点" : "连接终点"}
-                    value={id}
-                    options={choices.map((c) => ({
-                      ...c,
-                      disabled: c.value === opposite,
-                    }))}
-                    onChange={(id) =>
-                      onChange(source ? { source_id: id } : { target_id: id })
-                    }
-                  />
-                  <CustomSelect
-                    ariaLabel={source ? "起点端口" : "终点端口"}
-                    value={
-                      (source ? value.source_anchor : value.target_anchor) ??
-                      (source ? "right" : "left")
-                    }
-                    options={sides}
-                    onChange={(v) =>
+                    value={id ?? "free"}
+                    options={[
+                      { value: "free", label: "自由端点" },
+                      ...choices.map((c) => ({
+                        ...c,
+                        disabled: c.value === opposite,
+                      })),
+                    ]}
+                    onChange={(id) => {
+                      const point = connectionEnd(slide, value, end)!;
                       onChange(
                         source
-                          ? { source_anchor: v as Connection["source_anchor"] }
-                          : { target_anchor: v as Connection["target_anchor"] },
-                      )
-                    }
+                          ? {
+                              source_id: id === "free" ? null : id,
+                              source_point: id === "free" ? point : null,
+                            }
+                          : {
+                              target_id: id === "free" ? null : id,
+                              target_point: id === "free" ? point : null,
+                            },
+                      );
+                    }}
                   />
-                  <label>
-                    沿边位置（%）
-                    <input
-                      aria-label={source ? "起点沿边位置" : "终点沿边位置"}
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={
-                        Math.round(
-                          ((source
-                            ? value.source_offset
-                            : value.target_offset) ?? 0.5) * 1000,
-                        ) / 10
-                      }
-                      onChange={(event) => {
-                        const percent = event.target.valueAsNumber;
-                        if (
-                          Number.isFinite(percent) &&
-                          percent >= 0 &&
-                          percent <= 100
-                        )
+                  {!id ? (
+                    (["x", "y"] as const).map((axis) => (
+                      <NumberField
+                        key={axis}
+                        label={`${source ? "起点" : "终点"} ${axis.toUpperCase()}`}
+                        min={-10000}
+                        max={10000}
+                        value={connectionEnd(slide, value, end)?.[axis] ?? 0}
+                        onChange={(coordinate) =>
+                          onChange(
+                            {
+                              [`${end}_point`]: {
+                                ...connectionEnd(slide, value, end)!,
+                                [axis]: coordinate,
+                              },
+                            },
+                            `${end}-${axis}`,
+                          )
+                        }
+                      />
+                    ))
+                  ) : (
+                    <>
+                      <CustomSelect
+                        ariaLabel={source ? "起点端口" : "终点端口"}
+                        value={
+                          (source
+                            ? value.source_anchor
+                            : value.target_anchor) ??
+                          (source ? "right" : "left")
+                        }
+                        options={sides}
+                        onChange={(v) =>
                           onChange(
                             source
-                              ? { source_offset: percent / 100 }
-                              : { target_offset: percent / 100 },
-                            `${end}-offset`,
-                          );
-                      }}
-                    />
-                  </label>
+                              ? {
+                                  source_anchor:
+                                    v as Connection["source_anchor"],
+                                }
+                              : {
+                                  target_anchor:
+                                    v as Connection["target_anchor"],
+                                },
+                          )
+                        }
+                      />
+                      <label>
+                        沿边位置（%）
+                        <input
+                          aria-label={source ? "起点沿边位置" : "终点沿边位置"}
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={
+                            Math.round(
+                              ((source
+                                ? value.source_offset
+                                : value.target_offset) ?? 0.5) * 1000,
+                            ) / 10
+                          }
+                          onChange={(event) => {
+                            const percent = event.target.valueAsNumber;
+                            if (
+                              Number.isFinite(percent) &&
+                              percent >= 0 &&
+                              percent <= 100
+                            )
+                              onChange(
+                                source
+                                  ? { source_offset: percent / 100 }
+                                  : { target_offset: percent / 100 },
+                                `${end}-offset`,
+                              );
+                          }}
+                        />
+                      </label>
+                    </>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
         {!validConnection(slide, value) && (
-          <p role="alert">请选择两个不同且存在的节点</p>
+          <p role="alert">请选择有效节点或自由端点坐标</p>
         )}
       </div>
       <footer>

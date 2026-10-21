@@ -133,6 +133,9 @@ Future-Props-Lab/
   `llm/routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
 - `web/src/features/models/catalog/` 拥有受控 `ModelCatalogEditor`、目录分类、供应商树和三层表单；
   `ModelServicePage` 适配工作区 API、缓存和冲突恢复，`WorkspaceDefaults` 负责默认用途选择与保存。
+  工作区页面通过可选内容插槽提供「本地模型」标签；`LocalModelsPanel` 与 `LocalModelDetails`
+  拥有模型选择、状态步骤和空间接入操作，`useLocalModels` 统一轮询、写入及缓存刷新，
+  `localModelPresentation` 根据本机状态和当前空间目录派生摘要与接入状态；共用编辑器仍不发起 API 请求。
   管理中台通过数据、动作和字段权限复用编辑器，
   角色模板草稿、保存及同步由 `features/accounts/` 拥有；共用编辑器不直接请求 API 或持有 revision。
   页面、连接布局和弹窗样式分别由 `model-catalog.css`、`catalog-connections.css`、
@@ -173,6 +176,9 @@ Future-Props-Lab/
   最近使用状态，不复制工具名称、分类或外部网址。其 Codex 模型源用例仅在桌面私有传输内
   读取和修改当前用户的 `CODEX_HOME/config.toml`，不进入 Workspace 数据库。视频下载用例调用本机
   `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
+  空间占用用例仅向 macOS 桌面端平台超级管理员 Session 提供本机容量读取、GrandPerspective
+  目录分析与 Finder 打开；不递归扫描、不保存目录或扫描结果，不开放 Agent 通道。
+  Electron 仅负责可信主窗口的目录选择，Web 工具页通过正式 API 调用本机用例。
 - `integrations/` 拥有独立于工具导航的 Workspace 集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
@@ -476,7 +482,8 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `scene/` 拥有原生分组、节点连接、参考图对照和页面检查；`infographics/` 拥有 AntV
 声明式输入、受控模板原生转换与 ELK 布局，不持有另一套保存或导出状态。`elkLayout.ts` 按需创建并销毁独立布局 Worker，`validation.ts` 在原生片段预览前校验结构，装饰 SVG 复用正式素材预览校验。
 `scene/selection.ts` 解析命中元素与分组选择，`useSceneTools` 唯一持有组内层级；画布在点击松手时请求下钻，拖动保留原选区。这些选择状态不进入文稿持久化。
-`scene/connectionGeometry.ts` 拥有沿边比例端点、旋转边缘投影、路径编辑与节点跟随；`ConnectionHandles` 展示画布覆盖层，`useConnectionDrag` 只持有可取消预览，松手经统一草稿提交一次。直线拖动保持直线，折线才编辑走线。后端 `connection_routes.py` 与 Web 共用测试向量，operations 合并整批节点变换后调整路径，显式路径优先。连接 `source_offset`、`target_offset` 为 0–1，迁移 `0100_presentation_connection_offsets` 为旧连接补 0.5，保留路径与 revision；PPTX 将非中点连接导出为自由形状以保留几何。
+`scene/ConnectionPanel.tsx` 将连接属性停靠到右侧 `PresentationInspector` 元素页，连接选择与新建预览仍由 `useSceneTools` 拥有；不再持有浮层定位状态。
+`scene/connectionGeometry.ts` 拥有沿边比例端点、旋转边缘投影、路径编辑与节点跟随；`ConnectionHandles` 展示画布覆盖层，`useConnectionDrag` 只持有可取消预览，松手经统一草稿提交一次。线身拖动解除两端绑定并平移全路径，端点拖动可自由放置或重新吸附；直线拖动保持直线，折线手柄编辑局部走线。自由端点以互斥的 ID／point 表达，`0104_presentation_free_connections` 为旧连接补 null 坐标，复制、可见性、批量操作和 PPTX 共享端点语义。后端 `connection_routes.py` 与 Web 共用测试向量，operations 合并整批节点变换后调整路径，显式路径优先。连接 `source_offset`、`target_offset` 为 0–1，迁移 `0100_presentation_connection_offsets` 为旧连接补 0.5，保留路径与 revision；PPTX 将非中点连接导出为自由形状以保留几何。
 `scene/stacking.ts` 解析并调整元素与连接的统一前后顺序；连接 `layer` 保存下方元素数量，同层按连接数组顺序。迁移 `0098_presentation_connection_layers` 为缺失层级补 0，保留旧画面与 revision。`SlideSurface` 与 `pptx_scene.py` 消费相同顺序；PPTX 仅保留连续叠放的原生组，交错组在导出时展开以保持遮挡，源分组不变。
 后端 `schemas/scene.py` 校验文稿 v3 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
 `slideTheme.ts` 拥有新建色板、可修改颜色收集与单页换肤纯函数，`SlideThemeDialog` 只维护预览替换表；用户应用才进入原草稿历史与 CAS 保存，不追加持久化字段。`useSceneTools` 返回动作描述与独立弹窗，`PresentationToolbar` 统一展示信息图与“更多”菜单，不再增加整排场景工具。`slide-theme.css` 仅维护换肤弹窗布局。
@@ -506,7 +513,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 演示工坊 v3 扩展按职责组织：`schemas/appearance.py`、`objects.py`、`paths.py`、`annotations.py` 与 `playback.py` 拥有专属结构；`asset_references.py` 收集背景、填充、封面和媒体等实际引用。迁移 `0101_presentation_editor_v3` 保留内容、身份、revision 与更新时间，仅升级版本并补元素元数据；已有新能力的文稿拒绝旧格式降级覆盖。
 `exchange/` 拥有有界 ZIP 文稿包、无写入预检、PPTX 解析、转换报告、素材准备与重映射；`routes/exchange.py` 只适配 HTTP。`pptx_objects.py`、`pptx_paths.py`、`pptx_playback.py` 与 `pptx_appearance.py` 分别映射原生表格图表、路径、媒体与样式；`visible_scene.py` 统一排除隐藏对象及关联连接。
-Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替换、图层与面板；`objects/` 拥有原生元素内容编辑、ECharts SVG、KaTeX 预览及本地公式矢量生成；`exchange/` 拥有预检和静态图片／打印输出；`playback/` 拥有动画步骤、标注与同源观众同步。`web/mathFontData.ts` 在构建前将第三方字形轮廓发布为本地 JSON 数据资源，不改写构建产物或提高代码预算。`desktop/src/presentation-windows.ts` 校验并管理受控观众窗口，退出与父窗口关闭时终止会话。
+Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替换、图层与面板；`objects/` 拥有原生元素内容编辑与 ECharts SVG；`objects/formula/` 拥有公式模板弹窗、异步预览和自然尺寸计算，通过现有 `formulaSvg.ts` 共用本地 MathJax 矢量生成；`exchange/` 拥有预检和静态图片／打印输出；`playback/` 拥有动画步骤、标注与同源观众同步。`web/mathFontData.ts` 在构建前将第三方字形轮廓发布为本地 JSON 数据资源，不改写构建产物或提高代码预算。`desktop/src/presentation-windows.ts` 校验并管理受控观众窗口，退出与父窗口关闭时终止会话。
 
 ## 导演台
 
@@ -661,3 +668,20 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 在任务 admission 前校验本地参考文件。模型测试、视觉工坊与独立推理只持有各自的素材和任务，
 复用 `GenerationTaskDriver`，不互相导入实现。公共 `VideoCapabilitiesOut` 同步前端参数选择、
 画布草稿和 SDK 契约；参考视频复用已配置的临时素材上传服务。
+
+## 可选本地语音模型
+
+`llm/local_models/` 拥有固定下载清单、独立 Python 环境安装、恢复与 MLX 子进程生命周期；
+导入和应用启动均不访问下载源。`worker.py` 是仅依赖独立环境的管道程序，不导入应用或数据库。
+`llm/providers/local_qwen.py` 归一化参考录音校验和合成参数；`llm/inference/` 复用任务、素材和日志。
+`console/governance/local_models.py` 校验平台管理员浏览器身份，`llm/routes/local_models.py` 仅适配 HTTP。
+`web/src/features/models/` 拥有安装管理与语音测试页面，调用共用推理 API。
+`generation/SpeechSynthesisTestPanel.tsx` 装配配音表单和按模型筛选的生成记录，
+`useSpeechDraft.ts` 拥有参考录音替换、输入校验、单次提交与身份切换后的异步结果隔离；
+`SpeechSynthesisResult.tsx` 通过鉴权 Blob URL 播放、定位、下载与保存结果，
+`speechSynthesisPresentation.ts` 统一语言、任务状态和音频时间文案，`speech-synthesis.css` 限定语音工作区布局。
+
+`0103_local_models` 新增部署级安装元数据和操作回执，不保存 Workspace 数据。
+模型权重与环境属于可再下载缓存，桌面保存于数据根 `local-models/`，源码部署保存于运行目录下
+`local-models/`；数据库备份恢复后可主动重新安装。语音输入与输出保存在对应空间的
+`model-inference/inputs/`、`model-inference/outputs/`，沿用 Workspace 备份和访问边界。

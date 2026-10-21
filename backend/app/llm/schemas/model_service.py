@@ -8,6 +8,7 @@ from app.llm.schemas.model_supplier import ModelSupplierOut
 from app.runtime.outbound_urls import normalize_provider_base_url, normalize_provider_websocket_url
 
 ProviderKind = Literal[
+    "local_qwen_tts",
     "volcengine_image",
     "openai",
     "anthropic",
@@ -22,6 +23,7 @@ ProviderKind = Literal[
     "senseaudio_sfx",
 ]
 ModelCapability = Literal[
+    "speech_synthesis",
     "chat",
     "vision",
     "tools",
@@ -54,6 +56,7 @@ class ModelEntryIn(BaseModel):
 
 
 class ModelEntryOut(BaseModel):
+    availability: Literal["ready", "not_installed", "stopped", "unsupported_platform"] = "ready"
     origin: Literal["user", "role_template"] = "user"
     template_key: str | None = None
     managed_fields: list[str] = Field(default_factory=list)
@@ -78,6 +81,8 @@ class ProviderIn(BaseModel):
 
     @model_validator(mode="after")
     def valid_base_url(self) -> ProviderIn:
+        if self.kind == "local_qwen_tts" and (self.base_url.strip() or self.api_key.strip()):
+            raise ValueError("托管本地模型不接受服务地址或 API Key")
         if self.kind == "volcengine_video" and not self.base_url.strip():
             self.base_url = "https://ark.cn-beijing.volces.com/api/v3"
         self.base_url = (

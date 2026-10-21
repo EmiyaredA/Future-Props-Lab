@@ -5,12 +5,15 @@ import { SlideCanvas } from "../SlideCanvas";
 import { SelectionToolbar } from "../SelectionToolbar";
 import { ImageCropOverlay, CropToolbar } from "../ImageCropOverlay";
 import type { PresentationSession } from "./usePresentationSession";
+import type { SlideElement } from "../types";
 export function EditorCanvas({
   session,
   readOnly,
+  onFormulaEdit,
 }: {
   session: PresentationSession;
   readOnly: boolean;
+  onFormulaEdit?: (element: SlideElement) => void;
 }) {
   const {
     commands,
@@ -125,6 +128,7 @@ export function EditorCanvas({
           )}
 
           <SlideCanvas
+            onFormulaEdit={cropSession ? undefined : onFormulaEdit}
             size={draft.draft.document}
             drawMode={session.drawMode}
             onDrawCancel={() => session.setDrawMode(null)}
@@ -139,7 +143,10 @@ export function EditorCanvas({
             groupScope={scene.scope}
             onGroupScopeChange={scene.selectInScope}
             selectedConnection={scene.edgeId}
-            onSelectConnection={scene.onSelectEdge}
+            onSelectConnection={(id) => {
+              scene.onSelectEdge(id);
+              setPanel("format");
+            }}
             referenceOverlay={scene.referenceOverlay}
             slide={displayedSlide}
             cropOverlay={
@@ -223,7 +230,6 @@ export function EditorCanvas({
             onComposition={draft.setComposition}
             historyGesture={history.cancelGesture}
           />
-          {scene.connectionPanel}
         </div>
       </div>
     </>
