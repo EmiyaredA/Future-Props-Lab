@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LABELS = {
+    "interview": "面试资料准备",
     "desktop": "桌面初始化与本地 Agent 接入",
     "amadeus": "Amadeus 桌面助手",
     "desktop_pet": "桌宠工坊",
