@@ -68186,7 +68186,7 @@
         },
         "summary": "List Acceptance Templates",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       },
       "post": {
@@ -68225,7 +68225,7 @@
         },
         "summary": "Create Acceptance Template",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -68281,7 +68281,7 @@
         },
         "summary": "Delete Acceptance Template",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       },
       "put": {
@@ -68331,7 +68331,7 @@
         },
         "summary": "Update Acceptance Template",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69036,7 +69036,7 @@
         },
         "summary": "List Acceptance Models",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69087,7 +69087,7 @@
         },
         "summary": "Get Acceptance Repair",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       },
       "put": {
@@ -69146,7 +69146,7 @@
         },
         "summary": "Save Acceptance Repair",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69215,7 +69215,7 @@
         },
         "summary": "List Acceptance Runs",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       },
       "post": {
@@ -69265,7 +69265,7 @@
         },
         "summary": "Start Acceptance Runs",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69316,7 +69316,7 @@
         },
         "summary": "Get Acceptance Run",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69377,7 +69377,7 @@
         },
         "summary": "Cancel Acceptance Run",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69438,7 +69438,7 @@
         },
         "summary": "Decide Acceptance Run",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69489,7 +69489,7 @@
         },
         "summary": "Create Acceptance Repair",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69550,7 +69550,7 @@
         },
         "summary": "Sample Acceptance Video",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },
@@ -69592,7 +69592,7 @@
         },
         "summary": "Get Acceptance Standard",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       },
       "put": {
@@ -69642,7 +69642,7 @@
         },
         "summary": "Save Acceptance Standard",
         "tags": [
-          "visual-workshop-acceptance"
+          "visual-workshop"
         ]
       }
     },

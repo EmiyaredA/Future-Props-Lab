@@ -1,7 +1,8 @@
 """Version-bound visual acceptance standards, evidence and review history."""
 
 MIGRATION_ID = "0105_visual_acceptance"
-SQL = """
+SQL = (
+    """
 CREATE TABLE visual_acceptance_templates (
 	id VARCHAR(36) NOT NULL, 
 	workspace_id VARCHAR(36) NOT NULL, 
@@ -11,8 +12,10 @@ CREATE TABLE visual_acceptance_templates (
 	created_at DATETIME NOT NULL, 
 	PRIMARY KEY (id)
 );
-CREATE INDEX ix_visual_acceptance_templates_workspace_id ON visual_acceptance_templates (workspace_id);
-CREATE TABLE visual_acceptance_standards (
+"""
+    "CREATE INDEX ix_visual_acceptance_templates_workspace_id ON "
+    "visual_acceptance_templates (workspace_id);\n"
+    """CREATE TABLE visual_acceptance_standards (
 	project_id VARCHAR(36) NOT NULL, 
 	workspace_id VARCHAR(36) NOT NULL, 
 	draft JSON NOT NULL, 
@@ -22,8 +25,10 @@ CREATE TABLE visual_acceptance_standards (
 	PRIMARY KEY (project_id), 
 	FOREIGN KEY(project_id) REFERENCES visual_workshop_projects (id) ON DELETE CASCADE
 );
-CREATE INDEX ix_visual_acceptance_standards_workspace_id ON visual_acceptance_standards (workspace_id);
-CREATE TABLE visual_acceptance_standard_versions (
+"""
+    "CREATE INDEX ix_visual_acceptance_standards_workspace_id ON "
+    "visual_acceptance_standards (workspace_id);\n"
+    """CREATE TABLE visual_acceptance_standard_versions (
 	id VARCHAR(36) NOT NULL, 
 	workspace_id VARCHAR(36) NOT NULL, 
 	project_id VARCHAR(36) NOT NULL, 
@@ -34,8 +39,10 @@ CREATE TABLE visual_acceptance_standard_versions (
 	UNIQUE (project_id, version), 
 	FOREIGN KEY(project_id) REFERENCES visual_workshop_projects (id) ON DELETE CASCADE
 );
-CREATE INDEX ix_visual_acceptance_standard_versions_workspace_id ON visual_acceptance_standard_versions (workspace_id);
-CREATE TABLE visual_acceptance_runs (
+"""
+    "CREATE INDEX ix_visual_acceptance_standard_versions_workspace_id ON "
+    "visual_acceptance_standard_versions (workspace_id);\n"
+    """CREATE TABLE visual_acceptance_runs (
 	id VARCHAR(36) NOT NULL, 
 	workspace_id VARCHAR(36) NOT NULL, 
 	project_id VARCHAR(36) NOT NULL, 
@@ -72,8 +79,10 @@ CREATE TABLE visual_acceptance_asset_references (
 	FOREIGN KEY(asset_id) REFERENCES visual_assets (id) ON DELETE RESTRICT, 
 	FOREIGN KEY(project_id) REFERENCES visual_workshop_projects (id) ON DELETE CASCADE
 );
-CREATE INDEX ix_visual_acceptance_asset_references_project_id ON visual_acceptance_asset_references (project_id);
-CREATE TABLE visual_acceptance_repair_drafts (
+"""
+    "CREATE INDEX ix_visual_acceptance_asset_references_project_id ON "
+    "visual_acceptance_asset_references (project_id);\n"
+    """CREATE TABLE visual_acceptance_repair_drafts (
 	id VARCHAR(36) NOT NULL, 
 	workspace_id VARCHAR(36) NOT NULL, 
 	project_id VARCHAR(36) NOT NULL, 
@@ -85,5 +94,8 @@ CREATE TABLE visual_acceptance_repair_drafts (
 	FOREIGN KEY(project_id) REFERENCES visual_workshop_projects (id) ON DELETE CASCADE, 
 	FOREIGN KEY(run_id) REFERENCES visual_acceptance_runs (id) ON DELETE CASCADE
 );
-CREATE INDEX ix_visual_acceptance_repair_drafts_workspace_id ON visual_acceptance_repair_drafts (workspace_id);
 """
+    "CREATE INDEX ix_visual_acceptance_repair_drafts_workspace_id ON "
+    "visual_acceptance_repair_drafts (workspace_id);\n"
+    """"""
+)

@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ClipboardCheck, Save } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ClipboardCheck,
+  Files,
+  LayoutTemplate,
+  ListChecks,
+  Save,
+} from "lucide-react";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
@@ -28,6 +36,7 @@ import { TemplateLibrary } from "./TemplateLibrary";
 import { StandardEditor } from "./StandardEditor";
 import { RunsPane } from "./RunsPane";
 import "./acceptance.css";
+import "./standard-editor.css";
 export function AcceptanceWorkspace({
   projectId,
   title,
@@ -55,6 +64,7 @@ export function AcceptanceWorkspace({
   const [dirty, setDirty] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [repair, setRepair] = useState<Repair>(),
     [repairText, setRepairText] = useState("");
   const [confirm, setConfirm] = useState<{
@@ -145,26 +155,25 @@ export function AcceptanceWorkspace({
     });
   };
   const adopt = async (run: Run) => {
-    const revision = prepareCanvas
-      ? await prepareCanvas()
-      : (await getVisualCanvas(projectId)).revision;
-    await selectNodeFinalOutput(
+    if (prepareCanvas) await prepareCanvas();
+    const revision = (await getVisualCanvas(projectId)).revision;
+    const adopted = await selectNodeFinalOutput(
       projectId,
       run.node_id,
       run.output_id,
       revision,
     );
-    await client.invalidateQueries({ queryKey: keys.canvas(projectId) });
+    client.setQueryData(keys.canvas(projectId), adopted);
+    setNotice(`已将 v${run.snapshot.output.version} 设为最终输出`);
     await client.invalidateQueries({
       queryKey: keys.nodeOutputsProject(projectId),
     });
   };
   const saveRepair = async (apply: boolean) => {
     if (!repair) return;
+    if (apply && prepareCanvas) await prepareCanvas();
     const revision = apply
-      ? prepareCanvas
-        ? await prepareCanvas()
-        : (await getVisualCanvas(projectId)).revision
+      ? (await getVisualCanvas(projectId)).revision
       : undefined;
     const value = await act(() =>
       send<Repair>(
@@ -202,22 +211,28 @@ export function AcceptanceWorkspace({
         </strong>
         {(
           [
-            ["templates", "模板库"],
-            ["standard", "项目标准"],
-            ["runs", "验收记录"],
+            ["templates", "模板库", LayoutTemplate],
+            ["standard", "项目标准", ListChecks],
+            ["runs", "验收记录", Files],
           ] as const
-        ).map(([value, label]) => (
+        ).map(([value, label, Icon]) => (
           <button
             key={value}
             aria-pressed={tab === value}
             className={tab === value ? "is-selected" : ""}
             onClick={() => setTab(value)}
           >
+            <Icon size={16} aria-hidden="true" />
             {label}
           </button>
         ))}
       </nav>
       <main className="acceptance-body">
+        {notice && (
+          <p role="status" className="acceptance-notice">
+            {notice}
+          </p>
+        )}
         {error && (
           <p role="alert" className="acceptance-error">
             {error}
@@ -253,11 +268,22 @@ export function AcceptanceWorkspace({
                 <>
                   <div className="acceptance-section-heading">
                     <div>
-                      <h2>配置项目验收标准</h2>
-                      <p>
-                        已发布 v{standard.data?.published_version ?? 0} ·{" "}
-                        {dirty ? "有未保存修改" : "已保存"} ·
-                        发布后形成新版本，旧记录保留。
+                      <span className="acceptance-eyebrow">
+                        项目标准 · STANDARD
+                      </span>
+                      <div className="acceptance-title-line">
+                        <h2>配置项目验收标准</h2>
+                        <span
+                          className={`acceptance-badge ${dirty ? "pending" : "neutral"}`}
+                        >
+                          {dirty ? "未保存修改" : "已保存"}
+                        </span>
+                      </div>
+                      <p className="acceptance-muted">
+                        {standard.data?.published_version
+                          ? `当前生效 v${standard.data.published_version}`
+                          : "尚未发布"}{" "}
+                        · 发布后形成独立版本，每次验收都可追溯。
                       </p>
                     </div>
                     <div className="acceptance-actions">
@@ -286,7 +312,8 @@ export function AcceptanceWorkspace({
                         disabled={!canWrite || busy || !draft.criteria?.length}
                         onClick={() => void save(true)}
                       >
-                        发布并选择验收版本
+                        发布并选择验收版本{" "}
+                        <ArrowRight size={16} aria-hidden="true" />
                       </button>
                     </div>
                   </div>

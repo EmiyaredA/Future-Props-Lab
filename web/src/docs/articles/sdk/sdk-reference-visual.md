@@ -9,19 +9,32 @@
 
 | SDK 方法 | HTTP 操作 |
 | --- | --- |
+| [delete_acceptance_template](#delete-acceptance-template) | `DELETE /v1/visual-workshop/acceptance-templates/{template_id}` |
 | [delete_project](#delete-project) | `DELETE /v1/visual-workshop/projects/{project_id}` |
 | [delete_asset_reference](#delete-asset-reference) | `DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}` |
 | [delete_node_output](#delete-node-output) | `DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}` |
+| [list_acceptance_templates](#list-acceptance-templates) | `GET /v1/visual-workshop/acceptance-templates` |
 | [list_projects](#list-projects) | `GET /v1/visual-workshop/projects` |
 | [get_project](#get-project) | `GET /v1/visual-workshop/projects/{project_id}` |
+| [list_acceptance_models](#list-acceptance-models) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/models` |
+| [get_acceptance_repair](#get-acceptance-repair) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}` |
+| [list_acceptance_runs](#list-acceptance-runs) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/runs` |
+| [get_acceptance_run](#get-acceptance-run) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}` |
+| [get_acceptance_standard](#get-acceptance-standard) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/standard` |
 | [get_canvas](#get-canvas) | `GET /v1/visual-workshop/projects/{project_id}/canvas` |
 | [list_node_outputs](#list-node-outputs) | `GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` |
 | [get_node_output](#get-node-output) | `GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}` |
 | [export_project_snapshot](#export-project-snapshot) | `GET /v1/visual-workshop/projects/{project_id}/snapshot` |
 | [patch_project](#patch-project) | `PATCH /v1/visual-workshop/projects/{project_id}` |
 | [patch_asset_reference](#patch-asset-reference) | `PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}` |
+| [create_acceptance_template](#create-acceptance-template) | `POST /v1/visual-workshop/acceptance-templates` |
 | [create_project](#create-project) | `POST /v1/visual-workshop/projects` |
 | [import_project_snapshot](#import-project-snapshot) | `POST /v1/visual-workshop/projects/snapshot-imports` |
+| [start_acceptance_runs](#start-acceptance-runs) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs` |
+| [cancel_acceptance_run](#cancel-acceptance-run) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel` |
+| [decide_acceptance_run](#decide-acceptance-run) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions` |
+| [create_acceptance_repair](#create-acceptance-repair) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts` |
+| [sample_acceptance_video](#sample-acceptance-video) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples` |
 | [import_assets](#import-assets) | `POST /v1/visual-workshop/projects/{project_id}/asset-imports` |
 | [create_asset_reference](#create-asset-reference) | `POST /v1/visual-workshop/projects/{project_id}/asset-references` |
 | [apply_canvas_operations](#apply-canvas-operations) | `POST /v1/visual-workshop/projects/{project_id}/canvas/operations` |
@@ -29,8 +42,31 @@
 | [upload_node_output](#upload-node-output) | `POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads` |
 | [add_node_output](#add-node-output) | `POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` |
 | [reveal_project_folder](#reveal-project-folder) | `POST /v1/visual-workshop/projects/{project_id}/open-folder` |
+| [update_acceptance_template](#update-acceptance-template) | `PUT /v1/visual-workshop/acceptance-templates/{template_id}` |
+| [save_acceptance_repair](#save-acceptance-repair) | `PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}` |
+| [save_acceptance_standard](#save-acceptance-standard) | `PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard` |
 | [put_canvas](#put-canvas) | `PUT /v1/visual-workshop/projects/{project_id}/canvas` |
 | [set_node_final_output](#set-node-final-output) | `PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output` |
+
+## delete_acceptance_template {#delete-acceptance-template}
+
+`client.visual.delete_acceptance_template(...)`
+
+**接口**：`DELETE /v1/visual-workshop/acceptance-templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `template_id` | path | string | 是 |
+| `expected_revision` | query | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
 ## delete_project {#delete-project}
 
@@ -95,6 +131,24 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## list_acceptance_templates {#list-acceptance-templates}
+
+`client.visual.list_acceptance_templates(...)`
+
+**接口**：`GET /v1/visual-workshop/acceptance-templates`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceTemplateListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## list_projects {#list-projects}
 
 `client.visual.list_projects(...)`
@@ -129,6 +183,105 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VisualWorkshopProjectOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_acceptance_models {#list-acceptance-models}
+
+`client.visual.list_acceptance_models(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/models`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceModelListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_acceptance_repair {#get-acceptance-repair}
+
+`client.visual.get_acceptance_repair(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `draft_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRepairOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_acceptance_runs {#list-acceptance-runs}
+
+`client.visual.list_acceptance_runs(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/runs`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `node_id` | query | string / null | 否 |
+| `page` | query | integer | 否 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRunListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_acceptance_run {#get-acceptance-run}
+
+`client.visual.get_acceptance_run(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `run_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRunOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_acceptance_standard {#get-acceptance-standard}
+
+`client.visual.get_acceptance_standard(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/standard`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceStandardOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -262,6 +415,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## create_acceptance_template {#create-acceptance-template}
+
+`client.visual.create_acceptance_template(...)`
+
+**接口**：`POST /v1/visual-workshop/acceptance-templates`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | AcceptanceTemplateWriteIn | 是 |
+| `body.document` | 请求体 | AcceptanceDocument | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceTemplateOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## create_project {#create-project}
 
 `client.visual.create_project(...)`
@@ -302,6 +476,125 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VisualProjectSnapshotImportOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## start_acceptance_runs {#start-acceptance-runs}
+
+`client.visual.start_acceptance_runs(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | AcceptanceRunCreateIn | 是 |
+| `body.expected_standard_version` | 请求体 | integer | 是 |
+| `body.model_id` | 请求体 | string / null | 否 |
+| `body.output_ids` | 请求体 | array | 是 |
+| `body.previous_run_id` | 请求体 | string / null | 否 |
+| `body.request_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRunListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## cancel_acceptance_run {#cancel-acceptance-run}
+
+`client.visual.cancel_acceptance_run(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `run_id` | path | string | 是 |
+| `expected_revision` | query | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRunOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## decide_acceptance_run {#decide-acceptance-run}
+
+`client.visual.decide_acceptance_run(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `run_id` | path | string | 是 |
+| `body` | application/json | AcceptanceDecisionIn | 是 |
+| `body.criterion_id` | 请求体 | string / null | 否 |
+| `body.end_ms` | 请求体 | integer / null | 否 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.finalize` | 请求体 | boolean | 否 |
+| `body.reason` | 请求体 | string | 否 |
+| `body.region` | 请求体 | array / null | 否 |
+| `body.start_ms` | 请求体 | integer / null | 否 |
+| `body.verdict` | 请求体 | passed / failed / pending / not_applicable | 否 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRunOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_acceptance_repair {#create-acceptance-repair}
+
+`client.visual.create_acceptance_repair(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `run_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRepairOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## sample_acceptance_video {#sample-acceptance-video}
+
+`client.visual.sample_acceptance_video(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `run_id` | path | string | 是 |
+| `body` | application/json | AcceptanceSampleIn | 是 |
+| `body.end_ms` | 请求体 | integer | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.start_ms` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRunOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -466,6 +759,77 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ProjectFolderOpenOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## update_acceptance_template {#update-acceptance-template}
+
+`client.visual.update_acceptance_template(...)`
+
+**接口**：`PUT /v1/visual-workshop/acceptance-templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `template_id` | path | string | 是 |
+| `body` | application/json | AcceptanceTemplateWriteIn | 是 |
+| `body.document` | 请求体 | AcceptanceDocument | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceTemplateOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## save_acceptance_repair {#save-acceptance-repair}
+
+`client.visual.save_acceptance_repair(...)`
+
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `draft_id` | path | string | 是 |
+| `body` | application/json | AcceptanceRepairWriteIn | 是 |
+| `body.apply` | 请求体 | boolean | 否 |
+| `body.expected_canvas_revision` | 请求体 | integer / null | 否 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.text` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRepairOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## save_acceptance_standard {#save-acceptance-standard}
+
+`client.visual.save_acceptance_standard(...)`
+
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | AcceptanceStandardWriteIn | 是 |
+| `body.document` | 请求体 | AcceptanceDocument | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.publish` | 请求体 | boolean | 否 |
+| `body.required` | 请求体 | boolean | 否 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceStandardOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronRight,
+  ClipboardCheck,
+  Plus,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import type { VisualCanvasNode } from "../api";
 import {
@@ -46,7 +57,12 @@ export function StandardEditor({
   const labels = { image: "图片", video: "视频", audio: "音频", text: "文本" };
   return (
     <div className="acceptance-editor-layout">
-      <section className="acceptance-surface">
+      <section className="acceptance-surface acceptance-standard-sidebar">
+        <div className="acceptance-panel-title">
+          <ClipboardCheck size={18} />
+          <h3>标准概览</h3>
+          <span>{items.length} 项</span>
+        </div>
         <label>
           标准名称
           <input
@@ -56,50 +72,80 @@ export function StandardEditor({
             maxLength={120}
           />
         </label>
-        <fieldset disabled={!writable}>
-          <legend>应用节点</legend>
-          <p className="acceptance-muted">
-            不勾选时应用到全部节点，条目按媒体类型生效。
-          </p>
-          <div className="acceptance-scope">
-            {nodes.map((node) => (
-              <label key={node.id}>
-                <input
-                  type="checkbox"
-                  checked={(document.node_ids ?? []).includes(node.id)}
-                  onChange={(e) =>
-                    onChange({
-                      ...document,
-                      node_ids: e.target.checked
-                        ? [...(document.node_ids ?? []), node.id]
-                        : document.node_ids?.filter((id) => id !== node.id),
-                    })
-                  }
-                />
-                {node.title}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <details className="acceptance-scope-settings">
+          <summary>
+            应用范围{" "}
+            <span>
+              {document.node_ids?.length
+                ? `${document.node_ids.length} 个节点`
+                : "全部节点"}
+            </span>
+          </summary>
+          <fieldset disabled={!writable}>
+            <legend className="sr-only">应用节点</legend>
+            <small>不勾选时应用到全部节点，条目按媒体类型生效。</small>
+            <div className="acceptance-scope">
+              {nodes.map((node) => (
+                <label key={node.id}>
+                  <input
+                    type="checkbox"
+                    checked={(document.node_ids ?? []).includes(node.id)}
+                    onChange={(e) =>
+                      onChange({
+                        ...document,
+                        node_ids: e.target.checked
+                          ? [...(document.node_ids ?? []), node.id]
+                          : document.node_ids?.filter((id) => id !== node.id),
+                      })
+                    }
+                  />
+                  {node.title}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </details>
+        <div className="acceptance-list-heading">
+          <strong>验收清单</strong>
+          <small>
+            {items.filter((item) => item.required).length} 项必须满足
+          </small>
+        </div>
         <div className="acceptance-rule-list">
           {items.map((item, index) => (
             <button
               className={`acceptance-rule ${active?.id === item.id ? "is-selected" : ""}`}
+              aria-pressed={active?.id === item.id}
               key={item.id}
               onClick={() => setSelected(item.id)}
             >
-              <span className="acceptance-rule-number">{index + 1}</span>
+              <span className="acceptance-rule-icon" aria-hidden="true">
+                {item.method === "automatic" ? (
+                  <Settings2 size={18} />
+                ) : item.method === "ai" ? (
+                  <Sparkles size={18} />
+                ) : (
+                  <UserRound size={18} />
+                )}
+              </span>
               <span>
                 <strong>{item.title}</strong>
                 <small>
+                  {String(index + 1).padStart(2, "0")} ·{" "}
                   {methodNames[item.method ?? "manual"]} ·{" "}
                   {item.required ? "必须满足" : "建议满足"}
                 </small>
               </span>
+              <ChevronRight
+                size={15}
+                className="acceptance-rule-chevron"
+                aria-hidden="true"
+              />
             </button>
           ))}
         </div>
         <button
+          className="acceptance-add-rule"
           disabled={!writable || items.length >= 40}
           onClick={() => {
             const item = newCriterion();
@@ -110,6 +156,10 @@ export function StandardEditor({
           <Plus size={16} /> 添加验收项
         </button>
         <div className="acceptance-policy">
+          <div className="acceptance-panel-title">
+            <ShieldCheck size={17} />
+            <h3>输出采用规则</h3>
+          </div>
           <label>
             <input
               disabled={!writable}
@@ -124,8 +174,25 @@ export function StandardEditor({
           </p>
         </div>
       </section>
-      <section className="acceptance-surface">
-        <h2>编辑验收项</h2>
+      <section className="acceptance-surface acceptance-rule-editor">
+        <div className="acceptance-editor-heading">
+          <div>
+            <span className="acceptance-eyebrow">
+              验收项{" "}
+              {active
+                ? String(items.indexOf(active) + 1).padStart(2, "0")
+                : "—"}
+            </span>
+            <h2>{active?.title || "编辑验收项"}</h2>
+          </div>
+          {active && (
+            <span
+              className={`acceptance-badge ${active.required ? "required" : "optional"}`}
+            >
+              {active.required ? "必须满足" : "建议满足"}
+            </span>
+          )}
+        </div>
         {active ? (
           <fieldset disabled={!writable} className="acceptance-fields">
             <label>
@@ -140,16 +207,19 @@ export function StandardEditor({
               具体要求
               <textarea
                 value={active.requirement}
-                rows={4}
+                rows={3}
                 maxLength={3000}
                 onChange={(e) => update({ requirement: e.target.value })}
               />
             </label>
-            <div>
+            <div className="acceptance-media-options">
               <span>适用媒体</span>
               <div className="acceptance-actions">
                 {allKinds.map((kind) => (
-                  <label key={kind}>
+                  <label
+                    key={kind}
+                    className={active.kinds?.includes(kind) ? "is-checked" : ""}
+                  >
                     <input
                       type="checkbox"
                       checked={active.kinds?.includes(kind)}
@@ -172,7 +242,7 @@ export function StandardEditor({
                 ))}
               </div>
             </div>
-            <label>
+            <label className="acceptance-method-field">
               检查方式
               <CustomSelect
                 value={active.method ?? "manual"}
@@ -264,7 +334,7 @@ export function StandardEditor({
               </div>
             ) : (
               <>
-                <label>
+                <label className="acceptance-reference-label">
                   参考位置说明
                   <input
                     value={active.reference_label}
@@ -274,7 +344,7 @@ export function StandardEditor({
                     }
                   />
                 </label>
-                <fieldset>
+                <fieldset className="acceptance-reference-field">
                   <legend>绑定项目参考素材</legend>
                   <div className="acceptance-scope">
                     {nodes
@@ -313,7 +383,7 @@ export function StandardEditor({
                 </fieldset>
               </>
             )}
-            <label>
+            <label className="acceptance-required-field">
               <input
                 type="checkbox"
                 checked={active.required ?? true}

@@ -1,0 +1,169 @@
+.acceptance-standard-sidebar {
+  padding: 22px 18px;
+}
+.acceptance-rule-editor {
+  padding: 24px 28px;
+}
+.acceptance-editor-heading {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+  margin-bottom: 22px;
+}
+.acceptance-editor-heading h2 {
+  font-size: 21px;
+  margin: 0;
+}
+.acceptance-rule-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+.acceptance-rule-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.acceptance-rule
+  > span:not(.acceptance-rule-icon):not(.acceptance-rule-number) {
+  min-width: 0;
+}
+.acceptance-rule strong {
+  font-size: 14px;
+}
+.acceptance-rule small {
+  font-size: 11px;
+}
+.acceptance-workspace .acceptance-rule.is-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  box-shadow: inset 3px 0 var(--accent);
+}
+.acceptance-rule.is-selected .acceptance-rule-icon {
+  background: var(--surface);
+  color: var(--accent);
+}
+.acceptance-workspace .acceptance-add-rule {
+  width: 100%;
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+}
+.acceptance-workspace .acceptance-scope-settings {
+  margin: 18px 0 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+.acceptance-scope-settings summary {
+  font-size: 13px;
+}
+.acceptance-scope-settings summary > span {
+  float: right;
+  color: var(--muted);
+  font-size: 12px;
+}
+.acceptance-scope-settings fieldset {
+  margin: 12px 0 0;
+}
+.acceptance-policy .acceptance-panel-title {
+  margin-bottom: 14px;
+  color: var(--accent);
+}
+.acceptance-policy label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.acceptance-policy p {
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 10px 0 0;
+}
+.acceptance-rule-editor .acceptance-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.acceptance-fields > * {
+  grid-column: 1 / -1;
+}
+.acceptance-fields > .acceptance-media-options,
+.acceptance-fields > .acceptance-method-field {
+  grid-column: auto;
+}
+.acceptance-media-options .acceptance-actions {
+  gap: 6px;
+  margin: 9px 0 0;
+}
+.acceptance-media-options label {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+}
+.acceptance-media-options label.is-checked {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.acceptance-media-options input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+}
+.acceptance-media-options label:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.acceptance-workspace .acceptance-reference-field {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 0;
+}
+.acceptance-reference-field legend {
+  padding: 0 6px;
+  font-size: 13px;
+}
+.acceptance-reference-field .acceptance-scope {
+  padding: 8px 0 12px;
+}
+.acceptance-reference-field label {
+  font-size: 13px;
+}
+.acceptance-fields .acceptance-required-field {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+.acceptance-fields > .acceptance-actions {
+  margin: 0;
+}
+.acceptance-fields > .acceptance-notice {
+  margin: 0;
+  font-size: 12px;
+}
+
+@media (min-width: 1200px) {
+  .acceptance-fields > .acceptance-reference-label,
+  .acceptance-fields > .acceptance-reference-field {
+    grid-column: auto;
+  }
+}
+.acceptance-rule-editor .acceptance-fields {
+  margin: 0;
+  gap: 16px;
+}
+.acceptance-standard-sidebar .acceptance-rule {
+  padding: 13px 12px;
+}
+.acceptance-standard-sidebar .acceptance-rule-list {
+  margin: 12px 0;
+  gap: 6px;
+}
+.acceptance-workspace .custom-select-trigger {
+  background: var(--surface);
+  color: var(--text);
+  justify-content: space-between;
+}

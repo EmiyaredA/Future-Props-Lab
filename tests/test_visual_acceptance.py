@@ -30,6 +30,13 @@ async def cleanup_acceptance_projects():
                     params={"expected_revision": row["revision"]},
                 )
                 assert result.status_code == 200, result.text
+        from sqlalchemy import delete
+
+        from app.llm.models import ModelProvider
+
+        async with SessionLocal() as session:
+            await session.execute(delete(ModelProvider).where(ModelProvider.name == "验收假供应商"))
+            await session.commit()
 
 
 async def make_project(client, kind="image"):
@@ -175,6 +182,23 @@ async def test_strict_candidate_adoption_cas_and_standard_invalidation():
             json={"output_id": output["id"], "expected_revision": state["revision"]},
         )
         assert result.status_code == 200, result.text
+        state = (await client.get(f"{base}/canvas")).json()
+        state["nodes"][0]["approved"] = True
+        approved = await client.put(
+            f"{base}/canvas",
+            json={"expected_revision": state["revision"], "nodes": state["nodes"], "edges": []},
+        )
+        assert approved.status_code == 200, approved.text
+        run = await decide(
+            client, base, run, criterion_id="rule", verdict="failed", reason="复核发现规格不符"
+        )
+        state = (await client.get(f"{base}/canvas")).json()
+        assert state["nodes"][0]["approved"] is False
+        assert state["nodes"][0]["final_output_id"] == output["id"]
+        run = await decide(
+            client, base, run, criterion_id="rule", verdict="passed", reason="重新核实通过"
+        )
+        await decide(client, base, run, finalize=True)
         second = await add_output(client, base, identity)
         assert not second["is_final"]
         assert (await client.get(f"{base}/canvas")).json()["nodes"][0]["final_output_id"] == output[

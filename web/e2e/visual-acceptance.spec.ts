@@ -39,6 +39,7 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
   await page.screenshot({
     path: resolve(directory, "template-library.png"),
     fullPage: true,
+    animations: "disabled",
   });
   await page.getByRole("button", { name: "使用模板并配置" }).click();
   for (const title of ["角色外观一致", "动作与道具"]) {
@@ -50,7 +51,33 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
   await page.screenshot({
     path: resolve(directory, "standard-editor.png"),
     fullPage: true,
+    animations: "disabled",
   });
+  const policyControl = page.getByLabel("强制验收后才能采用输出");
+  const controlSize = await policyControl.boundingBox();
+  expect(controlSize?.width).toBe(17);
+  expect(controlSize?.height).toBe(17);
+  await page.getByRole("button", { name: "深色", exact: true }).click();
+  await page.screenshot({
+    path: resolve(directory, "standard-editor-dark.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.getByRole("button", { name: "浅色", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    )
+    .toBeTruthy();
+  await page.screenshot({
+    path: resolve(directory, "standard-editor-mobile.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.setViewportSize({ width: 1600, height: 1000 });
   await page.getByRole("button", { name: "发布并选择验收版本" }).click();
   await expect(
     page.getByRole("heading", { name: "选择输出版本开始验收" }),
@@ -88,6 +115,7 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
   await page.screenshot({
     path: resolve(directory, "version-result.png"),
     fullPage: true,
+    animations: "disabled",
   });
   canvas = await (await page.request.get(`${base}/canvas`)).json();
   await page.request.post(`${base}/nodes/${node.id}/output-uploads`, {
@@ -117,6 +145,7 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
   await page.screenshot({
     path: resolve(directory, "recheck.png"),
     fullPage: true,
+    animations: "disabled",
   });
   await page.getByRole("button", { name: "设为最终输出" }).click();
   await expect

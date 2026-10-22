@@ -50,6 +50,7 @@ export function RunsPane({
     [model, setModel] = useState("");
   const [selected, setSelected] = useState(""),
     [previous, setPrevious] = useState<Run>();
+  const [choosing, setChoosing] = useState(true);
   const versions = useQuery({
     queryKey: keys.acceptanceOutputs(projectId, nodeId, versionPage),
     queryFn: () => getNodeOutputs(projectId, nodeId, versionPage),
@@ -94,6 +95,7 @@ export function RunsPane({
       setSelected(response.items[0].id);
       setPicked([]);
       setPrevious(undefined);
+      setChoosing(false);
       await records.refetch();
     }
   };
@@ -105,111 +107,124 @@ export function RunsPane({
   return (
     <>
       <section className="acceptance-surface acceptance-start">
-        <h2>{previous ? "选择返修版本复验" : "选择输出版本开始验收"}</h2>
-        <p className="acceptance-muted">
-          标准 v{standard.published_version} · 每个输出独立留存结果。
-          {previous && ` 原记录 ${previous.id.slice(0, 8)}，重新检查全部条目。`}
-        </p>
-        <div className="acceptance-actions">
-          <CustomSelect
-            ariaLabel="验收节点"
-            value={nodeId}
-            onChange={(value) => {
-              setNodeId(value);
-              setVersionPage(1);
-            }}
-            options={nodes.map((node) => ({
-              value: node.id,
-              label: node.title,
-            }))}
-          />
-          {needsModel && (
+        <div className="acceptance-start-heading">
+          <h2>{previous ? "选择返修版本复验" : "选择输出版本开始验收"}</h2>
+          <button
+            onClick={() => setChoosing(!choosing)}
+            aria-expanded={choosing}
+          >
+            {choosing ? "收起版本选择" : "选择其他输出"}
+          </button>
+        </div>
+        <div hidden={!choosing}>
+          <p className="acceptance-muted">
+            标准 v{standard.published_version} · 每个输出独立留存结果。
+            {previous &&
+              ` 原记录 ${previous.id.slice(0, 8)}，重新检查全部条目。`}
+          </p>
+          <div className="acceptance-actions">
             <CustomSelect
-              ariaLabel="验收视觉模型"
-              value={model}
-              onChange={setModel}
-              options={[
-                { value: "", label: "请选择视觉模型" },
-                ...(models.data?.items.map((m) => ({
-                  value: m.id,
-                  label: `${m.provider_name} · ${m.label}`,
-                })) ?? []),
-              ]}
+              ariaLabel="验收节点"
+              value={nodeId}
+              onChange={(value) => {
+                setNodeId(value);
+                setVersionPage(1);
+              }}
+              options={nodes.map((node) => ({
+                value: node.id,
+                label: node.title,
+              }))}
             />
+            {needsModel && (
+              <CustomSelect
+                ariaLabel="验收视觉模型"
+                value={model}
+                onChange={setModel}
+                options={[
+                  { value: "", label: "请选择视觉模型" },
+                  ...(models.data?.items.map((m) => ({
+                    value: m.id,
+                    label: `${m.provider_name} · ${m.label}`,
+                  })) ?? []),
+                ]}
+              />
+            )}
+            <button
+              disabled={
+                !writable ||
+                busy ||
+                !standard.published_version ||
+                !picked.length ||
+                (needsModel && !model)
+              }
+              className="acceptance-primary"
+              onClick={() => void start()}
+            >
+              {previous ? "开始复验" : "开始验收"}（{picked.length}）
+            </button>
+            {previous && (
+              <button onClick={() => setPrevious(undefined)}>
+                取消复验选择
+              </button>
+            )}
+          </div>
+          {!standard.published_version && (
+            <p className="acceptance-notice">
+              请先在“项目标准”发布一套验收标准。
+            </p>
           )}
-          <button
-            disabled={
-              !writable ||
-              busy ||
-              !standard.published_version ||
-              !picked.length ||
-              (needsModel && !model)
-            }
-            className="acceptance-primary"
-            onClick={() => void start()}
-          >
-            {previous ? "开始复验" : "开始验收"}（{picked.length}）
-          </button>
-          {previous && (
-            <button onClick={() => setPrevious(undefined)}>取消复验选择</button>
+          {needsModel && models.data?.items.length === 0 && (
+            <p className="acceptance-notice">
+              暂无可用视觉模型，请先在模型服务启用 chat + vision
+              模型。也可将条目改为人工确认后重新发布。
+            </p>
           )}
-        </div>
-        {!standard.published_version && (
-          <p className="acceptance-notice">
-            请先在“项目标准”发布一套验收标准。
-          </p>
-        )}
-        {needsModel && models.data?.items.length === 0 && (
-          <p className="acceptance-notice">
-            暂无可用视觉模型，请先在模型服务启用 chat + vision
-            模型。也可将条目改为人工确认后重新发布。
-          </p>
-        )}
-        {(versions.error || models.error || records.error) && (
-          <p role="alert">数据加载失败，请刷新后重试。</p>
-        )}
-        <button onClick={() => void versions.refetch()}>刷新版本列表</button>
-        <div className="acceptance-output-options">
-          {versions.data?.items.map((output) => (
-            <label key={output.id}>
-              <input
-                type="checkbox"
-                disabled={
-                  !writable ||
-                  (!!previous &&
-                    (previous.node_id !== output.node_id ||
-                      previous.output_id === output.id))
-                }
-                checked={picked.includes(output.id)}
-                onChange={(e) =>
-                  setPicked(
-                    e.target.checked
-                      ? previous
-                        ? [output.id]
-                        : [...picked, output.id]
-                      : picked.filter((id) => id !== output.id),
-                  )
-                }
-              />{" "}
-              v{output.version} · {output.is_final ? "最终输出" : "候选版本"} ·{" "}
-              {output.source === "generated" ? "生成" : "保存"}
-            </label>
-          ))}
-        </div>
-        <div className="acceptance-actions">
-          <button
-            disabled={versionPage === 1}
-            onClick={() => setVersionPage((p) => p - 1)}
-          >
-            上一页版本
-          </button>
-          <button
-            disabled={versionPage * 20 >= (versions.data?.total ?? 0)}
-            onClick={() => setVersionPage((p) => p + 1)}
-          >
-            下一页版本
-          </button>
-          <small>可切换节点，批量选择最多 20 个输出。</small>
+          {(versions.error || models.error || records.error) && (
+            <p role="alert">数据加载失败，请刷新后重试。</p>
+          )}
+          <button onClick={() => void versions.refetch()}>刷新版本列表</button>
+          <div className="acceptance-output-options">
+            {versions.data?.items.map((output) => (
+              <label key={output.id}>
+                <input
+                  type="checkbox"
+                  disabled={
+                    !writable ||
+                    (!!previous &&
+                      (previous.node_id !== output.node_id ||
+                        previous.output_id === output.id))
+                  }
+                  checked={picked.includes(output.id)}
+                  onChange={(e) =>
+                    setPicked(
+                      e.target.checked
+                        ? previous
+                          ? [output.id]
+                          : [...picked, output.id]
+                        : picked.filter((id) => id !== output.id),
+                    )
+                  }
+                />{" "}
+                v{output.version} · {output.is_final ? "最终输出" : "候选版本"}{" "}
+                · {output.source === "generated" ? "生成" : "保存"}
+              </label>
+            ))}
+          </div>
+          <div className="acceptance-actions">
+            <button
+              disabled={versionPage === 1}
+              onClick={() => setVersionPage((p) => p - 1)}
+            >
+              上一页版本
+            </button>
+            <button
+              disabled={versionPage * 20 >= (versions.data?.total ?? 0)}
+              onClick={() => setVersionPage((p) => p + 1)}
+            >
+              下一页版本
+            </button>
+            <small>可切换节点，批量选择最多 20 个输出。</small>
+          </div>
         </div>
       </section>
       <div className="acceptance-record-navigation">
@@ -258,6 +273,7 @@ export function RunsPane({
           onAdopt={onAdopt}
           onRecheck={(value) => {
             setPrevious(value);
+            setChoosing(true);
             setNodeId(value.node_id);
             setVersionPage(1);
             setPicked([]);

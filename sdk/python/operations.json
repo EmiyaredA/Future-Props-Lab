@@ -181,7 +181,7 @@
   },
   "DELETE /v1/visual-workshop/acceptance-templates/{template_id}": {
     "method": "delete_acceptance_template",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "DELETE /v1/visual-workshop/projects/{project_id}": {
     "method": "delete_project",
@@ -1033,7 +1033,7 @@
   },
   "GET /v1/visual-workshop/acceptance-templates": {
     "method": "list_acceptance_templates",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "GET /v1/visual-workshop/generation-batches": {
     "method": "list_generation_batches",
@@ -1065,23 +1065,23 @@
   },
   "GET /v1/visual-workshop/projects/{project_id}/acceptance/models": {
     "method": "list_acceptance_models",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}": {
     "method": "get_acceptance_repair",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "GET /v1/visual-workshop/projects/{project_id}/acceptance/runs": {
     "method": "list_acceptance_runs",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}": {
     "method": "get_acceptance_run",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "GET /v1/visual-workshop/projects/{project_id}/acceptance/standard": {
     "method": "get_acceptance_standard",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "GET /v1/visual-workshop/projects/{project_id}/canvas": {
     "method": "get_canvas",
@@ -2149,7 +2149,7 @@
   },
   "POST /v1/visual-workshop/acceptance-templates": {
     "method": "create_acceptance_template",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition": {
     "method": "retry_image_composition",
@@ -2169,23 +2169,23 @@
   },
   "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs": {
     "method": "start_acceptance_runs",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel": {
     "method": "cancel_acceptance_run",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions": {
     "method": "decide_acceptance_run",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts": {
     "method": "create_acceptance_repair",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples": {
     "method": "sample_acceptance_video",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "POST /v1/visual-workshop/projects/{project_id}/asset-imports": {
     "method": "import_assets",
@@ -2329,15 +2329,15 @@
   },
   "PUT /v1/visual-workshop/acceptance-templates/{template_id}": {
     "method": "update_acceptance_template",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}": {
     "method": "save_acceptance_repair",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard": {
     "method": "save_acceptance_standard",
-    "resource": "visual_workshop_acceptance"
+    "resource": "visual"
   },
   "PUT /v1/visual-workshop/projects/{project_id}/canvas": {
     "method": "put_canvas",

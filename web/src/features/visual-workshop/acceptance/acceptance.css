@@ -39,7 +39,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 18px 24px;
+  padding: 14px 28px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
@@ -61,10 +61,10 @@
 }
 .acceptance-navigation {
   display: flex;
-  gap: 14px;
+  gap: 8px;
   align-items: center;
   border-bottom: 1px solid var(--border);
-  padding: 12px 24px;
+  padding: 0 28px;
   background: var(--surface);
 }
 .acceptance-navigation strong {
@@ -74,13 +74,14 @@
   margin-right: 16px;
 }
 .acceptance-body {
-  padding: 20px;
-  max-width: 1920px;
+  padding: 28px;
+  max-width: 1680px;
   margin: auto;
 }
 .acceptance-body h2 {
-  font-size: 20px;
-  margin: 0 0 12px;
+  font-size: 23px;
+  letter-spacing: -0.5px;
+  margin: 0 0 8px;
 }
 .acceptance-body h3 {
   font-size: 16px;
@@ -94,12 +95,13 @@
 }
 .acceptance-template-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(0, 1.65fr) minmax(340px, 1fr);
   gap: 20px;
 }
 .acceptance-editor-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: 360px minmax(0, 1fr);
+  align-items: start;
   gap: 20px;
 }
 .acceptance-results-layout {
@@ -110,17 +112,19 @@
 .acceptance-surface {
   background: var(--surface);
   padding: 24px;
-  border-radius: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 3px 15px #30241903;
   min-width: 0;
 }
 .acceptance-muted {
   color: var(--muted);
 }
-.acceptance-search {
+.acceptance-workspace .acceptance-search {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 25px 0;
+  margin: 20px 0;
   background: var(--surface-soft);
   padding: 5px 12px;
   border-radius: 10px;
@@ -154,8 +158,9 @@
   text-align: left;
   justify-content: flex-start;
   gap: 18px;
-  padding: 25px 20px;
-  min-height: 124px;
+  padding: 22px 20px;
+  min-height: 150px;
+  align-items: flex-start;
 }
 .acceptance-template strong,
 .acceptance-rule strong {
@@ -164,7 +169,7 @@
 .acceptance-template small,
 .acceptance-rule small {
   display: block;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 .acceptance-template-detail {
   display: flex;
@@ -180,7 +185,10 @@
   gap: 10px;
 }
 .acceptance-rule-summary {
-  padding: 16px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 0;
   border-bottom: 1px solid var(--border);
 }
 .acceptance-rule-summary small {
@@ -190,8 +198,10 @@
   width: 100%;
   justify-content: flex-start;
   text-align: left;
-  padding: 18px;
-  gap: 16px;
+  padding: 15px 14px;
+  gap: 12px;
+  border-color: transparent;
+  position: relative;
 }
 .acceptance-rule > .acceptance-badge {
   margin-left: auto;
@@ -215,7 +225,7 @@
 }
 .acceptance-fields {
   display: grid;
-  gap: 20px;
+  gap: 18px;
 }
 .acceptance-workspace fieldset {
   border: 0;
@@ -231,7 +241,12 @@
 .acceptance-workspace input[type="checkbox"] {
   appearance: none;
   width: 17px;
+  min-width: 17px;
+  max-width: 17px;
   height: 17px;
+  min-height: 17px;
+  max-height: 17px;
+  padding: 0;
   flex: 0 0 17px;
   border: 1px solid var(--border-strong);
   border-radius: 4px;
@@ -258,9 +273,9 @@
   gap: 10px;
 }
 .acceptance-policy {
-  margin-top: 28px;
+  margin-top: 24px;
   background: var(--surface-soft);
-  padding: 18px;
+  padding: 16px;
   border-radius: 9px;
 }
 .acceptance-policy p {
@@ -420,7 +435,194 @@
   padding: 14px;
   font: inherit;
 }
-@media (max-width: 1050px) {
+/* Keep the acceptance controls scoped: global workshop form rules also style inputs. */
+.acceptance-workspace button:focus-visible,
+.acceptance-workspace input:focus-visible,
+.acceptance-workspace textarea:focus-visible,
+.acceptance-workspace summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.acceptance-workspace .acceptance-primary {
+  box-shadow: 0 3px 8px #d55f2920;
+  font-weight: 600;
+}
+.acceptance-navigation > button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 18px 20px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+}
+.acceptance-navigation > button.is-selected {
+  border-bottom-color: var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+}
+.acceptance-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.acceptance-title-line,
+.acceptance-editor-heading,
+.acceptance-panel-title,
+.acceptance-list-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.acceptance-title-line h2 {
+  margin: 0;
+}
+.acceptance-section-heading p {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.acceptance-panel-title {
+  margin-bottom: 20px;
+  color: var(--muted);
+}
+.acceptance-panel-title h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+.acceptance-panel-title > span {
+  margin-left: auto;
+  font-size: 12px;
+}
+.acceptance-list-heading {
+  justify-content: space-between;
+  font-size: 13px;
+  margin-top: 24px;
+}
+.acceptance-badge.required {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.acceptance-badge.optional {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+.acceptance-badge.neutral {
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+.acceptance-template-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  border-radius: 12px;
+}
+.acceptance-template-icon.coral {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.acceptance-template-icon.violet {
+  color: #9671b5;
+  background: #9671b514;
+}
+.acceptance-template-icon.sage {
+  color: #688a79;
+  background: #688a7914;
+}
+.acceptance-template-icon.blue {
+  color: #638ea6;
+  background: #638ea614;
+}
+.acceptance-template-icon.amber {
+  color: #b38b4d;
+  background: #b38b4d14;
+}
+.acceptance-template-icon.neutral {
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+.acceptance-template p {
+  font-size: 12px;
+  margin: 8px 0 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.acceptance-template strong {
+  font-size: 16px;
+}
+.acceptance-template small {
+  font-size: 11px;
+}
+.acceptance-template-detail {
+  align-self: start;
+  border-top: 3px solid var(--accent-line);
+}
+.acceptance-template-detail h2 {
+  margin: 0;
+}
+.acceptance-template-detail > p {
+  margin: 0;
+  font-size: 13px;
+}
+.acceptance-template-detail .acceptance-rule-list {
+  margin: 0;
+  gap: 0;
+}
+.acceptance-rule-summary > div {
+  flex: 1;
+  min-width: 0;
+}
+.acceptance-rule-summary > svg {
+  flex-shrink: 0;
+  margin-top: 6px;
+  color: var(--muted);
+}
+.acceptance-rule-summary strong {
+  font-size: 14px;
+}
+.acceptance-rule-summary p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+.acceptance-rule-number {
+  font-size: 11px;
+  line-height: 20px;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  text-align: center;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.acceptance-template-detail .acceptance-primary {
+  flex: 1;
+}
+.acceptance-result-detail h3 {
+  font-size: 17px;
+}
+.acceptance-start h2 {
+  font-size: 18px;
+}
+.acceptance-start p {
+  font-size: 13px;
+  margin: 8px 0;
+}
+.acceptance-start {
+  padding: 20px 24px;
+}
+.acceptance-start .acceptance-output-options {
+  margin: 16px 0;
+}
+.acceptance-start .acceptance-actions:last-child {
+  margin-bottom: 0;
+}
+@media (max-width: 1100px) {
   .acceptance-template-layout,
   .acceptance-editor-layout,
   .acceptance-results-layout {
@@ -436,6 +638,19 @@
   }
 }
 @media (max-width: 600px) {
+  .acceptance-rule-editor .acceptance-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .acceptance-title-line {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .acceptance-navigation > button {
+    padding: 12px;
+  }
+  .acceptance-editor-heading h2 {
+    font-size: 19px;
+  }
   .acceptance-header {
     padding: 12px;
     gap: 8px;
@@ -475,5 +690,25 @@
   .acceptance-record-navigation > .custom-select {
     width: 100%;
     max-width: 100%;
+  }
+}
+
+.acceptance-start-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.acceptance-start-heading h2 {
+  margin: 0;
+}
+.acceptance-start-heading button {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .acceptance-start-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

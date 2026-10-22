@@ -25,7 +25,7 @@ from app.apps.visual_workshop.acceptance.standards import Standards
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.llm.routes.model_capacity import task_admission
 
-router = APIRouter(prefix="/visual-workshop", tags=["visual-workshop-acceptance"])
+router = APIRouter(prefix="/visual-workshop", tags=["visual-workshop"])
 
 
 @contextmanager

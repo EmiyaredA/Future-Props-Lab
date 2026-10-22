@@ -150,7 +150,11 @@ export function RunReview({
                   AI 建议：{verdictNames[active.suggestion]}，最终结论由你确认。
                 </p>
               )}
-              <p>{active.explanation}</p>
+              <p>
+                {active.origin === "manual" && active.verdict !== "pending"
+                  ? `人工结论：${verdictNames[active.verdict]}`
+                  : active.explanation}
+              </p>
               <fieldset
                 disabled={!writable || busy || run.status !== "completed"}
               >

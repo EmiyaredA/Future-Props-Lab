@@ -1,5 +1,17 @@
 import { useState } from "react";
-import { Copy, FileCheck2, Plus, Search, Trash2 } from "lucide-react";
+import {
+  Activity,
+  AudioLines,
+  BookOpen,
+  ChevronRight,
+  Copy,
+  FileCheck2,
+  Plus,
+  Search,
+  Trash2,
+  UserRound,
+  Video,
+} from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { methodNames, type Template, type StandardDocument } from "./api";
 export function TemplateLibrary({
@@ -18,9 +30,47 @@ export function TemplateLibrary({
   const [deleting, setDeleting] = useState<Template>();
   const filtered = templates.filter((t) => t.title.includes(search));
   const current = filtered.find((t) => t.id === selected) ?? filtered[0];
+  const visual = (title: string) => {
+    if (title.includes("视频"))
+      return {
+        Icon: Video,
+        tone: "coral",
+        description: "文件规格、角色外观、动作与表演",
+      };
+    if (title.includes("角色"))
+      return {
+        Icon: UserRound,
+        tone: "violet",
+        description: "身份、服装、比例与视觉风格",
+      };
+    if (title.includes("动作"))
+      return {
+        Icon: Activity,
+        tone: "sage",
+        description: "关键动作、道具状态与镜头表现",
+      };
+    if (title.includes("音画"))
+      return {
+        Icon: AudioLines,
+        tone: "blue",
+        description: "台词、字幕、口型与声音清晰度",
+      };
+    if (title.includes("剧情"))
+      return {
+        Icon: BookOpen,
+        tone: "amber",
+        description: "信息呈现、因果关系与情绪节奏",
+      };
+    return {
+      Icon: FileCheck2,
+      tone: "neutral",
+      description: "从你的创作要求开始，自由定义标准",
+    };
+  };
   return (
     <div className="acceptance-template-layout">
-      <section className="acceptance-surface">
+      <section className="acceptance-surface acceptance-library">
+        <span className="acceptance-eyebrow">模板库 · TEMPLATES</span>
         <h2>选择参考模板</h2>
         <p className="acceptance-muted">复制一套清单，再按你的项目调整要求。</p>
         <label className="acceptance-search">
@@ -33,22 +83,31 @@ export function TemplateLibrary({
           />
         </label>
         <div className="acceptance-template-grid">
-          {filtered.map((t) => (
-            <button
-              key={t.id}
-              className={`acceptance-template ${current?.id === t.id ? "is-selected" : ""}`}
-              onClick={() => setSelected(t.id)}
-            >
-              <FileCheck2 size={24} />
-              <span>
-                <strong>{t.title}</strong>
-                <small>
-                  {t.builtin ? "内置参考" : "Workspace 模板"} ·{" "}
-                  {t.document.criteria?.length ?? 0} 项要求
-                </small>
-              </span>
-            </button>
-          ))}
+          {filtered.map((t) => {
+            const { Icon, tone, description } = visual(t.title);
+            return (
+              <button
+                key={t.id}
+                className={`acceptance-template ${current?.id === t.id ? "is-selected" : ""}`}
+                onClick={() => setSelected(t.id)}
+              >
+                <span
+                  className={`acceptance-template-icon ${tone}`}
+                  aria-hidden="true"
+                >
+                  <Icon size={24} />
+                </span>
+                <span>
+                  <strong>{t.title}</strong>
+                  <p>{description}</p>
+                  <small>
+                    {t.builtin ? "内置参考" : "Workspace 模板"} ·{" "}
+                    {t.document.criteria?.length ?? 0} 项要求
+                  </small>
+                </span>
+              </button>
+            );
+          })}
         </div>
         {!filtered.length && <p>没有匹配的模板。</p>}
         <button
@@ -63,20 +122,27 @@ export function TemplateLibrary({
       <aside className="acceptance-surface acceptance-template-detail">
         {current && (
           <>
+            <span className="acceptance-eyebrow">模板预览</span>
             <h2>{current.title}</h2>
             <p className="acceptance-muted">
               {current.builtin ? "内置参考模板" : "当前 Workspace 内复用"} ·
               可复制后自由修改
             </p>
             <div className="acceptance-rule-list">
-              {current.document.criteria?.map((item) => (
+              {current.document.criteria?.map((item, index) => (
                 <div key={item.id} className="acceptance-rule-summary">
-                  <strong>{item.title}</strong>
-                  <small>
-                    {methodNames[item.method ?? "manual"]} ·{" "}
-                    {item.required ? "必须满足" : "建议满足"}
-                  </small>
-                  <p>{item.requirement}</p>
+                  <span className="acceptance-rule-number">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <small>
+                      {methodNames[item.method ?? "manual"]} ·{" "}
+                      {item.required ? "必须满足" : "建议满足"}
+                    </small>
+                    <p>{item.requirement}</p>
+                  </div>
+                  <ChevronRight size={14} aria-hidden="true" />
                 </div>
               ))}
             </div>
