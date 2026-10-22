@@ -56,7 +56,7 @@ export function ProjectBoard({
 }: {
   controller: BoardController;
   onCanvas: () => void;
-  onAcceptance?: () => void;
+  onAcceptance?: (output?: VisualNodeOutput) => void;
   previews: Record<string, VisualNodeOutput | undefined>;
   onPreview: (nodeId: string, version?: VisualNodeOutput) => void;
 }) {
@@ -264,7 +264,7 @@ export function ProjectBoard({
             </button>
           </div>
           {onAcceptance && (
-            <button onClick={onAcceptance}>
+            <button onClick={() => onAcceptance()}>
               <SlidersHorizontal size={15} /> 项目验收
             </button>
           )}
@@ -534,6 +534,7 @@ export function ProjectBoard({
                 )}
               </section>
               <OutputHistory
+                onAcceptance={onAcceptance}
                 controller={c}
                 nodeId={selected.id}
                 tasks={tasks.data ?? []}

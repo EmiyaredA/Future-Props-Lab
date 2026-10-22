@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from db.migrations.versions import (
-    r0105_visual_acceptance,
     r0001_initial,
     r0002_model_test_conversations,
     r0003_tool_navigation_state,
@@ -107,6 +106,7 @@ from db.migrations.versions import (
     r0102_skill_description,
     r0103_local_models,
     r0104_presentation_free_connections,
+    r0105_visual_acceptance,
 )
 
 

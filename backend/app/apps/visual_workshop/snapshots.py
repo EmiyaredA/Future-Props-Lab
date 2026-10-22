@@ -534,7 +534,7 @@ class VisualWorkshopProjectSnapshots:
                 node_ids = dict(zip(old_nodes, [node["id"] for node in nodes], strict=True))
                 output_ids = {
                     original["id"]: row.id
-                    for original, row in zip(payload.get("outputs", []), outputs)
+                    for original, row in zip(payload.get("outputs", []), outputs, strict=False)
                 }
                 await import_acceptance(
                     self.session,

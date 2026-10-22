@@ -237,7 +237,7 @@ export function StandardEditor({
                       update({
                         specifications: {
                           require_audio: false,
-                            ...active.specifications,
+                          ...active.specifications,
                           ratio: (value || null) as NonNullable<
                             Criterion["specifications"]
                           >["ratio"],
@@ -253,8 +253,7 @@ export function StandardEditor({
                     onChange={(e) =>
                       update({
                         specifications: {
-                          require_audio: false,
-                            ...active.specifications,
+                          ...active.specifications,
                           require_audio: e.target.checked,
                         },
                       })

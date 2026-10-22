@@ -11,7 +11,12 @@ from app.apps.visual_workshop.acceptance.models import (
     AcceptanceStandard,
     AcceptanceStandardVersion,
 )
-from app.apps.visual_workshop.acceptance.schemas import AcceptanceDocument, AcceptanceSnapshot
+from app.apps.visual_workshop.acceptance.schemas import (
+    AcceptanceDocument,
+    AcceptanceEvidence,
+    AcceptanceResult,
+    AcceptanceSnapshot,
+)
 from app.capabilities.asset_store import ProjectSnapshotError
 from app.runtime.ids import new_id
 
@@ -150,10 +155,6 @@ async def import_acceptance(
                 entry["id"] = evidence_ids[entry["id"]]
                 entry["asset_id"] = mapped(asset_ids, entry["asset_id"])
                 entry["source_asset_id"] = mapped(asset_ids, entry["source_asset_id"])
-            from app.apps.visual_workshop.acceptance.schemas import (
-                AcceptanceEvidence,
-                AcceptanceResult,
-            )
 
             evidence = [
                 AcceptanceEvidence.model_validate(entry).model_dump(mode="json")

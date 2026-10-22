@@ -1,6 +1,6 @@
 {
   "sceneVersion": 1,
-  "title": "创作图与生成结果的生命周期",
+  "title": "创作、生成与版本验收的生命周期",
   "elements": [
     {
       "id": "graph",
@@ -48,6 +48,39 @@
       "fill": "#f2edf8",
       "stroke": "#365f62",
       "icon": "file"
+    },
+    {
+      "id": "standard",
+      "kind": "rounded",
+      "x": 1100,
+      "y": 50,
+      "width": 240,
+      "height": 110,
+      "text": "已发布验收标准\n用户要求与固定参考",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "review",
+      "kind": "rounded",
+      "x": 1100,
+      "y": 310,
+      "width": 240,
+      "height": 110,
+      "text": "版本验收与实际证据\nAI 建议、人工确认",
+      "fill": "#fff1dd",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "adopt",
+      "kind": "rounded",
+      "x": 1460,
+      "y": 310,
+      "width": 240,
+      "height": 110,
+      "text": "用户采用最终输出\n强制模式先保留候选",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
     }
   ],
   "edges": [
@@ -73,6 +106,30 @@
       "target": "result",
       "label": "消费已有结果",
       "arrow": false,
+      "style": "step"
+    },
+    {
+      "id": "standard_review",
+      "source": "standard",
+      "target": "review",
+      "label": "固定标准版本",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "result_review",
+      "source": "result",
+      "target": "review",
+      "label": "绑定输出版本",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "review_adopt",
+      "source": "review",
+      "target": "adopt",
+      "label": "人工通过后采用",
+      "arrow": true,
       "style": "step"
     }
   ]

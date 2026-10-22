@@ -29,6 +29,7 @@ export function OutputHistory({
   onPreview,
   tasks = [],
   batches = [],
+  onAcceptance,
 }: {
   controller: BoardController;
   nodeId: string;
@@ -36,6 +37,7 @@ export function OutputHistory({
   onPreview: (version?: VisualNodeOutput) => void;
   tasks?: GenerationTask[];
   batches?: GenerationBatch[];
+  onAcceptance?: (output: VisualNodeOutput) => void;
 }) {
   const node = controller.nodes.find((node) => node.id === nodeId)!;
   const activity = nodeGenerationActivity(node, tasks, batches);
@@ -273,6 +275,11 @@ export function OutputHistory({
           onClick={() => void history.fetchNextPage()}
         >
           加载更早版本
+        </button>
+      )}
+      {showing && onAcceptance && (
+        <button className="board-upload" onClick={() => onAcceptance(showing)}>
+          验收当前版本
         </button>
       )}
       {showing && (

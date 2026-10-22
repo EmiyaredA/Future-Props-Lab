@@ -9,6 +9,7 @@ import {
   getVisualCanvas,
   selectNodeFinalOutput,
   type VisualCanvasNode,
+  type VisualNodeOutput,
 } from "../api";
 import { visualWorkshopQueryKeys as keys } from "../queryKeys";
 import {
@@ -34,6 +35,7 @@ export function AcceptanceWorkspace({
   onBack,
   prepareCanvas,
   readOnly = false,
+  initialOutput,
 }: {
   projectId: string;
   title: string;
@@ -41,11 +43,12 @@ export function AcceptanceWorkspace({
   onBack: () => void;
   prepareCanvas?: () => Promise<number>;
   readOnly?: boolean;
+  initialOutput?: VisualNodeOutput;
 }) {
   const client = useQueryClient();
   const canWrite = useWorkspacePermission("content.write") && !readOnly;
   const [tab, setTab] = useState<"templates" | "standard" | "runs">(
-    "templates",
+    initialOutput ? "runs" : "templates",
   );
   const [draft, setDraft] = useState<StandardDocument>(emptyDocument);
   const [required, setRequired] = useState(false);
@@ -305,6 +308,7 @@ export function AcceptanceWorkspace({
               <div hidden={tab !== "runs"}>
                 <RunsPane
                   projectId={projectId}
+                  initialOutput={initialOutput}
                   nodes={nodes}
                   standard={standard.data}
                   writable={canWrite}

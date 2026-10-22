@@ -4,6 +4,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.acceptance.access import AcceptanceError, require_passed, required_for
+from app.apps.visual_workshop.acceptance.models import AcceptanceRun
 from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
 from app.apps.visual_workshop.node_placement import automatic_node_position
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
@@ -67,7 +68,7 @@ async def register_output(
             )
         )
     ) or 0
-    candidate = await required_for(session, project_id, node["id"])
+    candidate = await required_for(session, project_id, node["id"], node["kind"])
     if not candidate:
         await session.execute(
             update(VisualNodeOutput)
@@ -145,7 +146,7 @@ async def publish_generated_output(
         node = next((node for node in nodes if node["id"] == node_id), None)
         if not node:
             return None
-    row = await register_output(
+    await register_output(
         session,
         project_id,
         node,
@@ -244,7 +245,7 @@ class NodeOutputs:
             if asset.media_kind != node["kind"] or body.text is not None:
                 raise OutputError("输出版本与节点类型不匹配")
         await self.claim(canvas, body.expected_revision)
-        await register_output(
+        output = await register_output(
             self.session,
             project_id,
             node,
@@ -253,7 +254,7 @@ class NodeOutputs:
             asset_id=body.asset_id,
             text=body.text,
         )
-        if node["kind"] == "text":
+        if node["kind"] == "text" and output.is_final:
             node["text"] = body.text
         canvas.nodes = nodes
         await self.session.commit()
@@ -291,6 +292,8 @@ class NodeOutputs:
         )
         if node["kind"] != "text":
             node["asset_id"] = row.asset_id
+        else:
+            node["text"] = row.text or ""
         canvas.nodes = nodes
         await self.session.commit()
 
@@ -312,7 +315,6 @@ class NodeOutputs:
         output = await self.get(project_id, node_id, output_id)
         if any(edge.get("output_id") == output_id for edge in canvas.edges or []):
             raise OutputError("请先解除固定引用，再删除版本", code="output_in_use", status=409)
-        from app.apps.visual_workshop.acceptance.models import AcceptanceRun
 
         if await self.session.scalar(
             select(AcceptanceRun.id).where(AcceptanceRun.output_id == output_id)

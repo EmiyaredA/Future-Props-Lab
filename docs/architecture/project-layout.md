@@ -685,3 +685,9 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 模型权重与环境属于可再下载缓存，桌面保存于数据根 `local-models/`，源码部署保存于运行目录下
 `local-models/`；数据库备份恢复后可主动重新安装。语音输入与输出保存在对应空间的
 `model-inference/inputs/`、`model-inference/outputs/`，沿用 Workspace 备份和访问边界。
+
+## 视觉工坊通用验收
+
+`backend/app/apps/visual_workshop/acceptance/` 拥有 Workspace 验收模板、项目标准及发布版本、输出版本验收记录、人工结论、参考与证据引用、返修草稿和历史快照迁移。`runner.py` 通过独立短事务和现有 RunnerSupervisor 执行规格检查及视觉模型辅助；媒体探测与解码由 `capabilities/media_rendering/inspection.py` 拥有，抽帧复用该能力的公开入口。输出登记和画布写入调用验收访问契约，强制项目新增结果为候选，不替换最终输出。
+
+`web/src/features/visual-workshop/acceptance/` 拥有模板库、标准编辑、输出选择、逐项结果、证据播放和复验对比。项目页保留原画布和看板实例，切换验收不改布局或视口；读写身份共用页面并按有效权限开放操作，缓存键仍归属 `queryKeys.ts`。

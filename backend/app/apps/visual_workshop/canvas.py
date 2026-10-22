@@ -4,6 +4,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.acceptance.access import AcceptanceError, require_passed, required_for
+from app.apps.visual_workshop.acceptance.models import AcceptanceRun
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualGenerationTask,
@@ -269,6 +270,20 @@ class VisualCanvasDocuments:
             node["final_output_id"] = previous.get("final_output_id")
             node["final_version"] = previous.get("final_version")
             if (
+                node["kind"] == "text"
+                and node.get("text") != previous.get("text")
+                and await required_for(self.session, project_id, node["id"], "text")
+            ):
+                await register_output(
+                    self.session,
+                    project_id,
+                    node,
+                    source="text",
+                    source_key=new_id(),
+                    text=node.get("text", ""),
+                )
+                node["text"] = previous.get("text", "")
+            if (
                 node["kind"] != "text"
                 and node.get("asset_id")
                 and node.get("asset_id") != previous.get("asset_id")
@@ -309,8 +324,6 @@ class VisualCanvasDocuments:
             .values(nodes=nodes)
         )
         if removed:
-            from app.apps.visual_workshop.acceptance.models import AcceptanceRun
-
             if await self.session.scalar(
                 select(AcceptanceRun.id).where(
                     AcceptanceRun.project_id == project_id, AcceptanceRun.node_id.in_(removed)

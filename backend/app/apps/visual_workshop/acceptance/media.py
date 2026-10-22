@@ -5,10 +5,12 @@ from PIL import Image
 
 from app.apps.visual_workshop.acceptance.access import AcceptanceError, asset
 from app.apps.visual_workshop.acceptance.models import AcceptanceAssetReference
+from app.capabilities.agents.harness.contracts import ImageInput
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media
 from app.capabilities.media_rendering.video_frames import extract_frame
+from app.capabilities.media_rendering.video_sampling import source_frame_time
 from app.runtime.ids import new_id
 
 
@@ -23,10 +25,15 @@ async def extract_evidence(session, settings, run, source_id, times):
     source = await asset(session, run.workspace_id, run.project_id, source_id)
     storage = AssetStorage(settings)
     source_path = storage.path_for(source)
-    evidence, written = [], []
+    evidence, written, seen = [], [], set()
     try:
         for position in times:
-            key = uuid4().hex
+            actual = await asyncio.to_thread(source_frame_time, source_path, position * 1000)
+            position = int(actual * 1000)
+            if position in seen:
+                continue
+            seen.add(position)
+            key = uuid4().hex + ".png"
             path = storage.target_path(
                 key,
                 visual_project_id=run.project_id,
@@ -75,8 +82,6 @@ async def image_input(storage, row):
     import base64
     from io import BytesIO
 
-    from app.capabilities.agents.harness.contracts import ImageInput
-
     def encode():
         with Image.open(storage.path_for(row)) as image:
             image.thumbnail((1024, 1024))
@@ -89,6 +94,14 @@ async def image_input(storage, row):
         )
 
     return await asyncio.to_thread(encode)
+
+
+async def flush_evidence(session):
+    # These are independent mappers: insert parent assets before restrictive refs.
+    pending = [row for row in session.new if isinstance(row, VisualAsset)]
+    if pending:
+        await session.flush(pending)
+    await session.flush()
 
 
 def check_specifications(metadata, config):

@@ -8,6 +8,8 @@ import type { VisualNodeOutput } from "../api";
 
 export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
   const [acceptance, setAcceptance] = useState(false);
+  const [acceptanceError, setAcceptanceError] = useState("");
+  const [reviewOutput, setReviewOutput] = useState<VisualNodeOutput>();
   const controller = useVisualCanvasController(props);
   const [historyPreviews, setHistoryPreviews] = useState<{
     projectId: string;
@@ -22,12 +24,25 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
     localStorage.setItem(`visual-project-view:${props.projectId}`, next);
     setView(next);
   };
-  const openAcceptance = async () => {
-    await controller.prepareCanvasForAgent();
-    setAcceptance(true);
+  const openAcceptance = async (output?: VisualNodeOutput) => {
+    try {
+      await controller.prepareCanvasForAgent();
+      setReviewOutput(output);
+      setAcceptanceError("");
+      setAcceptance(true);
+    } catch (error) {
+      setAcceptanceError(
+        error instanceof Error ? error.message : "请先处理画布保存错误",
+      );
+    }
   };
   return (
     <>
+      {acceptanceError && (
+        <p role="alert" className="acceptance-error">
+          {acceptanceError}
+        </p>
+      )}
       {acceptance && (
         <AcceptanceWorkspace
           key={props.projectId}
@@ -35,6 +50,7 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
           title={controller.projectQuery.data?.title ?? "创作项目"}
           nodes={controller.nodes}
           prepareCanvas={controller.prepareCanvasForAgent}
+          initialOutput={reviewOutput}
           onBack={() => setAcceptance(false)}
         />
       )}
@@ -42,8 +58,8 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
         {view === "board" ? (
           <ProjectBoard
             controller={controller}
-            onAcceptance={() => {
-              void openAcceptance();
+            onAcceptance={(output) => {
+              void openAcceptance(output);
             }}
             onCanvas={() => switchView("canvas")}
             previews={

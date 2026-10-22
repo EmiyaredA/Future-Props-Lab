@@ -113,3 +113,23 @@ flowchart TD
 1. `backend/app/apps/visual_workshop/operations.py`
 2. `backend/app/apps/visual_workshop/generation.py`
 3. `backend/app/apps/visual_workshop/generation_runner.py`
+
+## 验收标准与创作结果分开保存
+
+以同一镜头的 v2 返修为例：项目标准先发布固定版本，验收记录绑定 v2、该标准以及参考素材；AI 辅助只返回带证据的建议，人工决定单项及整体结论。返修草稿保存为新的提示词版本后，用户手动提交生成 v3，复验创建新记录而不改写 v2。
+
+```mermaid
+flowchart LR
+  T[Workspace 模板] --> D[项目草稿]
+  D --> S[已发布标准版本]
+  S --> R[输出 v2 验收]
+  R --> E[实际证据与 AI 建议]
+  E --> H[人工结论]
+  H --> F[返修草稿]
+  F --> V[用户生成输出 v3]
+  V --> N[全条目复验]
+  S --> N
+  N --> A[用户采用最终输出]
+```
+
+图中模板提供参考位置，不携带私人素材。强制模式的新结果保留为候选，最终输出与节点通过均由后端检查，画布 JSON 不拥有验收记录。视频是抽帧辅助检查，连续动作和音频需要人工确认，首版没有跨镜头组分析。

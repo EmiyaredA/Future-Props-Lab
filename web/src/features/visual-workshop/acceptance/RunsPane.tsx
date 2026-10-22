@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import { getNodeOutputs, type VisualCanvasNode } from "../api";
+import {
+  getNodeOutputs,
+  type VisualNodeOutput,
+  type VisualCanvasNode,
+} from "../api";
 import { visualWorkshopQueryKeys as keys } from "../queryKeys";
 import {
   createRuns,
@@ -22,7 +26,9 @@ export function RunsPane({
   act,
   onRepair,
   onAdopt,
+  initialOutput,
 }: {
+  initialOutput?: VisualNodeOutput;
   projectId: string;
   nodes: VisualCanvasNode[];
   standard: Standard;
@@ -32,10 +38,15 @@ export function RunsPane({
   onRepair: (draft: Repair) => void;
   onAdopt: (run: Run) => Promise<void>;
 }) {
-  const [nodeId, setNodeId] = useState(nodes[0]?.id ?? "");
+  const client = useQueryClient();
+  const [nodeId, setNodeId] = useState(
+    initialOutput?.node_id ?? nodes[0]?.id ?? "",
+  );
   const [versionPage, setVersionPage] = useState(1),
     [recordPage, setRecordPage] = useState(1);
-  const [picked, setPicked] = useState<string[]>([]),
+  const [picked, setPicked] = useState<string[]>(
+      initialOutput ? [initialOutput.id] : [],
+    ),
     [model, setModel] = useState("");
   const [selected, setSelected] = useState(""),
     [previous, setPrevious] = useState<Run>();
@@ -87,7 +98,7 @@ export function RunsPane({
     }
   };
   const update = (value: Run) => {
-    void run.refetch();
+    client.setQueryData(keys.acceptanceRun(projectId, value.id), value);
     void records.refetch();
     setSelected(value.id);
   };
@@ -157,6 +168,7 @@ export function RunsPane({
         {(versions.error || models.error || records.error) && (
           <p role="alert">数据加载失败，请刷新后重试。</p>
         )}
+        <button onClick={() => void versions.refetch()}>刷新版本列表</button>
         <div className="acceptance-output-options">
           {versions.data?.items.map((output) => (
             <label key={output.id}>

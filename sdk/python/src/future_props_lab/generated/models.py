@@ -48,6 +48,14 @@ class AcceptanceModelOut(WireModel):
     label: str = Field(default=..., alias='label')
     provider_name: str = Field(default=..., alias='provider_name')
 
+class AcceptanceOutputSnapshot(WireModel):
+    asset_id: str | None = Field(default=..., alias='asset_id')
+    id: str = Field(default=..., alias='id')
+    kind: Literal['image', 'video', 'audio', 'text'] = Field(default=..., alias='kind')
+    text: str | None = Field(default=..., alias='text')
+    title: str = Field(default=..., alias='title')
+    version: int = Field(default=..., alias='version')
+
 class AcceptanceRepairOut(WireModel):
     id: str = Field(default=..., alias='id')
     prompt_version_id: str | None = Field(default=..., alias='prompt_version_id')
@@ -95,7 +103,7 @@ class AcceptanceRunOut(WireModel):
     previous_run_id: str | None = Field(default=..., alias='previous_run_id')
     results: list[AcceptanceResult] = Field(default=..., alias='results')
     revision: int = Field(default=..., alias='revision')
-    snapshot: dict[str, Any] = Field(default=..., alias='snapshot')
+    snapshot: AcceptanceSnapshot = Field(default=..., alias='snapshot')
     standard_version: int = Field(default=..., alias='standard_version')
     status: Literal['queued', 'processing', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
 
@@ -103,6 +111,16 @@ class AcceptanceSampleIn(WireModel):
     end_ms: int = Field(default=..., alias='end_ms', gt=0.0)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     start_ms: int = Field(default=..., alias='start_ms', ge=0.0)
+
+class AcceptanceSnapshot(WireModel):
+    coverage: str = Field(default=..., alias='coverage')
+    criteria: list[AcceptanceCriterion] = Field(default=..., alias='criteria')
+    metadata: dict[str, Any] | None = Field(default=None, alias='metadata')
+    output: AcceptanceOutputSnapshot = Field(default=..., alias='output')
+    prompt: str = Field(default='', alias='prompt')
+    source_bytes: int | None = Field(default=None, alias='source_bytes')
+    standard_title: str = Field(default=..., alias='standard_title')
+    standard_version: int = Field(default=..., alias='standard_version')
 
 class AcceptanceStandardOut(WireModel):
     draft: AcceptanceDocument | None = Field(default=None, alias='draft')
@@ -6343,6 +6361,7 @@ AcceptanceDocument.model_rebuild()
 AcceptanceEvidence.model_rebuild()
 AcceptanceModelListOut.model_rebuild()
 AcceptanceModelOut.model_rebuild()
+AcceptanceOutputSnapshot.model_rebuild()
 AcceptanceRepairOut.model_rebuild()
 AcceptanceRepairWriteIn.model_rebuild()
 AcceptanceResult.model_rebuild()
@@ -6350,6 +6369,7 @@ AcceptanceRunCreateIn.model_rebuild()
 AcceptanceRunListOut.model_rebuild()
 AcceptanceRunOut.model_rebuild()
 AcceptanceSampleIn.model_rebuild()
+AcceptanceSnapshot.model_rebuild()
 AcceptanceStandardOut.model_rebuild()
 AcceptanceStandardWriteIn.model_rebuild()
 AcceptanceTemplateListOut.model_rebuild()

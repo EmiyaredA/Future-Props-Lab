@@ -67,7 +67,7 @@ async def cas(session, row, expected, current):
     await session.refresh(row)
 
 
-async def required_for(session, project_id, node_id):
+async def required_for(session, project_id, node_id, kind=None):
     standard = await session.get(AcceptanceStandard, project_id)
     if not standard or not standard.required:
         return False
@@ -77,8 +77,16 @@ async def required_for(session, project_id, node_id):
             AcceptanceStandardVersion.version == standard.published_version,
         )
     )
+    if kind is None:
+        canvas = await session.get(VisualCanvasDocument, project_id)
+        node = (
+            next((node for node in canvas.nodes if node["id"] == node_id), None) if canvas else None
+        )
+        kind = node["kind"] if node else None
     return bool(
-        version and (not version.document["node_ids"] or node_id in version.document["node_ids"])
+        version
+        and (not version.document["node_ids"] or node_id in version.document["node_ids"])
+        and any(kind in item["kinds"] for item in version.document["criteria"])
     )
 
 

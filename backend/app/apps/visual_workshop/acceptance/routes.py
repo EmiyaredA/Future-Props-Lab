@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.apps.visual_workshop.acceptance.access import AcceptanceError
-from app.apps.visual_workshop.acceptance.reviews import Reviews
+from app.apps.visual_workshop.acceptance.reviews import Reviews, repair_out
 from app.apps.visual_workshop.acceptance.runs import Runs, review_models
 from app.apps.visual_workshop.acceptance.schemas import (
     AcceptanceDecisionIn,
@@ -198,7 +198,6 @@ async def create_acceptance_repair(
 async def get_acceptance_repair(
     project_id: str, draft_id: str, session: SessionDep, workspace_id: WorkspaceDep
 ):
-    from app.apps.visual_workshop.acceptance.reviews import repair_out
 
     with errors():
         return repair_out(await Reviews(session, workspace_id).repair_row(project_id, draft_id))

@@ -3,20 +3,20 @@ from copy import deepcopy
 from sqlalchemy import select
 
 from app.apps.visual_workshop.acceptance.access import AcceptanceError, cas
+from app.apps.visual_workshop.acceptance.media import extract_evidence, flush_evidence, positions
 from app.apps.visual_workshop.acceptance.models import AcceptanceRepairDraft
 from app.apps.visual_workshop.acceptance.runs import Runs, run_out
 from app.apps.visual_workshop.acceptance.schemas import AcceptanceRepairOut
 from app.apps.visual_workshop.canvas import VisualCanvasDocuments
 from app.apps.visual_workshop.models import VisualCanvasDocument
 from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
+from app.runtime.config import get_settings
 from app.runtime.ids import new_id
 from app.runtime.time import iso_utc, utc_now
 
 
 class Reviews(Runs):
     async def sample(self, project_id, run_id, body):
-        from app.apps.visual_workshop.acceptance.media import extract_evidence, positions
-        from app.runtime.config import get_settings
 
         row = await self.row(project_id, run_id)
         if row.status != "completed" or row.snapshot["output"]["kind"] != "video":
@@ -40,6 +40,7 @@ class Reviews(Runs):
                 )
             row.evidence = [*row.evidence, *evidence]
             row.decision = "pending"
+            await flush_evidence(self.session)
             await self.session.commit()
         except BaseException:
             for path in paths:

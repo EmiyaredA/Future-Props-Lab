@@ -1,9 +1,9 @@
 import hashlib
 import json
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError, asset, project
+from app.apps.visual_workshop.acceptance.access import AcceptanceError, asset, cas, project
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
     AcceptanceRun,
@@ -96,8 +96,35 @@ class Runs:
         )
         return AcceptanceRunListOut(items=[run_out(row) for row in rows])
 
+    async def replay(self, project_id, body):
+        await project(self.session, self.workspace_id, project_id)
+        fingerprint = hashlib.sha256(
+            json.dumps(body.model_dump(mode="json"), sort_keys=True).encode()
+        ).hexdigest()
+        prior = list(
+            await self.session.scalars(
+                select(AcceptanceRun).where(
+                    AcceptanceRun.project_id == project_id,
+                    AcceptanceRun.workspace_id == self.workspace_id,
+                    AcceptanceRun.request_id == body.request_id,
+                )
+            )
+        )
+        if not prior:
+            return None
+        if any(row.fingerprint != fingerprint for row in prior) or set(body.output_ids) != {
+            row.output_id for row in prior
+        }:
+            raise AcceptanceError("请求标识已用于其他验收", "request_conflict", 409)
+        return AcceptanceRunListOut(items=[run_out(row) for row in prior])
+
     async def create(self, project_id, body, admission=None):
         await project(self.session, self.workspace_id, project_id)
+        await self.session.execute(
+            update(VisualCanvasDocument)
+            .where(VisualCanvasDocument.project_id == project_id)
+            .values(revision=VisualCanvasDocument.revision)
+        )
         fingerprint = hashlib.sha256(
             json.dumps(body.model_dump(mode="json"), sort_keys=True).encode()
         ).hexdigest()
@@ -220,7 +247,6 @@ class Runs:
         return AcceptanceRunListOut(items=[run_out(row) for row in rows])
 
     async def cancel(self, project_id, run_id, expected):
-        from app.apps.visual_workshop.acceptance.access import cas
 
         row = await self.row(project_id, run_id)
         await cas(self.session, row, expected, lambda: self.get(project_id, run_id))

@@ -12,6 +12,8 @@ from app.apps.visual_workshop.acceptance.access import (
 )
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
+    AcceptanceRepairDraft,
+    AcceptanceRun,
     AcceptanceStandard,
     AcceptanceStandardVersion,
     AcceptanceTemplate,
@@ -187,7 +189,6 @@ class Standards:
 
 async def delete_acceptance(session, project_id):
     # Remove restrictive child references before the project's output and asset cleanup.
-    from app.apps.visual_workshop.acceptance.models import AcceptanceRepairDraft, AcceptanceRun
 
     for cls in (
         AcceptanceRepairDraft,

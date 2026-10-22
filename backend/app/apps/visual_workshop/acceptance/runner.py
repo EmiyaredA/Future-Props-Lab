@@ -10,6 +10,7 @@ from app.apps.visual_workshop.acceptance.access import AcceptanceError
 from app.apps.visual_workshop.acceptance.media import (
     check_specifications,
     extract_evidence,
+    flush_evidence,
     image_input,
     metadata,
     positions,
@@ -18,7 +19,7 @@ from app.apps.visual_workshop.acceptance.models import AcceptanceRun
 from app.apps.visual_workshop.acceptance.runs import review_models
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.media_rendering.inspection import verify_video
+from app.capabilities.media_rendering.inspection import inspect_media, verify_video
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.orm import bind_workspace
@@ -79,37 +80,61 @@ async def evaluate_ai(session, settings, run, transport=None):
     )
     started = monotonic()
     text, usage = "", {}
-    await session.rollback()
-    # Rollback expires ORM instances: copy all identifiers before leaving this read transaction.
-    async for delta in stream_text_completion(
-        **args,
-        system_prompt=system,
-        messages=[
-            ChatMessageInput(
-                role="user", text=json.dumps(payload, ensure_ascii=False), images=tuple(images)
-            )
-        ],
-        transport=transport,
-    ):
-        text += delta.text
-        if len(text) > 100000:
-            raise ValueError("验收模型返回过长")
-        for field in ("prompt_tokens", "completion_tokens", "total_tokens"):
-            if getattr(delta, field) is not None:
-                usage[field] = getattr(delta, field)
-    parsed = Suggestions.model_validate_json(text)
-    expected = {item["id"] for item in criteria}
-    actual = [item.criterion_id for item in parsed.results]
-    evidence_ids = {item["id"] for item in evidence}
-    if set(actual) != expected or len(actual) != len(expected):
-        raise ValueError("模型未返回完整的逐项结果")
-    for item in parsed.results:
-        if (
-            item.verdict not in {"passed", "failed", "pending"}
-            or not set(item.evidence_ids) <= evidence_ids
-            or not item.evidence_ids
+    identity, workspace_id = run.id, run.workspace_id
+    error = None
+    parsed = None
+    try:
+        await session.rollback()
+        # Rollback expires ORM instances: copy all identifiers before leaving this read transaction.
+        async for delta in stream_text_completion(
+            **args,
+            system_prompt=system,
+            messages=[
+                ChatMessageInput(
+                    role="user", text=json.dumps(payload, ensure_ascii=False), images=tuple(images)
+                )
+            ],
+            transport=transport,
         ):
-            raise ValueError("模型返回无效结论或未提供的证据")
+            text += delta.text
+            if len(text) > 100000:
+                raise ValueError("验收模型返回过长")
+            for field in ("prompt_tokens", "completion_tokens", "total_tokens"):
+                if getattr(delta, field) is not None:
+                    usage[field] = getattr(delta, field)
+        parsed = Suggestions.model_validate_json(text)
+        expected = {item["id"] for item in criteria}
+        actual = [item.criterion_id for item in parsed.results]
+        evidence_ids = {item["id"] for item in evidence}
+        if set(actual) != expected or len(actual) != len(expected):
+            raise ValueError("模型未返回完整的逐项结果")
+        for item in parsed.results:
+            if (
+                item.verdict not in {"passed", "failed", "pending"}
+                or not set(item.evidence_ids) <= evidence_ids
+                or not item.evidence_ids
+            ):
+                raise ValueError("模型返回无效结论或未提供的证据")
+    except BaseException:
+        error = "模型调用中断或验收响应无效"
+        raise
+    finally:
+        session.add(
+            LlmCallLog(
+                workspace_id=workspace_id,
+                call_source="visual_acceptance",
+                trace_id=identity,
+                model=args["model"],
+                provider_kind=args["kind"],
+                request_payload={"run_id": identity},
+                response_payload={"results": parsed.model_dump() if parsed else None},
+                status="error" if error else "success",
+                error_message=error,
+                latency_ms=int((monotonic() - started) * 1000),
+                **usage,
+            )
+        )
+        await asyncio.shield(session.commit())
     return parsed, usage, int((monotonic() - started) * 1000), args["kind"], args["model"]
 
 
@@ -148,6 +173,7 @@ class AcceptanceRunner(PollingTaskRunner):
 
     async def process(self, identity):
         written = []
+        committed = False
         workspace_id = None
         try:
             async with self.session_factory() as session:
@@ -206,8 +232,6 @@ class AcceptanceRunner(PollingTaskRunner):
                                 }
                             )
                         elif source.media_kind == "video":
-                            from app.capabilities.media_rendering.inspection import inspect_media
-
                             data = await inspect_media(
                                 AssetStorage(self.settings).path_for(source), "video"
                             )
@@ -241,8 +265,12 @@ class AcceptanceRunner(PollingTaskRunner):
                         }
                     )
                 run.results = results
-                await session.flush()
+                await flush_evidence(session)
                 await session.commit()
+                committed = True
+                await session.refresh(run)
+                if run.status != "processing":
+                    return
                 # Evidence is committed before network work; no database writer is
                 # held across decoding or model I/O.
                 if any(item["method"] == "ai" for item in snapshot["criteria"]):
@@ -258,20 +286,6 @@ class AcceptanceRunner(PollingTaskRunner):
                                 explanation=suggestion.explanation,
                                 evidence_ids=suggestion.evidence_ids,
                             )
-                    session.add(
-                        LlmCallLog(
-                            workspace_id=workspace_id,
-                            call_source="visual_acceptance",
-                            trace_id=identity,
-                            model=model_slug,
-                            provider_kind=provider_kind,
-                            request_payload={"run_id": identity},
-                            response_payload={"results": parsed.model_dump()},
-                            status="success",
-                            latency_ms=latency,
-                            **usage,
-                        )
-                    )
                 await session.execute(
                     update(AcceptanceRun)
                     .where(AcceptanceRun.id == identity, AcceptanceRun.status == "processing")
@@ -284,6 +298,9 @@ class AcceptanceRunner(PollingTaskRunner):
                 )
                 await session.commit()
         except (Exception, asyncio.CancelledError) as exc:
+            if not committed:
+                for path in written:
+                    path.unlink(missing_ok=True)
             async with self.session_factory() as session:
                 # Some evidence may already be durably referenced; do not unlink it.
                 await session.execute(
@@ -300,20 +317,6 @@ class AcceptanceRunner(PollingTaskRunner):
                         revision=AcceptanceRun.revision + 1,
                     )
                 )
-                if workspace_id:
-                    session.add(
-                        LlmCallLog(
-                            workspace_id=workspace_id,
-                            call_source="visual_acceptance",
-                            trace_id=identity,
-                            model="",
-                            provider_kind="openai",
-                            request_payload={"run_id": identity},
-                            response_payload={},
-                            status="error",
-                            error_message="验收检查中断或失败",
-                        )
-                    )
                 await session.commit()
             if isinstance(exc, asyncio.CancelledError):
                 raise
