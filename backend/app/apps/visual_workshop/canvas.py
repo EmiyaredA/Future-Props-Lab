@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.visual_workshop.acceptance.access import AcceptanceError, require_passed, required_for
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualGenerationTask,
@@ -286,12 +287,38 @@ class VisualCanvasDocuments:
                 and previous.get("final_output_id")
             ):
                 node["asset_id"] = previous.get("asset_id")
+        for node in nodes:
+            if await required_for(self.session, project_id, node["id"]):
+                # Legacy canvas writes may register candidates, but never replace
+                # adopted content or forge approval through another API surface.
+                previous = old.get(node["id"], {})
+                if node["kind"] != "text":
+                    node["asset_id"] = previous.get("asset_id")
+                if node.get("approved"):
+                    try:
+                        await require_passed(
+                            self.session, project_id, node["id"], node.get("final_output_id")
+                        )
+                    except AcceptanceError as exc:
+                        raise VisualCanvasError(
+                            str(exc), code=exc.code, status=exc.status
+                        ) from None
         await self.session.execute(
             update(VisualCanvasDocument)
             .where(VisualCanvasDocument.project_id == project_id)
             .values(nodes=nodes)
         )
         if removed:
+            from app.apps.visual_workshop.acceptance.models import AcceptanceRun
+
+            if await self.session.scalar(
+                select(AcceptanceRun.id).where(
+                    AcceptanceRun.project_id == project_id, AcceptanceRun.node_id.in_(removed)
+                )
+            ):
+                raise VisualCanvasError(
+                    "节点被验收记录引用，不能直接删除", code="acceptance_in_use", status=409
+                )
             from sqlalchemy import delete
 
             await self.session.execute(

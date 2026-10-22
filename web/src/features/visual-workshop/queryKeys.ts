@@ -1,4 +1,15 @@
 export const visualWorkshopQueryKeys = {
+  acceptanceTemplates: () => ["visual-acceptance-templates"] as const,
+  acceptanceStandard: (id: string) =>
+    ["visual-acceptance-standard", id] as const,
+  acceptanceRuns: (id: string, page: number) =>
+    ["visual-acceptance-runs", id, page] as const,
+  acceptanceRun: (id: string, run: string) =>
+    ["visual-acceptance-run", id, run] as const,
+  acceptanceModels: (id: string) => ["visual-acceptance-models", id] as const,
+  acceptanceOutputs: (id: string, node: string, page: number) =>
+    ["visual-acceptance-outputs", id, node, page] as const,
+
   nodeOutput: (projectId: string, nodeId: string, outputId: string) =>
     ["visual-node-output", projectId, nodeId, outputId] as const,
   nodeOutputsProject: (projectId: string) =>

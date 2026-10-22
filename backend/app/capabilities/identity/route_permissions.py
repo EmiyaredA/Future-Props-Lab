@@ -615,6 +615,27 @@ OPERATIONS["configuration.manage"] += (
     ("POST", "/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile"),
 )
 
+OPERATIONS["content.read"] += (
+    ("GET", "/v1/visual-workshop/acceptance-templates"),
+    ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/standard"),
+    ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/models"),
+    ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/runs"),
+    ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}"),
+    ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}"),
+)
+OPERATIONS["content.write"] += (
+    ("POST", "/v1/visual-workshop/acceptance-templates"),
+    ("PUT", "/v1/visual-workshop/acceptance-templates/{template_id}"),
+    ("DELETE", "/v1/visual-workshop/acceptance-templates/{template_id}"),
+    ("PUT", "/v1/visual-workshop/projects/{project_id}/acceptance/standard"),
+    ("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions"),
+    ("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel"),
+    ("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples"),
+    ("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts"),
+    ("PUT", "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}"),
+)
+OPERATIONS["models.use"] += (("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs"),)
+
 ROUTE_PERMISSIONS = {
     operation: key for key, operations in OPERATIONS.items() for operation in operations
 }

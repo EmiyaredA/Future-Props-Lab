@@ -47,9 +47,11 @@ import "@features/visual-workshop/visual-workshop.css";
 export function VisualWorkshopCanvasView({
   controller,
   onBoard,
+  onAcceptance,
 }: {
   controller: ReturnType<typeof useVisualCanvasController>;
   onBoard?: () => void;
+  onAcceptance?: () => void;
 }) {
   const {
     client,
@@ -275,6 +277,7 @@ export function VisualWorkshopCanvasView({
       >
         <CanvasScreenChrome
           onBoard={onBoard}
+          onAcceptance={onAcceptance}
           projectTitle={projectQuery.data.title}
           title={title}
           editingTitle={editingTitle}

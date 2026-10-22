@@ -90,6 +90,14 @@ from app.apps.video_editor.models import (
     VideoEditorTask,
     VideoEditorTimeline,
 )
+from app.apps.visual_workshop.acceptance.models import (
+    AcceptanceAssetReference,
+    AcceptanceRepairDraft,
+    AcceptanceRun,
+    AcceptanceStandard,
+    AcceptanceStandardVersion,
+    AcceptanceTemplate,
+)
 from app.apps.visual_workshop.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
@@ -202,6 +210,7 @@ PUBLIC_WORKSPACE_GALGAME_MODELS: dict[str, type] = {
 
 # Runtime quota task kinds owned by migrated apps and llm.
 RUNTIME_QUOTA_TASK_MODELS: dict[str, type] = {
+    "visual_acceptance": AcceptanceRun,
     "galgame_asr": GalgameAssetTranscriptionTask,
     "inference": ModelInferenceTask,
     "model": ModelTestGenerationTask,
@@ -235,6 +244,7 @@ _ = (
     VisualAssistantMessageAsset,
     VisualCanvasDocument,
     VisualNodeOutput,
+    AcceptanceAssetReference,
     GalgameAssetMetadata,
     GalgameAssetSettings,
     GalgameProjectAssetReference,
@@ -258,6 +268,11 @@ _ = (
 )
 
 TENANT_MODELS = (
+    AcceptanceTemplate,
+    AcceptanceStandard,
+    AcceptanceStandardVersion,
+    AcceptanceRun,
+    AcceptanceRepairDraft,
     ExternalConnection,
     ArticleSyncBinding,
     ArticleSyncTask,

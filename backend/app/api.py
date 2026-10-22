@@ -14,6 +14,7 @@ from app.apps.thought_workshop.routes.community_tables import router as communit
 from app.apps.thought_workshop.routes.external_sync import router as article_sync_router
 from app.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from app.apps.video_editor.routes import router as video_editor_router
+from app.apps.visual_workshop.acceptance.routes import router as visual_acceptance_router
 from app.apps.visual_workshop.routes import router as visual_workshop_router
 from app.apps.visual_workshop.routes.assistant import router as visual_assistant_router
 from app.apps.visual_workshop.routes.generation import router as visual_generation_router
@@ -172,3 +173,7 @@ api_router.include_router(creative_workshop_router, dependencies=[Depends(requir
 # Community endpoints authenticate browser sessions and apply publication roles.
 api_router.include_router(community_router, prefix="/thought-workshop")
 api_router.include_router(community_tables_router, prefix="/thought-workshop")
+
+api_router.include_router(
+    visual_acceptance_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)

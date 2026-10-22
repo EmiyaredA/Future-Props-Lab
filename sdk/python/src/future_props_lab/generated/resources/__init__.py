@@ -31,10 +31,11 @@ from .tools import Tools, AsyncTools
 from .video import Video, AsyncVideo
 from .visual import Visual, AsyncVisual
 from .visual_assistant import VisualAssistant, AsyncVisualAssistant
+from .visual_workshop_acceptance import VisualWorkshopAcceptance, AsyncVisualWorkshopAcceptance
 from .workspaces import Workspaces, AsyncWorkspaces
 
-RESOURCES = {'accounts': Accounts, 'admin': Admin, 'amadeus': Amadeus, 'annotation': Annotation, 'creative_workshop': CreativeWorkshop, 'demo': Demo, 'demo_calls': DemoCalls, 'desktop': Desktop, 'desktop_pet': DesktopPet, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'live2d_workshop': Live2DWorkshop, 'logs': Logs, 'models': Models, 'motion_compositor': MotionCompositor, 'presentation': Presentation, 'public': Public, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant, 'workspaces': Workspaces}
-ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'amadeus': AsyncAmadeus, 'annotation': AsyncAnnotation, 'creative_workshop': AsyncCreativeWorkshop, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'desktop': AsyncDesktop, 'desktop_pet': AsyncDesktopPet, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'live2d_workshop': AsyncLive2DWorkshop, 'logs': AsyncLogs, 'models': AsyncModels, 'motion_compositor': AsyncMotionCompositor, 'presentation': AsyncPresentation, 'public': AsyncPublic, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant, 'workspaces': AsyncWorkspaces}
+RESOURCES = {'accounts': Accounts, 'admin': Admin, 'amadeus': Amadeus, 'annotation': Annotation, 'creative_workshop': CreativeWorkshop, 'demo': Demo, 'demo_calls': DemoCalls, 'desktop': Desktop, 'desktop_pet': DesktopPet, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'live2d_workshop': Live2DWorkshop, 'logs': Logs, 'models': Models, 'motion_compositor': MotionCompositor, 'presentation': Presentation, 'public': Public, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant, 'visual_workshop_acceptance': VisualWorkshopAcceptance, 'workspaces': Workspaces}
+ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'amadeus': AsyncAmadeus, 'annotation': AsyncAnnotation, 'creative_workshop': AsyncCreativeWorkshop, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'desktop': AsyncDesktop, 'desktop_pet': AsyncDesktopPet, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'live2d_workshop': AsyncLive2DWorkshop, 'logs': AsyncLogs, 'models': AsyncModels, 'motion_compositor': AsyncMotionCompositor, 'presentation': AsyncPresentation, 'public': AsyncPublic, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant, 'visual_workshop_acceptance': AsyncVisualWorkshopAcceptance, 'workspaces': AsyncWorkspaces}
 
 class SyncResources:
     accounts: Accounts
@@ -68,6 +69,7 @@ class SyncResources:
     video: Video
     visual: Visual
     visual_assistant: VisualAssistant
+    visual_workshop_acceptance: VisualWorkshopAcceptance
     workspaces: Workspaces
 
 class AsyncResources:
@@ -102,4 +104,5 @@ class AsyncResources:
     video: AsyncVideo
     visual: AsyncVisual
     visual_assistant: AsyncVisualAssistant
+    visual_workshop_acceptance: AsyncVisualWorkshopAcceptance
     workspaces: AsyncWorkspaces

@@ -8,6 +8,130 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel
 class WireModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra='allow', protected_namespaces=())
 
+class AcceptanceCriterion(WireModel):
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    kinds: list[Literal['image', 'video', 'audio', 'text']] | None = Field(default=None, alias='kinds', min_length=1, max_length=4)
+    method: Literal['automatic', 'ai', 'manual'] = Field(default='manual', alias='method')
+    reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=6)
+    reference_label: str = Field(default='', alias='reference_label', max_length=120)
+    required: bool = Field(default=True, alias='required')
+    requirement: str = Field(default='', alias='requirement', max_length=3000)
+    specifications: Specification | None = Field(default=None, alias='specifications')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class AcceptanceDecisionIn(WireModel):
+    criterion_id: str | None = Field(default=None, alias='criterion_id')
+    end_ms: int | None = Field(default=None, alias='end_ms')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    finalize: bool = Field(default=False, alias='finalize')
+    reason: str = Field(default='', alias='reason', max_length=3000)
+    region: list[float] | None = Field(default=None, alias='region')
+    start_ms: int | None = Field(default=None, alias='start_ms')
+    verdict: Literal['passed', 'failed', 'pending', 'not_applicable'] = Field(default='pending', alias='verdict')
+
+class AcceptanceDocument(WireModel):
+    criteria: list[AcceptanceCriterion] | None = Field(default=None, alias='criteria', max_length=40)
+    node_ids: list[str] | None = Field(default=None, alias='node_ids', max_length=1000)
+    title: str = Field(default='项目验收标准', alias='title', min_length=1, max_length=120)
+
+class AcceptanceEvidence(WireModel):
+    asset_id: str = Field(default=..., alias='asset_id')
+    id: str = Field(default=..., alias='id')
+    position_ms: int | None = Field(default=None, alias='position_ms')
+    source_asset_id: str = Field(default=..., alias='source_asset_id')
+
+class AcceptanceModelListOut(WireModel):
+    items: list[AcceptanceModelOut] = Field(default=..., alias='items')
+
+class AcceptanceModelOut(WireModel):
+    id: str = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label')
+    provider_name: str = Field(default=..., alias='provider_name')
+
+class AcceptanceRepairOut(WireModel):
+    id: str = Field(default=..., alias='id')
+    prompt_version_id: str | None = Field(default=..., alias='prompt_version_id')
+    revision: int = Field(default=..., alias='revision')
+    run_id: str = Field(default=..., alias='run_id')
+    text: str = Field(default=..., alias='text')
+
+class AcceptanceRepairWriteIn(WireModel):
+    apply: bool = Field(default=False, alias='apply')
+    expected_canvas_revision: int | None = Field(default=None, alias='expected_canvas_revision')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    text: str = Field(default=..., alias='text', min_length=1, max_length=6000)
+
+class AcceptanceResult(WireModel):
+    criterion_id: str = Field(default=..., alias='criterion_id')
+    end_ms: int | None = Field(default=None, alias='end_ms')
+    evidence_ids: list[str] | None = Field(default=None, alias='evidence_ids')
+    explanation: str = Field(default='', alias='explanation')
+    origin: Literal['automatic', 'ai', 'manual'] = Field(default=..., alias='origin')
+    region: list[float] | None = Field(default=None, alias='region')
+    start_ms: int | None = Field(default=None, alias='start_ms')
+    suggestion: Literal['passed', 'failed', 'pending', 'not_applicable'] | None = Field(default=None, alias='suggestion')
+    verdict: Literal['passed', 'failed', 'pending', 'not_applicable'] = Field(default='pending', alias='verdict')
+
+class AcceptanceRunCreateIn(WireModel):
+    expected_standard_version: int = Field(default=..., alias='expected_standard_version', ge=1.0)
+    model_id: str | None = Field(default=None, alias='model_id')
+    output_ids: list[str] = Field(default=..., alias='output_ids', min_length=1, max_length=20)
+    previous_run_id: str | None = Field(default=None, alias='previous_run_id')
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=100)
+
+class AcceptanceRunListOut(WireModel):
+    items: list[AcceptanceRunOut] = Field(default=..., alias='items')
+
+class AcceptanceRunOut(WireModel):
+    created_at: str = Field(default=..., alias='created_at')
+    decision: Literal['pending', 'passed', 'failed', 'historical'] = Field(default=..., alias='decision')
+    decisions: list[dict[str, Any]] = Field(default=..., alias='decisions')
+    error_message: str | None = Field(default=..., alias='error_message')
+    evidence: list[AcceptanceEvidence] = Field(default=..., alias='evidence')
+    id: str = Field(default=..., alias='id')
+    model_id: str | None = Field(default=..., alias='model_id')
+    node_id: str = Field(default=..., alias='node_id')
+    output_id: str = Field(default=..., alias='output_id')
+    previous_run_id: str | None = Field(default=..., alias='previous_run_id')
+    results: list[AcceptanceResult] = Field(default=..., alias='results')
+    revision: int = Field(default=..., alias='revision')
+    snapshot: dict[str, Any] = Field(default=..., alias='snapshot')
+    standard_version: int = Field(default=..., alias='standard_version')
+    status: Literal['queued', 'processing', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
+
+class AcceptanceSampleIn(WireModel):
+    end_ms: int = Field(default=..., alias='end_ms', gt=0.0)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    start_ms: int = Field(default=..., alias='start_ms', ge=0.0)
+
+class AcceptanceStandardOut(WireModel):
+    draft: AcceptanceDocument | None = Field(default=None, alias='draft')
+    project_id: str = Field(default=..., alias='project_id')
+    published: AcceptanceDocument | None = Field(default=None, alias='published')
+    published_version: int = Field(default=0, alias='published_version')
+    required: bool = Field(default=False, alias='required')
+    revision: int = Field(default=0, alias='revision')
+
+class AcceptanceStandardWriteIn(WireModel):
+    document: AcceptanceDocument = Field(default=..., alias='document')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    publish: bool = Field(default=False, alias='publish')
+    required: bool = Field(default=False, alias='required')
+
+class AcceptanceTemplateListOut(WireModel):
+    items: list[AcceptanceTemplateOut] = Field(default=..., alias='items')
+
+class AcceptanceTemplateOut(WireModel):
+    builtin: bool = Field(default=False, alias='builtin')
+    document: AcceptanceDocument = Field(default=..., alias='document')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=0, alias='revision')
+    title: str = Field(default=..., alias='title')
+
+class AcceptanceTemplateWriteIn(WireModel):
+    document: AcceptanceDocument = Field(default=..., alias='document')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+
 class AccountAvatarDeleteIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
@@ -4858,6 +4982,14 @@ class Sort(WireModel):
     direction: Literal['asc', 'desc'] = Field(default='asc', alias='direction')
     field_id: str = Field(default=..., alias='field_id')
 
+class Specification(WireModel):
+    max_duration: float | None = Field(default=None, alias='max_duration')
+    min_duration: float | None = Field(default=None, alias='min_duration')
+    min_height: int | None = Field(default=None, alias='min_height')
+    min_width: int | None = Field(default=None, alias='min_width')
+    ratio: Literal['16:9', '9:16', '1:1', '4:3', '3:4'] | None = Field(default=None, alias='ratio')
+    require_audio: bool = Field(default=False, alias='require_audio')
+
 class SplitClipOperation(WireModel):
     at_us: int = Field(default=..., alias='atUs', gt=0.0)
     clip_id: str = Field(default=..., alias='clipId')
@@ -6205,6 +6337,24 @@ class WorkspacePatchIn(WireModel):
 class WorkspaceSwitchIn(WireModel):
     workspace_id: str = Field(default=..., alias='workspace_id', min_length=1, max_length=36)
 
+AcceptanceCriterion.model_rebuild()
+AcceptanceDecisionIn.model_rebuild()
+AcceptanceDocument.model_rebuild()
+AcceptanceEvidence.model_rebuild()
+AcceptanceModelListOut.model_rebuild()
+AcceptanceModelOut.model_rebuild()
+AcceptanceRepairOut.model_rebuild()
+AcceptanceRepairWriteIn.model_rebuild()
+AcceptanceResult.model_rebuild()
+AcceptanceRunCreateIn.model_rebuild()
+AcceptanceRunListOut.model_rebuild()
+AcceptanceRunOut.model_rebuild()
+AcceptanceSampleIn.model_rebuild()
+AcceptanceStandardOut.model_rebuild()
+AcceptanceStandardWriteIn.model_rebuild()
+AcceptanceTemplateListOut.model_rebuild()
+AcceptanceTemplateOut.model_rebuild()
+AcceptanceTemplateWriteIn.model_rebuild()
 AccountAvatarDeleteIn.model_rebuild()
 AccountCreateIn.model_rebuild()
 AccountCreatedOut.model_rebuild()
@@ -6915,6 +7065,7 @@ Snapshot.model_rebuild()
 SnapshotBlock.model_rebuild()
 SnapshotRun.model_rebuild()
 Sort.model_rebuild()
+Specification.model_rebuild()
 SplitClipOperation.model_rebuild()
 StorageAnalyzer.model_rebuild()
 StorageCapacity.model_rebuild()

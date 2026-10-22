@@ -24,6 +24,7 @@ function openCurrentPageInNewWindow() {
 
 type CanvasScreenChromeProps = {
   onBoard?: () => void;
+  onAcceptance?: () => void;
   projectTitle: string;
   title: string;
   editingTitle: boolean;
@@ -44,6 +45,7 @@ type CanvasScreenChromeProps = {
 
 export function CanvasScreenChrome({
   onBoard,
+  onAcceptance,
   projectTitle,
   title,
   editingTitle,
@@ -137,6 +139,7 @@ export function CanvasScreenChrome({
             <AppWindow aria-hidden />
             新建窗口
           </button>
+          {onAcceptance && <button onClick={onAcceptance}>项目验收</button>}
           <ThemeToggle />
           <button
             className={

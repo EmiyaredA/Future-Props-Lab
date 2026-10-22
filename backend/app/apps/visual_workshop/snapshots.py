@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.visual_workshop.acceptance.snapshots import export_acceptance, import_acceptance
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualGenerationTask,
@@ -337,7 +338,8 @@ class VisualWorkshopProjectSnapshots:
             for output in await export_outputs(self.session, project_id)
             if output["node_id"] in node_ids
         ]
-        used_ids = _canvas_asset_ids(nodes)
+        acceptance, acceptance_assets = await export_acceptance(self.session, project_id)
+        used_ids = _canvas_asset_ids(nodes) | acceptance_assets
         for output in outputs:
             if output.get("asset_id"):
                 used_ids.add(output["asset_id"])
@@ -412,6 +414,7 @@ class VisualWorkshopProjectSnapshots:
                 or [item.model_dump(mode="json") for item in default_material_categories()],
             },
             "outputs": outputs,
+            "acceptance": acceptance,
             "folders": [
                 {"id": row.id, "parent_id": row.parent_id, "name": row.name} for row in folders
             ],
@@ -472,6 +475,7 @@ class VisualWorkshopProjectSnapshots:
                 kind=create.kind,
                 status=status,
             )
+            old_nodes = [node["id"] for node in nodes]
             outputs = import_outputs(
                 payload.get("outputs", []), nodes, edges, asset_ids, project.id
             )
@@ -526,6 +530,28 @@ class VisualWorkshopProjectSnapshots:
                     )
                 await self.session.flush()
                 self.session.add_all(outputs)
+                await self.session.flush()
+                node_ids = dict(zip(old_nodes, [node["id"] for node in nodes], strict=True))
+                output_ids = {
+                    original["id"]: row.id
+                    for original, row in zip(payload.get("outputs", []), outputs)
+                }
+                await import_acceptance(
+                    self.session,
+                    payload.get("acceptance"),
+                    project.id,
+                    self.workspace_id,
+                    node_ids,
+                    output_ids,
+                    asset_ids,
+                )
+                if (
+                    payload.get("acceptance", {}).get("required")
+                    if payload.get("acceptance")
+                    else False
+                ):
+                    for node in nodes:
+                        node["approved"] = False
                 self.session.add(
                     VisualCanvasDocument(
                         project_id=project.id,

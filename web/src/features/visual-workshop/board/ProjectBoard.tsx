@@ -50,11 +50,13 @@ import "./status-board.css";
 export function ProjectBoard({
   controller: c,
   onCanvas,
+  onAcceptance,
   previews,
   onPreview,
 }: {
   controller: BoardController;
   onCanvas: () => void;
+  onAcceptance?: () => void;
   previews: Record<string, VisualNodeOutput | undefined>;
   onPreview: (nodeId: string, version?: VisualNodeOutput) => void;
 }) {
@@ -261,6 +263,11 @@ export function ProjectBoard({
               看板
             </button>
           </div>
+          {onAcceptance && (
+            <button onClick={onAcceptance}>
+              <SlidersHorizontal size={15} /> 项目验收
+            </button>
+          )}
           <ThemeToggle />
           <button
             aria-expanded={c.assistantOpen}

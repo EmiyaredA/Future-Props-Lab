@@ -1,6 +1,922 @@
 {
   "components": {
     "schemas": {
+      "AcceptanceCriterion": {
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kinds": {
+            "items": {
+              "enum": [
+                "image",
+                "video",
+                "audio",
+                "text"
+              ],
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Kinds",
+            "type": "array"
+          },
+          "method": {
+            "default": "manual",
+            "enum": [
+              "automatic",
+              "ai",
+              "manual"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "reference_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Reference Asset Ids",
+            "type": "array"
+          },
+          "reference_label": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Reference Label",
+            "type": "string"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "requirement": {
+            "default": "",
+            "maxLength": 3000,
+            "title": "Requirement",
+            "type": "string"
+          },
+          "specifications": {
+            "$ref": "#/components/schemas/Specification"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AcceptanceCriterion",
+        "type": "object"
+      },
+      "AcceptanceDecisionIn": {
+        "properties": {
+          "criterion_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criterion Id"
+          },
+          "end_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Ms"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "finalize": {
+            "default": false,
+            "title": "Finalize",
+            "type": "boolean"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 3000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 4,
+                "minItems": 4,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "start_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Ms"
+          },
+          "verdict": {
+            "default": "pending",
+            "enum": [
+              "passed",
+              "failed",
+              "pending",
+              "not_applicable"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AcceptanceDecisionIn",
+        "type": "object"
+      },
+      "AcceptanceDocument": {
+        "properties": {
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceCriterion"
+            },
+            "maxItems": 40,
+            "title": "Criteria",
+            "type": "array"
+          },
+          "node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Node Ids",
+            "type": "array"
+          },
+          "title": {
+            "default": "项目验收标准",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "AcceptanceDocument",
+        "type": "object"
+      },
+      "AcceptanceEvidence": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "position_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position Ms"
+          },
+          "source_asset_id": {
+            "title": "Source Asset Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "asset_id",
+          "source_asset_id"
+        ],
+        "title": "AcceptanceEvidence",
+        "type": "object"
+      },
+      "AcceptanceModelListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceModelOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AcceptanceModelListOut",
+        "type": "object"
+      },
+      "AcceptanceModelOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "provider_name"
+        ],
+        "title": "AcceptanceModelOut",
+        "type": "object"
+      },
+      "AcceptanceOutputSnapshot": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video",
+              "audio",
+              "text"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "version",
+          "asset_id",
+          "text",
+          "title"
+        ],
+        "title": "AcceptanceOutputSnapshot",
+        "type": "object"
+      },
+      "AcceptanceRepairOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "prompt_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Version Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "run_id",
+          "text",
+          "revision",
+          "prompt_version_id"
+        ],
+        "title": "AcceptanceRepairOut",
+        "type": "object"
+      },
+      "AcceptanceRepairWriteIn": {
+        "properties": {
+          "apply": {
+            "default": false,
+            "title": "Apply",
+            "type": "boolean"
+          },
+          "expected_canvas_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Canvas Revision"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "text"
+        ],
+        "title": "AcceptanceRepairWriteIn",
+        "type": "object"
+      },
+      "AcceptanceResult": {
+        "properties": {
+          "criterion_id": {
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "end_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Ms"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "explanation": {
+            "default": "",
+            "title": "Explanation",
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "automatic",
+              "ai",
+              "manual"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 4,
+                "minItems": 4,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "start_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Ms"
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "pending",
+                  "not_applicable"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion"
+          },
+          "verdict": {
+            "default": "pending",
+            "enum": [
+              "passed",
+              "failed",
+              "pending",
+              "not_applicable"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "origin"
+        ],
+        "title": "AcceptanceResult",
+        "type": "object"
+      },
+      "AcceptanceRunCreateIn": {
+        "properties": {
+          "expected_standard_version": {
+            "minimum": 1.0,
+            "title": "Expected Standard Version",
+            "type": "integer"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "output_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Output Ids",
+            "type": "array"
+          },
+          "previous_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Run Id"
+          },
+          "request_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_standard_version",
+          "output_ids",
+          "request_id"
+        ],
+        "title": "AcceptanceRunCreateIn",
+        "type": "object"
+      },
+      "AcceptanceRunListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceRunOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AcceptanceRunListOut",
+        "type": "object"
+      },
+      "AcceptanceRunOut": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "pending",
+              "passed",
+              "failed",
+              "historical"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "decisions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "output_id": {
+            "title": "Output Id",
+            "type": "string"
+          },
+          "previous_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Run Id"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/AcceptanceSnapshot"
+          },
+          "standard_version": {
+            "title": "Standard Version",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "node_id",
+          "output_id",
+          "previous_run_id",
+          "standard_version",
+          "model_id",
+          "status",
+          "decision",
+          "snapshot",
+          "results",
+          "evidence",
+          "decisions",
+          "error_message",
+          "revision",
+          "created_at"
+        ],
+        "title": "AcceptanceRunOut",
+        "type": "object"
+      },
+      "AcceptanceSampleIn": {
+        "properties": {
+          "end_ms": {
+            "exclusiveMinimum": 0.0,
+            "title": "End Ms",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "start_ms": {
+            "minimum": 0.0,
+            "title": "Start Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "AcceptanceSampleIn",
+        "type": "object"
+      },
+      "AcceptanceSnapshot": {
+        "properties": {
+          "coverage": {
+            "title": "Coverage",
+            "type": "string"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceCriterion"
+            },
+            "title": "Criteria",
+            "type": "array"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "output": {
+            "$ref": "#/components/schemas/AcceptanceOutputSnapshot"
+          },
+          "prompt": {
+            "default": "",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "source_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Bytes"
+          },
+          "standard_title": {
+            "title": "Standard Title",
+            "type": "string"
+          },
+          "standard_version": {
+            "title": "Standard Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "standard_version",
+          "standard_title",
+          "criteria",
+          "output",
+          "coverage"
+        ],
+        "title": "AcceptanceSnapshot",
+        "type": "object"
+      },
+      "AcceptanceStandardOut": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/AcceptanceDocument"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "published": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AcceptanceDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published_version": {
+            "default": 0,
+            "title": "Published Version",
+            "type": "integer"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "revision": {
+            "default": 0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "AcceptanceStandardOut",
+        "type": "object"
+      },
+      "AcceptanceStandardWriteIn": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/AcceptanceDocument"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "publish": {
+            "default": false,
+            "title": "Publish",
+            "type": "boolean"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "document"
+        ],
+        "title": "AcceptanceStandardWriteIn",
+        "type": "object"
+      },
+      "AcceptanceTemplateListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceTemplateOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AcceptanceTemplateListOut",
+        "type": "object"
+      },
+      "AcceptanceTemplateOut": {
+        "properties": {
+          "builtin": {
+            "default": false,
+            "title": "Builtin",
+            "type": "boolean"
+          },
+          "document": {
+            "$ref": "#/components/schemas/AcceptanceDocument"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "default": 0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "document"
+        ],
+        "title": "AcceptanceTemplateOut",
+        "type": "object"
+      },
+      "AcceptanceTemplateWriteIn": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/AcceptanceDocument"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "document",
+          "expected_revision"
+        ],
+        "title": "AcceptanceTemplateWriteIn",
+        "type": "object"
+      },
       "AccountAvatarDeleteIn": {
         "properties": {
           "expected_revision": {
@@ -31104,6 +32020,87 @@
           "field_id"
         ],
         "title": "Sort",
+        "type": "object"
+      },
+      "Specification": {
+        "properties": {
+          "max_duration": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 86400.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Duration"
+          },
+          "min_duration": {
+            "anyOf": [
+              {
+                "maximum": 86400.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Duration"
+          },
+          "min_height": {
+            "anyOf": [
+              {
+                "maximum": 16384.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Height"
+          },
+          "min_width": {
+            "anyOf": [
+              {
+                "maximum": 16384.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Width"
+          },
+          "ratio": {
+            "anyOf": [
+              {
+                "enum": [
+                  "16:9",
+                  "9:16",
+                  "1:1",
+                  "4:3",
+                  "3:4"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio"
+          },
+          "require_audio": {
+            "default": false,
+            "title": "Require Audio",
+            "type": "boolean"
+          }
+        },
+        "title": "Specification",
         "type": "object"
       },
       "SplitClipOperation": {
@@ -67172,6 +68169,172 @@
         ]
       }
     },
+    "/v1/visual-workshop/acceptance-templates": {
+      "get": {
+        "operationId": "list_acceptance_templates_v1_visual_workshop_acceptance_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceTemplateListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Acceptance Templates",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      },
+      "post": {
+        "operationId": "create_acceptance_template_v1_visual_workshop_acceptance_templates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceTemplateWriteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceTemplateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Acceptance Template",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/acceptance-templates/{template_id}": {
+      "delete": {
+        "operationId": "delete_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Acceptance Template V1 Visual Workshop Acceptance Templates  Template Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Acceptance Template",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      },
+      "put": {
+        "operationId": "update_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceTemplateWriteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceTemplateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Acceptance Template",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
     "/v1/visual-workshop/generation-batches": {
       "get": {
         "operationId": "list_generation_batches_v1_visual_workshop_generation_batches_get",
@@ -67832,6 +68995,654 @@
         "summary": "Patch Project",
         "tags": [
           "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/models": {
+      "get": {
+        "operationId": "list_acceptance_models_v1_visual_workshop_projects__project_id__acceptance_models_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceModelListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Acceptance Models",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}": {
+      "get": {
+        "operationId": "get_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draft_id",
+            "required": true,
+            "schema": {
+              "title": "Draft Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRepairOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Acceptance Repair",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      },
+      "put": {
+        "operationId": "save_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draft_id",
+            "required": true,
+            "schema": {
+              "title": "Draft Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceRepairWriteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRepairOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Acceptance Repair",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/runs": {
+      "get": {
+        "operationId": "list_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "node_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Node Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRunListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Acceptance Runs",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      },
+      "post": {
+        "operationId": "start_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceRunCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRunListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Acceptance Runs",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}": {
+      "get": {
+        "operationId": "get_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Acceptance Run",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel": {
+      "post": {
+        "operationId": "cancel_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Acceptance Run",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions": {
+      "post": {
+        "operationId": "decide_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__decisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceDecisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Acceptance Run",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts": {
+      "post": {
+        "operationId": "create_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__repair_drafts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRepairOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Acceptance Repair",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples": {
+      "post": {
+        "operationId": "sample_acceptance_video_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__samples_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceSampleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sample Acceptance Video",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/standard": {
+      "get": {
+        "operationId": "get_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceStandardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Acceptance Standard",
+        "tags": [
+          "visual-workshop-acceptance"
+        ]
+      },
+      "put": {
+        "operationId": "save_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceStandardWriteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceStandardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Acceptance Standard",
+        "tags": [
+          "visual-workshop-acceptance"
         ]
       }
     },

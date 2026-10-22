@@ -3913,6 +3913,118 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/visual-workshop/acceptance-templates/{template_id}",
+    "sdk": "client.visual_workshop_acceptance.delete_acceptance_template",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#delete-acceptance-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/acceptance-templates",
+    "sdk": "client.visual_workshop_acceptance.list_acceptance_templates",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#list-acceptance-templates",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/models",
+    "sdk": "client.visual_workshop_acceptance.list_acceptance_models",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#list-acceptance-models",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}",
+    "sdk": "client.visual_workshop_acceptance.get_acceptance_repair",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#get-acceptance-repair",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/runs",
+    "sdk": "client.visual_workshop_acceptance.list_acceptance_runs",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#list-acceptance-runs",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}",
+    "sdk": "client.visual_workshop_acceptance.get_acceptance_run",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#get-acceptance-run",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/standard",
+    "sdk": "client.visual_workshop_acceptance.get_acceptance_standard",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#get-acceptance-standard",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/acceptance-templates",
+    "sdk": "client.visual_workshop_acceptance.create_acceptance_template",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#create-acceptance-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs",
+    "sdk": "client.visual_workshop_acceptance.start_acceptance_runs",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#start-acceptance-runs",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel",
+    "sdk": "client.visual_workshop_acceptance.cancel_acceptance_run",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#cancel-acceptance-run",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions",
+    "sdk": "client.visual_workshop_acceptance.decide_acceptance_run",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#decide-acceptance-run",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts",
+    "sdk": "client.visual_workshop_acceptance.create_acceptance_repair",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#create-acceptance-repair",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples",
+    "sdk": "client.visual_workshop_acceptance.sample_acceptance_video",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#sample-acceptance-video",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/acceptance-templates/{template_id}",
+    "sdk": "client.visual_workshop_acceptance.update_acceptance_template",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#update-acceptance-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}",
+    "sdk": "client.visual_workshop_acceptance.save_acceptance_repair",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#save-acceptance-repair",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard",
+    "sdk": "client.visual_workshop_acceptance.save_acceptance_standard",
+    "document": "/docs.html?page=sdk-reference-visual-workshop-acceptance#save-acceptance-standard",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/account/workspaces/current/invitations/{invitation_id}",
     "sdk": "client.workspaces.revoke_invitation",
     "document": "/docs.html?page=sdk-reference-workspaces#revoke-invitation",

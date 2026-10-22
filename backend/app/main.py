@@ -20,6 +20,7 @@ from app.apps.live2d_workshop.runner import Live2DExportRunner
 from app.apps.motion_compositor.runner import MotionExportRunner
 from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
 from app.apps.video_editor.runner import VideoEditorRunner
+from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
 from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
 from app.capabilities.asset_store.layout_migration import (
@@ -85,6 +86,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             ArticleSyncRunner(external_sync_actor_allowed),
             ModelTemplateSyncRunner(),
             VisualGenerationRunner(),
+            AcceptanceRunner(),
             ModelTestGenerationRunner(),
             InferenceRunner(local_runtime=local_runtime),
             ModelTestTranscriptionRunner(),

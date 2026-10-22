@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { AcceptanceWorkspace } from "./acceptance/AcceptanceWorkspace";
 import { ReadOnlyVisualConversation } from "./ReadOnlyVisualConversation";
 import { useQuery } from "@tanstack/react-query";
 import { ReadOnlyCollection, ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
@@ -17,6 +19,7 @@ export function ReadOnlyVisual({
   onOpen: (id: string) => void;
   onBack: () => void;
 }) {
+  const [acceptance, setAcceptance] = useState(false);
   const projects = useQuery({
     queryKey: visualWorkshopQueryKeys.projects,
     queryFn: getVisualWorkshopProjects,
@@ -32,6 +35,16 @@ export function ReadOnlyVisual({
     queryFn: () => getVisualCanvas(projectId!),
     enabled: !!projectId,
   });
+  if (acceptance && projectId && canvas.data)
+    return (
+      <AcceptanceWorkspace
+        projectId={projectId}
+        title={project.data?.title ?? "视觉工坊"}
+        nodes={canvas.data.nodes}
+        readOnly
+        onBack={() => setAcceptance(false)}
+      />
+    );
   return (
     <ReadOnlyPage
       title={project.data?.title || "视觉工坊"}
@@ -63,6 +76,9 @@ export function ReadOnlyVisual({
             </article>
           ))}
         </div>
+      )}
+      {projectId && (
+        <button onClick={() => setAcceptance(true)}>查看项目验收</button>
       )}
       {projectId ? (
         <ReadOnlyVisualConversation key={projectId} projectId={projectId} />

@@ -8,6 +8,11 @@ from app.runtime.orm_base import Base
 
 
 async def protect_document_references(session: AsyncSession, asset_ids: list[str]) -> None:
+    acceptance_refs = Base.metadata.tables.get("visual_acceptance_asset_references")
+    if acceptance_refs is not None and await session.scalar(
+        select(acceptance_refs.c.owner_id).where(acceptance_refs.c.asset_id.in_(asset_ids)).limit(1)
+    ):
+        raise AssetError("文件被验收标准或证据引用", code="asset_in_use", status=409)
     sync_assets = Base.metadata.tables.get("thought_sync_assets")
     if sync_assets is not None and await session.scalar(
         select(sync_assets.c.task_id).where(sync_assets.c.asset_id.in_(asset_ids)).limit(1)

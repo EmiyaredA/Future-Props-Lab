@@ -98,7 +98,10 @@ def import_outputs(value, nodes, edges, asset_ids, project_id):
                     if row.asset_id:
                         node["asset_id"] = row.asset_id
         elif candidates:
-            raise ProjectSnapshotError("节点历史缺少最终版本")
+            # Strict acceptance projects legitimately contain only candidates.
+            if any(record.is_final for record in candidates):
+                raise ProjectSnapshotError("节点历史缺少最终版本")
+            node["asset_id"] = None if node["kind"] != "text" else node.get("asset_id")
         elif node.get("asset_id") or (node["kind"] == "text" and node.get("text")):
             # Old snapshot format: the current media/text has a provable owner.
             identity = new_id()

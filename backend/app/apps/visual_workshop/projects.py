@@ -148,6 +148,9 @@ class VisualWorkshopProjects:
             workspace_id=self.workspace_id,
             legacy_paths=legacy_paths,
         ):
+            from app.apps.visual_workshop.acceptance.standards import delete_acceptance
+
+            await delete_acceptance(self.session, project_id)
             await self.session.execute(
                 delete(VisualNodeOutput).where(VisualNodeOutput.project_id == project_id)
             )

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from db.migrations.versions import (
+    r0105_visual_acceptance,
     r0001_initial,
     r0002_model_test_conversations,
     r0003_tool_navigation_state,
@@ -485,5 +486,7 @@ MIGRATIONS += (
         r0104_presentation_free_connections.MIGRATION_ID, r0104_presentation_free_connections.SQL
     ),
 )
+
+MIGRATIONS += (Migration(r0105_visual_acceptance.MIGRATION_ID, r0105_visual_acceptance.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id
