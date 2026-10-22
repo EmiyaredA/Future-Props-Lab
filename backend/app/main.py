@@ -16,6 +16,7 @@ from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnn
 from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
 from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from app.apps.interview_assistant.runner import InterviewPreparationRunner
 from app.apps.live2d_workshop.runner import Live2DExportRunner
 from app.apps.motion_compositor.runner import MotionExportRunner
 from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
@@ -32,6 +33,7 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
 from app.console.governance.external_sync_access import external_sync_actor_allowed
+from app.console.governance.interview_executor_access import interview_actor_allowed
 from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
 from app.console.governance.runtime_quotas import recover_admissions
@@ -83,6 +85,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await local_models.recover()
     supervisor = RunnerSupervisor(
         (
+            InterviewPreparationRunner(interview_actor_allowed),
             ArticleSyncRunner(external_sync_actor_allowed),
             ModelTemplateSyncRunner(),
             VisualGenerationRunner(),

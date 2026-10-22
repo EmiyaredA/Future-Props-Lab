@@ -4,6 +4,7 @@ from app.apps.audio_annotation.routes import router as audio_annotation_router
 from app.apps.desktop_pet.routes import router as desktop_pet_router
 from app.apps.director_desk.routes import router as director_desk_router
 from app.apps.galgame_workshop.routes import router as galgame_workshop_router
+from app.apps.interview_assistant.routes import router as interview_assistant_router
 from app.apps.live2d_workshop.routes import router as live2d_router
 from app.apps.motion_compositor.routes import router as motion_compositor_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
@@ -62,6 +63,7 @@ register_video_executor(apply_assistant_timeline_batch)
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(local_models_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(interview_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(article_sync_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(

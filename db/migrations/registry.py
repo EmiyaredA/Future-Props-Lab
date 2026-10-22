@@ -107,6 +107,7 @@ from db.migrations.versions import (
     r0103_local_models,
     r0104_presentation_free_connections,
     r0105_visual_acceptance,
+    r0106_interview_preparation,
 )
 
 
@@ -488,5 +489,9 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0105_visual_acceptance.MIGRATION_ID, r0105_visual_acceptance.SQL),)
+
+MIGRATIONS += (
+    Migration(r0106_interview_preparation.MIGRATION_ID, r0106_interview_preparation.SQL),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

@@ -203,6 +203,8 @@ Future-Props-Lab/
 - 应用目录同样由 Web 静态注册表维护， 应用最近访问记录只保存在浏览器本地。视觉创作工坊、
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
+  `web/src/features/interview-assistant/` 拥有面试助手，入口为 `/apps/interview-assistant`，复用应用壳。`api.ts` 与 `queryKeys.ts` 消费生成契约并按账号／Workspace 区分缓存；`usePreparation.ts` 管理场次恢复、原件提交和真实进度；`PreparationPanel.tsx` 与 `BundleView.tsx` 展示资料版本、来源和问题依据。`Practice.tsx`、`session.ts`、`useInterviewSession.ts` 管理仅本页内存中的文字练习与规则复盘，固定使用已验收资料的首轮问题；不采集音视频。`assets/` 中的候选人为生成的虚构示意图，使用 Git LFS。
+  `backend/app/apps/interview_assistant/` 拥有私有场次、材料、输入快照、Codex 准备任务和交付契约；`routes/` 只适配 HTTP，`rooms.py` 执行权限、回执和 CAS，`runner.py` 通过现有 Runner 生命周期串行执行准备、处理中断并拒绝过期结果。`codex.py` 白名单读取模型连接、冻结上下文并消费 JSONL；`task_tools.py` 是不依赖运行时配置、ORM 或 HTTP 的文档／草稿 MCP，`process_watchdog.py` 负责父进程退出和超时终止。二者经 `desktop/backend/interview_tools_entry.py` 独立打包为 `fpl-interview-tools`，不复用服务进程凭据。`console/governance/interview_executor_access.py` 提供后台账号／成员权限重验，在主入口注入执行器。
   后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
   `apps/visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
@@ -344,6 +346,7 @@ Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<s
 `workspaces/<workspace-id>/creative-workshop/{covers,skill-drafts,skill-releases}/`；
 目标 Workspace 安装后的 Skill 副本回到其 `integrations/skills/`。备份数据库时必须同时保留
 整个 `workspaces/` 树，才能恢复创作封面、公开 Skill 版本和安装副本。
+`.local/interview-room-prototype/` 保存面试室的独立前端交互原型、模拟任务与对话状态、生成的示意图和浏览器验收证据；不注册生产路由，不接入后端、外部 Agent、真实检索或音视频采集，刷新即清空本次记录。
 本地临时分镜、场景图、导出结果、下载与研究草稿统一放在仓库根目录 `.local/`
 （`scratch/`、`output/`、`tmp/`、`downloads/`、`research/`），与 `.runtime/`
 一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建
@@ -690,4 +693,4 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 `backend/app/apps/visual_workshop/acceptance/` 拥有 Workspace 验收模板、项目标准及发布版本、输出版本验收记录、人工结论、参考与证据引用、返修草稿和历史快照迁移。`runner.py` 通过独立短事务和现有 RunnerSupervisor 执行规格检查及视觉模型辅助；媒体探测与解码由 `capabilities/media_rendering/inspection.py` 拥有，抽帧复用该能力的公开入口。输出登记和画布写入调用验收访问契约，强制项目新增结果为候选，不替换最终输出。
 
-`web/src/features/visual-workshop/acceptance/` 拥有模板库、标准编辑、输出选择、逐项结果、证据播放和复验对比。项目页保留原画布和看板实例，切换验收不改布局或视口；读写身份共用页面并按有效权限开放操作，缓存键仍归属 `queryKeys.ts`。
+`web/src/features/visual-workshop/acceptance/` 拥有模板库、标准编辑、输出选择、逐项结果、证据播放和复验对比；公共布局、模板、标准与审阅样式分别维护。验收模块自绘视频控制以新版为时间主轴，短旧版停留末帧，取样证据与参考资料分区，人工判断草稿不随查询刷新重置。项目页保留原画布和看板实例，切换验收不改布局或视口；读写身份共用页面并按有效权限开放操作，缓存键仍归属 `queryKeys.ts`。

@@ -34,6 +34,9 @@ export const APPLICATION_TAGS = [
   "音频",
   "标注",
   "语音识别",
+  "面试",
+  "简历",
+  "复盘",
 ];
 
 export function categoryLabel(category: ApplicationCategory): string {

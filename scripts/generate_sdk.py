@@ -35,6 +35,7 @@ TAGS = {
     "galgame-workshop": "galgame",
     "video-editor": "video",
     "thought-workshop": "thought",
+    "interview-assistant": "interview",
     "audio-annotation": "annotation",
     "presentation-workshop": "presentation",
     "director-desk": "director",

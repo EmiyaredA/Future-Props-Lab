@@ -75,6 +75,10 @@
     "method": "delete_tool_api",
     "resource": "integrations"
   },
+  "DELETE /v1/interview-assistant/rooms/{room_id}": {
+    "method": "delete_interview_room",
+    "resource": "interview"
+  },
   "DELETE /v1/live2d-workshop/projects/{project_id}": {
     "method": "delete_project",
     "resource": "live2d_workshop"
@@ -582,6 +586,34 @@
   "GET /v1/integrations/tool-apis/{integration_id}": {
     "method": "tool_api",
     "resource": "integrations"
+  },
+  "GET /v1/interview-assistant/executor": {
+    "method": "get_interview_executor",
+    "resource": "interview"
+  },
+  "GET /v1/interview-assistant/rooms": {
+    "method": "list_interview_rooms",
+    "resource": "interview"
+  },
+  "GET /v1/interview-assistant/rooms/{room_id}": {
+    "method": "get_interview_room",
+    "resource": "interview"
+  },
+  "GET /v1/interview-assistant/rooms/{room_id}/materials/{material_id}/download": {
+    "method": "download_interview_material",
+    "resource": "interview"
+  },
+  "GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/bundle": {
+    "method": "get_interview_bundle",
+    "resource": "interview"
+  },
+  "GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/events": {
+    "method": "get_interview_progress",
+    "resource": "interview"
+  },
+  "GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/export": {
+    "method": "export_interview_bundle",
+    "resource": "interview"
   },
   "GET /v1/live2d-workshop/projects": {
     "method": "list_projects",
@@ -1710,6 +1742,22 @@
   "POST /v1/integrations/tool-apis/{integration_id}/validate": {
     "method": "validate_tool_api",
     "resource": "integrations"
+  },
+  "POST /v1/interview-assistant/rooms": {
+    "method": "create_interview_room",
+    "resource": "interview"
+  },
+  "POST /v1/interview-assistant/rooms/{room_id}/materials": {
+    "method": "upload_interview_material",
+    "resource": "interview"
+  },
+  "POST /v1/interview-assistant/rooms/{room_id}/preparations": {
+    "method": "prepare_interview",
+    "resource": "interview"
+  },
+  "POST /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/cancel": {
+    "method": "cancel_interview_preparation",
+    "resource": "interview"
   },
   "POST /v1/live2d-workshop/projects": {
     "method": "create_project",

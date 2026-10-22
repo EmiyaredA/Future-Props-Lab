@@ -32,6 +32,7 @@ export type StudioPage =
   | "model-call-logs";
 
 export type WorkshopPage =
+  | "interview-assistant-session"
   | "presentation-workshop-projects"
   | "presentation-workshop-editor"
   | "thought-workshop-notes"
@@ -85,6 +86,7 @@ export type AppRoute = {
 
 export function isWorkshopPage(page: AppPage): page is WorkshopPage {
   return (
+    page.startsWith("interview-assistant-") ||
     page.startsWith("presentation-workshop-") ||
     page.startsWith("thought-workshop-") ||
     page.startsWith("visual-workshop-") ||
@@ -230,6 +232,7 @@ export function pathFor(
   const applicationPath = applicationPathFor(page, projectId, documentId);
   if (applicationPath) return applicationPath;
   const paths: Record<AppPage, string> = {
+    "interview-assistant-session": "/apps/interview-assistant",
     "presentation-workshop-projects": "/apps/presentation-workshop",
     "presentation-workshop-editor": "/apps/presentation-workshop",
     "thought-workshop-notes": "/apps/thought-workshop",

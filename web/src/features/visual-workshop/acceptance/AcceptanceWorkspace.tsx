@@ -36,7 +36,9 @@ import { TemplateLibrary } from "./TemplateLibrary";
 import { StandardEditor } from "./StandardEditor";
 import { RunsPane } from "./RunsPane";
 import "./acceptance.css";
+import "./templates.css";
 import "./standard-editor.css";
+import "./review.css";
 export function AcceptanceWorkspace({
   projectId,
   title,
@@ -67,6 +69,7 @@ export function AcceptanceWorkspace({
   const [notice, setNotice] = useState("");
   const [repair, setRepair] = useState<Repair>(),
     [repairText, setRepairText] = useState("");
+  const [repairs, setRepairs] = useState<Record<string, Repair>>({});
   const [confirm, setConfirm] = useState<{
     message: string;
     run: () => void;
@@ -189,7 +192,23 @@ export function AcceptanceWorkspace({
     );
     if (value) {
       setRepair(value);
+      setRepairs((values) => ({ ...values, [value.run_id]: value }));
       await client.invalidateQueries({ queryKey: keys.canvas(projectId) });
+    }
+  };
+  const openRepair = async (run: Run) => {
+    const existing = repairs[run.id];
+    const value = await act(() =>
+      existing
+        ? fetchApiJson<Repair>(
+            `${base(projectId)}/repair-drafts/${existing.id}`,
+          )
+        : send<Repair>(`${base(projectId)}/runs/${run.id}/repair-drafts`, {}),
+    );
+    if (value) {
+      setRepairs((values) => ({ ...values, [value.run_id]: value }));
+      setRepair(value);
+      setRepairText(value.text);
     }
   };
   return (
@@ -268,9 +287,6 @@ export function AcceptanceWorkspace({
                 <>
                   <div className="acceptance-section-heading">
                     <div>
-                      <span className="acceptance-eyebrow">
-                        项目标准 · STANDARD
-                      </span>
                       <div className="acceptance-title-line">
                         <h2>配置项目验收标准</h2>
                         <span
@@ -341,10 +357,10 @@ export function AcceptanceWorkspace({
                   writable={canWrite}
                   busy={busy}
                   act={act}
-                  onRepair={(value) => {
-                    setRepair(value);
-                    setRepairText(value.text);
-                  }}
+                  onRepair={openRepair}
+                  repairs={repairs}
+                  onBack={leave}
+                  onViewStandard={() => setTab("standard")}
                   onAdopt={adopt}
                 />
               </div>
@@ -382,6 +398,11 @@ export function AcceptanceWorkspace({
           onCancel={() => setRepair(undefined)}
           description={
             <>
+              {error && (
+                <p role="alert" className="acceptance-error">
+                  {error}
+                </p>
+              )}
               <p>根据人工确认的问题整理。保存提示词后，由你手动提交生成。</p>
               <textarea
                 aria-label="返修提示词"

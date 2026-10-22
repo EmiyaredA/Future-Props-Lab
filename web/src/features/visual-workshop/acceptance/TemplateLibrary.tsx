@@ -3,7 +3,6 @@ import {
   Activity,
   AudioLines,
   BookOpen,
-  ChevronRight,
   Copy,
   FileCheck2,
   Plus,
@@ -14,6 +13,57 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { methodNames, type Template, type StandardDocument } from "./api";
+import { AcceptanceChoice } from "./AcceptanceChoice";
+const mediaNames = {
+  image: "图片",
+  video: "视频",
+  audio: "音频",
+  text: "文本",
+};
+type MediaFilter = "all" | keyof typeof mediaNames;
+const media = (template: Template) => [
+  ...new Set(
+    template.document.criteria?.flatMap((item) => item.kinds ?? []) ?? [],
+  ),
+];
+function appearance(template: Template) {
+  const id = template.id.replace("builtin:", "");
+  if (id === "video")
+    return {
+      Icon: Video,
+      tone: "coral",
+      description: "文件规格、角色外观、动作与表演",
+    };
+  if (id === "character")
+    return {
+      Icon: UserRound,
+      tone: "violet",
+      description: "身份、服装、比例与视觉风格",
+    };
+  if (id === "continuity")
+    return {
+      Icon: Activity,
+      tone: "sage",
+      description: "关键动作、道具状态与镜头表现",
+    };
+  if (id === "sound")
+    return {
+      Icon: AudioLines,
+      tone: "blue",
+      description: "台词、字幕、口型与声音清晰度",
+    };
+  if (id === "story")
+    return {
+      Icon: BookOpen,
+      tone: "amber",
+      description: "信息呈现、因果关系与情绪节奏",
+    };
+  return {
+    Icon: FileCheck2,
+    tone: "neutral",
+    description: "从自己的要求开始，自由定义标准",
+  };
+}
 export function TemplateLibrary({
   templates,
   onUse,
@@ -26,107 +76,196 @@ export function TemplateLibrary({
   writable: boolean;
 }) {
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<MediaFilter>("all");
   const [selected, setSelected] = useState<string>();
+  const [pane, setPane] = useState("list");
   const [deleting, setDeleting] = useState<Template>();
-  const filtered = templates.filter((t) => t.title.includes(search));
+  const term = search.trim().toLocaleLowerCase();
+  const filtered = templates.filter(
+    (t) =>
+      (filter === "all" || media(t).includes(filter)) &&
+      [
+        t.title,
+        ...(t.document.criteria ?? []).flatMap((item) => [
+          item.title,
+          item.requirement,
+        ]),
+      ]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(term),
+  );
   const current = filtered.find((t) => t.id === selected) ?? filtered[0];
-  const visual = (title: string) => {
-    if (title.includes("视频"))
-      return {
-        Icon: Video,
-        tone: "coral",
-        description: "文件规格、角色外观、动作与表演",
-      };
-    if (title.includes("角色"))
-      return {
-        Icon: UserRound,
-        tone: "violet",
-        description: "身份、服装、比例与视觉风格",
-      };
-    if (title.includes("动作"))
-      return {
-        Icon: Activity,
-        tone: "sage",
-        description: "关键动作、道具状态与镜头表现",
-      };
-    if (title.includes("音画"))
-      return {
-        Icon: AudioLines,
-        tone: "blue",
-        description: "台词、字幕、口型与声音清晰度",
-      };
-    if (title.includes("剧情"))
-      return {
-        Icon: BookOpen,
-        tone: "amber",
-        description: "信息呈现、因果关系与情绪节奏",
-      };
-    return {
-      Icon: FileCheck2,
-      tone: "neutral",
-      description: "从你的创作要求开始，自由定义标准",
-    };
+  const builtin = filtered.filter((t) => t.builtin),
+    custom = filtered.filter((t) => !t.builtin);
+  const prepare = [
+    ...new Set(
+      current?.document.criteria
+        ?.map((item) => item.reference_label?.trim())
+        .filter((label): label is string => !!label) ?? [],
+    ),
+  ];
+  const pick = (template: Template) => {
+    setSelected(template.id);
+    setPane("preview");
+  };
+  const changeSearch = (value: string) => {
+    setSearch(value);
+    setSelected(undefined);
   };
   return (
     <div className="acceptance-template-layout">
-      <section className="acceptance-surface acceptance-library">
-        <span className="acceptance-eyebrow">模板库 · TEMPLATES</span>
+      <div className="acceptance-compact-tabs" aria-label="模板面板">
+        <button aria-pressed={pane === "list"} onClick={() => setPane("list")}>
+          模板列表
+        </button>
+        <button
+          aria-pressed={pane === "preview"}
+          onClick={() => setPane("preview")}
+        >
+          模板预览
+        </button>
+      </div>
+      <section
+        className={`acceptance-surface acceptance-library ${pane === "list" ? "is-compact-active" : ""}`}
+      >
         <h2>选择参考模板</h2>
         <p className="acceptance-muted">复制一套清单，再按你的项目调整要求。</p>
-        <label className="acceptance-search">
-          <Search size={17} />
-          <input
-            aria-label="搜索验收模板"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索模板或验收要求…"
+        <div className="acceptance-library-toolbar">
+          <label className="acceptance-search">
+            <Search size={16} />
+            <input
+              aria-label="搜索验收模板"
+              value={search}
+              onChange={(e) => changeSearch(e.target.value)}
+              placeholder="搜索模板或验收要求…"
+            />
+          </label>
+          <AcceptanceChoice
+            label="适用媒体筛选"
+            value={filter}
+            onChange={(value) => {
+              setFilter(value);
+              setSelected(undefined);
+            }}
+            options={[
+              { value: "all", label: "全部" },
+              ...Object.entries(mediaNames).map(([value, label]) => ({
+                value: value as MediaFilter,
+                label,
+              })),
+            ]}
           />
-        </label>
+        </div>
         <div className="acceptance-template-grid">
-          {filtered.map((t) => {
-            const { Icon, tone, description } = visual(t.title);
+          {builtin.map((t) => {
+            const { Icon, tone, description } = appearance(t);
             return (
               <button
                 key={t.id}
                 className={`acceptance-template ${current?.id === t.id ? "is-selected" : ""}`}
-                onClick={() => setSelected(t.id)}
+                aria-pressed={current?.id === t.id}
+                onClick={() => pick(t)}
               >
                 <span
                   className={`acceptance-template-icon ${tone}`}
                   aria-hidden="true"
                 >
-                  <Icon size={24} />
+                  <Icon size={22} />
                 </span>
                 <span>
                   <strong>{t.title}</strong>
                   <p>{description}</p>
                   <small>
-                    {t.builtin ? "内置参考" : "Workspace 模板"} ·{" "}
-                    {t.document.criteria?.length ?? 0} 项要求
+                    {media(t)
+                      .map((kind) => mediaNames[kind])
+                      .join("、") || "自定义"}{" "}
+                    · {t.document.criteria?.length ?? 0} 项要求
                   </small>
                 </span>
               </button>
             );
           })}
         </div>
-        {!filtered.length && <p>没有匹配的模板。</p>}
-        <button
-          disabled={!writable}
-          onClick={() =>
-            onUse({ title: "自定义标准", node_ids: [], criteria: [] })
-          }
-        >
-          <Plus size={16} /> 从空白开始
-        </button>
+        {!builtin.length && (
+          <p className="acceptance-empty">没有匹配的内置模板。</p>
+        )}
+        <div className="acceptance-list-heading">
+          <h3>我的模板</h3>
+          <button
+            disabled={!writable}
+            onClick={() =>
+              onUse({ title: "自定义标准", node_ids: [], criteria: [] })
+            }
+          >
+            <Plus size={16} />
+            从空白开始
+          </button>
+        </div>
+        {custom.length ? (
+          <div className="acceptance-table-scroll">
+            <table className="acceptance-template-table">
+              <thead>
+                <tr>
+                  <th>名称</th>
+                  <th>适用媒体</th>
+                  <th>条目</th>
+                  <th>
+                    <span className="sr-only">操作</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {custom.map((t) => (
+                  <tr
+                    key={t.id}
+                    className={current?.id === t.id ? "is-selected" : ""}
+                  >
+                    <td>
+                      <button
+                        className="acceptance-text-button"
+                        onClick={() => pick(t)}
+                      >
+                        {t.title}
+                      </button>
+                    </td>
+                    <td>
+                      {media(t)
+                        .map((kind) => mediaNames[kind])
+                        .join("、") || "自定义"}
+                    </td>
+                    <td>{t.document.criteria?.length ?? 0}</td>
+                    <td>
+                      <button
+                        disabled={!writable}
+                        aria-label={`删除模板 ${t.title}`}
+                        onClick={() => setDeleting(t)}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="acceptance-empty">
+            {term || filter !== "all"
+              ? "没有匹配的 Workspace 模板。"
+              : "保存常用标准后，可在当前 Workspace 的其他项目复用。"}
+          </p>
+        )}
       </section>
-      <aside className="acceptance-surface acceptance-template-detail">
-        {current && (
+      <aside
+        className={`acceptance-surface acceptance-template-detail ${pane === "preview" ? "is-compact-active" : ""}`}
+      >
+        {current ? (
           <>
-            <span className="acceptance-eyebrow">模板预览</span>
+            <small>{current.builtin ? "内置模板" : "Workspace 模板"}</small>
             <h2>{current.title}</h2>
             <p className="acceptance-muted">
-              {current.builtin ? "内置参考模板" : "当前 Workspace 内复用"} ·
-              可复制后自由修改
+              可复制后自由修改，项目参考资料在使用后绑定。
             </p>
             <div className="acceptance-rule-list">
               {current.document.criteria?.map((item, index) => (
@@ -135,41 +274,49 @@ export function TemplateLibrary({
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div>
-                    <strong>{item.title}</strong>
-                    <small>
-                      {methodNames[item.method ?? "manual"]} ·{" "}
-                      {item.required ? "必须满足" : "建议满足"}
-                    </small>
+                    <div className="acceptance-inline">
+                      <strong>{item.title}</strong>
+                      <span className="acceptance-badge neutral">
+                        {methodNames[item.method ?? "manual"]}
+                      </span>
+                      <span
+                        className={`acceptance-badge ${item.required ? "required" : "optional"}`}
+                      >
+                        {item.required ? "必须满足" : "建议满足"}
+                      </span>
+                    </div>
                     <p>{item.requirement}</p>
                   </div>
-                  <ChevronRight size={14} aria-hidden="true" />
                 </div>
               ))}
             </div>
             {!current.document.criteria?.length && <p>添加自己的验收要求。</p>}
-            <p className="acceptance-muted">
-              应用模板后再绑定项目素材。音频、台词和跨镜头检查首版由人工完成。
-            </p>
-            <div className="acceptance-actions">
-              <button
-                className="acceptance-primary"
-                disabled={!writable}
-                onClick={() => onUse(structuredClone(current.document))}
-              >
-                <Copy size={16} /> 使用模板并配置
-              </button>
-              {!current.builtin && (
-                <button
-                  disabled={!writable}
-                  aria-label="删除模板"
-                  onClick={() => setDeleting(current)}
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-            <small>模板更新不会覆盖已经发布的项目标准。</small>
+            {!!prepare.length && (
+              <section className="acceptance-preparation">
+                <h3>使用前准备</h3>
+                {prepare.map((label) => (
+                  <div key={label}>
+                    <FileCheck2 size={17} />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </section>
+            )}
+            <small>音频、台词与跨镜头检查由人工完成。</small>
+            <button
+              className="acceptance-primary"
+              disabled={!writable}
+              onClick={() => onUse(structuredClone(current.document))}
+            >
+              <Copy size={16} />
+              使用模板并配置
+            </button>
+            <small>复制后可自由调整，不影响原模板。</small>
           </>
+        ) : (
+          <p className="acceptance-empty">
+            没有匹配的模板。调整搜索或媒体筛选后再试。
+          </p>
         )}
       </aside>
       {deleting && (

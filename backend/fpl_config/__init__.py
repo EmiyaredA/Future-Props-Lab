@@ -12,6 +12,11 @@ CONFIG_FILE = Path(os.environ.get("FPL_CONFIG_FILE", REPO_ROOT / "backend" / "co
 
 # TOML field -> (existing environment/Settings field, native TOML type).
 FIELDS = {
+    "interview_codex": {
+        "enabled": ("fpl_interview_codex_enabled", bool),
+        "executable": ("fpl_interview_codex_executable", str),
+        "user_id": ("fpl_interview_codex_user_id", str),
+    },
     "storage": {"database_path": ("fpl_database_path", str)},
     "security": {"secrets_key": ("fpl_secrets_key", str)},
     "http": {

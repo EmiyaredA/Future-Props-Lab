@@ -3412,6 +3412,178 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/interview-assistant/executor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Interview Executor */
+        get: operations["get_interview_executor_v1_interview_assistant_executor_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Interview Rooms */
+        get: operations["list_interview_rooms_v1_interview_assistant_rooms_get"];
+        put?: never;
+        /** Create Interview Room */
+        post: operations["create_interview_room_v1_interview_assistant_rooms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms/{room_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Interview Room */
+        get: operations["get_interview_room_v1_interview_assistant_rooms__room_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Interview Room */
+        delete: operations["delete_interview_room_v1_interview_assistant_rooms__room_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms/{room_id}/materials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Interview Material */
+        post: operations["upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms/{room_id}/materials/{material_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Interview Material */
+        get: operations["download_interview_material_v1_interview_assistant_rooms__room_id__materials__material_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms/{room_id}/preparations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prepare Interview */
+        post: operations["prepare_interview_v1_interview_assistant_rooms__room_id__preparations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Interview Bundle */
+        get: operations["get_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__bundle_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Interview Preparation */
+        post: operations["cancel_interview_preparation_v1_interview_assistant_rooms__room_id__preparations__task_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Interview Progress */
+        get: operations["get_interview_progress_v1_interview_assistant_rooms__room_id__preparations__task_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Interview Bundle */
+        get: operations["export_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/live2d-workshop/projects": {
         parameters: {
             query?: never;
@@ -9514,6 +9686,27 @@ export interface components {
             /** Version */
             version?: string | null;
         };
+        /** BlueprintQuestion */
+        BlueprintQuestion: {
+            /** Answer Points */
+            answer_points: string[];
+            /** Category */
+            category: string;
+            /** Experience Ids */
+            experience_ids: string[];
+            /** Follow Ups */
+            follow_ups: string[];
+            /** Id */
+            id: string;
+            /** Objective */
+            objective: string;
+            /** Question */
+            question: string;
+            /** Requirement Ids */
+            requirement_ids: string[];
+            /** Source Ids */
+            source_ids: string[];
+        };
         /** Body_add_skill_version_v1_integrations_skills__skill_id__versions_post */
         Body_add_skill_version_v1_integrations_skills__skill_id__versions_post: {
             /** Expected Revision */
@@ -9735,6 +9928,11 @@ export interface components {
         Body_upload_image_v1_thought_workshop_images_post: {
             /** Upload */
             upload: string;
+        };
+        /** Body_upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post */
+        Body_upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post: {
+            /** File */
+            file: string;
         };
         /** Body_upload_library_file_v1_director_desk_library_files_post */
         Body_upload_library_file_v1_director_desk_library_files_post: {
@@ -11406,6 +11604,19 @@ export interface components {
             revisions: {
                 [key: string]: number;
             };
+        };
+        /** Experience */
+        Experience: {
+            /** Evidence */
+            evidence: components["schemas"]["InputReference"][];
+            /** Id */
+            id: string;
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+            /** Uncertainties */
+            uncertainties: string[];
         };
         /** ExportCreateIn */
         ExportCreateIn: {
@@ -15496,6 +15707,15 @@ export interface components {
             /** Total Tokens */
             total_tokens?: number | null;
         };
+        /** InputReference */
+        InputReference: {
+            /** Excerpt */
+            excerpt: string;
+            /** File Id */
+            file_id: string;
+            /** Location */
+            location: string;
+        };
         /** IntegrationCheckOut */
         IntegrationCheckOut: {
             /** Created At */
@@ -15530,6 +15750,202 @@ export interface components {
             recent?: components["schemas"]["IntegrationCheckOut"][];
             /** Tertiary Count */
             tertiary_count: number;
+        };
+        /** InterviewCreateIn */
+        InterviewCreateIn: {
+            /** Request Id */
+            request_id: string;
+            /** Title */
+            title: string;
+        };
+        /** InterviewExecutorOut */
+        InterviewExecutorOut: {
+            /** Available */
+            available: boolean;
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Version */
+            version: string;
+        };
+        /** InterviewInputSnapshot */
+        InterviewInputSnapshot: {
+            /**
+             * Duration
+             * @enum {string}
+             */
+            duration: "15" | "30" | "45" | "60";
+            /** Jd */
+            jd: string;
+            material: components["schemas"]["InterviewMaterialSnapshot"] | null;
+            /** Resume */
+            resume: string;
+            /** Role */
+            role: string;
+        };
+        /** InterviewMaterialOut */
+        InterviewMaterialOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Sha256 */
+            sha256: string;
+            /** Size */
+            size: number;
+        };
+        /** InterviewMaterialSnapshot */
+        InterviewMaterialSnapshot: {
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Sha256 */
+            sha256: string;
+        };
+        /** InterviewPrepareIn */
+        InterviewPrepareIn: {
+            /**
+             * Duration
+             * @default 30
+             * @enum {string}
+             */
+            duration: "15" | "30" | "45" | "60";
+            /** Expected Revision */
+            expected_revision: number;
+            /** Jd */
+            jd: string;
+            /** Material Id */
+            material_id?: string | null;
+            /** Request Id */
+            request_id: string;
+            /**
+             * Resume
+             * @default
+             */
+            resume: string;
+            /** Role */
+            role: string;
+        };
+        /** InterviewRevisionIn */
+        InterviewRevisionIn: {
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** InterviewRoomList */
+        InterviewRoomList: {
+            /** Items */
+            items: components["schemas"]["InterviewRoomSummary"][];
+        };
+        /** InterviewRoomOut */
+        InterviewRoomOut: {
+            /** Active Bundle Id */
+            active_bundle_id: string | null;
+            /** Active Task Id */
+            active_task_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Input Version */
+            input_version: number;
+            /** Materials */
+            materials: components["schemas"]["InterviewMaterialOut"][];
+            /** Revision */
+            revision: number;
+            /** Tasks */
+            tasks: components["schemas"]["InterviewTaskOut"][];
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** InterviewRoomSummary */
+        InterviewRoomSummary: {
+            /** Active Bundle Id */
+            active_bundle_id: string | null;
+            /** Active Task Id */
+            active_task_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Input Version */
+            input_version: number;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** InterviewTaskOut */
+        InterviewTaskOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Events */
+            events: components["schemas"]["PreparationEvent"][];
+            /** Id */
+            id: string;
+            /** Input Hash */
+            input_hash: string;
+            /** Input Version */
+            input_version: number;
+            /** Message */
+            message: string;
+            result: components["schemas"]["PreparationBundle"] | null;
+            /** Revision */
+            revision: number;
+            /** Room Id */
+            room_id: string;
+            snapshot: components["schemas"]["InterviewInputSnapshot"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "validating" | "succeeded" | "needs_input" | "failed" | "cancelled" | "interrupted";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** InterviewTaskProgress */
+        InterviewTaskProgress: {
+            /** Events */
+            events: components["schemas"]["PreparationEvent"][];
+            /** Id */
+            id: string;
+            /** Message */
+            message: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "validating" | "succeeded" | "needs_input" | "failed" | "cancelled" | "interrupted";
         };
         /** KeyframeOperation */
         KeyframeOperation: {
@@ -15622,6 +16038,23 @@ export interface components {
              * @default 未命名文档
              */
             title: string;
+        };
+        /** KnowledgeTopic */
+        KnowledgeTopic: {
+            /** Id */
+            id: string;
+            /** Key Points */
+            key_points: string[];
+            /** Relevance */
+            relevance: string;
+            /** Source Ids */
+            source_ids: string[];
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+            /** Version */
+            version: string | null;
         };
         /** LegacyTarget */
         LegacyTarget: {
@@ -17903,6 +18336,70 @@ export interface components {
             /** Y */
             y: number;
         };
+        /** PreparationBundle */
+        PreparationBundle: {
+            /** Experiences */
+            experiences: components["schemas"]["Experience"][];
+            /** First Round */
+            first_round: string[];
+            /** Input Hash */
+            input_hash: string;
+            /** Limitations */
+            limitations: string[];
+            /** Material Complete */
+            material_complete: boolean;
+            /** Material Summary */
+            material_summary: string;
+            /** Questions */
+            questions: components["schemas"]["BlueprintQuestion"][];
+            /** Requirements */
+            requirements: components["schemas"]["Requirement"][];
+            /** Rubric */
+            rubric: components["schemas"]["RubricDimension"][];
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 1;
+            /** Sources */
+            sources: components["schemas"]["PreparationSource"][];
+            /** Task Id */
+            task_id: string;
+            /** Topics */
+            topics: components["schemas"]["KnowledgeTopic"][];
+        };
+        /** PreparationEvent */
+        PreparationEvent: {
+            /** At */
+            at: string;
+            /** Kind */
+            kind: string;
+            /** Message */
+            message: string;
+            /** Sequence */
+            sequence: number;
+            /** Urls */
+            urls?: string[];
+        };
+        /** PreparationSource */
+        PreparationSource: {
+            /** Excerpt */
+            excerpt: string;
+            /** Id */
+            id: string;
+            /** Published At */
+            published_at: string | null;
+            /** Retrieved At */
+            retrieved_at: string;
+            /** Supports */
+            supports: string[];
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+            /** Version */
+            version: string | null;
+        };
         /** PresentationAnimation */
         PresentationAnimation: {
             /**
@@ -19602,6 +20099,20 @@ export interface components {
              */
             type: "reorderTrack";
         };
+        /** Requirement */
+        Requirement: {
+            /** Capability */
+            capability: string;
+            /** Evidence */
+            evidence: components["schemas"]["InputReference"][];
+            /** Id */
+            id: string;
+            /**
+             * Importance
+             * @enum {string}
+             */
+            importance: "core" | "supporting";
+        };
         /** ResetPasswordOut */
         ResetPasswordOut: {
             account: components["schemas"]["AccountOut"];
@@ -19704,6 +20215,17 @@ export interface components {
              * @default false
              */
             view_sensitive_tool_results: boolean;
+        };
+        /** RubricDimension */
+        RubricDimension: {
+            /** Answer Points */
+            answer_points: string[];
+            /** Common Gaps */
+            common_gaps: string[];
+            /** Dimension */
+            dimension: string;
+            /** Question Ids */
+            question_ids: string[];
         };
         /** RunCreateIn */
         RunCreateIn: {
@@ -31870,6 +32392,383 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolApiValidationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_interview_executor_v1_interview_assistant_executor_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewExecutorOut"];
+                };
+            };
+        };
+    };
+    list_interview_rooms_v1_interview_assistant_rooms_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewRoomList"];
+                };
+            };
+        };
+    };
+    create_interview_room_v1_interview_assistant_rooms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterviewCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewRoomOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_interview_room_v1_interview_assistant_rooms__room_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewRoomOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_interview_room_v1_interview_assistant_rooms__room_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewRoomOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_interview_material_v1_interview_assistant_rooms__room_id__materials__material_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+                material_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    prepare_interview_v1_interview_assistant_rooms__room_id__preparations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterviewPrepareIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewRoomOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__bundle_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreparationBundle"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_interview_preparation_v1_interview_assistant_rooms__room_id__preparations__task_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterviewRevisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewRoomOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_interview_progress_v1_interview_assistant_rooms__room_id__preparations__task_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                room_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewTaskProgress"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__export_get: {
+        parameters: {
+            query?: {
+                format?: string;
+            };
+            header?: never;
+            path: {
+                room_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
                 };
             };
             /** @description Validation Error */

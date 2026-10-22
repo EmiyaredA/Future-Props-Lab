@@ -25,6 +25,7 @@ module.exports = {
       path.join(__dirname, "build/backend/fpl-server"),
       path.join(__dirname, "build/cli/fpl"),
       path.join(__dirname, "build/runner/fpl-script-runner"),
+      path.join(__dirname, "build/interview-tools/fpl-interview-tools"),
       path.join(__dirname, "../web/dist"),
     ],
     osxSign: {

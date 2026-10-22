@@ -44,8 +44,10 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
   await page.getByRole("button", { name: "使用模板并配置" }).click();
   for (const title of ["角色外观一致", "动作与道具"]) {
     await page.getByRole("button", { name: new RegExp(title) }).click();
-    await page.getByRole("combobox", { name: "检查方式", exact: true }).click();
-    await page.getByRole("option", { name: "人工确认", exact: true }).click();
+    await page
+      .getByRole("radiogroup", { name: "检查方式", exact: true })
+      .getByRole("radio", { name: "人工确认", exact: true })
+      .click();
   }
   await page.getByLabel("强制验收后才能采用输出").check();
   await page.screenshot({
@@ -161,7 +163,7 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
           .final_version,
     )
     .toBe(3);
-  for (const width of [390, 768, 1600]) {
+  for (const width of [390, 768, 1366, 1600]) {
     await page.setViewportSize({ width, height: 1000 });
     await expect
       .poll(() =>

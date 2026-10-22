@@ -47,6 +47,8 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 
 ## LFS 边界
 
+面试助手头像：`web/public/brand/interview-assistant-mark.png`，用于应用卡片、侧栏及最近访问。内置 ImageGen 生成，参考现有演示／思绪工坊徽章与用户指定的真由理女仆形象；[来源与完整提示词](interview-assistant-avatar.md)。沿用内部开发交接范围，角色未提供独立再分发授权。SHA-256：`07ae5493f7d260880570893fe2affb9ea22d1459d4a67e91cb72d3c8c9fead4c`。Web 生产构建需要。
+
 本次迁移不改写既有 Git 历史，只把当前分支上的文件和未来增量改为 LFS 指针。因此旧提交中的二进制
 对象仍会保留在 Git 历史中，仓库体积不会立即下降。新增或替换素材后，应更新本清单的数量/校验值，
 并运行 `npm run lfs:check:pointers`、`npm run lfs:check` 和 `git lfs fsck`。

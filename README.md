@@ -89,6 +89,12 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 Mermaid；AI 写作经 Agent/SDK 接入（应用内无入口）。提供回收站、v3 完整或单库备份、Markdown 导入导出与 HTML 离线阅读。
 旧笔记本经 0046 迁移转为文件夹，文档 ID 与内容保留；旧备份仅在导入转换层兼容。编辑器依赖通过既有 `npm run setup` 安装，无额外服务或新环境变量。
 
+### 面试助手
+
+在「应用 → 效率协作 → 面试助手」提交 JD 与 TXT / Markdown / PDF / DOCX 简历原件，由本机 Codex 读取、联网整理本场资料。准备任务、输入快照与资料版本按账号和 Workspace 私有保存，支持取消、手动重试、刷新恢复、来源审阅及 Markdown / JSON 导出；文字练习固定使用资料蓝图的首轮三题。
+
+真实准备默认关闭，在本机 `backend/config.toml` 的 `[interview_codex]` 启用并绑定 FPL 账号；需要已登录的 Codex CLI 0.163 或更新版本，首版支持 macOS。不会改写 Codex 全局配置。画面、语音输入与评分仍为模拟，练习回答及规则复盘仅保存在本页，刷新会清空；资料继续保留。配置、任务边界和接口见[面试资料准备](docs/operations/interview-preparation.md)。
+
 ### Live2D 工坊
 
 在「应用 → Live2D 工坊」创建角色，导入透明 PNG 或 RGB 8 位分层 PSD，编辑网格、变形器与参数关键形，再制作表情和动作。保存格式为 `.fpllive2d`，可往返导入；PNG 序列按表情与动作组合分别输出。Cubism/CMO3/MOC3 和视频编译尚未支持。
@@ -104,7 +110,6 @@ Mermaid；AI 写作经 Agent/SDK 接入（应用内无入口）。提供回收�
 生产环境无需安装 Office 或 LibreOffice，后者仅用于交付时的外观核验。
 仍使用单进程 SQLite 与现有公共文件库，不新增环境变量或常驻服务。
 使用流程见[演示工坊官方指南来源](web/src/features/thought-workshop/official/content/presentation-workshop/overview.md)，文件互通与转换边界见[交付说明](web/src/features/thought-workshop/official/content/presentation-workshop/delivery.md)。管理员可主动导入更新后的指南，升级不会覆盖已导入的文章。
-
 
 ### Python 自动化
 

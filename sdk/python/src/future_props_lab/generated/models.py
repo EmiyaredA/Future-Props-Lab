@@ -599,6 +599,17 @@ class BinaryStatus(WireModel):
     path: str | None = Field(default=None, alias='path')
     version: str | None = Field(default=None, alias='version')
 
+class BlueprintQuestion(WireModel):
+    answer_points: list[str] = Field(default=..., alias='answer_points')
+    category: str = Field(default=..., alias='category')
+    experience_ids: list[str] = Field(default=..., alias='experience_ids')
+    follow_ups: list[str] = Field(default=..., alias='follow_ups')
+    id: str = Field(default=..., alias='id')
+    objective: str = Field(default=..., alias='objective')
+    question: str = Field(default=..., alias='question')
+    requirement_ids: list[str] = Field(default=..., alias='requirement_ids')
+    source_ids: list[str] = Field(default=..., alias='source_ids')
+
 class Body_add_skill_version_v1_integrations_skills__skill_id__versions_post(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
@@ -719,6 +730,9 @@ class Body_upload_generation_assets_v1_model_test_generation_assets_post(WireMod
 
 class Body_upload_image_v1_thought_workshop_images_post(WireModel):
     upload: str = Field(default=..., alias='upload')
+
+class Body_upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post(WireModel):
+    file: str = Field(default=..., alias='file')
 
 class Body_upload_library_file_v1_director_desk_library_files_post(WireModel):
     upload: str = Field(default=..., alias='upload')
@@ -1430,6 +1444,13 @@ class DuplicateOut(WireModel):
 class DuplicateSnapshot(WireModel):
     knowledge_revision: int = Field(default=..., alias='knowledge_revision')
     revisions: dict[str, int] = Field(default=..., alias='revisions')
+
+class Experience(WireModel):
+    evidence: list[InputReference] = Field(default=..., alias='evidence')
+    id: str = Field(default=..., alias='id')
+    summary: str = Field(default=..., alias='summary')
+    title: str = Field(default=..., alias='title')
+    uncertainties: list[str] = Field(default=..., alias='uncertainties')
 
 class ExportCreateIn(WireModel):
     end_frame: int | None = Field(default=None, alias='endFrame')
@@ -3031,6 +3052,11 @@ class InferenceTextOut(WireModel):
     text: str = Field(default=..., alias='text')
     total_tokens: int | None = Field(default=None, alias='total_tokens', repr=False)
 
+class InputReference(WireModel):
+    excerpt: str = Field(default=..., alias='excerpt')
+    file_id: str = Field(default=..., alias='file_id')
+    location: str = Field(default=..., alias='location')
+
 class IntegrationCheckOut(WireModel):
     created_at: str = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
@@ -3047,6 +3073,93 @@ class IntegrationOverviewOut(WireModel):
     primary_count: int = Field(default=..., alias='primary_count')
     recent: list[IntegrationCheckOut] | None = Field(default=None, alias='recent')
     tertiary_count: int = Field(default=..., alias='tertiary_count')
+
+class InterviewCreateIn(WireModel):
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=100)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class InterviewExecutorOut(WireModel):
+    available: bool = Field(default=..., alias='available')
+    code: str = Field(default=..., alias='code')
+    message: str = Field(default=..., alias='message')
+    version: str = Field(default=..., alias='version')
+
+class InterviewInputSnapshot(WireModel):
+    duration: Literal['15', '30', '45', '60'] = Field(default=..., alias='duration')
+    jd: str = Field(default=..., alias='jd')
+    material: InterviewMaterialSnapshot | None = Field(default=..., alias='material')
+    resume: str = Field(default=..., alias='resume')
+    role: str = Field(default=..., alias='role')
+
+class InterviewMaterialOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    filename: str = Field(default=..., alias='filename')
+    id: str = Field(default=..., alias='id')
+    sha256: str = Field(default=..., alias='sha256')
+    size: int = Field(default=..., alias='size')
+
+class InterviewMaterialSnapshot(WireModel):
+    filename: str = Field(default=..., alias='filename')
+    id: str = Field(default=..., alias='id')
+    sha256: str = Field(default=..., alias='sha256')
+
+class InterviewPrepareIn(WireModel):
+    duration: Literal['15', '30', '45', '60'] = Field(default='30', alias='duration')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    jd: str = Field(default=..., alias='jd', min_length=1, max_length=20000)
+    material_id: str | None = Field(default=None, alias='material_id')
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=100)
+    resume: str = Field(default='', alias='resume', max_length=30000)
+    role: str = Field(default=..., alias='role', min_length=1, max_length=120)
+
+class InterviewRevisionIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+
+class InterviewRoomList(WireModel):
+    items: list[InterviewRoomSummary] = Field(default=..., alias='items')
+
+class InterviewRoomOut(WireModel):
+    active_bundle_id: str | None = Field(default=..., alias='active_bundle_id')
+    active_task_id: str | None = Field(default=..., alias='active_task_id')
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    input_version: int = Field(default=..., alias='input_version')
+    materials: list[InterviewMaterialOut] = Field(default=..., alias='materials')
+    revision: int = Field(default=..., alias='revision')
+    tasks: list[InterviewTaskOut] = Field(default=..., alias='tasks')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class InterviewRoomSummary(WireModel):
+    active_bundle_id: str | None = Field(default=..., alias='active_bundle_id')
+    active_task_id: str | None = Field(default=..., alias='active_task_id')
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    input_version: int = Field(default=..., alias='input_version')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class InterviewTaskOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    events: list[PreparationEvent] = Field(default=..., alias='events')
+    id: str = Field(default=..., alias='id')
+    input_hash: str = Field(default=..., alias='input_hash')
+    input_version: int = Field(default=..., alias='input_version')
+    message: str = Field(default=..., alias='message')
+    result: PreparationBundle | None = Field(default=..., alias='result')
+    revision: int = Field(default=..., alias='revision')
+    room_id: str = Field(default=..., alias='room_id')
+    snapshot: InterviewInputSnapshot = Field(default=..., alias='snapshot')
+    status: Literal['queued', 'running', 'validating', 'succeeded', 'needs_input', 'failed', 'cancelled', 'interrupted'] = Field(default=..., alias='status')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class InterviewTaskProgress(WireModel):
+    events: list[PreparationEvent] = Field(default=..., alias='events')
+    id: str = Field(default=..., alias='id')
+    message: str = Field(default=..., alias='message')
+    revision: int = Field(default=..., alias='revision')
+    status: Literal['queued', 'running', 'validating', 'succeeded', 'needs_input', 'failed', 'cancelled', 'interrupted'] = Field(default=..., alias='status')
 
 class KeyframeOperation(WireModel):
     clip_id: str = Field(default=..., alias='clipId')
@@ -3082,6 +3195,15 @@ class KnowledgeNoteCreate(WireModel):
     kind: Literal['note', 'multitable'] = Field(default='note', alias='kind')
     parent_id: str | None = Field(default=None, alias='parent_id')
     title: str = Field(default='未命名文档', alias='title', min_length=1, max_length=240)
+
+class KnowledgeTopic(WireModel):
+    id: str = Field(default=..., alias='id')
+    key_points: list[str] = Field(default=..., alias='key_points')
+    relevance: str = Field(default=..., alias='relevance')
+    source_ids: list[str] = Field(default=..., alias='source_ids')
+    summary: str = Field(default=..., alias='summary')
+    title: str = Field(default=..., alias='title')
+    version: str | None = Field(default=..., alias='version')
 
 class LegacyTarget(WireModel):
     excerpt: str = Field(default=..., alias='excerpt')
@@ -4042,6 +4164,38 @@ class Point(WireModel):
     x: float = Field(default=..., alias='x', ge=-100000.0, le=100000.0)
     y: float = Field(default=..., alias='y', ge=-100000.0, le=100000.0)
 
+class PreparationBundle(WireModel):
+    experiences: list[Experience] = Field(default=..., alias='experiences')
+    first_round: list[str] = Field(default=..., alias='first_round')
+    input_hash: str = Field(default=..., alias='input_hash')
+    limitations: list[str] = Field(default=..., alias='limitations')
+    material_complete: bool = Field(default=..., alias='material_complete')
+    material_summary: str = Field(default=..., alias='material_summary')
+    questions: list[BlueprintQuestion] = Field(default=..., alias='questions')
+    requirements: list[Requirement] = Field(default=..., alias='requirements')
+    rubric: list[RubricDimension] = Field(default=..., alias='rubric')
+    schema_version: Literal[1] = Field(default=..., alias='schema_version')
+    sources: list[PreparationSource] = Field(default=..., alias='sources')
+    task_id: str = Field(default=..., alias='task_id')
+    topics: list[KnowledgeTopic] = Field(default=..., alias='topics')
+
+class PreparationEvent(WireModel):
+    at: str = Field(default=..., alias='at')
+    kind: str = Field(default=..., alias='kind')
+    message: str = Field(default=..., alias='message')
+    sequence: int = Field(default=..., alias='sequence')
+    urls: list[str] | None = Field(default=None, alias='urls')
+
+class PreparationSource(WireModel):
+    excerpt: str = Field(default=..., alias='excerpt')
+    id: str = Field(default=..., alias='id')
+    published_at: str | None = Field(default=..., alias='published_at')
+    retrieved_at: str = Field(default=..., alias='retrieved_at')
+    supports: list[str] = Field(default=..., alias='supports')
+    title: str = Field(default=..., alias='title')
+    url: str = Field(default=..., alias='url')
+    version: str | None = Field(default=..., alias='version')
+
 class PresentationAnimation(WireModel):
     delay: int = Field(default=0, alias='delay', ge=0.0, le=30000.0)
     direction: Literal['none', 'left', 'right', 'top', 'bottom'] = Field(default='none', alias='direction')
@@ -4697,6 +4851,12 @@ class ReorderTrackOperation(WireModel):
     track_id: str = Field(default=..., alias='trackId')
     type: Literal['reorderTrack'] = Field(default=..., alias='type')
 
+class Requirement(WireModel):
+    capability: str = Field(default=..., alias='capability')
+    evidence: list[InputReference] = Field(default=..., alias='evidence')
+    id: str = Field(default=..., alias='id')
+    importance: Literal['core', 'supporting'] = Field(default=..., alias='importance')
+
 class ResetPasswordOut(WireModel):
     account: AccountOut = Field(default=..., alias='account')
     temporary_password: str = Field(default=..., alias='temporary_password', repr=False)
@@ -4740,6 +4900,12 @@ class RolePolicy(WireModel):
     view_model_diagnostics: bool = Field(default=False, alias='view_model_diagnostics')
     view_realtime_voice_diagnostics: bool = Field(default=False, alias='view_realtime_voice_diagnostics')
     view_sensitive_tool_results: bool = Field(default=False, alias='view_sensitive_tool_results')
+
+class RubricDimension(WireModel):
+    answer_points: list[str] = Field(default=..., alias='answer_points')
+    common_gaps: list[str] = Field(default=..., alias='common_gaps')
+    dimension: str = Field(default=..., alias='dimension')
+    question_ids: list[str] = Field(default=..., alias='question_ids')
 
 class RunCreateIn(WireModel):
     capabilities: list[str] | None = Field(default=None, alias='capabilities', max_length=100)
@@ -6448,6 +6614,7 @@ BatchDeleteIn.model_rebuild()
 BatchIn.model_rebuild()
 BatchOut.model_rebuild()
 BinaryStatus.model_rebuild()
+BlueprintQuestion.model_rebuild()
 Body_add_skill_version_v1_integrations_skills__skill_id__versions_post.model_rebuild()
 Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put.model_rebuild()
 Body_attachments_v1_thought_workshop_attachments_post.model_rebuild()
@@ -6480,6 +6647,7 @@ Body_upload_cover_v1_creative_workshop_items__item_id__cover_post.model_rebuild(
 Body_upload_file_v1_files_post.model_rebuild()
 Body_upload_generation_assets_v1_model_test_generation_assets_post.model_rebuild()
 Body_upload_image_v1_thought_workshop_images_post.model_rebuild()
+Body_upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post.model_rebuild()
 Body_upload_library_file_v1_director_desk_library_files_post.model_rebuild()
 Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post.model_rebuild()
 Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post.model_rebuild()
@@ -6588,6 +6756,7 @@ DocumentOut.model_rebuild()
 DuplicateIn.model_rebuild()
 DuplicateOut.model_rebuild()
 DuplicateSnapshot.model_rebuild()
+Experience.model_rebuild()
 ExportCreateIn.model_rebuild()
 ExportListOut.model_rebuild()
 ExportOut.model_rebuild()
@@ -6807,13 +6976,27 @@ InferenceTaskOut.model_rebuild()
 InferenceTasksOut.model_rebuild()
 InferenceTextIn.model_rebuild()
 InferenceTextOut.model_rebuild()
+InputReference.model_rebuild()
 IntegrationCheckOut.model_rebuild()
 IntegrationOverviewOut.model_rebuild()
+InterviewCreateIn.model_rebuild()
+InterviewExecutorOut.model_rebuild()
+InterviewInputSnapshot.model_rebuild()
+InterviewMaterialOut.model_rebuild()
+InterviewMaterialSnapshot.model_rebuild()
+InterviewPrepareIn.model_rebuild()
+InterviewRevisionIn.model_rebuild()
+InterviewRoomList.model_rebuild()
+InterviewRoomOut.model_rebuild()
+InterviewRoomSummary.model_rebuild()
+InterviewTaskOut.model_rebuild()
+InterviewTaskProgress.model_rebuild()
 KeyframeOperation.model_rebuild()
 KnowledgeBaseIn.model_rebuild()
 KnowledgeBaseOut.model_rebuild()
 KnowledgeBasePut.model_rebuild()
 KnowledgeNoteCreate.model_rebuild()
+KnowledgeTopic.model_rebuild()
 LegacyTarget.model_rebuild()
 LibraryAssetImportIn.model_rebuild()
 LibraryExportSnapshot.model_rebuild()
@@ -6947,6 +7130,9 @@ PetSave.model_rebuild()
 PetSkin.model_rebuild()
 PetSync.model_rebuild()
 Point.model_rebuild()
+PreparationBundle.model_rebuild()
+PreparationEvent.model_rebuild()
+PreparationSource.model_rebuild()
 PresentationAnimation.model_rebuild()
 PresentationAnnotation.model_rebuild()
 PresentationCell.model_rebuild()
@@ -7037,6 +7223,7 @@ RemoveTrackOperation.model_rebuild()
 RemoveTransitionOperation.model_rebuild()
 RenewApiKeyIn.model_rebuild()
 ReorderTrackOperation.model_rebuild()
+Requirement.model_rebuild()
 ResetPasswordOut.model_rebuild()
 ResolveReferences.model_rebuild()
 RestoreClipStatesOperation.model_rebuild()
@@ -7047,6 +7234,7 @@ RoleModelTemplate_Output.model_rebuild()
 RoleModelTemplateIn.model_rebuild()
 RoleModelTemplateOut.model_rebuild()
 RolePolicy.model_rebuild()
+RubricDimension.model_rebuild()
 RunCreateIn.model_rebuild()
 RunDetailOut.model_rebuild()
 RunEventIn.model_rebuild()

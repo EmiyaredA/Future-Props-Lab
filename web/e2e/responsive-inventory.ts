@@ -19,6 +19,7 @@ export const desktopSurfaces = {
 // 桌宠项目页与编辑器的明暗主题、六个步骤、紧凑面板和弹层由 desktop-pet-ui.spec.ts 覆盖。
 // Every application route must name its responsive scenario owner.
 export const responsiveOwners = {
+  "interview-assistant-session": "shell",
   "management-accounts": "shell",
   "management-workspaces": "shell",
   "management-audit": "shell",
@@ -85,6 +86,7 @@ export const publicSurfaces = [
   "docs",
 ] as const;
 export const staticPaths = [
+  "/apps/interview-assistant",
   "/management/accounts",
   "/management/workspaces",
   "/management/audit",

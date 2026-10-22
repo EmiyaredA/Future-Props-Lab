@@ -313,6 +313,33 @@ def main() -> None:
         check=True,
     )
 
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "PyInstaller",
+            "--noconfirm",
+            "--clean",
+            "--onedir",
+            "--name",
+            "fpl-interview-tools",
+            "--target-arch",
+            "arm64",
+            "--distpath",
+            str(BUILD / "interview-tools"),
+            "--workpath",
+            str(BUILD / "interview-tools-pyinstaller"),
+            "--specpath",
+            str(BUILD),
+            "--paths",
+            str(ROOT / "backend"),
+            str(ROOT / "desktop/backend/interview_tools_entry.py"),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=True,
+    )
+
 
 if __name__ == "__main__":
     if sys.argv[1:] == ["--check-assets"]:

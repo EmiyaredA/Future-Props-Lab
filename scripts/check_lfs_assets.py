@@ -26,10 +26,14 @@ WEB_ASSETS = (
     Path("web/public/brand/director-desk-mark.png"),
     Path("web/public/brand/presentation-workshop-mark.png"),
     Path("web/public/brand/thought-workshop-mark.png"),
+    Path("web/public/brand/interview-assistant-mark.png"),
     Path("web/public/voice-vad/silero_vad_v5.onnx"),
     Path("web/public/voice-vad/ort-wasm-simd-threaded.wasm"),
 )
 EXPECTED_SHA256 = {
+    Path("web/public/brand/interview-assistant-mark.png"): (
+        "07ae5493f7d260880570893fe2affb9ea22d1459d4a67e91cb72d3c8c9fead4c"
+    ),
     Path("web/public/brand/amadeus/amadeus.fpllive2d"): (
         "9cd9d77c781fbe6d96e878cd48a5ac0709deeeb2b7e5ac876bc3d44d0ca97aac"
     ),

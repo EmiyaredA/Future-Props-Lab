@@ -28,3 +28,11 @@ skill_max_files = 500
 temp_media_upload_url = ""
 # 绝对可执行文件路径数组；默认禁用 stdio。
 mcp_stdio_allowed_commands = []
+
+[interview_codex]
+# macOS 本机 Codex 资料准备；默认关闭，只能由绑定账号发起。
+enabled = false
+# 留空自动发现已安装的 Codex CLI；需要 0.163 或更新版本。
+executable = ""
+# 当前部署中获准使用本机 Codex 身份的 FPL 账号 ID。
+user_id = ""

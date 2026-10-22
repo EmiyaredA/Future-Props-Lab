@@ -1,0 +1,233 @@
+.interview-assistant .preparation-grid {
+  display: grid;
+  grid-template-columns: 0.88fr 1.6fr;
+  gap: 22px;
+}
+.interview-assistant .progress-panel,
+.interview-assistant .knowledge-panel {
+  padding: 25px;
+}
+.interview-assistant .progress-panel .section-title {
+  gap: 9px;
+  margin-bottom: 31px;
+}
+.interview-assistant .progress-panel .section-title svg {
+  color: var(--muted);
+}
+.interview-assistant .progress-list {
+  display: grid;
+  gap: 30px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.interview-assistant .progress-list li {
+  display: flex;
+  gap: 13px;
+  position: relative;
+  color: var(--muted);
+}
+.interview-assistant .progress-dot {
+  height: 27px;
+  width: 27px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.interview-assistant .progress-list li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 28px;
+  bottom: -29px;
+  left: 13px;
+  border-left: 1px solid var(--border);
+}
+.interview-assistant .progress-list li.complete {
+  color: var(--text);
+}
+.interview-assistant .progress-list li.complete .progress-dot {
+  border-color: #518b63;
+  background: #518b63;
+  color: white;
+}
+.interview-assistant .progress-list li.current {
+  color: var(--text);
+}
+.interview-assistant .progress-list li.current .progress-dot {
+  color: var(--accent);
+  border-color: #efc1ac;
+}
+.interview-assistant .progress-list strong {
+  font-size: 14px;
+  display: block;
+  margin: 3px 0 7px;
+}
+.interview-assistant .progress-list small {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+  display: block;
+}
+.interview-assistant .progress-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 27px;
+}
+.interview-assistant .progress-track {
+  height: 3px;
+  background: var(--soft);
+  border-radius: 4px;
+  flex: 1;
+}
+.interview-assistant .progress-track > span {
+  display: block;
+  height: 100%;
+  background: #518b63;
+  transition: width 0.7s;
+}
+.interview-assistant .topic-list {
+  display: grid;
+  gap: 16px;
+}
+.interview-assistant .topic-row {
+  width: 100%;
+  min-height: 91px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 19px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  text-align: left;
+}
+.interview-assistant .topic-row:disabled {
+  opacity: 0.55;
+}
+.interview-assistant .topic-row:not(:disabled):hover {
+  border-color: #c69e82;
+  background: var(--accent-soft);
+}
+.interview-assistant .topic-row > span:not(.badge) {
+  flex: 1;
+  min-width: 0;
+}
+.interview-assistant .topic-row strong {
+  font-size: 14px;
+  line-height: 1.7;
+  display: block;
+  overflow-wrap: anywhere;
+}
+.interview-assistant .topic-row small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+  display: block;
+  margin-top: 6px;
+}
+.interview-assistant .topic-row > svg:last-child {
+  color: var(--muted);
+}
+.interview-assistant .task-strip {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 16px 0 0;
+}
+.interview-assistant .task-strip > .button {
+  border-color: transparent;
+  background: transparent;
+  margin-left: auto;
+  font-size: 12px;
+  padding: 7px 10px;
+}
+.interview-assistant .task-strip > .button.muted-button {
+  margin-left: 0;
+}
+.interview-assistant .status-dot {
+  height: 5px;
+  width: 5px;
+  background: var(--ok);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+@media (max-width: 1200px) {
+  .interview-assistant .topic-row > .badge {
+    display: none;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .preparation-grid {
+    grid-template-columns: 0.9fr 1.2fr;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .progress-panel,
+  .interview-assistant .knowledge-panel {
+    padding: 19px;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .topic-row {
+    gap: 10px;
+    padding: 14px;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .topic-row > svg:last-child {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .preparation-grid {
+    grid-template-columns: 1fr;
+    gap: 17px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .progress-panel,
+  .interview-assistant .knowledge-panel {
+    padding: 22px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .progress-list {
+    gap: 24px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .progress-list li:not(:last-child)::after {
+    bottom: -23px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .topic-row {
+    padding: 17px 13px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .task-strip {
+    flex-wrap: wrap;
+    line-height: 1.8;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .task-strip > span:not(.status-dot) {
+    max-width: calc(100% - 18px);
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .task-strip > .button {
+    margin-left: auto;
+  }
+}

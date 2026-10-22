@@ -1,114 +1,110 @@
-.acceptance-standard-sidebar {
-  padding: 22px 18px;
+.acceptance-standard-sidebar > h2 {
+  margin-bottom: 14px;
 }
-.acceptance-rule-editor {
-  padding: 24px 28px;
+.acceptance-inline-field {
+  grid-template-columns: 100px minmax(0, 1fr);
+  align-items: center;
 }
-.acceptance-editor-heading {
-  justify-content: space-between;
+.acceptance-scope-settings {
+  margin-top: 12px;
+  padding: 6px 0 10px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 20px;
-  margin-bottom: 22px;
 }
-.acceptance-editor-heading h2 {
-  font-size: 21px;
-  margin: 0;
-}
-.acceptance-rule-icon {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  border-radius: 10px;
-  background: var(--surface-soft);
-  color: var(--muted);
-}
-.acceptance-rule-chevron {
-  margin-left: auto;
-  flex-shrink: 0;
-  color: var(--muted);
-}
-.acceptance-rule
-  > span:not(.acceptance-rule-icon):not(.acceptance-rule-number) {
-  min-width: 0;
-}
-.acceptance-rule strong {
+.acceptance-scope-settings summary {
   font-size: 14px;
 }
-.acceptance-rule small {
-  font-size: 11px;
+.acceptance-scope-settings summary > span {
+  float: right;
+  color: var(--muted);
 }
-.acceptance-workspace .acceptance-rule.is-selected {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  box-shadow: inset 3px 0 var(--accent);
+.acceptance-scope-settings fieldset {
+  margin-top: 8px;
 }
-.acceptance-rule.is-selected .acceptance-rule-icon {
-  background: var(--surface);
-  color: var(--accent);
+.acceptance-scope {
+  max-height: 180px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+  padding: 10px 0;
+}
+.acceptance-scope label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.acceptance-standard-list {
+  max-height: 330px;
+  overflow-y: auto;
+}
+.acceptance-standard-list .acceptance-rule {
+  min-height: 62px;
 }
 .acceptance-workspace .acceptance-add-rule {
   width: 100%;
   background: transparent;
   border-style: dashed;
-  color: var(--muted);
 }
-.acceptance-workspace .acceptance-scope-settings {
-  margin: 18px 0 0;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 12px;
+.acceptance-policy {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 14px;
 }
-.acceptance-scope-settings summary {
-  font-size: 13px;
-}
-.acceptance-scope-settings summary > span {
-  float: right;
-  color: var(--muted);
-  font-size: 12px;
-}
-.acceptance-scope-settings fieldset {
-  margin: 12px 0 0;
-}
-.acceptance-policy .acceptance-panel-title {
-  margin-bottom: 14px;
-  color: var(--accent);
-}
-.acceptance-policy label {
-  font-size: 12px;
-  font-weight: 600;
+.acceptance-policy > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
 }
 .acceptance-policy p {
-  font-size: 11px;
-  line-height: 1.8;
-  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
 }
-.acceptance-rule-editor .acceptance-fields {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.acceptance-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
 }
-.acceptance-fields > * {
-  grid-column: 1 / -1;
+.acceptance-editor-heading h2 {
+  font-size: 18px;
 }
-.acceptance-fields > .acceptance-media-options,
-.acceptance-fields > .acceptance-method-field {
-  grid-column: auto;
+.acceptance-editor-heading .acceptance-actions {
+  flex-wrap: nowrap;
+}
+.acceptance-editor-heading .acceptance-actions button {
+  padding: 6px 8px;
+}
+.acceptance-fields {
+  display: grid;
+  gap: 12px;
+}
+.acceptance-name-media {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
 }
 .acceptance-media-options .acceptance-actions {
   gap: 6px;
-  margin: 9px 0 0;
 }
 .acceptance-media-options label {
-  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  min-height: 34px;
+  font-size: 13px;
   border: 1px solid var(--border);
-  border-radius: 7px;
-  font-size: 12px;
+  border-radius: 6px;
 }
 .acceptance-media-options label.is-checked {
+  color: var(--accent);
   background: var(--accent-soft);
   border-color: var(--accent-line);
-  color: var(--accent);
 }
-.acceptance-media-options input[type="checkbox"] {
+.acceptance-media-options input {
   position: absolute;
   opacity: 0;
 }
@@ -116,59 +112,142 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.acceptance-workspace .acceptance-reference-field {
-  background: var(--surface-soft);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
+.acceptance-field-label {
+  display: block;
+  margin-bottom: 6px;
+}
+.acceptance-fields .acceptance-notice {
   margin: 0;
 }
-.acceptance-reference-field legend {
-  padding: 0 6px;
+.acceptance-fields .acceptance-choice + small {
+  display: block;
+  margin-top: 6px;
+}
+.acceptance-reference-field > .acceptance-list-heading {
+  margin: 0 0 8px;
+}
+.acceptance-reference-field > p {
   font-size: 13px;
 }
-.acceptance-reference-field .acceptance-scope {
-  padding: 8px 0 12px;
-}
-.acceptance-reference-field label {
-  font-size: 13px;
-}
-.acceptance-fields .acceptance-required-field {
-  border-top: 1px solid var(--border);
-  padding-top: 18px;
-}
-.acceptance-fields > .acceptance-actions {
-  margin: 0;
-}
-.acceptance-fields > .acceptance-notice {
-  margin: 0;
-  font-size: 12px;
-}
-
-@media (min-width: 1200px) {
-  .acceptance-fields > .acceptance-reference-label,
-  .acceptance-fields > .acceptance-reference-field {
-    grid-column: auto;
-  }
-}
-.acceptance-rule-editor .acceptance-fields {
-  margin: 0;
-  gap: 16px;
-}
-.acceptance-standard-sidebar .acceptance-rule {
-  padding: 13px 12px;
-}
-.acceptance-standard-sidebar .acceptance-rule-list {
-  margin: 12px 0;
+.acceptance-reference-list {
+  display: grid;
   gap: 6px;
 }
-.acceptance-workspace .custom-select-trigger {
-  background: var(--surface);
-  color: var(--text);
-  justify-content: space-between;
+.acceptance-reference-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-width: 0;
+}
+.acceptance-reference-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.acceptance-reference-row strong,
+.acceptance-reference-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acceptance-reference-row button {
+  padding: 4px 8px;
+  flex-shrink: 0;
+}
+.acceptance-thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 40px;
+  flex: 0 0 64px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+.acceptance-thumbnail :is(img, video) {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.acceptance-thumbnail > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.acceptance-thumbnail small {
+  font-size: 11px;
+}
+.acceptance-reference-picker {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+.acceptance-reference-picker .custom-select {
+  flex: 1;
+  min-width: 0;
+}
+.acceptance-level-field {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.acceptance-level-field .acceptance-choice {
+  min-width: 240px;
+}
+@media (max-width: 1450px) and (min-width: 1200px) {
+  .acceptance-standard-list .acceptance-rule {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .acceptance-standard-list .acceptance-rule-copy {
+    flex-basis: 55%;
+  }
+  .acceptance-standard-list .acceptance-rule-icon {
+    display: none;
+  }
 }
 @media (max-width: 600px) {
-  .acceptance-rule-editor .acceptance-fields {
+  .acceptance-name-media {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .acceptance-inline-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .acceptance-editor-heading {
+    align-items: flex-start;
+  }
+  .acceptance-editor-heading .acceptance-inline {
+    gap: 6px;
+  }
+  .acceptance-editor-heading .acceptance-badge {
+    display: none;
+  }
+  .acceptance-standard-list .acceptance-rule {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .acceptance-standard-list .acceptance-rule-copy {
+    flex-basis: 55%;
+  }
+  .acceptance-standard-list .acceptance-rule-icon {
+    display: none;
+  }
+  .acceptance-level-field {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .acceptance-reference-row {
+    flex-wrap: wrap;
+  }
+  .acceptance-reference-row > div {
+    min-width: 120px;
   }
 }

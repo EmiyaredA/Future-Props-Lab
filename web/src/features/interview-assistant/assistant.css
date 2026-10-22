@@ -1,0 +1,662 @@
+.interview-assistant * {
+  box-sizing: border-box;
+}
+.interview-assistant button,
+.interview-assistant input,
+.interview-assistant textarea {
+  font: inherit;
+}
+.interview-assistant button,
+.interview-assistant a,
+.interview-assistant input,
+.interview-assistant textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+.interview-assistant button {
+  cursor: pointer;
+}
+.interview-assistant button:disabled {
+  cursor: not-allowed;
+  opacity: 0.44;
+}
+.interview-assistant button,
+.interview-assistant a {
+  touch-action: manipulation;
+}
+.interview-assistant button:focus-visible,
+.interview-assistant a:focus-visible,
+.interview-assistant input:focus-visible,
+.interview-assistant textarea:focus-visible {
+  outline: 3px solid #c9744b;
+  outline-offset: 4px;
+}
+.interview-assistant button {
+  color: inherit;
+}
+.interview-assistant a {
+  color: inherit;
+  text-decoration: none;
+}
+.interview-assistant svg {
+  flex-shrink: 0;
+}
+.interview-assistant h1,
+.interview-assistant h2,
+.interview-assistant h3,
+.interview-assistant h4,
+.interview-assistant p {
+  margin: 0;
+}
+.interview-assistant h1 {
+  font-size: 30px;
+  line-height: 1.4;
+  font-weight: 650;
+  color: var(--strong);
+  letter-spacing: -0.9px;
+}
+.interview-assistant h2 {
+  font-size: 18px;
+  font-weight: 620;
+  color: var(--strong);
+}
+.interview-assistant h3 {
+  font-size: 18px;
+  color: var(--strong);
+  line-height: 1.6;
+}
+.interview-assistant strong {
+  font-weight: 600;
+}
+.interview-assistant .flow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+.interview-assistant .room-title {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 2.4px;
+}
+.interview-assistant .flow-steps {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  padding: 0;
+  margin: 0;
+}
+.interview-assistant .flow-steps li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.interview-assistant .flow-steps li > span {
+  height: 23px;
+  width: 23px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+.interview-assistant .flow-steps strong {
+  font-weight: 400;
+}
+.interview-assistant .flow-steps li.active {
+  color: var(--accent);
+}
+.interview-assistant .flow-steps li.active > span {
+  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.interview-assistant .flow-steps li.active strong {
+  font-weight: 600;
+}
+.interview-assistant .flow-steps li.complete > span {
+  color: var(--ok);
+  background: #47885d12;
+  border-color: transparent;
+}
+.interview-assistant .flow-steps li > svg {
+  margin-left: 8px;
+  color: var(--muted);
+  opacity: 0.55;
+}
+.interview-assistant main {
+  min-width: 0;
+}
+.interview-assistant .page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 0 20px;
+}
+.interview-assistant .eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.3px;
+  color: var(--muted);
+}
+.interview-assistant .page-heading .eyebrow {
+  display: none;
+}
+.interview-assistant .page-heading p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+  margin-top: 7px;
+}
+.interview-assistant .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 16px;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text);
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.interview-assistant .button:not(:disabled):hover {
+  background: var(--hover);
+  border-color: #c9bbae;
+}
+.interview-assistant .button:not(:disabled):active {
+  transform: translateY(1px);
+}
+.interview-assistant .button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  padding: 14px 22px;
+  box-shadow: 0 4px 9px var(--accent) 1b;
+}
+.interview-assistant .button.primary:not(:disabled):hover {
+  background: #c95334;
+  border-color: #c95334;
+}
+.interview-assistant .button.icon-button {
+  padding: 7px;
+  background: transparent;
+  border-color: transparent;
+}
+.interview-assistant .actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.interview-assistant .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 4px 9px;
+  white-space: nowrap;
+  font-weight: 400;
+}
+.interview-assistant .badge.warm {
+  border-color: #eadcc9;
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+.interview-assistant .badge.success {
+  border-color: #cfe1cf;
+  background: #eff6ef;
+  color: #3d8053;
+}
+.interview-assistant .badge.warning {
+  border-color: #f1d6c3;
+  background: #fff1e8;
+  color: #ac5a25;
+}
+.interview-assistant .badge.blue {
+  border: 0;
+  color: #6478a4;
+  background: #edf0f7;
+  font-size: 11px;
+}
+.interview-assistant .panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.interview-assistant .section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.interview-assistant .section-title > .badge {
+  margin-left: auto;
+}
+.interview-assistant .section-icon {
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  width: 34px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.interview-assistant input,
+.interview-assistant textarea {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 13px 14px;
+  font-size: 14px;
+  line-height: 1.9;
+  width: 100%;
+  min-width: 0;
+  transition: border-color 0.15s;
+}
+.interview-assistant input::placeholder,
+.interview-assistant textarea::placeholder {
+  color: #898174;
+}
+.interview-assistant input:focus,
+.interview-assistant textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent) 10;
+}
+.interview-assistant textarea {
+  resize: vertical;
+}
+.interview-assistant .accent {
+  color: var(--accent);
+}
+.interview-assistant .page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 21px 0 18px;
+}
+.interview-assistant .page-footer > p {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.interview-assistant .inline-message {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 7px;
+  padding: 11px 14px;
+  font-size: 13px;
+  margin-top: 15px;
+}
+.interview-assistant .workspace-footnote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  padding: 18px 0 23px;
+  border-top: 1px solid var(--border);
+}
+.interview-assistant .workspace-footnote > span {
+  margin-left: auto;
+  font-size: 8px;
+  letter-spacing: 1px;
+  opacity: 0.65;
+}
+.interview-assistant .interviewer-emblem {
+  border: 1px solid #a9683e;
+  box-shadow:
+    0 0 0 7px #b5662720,
+    0 0 0 8px #92562a25;
+  border-radius: 50%;
+  width: 85px;
+  height: 85px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: #1f231c;
+  margin-bottom: 22px;
+}
+.interview-assistant .interviewer-emblem.listening > svg {
+  animation: ia-breathe 2.7s ease-in-out infinite;
+}
+.interview-assistant .evaluating {
+  min-height: 630px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+.interview-assistant .evaluating > .section-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 19px;
+  margin-bottom: 5px;
+}
+.interview-assistant .evaluating h1 {
+  font-size: 28px;
+}
+.interview-assistant .evaluating p {
+  color: var(--muted);
+  font-size: 14px;
+}
+.interview-assistant .evaluating > svg {
+  color: var(--accent);
+  margin-top: 20px;
+}
+.interview-assistant .evaluating small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.interview-assistant .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  min-height: 260px;
+  color: var(--muted);
+}
+.interview-assistant .empty-state h3 {
+  font-size: 15px;
+}
+.interview-assistant .empty-state p {
+  font-size: 13px;
+  line-height: 1.9;
+}
+.interview-assistant .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.interview-assistant .spin {
+  animation: ia-spin 1.5s linear infinite;
+}
+@media (max-width: 1200px) {
+  .interview-assistant .room-title {
+    display: none;
+  }
+}
+@media (max-width: 1200px) {
+  .interview-assistant .flow-header {
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 1200px) {
+  .interview-assistant .flow-steps {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .page-heading h1 {
+    font-size: 26px;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .page-footer {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .page-footer > .actions {
+    margin-left: auto;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .flow-header {
+    padding: 19px 0;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .flow-steps {
+    gap: 4px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .flow-steps li {
+    gap: 5px;
+    font-size: 10px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .flow-steps li > span {
+    width: 19px;
+    height: 19px;
+    font-size: 8px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .flow-steps li > svg {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding: 25px 0 22px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-heading .eyebrow {
+    font-size: 8px;
+    letter-spacing: 0.6px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-heading h1 {
+    font-size: 26px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-heading > .button {
+    align-self: flex-end;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-heading p:not(.eyebrow) {
+    font-size: 11px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .section-title {
+    margin-bottom: 20px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-footer {
+    gap: 15px;
+    padding: 23px 0;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-footer > p {
+    flex-basis: 100%;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-footer > .button.primary {
+    width: 100%;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-footer .actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .page-footer .button {
+    font-size: 11px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .workspace-footnote {
+    font-size: 8px;
+    align-items: flex-start;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .workspace-footnote > span {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .interviewer-emblem {
+    width: 61px;
+    height: 61px;
+    margin-bottom: 23px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .interviewer-emblem > svg {
+    width: 30px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .evaluating {
+    min-height: 600px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .evaluating h1 {
+    font-size: 22px;
+  }
+}
+@media (min-width: 701px) and (max-height: 850px) {
+  .interview-assistant .interviewer-emblem {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 18px;
+  }
+}
+@media (min-width: 701px) and (max-height: 850px) {
+  .interview-assistant .interviewer-emblem > svg {
+    width: 31px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .interview-assistant *,
+  .interview-assistant *::before,
+  .interview-assistant *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+@keyframes ia-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ia-breathe {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.interview-assistant {
+  --soft: var(--surface-soft);
+  --hover: var(--surface-hover);
+  --strong: var(--text-strong);
+  --shadow: 0 3px 15px #49331e03;
+  color: var(--text);
+  font-family: inherit;
+  min-width: 0;
+}
+.interview-assistant.ia-page {
+  padding: 22px clamp(18px, 3vw, 42px);
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  background: var(--bg);
+}
+.interview-assistant .ia-app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: -22px;
+  z-index: 3;
+  background: var(--bg);
+  padding-block: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.interview-assistant .ia-app-header > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.interview-assistant .badge.success {
+  background: color-mix(in srgb, var(--ok) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--ok) 30%, var(--border));
+  color: var(--ok);
+}
+.interview-assistant .badge.blue {
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 12%, var(--surface));
+}
+.interview-assistant .badge.warm {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--border);
+}
+.interview-assistant .empty-state p {
+  max-width: 100%;
+}
+@media (max-width: 700px) {
+  .interview-assistant .ia-app-header {
+    align-items: flex-start;
+  }
+  .interview-assistant .ia-app-header > .actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+  }
+  .interview-assistant .ia-app-header .button {
+    padding: 7px;
+    font-size: 11px;
+  }
+}

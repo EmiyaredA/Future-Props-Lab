@@ -1,0 +1,206 @@
+.interview-assistant .materials-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.interview-assistant .material-panel {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.interview-assistant .field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--text);
+  position: relative;
+  margin-bottom: 17px;
+}
+.interview-assistant .field.grow {
+  flex: 1;
+}
+.interview-assistant textarea.jd-text {
+  flex: 1;
+  min-height: 180px;
+  padding-bottom: 30px;
+}
+.interview-assistant .input-count {
+  align-self: flex-end;
+  margin-top: -3px;
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.interview-assistant .field-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.interview-assistant .field-hint svg {
+  margin-top: 2px;
+}
+.interview-assistant .upload-area {
+  width: 100%;
+  border: 1px dashed #d6c8b9;
+  background: var(--surface-soft);
+  border-radius: 9px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.interview-assistant .upload-area:hover,
+.interview-assistant .upload-area.dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.interview-assistant .upload-area svg {
+  color: var(--accent);
+}
+.interview-assistant .upload-area span {
+  font-size: 13px;
+}
+.interview-assistant .upload-area small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.interview-assistant .file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 1px;
+}
+.interview-assistant .file-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.interview-assistant .file-row strong {
+  font-size: 13px;
+  display: block;
+  overflow-wrap: anywhere;
+}
+.interview-assistant .file-row small {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  margin-top: 6px;
+}
+.interview-assistant textarea.resume-text {
+  height: 90px;
+  min-height: 85px;
+  font-size: 13px;
+}
+.interview-assistant .material-panel .field:last-of-type {
+  margin-bottom: 10px;
+}
+.interview-assistant .session-settings {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 23px;
+  margin-top: 18px;
+}
+.interview-assistant .setting-icon {
+  color: var(--muted);
+  align-self: flex-start;
+  margin-top: 17px;
+}
+.interview-assistant .setting-divider {
+  height: 46px;
+  width: 1px;
+  background: var(--border);
+  margin: 0 8px;
+}
+.interview-assistant .session-settings p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--muted);
+  margin-left: auto;
+}
+.interview-assistant .field-label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.interview-assistant .knowledge-panel > .field-hint {
+  margin-top: 21px;
+}
+@media (min-width: 1600px) {
+  .interview-assistant .material-panel {
+    padding: 30px;
+  }
+}
+@media (max-width: 1200px) {
+  .interview-assistant .material-panel {
+    padding: 20px;
+  }
+}
+@media (max-width: 1200px) {
+  .interview-assistant .session-settings p {
+    max-width: 210px;
+  }
+}
+@media (max-width: 1200px) {
+  .interview-assistant .setting-divider {
+    margin: 0 1px;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .session-settings p {
+    display: none;
+  }
+}
+@media (max-width: 950px) {
+  .interview-assistant .session-settings {
+    gap: 15px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .materials-grid {
+    grid-template-columns: 1fr;
+    gap: 17px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .material-panel {
+    padding: 22px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant textarea.jd-text {
+    min-height: 170px;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .session-settings {
+    padding: 17px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 700px) {
+  .interview-assistant .session-settings .setting-icon,
+  .interview-assistant .setting-divider {
+    display: none;
+  }
+}
+
+.interview-assistant .ia-selector {
+  min-width: 0;
+  width: 170px;
+}
+.interview-assistant .ia-selector .custom-select {
+  width: 100%;
+}
+@media (max-width: 700px) {
+  .interview-assistant .ia-selector {
+    flex: 1;
+    width: auto;
+  }
+}

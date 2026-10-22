@@ -30,6 +30,7 @@ import {
   VISUAL_WORKSHOP_MODULE,
   VIDEO_EDITOR_MODULE,
   MOTION_COMPOSITOR_MODULE,
+  INTERVIEW_ASSISTANT_MODULE,
 } from "@app/applicationRegistry";
 import {
   isAudioAnnotationPage,
@@ -49,6 +50,7 @@ import {
 const PresentationWorkshopPage = lazy(
   PRESENTATION_WORKSHOP_MODULE.pages.workspace,
 );
+const InterviewAssistantPage = lazy(INTERVIEW_ASSISTANT_MODULE.pages.workspace);
 
 const HomePage = lazy(() =>
   import("@features/home/HomePage").then((module) => ({
@@ -217,6 +219,7 @@ export default function App() {
     const key = String(page);
     const applications: Record<string, string> = {
       "presentation-workshop": "演示工坊",
+      "interview-assistant": "面试助手",
       "thought-workshop": "思绪工坊",
       "visual-workshop": "视觉创作工坊",
       "galgame-workshop": "Galgame 工坊",
@@ -426,6 +429,24 @@ export default function App() {
       />
     );
   }
+
+  if (page === "interview-assistant-session")
+    return (
+      <WorkshopShell
+        module={INTERVIEW_ASSISTANT_MODULE}
+        page={page}
+        navigate={(next) => navigate(next as WorkshopPage)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          <InterviewAssistantPage
+            key={`${me.user.id}:${me.workspace.id}`}
+            scopeKey={`${me.user.id}:${me.workspace.id}`}
+            registerNavigationGuard={registerNavigationGuard}
+          />
+        </PageBoundary>
+      </WorkshopShell>
+    );
 
   if (page === "presentation-workshop-projects")
     return (

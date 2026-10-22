@@ -1995,6 +1995,90 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/interview-assistant/rooms/{room_id}",
+    "sdk": "client.interview.delete_interview_room",
+    "document": "/docs.html?page=sdk-reference-interview#delete-interview-room",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/interview-assistant/executor",
+    "sdk": "client.interview.get_interview_executor",
+    "document": "/docs.html?page=sdk-reference-interview#get-interview-executor",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/interview-assistant/rooms",
+    "sdk": "client.interview.list_interview_rooms",
+    "document": "/docs.html?page=sdk-reference-interview#list-interview-rooms",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/interview-assistant/rooms/{room_id}",
+    "sdk": "client.interview.get_interview_room",
+    "document": "/docs.html?page=sdk-reference-interview#get-interview-room",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/interview-assistant/rooms/{room_id}/materials/{material_id}/download",
+    "sdk": "client.interview.download_interview_material",
+    "document": "/docs.html?page=sdk-reference-interview#download-interview-material",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/bundle",
+    "sdk": "client.interview.get_interview_bundle",
+    "document": "/docs.html?page=sdk-reference-interview#get-interview-bundle",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/events",
+    "sdk": "client.interview.get_interview_progress",
+    "document": "/docs.html?page=sdk-reference-interview#get-interview-progress",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/export",
+    "sdk": "client.interview.export_interview_bundle",
+    "document": "/docs.html?page=sdk-reference-interview#export-interview-bundle",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/interview-assistant/rooms",
+    "sdk": "client.interview.create_interview_room",
+    "document": "/docs.html?page=sdk-reference-interview#create-interview-room",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/interview-assistant/rooms/{room_id}/materials",
+    "sdk": "client.interview.upload_interview_material",
+    "document": "/docs.html?page=sdk-reference-interview#upload-interview-material",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/interview-assistant/rooms/{room_id}/preparations",
+    "sdk": "client.interview.prepare_interview",
+    "document": "/docs.html?page=sdk-reference-interview#prepare-interview",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/cancel",
+    "sdk": "client.interview.cancel_interview_preparation",
+    "document": "/docs.html?page=sdk-reference-interview#cancel-interview-preparation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/live2d-workshop/projects/{project_id}",
     "sdk": "client.live2d_workshop.delete_project",
     "document": "/docs.html?page=sdk-reference-live2d-workshop#delete-project",

@@ -1,0 +1,129 @@
+.interview-assistant .ia-material-fields {
+  border: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+}
+.interview-assistant .ia-room-toolbar,
+.interview-assistant .ia-preparation-toolbar,
+.interview-assistant .ia-executor-status,
+.interview-assistant .ia-practice-context {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+  min-width: 0;
+}
+.interview-assistant .ia-room-toolbar .field,
+.interview-assistant .ia-preparation-toolbar .field {
+  min-width: 200px;
+  max-width: 100%;
+}
+.interview-assistant .ia-executor-status,
+.interview-assistant .ia-preparation-toolbar,
+.interview-assistant .ia-job-events,
+.interview-assistant .ia-material-library {
+  padding: 22px;
+  margin-bottom: 20px;
+}
+.interview-assistant .ia-executor-status p {
+  flex: 1;
+  margin: 0;
+  color: var(--muted);
+  min-width: 160px;
+}
+.interview-assistant .ia-job-events h2 {
+  font-size: 17px;
+}
+.interview-assistant .ia-job-events ol {
+  list-style: none;
+  padding: 0;
+  max-height: 260px;
+  overflow: auto;
+}
+.interview-assistant .ia-job-events li {
+  display: flex;
+  align-items: baseline;
+  gap: 15px;
+  margin: 10px 0;
+}
+.interview-assistant .ia-job-events li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.interview-assistant .ia-job-events li a {
+  display: block;
+  color: var(--accent);
+  font-size: 12px;
+}
+.interview-assistant .ia-job-events time {
+  color: var(--muted);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.interview-assistant .ia-bundle {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.interview-assistant .ia-bundle .task-tabs {
+  flex-wrap: wrap;
+}
+.interview-assistant .ia-bundle-body {
+  min-width: 0;
+}
+.interview-assistant .ia-document-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin: 16px 0;
+  line-height: 1.75;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.interview-assistant .ia-document-card h3 {
+  margin-top: 10px;
+  font-size: 18px;
+}
+.interview-assistant .ia-document-card small {
+  color: var(--muted);
+}
+.interview-assistant .ia-document-card blockquote {
+  margin: 14px 0;
+  border-left: 3px solid var(--accent);
+  padding: 10px 15px;
+  background: var(--surface);
+}
+.interview-assistant .ia-document-card ul {
+  padding-left: 20px;
+}
+.interview-assistant .ia-document-card a {
+  color: var(--accent);
+}
+.interview-assistant .ia-limitations {
+  color: var(--muted);
+  line-height: 1.8;
+}
+.interview-assistant .ia-practice.interview-theme {
+  background: var(--bg);
+  color: var(--text);
+  padding: 20px;
+  border-radius: 18px;
+}
+@media (max-width: 600px) {
+  .interview-assistant .ia-executor-status,
+  .interview-assistant .ia-preparation-toolbar,
+  .interview-assistant .ia-job-events,
+  .interview-assistant .ia-material-library,
+  .interview-assistant .ia-document-card {
+    padding: 14px;
+  }
+  .interview-assistant .ia-practice.interview-theme {
+    padding: 10px;
+  }
+  .interview-assistant .ia-room-toolbar > label,
+  .interview-assistant .ia-preparation-toolbar > label {
+    width: 100%;
+  }
+}

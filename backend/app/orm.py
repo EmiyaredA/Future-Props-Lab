@@ -29,6 +29,7 @@ from app.apps.galgame_workshop.models import (
     GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
+from app.apps.interview_assistant.models import InterviewPreparation, InterviewRoom
 from app.apps.live2d_workshop.models import (
     Live2DAsset,
     Live2DCubismAttachment,
@@ -268,6 +269,8 @@ _ = (
 )
 
 TENANT_MODELS = (
+    InterviewRoom,
+    InterviewPreparation,
     AcceptanceTemplate,
     AcceptanceStandard,
     AcceptanceStandardVersion,

@@ -20,7 +20,8 @@ export type ApplicationModule = {
     | "thought-workshop"
     | "presentation-workshop"
     | "audio-annotation"
-    | "director-desk";
+    | "director-desk"
+    | "interview-assistant";
   shellConfig: {
     className?: string;
     brandClassName?: string;

@@ -3658,6 +3658,75 @@
         "title": "BinaryStatus",
         "type": "object"
       },
+      "BlueprintQuestion": {
+        "additionalProperties": false,
+        "properties": {
+          "answer_points": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Answer Points",
+            "type": "array"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "experience_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Experience Ids",
+            "type": "array"
+          },
+          "follow_ups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Follow Ups",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "objective": {
+            "title": "Objective",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "requirement_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Requirement Ids",
+            "type": "array"
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "question",
+          "objective",
+          "requirement_ids",
+          "experience_ids",
+          "source_ids",
+          "answer_points",
+          "follow_ups"
+        ],
+        "title": "BlueprintQuestion",
+        "type": "object"
+      },
       "Body_add_skill_version_v1_integrations_skills__skill_id__versions_post": {
         "properties": {
           "expected_revision": {
@@ -4323,6 +4392,20 @@
           "upload"
         ],
         "title": "Body_upload_image_v1_thought_workshop_images_post",
+        "type": "object"
+      },
+      "Body_upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post",
         "type": "object"
       },
       "Body_upload_library_file_v1_director_desk_library_files_post": {
@@ -8781,6 +8864,46 @@
           "revisions"
         ],
         "title": "DuplicateSnapshot",
+        "type": "object"
+      },
+      "Experience": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/InputReference"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "uncertainties": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Uncertainties",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "evidence",
+          "uncertainties"
+        ],
+        "title": "Experience",
         "type": "object"
       },
       "ExportCreateIn": {
@@ -19641,6 +19764,30 @@
         "title": "InferenceTextOut",
         "type": "object"
       },
+      "InputReference": {
+        "additionalProperties": false,
+        "properties": {
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "file_id": {
+            "title": "File Id",
+            "type": "string"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_id",
+          "location",
+          "excerpt"
+        ],
+        "title": "InputReference",
+        "type": "object"
+      },
       "IntegrationCheckOut": {
         "properties": {
           "created_at": {
@@ -19733,6 +19880,532 @@
           "tertiary_count"
         ],
         "title": "IntegrationOverviewOut",
+        "type": "object"
+      },
+      "InterviewCreateIn": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "title"
+        ],
+        "title": "InterviewCreateIn",
+        "type": "object"
+      },
+      "InterviewExecutorOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "code",
+          "message",
+          "version"
+        ],
+        "title": "InterviewExecutorOut",
+        "type": "object"
+      },
+      "InterviewInputSnapshot": {
+        "properties": {
+          "duration": {
+            "enum": [
+              "15",
+              "30",
+              "45",
+              "60"
+            ],
+            "title": "Duration",
+            "type": "string"
+          },
+          "jd": {
+            "title": "Jd",
+            "type": "string"
+          },
+          "material": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InterviewMaterialSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resume": {
+            "title": "Resume",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "jd",
+          "resume",
+          "duration",
+          "material"
+        ],
+        "title": "InterviewInputSnapshot",
+        "type": "object"
+      },
+      "InterviewMaterialOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "sha256",
+          "size",
+          "created_at"
+        ],
+        "title": "InterviewMaterialOut",
+        "type": "object"
+      },
+      "InterviewMaterialSnapshot": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "sha256"
+        ],
+        "title": "InterviewMaterialSnapshot",
+        "type": "object"
+      },
+      "InterviewPrepareIn": {
+        "additionalProperties": false,
+        "properties": {
+          "duration": {
+            "default": "30",
+            "enum": [
+              "15",
+              "30",
+              "45",
+              "60"
+            ],
+            "title": "Duration",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "jd": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Jd",
+            "type": "string"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "request_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "resume": {
+            "default": "",
+            "maxLength": 30000,
+            "title": "Resume",
+            "type": "string"
+          },
+          "role": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "role",
+          "jd"
+        ],
+        "title": "InterviewPrepareIn",
+        "type": "object"
+      },
+      "InterviewRevisionIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "InterviewRevisionIn",
+        "type": "object"
+      },
+      "InterviewRoomList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InterviewRoomSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "InterviewRoomList",
+        "type": "object"
+      },
+      "InterviewRoomOut": {
+        "properties": {
+          "active_bundle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Bundle Id"
+          },
+          "active_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Task Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_version": {
+            "title": "Input Version",
+            "type": "integer"
+          },
+          "materials": {
+            "items": {
+              "$ref": "#/components/schemas/InterviewMaterialOut"
+            },
+            "title": "Materials",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/InterviewTaskOut"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "input_version",
+          "active_task_id",
+          "active_bundle_id",
+          "materials",
+          "tasks",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "InterviewRoomOut",
+        "type": "object"
+      },
+      "InterviewRoomSummary": {
+        "properties": {
+          "active_bundle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Bundle Id"
+          },
+          "active_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Task Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_version": {
+            "title": "Input Version",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "input_version",
+          "active_task_id",
+          "active_bundle_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "InterviewRoomSummary",
+        "type": "object"
+      },
+      "InterviewTaskOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/PreparationEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_hash": {
+            "title": "Input Hash",
+            "type": "string"
+          },
+          "input_version": {
+            "title": "Input Version",
+            "type": "integer"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PreparationBundle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "room_id": {
+            "title": "Room Id",
+            "type": "string"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/InterviewInputSnapshot"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "validating",
+              "succeeded",
+              "needs_input",
+              "failed",
+              "cancelled",
+              "interrupted"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "room_id",
+          "input_hash",
+          "input_version",
+          "snapshot",
+          "status",
+          "revision",
+          "events",
+          "result",
+          "message",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "InterviewTaskOut",
+        "type": "object"
+      },
+      "InterviewTaskProgress": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/PreparationEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "validating",
+              "succeeded",
+              "needs_input",
+              "failed",
+              "cancelled",
+              "interrupted"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "revision",
+          "events",
+          "message"
+        ],
+        "title": "InterviewTaskProgress",
         "type": "object"
       },
       "KeyframeOperation": {
@@ -19969,6 +20642,63 @@
           "expected_revision"
         ],
         "title": "KnowledgeNoteCreate",
+        "type": "object"
+      },
+      "KnowledgeTopic": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key_points": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Key Points",
+            "type": "array"
+          },
+          "relevance": {
+            "title": "Relevance",
+            "type": "string"
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Ids",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "relevance",
+          "version",
+          "source_ids",
+          "key_points"
+        ],
+        "title": "KnowledgeTopic",
         "type": "object"
       },
       "LegacyTarget": {
@@ -26053,6 +26783,206 @@
         "title": "Point",
         "type": "object"
       },
+      "PreparationBundle": {
+        "additionalProperties": false,
+        "properties": {
+          "experiences": {
+            "items": {
+              "$ref": "#/components/schemas/Experience"
+            },
+            "title": "Experiences",
+            "type": "array"
+          },
+          "first_round": {
+            "items": {
+              "type": "string"
+            },
+            "title": "First Round",
+            "type": "array"
+          },
+          "input_hash": {
+            "title": "Input Hash",
+            "type": "string"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "material_complete": {
+            "title": "Material Complete",
+            "type": "boolean"
+          },
+          "material_summary": {
+            "title": "Material Summary",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/BlueprintQuestion"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/Requirement"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "rubric": {
+            "items": {
+              "$ref": "#/components/schemas/RubricDimension"
+            },
+            "title": "Rubric",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/PreparationSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeTopic"
+            },
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "task_id",
+          "input_hash",
+          "material_summary",
+          "requirements",
+          "experiences",
+          "topics",
+          "sources",
+          "questions",
+          "first_round",
+          "rubric",
+          "limitations",
+          "material_complete"
+        ],
+        "title": "PreparationBundle",
+        "type": "object"
+      },
+      "PreparationEvent": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "sequence": {
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Urls",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sequence",
+          "kind",
+          "message",
+          "at"
+        ],
+        "title": "PreparationEvent",
+        "type": "object"
+      },
+      "PreparationSource": {
+        "additionalProperties": false,
+        "properties": {
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "retrieved_at": {
+            "title": "Retrieved At",
+            "type": "string"
+          },
+          "supports": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Supports",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "title",
+          "retrieved_at",
+          "published_at",
+          "version",
+          "excerpt",
+          "supports"
+        ],
+        "title": "PreparationSource",
+        "type": "object"
+      },
       "PresentationAnimation": {
         "additionalProperties": false,
         "properties": {
@@ -30234,6 +31164,42 @@
         "title": "ReorderTrackOperation",
         "type": "object"
       },
+      "Requirement": {
+        "additionalProperties": false,
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/InputReference"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "importance": {
+            "enum": [
+              "core",
+              "supporting"
+            ],
+            "title": "Importance",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "capability",
+          "importance",
+          "evidence"
+        ],
+        "title": "Requirement",
+        "type": "object"
+      },
       "ResetPasswordOut": {
         "properties": {
           "account": {
@@ -30480,6 +31446,44 @@
           }
         },
         "title": "RolePolicy",
+        "type": "object"
+      },
+      "RubricDimension": {
+        "additionalProperties": false,
+        "properties": {
+          "answer_points": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Answer Points",
+            "type": "array"
+          },
+          "common_gaps": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Common Gaps",
+            "type": "array"
+          },
+          "dimension": {
+            "title": "Dimension",
+            "type": "string"
+          },
+          "question_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Question Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dimension",
+          "question_ids",
+          "answer_points",
+          "common_gaps"
+        ],
+        "title": "RubricDimension",
         "type": "object"
       },
       "RunCreateIn": {
@@ -53292,6 +54296,575 @@
         "summary": "Validate Tool Api",
         "tags": [
           "integrations"
+        ]
+      }
+    },
+    "/v1/interview-assistant/executor": {
+      "get": {
+        "operationId": "get_interview_executor_v1_interview_assistant_executor_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewExecutorOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Interview Executor",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms": {
+      "get": {
+        "operationId": "list_interview_rooms_v1_interview_assistant_rooms_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewRoomList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Interview Rooms",
+        "tags": [
+          "interview-assistant"
+        ]
+      },
+      "post": {
+        "operationId": "create_interview_room_v1_interview_assistant_rooms_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterviewCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewRoomOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Interview Room",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms/{room_id}": {
+      "delete": {
+        "operationId": "delete_interview_room_v1_interview_assistant_rooms__room_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Interview Room V1 Interview Assistant Rooms  Room Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Interview Room",
+        "tags": [
+          "interview-assistant"
+        ]
+      },
+      "get": {
+        "operationId": "get_interview_room_v1_interview_assistant_rooms__room_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewRoomOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Interview Room",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms/{room_id}/materials": {
+      "post": {
+        "operationId": "upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewRoomOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Interview Material",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms/{room_id}/materials/{material_id}/download": {
+      "get": {
+        "operationId": "download_interview_material_v1_interview_assistant_rooms__room_id__materials__material_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "material_id",
+            "required": true,
+            "schema": {
+              "title": "Material Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Interview Material",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms/{room_id}/preparations": {
+      "post": {
+        "operationId": "prepare_interview_v1_interview_assistant_rooms__room_id__preparations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterviewPrepareIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewRoomOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Prepare Interview",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/bundle": {
+      "get": {
+        "operationId": "get_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__bundle_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparationBundle"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Interview Bundle",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_interview_preparation_v1_interview_assistant_rooms__room_id__preparations__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterviewRevisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewRoomOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Interview Preparation",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/events": {
+      "get": {
+        "operationId": "get_interview_progress_v1_interview_assistant_rooms__room_id__preparations__task_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewTaskProgress"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Interview Progress",
+        "tags": [
+          "interview-assistant"
+        ]
+      }
+    },
+    "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/export": {
+      "get": {
+        "operationId": "export_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "markdown",
+              "pattern": "^(json|markdown)$",
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Interview Bundle",
+        "tags": [
+          "interview-assistant"
         ]
       }
     },
