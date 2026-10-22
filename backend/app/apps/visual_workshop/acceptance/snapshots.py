@@ -169,6 +169,10 @@ async def import_acceptance(
                 AcceptanceResult.model_validate(result).model_dump(mode="json")
                 for result in results
             ]
+            for result in snapshot["check_results"]:
+                result["evidence_ids"] = [
+                    mapped(evidence_ids, identity) for identity in result["evidence_ids"]
+                ]
             row = AcceptanceRun(
                 id=run_ids[item["id"]],
                 workspace_id=workspace_id,

@@ -65,6 +65,12 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
   });
   await page.getByRole("button", { name: "浅色", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "验收清单", exact: true }).click();
+  await expect(page.getByLabel("标准名称")).toBeVisible();
+  await expect(page.getByLabel("验收项名称")).not.toBeVisible();
+  await page.getByRole("button", { name: "条目详情", exact: true }).focus();
+  await page.keyboard.press("Space");
+  await expect(page.getByLabel("验收项名称")).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(

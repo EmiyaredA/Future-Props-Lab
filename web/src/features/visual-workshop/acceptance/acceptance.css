@@ -712,3 +712,30 @@
     flex-direction: column;
   }
 }
+.acceptance-compact-tabs {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .acceptance-compact-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .acceptance-compact-tabs button {
+    flex: 1;
+    border-color: transparent;
+    font-size: 13px;
+  }
+  .acceptance-compact-tabs button[aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent-line);
+  }
+  .acceptance-editor-layout > section:not(.is-compact-active),
+  .acceptance-results-layout > section:not(.is-compact-active) {
+    display: none;
+  }
+}

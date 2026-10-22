@@ -113,6 +113,7 @@ class AcceptanceSampleIn(WireModel):
     start_ms: int = Field(default=..., alias='start_ms', ge=0.0)
 
 class AcceptanceSnapshot(WireModel):
+    check_results: list[AcceptanceResult] | None = Field(default=None, alias='check_results')
     coverage: str = Field(default=..., alias='coverage')
     criteria: list[AcceptanceCriterion] = Field(default=..., alias='criteria')
     metadata: dict[str, Any] | None = Field(default=None, alias='metadata')

@@ -265,6 +265,7 @@ class AcceptanceRunner(PollingTaskRunner):
                         }
                     )
                 run.results = results
+                run.snapshot = {**snapshot, "check_results": deepcopy(results)}
                 await flush_evidence(session)
                 await session.commit()
                 committed = True
@@ -291,6 +292,7 @@ class AcceptanceRunner(PollingTaskRunner):
                     .where(AcceptanceRun.id == identity, AcceptanceRun.status == "processing")
                     .values(
                         results=results,
+                        snapshot={**snapshot, "check_results": deepcopy(results)},
                         status="completed",
                         revision=AcceptanceRun.revision + 1,
                         updated_at=utc_now(),

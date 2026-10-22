@@ -8433,6 +8433,8 @@ export interface components {
         };
         /** AcceptanceSnapshot */
         AcceptanceSnapshot: {
+            /** Check Results */
+            check_results?: components["schemas"]["AcceptanceResult"][];
             /** Coverage */
             coverage: string;
             /** Criteria */

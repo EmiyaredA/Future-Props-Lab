@@ -101,6 +101,7 @@ export function RunsPane({
   };
   const update = (value: Run) => {
     client.setQueryData(keys.acceptanceRun(projectId, value.id), value);
+    void client.invalidateQueries({ queryKey: keys.canvas(projectId) });
     void records.refetch();
     setSelected(value.id);
   };

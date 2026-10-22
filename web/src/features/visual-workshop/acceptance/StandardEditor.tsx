@@ -35,6 +35,7 @@ export function StandardEditor({
   writable: boolean;
 }) {
   const [selected, setSelected] = useState<string>();
+  const [compactPane, setCompactPane] = useState<"list" | "detail">("list");
   const items = document.criteria ?? [];
   const active = items.find((item) => item.id === selected) ?? items[0];
   const update = (values: Partial<Criterion>) =>
@@ -57,7 +58,23 @@ export function StandardEditor({
   const labels = { image: "图片", video: "视频", audio: "音频", text: "文本" };
   return (
     <div className="acceptance-editor-layout">
-      <section className="acceptance-surface acceptance-standard-sidebar">
+      <div className="acceptance-compact-tabs" aria-label="标准编辑面板">
+        <button
+          aria-pressed={compactPane === "list"}
+          onClick={() => setCompactPane("list")}
+        >
+          验收清单
+        </button>
+        <button
+          aria-pressed={compactPane === "detail"}
+          onClick={() => setCompactPane("detail")}
+        >
+          条目详情
+        </button>
+      </div>
+      <section
+        className={`acceptance-surface acceptance-standard-sidebar ${compactPane === "list" ? "is-compact-active" : ""}`}
+      >
         <div className="acceptance-panel-title">
           <ClipboardCheck size={18} />
           <h3>标准概览</h3>
@@ -117,7 +134,10 @@ export function StandardEditor({
               className={`acceptance-rule ${active?.id === item.id ? "is-selected" : ""}`}
               aria-pressed={active?.id === item.id}
               key={item.id}
-              onClick={() => setSelected(item.id)}
+              onClick={() => {
+                setSelected(item.id);
+                setCompactPane("detail");
+              }}
             >
               <span className="acceptance-rule-icon" aria-hidden="true">
                 {item.method === "automatic" ? (
@@ -151,6 +171,7 @@ export function StandardEditor({
             const item = newCriterion();
             onChange({ ...document, criteria: [...items, item] });
             setSelected(item.id);
+            setCompactPane("detail");
           }}
         >
           <Plus size={16} /> 添加验收项
@@ -174,7 +195,9 @@ export function StandardEditor({
           </p>
         </div>
       </section>
-      <section className="acceptance-surface acceptance-rule-editor">
+      <section
+        className={`acceptance-surface acceptance-rule-editor ${compactPane === "detail" ? "is-compact-active" : ""}`}
+      >
         <div className="acceptance-editor-heading">
           <div>
             <span className="acceptance-eyebrow">

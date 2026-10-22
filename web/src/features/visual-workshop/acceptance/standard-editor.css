@@ -167,3 +167,8 @@
   color: var(--text);
   justify-content: space-between;
 }
+@media (max-width: 600px) {
+  .acceptance-rule-editor .acceptance-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

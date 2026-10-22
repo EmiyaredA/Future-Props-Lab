@@ -140,6 +140,7 @@ class AcceptanceSnapshot(BaseModel):
     coverage: str
     source_bytes: int | None = None
     metadata: dict = Field(default_factory=dict)
+    check_results: list[AcceptanceResult] = Field(default_factory=list)
 
 
 class AcceptanceRunOut(BaseModel):

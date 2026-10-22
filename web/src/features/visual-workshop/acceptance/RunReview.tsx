@@ -37,6 +37,9 @@ export function RunReview({
   act: <T>(action: () => Promise<T>) => Promise<T | undefined>;
 }) {
   const [selected, setSelected] = useState<string>();
+  const [compactPane, setCompactPane] = useState<"preview" | "detail">(
+    "detail",
+  );
   const [reason, setReason] = useState("");
   const [start, setStart] = useState(""),
     [end, setEnd] = useState("");
@@ -47,6 +50,9 @@ export function RunReview({
     run.results[0];
   const criteria = run.snapshot.criteria as Criterion[];
   const criterion = criteria.find((item) => item.id === active?.criterion_id);
+  const original = run.snapshot.check_results?.find(
+    (item) => item.criterion_id === active?.criterion_id,
+  );
   const previous = useQuery({
     queryKey: keys.acceptanceRun(projectId, run.previous_run_id ?? ""),
     queryFn: () => getRun(projectId, run.previous_run_id!),
@@ -103,7 +109,23 @@ export function RunReview({
         <p className="acceptance-error">{run.error_message}</p>
       )}
       <div className="acceptance-results-layout">
-        <section className="acceptance-surface">
+        <div className="acceptance-compact-tabs" aria-label="验收结果面板">
+          <button
+            aria-pressed={compactPane === "preview"}
+            onClick={() => setCompactPane("preview")}
+          >
+            输出预览
+          </button>
+          <button
+            aria-pressed={compactPane === "detail"}
+            onClick={() => setCompactPane("detail")}
+          >
+            检查详情
+          </button>
+        </div>
+        <section
+          className={`acceptance-surface acceptance-review-media ${compactPane === "preview" ? "is-compact-active" : ""}`}
+        >
           <EvidenceViewer
             run={run}
             previous={previous.data}
@@ -111,7 +133,9 @@ export function RunReview({
           />
           {previous.isError && <p role="alert">原验收记录加载失败。</p>}
         </section>
-        <section className="acceptance-surface">
+        <section
+          className={`acceptance-surface acceptance-review-detail ${compactPane === "detail" ? "is-compact-active" : ""}`}
+        >
           <h2>逐项验收结果</h2>
           <div className="acceptance-rule-list">
             {run.results.map((item) => (
@@ -155,6 +179,19 @@ export function RunReview({
                   ? `人工结论：${verdictNames[active.verdict]}`
                   : active.explanation}
               </p>
+              {original && (
+                <details>
+                  <summary>查看原始检查结果</summary>
+                  <small>
+                    {methodNames[original.origin]} ·{" "}
+                    {verdictNames[original.verdict]}
+                    {original.suggestion
+                      ? ` · 建议${verdictNames[original.suggestion]}`
+                      : ""}
+                  </small>
+                  <p>{original.explanation}</p>
+                </details>
+              )}
               <fieldset
                 disabled={!writable || busy || run.status !== "completed"}
               >

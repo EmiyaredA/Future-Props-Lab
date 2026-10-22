@@ -194,6 +194,8 @@ async def test_strict_candidate_adoption_cas_and_standard_invalidation():
         )
         state = (await client.get(f"{base}/canvas")).json()
         assert state["nodes"][0]["approved"] is False
+        assert run["results"][0]["verdict"] == "failed"
+        assert run["snapshot"]["check_results"][0]["verdict"] == "passed"
         assert state["nodes"][0]["final_output_id"] == output["id"]
         run = await decide(
             client, base, run, criterion_id="rule", verdict="passed", reason="重新核实通过"

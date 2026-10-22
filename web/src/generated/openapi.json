@@ -728,6 +728,13 @@
       },
       "AcceptanceSnapshot": {
         "properties": {
+          "check_results": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceResult"
+            },
+            "title": "Check Results",
+            "type": "array"
+          },
           "coverage": {
             "title": "Coverage",
             "type": "string"
