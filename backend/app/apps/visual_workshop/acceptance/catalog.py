@@ -5,6 +5,8 @@ import os
 from sqlalchemy import select
 
 from app.capabilities.agents.cli import probe
+from app.capabilities.agents.cli.catalog import connection
+from app.console.governance.code_agents import authorized
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.runtime.config import get_settings
@@ -26,11 +28,9 @@ SCHEME_VERSION = 1
 
 def cli_configuration(settings, scheme_id):
     codex = scheme_id == "motion-transfer:codex"
-    path = (
-        settings.fpl_acceptance_codex_executable
-        if codex
-        else settings.fpl_acceptance_claude_executable
-    )
+
+    agent_id = "codex" if codex else "claude-code"
+    _, path, _ = connection(settings, agent_id)
     users = (
         settings.fpl_acceptance_codex_user_ids if codex else settings.fpl_acceptance_claude_user_ids
     )
@@ -76,7 +76,13 @@ async def scheme_status(session, workspace_id, user_id, identity, *, check_cli=T
     else:
         agent, path, users = cli_configuration(settings, identity)
         label = "Codex" if agent == "codex" else "Claude Code"
-        available = bool(path and user_id in users)
+
+        available = bool(
+            path
+            and await authorized(
+                session, workspace_id, user_id, agent, "visual_acceptance", settings=settings
+            )
+        )
         message = "已配置" if available else "此账号尚未获准使用该固定 Agent 连接"
         if available and check_cli:
             available, message = await probe(agent, path)

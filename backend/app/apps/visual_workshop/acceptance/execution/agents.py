@@ -9,6 +9,7 @@ from pathlib import Path
 from app.capabilities.agents.cli import execute, probe
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from app.console.governance.code_agents import authorized
 from app.runtime.config import REPO_ROOT
 from app.runtime.ids import new_id
 
@@ -93,7 +94,15 @@ async def evaluate_agent(session, settings, run, cancelled, executor=execute):
         "connection_signature"
     ):
         raise AcceptanceError("固定 Agent 连接已变化，请手动重新发起验收")
-    if snapshot.get("executor", {}).get("user_id") not in users:
+
+    if not await authorized(
+        session,
+        workspace_id,
+        snapshot.get("executor", {}).get("user_id"),
+        kind,
+        "visual_acceptance",
+        settings=settings,
+    ):
         raise AcceptanceError("本机 Agent 执行授权已失效")
     available, message = await probe(kind, path)
     if not available:

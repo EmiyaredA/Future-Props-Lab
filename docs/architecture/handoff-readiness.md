@@ -280,3 +280,5 @@ MLX、Python 或模型权重。管理员通过模型服务主动选择安装 Qwe
 调用使用统一模型推理任务；语音录音和结果继续按 Workspace 隔离。
 
 节点绑定通过 `0108_node_acceptance` 追加，保留 `0105_visual_acceptance` 及后续迁移历史。
+
+全局编程智能体由 `0109_code_agents` 记录执行器绑定与运行快照；部署配置使用 TOML，账号与用途授权经正式治理 API 保存。

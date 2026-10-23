@@ -1295,6 +1295,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/code-agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Code Agents */
+        get: operations["list_code_agents_v1_code_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/code-agents/detect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Detect Code Agents */
+        post: operations["detect_code_agents_v1_code_agents_detect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/code-agents/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Code Agent Grants */
+        get: operations["get_code_agent_grants_v1_code_agents_grants_get"];
+        /** Put Code Agent Grants */
+        put: operations["put_code_agent_grants_v1_code_agents_grants_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/creative-workshop/installations": {
         parameters: {
             query?: never;
@@ -9177,6 +9229,30 @@ export interface components {
             /** Expected Workspace Id */
             expected_workspace_id: string;
         };
+        /** AgentOut */
+        AgentOut: {
+            /** Available */
+            available: boolean;
+            /** Enabled */
+            enabled: boolean;
+            /** Executable */
+            executable: string;
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "codex" | "claude-code";
+            /** Message */
+            message: string;
+            /** Models */
+            models?: components["schemas"]["ModelOption"][];
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** Version */
+            version: string;
+        };
         /** AgentPairIn */
         AgentPairIn: {
             /** Name */
@@ -10340,6 +10416,11 @@ export interface components {
             /** Total Tokens Today */
             total_tokens_today: number;
         };
+        /** CatalogOut */
+        CatalogOut: {
+            /** Items */
+            items: components["schemas"]["AgentOut"][];
+        };
         /** CertificationIn */
         CertificationIn: {
             /** Expected Revision */
@@ -10970,11 +11051,18 @@ export interface components {
         };
         /** ConversationOut */
         ConversationOut: {
+            /** Agent Id */
+            agent_id?: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Executor Kind
+             * @default legacy-pi
+             */
+            executor_kind: string;
             /** Id */
             id: string;
             /** Model Id */
@@ -15595,6 +15683,45 @@ export interface components {
             /** Updated At */
             updated_at: string;
         };
+        /** Grant */
+        Grant: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code";
+            /**
+             * Purpose
+             * @enum {string}
+             */
+            purpose: "amadeus" | "visual_acceptance" | "interview_preparation";
+            /** User Id */
+            user_id: string;
+        };
+        /** GrantUpdate */
+        GrantUpdate: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Grants */
+            grants: components["schemas"]["Grant"][];
+            /** Managed */
+            managed: string[];
+        };
+        /** GrantsOut */
+        GrantsOut: {
+            /** Accounts */
+            accounts: {
+                [key: string]: string;
+            }[];
+            /** Grants */
+            grants: components["schemas"]["Grant"][];
+            /** Legacy */
+            legacy: components["schemas"]["Grant"][];
+            /** Managed */
+            managed: string[];
+            /** Revision */
+            revision: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -16990,6 +17117,13 @@ export interface components {
             model: components["schemas"]["ModelEntryOut"];
             /** Revision */
             revision: number;
+        };
+        /** ModelOption */
+        ModelOption: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
         };
         /** ModelSupplierIn */
         ModelSupplierIn: {
@@ -20538,6 +20672,16 @@ export interface components {
         };
         /** RunCreateIn */
         RunCreateIn: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code";
+            /**
+             * Agent Model
+             * @default
+             */
+            agent_model: string;
             /** Capabilities */
             capabilities?: string[];
             /** Context */
@@ -20550,7 +20694,10 @@ export interface components {
              * @enum {string}
              */
             mode: "agent" | "plan";
-            /** Model Id */
+            /**
+             * Model Id
+             * @default code-agent
+             */
             model_id: string;
             /** References */
             references?: components["schemas"]["Reference"][];
@@ -20611,6 +20758,13 @@ export interface components {
         };
         /** RunOut */
         RunOut: {
+            /** Agent Id */
+            agent_id?: string | null;
+            /**
+             * Agent Model
+             * @default
+             */
+            agent_model: string;
             /** Capabilities */
             capabilities: string[];
             /** Context */
@@ -20626,6 +20780,10 @@ export interface components {
             created_at: string;
             /** Error Message */
             error_message: string | null;
+            /** Execution Config */
+            execution_config?: {
+                [key: string]: unknown;
+            };
             /** Finished At */
             finished_at: string | null;
             /**
@@ -27321,6 +27479,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthMeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_code_agents_v1_code_agents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogOut"];
+                };
+            };
+        };
+    };
+    detect_code_agents_v1_code_agents_detect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogOut"];
+                };
+            };
+        };
+    };
+    get_code_agent_grants_v1_code_agents_grants_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantsOut"];
+                };
+            };
+        };
+    };
+    put_code_agent_grants_v1_code_agents_grants_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantsOut"];
                 };
             };
             /** @description Validation Error */

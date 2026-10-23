@@ -110,6 +110,7 @@ from db.migrations.versions import (
     r0106_interview_preparation,
     r0107_deepseek_provider,
     r0108_node_acceptance,
+    r0109_code_agents,
 )
 
 
@@ -503,5 +504,7 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0108_node_acceptance.MIGRATION_ID, r0108_node_acceptance.SQL),)
+
+MIGRATIONS += (Migration(r0109_code_agents.MIGRATION_ID, r0109_code_agents.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

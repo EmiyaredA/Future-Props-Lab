@@ -4,15 +4,16 @@ import asyncio
 import hashlib
 import json
 import os
-import re
-import shutil
 import signal
 import sys
-import tomllib
 from pathlib import Path
-from urllib.parse import urlsplit
 
+from app.capabilities.agents.cli.catalog import connection, inspect_connection
+from app.capabilities.agents.cli.model_connection import connection_overrides, toml_value
+from app.console.governance.code_agents import resolve
+from app.orm import bind_workspace
 from app.runtime.config import REPO_ROOT, get_settings
+from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
 
 from .files import exclusive_write, material_path, room_root
@@ -20,16 +21,11 @@ from .schemas import InterviewExecutorOut, PreparationBundle
 
 
 def executable() -> str:
-    configured = get_settings().fpl_interview_codex_executable
-    found = configured or shutil.which("codex")
-    bundled = Path(
-        "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
-    )
-    if not found and bundled.is_file():
-        found = str(bundled)
-    if not found or not Path(found).is_file():
-        raise OperationError("未找到 Codex CLI，请先安装并登录", "codex_missing", 409)
-    return str(Path(found).resolve())
+
+    enabled, path, error = connection(get_settings(), "codex")
+    if error or not enabled or not path:
+        raise OperationError(error or "未找到 Codex CLI", "codex_missing", 409)
+    return path
 
 
 def cli_environment() -> dict[str, str]:
@@ -52,75 +48,26 @@ def cli_environment() -> dict[str, str]:
     return {key: value for key, value in os.environ.items() if key in names}
 
 
-async def executor_status(user_id: str) -> InterviewExecutorOut:
-    settings = get_settings()
-    if not settings.fpl_interview_codex_enabled:
-        return InterviewExecutorOut(
-            available=False,
-            code="disabled",
-            version="",
-            message="资料准备尚未启用；请在本机配置的 interview_codex 分组启用并绑定账号",
-        )
-    if user_id != settings.fpl_interview_codex_user_id:
-        return InterviewExecutorOut(
-            available=False,
-            code="account_not_bound",
-            version="",
-            message="此账号未获准使用本机 Codex",
-        )
-    if sys.platform != "darwin":
-        return InterviewExecutorOut(
-            available=False,
-            code="unsupported_platform",
-            version="",
-            message="首版真实准备仅支持 macOS 本机部署",
-        )
+async def executor_status(
+    user_id: str, workspace_id: str = "", session=None
+) -> InterviewExecutorOut:
+
     try:
-        binary = executable()
-        process = await asyncio.create_subprocess_exec(
-            binary,
-            "--version",
-            env=cli_environment(),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL,
-        )
-        output, _ = await asyncio.wait_for(process.communicate(), 5)
-        version = re.search(rb"codex-cli (\S+)", output)
-        if process.returncode or not version:
-            raise OperationError("Codex 版本检查失败", "codex_unavailable", 409)
-        value = version.group(1).decode()
-        numbers = re.match(r"(\d+)\.(\d+)", value)
-        if not numbers or (int(numbers[1]), int(numbers[2])) < (0, 163):
-            raise OperationError("需要 Codex CLI 0.163 或更新版本", "codex_version", 409)
-        process = await asyncio.create_subprocess_exec(
-            binary,
-            "login",
-            "status",
-            env=cli_environment(),
-            stdout=asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.DEVNULL,
-        )
-        await asyncio.wait_for(process.wait(), 10)
-        if process.returncode:
-            raise OperationError("Codex 尚未登录或凭据不可用，请先在终端登录", "codex_auth", 409)
+        if session is None:
+            async with SessionLocal() as owned:
+                if workspace_id:
+                    bind_workspace(owned, workspace_id)
+                return await executor_status(user_id, workspace_id, owned)
+        await resolve(session, workspace_id, user_id, "codex", "interview_preparation", probe=False)
+        status = await inspect_connection(get_settings(), "codex", discover_models=False)
         return InterviewExecutorOut(
-            available=True,
-            code="ready",
-            version=value,
-            message="本机 Codex 可用；使用已登录账号和当前模型连接",
+            available=status["available"],
+            code=status["status"],
+            message=status["message"],
+            version=status["version"],
         )
     except OperationError as exc:
         return InterviewExecutorOut(available=False, code=exc.code, message=str(exc), version="")
-    except (OSError, TimeoutError):
-        if "process" in locals() and process.returncode is None:
-            process.kill()
-            await process.wait()
-        return InterviewExecutorOut(
-            available=False,
-            code="codex_unavailable",
-            version="",
-            message="无法启动 Codex，请检查可执行文件与登录状态",
-        )
 
 
 def task_context(task) -> Path:
@@ -154,79 +101,6 @@ def task_context(task) -> Path:
         root / "output-schema.json", json.dumps(PreparationBundle.model_json_schema()).encode()
     )
     return root
-
-
-def connection_overrides() -> tuple[dict, dict]:
-    """Read only model/connection fields; never inherit hooks, tools, rules or instructions."""
-    home = Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex")
-    path = home / "config.toml"
-    if path.is_symlink():
-        raise OperationError("Codex 配置不能是符号链接", "codex_config", 409)
-    try:
-        config = tomllib.loads(path.read_text()) if path.is_file() else {}
-    except (ValueError, OSError):
-        raise OperationError("Codex 连接配置无法读取", "codex_config", 409) from None
-    overrides, env = {}, cli_environment()
-    for name in ("model", "model_provider", "model_reasoning_effort"):
-        if isinstance(config.get(name), str):
-            overrides[name] = config[name]
-    provider = config.get("model_provider", "openai")
-    definition = config.get("model_providers", {}).get(provider, {})
-    if isinstance(definition, dict):
-        allowed = {
-            name: definition[name]
-            for name in (
-                "name",
-                "base_url",
-                "wire_api",
-                "env_key",
-                "requires_openai_auth",
-                "supports_websockets",
-            )
-            if name in definition and isinstance(definition[name], (str, bool))
-        }
-        if allowed:
-            if allowed.get("base_url"):
-                address = urlsplit(allowed["base_url"])
-                if (
-                    address.scheme not in {"http", "https"}
-                    or not address.hostname
-                    or address.username
-                    or address.password
-                    or address.query
-                    or address.fragment
-                ):
-                    raise OperationError(
-                        "Codex 连接地址不能包含凭据、查询参数或片段", "codex_config", 409
-                    )
-            overrides[f"model_providers.{provider}"] = allowed
-        env_key = allowed.get("env_key", "")
-        if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", str(env_key)) and env_key in os.environ:
-            if env_key.upper().startswith("FPL_"):
-                raise OperationError(
-                    "不能使用 FPL 后端凭据作为 Codex 连接密钥", "codex_config", 409
-                )
-            env[env_key] = os.environ[env_key]
-    disabled = []
-    for skills in (home / "skills", Path.home() / ".agents" / "skills"):
-        for pattern in ("*/SKILL.md", ".system/*/SKILL.md"):
-            disabled += [
-                {"path": str(file.parent), "enabled": False} for file in skills.glob(pattern)
-            ]
-    overrides["skills.config"] = disabled
-    return overrides, env
-
-
-def toml_value(value):
-    if isinstance(value, dict):
-        return (
-            "{"
-            + ",".join(f"{json.dumps(key)}={toml_value(item)}" for key, item in value.items())
-            + "}"
-        )
-    if isinstance(value, list):
-        return "[" + ",".join(toml_value(item) for item in value) + "]"
-    return json.dumps(value, ensure_ascii=False)
 
 
 def invocation(root: Path):

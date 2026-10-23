@@ -34,3 +34,7 @@ test("固定方案以图标、名称、调用标识和状态展示，支持键�
     "固定接入",
   );
 });
+
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "wait" });
+});

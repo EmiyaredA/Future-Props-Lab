@@ -61,6 +61,17 @@ vi.mock("../src/features/amadeus/useAmadeusController", () => ({
       activeRun: null,
       error,
       setError,
+      agents: [
+        {
+          id: "codex",
+          name: "Codex",
+          available: true,
+          message: "已连接",
+          models: [],
+        },
+      ],
+      agentId: "codex",
+      setAgentId: vi.fn(),
       models: [],
       modelId: "",
       setModelId: vi.fn(),

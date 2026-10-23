@@ -13,6 +13,7 @@ from app.console.amadeus.fpl_operations import call_operation
 from app.console.amadeus.models import AmadeusAction, AmadeusConversation, AmadeusRun
 from app.console.amadeus.schemas import ActionOut
 from app.console.amadeus.scripts import run_script
+from app.console.governance.code_agents import resolve
 from app.integrations.mcp.catalog import McpCatalog
 from app.integrations.tool_apis.catalog import ToolApiCatalog
 from app.runtime.operation_receipts import OperationError
@@ -61,6 +62,8 @@ async def execute_action(
     )
     if owner is None:
         raise OperationError("对话不存在", "not_found", 404)
+    if owner.executor_kind == "legacy-pi":
+        raise OperationError("旧内核对话只读", "legacy_readonly", 409)
     row = await session.scalar(
         select(AmadeusAction).where(
             AmadeusAction.id == action_id,
@@ -74,6 +77,16 @@ async def execute_action(
     if row.status != "approved":
         raise OperationError("操作未获批准或已经执行", "approval_conflict", 409)
     if row.run_id:
+        source_run = await session.get(AmadeusRun, row.run_id)
+        if source_run and source_run.agent_id:
+            await resolve(
+                session,
+                principal.workspace_id,
+                principal.user_id,
+                source_run.agent_id,
+                "amadeus",
+                probe=False,
+            )
         active = await session.scalar(
             select(AmadeusRun.id).where(
                 AmadeusRun.id == row.run_id,
@@ -85,7 +98,7 @@ async def execute_action(
         if active is None:
             raise OperationError("运行已经结束，操作不可执行", "run_not_active", 409)
     name, args = row.tool_name, row.arguments_json
-    built_in = {"write_script", "run_script", "video_timeline_batch"}
+    built_in = {"write_work_file", "write_script", "run_script", "video_timeline_batch"}
     if not name.startswith(("tool_api:", "mcp:", "fpl_operation:")) and name not in built_in:
         raise OperationError("工具不可执行", "unsupported_tool", 422)
     if name.startswith(("tool_api:", "mcp:")) and not principal.allows("configuration.manage"):
@@ -117,7 +130,7 @@ async def execute_action(
             result = await McpCatalog(session, principal.workspace_id).execute(
                 parts[1], parts[2], args.get("input", {}), args["revision"]
             )
-        elif name == "write_script":
+        elif name in {"write_script", "write_work_file"}:
             filename = str(args.get("name", ""))
             content = args.get("content")
             if not isinstance(content, str):
@@ -125,7 +138,7 @@ async def execute_action(
             result = write_file(
                 principal.workspace_id,
                 conversation_id,
-                "scripts",
+                "scripts" if name == "write_script" else "outputs",
                 filename,
                 content.encode(),
                 str(args.get("expected_sha256", "")),

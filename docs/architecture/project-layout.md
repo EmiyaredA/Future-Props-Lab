@@ -66,7 +66,7 @@ Future-Props-Lab/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
 │   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
 │   ├── features/      # 账号治理、首页、应用、文件管理、工坊、工具导航、集成中心与模型功能
-│   │   ├── amadeus/   # 独立窗口 UI、Pi Worker、控件选取与原生动态头像源画
+│   │   ├── amadeus/   # 独立窗口 UI、后端运行重连、控件选取与原生动态头像源画
 │   │   └── creative-workshop/ # 广场、创作、版本详情、能力选择与安装引导
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
@@ -122,10 +122,10 @@ Future-Props-Lab/
   由原路由重新校验 Workspace、权限和资源版本。
   `console/routes/amadeus.py` 只暴露协议。会话文件存于
   `workspaces/<workspace-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号与 Workspace
-  读取隔离，文件访问拒绝符号链接和目录穿越。模型桥接仅使用现有供应商适配器和服务端凭据。
-  `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Pi Worker、只读子任务、对话时间线与控件选取；
+  读取隔离，文件访问拒绝符号链接和目录穿越。新运行通过 `execution.py` 持有官方 CLI，`tool_bridge.py` 以短期任务工具授权连接正式 API；旧模型轮次与浏览器事件写接口返回 410。
+  `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Code Agent 选择、运行状态重连、对话时间线与控件选取；
   `useAmadeusData.ts` 管理账号、Workspace 和会话范围内的读取与订阅，`revisionConflict.ts` 解释会话 CAS 冲突；
-  `vendor/pi/SOURCE.md` 记录固定源码与许可证。沙箱脚本运行器由桌面构建单独打包，
+  `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。
 
 - `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供工作区限定的
@@ -697,3 +697,5 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 `backend/app/capabilities/agents/cli/` 拥有 Codex、Claude Code 非交互执行参数、事件解析、环境过滤、取消、超时和父进程退出监督；不包含验收业务。`console/governance/visual_acceptance_access.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
 
 `web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
+
+- `console/governance/code_agents.py` 拥有按 Workspace、账号和用途的授权 CAS 及旧授权接管，配置路径由 `fpl_config` 解析。`console/routes/code_agents.py` 只做协议适配。`capabilities/agents/cli/` 统一 CLI 发现、模型连接白名单、官方对话与固定任务传输；`web/src/features/code-agents/` 拥有管理页和查询键。独立 SDK 的 `mcp.py` 拥有外部 stdio MCP 与内部短期 Socket 中继，不导入后端。

@@ -47,3 +47,10 @@ codex_executable = ""
 codex_user_ids = []
 claude_executable = ""
 claude_user_ids = []
+
+# Shared local CLI connections. Login with the CLI outside FPL; grant usage in Code Agents.
+[code_agents]
+codex_enabled = false
+codex_executable = ""
+claude_enabled = false
+claude_executable = ""

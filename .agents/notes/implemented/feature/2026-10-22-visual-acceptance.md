@@ -25,3 +25,7 @@ Status: implemented
 ## Verification
 
 后端 tests/test_visual_acceptance.py 覆盖候选、采用、CAS、去重、标准失效、人工判断、返修复验、模拟视觉模型、恢复与快照。Web 组件及隔离浏览器旅程覆盖标准配置、结果与复验。执行契约、SDK、构建、格式与相关架构检查；真实供应商调用不用于确定性测试。
+
+## 后续决策
+
+[节点验收与固定只读方案](../architecture/2026-10-23-node-acceptance.md) 替代项目标准发布及强制采用门禁；本文保留当时的决策背景。

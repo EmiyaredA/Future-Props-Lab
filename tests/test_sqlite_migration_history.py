@@ -169,6 +169,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("0106_interview_preparation",),
             ("0107_deepseek_provider",),
             ("0108_node_acceptance",),
+            ("0109_code_agents",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -265,9 +266,14 @@ def test_node_acceptance_upgrade_keeps_legacy_data_without_automatic_bindings(
     tmp_path, monkeypatch
 ):
     database = tmp_path / "node-acceptance-upgrade.db"
+    index = next(
+        i
+        for i, migration in enumerate(MIGRATIONS)
+        if migration.migration_id == "0108_node_acceptance"
+    )
     with monkeypatch.context() as patch:
-        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:-1])
-        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[-2].migration_id)
+        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:index])
+        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[index - 1].migration_id)
         apply_migrations(database)
     with connect_database(database) as connection:
         connection.execute(

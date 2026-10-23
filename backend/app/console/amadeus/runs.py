@@ -7,6 +7,7 @@ import json
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
+from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.models import (
     AmadeusAction,
     AmadeusConversation,
@@ -22,6 +23,7 @@ from app.console.amadeus.schemas import (
     RunEventOut,
     RunOut,
 )
+from app.console.governance.code_agents import resolve
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
 from app.runtime.time import utc_now
@@ -51,6 +53,9 @@ def _run(row: AmadeusRun) -> RunOut:
         id=row.id,
         conversation_id=row.conversation_id,
         model_id=row.model_id,
+        agent_id=row.agent_id,
+        agent_model=row.agent_model,
+        execution_config=row.execution_config,
         mode=row.mode,
         source_run_id=row.source_run_id,
         status=row.status,
@@ -118,7 +123,21 @@ class Runs:
         return await self.detail(row.conversation_id, row.id) if row else None
 
     async def create(self, conversation_id: str, body: RunCreateIn) -> RunDetailOut:
-        await self._conversation(conversation_id)
+        conversation = await self._conversation(conversation_id)
+        if conversation.executor_kind == "legacy-pi":
+            raise OperationError("旧内核对话只读，请新建会话", "legacy_readonly", 409)
+        if conversation.agent_id and conversation.agent_id != body.agent_id:
+            raise OperationError("切换 Agent 请新建会话", "agent_changed", 409)
+
+        path = await resolve(
+            self.session,
+            self.principal.workspace_id,
+            self.principal.user_id,
+            body.agent_id,
+            "amadeus",
+        )
+        detail_snapshot = await Conversations(self.session, self.principal).detail(conversation_id)
+        conversation.agent_id = body.agent_id
         unresolved_question = await self.session.scalar(
             select(AmadeusQuestion.id).where(
                 AmadeusQuestion.conversation_id == conversation_id,
@@ -169,6 +188,15 @@ class Runs:
             workspace_id=self.principal.workspace_id,
             user_id=self.principal.user_id,
             model_id=body.model_id,
+            agent_id=body.agent_id,
+            agent_model=body.agent_model,
+            execution_config={
+                "executable": path,
+                "agent_id": body.agent_id,
+                "messages": [m.model_dump(mode="json") for m in detail_snapshot.messages[-60:]],
+                "actions": [a.model_dump(mode="json") for a in detail_snapshot.actions],
+                "questions": [q.model_dump(mode="json") for q in detail_snapshot.questions],
+            },
             mode=body.mode,
             source_run_id=body.source_run_id,
             status="running",

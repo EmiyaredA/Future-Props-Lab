@@ -314,6 +314,17 @@ class AgentDecisionIn(WireModel):
     code: str = Field(default=..., alias='code', min_length=6, max_length=6)
     expected_workspace_id: str = Field(default=..., alias='expected_workspace_id', min_length=1, max_length=128)
 
+class AgentOut(WireModel):
+    available: bool = Field(default=..., alias='available')
+    enabled: bool = Field(default=..., alias='enabled')
+    executable: str = Field(default=..., alias='executable')
+    id: Literal['codex', 'claude-code'] = Field(default=..., alias='id')
+    message: str = Field(default=..., alias='message')
+    models: list[ModelOption] | None = Field(default=None, alias='models')
+    name: str = Field(default=..., alias='name')
+    status: str = Field(default=..., alias='status')
+    version: str = Field(default=..., alias='version')
+
 class AgentPairIn(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=80)
     scope: Literal['studio:read', 'studio:write'] = Field(default='studio:read', alias='scope')
@@ -880,6 +891,9 @@ class CallLogStatsOut(WireModel):
     errors_today: int = Field(default=..., alias='errors_today')
     total_tokens_today: int = Field(default=..., alias='total_tokens_today', repr=False)
 
+class CatalogOut(WireModel):
+    items: list[AgentOut] = Field(default=..., alias='items')
+
 class CertificationIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     is_official: bool = Field(default=..., alias='is_official')
@@ -1124,7 +1138,9 @@ class ConversationListOut(WireModel):
     items: list[ConversationOut] = Field(default=..., alias='items')
 
 class ConversationOut(WireModel):
+    agent_id: str | None = Field(default=None, alias='agent_id')
     created_at: datetime = Field(default=..., alias='created_at')
+    executor_kind: str = Field(default='legacy-pi', alias='executor_kind')
     id: str = Field(default=..., alias='id')
     model_id: str | None = Field(default=..., alias='model_id')
     revision: int = Field(default=..., alias='revision')
@@ -2957,6 +2973,23 @@ class GenerationTaskOut(WireModel):
     status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed'] = Field(default=..., alias='status')
     updated_at: str = Field(default=..., alias='updated_at')
 
+class Grant(WireModel):
+    agent_id: Literal['codex', 'claude-code'] = Field(default=..., alias='agent_id')
+    purpose: Literal['amadeus', 'visual_acceptance', 'interview_preparation'] = Field(default=..., alias='purpose')
+    user_id: str = Field(default=..., alias='user_id', min_length=1, max_length=36)
+
+class GrantUpdate(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    grants: list[Grant] = Field(default=..., alias='grants', max_length=1000)
+    managed: list[str] = Field(default=..., alias='managed', max_length=6)
+
+class GrantsOut(WireModel):
+    accounts: list[dict[str, str]] = Field(default=..., alias='accounts')
+    grants: list[Grant] = Field(default=..., alias='grants')
+    legacy: list[Grant] = Field(default=..., alias='legacy')
+    managed: list[str] = Field(default=..., alias='managed')
+    revision: int = Field(default=..., alias='revision')
+
 class HTTPValidationError(WireModel):
     detail: list[ValidationError] | None = Field(default=None, alias='detail')
 
@@ -3555,6 +3588,10 @@ class ModelEntryOut(WireModel):
 class ModelMutationOut(WireModel):
     model: ModelEntryOut = Field(default=..., alias='model')
     revision: int = Field(default=..., alias='revision')
+
+class ModelOption(WireModel):
+    id: str = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label')
 
 class ModelSupplierIn(WireModel):
     expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
@@ -4995,10 +5032,12 @@ class RubricDimension(WireModel):
     question_ids: list[str] = Field(default=..., alias='question_ids')
 
 class RunCreateIn(WireModel):
+    agent_id: Literal['codex', 'claude-code'] = Field(default=..., alias='agent_id')
+    agent_model: str = Field(default='', alias='agent_model', max_length=160)
     capabilities: list[str] | None = Field(default=None, alias='capabilities', max_length=100)
     context: list[dict[str, Any]] | None = Field(default=None, alias='context', max_length=32)
     mode: Literal['agent', 'plan'] = Field(default='agent', alias='mode')
-    model_id: str = Field(default=..., alias='model_id', min_length=1, max_length=160)
+    model_id: str = Field(default='code-agent', alias='model_id', max_length=160)
     references: list[Reference] | None = Field(default=None, alias='references', max_length=20)
     source_run_id: str | None = Field(default=None, alias='source_run_id')
 
@@ -5025,11 +5064,14 @@ class RunFinishIn(WireModel):
     status: Literal['completed', 'failed', 'cancelled', 'interrupted'] = Field(default=..., alias='status')
 
 class RunOut(WireModel):
+    agent_id: str | None = Field(default=None, alias='agent_id')
+    agent_model: str = Field(default='', alias='agent_model')
     capabilities: list[str] = Field(default=..., alias='capabilities')
     context: list[dict[str, Any]] = Field(default=..., alias='context')
     conversation_id: str = Field(default=..., alias='conversation_id')
     created_at: datetime = Field(default=..., alias='created_at')
     error_message: str | None = Field(default=..., alias='error_message')
+    execution_config: dict[str, Any] | None = Field(default=None, alias='execution_config')
     finished_at: datetime | None = Field(default=..., alias='finished_at')
     heartbeat_at: datetime = Field(default=..., alias='heartbeat_at')
     id: str = Field(default=..., alias='id')
@@ -6653,6 +6695,7 @@ AgentCapabilities.model_rebuild()
 AgentClaimIn.model_rebuild()
 AgentClaimOut.model_rebuild()
 AgentDecisionIn.model_rebuild()
+AgentOut.model_rebuild()
 AgentPairIn.model_rebuild()
 AgentPairOut.model_rebuild()
 AgentPairStarted.model_rebuild()
@@ -6753,6 +6796,7 @@ CallLogListItem.model_rebuild()
 CallLogListOut.model_rebuild()
 CallLogOut.model_rebuild()
 CallLogStatsOut.model_rebuild()
+CatalogOut.model_rebuild()
 CertificationIn.model_rebuild()
 CertificationOut.model_rebuild()
 ChangePasswordIn.model_rebuild()
@@ -7045,6 +7089,9 @@ GenerationModelOptionOut.model_rebuild()
 GenerationOptionsOut.model_rebuild()
 GenerationTaskListOut.model_rebuild()
 GenerationTaskOut.model_rebuild()
+Grant.model_rebuild()
+GrantUpdate.model_rebuild()
+GrantsOut.model_rebuild()
 HTTPValidationError.model_rebuild()
 HandoffIn.model_rebuild()
 HandoffOut.model_rebuild()
@@ -7134,6 +7181,7 @@ ModelDefaultsIn.model_rebuild()
 ModelEntryIn.model_rebuild()
 ModelEntryOut.model_rebuild()
 ModelMutationOut.model_rebuild()
+ModelOption.model_rebuild()
 ModelSupplierIn.model_rebuild()
 ModelSupplierMutationOut.model_rebuild()
 ModelSupplierOut.model_rebuild()

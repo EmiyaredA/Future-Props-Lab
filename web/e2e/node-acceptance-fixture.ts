@@ -9,15 +9,24 @@ export const acceptanceScreens = resolve("../.local/acceptance/node-ui");
 export async function acceptanceProject(page: Page, references = true) {
   mkdirSync(acceptanceScreens, { recursive: true });
   const videoPath = resolve(acceptanceScreens, `synthetic-${process.pid}.mp4`);
+  const visualReference = process.env.FPL_E2E_ACCEPTANCE_IMAGE;
   execFileSync("ffmpeg", [
     "-v",
     "error",
-    "-f",
-    "lavfi",
-    "-i",
-    "testsrc2=size=320x180:rate=12",
+    ...(visualReference
+      ? [
+          "-loop",
+          "1",
+          "-framerate",
+          "12",
+          "-i",
+          visualReference,
+          "-vf",
+          "scale=400:-2",
+        ]
+      : ["-f", "lavfi", "-i", "testsrc2=size=320x180:rate=12"]),
     "-t",
-    "1",
+    visualReference ? "8" : "1",
     "-c:v",
     "libx264",
     "-pix_fmt",
@@ -26,10 +35,12 @@ export async function acceptanceProject(page: Page, references = true) {
     videoPath,
   ]);
   const video = readFileSync(videoPath);
-  const image = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-    "base64",
-  );
+  const image = visualReference
+    ? readFileSync(visualReference)
+    : Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+      );
   await page.goto("/apps/visual-workshop");
   const csrf = (await page.context().cookies()).find(
     (c) => c.name === "fpl_csrf",
@@ -154,6 +165,11 @@ export async function simulatedInspection(
     const output = (
       await (await page.request.get(`${base}/nodes/shot/outputs`)).json()
     ).items.find((i: { id: string }) => i.id === body.output_id);
+    const context = await (
+      await page.request.get(
+        `${base}/nodes/shot/acceptance?output_id=${body.output_id}`,
+      )
+    ).json();
     const run: Run = {
       id: `fake-${records.length}`,
       node_id: "shot",
@@ -176,6 +192,7 @@ export async function simulatedInspection(
         inputs_version: 1,
         scheme_version: 1,
         result_contract_version: 1,
+        inputs: { assets: context.inputs },
         prompt: "保持角色外观，复现参考动作",
         coverage: "仅检查抽样帧，连续动作需要人工完整播放确认。",
         criteria: catalog.items[0].criteria,
@@ -187,7 +204,9 @@ export async function simulatedInspection(
           text: null,
           title: "动作迁移镜头",
         },
-        metadata: { duration_ms: 1000 },
+        metadata: {
+          duration_ms: process.env.FPL_E2E_ACCEPTANCE_IMAGE ? 8000 : 1000,
+        },
         check_results: [],
       },
       evidence: [
@@ -252,10 +271,15 @@ export async function simulatedInspection(
     const response = await route.fetch(),
       value = await response.json();
     value.items.forEach(
-      (item: { node_id: string; state: string; run?: Run }) => {
+      (item: { node_id: string; state: string; issue: string; run?: Run }) => {
         if (records[0] && item.node_id === "shot") {
           item.run = records[0];
           item.state = records[0].decision;
+          item.issue = String(
+            [...records[0].decisions]
+              .reverse()
+              .find((d) => d.verdict === "failed" && d.reason)?.reason ?? "",
+          );
         }
       },
     );

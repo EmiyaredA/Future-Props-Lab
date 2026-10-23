@@ -20,6 +20,27 @@ function openDocsSearch() {
   return screen.getByRole("dialog", { name: "搜索文档" });
 }
 
+test.each(["model-service", "code-agents"] as const)(
+  "%s shares the single model infrastructure sidebar entry",
+  (page) => {
+    render(<StudioSidebar page={page} navigate={vi.fn()} />);
+    const navigation = screen.getByRole("navigation", { name: "基模型子菜单" });
+    expect(
+      within(navigation).getByRole("button", { name: "模型与智能体" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(
+      within(navigation).queryByRole("button", {
+        name: "模型服务",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(navigation).queryByRole("button", {
+        name: "编程智能体",
+      }),
+    ).not.toBeInTheDocument();
+  },
+);
+
 test("renders integrations after tools and before the base model group", () => {
   const navigate = vi.fn();
   render(
@@ -285,7 +306,7 @@ test("opens base-model flyout from the primary rail when secondary is hidden", (
   fireEvent.click(screen.getByRole("button", { name: "基模型，点击展开菜单" }));
   const menu = screen.getByRole("menu", { name: "基模型" });
   expect(menu).toBeInTheDocument();
-  fireEvent.click(within(menu).getByRole("menuitem", { name: "模型服务" }));
+  fireEvent.click(within(menu).getByRole("menuitem", { name: "模型与智能体" }));
   expect(navigate).toHaveBeenCalledWith("model-service");
   expect(
     screen.queryByRole("menu", { name: "基模型" }),

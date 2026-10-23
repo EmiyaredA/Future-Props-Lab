@@ -36,3 +36,7 @@ test("复验选择另一个输出版本并保留原验收记录", async ({ page 
   expect(records()).toHaveLength(2);
   expect(records()[0].previous_run_id).toBe(records()[1].id);
 });
+
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "wait" });
+});

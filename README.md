@@ -17,9 +17,10 @@ macOS App 支持本地 CLI / Python SDK 接入：在「账号设置 → API 密�
 [本地 Agent 接入](docs/operations/desktop-agent.md)。
 
 桌面顶栏的「Amadeus」打开独立的助手窗口。它在当前授权 Workspace 内显示已打开的 FPL
-窗口和手动选取的控件，按账号保存本地会话；模型使用现有供应商配置。窗口可加载集成中心的
-工具 API、MCP 和 Skills，外部调用、时间线修改及会话脚本会先显示参数并等待确认。
-Pi Agent 源码固定在 `vendor/pi/`，安装和构建不依赖开发机的 Pi 目录。
+窗口和手动选取的控件，按账号保存本地会话；新对话使用管理员授权的 Codex 或 Claude Code。基模型菜单中的
+“基模型 → 模型与智能体”统一提供模型服务和编程智能体切换；编程智能体提供连接检测与按用途授权；CLI 路径和启用项由 TOML 部署配置管理。窗口可加载所选
+工具 API、MCP 和 Skills，写入需确认。旧对话只读保留；外部客户端可通过 `fpl mcp serve`
+连接已授权项目。详见 [编程智能体](docs/operations/code-agents.md)。
 
 macOS Apple Silicon 桌面版可通过 `npm run build:desktop` 构建 `.app`，
 `npm run package:desktop` 制作 `.dmg`。安装后不需要 Python、Node.js、uv 或 FFmpeg，

@@ -1927,6 +1927,65 @@
         "title": "AgentDecisionIn",
         "type": "object"
       },
+      "AgentOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "executable": {
+            "title": "Executable",
+            "type": "string"
+          },
+          "id": {
+            "enum": [
+              "codex",
+              "claude-code"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelOption"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "executable",
+          "version",
+          "enabled",
+          "available",
+          "status",
+          "message"
+        ],
+        "title": "AgentOut",
+        "type": "object"
+      },
       "AgentPairIn": {
         "properties": {
           "name": {
@@ -5367,6 +5426,22 @@
         "title": "CallLogStatsOut",
         "type": "object"
       },
+      "CatalogOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgentOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "CatalogOut",
+        "type": "object"
+      },
       "CertificationIn": {
         "properties": {
           "expected_revision": {
@@ -6934,9 +7009,25 @@
       },
       "ConversationOut": {
         "properties": {
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
+            "type": "string"
+          },
+          "executor_kind": {
+            "default": "legacy-pi",
+            "title": "Executor Kind",
             "type": "string"
           },
           "id": {
@@ -19159,6 +19250,122 @@
         "title": "GenerationTaskOut",
         "type": "object"
       },
+      "Grant": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "enum": [
+              "codex",
+              "claude-code"
+            ],
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "amadeus",
+              "visual_acceptance",
+              "interview_preparation"
+            ],
+            "title": "Purpose",
+            "type": "string"
+          },
+          "user_id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "agent_id",
+          "purpose"
+        ],
+        "title": "Grant",
+        "type": "object"
+      },
+      "GrantUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/Grant"
+            },
+            "maxItems": 1000,
+            "title": "Grants",
+            "type": "array"
+          },
+          "managed": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Managed",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "grants",
+          "managed"
+        ],
+        "title": "GrantUpdate",
+        "type": "object"
+      },
+      "GrantsOut": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/Grant"
+            },
+            "title": "Grants",
+            "type": "array"
+          },
+          "legacy": {
+            "items": {
+              "$ref": "#/components/schemas/Grant"
+            },
+            "title": "Legacy",
+            "type": "array"
+          },
+          "managed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Managed",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "grants",
+          "managed",
+          "legacy",
+          "accounts"
+        ],
+        "title": "GrantsOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -22846,6 +23053,24 @@
           "model"
         ],
         "title": "ModelMutationOut",
+        "type": "object"
+      },
+      "ModelOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ModelOption",
         "type": "object"
       },
       "ModelSupplierIn": {
@@ -32051,6 +32276,20 @@
       "RunCreateIn": {
         "additionalProperties": false,
         "properties": {
+          "agent_id": {
+            "enum": [
+              "codex",
+              "claude-code"
+            ],
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "agent_model": {
+            "default": "",
+            "maxLength": 160,
+            "title": "Agent Model",
+            "type": "string"
+          },
           "capabilities": {
             "items": {
               "type": "string"
@@ -32078,8 +32317,8 @@
             "type": "string"
           },
           "model_id": {
+            "default": "code-agent",
             "maxLength": 160,
-            "minLength": 1,
             "title": "Model Id",
             "type": "string"
           },
@@ -32104,7 +32343,7 @@
           }
         },
         "required": [
-          "model_id"
+          "agent_id"
         ],
         "title": "RunCreateIn",
         "type": "object"
@@ -32245,6 +32484,22 @@
       },
       "RunOut": {
         "properties": {
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "agent_model": {
+            "default": "",
+            "title": "Agent Model",
+            "type": "string"
+          },
           "capabilities": {
             "items": {
               "type": "string"
@@ -32279,6 +32534,11 @@
               }
             ],
             "title": "Error Message"
+          },
+          "execution_config": {
+            "additionalProperties": true,
+            "title": "Execution Config",
+            "type": "object"
           },
           "finished_at": {
             "anyOf": [
@@ -47000,6 +47260,108 @@
         "summary": "Registration",
         "tags": [
           "platform-governance"
+        ]
+      }
+    },
+    "/v1/code-agents": {
+      "get": {
+        "operationId": "list_code_agents_v1_code_agents_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Code Agents",
+        "tags": [
+          "code-agents"
+        ]
+      }
+    },
+    "/v1/code-agents/detect": {
+      "post": {
+        "operationId": "detect_code_agents_v1_code_agents_detect_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Detect Code Agents",
+        "tags": [
+          "code-agents"
+        ]
+      }
+    },
+    "/v1/code-agents/grants": {
+      "get": {
+        "operationId": "get_code_agent_grants_v1_code_agents_grants_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Code Agent Grants",
+        "tags": [
+          "code-agents"
+        ]
+      },
+      "put": {
+        "operationId": "put_code_agent_grants_v1_code_agents_grants_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Code Agent Grants",
+        "tags": [
+          "code-agents"
         ]
       }
     },

@@ -254,6 +254,10 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/open-folder"),
     ),
     "content.read": (
+        ("GET", "/v1/code-agents"),
+        ("POST", "/v1/code-agents/detect"),
+        ("GET", "/v1/code-agents/grants"),
+        ("PUT", "/v1/code-agents/grants"),
         ("GET", "/v1/interview-assistant/executor"),
         ("GET", "/v1/interview-assistant/rooms"),
         ("GET", "/v1/interview-assistant/rooms/{room_id}"),

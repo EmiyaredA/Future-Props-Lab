@@ -4,6 +4,7 @@
 // 账号公共入口、工作区全屏弹窗与管理抽屉由 account-ui.spec.ts 验证。
 // 独立成员/角色/审计管理与收到邀请弹窗由 workspace-management.spec.ts 验证。
 // 模型目录、协议类型连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。
+// 模型与智能体统一入口、键盘切换、授权矩阵由 code-agents.spec.ts 覆盖 390/768/1280/1600px 与明暗主题。
 // 官方技术文档图、放大阅读和个人全屏画板由 technical-knowledge.spec.ts 覆盖 390/768/1600 宽度与明暗主题。
 import type { AppPage } from "../src/app/routes";
 
@@ -46,6 +47,7 @@ export const responsiveOwners = {
   "storage-usage": "shell",
   "model-test": "shell",
   "model-test-tools": "shell",
+  "code-agents": "shell",
   "model-service": "shell",
   "model-call-logs": "shell",
   "thought-workshop-community": "thought",
@@ -111,6 +113,7 @@ export const staticPaths = [
   "/tools/storage-usage",
   "/model-test",
   "/model-test-tools",
+  "/code-agents",
   "/model-service",
   "/model-call-logs",
   "/apps/thought-workshop",

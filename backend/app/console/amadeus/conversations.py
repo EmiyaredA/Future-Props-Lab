@@ -219,6 +219,8 @@ class Conversations:
 
     async def add_message(self, identity: str, body: MessageIn) -> ConversationDetailOut:
         row = await self._get(identity)
+        if row.executor_kind == "legacy-pi":
+            raise OperationError("旧内核对话只读，请新建 Code Agent 对话", "legacy_readonly", 409)
         await self._revision(row, body.expected_revision)
         values = {"revision": body.expected_revision + 1, "updated_at": utc_now()}
         if row.title == "新对话" and body.role == "user":

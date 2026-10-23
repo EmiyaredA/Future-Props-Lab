@@ -223,3 +223,48 @@ async def test_parent_death_watchdog_stops_executor():
     )
     assert result.returncode != 0
     assert b"Traceback" not in result.stderr
+
+
+@pytest.mark.asyncio
+async def test_independent_media_entry_exposes_only_scoped_mcp_tools(tmp_path):
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+    from PIL import Image
+
+    image = tmp_path / "reference.png"
+    Image.new("RGB", (24, 24), "green").save(image)
+    (tmp_path / "manifest.json").write_text(
+        json.dumps(
+            {
+                "task": {"prompt": "data"},
+                "media": [],
+                "evidence": [
+                    {
+                        "id": "e",
+                        "file": image.name,
+                        "source_asset_id": "source",
+                        "position_ms": None,
+                        "sha256": file_digest(image),
+                    }
+                ],
+            }
+        )
+    )
+    entry = Path(__file__).resolve().parents[1] / "desktop/backend/acceptance_tools_entry.py"
+    parameters = StdioServerParameters(
+        command=sys.executable,
+        args=[str(entry), str(tmp_path)],
+        env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "PYTHONDONTWRITEBYTECODE": "1"},
+    )
+    async with asyncio.timeout(10), stdio_client(parameters) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            assert {tool.name for tool in (await session.list_tools()).tools} == {
+                "manifest",
+                "image",
+                "sample",
+            }
+            result = await session.call_tool("image", {"evidence_id": "e"})
+            assert not result.is_error and any(item.type == "image" for item in result.content)
+            denied = await session.call_tool("image", {"evidence_id": "../outside"})
+            assert denied.is_error

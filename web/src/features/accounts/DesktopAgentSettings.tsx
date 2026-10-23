@@ -1,23 +1,10 @@
-import { useEffect, useState } from "react";
-import "@platform/desktop";
+import { useDesktopAgentAccess } from "./useDesktopAgentAccess";
 import "./api-keys-settings.css";
 import "./api-keys-responsive.css";
 
 export function DesktopAgentSettings() {
-  const bridge = window.futurePropsDesktop;
-  const [enabled, setEnabled] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let active = true;
-    void bridge?.agentStatus?.().then((value) => {
-      if (active) setEnabled(value.enabled);
-    });
-    return () => {
-      active = false;
-    };
-  }, [bridge]);
-  if (!bridge?.agentStatus) return null;
+  const { supported, enabled, busy, error, toggle } = useDesktopAgentAccess();
+  if (!supported) return null;
   return (
     <section className="desktop-agent-settings">
       <div className="desktop-agent-settings-copy">
@@ -35,18 +22,17 @@ export function DesktopAgentSettings() {
       <button
         type="button"
         className={`btn ${enabled ? "" : "primary"}`}
-        disabled={busy}
-        aria-pressed={enabled}
-        onClick={() => {
-          setBusy(true);
-          setError("");
-          void (enabled ? bridge.disableAgent() : bridge.enableAgent())
-            .then((value) => setEnabled(value.enabled))
-            .catch(() => setError("无法切换接入状态，请查看桌面日志"))
-            .finally(() => setBusy(false));
-        }}
+        disabled={busy || enabled === null}
+        aria-pressed={enabled ?? false}
+        onClick={() => void toggle()}
       >
-        {busy ? "正在设置…" : enabled ? "关闭本地接入" : "开启本地接入"}
+        {busy
+          ? "正在设置…"
+          : enabled === null
+            ? "正在读取状态…"
+            : enabled
+              ? "关闭本地接入"
+              : "开启本地接入"}
       </button>
     </section>
   );

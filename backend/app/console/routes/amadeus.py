@@ -110,13 +110,18 @@ async def active_run(session: SessionDep, principal: StudioAuth) -> RunDetailOut
 
 @router.post("/conversations/{conversation_id}/runs", response_model=RunDetailOut)
 async def create_run(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     conversation_id: str,
     body: RunCreateIn,
 ) -> RunDetailOut:
     try:
-        return await Runs(session, principal).create(conversation_id, body)
+        from app.console.amadeus.execution import runtime
+
+        result = await Runs(session, principal).create(conversation_id, body)
+        runtime(request.app).start(request.app, request.headers, principal, result.run)
+        return result
     except OperationError as exc:
         raise _error(exc) from None
 
@@ -148,6 +153,7 @@ async def get_run(
 async def pause_run_for_approval(
     session: SessionDep, principal: StudioAuth, conversation_id: str, run_id: str
 ) -> RunDetailOut:
+    raise HTTPException(410, {"code": "server_owned_run"})
     try:
         return await Runs(session, principal).pause_for_approval(conversation_id, run_id)
     except OperationError as exc:
@@ -165,6 +171,7 @@ async def create_question(
     run_id: str,
     body: QuestionIn,
 ) -> QuestionOut:
+    raise HTTPException(410, {"code": "server_owned_run"})
     try:
         return await Questions(session, principal).create(conversation_id, run_id, body)
     except OperationError as exc:
@@ -196,6 +203,7 @@ async def append_run_event(
     run_id: str,
     body: RunEventIn,
 ) -> RunEventOut:
+    raise HTTPException(410, {"code": "server_owned_run"})
     try:
         return await Runs(session, principal).append_event(conversation_id, run_id, body)
     except OperationError as exc:
@@ -206,6 +214,7 @@ async def append_run_event(
 async def heartbeat_run(
     session: SessionDep, principal: StudioAuth, conversation_id: str, run_id: str
 ) -> RunOut:
+    raise HTTPException(410, {"code": "server_owned_run"})
     try:
         return await Runs(session, principal).heartbeat(conversation_id, run_id)
     except OperationError as exc:
@@ -220,6 +229,7 @@ async def finish_run(
     run_id: str,
     body: RunFinishIn,
 ) -> RunDetailOut:
+    raise HTTPException(410, {"code": "server_owned_run"})
     try:
         return await Runs(session, principal).finish(
             conversation_id, run_id, body.status, body.error_message
@@ -230,12 +240,15 @@ async def finish_run(
 
 @router.post("/conversations/{conversation_id}/runs/{run_id}/cancel", response_model=RunDetailOut)
 async def cancel_run(
-    session: SessionDep, principal: StudioAuth, conversation_id: str, run_id: str
+    request: Request, session: SessionDep, principal: StudioAuth, conversation_id: str, run_id: str
 ) -> RunDetailOut:
     try:
         runs = Runs(session, principal)
         await runs.mark_cancelling(conversation_id, run_id)
         await cancel_actions_for_run(session, principal, run_id)
+        from app.console.amadeus.execution import runtime
+
+        await runtime(request.app).cancel(run_id)
         return await runs.detail(conversation_id, run_id)
     except OperationError as exc:
         raise _error(exc) from None
@@ -425,6 +438,7 @@ async def read_registered_operation(request: Request, principal: StudioAuth, bod
 
 @router.post("/model-turn", response_model=ModelTurnOut)
 async def model_turn(session: SessionDep, principal: StudioAuth, body: ModelTurnIn) -> ModelTurnOut:
+    raise HTTPException(410, {"code": "external_agent_required"})
     if not principal.allows("models.use"):
         raise HTTPException(403, {"code": "insufficient_permission", "message": "没有模型调用权限"})
     text_parts: list[str] = []
@@ -449,6 +463,7 @@ async def model_turn(session: SessionDep, principal: StudioAuth, body: ModelTurn
 async def model_turn_stream(
     session: SessionDep, principal: StudioAuth, body: ModelTurnIn
 ) -> StreamingResponse:
+    raise HTTPException(410, {"code": "external_agent_required"})
     if not principal.allows("models.use"):
         raise HTTPException(403, {"code": "insufficient_permission", "message": "没有模型调用权限"})
 

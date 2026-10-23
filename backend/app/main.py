@@ -30,6 +30,7 @@ from app.capabilities.asset_store.layout_migration import (
 )
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.capabilities.asset_store.storage import AssetStorage
+from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
 from app.console.governance.external_sync_access import external_sync_actor_allowed
@@ -79,6 +80,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs()
     await recover_interrupted_amadeus_runs()
+    lifespan_app.state.code_agent_runs = CodeAgentRuns()
     installer = Installer(local_root(settings))
     local_runtime = LocalRuntime(installer)
     local_models = LocalModels(SessionLocal, installer, local_runtime)
@@ -109,6 +111,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await supervisor.start()
         yield
     finally:
+        await lifespan_app.state.code_agent_runs.close()
         await supervisor.stop()
         await local_models.close()
         lifespan_app.state.runner_supervisor = None
@@ -121,6 +124,7 @@ app = FastAPI(
     description="未来道具研究所模型目录与调用观测 API",
     lifespan=lifespan,
 )
+app.state.code_agent_runs = CodeAgentRuns()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,

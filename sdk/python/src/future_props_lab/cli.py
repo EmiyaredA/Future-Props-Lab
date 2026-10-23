@@ -41,6 +41,8 @@ def parser():
     )
     commands.add_parser("disconnect", help="清除本机凭据；撤销授权请在 App 内操作")
     commands.add_parser("status")
+    mcp = commands.add_parser("mcp", help="Serve FPL tools over stdio MCP")
+    mcp.add_argument("mcp_action", choices=["serve", "relay"])
     operations = commands.add_parser("operations", help="列出操作，或查看操作参数和 schema")
     operations.add_argument("operation", nargs="?")
     for command in ("call", "wait"):
@@ -192,6 +194,14 @@ def main(argv=None):
     args = parser().parse_args(argv)
     options = dict(data_dir=args.data_dir, development=args.development, profile=args.profile)
     try:
+        if args.command == "mcp":
+            from .mcp import run_external, run_relay
+
+            if args.mcp_action == "relay":
+                run_relay()
+            else:
+                run_external(**options)
+            return 0
         if args.command == "connect":
             emit(
                 pair_desktop(

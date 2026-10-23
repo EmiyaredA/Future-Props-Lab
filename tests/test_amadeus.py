@@ -684,125 +684,76 @@ async def test_amadeus_concurrent_message_cas_allows_one_writer() -> None:
 
 
 @pytest.mark.asyncio
-async def test_amadeus_run_is_single_idempotent_and_persists_partial_reply() -> None:
+async def test_amadeus_browser_cannot_author_run_events_or_finalize() -> None:
     await _test_user()
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
         conversation = (await client.post("/v1/amadeus/conversations")).json()
-        root = f"/v1/amadeus/conversations/{conversation['id']}"
-        run_response = await client.post(
-            root + "/runs",
-            json={
-                "model_id": "mock",
-                "context": [{"application": "视频剪辑工坊", "projectId": "project-1"}],
-                "references": [],
-                "capabilities": ["fpl_operations"],
-            },
-        )
-        assert run_response.status_code == 200, run_response.text
-        run = run_response.json()["run"]
-        duplicate = await client.post(
-            root + "/runs",
-            json={"model_id": "mock", "context": [], "references": [], "capabilities": []},
-        )
-        assert duplicate.status_code == 409
-        event_path = root + f"/runs/{run['id']}/events"
-        event_body = {
-            "kind": "assistant_delta",
-            "payload": {"text": "正在分析片段"},
-            "idempotency_key": "delta-1",
-        }
-        first = await client.post(event_path, json=event_body)
-        repeated = await client.post(event_path, json=event_body)
-        assert first.status_code == repeated.status_code == 200
-        assert first.json()["id"] == repeated.json()["id"]
-        history = await client.get(root + "/runs")
-        assert history.status_code == 200
-        assert history.json()[0]["events"][0]["payload"] == {"text": "正在分析片段"}
-        action = (
+        root = f"/v1/amadeus/conversations/{conversation['id']}/runs/nonexistent"
+        assert (
             await client.post(
-                root + "/actions",
+                root + "/events",
                 json={
-                    "run_id": run["id"],
-                    "tool_name": "write_script",
-                    "arguments": {"name": "late.py", "content": "print('late')"},
+                    "kind": "assistant_delta",
+                    "payload": {"text": "forged"},
+                    "idempotency_key": "forged",
                 },
             )
-        ).json()
-        cancelling = await client.post(root + f"/runs/{run['id']}/cancel")
-        assert cancelling.status_code == 200
-        assert cancelling.json()["run"]["status"] == "cancelling"
-        trailing = await client.post(
-            root + f"/runs/{run['id']}/events",
-            json={
-                "kind": "assistant_delta",
-                "payload": {"text": "，以及停止前的尾部"},
-                "idempotency_key": "partial-after-cancel",
-            },
-        )
-        assert trailing.status_code == 200
-        finished = await client.post(
-            root + f"/runs/{run['id']}/finish",
-            json={"status": "cancelled", "error_message": "用户停止"},
-        )
-        assert finished.status_code == 200, finished.text
-        assert finished.json()["run"]["status"] == "cancelled"
-        repeated_finish = await client.post(
-            root + f"/runs/{run['id']}/finish",
-            json={"status": "failed", "error_message": "迟到的重复终态"},
-        )
-        assert repeated_finish.status_code == 200
-        assert repeated_finish.json()["run"]["status"] == "cancelled"
-        detail = (await client.get(root)).json()
-        reply = detail["messages"][-1]
-        assert reply["content"] == "正在分析片段，以及停止前的尾部"
-        assert reply["run_id"] == run["id"]
-        assert reply["status"] == "cancelled"
-        expired = await client.post(
-            root + f"/actions/{action['id']}/decision",
-            json={"arguments_sha256": action["arguments_sha256"], "approve": True},
-        )
-        assert expired.status_code == 409
-        assert (await client.get("/v1/amadeus/runs/active")).json() is None
+        ).status_code == 410
+        assert (
+            await client.post(root + "/finish", json={"status": "completed"})
+        ).status_code == 410
+        assert (await client.post(root + "/heartbeat")).status_code == 410
 
 
 @pytest.mark.asyncio
 async def test_amadeus_startup_recovery_interrupts_run_without_replay() -> None:
+    from app.console.amadeus.models import AmadeusAction, AmadeusRun
+    from app.runtime.ids import new_id
+
     await _test_user()
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
         conversation = (await client.post("/v1/amadeus/conversations")).json()
         root = f"/v1/amadeus/conversations/{conversation['id']}"
-        run = (
-            await client.post(
-                root + "/runs",
-                json={"model_id": "mock", "context": [], "references": [], "capabilities": []},
+        identity = new_id()
+        async with SessionLocal() as session:
+            bind_workspace(session, "default")
+            session.add(
+                AmadeusRun(
+                    id=identity,
+                    conversation_id=conversation["id"],
+                    workspace_id="default",
+                    user_id="test-user",
+                    model_id="legacy",
+                    status="running",
+                    active_owner_key="default:test-user",
+                    partial_text="已收到部分回复",
+                )
             )
-        ).json()["run"]
-        await client.post(
-            root + f"/runs/{run['id']}/events",
-            json={
-                "kind": "assistant_delta",
-                "payload": {"text": "已收到部分回复"},
-                "idempotency_key": "partial-1",
-            },
-        )
-        action = (
-            await client.post(
-                root + "/actions",
-                json={"run_id": run["id"], "tool_name": "write_script", "arguments": {}},
+            await session.flush()
+            session.add(
+                AmadeusAction(
+                    conversation_id=conversation["id"],
+                    workspace_id="default",
+                    user_id="test-user",
+                    run_id=identity,
+                    tool_name="write_script",
+                    arguments_json={},
+                    arguments_sha256="0" * 64,
+                    status="pending",
+                )
             )
-        ).json()
+            await session.commit()
         await recover_interrupted_amadeus_runs()
-        recovered = (await client.get(root + f"/runs/{run['id']}")).json()
+        recovered = (await client.get(root + f"/runs/{identity}")).json()
         assert recovered["run"]["status"] == "interrupted"
         assert recovered["run"]["partial_text"] == "已收到部分回复"
         detail = (await client.get(root)).json()
         assert detail["messages"][-1]["status"] == "interrupted"
-        saved_action = next(item for item in detail["actions"] if item["id"] == action["id"])
-        assert saved_action["status"] == "cancelled"
+        assert detail["actions"][0]["status"] == "cancelled"
 
 
 @pytest.mark.asyncio
@@ -903,27 +854,10 @@ async def test_amadeus_video_batch_applies_once_and_reports_revision_conflict() 
         root = f"/v1/amadeus/conversations/{conversation_id}"
 
         async def execute(arguments: dict) -> dict:
-            run = (
-                await client.post(
-                    root + "/runs",
-                    json={
-                        "model_id": "mock",
-                        "context": [
-                            {
-                                "application": "视频剪辑工坊",
-                                "projectId": project_id,
-                            }
-                        ],
-                        "references": [],
-                        "capabilities": ["video_timeline_batch"],
-                    },
-                )
-            ).json()["run"]
             proposed = (
                 await client.post(
                     root + "/actions",
                     json={
-                        "run_id": run["id"],
                         "tool_name": "video_timeline_batch",
                         "arguments": arguments,
                     },
@@ -939,10 +873,6 @@ async def test_amadeus_video_batch_applies_once_and_reports_revision_conflict() 
             assert approved.status_code == 200
             completed = await client.post(root + f"/actions/{proposed['id']}/execute")
             assert completed.status_code == 200, completed.text
-            await client.post(
-                root + f"/runs/{run['id']}/finish",
-                json={"status": "completed"},
-            )
             return completed.json()
 
         applied = await execute(

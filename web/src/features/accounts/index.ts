@@ -9,3 +9,6 @@ export {
 } from "./useLogWorkspaceScope";
 
 export { accountQueryKeys } from "./queryKeys";
+
+export { DesktopAgentSettings } from "./DesktopAgentSettings";
+export { useDesktopAgentAccess } from "./useDesktopAgentAccess";

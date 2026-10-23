@@ -25,17 +25,19 @@ export function AcceptanceWorkspace({
   readOnly = false,
   onView,
   onConversation,
+  initialTab = "templates",
 }: {
   projectId: string;
   title: string;
   nodes?: VisualCanvasNode[];
   readOnly?: boolean;
+  initialTab?: "templates" | "summary";
   onView?: (view: "canvas" | "board") => void;
   onConversation?: () => void;
   onBack: () => void;
   onOpenNode?: (nodeId: string, outputId?: string) => void;
 }) {
-  const [tab, setTab] = useState<"templates" | "summary">("templates");
+  const [tab, setTab] = useState<"templates" | "summary">(initialTab);
   const catalog = useQuery({
     queryKey: keys.acceptanceCatalog(),
     queryFn: getAcceptanceCatalog,
@@ -60,7 +62,7 @@ export function AcceptanceWorkspace({
         <img src="/brand/visual-workshop-mark-cutout.png" alt="" />
         <div>
           <strong>{title}</strong>
-          <small>视觉创作工坊 · 项目验收</small>
+          <small>视觉创作工坊 · 项目验收{readOnly ? " · 只读" : ""}</small>
         </div>
         <div className="acceptance-header-actions">
           {onView && (
@@ -130,7 +132,7 @@ export function AcceptanceWorkspace({
               <ProjectAcceptanceSummary
                 summary={summary.data}
                 catalog={catalog.data}
-                onOpenNode={readOnly ? undefined : onOpenNode}
+                onOpenNode={onOpenNode}
               />
             )}
           </>

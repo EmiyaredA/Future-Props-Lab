@@ -555,6 +555,12 @@
   border-bottom-color: var(--board-accent);
 }
 @media (min-width: 1300px) {
+  .visual-project-board:has(.board-workbench.is-acceptance) .board-header {
+    min-height: 72px;
+  }
+  .visual-project-board:has(.board-workbench.is-acceptance) .board-tabs {
+    display: none;
+  }
   .visual-project-board:has(.board-workbench.is-acceptance) .board-materials {
     width: 280px;
   }
@@ -691,6 +697,8 @@
   gap: 10px;
 }
 .board-output-panel.is-acceptance .board-version-entry {
+  flex: 0 0 auto;
+  min-height: 74px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -703,6 +711,8 @@
   background: var(--board-accent-soft);
 }
 .board-output-panel.is-acceptance .board-version-select {
+  flex-direction: row;
+  box-shadow: none;
   width: auto;
   flex: 1;
   display: flex;
@@ -745,6 +755,9 @@
   flex: 0 0 18px;
 }
 .board-output-panel.is-acceptance .board-version-entry > .board-version-delete {
+  width: auto;
+  flex: 0 0 auto;
+  margin-top: 0;
   position: static;
   height: 32px;
   border: 0;

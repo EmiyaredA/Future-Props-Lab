@@ -3,6 +3,7 @@
 from pydantic import ValidationError
 from sqlalchemy import select, update
 
+from app.console.governance.code_agents import authorized
 from app.orm import bind_workspace
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
@@ -62,8 +63,14 @@ class InterviewPreparationRunner(PollingTaskRunner):
             return bool(
                 room
                 and room.active_task_id == task.id
-                and settings.fpl_interview_codex_enabled
-                and settings.fpl_interview_codex_user_id == task.user_id
+                and await authorized(
+                    session,
+                    task.workspace_id,
+                    task.user_id,
+                    "codex",
+                    "interview_preparation",
+                    settings=settings,
+                )
                 and await self.actor_allowed(session, task.workspace_id, task.user_id)
             )
 
@@ -182,7 +189,7 @@ class InterviewPreparationRunner(PollingTaskRunner):
         try:
             if not await self.active(identifier):
                 raise OperationError("执行者权限或本机授权已变化", "executor_access", 403)
-            status = await executor_status(task.user_id)
+            status = await executor_status(task.user_id, task.workspace_id)
             if not status.available:
                 raise OperationError(status.message, status.code, 409)
             root = task_context(task)

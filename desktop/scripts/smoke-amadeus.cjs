@@ -1,6 +1,12 @@
 // Real Electron + Vite + Python, with disposable account and database.
 const { spawn } = require("node:child_process");
-const { mkdtempSync, readFileSync, rmSync } = require("node:fs");
+const {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  mkdirSync,
+  writeFileSync,
+} = require("node:fs");
 const { createServer } = require("node:net");
 const { once } = require("node:events");
 const os = require("node:os");
@@ -52,8 +58,86 @@ async function apiJson(page, url, method = "GET", body) {
   );
 }
 
+function sourceCli(directory, args, input = "") {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      path.join(root, ".venv/bin/python"),
+      [
+        path.join(root, "desktop/backend/cli_entry.py"),
+        "--data-dir",
+        directory,
+        "--profile",
+        "external-smoke",
+        ...args,
+      ],
+      { stdio: ["pipe", "pipe", "pipe"] },
+    );
+    let output = "",
+      error = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      error += chunk;
+    });
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error("Source CLI timed out"));
+    }, 45000);
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      clearTimeout(timer);
+      if (code) reject(new Error(`CLI failed ${code}: ${error}`));
+      else
+        resolve(
+          output
+            .trim()
+            .split("\n")
+            .filter(Boolean)
+            .map((line) => JSON.parse(line)),
+        );
+    });
+    child.stdin.end(input);
+  });
+}
+
+async function mcpCall(directory, operation, parameters) {
+  const requests = [
+    {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-03-26" },
+    },
+    {
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/call",
+      params: { name: "call", arguments: { operation, parameters } },
+    },
+  ];
+  const output = await sourceCli(
+    directory,
+    ["mcp", "serve"],
+    requests.map((r) => JSON.stringify(r)).join("\n") + "\n",
+  );
+  return output.find((item) => item.id === 2).result;
+}
+
 async function main() {
   const directory = mkdtempSync(path.join(os.tmpdir(), "fpl-amadeus-smoke-"));
+  const fake = path.join(directory, "codex-fixture");
+  writeFileSync(
+    fake,
+    `#!${path.join(root, ".venv/bin/python")}\n${readFileSync(path.join(root, "tests/fixtures/code_agent_cli.py"), "utf8")}`,
+    { mode: 0o700 },
+  );
+  mkdirSync(path.join(directory, "backend"), { recursive: true });
+  writeFileSync(
+    path.join(directory, "backend/config.toml"),
+    `[security]\nsecrets_key="Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys="\n[code_agents]\ncodex_enabled=true\ncodex_executable=${JSON.stringify(fake)}\n`,
+    { mode: 0o600 },
+  );
   const listener = createServer().listen(0, "127.0.0.1");
   await once(listener, "listening");
   const port = listener.address().port;
@@ -490,7 +574,7 @@ async function main() {
       1,
     );
     assert.equal(
-      await assistant.getByRole("button", { name: "选择模型" }).count(),
+      await assistant.getByRole("combobox", { name: "选择模型" }).count(),
       1,
     );
     assert.equal(
@@ -779,195 +863,45 @@ async function main() {
       position: { x: 80, y: 120 },
       generation_draft: { prompt: "日落时分的城市街景，缓慢推进镜头" },
     };
-    await assistant.addInitScript(
-      ({ projectId, canvasPath, videoNode }) => {
-        const realFetch = window.fetch.bind(window);
-        window.__amadeusMockTurns = 0;
-        window.fetch = async (input, init) => {
-          const request =
-            input instanceof Request ? input : new Request(input, init);
-          const url = new URL(request.url);
-          if (url.pathname === "/v1/model-inference/options")
-            return new Response(
-              JSON.stringify({
-                items: [{ id: "smoke-model", label: "隔离模型" }],
-              }),
-              { status: 200, headers: { "Content-Type": "application/json" } },
-            );
-          if (url.pathname !== "/v1/amadeus/model-turn/stream")
-            return realFetch(input, init);
-          window.__amadeusMockTurns += 1;
-          const payload = await request.clone().json();
-          const messages = payload.messages || [];
-          const toolSeen = (name) =>
-            messages.some(
-              (item) => item.role === "tool" && item.tool_name === name,
-            );
-          let text = "";
-          let tool_calls = [];
-          if (payload.system.includes("Plan 模式"))
-            text = messages.some(
-              (item) => item.role === "user" && item.text?.includes("我的修订"),
-            )
-              ? "修订计划：先核对画布，再展示变更并等待批准。"
-              : "计划：读取视频项目画布，确认版本后新增视频生成草稿。";
-          else if (toolSeen("fpl_operation_write"))
-            text = "已新增视频生成草稿，并确认当前项目状态。";
-          else if (toolSeen("fpl_read"))
-            tool_calls = [
-              {
-                id: "add-video-draft",
-                name: "fpl_operation_write",
-                arguments: {
-                  operation: "visual.apply_canvas_operations",
-                  path_params: { project_id: projectId },
-                  body: JSON.stringify({
-                    expected_revision: 0,
-                    request_id: "amadeus-video-draft-smoke",
-                    operations: [
-                      {
-                        entity: "node",
-                        action: "insert",
-                        id: videoNode.id,
-                        value: videoNode,
-                      },
-                    ],
-                  }),
-                },
-              },
-            ];
-          else
-            tool_calls = [
-              {
-                id: "read-canvas",
-                name: "fpl_read",
-                arguments: { path: canvasPath },
-              },
-            ];
-          const events = [
-            ...(text ? [{ type: "delta", text }] : []),
-            {
-              type: "end",
-              tool_calls,
-              usage: {
-                prompt_tokens: 1,
-                completion_tokens: 1,
-                total_tokens: 2,
-              },
-            },
-          ];
-          return new Response(
-            events.map((event) => JSON.stringify(event)).join("\n") + "\n",
-            {
-              status: 200,
-              headers: { "Content-Type": "application/x-ndjson" },
-            },
-          );
-        };
-      },
-      { projectId: project.id, canvasPath: canvasUrl, videoNode: node },
+    writeFileSync(
+      fake + ".json",
+      JSON.stringify({ project_id: project.id, node }),
     );
+    const me = await apiJson(assistant, "/v1/auth/me");
+    const grants = await apiJson(assistant, "/v1/code-agents/grants");
+    await apiJson(assistant, "/v1/code-agents/grants", "PUT", {
+      expected_revision: grants.revision,
+      managed: ["codex:amadeus"],
+      grants: [{ user_id: me.user.id, agent_id: "codex", purpose: "amadeus" }],
+    });
     await assistant.reload();
     await assistant
-      .getByRole("button", { name: "选择模型" })
-      .getByText("隔离模型")
+      .getByRole("combobox", { name: "选择 Code Agent" })
       .waitFor();
+    await assistant
+      .getByRole("button", { name: "新建对话", exact: true })
+      .click();
     await assistant.getByRole("button", { name: "Plan", exact: true }).click();
     await assistant
       .getByRole("textbox", { name: "向 Amadeus 提问" })
-      .fill(
-        "在当前视频项目画布新增一个日落城市镜头的视频生成草稿，先给出计划。",
-      );
-    await assistant.getByRole("button", { name: "发送" }).click();
-    try {
-      await assistant.getByRole("button", { name: "执行计划" }).waitFor();
-    } catch (error) {
-      console.error(
-        "workflow model turns",
-        await assistant.evaluate(() => window.__amadeusMockTurns),
-      );
-      console.error(
-        "workflow messages",
-        await assistant.locator(".amadeus-messages").innerText(),
-      );
-      console.error(
-        "workflow error",
-        await assistant.locator(".amadeus-error").allInnerTexts(),
-      );
-      throw error;
-    }
-    assert.equal((await apiJson(assistant, canvasUrl)).revision, 0);
-    await assistant.getByRole("button", { name: "编辑或补充说明" }).click();
+      .fill("在当前视频项目新增日落城市镜头草稿，先给出计划。");
+    await assistant.getByRole("button", { name: "发送", exact: true }).click();
     await assistant
-      .getByRole("textbox", { name: "修订计划" })
-      .fill("先核对画布，再展示变更并等待批准。");
-    await assistant.getByRole("button", { name: "请 AI 再修订" }).click();
-    await assistant
-      .getByText(/修订计划：先核对画布/)
-      .first()
+      .getByRole("button", { name: "执行计划", exact: true })
       .waitFor();
-    await assistant.getByRole("button", { name: "执行计划" }).waitFor();
-    assert.equal(
-      await assistant.getByRole("button", { name: "执行计划" }).count(),
-      1,
-    );
-    await assistant.getByRole("button", { name: "执行计划" }).click();
-    try {
-      await assistant.getByRole("button", { name: "批准并执行" }).waitFor();
-    } catch (error) {
-      console.error(
-        "workflow model turns",
-        await assistant.evaluate(() => window.__amadeusMockTurns),
-      );
-      console.error(
-        "workflow messages",
-        await assistant.locator(".amadeus-messages").innerText(),
-      );
-      console.error(
-        "workflow error",
-        await assistant.locator(".amadeus-error").allInnerTexts(),
-      );
-      throw error;
-    }
-    assert.equal(
-      await assistant.getByRole("button", { name: "批准并执行" }).count(),
-      1,
-    );
-    if (process.env.FPL_AMADEUS_WORKFLOW_SCREENSHOT) {
-      await assistant.setViewportSize({ width: 1440, height: 850 });
-      await assistant.waitForFunction(() =>
-        document
-          .querySelector(".amadeus-side-rail")
-          .classList.contains("is-open"),
-      );
-      await assistant
-        .getByRole("button", { name: "查看执行详情", exact: true })
-        .click();
-      await assistant.screenshot({
-        path: process.env.FPL_AMADEUS_WORKFLOW_SCREENSHOT,
-      });
-      await assistant
-        .getByRole("button", { name: "收起执行详情", exact: true })
-        .last()
-        .click();
-    }
     await assistant
-      .getByRole("button", { name: "查看执行详情", exact: true })
+      .getByRole("button", { name: "执行计划", exact: true })
       .click();
-    await assistant.getByRole("complementary", { name: "执行详情" }).waitFor();
     await assistant
-      .getByRole("button", { name: "收起执行详情" })
-      .last()
-      .click();
-    assert.equal(
-      await assistant.getByText("并行调查", { exact: true }).count(),
-      0,
-    );
+      .getByRole("button", { name: "批准并执行", exact: true })
+      .waitFor();
+    // Reloading reconnects to persisted work; it must not restart the CLI or replay a write.
     await assistant.reload();
-    await assistant.getByRole("button", { name: "批准并执行" }).waitFor();
-    await assistant.getByRole("button", { name: "批准并执行" }).click();
     await assistant
-      .getByText("已新增视频生成草稿，并确认当前项目状态。")
+      .getByRole("button", { name: "批准并执行", exact: true })
+      .click();
+    await assistant
+      .getByText("已新增视频生成草稿，并确认当前项目状态。", { exact: true })
       .first()
       .waitFor();
     const finalCanvas = await apiJson(assistant, canvasUrl);
@@ -1009,8 +943,55 @@ async function main() {
       (await apiJson(assistant, canvasUrl)).nodes,
       finalCanvas.nodes,
     );
+    await page.evaluate(() => window.futurePropsDesktop.enableAgent());
+    const pairing = sourceCli(directory, [
+      "connect",
+      "--name",
+      "MCP 隔离验收",
+      "--write",
+    ]);
+    pairing.catch(() => {});
+    await page
+      .getByRole("heading", { name: "允许「MCP 隔离验收」接入？" })
+      .waitFor();
+    await page.getByRole("button", { name: "核对一致，允许接入" }).click();
+    const paired = (await pairing)[0];
+    assert.equal(paired.status, "approved");
+    const created = await mcpCall(directory, "visual.create_project", {
+      body: { title: "外部 MCP 隔离项目", kind: "image" },
+    });
+    assert.equal(created.isError, false);
+    const external = JSON.parse(created.content[0].text);
+    const edited = await mcpCall(directory, "visual.patch_project", {
+      project_id: external.id,
+      body: { expected_revision: external.revision, title: "外部 MCP 已编辑" },
+    });
+    assert.equal(edited.isError, false);
+    assert.equal(JSON.parse(edited.content[0].text).title, "外部 MCP 已编辑");
+    const keys = await apiJson(page, "/v1/account/api-keys");
+    const key = keys.find((item) => item.id === paired.key_id);
+    assert.ok(key);
+    await page.evaluate(async ({ id, revision }) => {
+      const csrf = document.cookie
+        .split(";")
+        .map((s) => s.trim())
+        .find((s) => s.startsWith("fpl_csrf="));
+      const response = await fetch(`/v1/account/api-keys/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": decodeURIComponent(csrf.slice(9)),
+        },
+        body: JSON.stringify({ expected_revision: revision }),
+      });
+      if (!response.ok) throw new Error(`revoke failed: ${response.status}`);
+    }, key);
+    const revoked = await mcpCall(directory, "visual.get_project", {
+      project_id: external.id,
+    });
+    assert.equal(revoked.isError, true);
     console.log(
-      "PASS Amadeus layout, inline rename, centered deletion confirmation, safe control picking, and isolated Plan → Agent video workflow",
+      "PASS Amadeus layout, inline rename, centered deletion confirmation, safe control picking, native CLI Plan → Agent workflow, and external MCP pairing/edit/revocation",
     );
   } catch (error) {
     console.error(output.slice(-2000));

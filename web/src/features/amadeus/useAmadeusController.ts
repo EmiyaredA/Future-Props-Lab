@@ -1,24 +1,18 @@
+import { getAgents, type Agent as AgentOption } from "@features/code-agents";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchApiJson, requestApi } from "@platform/api/client";
+import { fetchApiJson } from "@platform/api/client";
 import type { DesktopBridge } from "@platform/desktop";
 import type { AccountSessionContext } from "@features/accounts";
 import { decideAmadeusApproval } from "./approval";
 import { submitAmadeusAnswer } from "./answerQuestion";
-import { configuredCapabilities } from "./configuredCapabilities";
 import { conversationActions } from "./conversationActions";
 import { useAmadeusData } from "./useAmadeusData";
 import { groupConversations } from "./conversationGroups";
-import { formatAmadeusPrompt } from "./formatPrompt";
-import { buildAgentHistory } from "./history";
-import { createRunEventRecorder } from "./runEvents";
 import {
   conversationConflict,
   CONVERSATION_CONFLICT_MESSAGE,
 } from "./revisionConflict";
-import { streamTurn } from "./streamTurn";
-import { encodeVideoContactSheet } from "./videoReference";
 import {
-  safeReadPath,
   type Approval,
   type AvatarState,
   type Capability,
@@ -30,7 +24,6 @@ import {
   type Run,
   type RunDetail,
   type SavedQuestion,
-  type WorkerEvent,
   type WorkFile,
 } from "./protocol";
 
@@ -46,11 +39,13 @@ export function useAmadeusController(session: AccountSessionContext) {
   const [mode, setMode] = useState<"agent" | "plan">("agent");
   const [runs, setRuns] = useState<RunDetail[]>([]);
   const [busy, setBusy] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const saving = false;
   const [activeRun, setActiveRun] = useState<Run | null>(null);
   const [error, setError] = useState("");
   const [models, setModels] = useState<ModelOption[]>([]);
-  const [modelId, setModelId] = useState("");
+  const [modelId, setModelId] = useState("default");
+  const [agentId, setAgentId] = useState("codex");
+  const [agents, setAgents] = useState<AgentOption[]>([]);
   const [toolSteps, setToolSteps] = useState<
     Array<{ name: string; status: string }>
   >([]);
@@ -66,7 +61,6 @@ export function useAmadeusController(session: AccountSessionContext) {
   const [renameItem, setRenameItem] = useState<Conversation | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const [deleteItem, setDeleteItem] = useState<Conversation | null>(null);
-  const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [attachments, setAttachments] = useState<
     Array<{ name: string; bytes: number }>
   >([]);
@@ -84,8 +78,6 @@ export function useAmadeusController(session: AccountSessionContext) {
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
   const [alwaysOnTop, setAlwaysOnTop] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const workerRef = useRef<Worker | undefined>(undefined);
-  const modelAbortRef = useRef<AbortController | undefined>(undefined);
   const activeActionRef = useRef<{
     conversationId: string;
     actionId: string;
@@ -118,9 +110,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     detail,
     detailRef,
     contextRef,
-    modelAbortRef,
-    workerRef,
-    activeRunRef,
     avatarTimerRef,
     loaded,
     loadedConversationId,
@@ -153,10 +142,7 @@ export function useAmadeusController(session: AccountSessionContext) {
       setToolApis(apis.items);
       setMcpServers(mcps.items);
       setSkills(skillList.items);
-      const script = await fetchApiJson<{ available: boolean }>(
-        "/v1/amadeus/script-capability",
-      );
-      setScriptAvailable(script.available);
+      setScriptAvailable(false);
       const business = await fetchApiJson<{ items: unknown[] }>(
         "/v1/amadeus/operations",
       );
@@ -173,38 +159,130 @@ export function useAmadeusController(session: AccountSessionContext) {
     if (!capabilitiesOpen) await refreshCapabilities();
   };
   const stop = () => {
-    showAvatarState("paused", 2200);
-    modelAbortRef.current?.abort();
-    workerRef.current?.postMessage({ type: "stop" });
     const run = activeRunRef.current;
-    if (run)
-      void fetchApiJson<RunDetail>(
-        `/v1/amadeus/conversations/${run.conversation_id}/runs/${run.id}/cancel`,
-        { method: "POST" },
-      )
-        .then(async () => {
-          if (!workerRef.current) {
-            await fetchApiJson<RunDetail>(
-              `/v1/amadeus/conversations/${run.conversation_id}/runs/${run.id}/finish`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  status: "cancelled",
-                  error_message: "任务已由用户停止",
-                }),
-              },
-            );
-            setActiveRun(null);
-            activeRunRef.current = null;
-            setBusy(false);
-          }
-          if (detailRef.current?.conversation.id === run.conversation_id)
-            void open(run.conversation_id);
-          setError("任务已停止。执行中的外部操作请检查实际结果。");
-        })
-        .catch(() => setError("停止请求已发出；请检查操作的最终状态。"));
+    if (!run) return;
+    void fetchApiJson(
+      `/v1/amadeus/conversations/${run.conversation_id}/runs/${run.id}/cancel`,
+      { method: "POST" },
+    ).catch((cause) => setError(String(cause)));
   };
+
+  useEffect(() => {
+    let alive = true;
+    setAgents([]);
+    const refresh = () => {
+      void getAgents()
+        .then((value) => {
+          if (alive) setAgents(value.items);
+        })
+        .catch((cause) => {
+          if (alive) setError(String(cause));
+        });
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => {
+      alive = false;
+      window.removeEventListener("focus", refresh);
+    };
+  }, [session.me.user.id, session.me.workspace.id]);
+  useEffect(() => {
+    const options = [
+      { id: "default", label: "CLI 默认模型" },
+      ...(agents.find((a) => a.id === agentId)?.models || []),
+    ];
+    setModels(options);
+    setModelId((previous) =>
+      options.some((item) => item.id === previous) ? previous : "default",
+    );
+  }, [agentId, agents]);
+  const selectedConversationRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const conversation = detail?.conversation;
+    if (!conversation || selectedConversationRef.current === conversation.id)
+      return;
+    selectedConversationRef.current = conversation.id;
+    if (conversation.agent_id) {
+      setAgentId(conversation.agent_id);
+      setModelId(runs.at(-1)?.run.agent_model || "default");
+    }
+  }, [detail?.conversation, runs]);
+
+  useEffect(() => {
+    if (!activeRun) return;
+    let alive = true;
+    let timer: number | undefined;
+    const run = activeRun;
+    const poll = async () => {
+      try {
+        const value = await fetchApiJson<RunDetail>(
+          `/v1/amadeus/conversations/${run.conversation_id}/runs/${run.id}`,
+        );
+        if (!alive) return;
+        if (detailRef.current?.conversation.id === run.conversation_id) {
+          setRuns((previous) => [
+            ...previous.filter((item) => item.run.id !== run.id),
+            value,
+          ]);
+          setToolSteps(
+            value.events
+              .filter((event) => event.kind === "tool_call")
+              .map((event) => ({
+                name: String(event.payload.tool_name || "工具"),
+                status: "running",
+              })),
+          );
+          setDetail((previous) =>
+            previous
+              ? {
+                  ...previous,
+                  messages: [
+                    ...previous.messages.filter(
+                      (message) => message.id !== `stream:${run.id}`,
+                    ),
+                    ...(value.run.partial_text
+                      ? [
+                          {
+                            id: `stream:${run.id}`,
+                            role: "assistant",
+                            content: value.run.partial_text,
+                            references: [],
+                            created_at: new Date().toISOString(),
+                            run_id: run.id,
+                          },
+                        ]
+                      : []),
+                  ],
+                }
+              : previous,
+          );
+        }
+        if (!["running", "cancelling"].includes(value.run.status)) {
+          setActiveRun(null);
+          activeRunRef.current = null;
+          setBusy(false);
+          showAvatarState(
+            value.run.status === "completed" ? "success" : "paused",
+            2200,
+          );
+          if (value.run.error_message) setError(value.run.error_message);
+          if (detailRef.current?.conversation.id === run.conversation_id)
+            await open(run.conversation_id);
+          await refreshList();
+          return;
+        }
+      } catch (cause) {
+        if (alive)
+          setError(`连接暂时中断，正在重新读取任务状态：${String(cause)}`);
+      }
+      if (alive) timer = window.setTimeout(() => void poll(), 1200);
+    };
+    void poll();
+    return () => {
+      alive = false;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [activeRun, detailRef, open, refreshList, showAvatarState]);
 
   const {
     create,
@@ -231,6 +309,19 @@ export function useAmadeusController(session: AccountSessionContext) {
     setFilePreview,
   });
 
+  const startFromHistory = async () => {
+    const previous = detailRef.current;
+    const context =
+      previous?.messages
+        .slice(-8)
+        .map((message) => `${message.role}: ${message.content.slice(0, 3000)}`)
+        .join("\n\n") || "";
+    await create();
+    setDraft(
+      `以下是我选择带入的历史参考，请先核对当前项目状态，再根据我的新要求继续。\n\n${context}\n\n新要求：`,
+    );
+  };
+
   const send = async (options?: {
     prompt: string;
     sourceRunId: string;
@@ -238,44 +329,28 @@ export function useAmadeusController(session: AccountSessionContext) {
     feedback?: string;
   }) => {
     const prompt = options?.prompt || draft.trim();
-    if (!prompt || busy || !modelId) {
-      if (options?.feedback)
-        throw new Error(
-          busy ? "Agent 正在运行，请稍后重试。" : "请先选择模型。",
-        );
+    if (!prompt || busy) return;
+    if (!agents.find((a) => a.id === agentId)?.available) {
+      setError("请先在基模型 → 模型与智能体 → 编程智能体 配置并授权此 Agent");
       return;
     }
-    if (
-      !options &&
-      (detailRef.current?.questions?.some(
-        (item) => item.status === "pending",
-      ) ||
-        detailRef.current?.actions.some(
-          (item) =>
-            item.run_id &&
-            ["pending", "approved", "running"].includes(item.status),
-        ))
-    ) {
-      setError("请先处理当前提问或审批。");
+    if (detailRef.current?.conversation.executor_kind === "legacy-pi") {
+      setError("旧对话只读；请复制需要的上下文并新建 Code Agent 对话");
       return;
     }
-    const runMode = options?.mode || mode;
-    const referenceSnapshot = options ? [] : references;
-    const contextSnapshot = contexts.filter(
-      (item) =>
-        item.userId === session.me.user.id &&
-        item.workspaceId === session.me.workspace.id,
-    );
     setBusy(true);
-    showAvatarState("thinking");
     setError("");
-    if (!options) setDraft("");
-    setToolSteps([]);
-    setScriptOutput("");
-    let startedRun: Run | null = null;
-    let heartbeatTimer: number | undefined;
+    showAvatarState("thinking");
     try {
       let current = detailRef.current;
+      if (
+        current?.conversation.agent_id &&
+        current.conversation.agent_id !== agentId
+      ) {
+        setError("切换 Agent 请先新建对话");
+        setBusy(false);
+        return;
+      }
       if (!current) {
         const created = await fetchApiJson<Conversation>(
           "/v1/amadeus/conversations",
@@ -287,502 +362,62 @@ export function useAmadeusController(session: AccountSessionContext) {
           actions: [],
           questions: [],
         };
-        setDetail(current);
       }
-      const previousRuns = await fetchApiJson<RunDetail[]>(
-        `/v1/amadeus/conversations/${current.conversation.id}/runs`,
-      );
-      const history = buildAgentHistory(
-        current.messages,
-        previousRuns,
-        current.actions,
-        current.questions || [],
-      );
-      const updated =
-        options && !options.feedback
-          ? current
-          : await fetchApiJson<Detail>(
-              `/v1/amadeus/conversations/${current.conversation.id}/messages`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  expected_revision: current.conversation.revision,
-                  role: "user",
-                  content: options?.feedback || prompt,
-                  references: options
-                    ? []
-                    : referenceSnapshot.map(({ windowId, ...item }) => ({
-                        ...item,
-                        window_id: windowId,
-                      })),
-                }),
-              },
-            );
-      setDetail(updated);
-      detailRef.current = updated;
-      if (!options) setReferences([]);
-      await refreshList();
-      const configured = await configuredCapabilities({
-        mode: runMode,
-        conversationId: updated.conversation.id,
-        loaded,
-        toolApis,
-        mcpServers,
-        skills,
-      });
-      const runDetail = await fetchApiJson<RunDetail>(
-        `/v1/amadeus/conversations/${updated.conversation.id}/runs`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model_id: modelId,
-            mode: runMode,
-            source_run_id: options?.sourceRunId,
-            context: contextSnapshot.map((item) => ({
-              application: item.application,
-              projectId: item.projectId,
-              path: item.path,
-              unsaved: item.unsaved,
-              selection: item.selection,
-            })),
-            references: referenceSnapshot.map(({ windowId, ...item }) => ({
-              ...item,
-              window_id: windowId,
-            })),
-            capabilities: loaded,
-          }),
-        },
-      );
-      const run = runDetail.run;
-      setRuns((previous) => [...previous, runDetail]);
-      startedRun = run;
-      setActiveRun(run);
-      activeRunRef.current = run;
-      heartbeatTimer = window.setInterval(() => {
-        void fetchApiJson(
-          `/v1/amadeus/conversations/${run.conversation_id}/runs/${run.id}/heartbeat`,
-          { method: "POST" },
-        ).catch(() => undefined);
-      }, 15_000);
-      const worker = new Worker(new URL("./agent.worker.ts", import.meta.url), {
-        type: "module",
-      });
-      workerRef.current = worker;
-      const conversationId = updated.conversation.id;
-      let text = "";
-      let partialText = "";
-      let pendingDelta = "";
-      let deltaTimer: number | undefined;
-      const recorder = createRunEventRecorder(conversationId, run.id, (saved) =>
-        setRuns((previous) =>
-          previous.map((item) =>
-            item.run.id === run.id
-              ? { ...item, events: [...item.events, saved] }
-              : item,
-          ),
-        ),
-      );
-      const persistEvent = recorder.append;
-      const flushDelta = () => {
-        if (deltaTimer) window.clearTimeout(deltaTimer);
-        deltaTimer = undefined;
-        if (!pendingDelta) return recorder.wait();
-        const value = pendingDelta;
-        pendingDelta = "";
-        return persistEvent("assistant_delta", { text: value });
-      };
-      const scheduleDelta = () => {
-        if (deltaTimer) return;
-        deltaTimer = window.setTimeout(() => void flushDelta(), 250);
-      };
-      const showStream = () => {
-        if (detailRef.current?.conversation.id !== conversationId) return;
-        const previous = detailRef.current;
-        const temporary = {
-          id: "streaming",
-          role: "assistant",
-          content: text + partialText,
-          references: [],
-          created_at: new Date().toISOString(),
-        };
-        setDetail({
-          ...previous,
-          messages: [
-            ...previous.messages.filter((item) => item.id !== "streaming"),
-            temporary,
-          ],
-        });
-      };
-      worker.onmessage = async ({ data }: MessageEvent<WorkerEvent>) => {
-        if (activeRunRef.current?.id !== run.id) return;
-        try {
-          if (data.type === "rpc") {
-            let value: unknown;
-            if (data.method === "model-turn-stream") {
-              value = await streamTurn(
-                data.payload,
-                data.id,
-                worker,
-                (controller) => {
-                  modelAbortRef.current = controller;
-                },
-              );
-            } else if (data.method === "fpl-read")
-              value = await fetchApiJson(safeReadPath(data.payload));
-            else if (data.method === "fpl-operations") {
-              const requested = data.payload as { resource?: string };
-              if (requested.resource && !/^[a-z]+$/.test(requested.resource))
-                throw new Error("应用资源名无效");
-              value = await fetchApiJson(
-                `/v1/amadeus/operations${
-                  requested.resource
-                    ? `?resource=${encodeURIComponent(requested.resource)}`
-                    : ""
-                }`,
-              );
-            } else if (data.method === "fpl-operation-read") {
-              const requested = data.payload as {
-                operation: string;
-                path_params?: Record<string, string>;
-                query?: Record<string, unknown>;
-              };
-              value = await fetchApiJson("/v1/amadeus/operations/read", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  operation: requested.operation,
-                  arguments: {
-                    path_params: requested.path_params || {},
-                    query: requested.query || {},
-                  },
-                }),
-              });
-            } else if (data.method === "list-files")
-              value = await fetchApiJson(
-                `/v1/amadeus/conversations/${conversationId}/files`,
-              );
-            else if (data.method === "file-read") {
-              const requested = data.payload as { kind: string; name: string };
-              const listing = await fetchApiJson<{ items: WorkFile[] }>(
-                `/v1/amadeus/conversations/${conversationId}/files`,
-              );
-              if (
-                !listing.items.some(
-                  (item) =>
-                    item.kind === requested.kind &&
-                    item.name === requested.name &&
-                    item.bytes <= 1024 * 1024,
-                )
-              )
-                throw new Error("文件不存在或超过 1 MiB；请先列出会话文件");
-              const response = await requestApi(
-                `/v1/amadeus/conversations/${conversationId}/files/${encodeURIComponent(requested.kind)}/${encodeURIComponent(requested.name)}`,
-              );
-              value = {
-                kind: requested.kind,
-                name: requested.name,
-                content: await response.text(),
-              };
-            } else if (data.method === "skill-file-read") {
-              const requested = data.payload as {
-                skill_id: string;
-                version: string;
-                path: string;
-              };
-              if (
-                !configured.skills.some(
-                  (item) =>
-                    item.id === requested.skill_id &&
-                    item.version === requested.version,
-                ) ||
-                requested.path
-                  .split("/")
-                  .some((part) => !part || part === "." || part === "..")
-              )
-                throw new Error("只能读取当前会话已加载的 Skill 版本");
-              value = await fetchApiJson(
-                `/v1/amadeus/conversations/${conversationId}/skills/${encodeURIComponent(requested.skill_id)}/${encodeURIComponent(requested.version)}/files/${requested.path
-                  .split("/")
-                  .map(encodeURIComponent)
-                  .join("/")}`,
-              );
-            } else if (data.method === "video-reference-read") {
-              const requested = data.payload as {
-                asset_id: string;
-                positions_ms: number[];
-              };
-              const response = await requestApi(
-                `/v1/files/${encodeURIComponent(requested.asset_id)}/frames`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    positions_ms: requested.positions_ms,
-                    max_width: 640,
-                    output: "grid",
-                  }),
-                },
-              );
-              value = await encodeVideoContactSheet(
-                await response.blob(),
-                requested.positions_ms,
-              );
-            } else if (data.method === "invoke") {
-              const requested = data.payload as {
-                tool_call_id?: string;
-                tool_name: string;
-                arguments: Record<string, unknown>;
-              };
-              const tool = [...toolApis, ...mcpServers].find((item) =>
-                requested.tool_name.includes(item.id),
-              );
-              const builtInTool = [
-                "write_script",
-                "run_script",
-                "video_timeline_batch",
-              ].includes(requested.tool_name);
-              const registeredTool =
-                requested.tool_name.startsWith("fpl_operation:");
-              if (
-                !builtInTool &&
-                !registeredTool &&
-                (!tool ||
-                  !loaded.includes(
-                    requested.tool_name.startsWith("tool_api:")
-                      ? `toolapi:${tool.id}`
-                      : `mcp:${tool.id}`,
-                  ))
-              )
-                throw new Error("能力未加载");
-              await fetchApiJson(
-                `/v1/amadeus/conversations/${conversationId}/actions`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    tool_name: requested.tool_name,
-                    run_id: run.id,
-                    arguments:
-                      builtInTool || registeredTool
-                        ? requested.arguments
-                        : {
-                            input: requested.arguments,
-                            revision: tool!.revision,
-                          },
-                  }),
-                },
-              );
-              await flushDelta();
-              await recorder.wait();
-              await fetchApiJson<RunDetail>(
-                `/v1/amadeus/conversations/${conversationId}/runs/${run.id}/pause-approval`,
-                { method: "POST" },
-              );
-              await open(conversationId);
-              setBusy(false);
-              if (runMode === "plan") setMode("agent");
-              setActiveRun(null);
-              activeRunRef.current = null;
-              if (heartbeatTimer) window.clearInterval(heartbeatTimer);
-              worker.terminate();
-              workerRef.current = undefined;
-              return;
-            } else if (data.method === "ask-user") {
-              const requested = data.payload as {
-                tool_call_id: string;
-                question: string;
-                options?: string[];
-                allow_text?: boolean;
-              };
-              await flushDelta();
-              await recorder.wait();
-              await fetchApiJson<SavedQuestion>(
-                `/v1/amadeus/conversations/${conversationId}/runs/${run.id}/question`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    tool_call_id: requested.tool_call_id,
-                    prompt: requested.question,
-                    options: requested.options || [],
-                    allow_text: requested.allow_text !== false,
-                  }),
-                },
-              );
-              await open(conversationId);
-              setBusy(false);
-              if (runMode === "plan") setMode("agent");
-              setActiveRun(null);
-              activeRunRef.current = null;
-              if (heartbeatTimer) window.clearInterval(heartbeatTimer);
-              worker.terminate();
-              workerRef.current = undefined;
-              return;
-            } else throw new Error("未知工具请求");
-            worker.postMessage({ type: "rpc-result", id: data.id, value });
-          } else if (data.type === "delta") {
-            partialText += data.text || "";
-            pendingDelta += data.text || "";
-            scheduleDelta();
-            showStream();
-          } else if (data.type === "message") {
-            text += `${text && data.text ? "\n\n" : ""}${data.text || ""}`;
-            partialText = "";
-            if (text) showStream();
-            if (data.text)
-              await persistEvent("assistant_message", { text: data.text });
-          } else if (data.type === "tool") {
-            showAvatarState("tool");
-            setToolSteps((previous) => [
-              ...previous.filter((step) => step.name !== data.name),
-              { name: data.name || "工具", status: data.status || "running" },
-            ]);
-            if (data.status === "running")
-              await persistEvent("tool_call", {
-                tool_call_id: data.id,
-                tool_name: data.name,
-                arguments: data.arguments || {},
-              });
-            else
-              await persistEvent("tool_result", {
-                tool_call_id: data.id,
-                name: data.name,
-                status: data.status,
-                result: data.result,
-              });
-          } else if (data.type === "subagent") {
-            await persistEvent(
-              data.status === "running" ? "subagent_start" : "subagent_finish",
-              {
-                id: data.id,
-                task: data.name,
-                status: data.status,
-                result: data.result,
-              },
-            );
-          } else if (
-            data.type === "done" ||
-            data.type === "error" ||
-            data.type === "stopped"
-          ) {
-            if (data.type === "error") {
-              setError(data.message || "运行失败");
-              showAvatarState("error", 3200);
-            } else if (data.type === "stopped") {
-              showAvatarState("paused", 2200);
-            } else {
-              showAvatarState("success", 2600);
-            }
-            if (data.type === "stopped")
-              setError("任务已停止。执行中的外部操作请检查实际结果。");
-            setSaving(true);
-            await flushDelta();
-            await recorder.wait();
-            const terminal =
-              data.type === "done"
-                ? "completed"
-                : data.type === "stopped"
-                  ? "cancelled"
-                  : "failed";
-            await fetchApiJson<RunDetail>(
-              `/v1/amadeus/conversations/${conversationId}/runs/${run.id}/finish`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  status: terminal,
-                  error_message: data.type === "error" ? data.message : null,
-                }),
-              },
-            );
-            if (detailRef.current?.conversation.id === conversationId)
-              await open(conversationId);
-            setBusy(false);
-            if (runMode === "plan") setMode("agent");
-            setSaving(false);
-            setActiveRun(null);
-            activeRunRef.current = null;
-            worker.terminate();
-            workerRef.current = undefined;
-            if (heartbeatTimer) window.clearInterval(heartbeatTimer);
-          }
-        } catch (cause) {
-          if (data.type === "rpc")
-            worker.postMessage({
-              type: "rpc-result",
-              id: data.id,
-              error: cause instanceof Error ? cause.message : String(cause),
-            });
-          else {
-            setError(String(cause));
-            showAvatarState("error", 3200);
-            setBusy(false);
-            setSaving(false);
-            if (heartbeatTimer) window.clearInterval(heartbeatTimer);
-            worker.terminate();
-            workerRef.current = undefined;
-            void fetchApiJson(
-              `/v1/amadeus/conversations/${conversationId}/runs/${run.id}/finish`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  status: "failed",
-                  error_message: String(cause),
-                }),
-              },
-            ).finally(() => {
-              setActiveRun(null);
-              activeRunRef.current = null;
-            });
-          }
-        }
-      };
-      worker.postMessage({
-        type: "start",
-        mode: runMode,
-        modelId,
-        prompt: formatAmadeusPrompt(prompt, contextSnapshot, referenceSnapshot),
-        history,
-        tools: configured.tools,
-        skills: configured.skills,
-        runId: run.id,
-      });
-    } catch (cause) {
-      if (heartbeatTimer) window.clearInterval(heartbeatTimer);
-      if (!options) setDraft(prompt);
-      if (startedRun)
-        void fetchApiJson(
-          `/v1/amadeus/conversations/${startedRun.conversation_id}/runs/${startedRun.id}/finish`,
+      const refs = options
+        ? []
+        : references.map(({ windowId, ...item }) => ({
+            ...item,
+            window_id: windowId,
+          }));
+      if (!options || options.feedback)
+        current = await fetchApiJson<Detail>(
+          `/v1/amadeus/conversations/${current.conversation.id}/messages`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              status: "failed",
-              error_message:
-                cause instanceof Error ? cause.message : String(cause),
+              expected_revision: current.conversation.revision,
+              role: "user",
+              content: options?.feedback || prompt,
+              references: refs,
             }),
           },
-        ).finally(() => {
-          setActiveRun(null);
-          activeRunRef.current = null;
-        });
+        );
+      setDetail(current);
+      detailRef.current = current;
+      const value = await fetchApiJson<RunDetail>(
+        `/v1/amadeus/conversations/${current.conversation.id}/runs`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agent_id: agentId,
+            agent_model: modelId === "default" ? "" : modelId,
+            mode: options?.mode || mode,
+            source_run_id: options?.sourceRunId,
+            context: contexts.filter(
+              (item) =>
+                item.userId === session.me.user.id &&
+                item.workspaceId === session.me.workspace.id,
+            ),
+            references: refs,
+            capabilities: loaded,
+          }),
+        },
+      );
+      setActiveRun(value.run);
+      activeRunRef.current = value.run;
+      setRuns((previous) => [...previous, value]);
+      if (!options) {
+        setDraft("");
+        setReferences([]);
+      }
+      await refreshList();
+    } catch (cause) {
       const conflict = conversationConflict(cause);
-      if (conflict) {
-        if (detailRef.current?.conversation.id === conflict.id) {
-          try {
-            await refreshList();
-            await open(conflict.id);
-          } catch {
-            // The submitted text remains in the draft even if refresh fails.
-          }
-        }
-        setError(CONVERSATION_CONFLICT_MESSAGE);
-      } else setError(cause instanceof Error ? cause.message : String(cause));
-      showAvatarState("error", 3200);
+      setError(conflict ? CONVERSATION_CONFLICT_MESSAGE : String(cause));
       setBusy(false);
+      showAvatarState("error", 3200);
       if (options?.feedback) throw cause;
     }
   };
@@ -937,6 +572,9 @@ export function useAmadeusController(session: AccountSessionContext) {
     activeRun,
     error,
     setError,
+    agents,
+    agentId,
+    setAgentId,
     models,
     modelId,
     setModelId,
@@ -955,8 +593,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     setRenameTitle,
     deleteItem,
     setDeleteItem,
-    modelPickerOpen,
-    setModelPickerOpen,
     attachments,
     filesOpen,
     setFilesOpen,
@@ -988,6 +624,7 @@ export function useAmadeusController(session: AccountSessionContext) {
     previewFile,
     downloadFile,
     send,
+    startFromHistory,
     scopedContexts,
     groups,
   };

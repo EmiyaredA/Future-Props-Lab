@@ -22,3 +22,7 @@ test("缺少资料时从节点验收返回生成设置，画布与看板共用�
   await page.getByRole("tab", { name: "节点验收", exact: true }).click();
   await expect(page.getByText(/缺少原动作视频/)).toBeVisible();
 });
+
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "wait" });
+});

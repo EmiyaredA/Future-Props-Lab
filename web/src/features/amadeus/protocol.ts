@@ -1,4 +1,6 @@
 export type Conversation = {
+  executor_kind?: string;
+  agent_id?: string | null;
   id: string;
   title: string;
   model_id: string | null;
@@ -128,6 +130,8 @@ export type WorkerEvent = {
 };
 
 export type Run = {
+  agent_id?: string | null;
+  agent_model?: string;
   id: string;
   conversation_id: string;
   model_id: string;

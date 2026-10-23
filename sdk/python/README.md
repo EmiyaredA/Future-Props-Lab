@@ -124,3 +124,9 @@ assert next(s for s in result.document.slides if s.id == slide_id).image_asset_i
 
 调用者需要文稿编辑权限；缺少素材或跨空间返回 404，revision 过期返回 409，原文稿不变。
 移除归档时将 `image_asset_id` 设为 `None`；整篇 `put_project` 也使用相同字段与校验。
+
+## 外部 Code Agent 的 stdio MCP
+
+桌面版开启本地接入后，运行 `fpl --profile codex connect --name Codex` 并在 App 核对配对码与空间。默认只读；需要编辑时使用独立 profile 显式添加 `--write`。Codex、Claude Code 可使用命令 `fpl --profile codex mcp serve`，连接配置可在“基模型 → 编程智能体”复制。该入口不依赖后端 Python 包。
+
+工具 `operations` 列出白名单或查看单个操作的参数 Schema；`call` 使用 SDK 关键字参数执行，读取最新 revision 后再修改，不自动重试；`open` 定位已授权资源并保留未保存保护。上传文件通过 `call.files` 显式传递 field 与 path；小文件下载返回 Base64，大文件使用 `fpl call --output`。撤销客户端仍在 App 的 API 密钥页完成。

@@ -28,6 +28,7 @@ export type StudioPage =
   | "storage-usage"
   | "model-test"
   | "model-test-tools"
+  | "code-agents"
   | "model-service"
   | "model-call-logs";
 
@@ -220,6 +221,7 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
   if (pathname.startsWith("/model-test")) return { page: "model-test" };
   if (pathname.startsWith("/model-call-logs"))
     return { page: "model-call-logs" };
+  if (pathname === "/code-agents") return { page: "code-agents" };
   if (pathname.startsWith("/model-service")) return { page: "model-service" };
   return { page: "home" };
 }
@@ -274,6 +276,7 @@ export function pathFor(
     "model-test-tools": projectId
       ? `/model-test-tools/${encodeURIComponent(projectId)}`
       : "/model-test-tools",
+    "code-agents": "/code-agents",
     "model-service": "/model-service",
     "model-call-logs": "/model-call-logs",
     "visual-workshop-projects": "/apps/visual-workshop",

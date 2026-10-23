@@ -1,3 +1,4 @@
+import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   History,
   Pin,
@@ -78,6 +79,9 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     activeRun,
     error,
     setError,
+    agents,
+    agentId,
+    setAgentId,
     models,
     modelId,
     setModelId,
@@ -94,8 +98,6 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     setRenameTitle,
     deleteItem,
     setDeleteItem,
-    modelPickerOpen,
-    setModelPickerOpen,
     attachments,
     filesOpen,
     setFilesOpen,
@@ -127,6 +129,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     previewFile,
     downloadFile,
     send,
+    startFromHistory,
     scopedContexts,
     groups,
   } = useAmadeusController(session);
@@ -446,6 +449,15 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           </section>
         </aside>
         <main className="amadeus-chat">
+          {detail?.conversation.executor_kind === "legacy-pi" && (
+            <div className="amadeus-running-banner">
+              旧内核历史只读。新对话使用 Code Agent。
+              <button className="btn" onClick={() => void startFromHistory()}>
+                带入历史，新建对话
+              </button>
+            </div>
+          )}
+
           <Dialog.Root open={filesOpen} onOpenChange={setFilesOpen}>
             <Dialog.Portal>
               <Dialog.Overlay className="amadeus-files-overlay" />
@@ -691,32 +703,37 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 </div>
                 <div className="amadeus-spacer" />
                 <div className="amadeus-model-control">
-                  <button
-                    aria-label="选择模型"
-                    aria-expanded={modelPickerOpen}
-                    onClick={() => setModelPickerOpen(!modelPickerOpen)}
-                  >
-                    {models.find((item) => item.id === modelId)?.label ||
-                      "没有可用模型"}
-                    <ChevronDown size={13} />
-                  </button>
-                  {modelPickerOpen && (
-                    <div role="listbox" className="amadeus-model-list">
-                      {models.map((item) => (
-                        <button
-                          role="option"
-                          aria-selected={modelId === item.id}
-                          key={item.id}
-                          onClick={() => {
-                            setModelId(item.id);
-                            setModelPickerOpen(false);
-                          }}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <CustomSelect
+                    ariaLabel="选择 Code Agent"
+                    value={agentId}
+                    disabled={busy}
+                    options={agents.map((item) => ({
+                      value: item.id,
+                      label: item.name,
+                      description: item.message,
+                      disabled: !item.available,
+                    }))}
+                    onChange={(value) => {
+                      if (
+                        detail?.conversation.agent_id &&
+                        detail.conversation.agent_id !== value
+                      )
+                        void create().then(() => setAgentId(value));
+                      else setAgentId(value);
+                    }}
+                  />
+                </div>
+                <div className="amadeus-model-control">
+                  <CustomSelect
+                    ariaLabel="选择模型"
+                    value={modelId}
+                    disabled={busy}
+                    options={models.map((item) => ({
+                      value: item.id,
+                      label: item.label,
+                    }))}
+                    onChange={setModelId}
+                  />
                 </div>
                 <button
                   className="amadeus-send"

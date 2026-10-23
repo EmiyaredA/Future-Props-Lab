@@ -546,3 +546,71 @@ async def test_agent_task_report_and_scoped_media_with_fake_executor(
     assert run["execution_result"]["kind"] == "code_agent" and run["decision"] == "pending"
     assert run["execution_result"]["report"]["limitations"]
     assert not roots[0].exists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured_model")
+async def test_concurrent_retry_freezes_one_run_and_unreadable_references_are_actionable(
+    client, video
+):
+    import asyncio
+
+    _, base, *_ = await setup(client, video)
+    value = await select_scheme(client, base)
+    responses = await asyncio.gather(
+        *[
+            client.post(
+                f"{base}/nodes/shot/acceptance/runs", json=submission(value, "same-request")
+            )
+            for _ in range(2)
+        ]
+    )
+    assert all(r.status_code == 200 for r in responses), [r.text for r in responses]
+    assert responses[0].json()["id"] == responses[1].json()["id"]
+    canvas = (await client.get(f"{base}/canvas")).json()
+    canvas["nodes"][0]["generation_draft"]["duration"] = 2
+    saved = await client.put(
+        f"{base}/canvas",
+        json={"expected_revision": canvas["revision"], "nodes": canvas["nodes"], "edges": []},
+    )
+    assert saved.status_code == 200, saved.text
+    value = await context(client, base)
+    assert not value["result_is_current"]
+    from app.capabilities.asset_store.models import VisualAsset
+    from app.capabilities.asset_store.storage import AssetStorage
+
+    async with SessionLocal() as session:
+        source = await session.get(VisualAsset, value["inputs"][0]["asset_id"])
+        path = AssetStorage(get_settings()).path_for(source)
+    backup = path.with_suffix(".unavailable")
+    path.rename(backup)
+    try:
+        value = await context(client, base)
+        assert any("参考素材无法读取" in issue for issue in value["issues"])
+        response = await client.post(
+            f"{base}/nodes/shot/acceptance/runs", json=submission(value, "missing-file")
+        )
+        assert response.status_code == 422
+    finally:
+        backup.rename(path)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured_model")
+async def test_queued_execution_revalidates_actor_and_frozen_connection(client, video):
+    _, base, *_ = await setup(client, video)
+    await select_scheme(client, base)
+    run = await start(client, base)
+
+    async def revoked(*_):
+        return False
+
+    failed = await process(client, base, run, actor_allowed=revoked, transport=api_transport())
+    assert failed["status"] == "failed" and "权限" in failed["error_message"]
+    run = await start(client, base, "changed-connection")
+    async with SessionLocal() as session:
+        model = await session.get(ModelEntry, run["model_id"])
+        model.slug = "other-model"
+        await session.commit()
+    failed = await process(client, base, run, transport=api_transport())
+    assert failed["status"] == "failed" and "连接已变化" in failed["error_message"]

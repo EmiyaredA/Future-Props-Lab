@@ -1,3 +1,5 @@
+import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
+import { ModelServiceRoute } from "@app/layout/ModelServiceRoute";
 import type { KnowledgeSection } from "@features/thought-workshop/KnowledgeSections";
 import { PageErrorBoundary } from "./PageErrorBoundary";
 import { LIVE2D_WORKSHOP_MODULE } from "@features/live2d-workshop/module";
@@ -118,11 +120,6 @@ const ModelTestToolsPage = lazy(() =>
     default: module.ModelTestToolsPage,
   })),
 );
-const ModelServicePage = lazy(() =>
-  import("@features/models/catalog").then((module) => ({
-    default: module.ModelServicePage,
-  })),
-);
 const ModelCallLogsPage = lazy(() =>
   import("@features/models/logs").then((module) => ({
     default: module.ModelCallLogsPage,
@@ -203,6 +200,7 @@ export default function App() {
   const { me } = session;
   const [route, setRoute] = useState<AppRoute>(parseRoute);
   const [catalogTestModel, setCatalogTestModel] = useState<string | null>(null);
+  const [focusModelTab, setFocusModelTab] = useState(false);
   const navigationGuard = useRef<
     ((continueNavigation: () => void) => boolean) | null
   >(null);
@@ -300,6 +298,10 @@ export default function App() {
     const commit = () => commitNavigation(next, projectId, documentId);
     if (navigationGuard.current?.(commit)) return;
     commit();
+  };
+  const navigateModelView = (next: StudioPage, keyboard = false) => {
+    setFocusModelTab(keyboard);
+    navigate(next);
   };
   const registerNavigationGuard = useCallback(
     (guard: ((continueNavigation: () => void) => boolean) | null) => {
@@ -597,13 +599,11 @@ export default function App() {
               <p>完整模型调用日志与诊断包仅向工作区管理员开放。</p>
             </section>
           ) : page === "model-service" ? (
-            <ModelServicePage
-              key={me.workspace.id}
+            <ModelServiceRoute
+              workspace={me.workspace}
+              navigate={navigateModelView}
+              focusSelected={focusModelTab}
               canWrite={false}
-              canTest={
-                workspaceAllows(me.workspace, "content.write") &&
-                workspaceAllows(me.workspace, "models.use")
-              }
               onTestModel={(model) => {
                 setCatalogTestModel(model.id);
                 navigate("model-test");
@@ -951,14 +951,18 @@ export default function App() {
             onOpenTool={(toolId) => navigate("model-test-tools", toolId)}
             onBack={() => navigate("model-test-tools")}
           />
+        ) : page === "code-agents" ? (
+          <CodeAgentsRoute
+            user={me.user}
+            workspaceId={me.workspace.id}
+            navigate={navigateModelView}
+            focusSelected={focusModelTab}
+          />
         ) : page === "model-service" ? (
-          <ModelServicePage
-            key={me.workspace.id}
-            canWrite={workspaceAllows(me.workspace, "configuration.manage")}
-            canTest={
-              workspaceAllows(me.workspace, "content.write") &&
-              workspaceAllows(me.workspace, "models.use")
-            }
+          <ModelServiceRoute
+            workspace={me.workspace}
+            navigate={navigateModelView}
+            focusSelected={focusModelTab}
             onTestModel={(model) => {
               setCatalogTestModel(model.id);
               navigate("model-test");

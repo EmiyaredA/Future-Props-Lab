@@ -100,7 +100,7 @@ def configured(monkeypatch):
     monkeypatch.setattr(settings, "fpl_interview_codex_enabled", True)
     monkeypatch.setattr(settings, "fpl_interview_codex_user_id", "test-user")
 
-    async def available(_user):
+    async def available(_user, *_args):
         return InterviewExecutorOut(available=True, code="ready", message="test", version="0.163.0")
 
     monkeypatch.setattr(routes, "executor_status", available)
@@ -496,4 +496,4 @@ def test_executor_binding_is_checked_before_cli_discovery(configured, monkeypatc
     )
     status = asyncio.run(codex.executor_status("another-account"))
     assert not status.available
-    assert status.code == "account_not_bound"
+    assert status.code == "agent_not_authorized"

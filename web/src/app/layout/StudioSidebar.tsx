@@ -1,5 +1,6 @@
 import "./studio-shell.css";
 import { useEffect, useState, type ReactNode } from "react";
+import { Bot } from "lucide-react";
 import {
   StudioCollapsedRail,
   type StudioRailEntry,
@@ -75,16 +76,6 @@ function CubeIcon() {
       <path d="m12 2 9 5-9 5-9-5 9-5Z" />
       <path d="m3 7 9 5 9-5v10l-9 5-9-5V7Z" />
       <path d="M12 12v10" />
-    </svg>
-  );
-}
-
-function ServiceIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <rect x="3" y="5" width="18" height="5" rx="2" />
-      <rect x="3" y="14" width="18" height="5" rx="2" />
-      <path d="M7 7.5h.01M7 16.5h.01M12 7.5h6M12 16.5h6" />
     </svg>
   );
 }
@@ -207,6 +198,7 @@ function StudioChrome({
     page === "storage-usage";
   const integrationsActive = page.startsWith("integrations-");
   const infrastructurePages: StudioPage[] = [
+    "code-agents",
     "model-test",
     "model-test-tools",
     "model-service",
@@ -215,6 +207,13 @@ function StudioChrome({
   const infrastructureActive = infrastructurePages.includes(page);
 
   const modelItems: SecondaryItem[] = [
+    {
+      id: "model-service",
+      label: "模型与智能体",
+      icon: <Bot aria-hidden />,
+      active: page === "code-agents" || page === "model-service",
+      onSelect: () => navigate("model-service"),
+    },
     {
       id: "model-test",
       label: "模型测试",
@@ -228,13 +227,6 @@ function StudioChrome({
       icon: <TestToolIcon />,
       active: page === "model-test-tools",
       onSelect: () => navigate("model-test-tools"),
-    },
-    {
-      id: "model-service",
-      label: "模型服务",
-      icon: <ServiceIcon />,
-      active: page === "model-service",
-      onSelect: () => navigate("model-service"),
     },
     ...(canReadLogs
       ? [

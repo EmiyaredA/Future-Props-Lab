@@ -22,6 +22,8 @@ class AmadeusConversation(Base):
         String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
     )
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    executor_kind: Mapped[str] = mapped_column(String(24), default="code-agent")
+    agent_id: Mapped[str | None] = mapped_column(String(24), nullable=True)
     title: Mapped[str] = mapped_column(String(120), default="新对话")
     model_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -93,6 +95,9 @@ class AmadeusRun(Base):
         String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
     )
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    agent_id: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    agent_model: Mapped[str] = mapped_column(String(160), default="")
+    execution_config: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     model_id: Mapped[str] = mapped_column(String(36))
     mode: Mapped[str] = mapped_column(String(12), default="agent")
     source_run_id: Mapped[str | None] = mapped_column(

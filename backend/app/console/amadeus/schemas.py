@@ -18,6 +18,8 @@ class Reference(BaseModel):
 
 
 class ConversationOut(BaseModel):
+    executor_kind: str = "legacy-pi"
+    agent_id: str | None = None
     id: str
     title: str
     model_id: str | None
@@ -111,7 +113,9 @@ class ModelTurnIn(BaseModel):
 
 class RunCreateIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    model_id: str = Field(min_length=1, max_length=160)
+    agent_id: Literal["codex", "claude-code"]
+    agent_model: str = Field(default="", max_length=160)
+    model_id: str = Field(default="code-agent", max_length=160)
     mode: Literal["agent", "plan"] = "agent"
     source_run_id: str | None = None
     context: list[dict[str, Any]] = Field(default_factory=list, max_length=32)
@@ -153,6 +157,9 @@ class RunEventOut(BaseModel):
 
 
 class RunOut(BaseModel):
+    agent_id: str | None = None
+    agent_model: str = ""
+    execution_config: dict[str, Any] = Field(default_factory=dict)
     id: str
     conversation_id: str
     model_id: str

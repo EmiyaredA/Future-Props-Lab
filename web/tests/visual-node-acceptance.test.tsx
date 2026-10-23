@@ -208,3 +208,19 @@ test("read-only users can inspect but cannot select or start a scheme", async ()
   );
   expect(mocks.start).not.toHaveBeenCalled();
 });
+
+test("explicit read-only browsing disables mutations even with an owner context", async () => {
+  mocks.writable = true;
+  render(
+    <NodeAcceptancePanel
+      projectId="project"
+      nodeId="shot"
+      onGeneration={vi.fn()}
+      readOnly
+    />,
+    { wrapper },
+  );
+  await screen.findByText("实际提交的镜头要求");
+  expect(screen.getByRole("combobox", { name: "选择验收方案" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "开始验收 v2" })).toBeDisabled();
+});

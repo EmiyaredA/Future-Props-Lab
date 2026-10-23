@@ -1,4 +1,5 @@
 import { LocalModelsPanel } from "./LocalModelsPanel";
+import type { ReactNode } from "react";
 import "./local-models.css";
 import { WorkspaceDefaults } from "./WorkspaceDefaults";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,10 +29,12 @@ export function ModelServicePage({
   canWrite = true,
   canTest = false,
   onTestModel,
+  renderHeader,
 }: {
   canWrite?: boolean;
   canTest?: boolean;
   onTestModel?: ModelCatalogEditorProps["onTestModel"];
+  renderHeader?: (actions: ReactNode) => ReactNode;
 }) {
   const queryClient = useQueryClient();
   const catalog = useQuery({
@@ -116,52 +119,73 @@ export function ModelServicePage({
       }),
   };
   return (
-    <section className="page model-service-page">
-      <header className="page-header">
-        <div>
-          <h1>模型服务</h1>
-          <p>按用途发现模型，按协议类型浏览接入连接。</p>
-        </div>
-        {catalog.data && (
-          <WorkspaceDefaults catalog={catalog.data} canWrite={canWrite} />
-        )}
-      </header>
-      <QueryFeedback
-        error={catalog.error ?? categories.error}
-        onRetry={() => {
-          void catalog.refetch();
-          void categories.refetch();
-        }}
-      />
-      {catalog.isPending || categories.isPending ? (
-        <p role="status">正在加载模型目录…</p>
-      ) : (
-        catalog.data &&
-        categories.data && (
-          <ModelCatalogEditor
-            value={{ ...catalog.data, suppliers: catalog.data.suppliers ?? [] }}
-            categories={categories.data.items}
-            actions={actions}
-            permissions={{ canWrite, canTest }}
-            onTestModel={onTestModel}
-            renderLocalModels={(onOpenConnection) =>
-              catalog.data && (
-                <LocalModelsPanel
-                  catalog={catalog.data}
-                  canWrite={canWrite}
-                  canTest={canTest}
-                  onTestModel={onTestModel}
-                  onOpenConnection={onOpenConnection}
-                />
-              )
-            }
-            advancedInfo={`目录版本 ${catalog.data.revision}`}
-            onRefresh={async () => {
-              await catalog.refetch({ throwOnError: true });
-            }}
-          />
+    <section
+      className={`page model-service-page${renderHeader ? " model-infrastructure-page" : ""}`}
+    >
+      {renderHeader ? (
+        renderHeader(
+          catalog.data && (
+            <WorkspaceDefaults catalog={catalog.data} canWrite={canWrite} />
+          ),
         )
+      ) : (
+        <header className="page-header">
+          <div>
+            <h1>模型服务</h1>
+            <p>按用途发现模型，按协议类型浏览接入连接。</p>
+          </div>
+          {catalog.data && (
+            <WorkspaceDefaults catalog={catalog.data} canWrite={canWrite} />
+          )}
+        </header>
       )}
+      <div
+        id={renderHeader ? "model-infrastructure-content" : undefined}
+        role={renderHeader ? "tabpanel" : undefined}
+        aria-labelledby={
+          renderHeader ? "infrastructure-tab-model-service" : undefined
+        }
+      >
+        <QueryFeedback
+          error={catalog.error ?? categories.error}
+          onRetry={() => {
+            void catalog.refetch();
+            void categories.refetch();
+          }}
+        />
+        {catalog.isPending || categories.isPending ? (
+          <p role="status">正在加载模型目录…</p>
+        ) : (
+          catalog.data &&
+          categories.data && (
+            <ModelCatalogEditor
+              value={{
+                ...catalog.data,
+                suppliers: catalog.data.suppliers ?? [],
+              }}
+              categories={categories.data.items}
+              actions={actions}
+              permissions={{ canWrite, canTest }}
+              onTestModel={onTestModel}
+              renderLocalModels={(onOpenConnection) =>
+                catalog.data && (
+                  <LocalModelsPanel
+                    catalog={catalog.data}
+                    canWrite={canWrite}
+                    canTest={canTest}
+                    onTestModel={onTestModel}
+                    onOpenConnection={onOpenConnection}
+                  />
+                )
+              }
+              advancedInfo={`目录版本 ${catalog.data.revision}`}
+              onRefresh={async () => {
+                await catalog.refetch({ throwOnError: true });
+              }}
+            />
+          )
+        )}
+      </div>
     </section>
   );
 }

@@ -2,6 +2,8 @@
 
 Status: implemented
 
+执行器与窗口生命周期决定已由 [外部 Code Agent 执行 Amadeus 与统一连接治理](2026-10-23-code-agents.md) 替代；以下保留原始决策与当时的验证记录。
+
 ## Problem
 
 Future Props Lab 需要一个能持续对话、读取多个工坊上下文并在审批后执行正式业务操作的桌面助手。候选内核包括 DeepSeek Harness、Pi 和 OpenCode，但产品已有 Python 后端、统一模型供应商适配、Principal/Workspace 权限、SQLite 真源和桌面单例窗口，运行内核不能引入第二套凭据、权限或业务数据真源。

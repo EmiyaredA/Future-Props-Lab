@@ -1,9 +1,7 @@
 import asyncio
 import json
 import os
-import re
 import signal
-from pathlib import Path
 
 EXECUTION_TIMEOUT_SECONDS = 900
 
@@ -34,56 +32,35 @@ def environment():
 
 
 async def _stop(process):
-    if process.returncode is None:
+    if process.returncode is not None:
+        return
+
+    def signal_tree(value):
         try:
-            os.killpg(process.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        try:
-            await asyncio.wait_for(process.wait(), 3)
-        except TimeoutError:
+            os.killpg(process.pid, value)
+        except PermissionError:
+            # Restricted hosts may forbid process-group signals after a fast child exit.
             try:
-                os.killpg(process.pid, signal.SIGKILL)
+                process.send_signal(value)
             except ProcessLookupError:
                 pass
-            await process.wait()
+        except ProcessLookupError:
+            pass
+
+    signal_tree(signal.SIGTERM)
+    try:
+        # The watchdog has a three-second child-tree shutdown grace period.
+        await asyncio.wait_for(process.wait(), 5)
+    except TimeoutError:
+        signal_tree(signal.SIGKILL)
+        await process.wait()
 
 
 async def probe(kind: str, executable: str):
-    path = Path(executable) if executable else None
-    if not path or not path.is_absolute() or not path.is_file() or not os.access(path, os.X_OK):
-        return False, "未配置可用的 CLI 可执行文件"
-    process = None
-    try:
-        process = await asyncio.create_subprocess_exec(
-            str(path),
-            "--version",
-            env=environment(),
-            start_new_session=True,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL,
-        )
-        data, _ = await asyncio.wait_for(process.communicate(), 5)
-        version = re.search(rb"(\d+)\.(\d+)\.(\d+)", data[:2048])
-        minimum = (0, 163, 0) if kind == "codex" else (2, 1, 259)
-        if process.returncode or not version or tuple(map(int, version.groups())) < minimum:
-            return False, "CLI 版本不支持所需的受限执行与结构化结果"
-        args = ["login", "status"] if kind == "codex" else ["auth", "status"]
-        process = await asyncio.create_subprocess_exec(
-            str(path),
-            *args,
-            env=environment(),
-            start_new_session=True,
-            stdout=asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.DEVNULL,
-        )
-        await asyncio.wait_for(process.wait(), 10)
-        return (True, "已连接") if process.returncode == 0 else (False, "CLI 尚未登录或登录已失效")
-    except (OSError, TimeoutError):
-        return False, "CLI 状态检查失败，请检查安装与登录状态"
-    finally:
-        if process:
-            await _stop(process)
+    from .catalog import inspect_executable
+
+    status = await inspect_executable(kind, executable)
+    return status["available"], status["message"]
 
 
 def command(kind, executable, root, schema, tool_command):
@@ -203,7 +180,12 @@ async def execute(kind, executable, root, schema, tool_command, prompt, cancelle
             total += len(line)
             if total > 8 * 1024 * 1024:
                 raise CliError("Agent 返回超出限制")
-            event = json.loads(line)
+            try:
+                event = json.loads(line)
+            except (ValueError, TypeError):
+                raise CliError("Agent 返回的事件格式无效") from None
+            if not isinstance(event, dict):
+                raise CliError("Agent 返回的事件格式无效")
             if event.get("type") in {"error", "turn.failed"} or event.get("is_error"):
                 failed = True
             if kind == "claude-code" and event.get("type") == "result":

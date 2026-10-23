@@ -28,31 +28,16 @@ type Reads = {
   selection: number;
 };
 
-function releaseRunResources(
-  modelAbortRef: RefObject<AbortController | undefined>,
-  workerRef: RefObject<Worker | undefined>,
-  activeRunRef: RefObject<Run | null>,
-  avatarTimerRef: RefObject<number | undefined>,
-) {
-  modelAbortRef.current?.abort();
-  workerRef.current?.terminate();
-  const run = activeRunRef.current;
-  if (run)
-    void fetchApiJson(
-      `/v1/amadeus/conversations/${run.conversation_id}/runs/${run.id}/cancel`,
-      { method: "POST" },
-    ).catch(() => undefined);
-  if (avatarTimerRef.current) window.clearTimeout(avatarTimerRef.current);
+function clearAvatarTimer(ref: RefObject<number | undefined>) {
+  if (ref.current) window.clearTimeout(ref.current);
 }
+
 type Options = {
   session: AccountSessionContext;
   bridge: Required<DesktopBridge>;
   detail: Detail | null;
   detailRef: RefObject<Detail | null>;
   contextRef: RefObject<Context[]>;
-  modelAbortRef: RefObject<AbortController | undefined>;
-  workerRef: RefObject<Worker | undefined>;
-  activeRunRef: RefObject<Run | null>;
   avatarTimerRef: RefObject<number | undefined>;
   loaded: string[];
   loadedConversationId: string | null;
@@ -85,9 +70,6 @@ export function useAmadeusData(options: Options) {
     detail,
     detailRef,
     contextRef,
-    modelAbortRef,
-    workerRef,
-    activeRunRef,
     avatarTimerRef,
     loaded,
     loadedConversationId,
@@ -224,35 +206,14 @@ export function useAmadeusData(options: Options) {
     void fetchApiJson<RunDetail | null>("/v1/amadeus/runs/active")
       .then(async (running) => {
         if (!alive || !running) return;
-        const path = `/v1/amadeus/conversations/${running.run.conversation_id}/runs/${running.run.id}/finish`;
-        const interrupted = await fetchApiJson<RunDetail>(path, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "interrupted",
-            error_message:
-              "助手窗口已重新载入，任务中断；未确认结果的操作不会自动重试。",
-          }),
-        });
-        if (!alive) return;
-        setActiveRun(null);
-        setBusy(false);
-        setError(interrupted.run.error_message || "上次任务已中断。");
-        await open(interrupted.run.conversation_id);
+        setActiveRun(running.run);
+        setBusy(true);
+        if (readsRef.current === reads && reads.selection === selection)
+          await open(running.run.conversation_id);
       })
       .catch((cause) => {
         if (alive && (cause as Error)?.name !== "AbortError")
           setError(String(cause));
-      });
-    void fetchApiJson<{ items: ModelOption[] }>("/v1/model-inference/options")
-      .then((value) => {
-        if (alive) {
-          setModels(value.items.filter((item) => item.id));
-          setModelId(value.items[0]?.id || "");
-        }
-      })
-      .catch(() => {
-        if (alive) setModels([]);
       });
     void bridge.amadeusContexts().then((value) => {
       if (alive) setContexts(value as Context[]);
@@ -286,12 +247,7 @@ export function useAmadeusData(options: Options) {
       offContexts();
       offReference();
       offPickFinished?.();
-      releaseRunResources(
-        modelAbortRef,
-        workerRef,
-        activeRunRef,
-        avatarTimerRef,
-      );
+      clearAvatarTimer(avatarTimerRef);
     };
   }, [
     session.me.user.id,
@@ -302,9 +258,6 @@ export function useAmadeusData(options: Options) {
     owner,
     detailRef,
     contextRef,
-    modelAbortRef,
-    workerRef,
-    activeRunRef,
     avatarTimerRef,
     setConversations,
     setDetail,

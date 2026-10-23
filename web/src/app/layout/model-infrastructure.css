@@ -1,0 +1,112 @@
+.model-infrastructure-page {
+  container: model-infrastructure / inline-size;
+  min-width: 0;
+}
+.page.model-infrastructure-page,
+.code-agents-page.model-infrastructure-page {
+  max-width: none;
+  margin: 0;
+  padding: 28px;
+}
+.model-infrastructure-header {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 360px minmax(160px, 1fr);
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+.model-infrastructure-heading h1 {
+  margin: 0 0 8px;
+  color: var(--text-strong);
+  font-size: 26px;
+  line-height: 1.25;
+}
+.model-infrastructure-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.model-infrastructure-tabs {
+  display: flex;
+  padding: 3px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.model-infrastructure-tabs button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.model-infrastructure-tabs button:hover {
+  color: var(--text-strong);
+  background: var(--surface-hover);
+}
+.model-infrastructure-tabs button[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--bg);
+}
+.model-infrastructure-tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.model-infrastructure-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.model-infrastructure-actions .btn {
+  min-height: 40px;
+  white-space: nowrap;
+}
+@container model-infrastructure (max-width: 920px) {
+  .model-infrastructure-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+  }
+  .model-infrastructure-tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: min(360px, 100%);
+  }
+}
+@container model-infrastructure (max-width: 480px) {
+  .model-infrastructure-header {
+    column-gap: 10px;
+    margin-bottom: 20px;
+  }
+  .model-infrastructure-heading h1 {
+    font-size: 21px;
+  }
+  .model-infrastructure-heading p {
+    font-size: 11px;
+    text-wrap: balance;
+  }
+  .model-infrastructure-actions .btn {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .model-infrastructure-tabs {
+    width: 100%;
+  }
+}
+@media (max-width: 700px) {
+  .page.model-infrastructure-page,
+  .code-agents-page.model-infrastructure-page {
+    padding: 18px 12px;
+  }
+}

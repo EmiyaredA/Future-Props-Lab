@@ -38,6 +38,7 @@ export function NodeAcceptancePanel({
   prepareCanvas,
   onGeneration,
   onTemplates,
+  readOnly = false,
 }: {
   projectId: string;
   nodeId: string;
@@ -45,9 +46,11 @@ export function NodeAcceptancePanel({
   prepareCanvas?: () => Promise<number>;
   onGeneration: () => void;
   onTemplates?: () => void;
+  readOnly?: boolean;
 }) {
   const client = useQueryClient();
-  const canWrite = useWorkspacePermission("content.write");
+  const permissionWrite = useWorkspacePermission("content.write");
+  const canWrite = permissionWrite && !readOnly;
   const canUseModels = useWorkspacePermission("models.use");
   const canRun = canWrite && canUseModels;
   const [error, setError] = useState("");
@@ -313,7 +316,9 @@ export function NodeAcceptancePanel({
                   <li key={issue}>{issue}</li>
                 ))}
               </ul>
-              <button onClick={onGeneration}>返回生成设置</button>
+              <button onClick={onGeneration}>
+                {readOnly ? "返回项目" : "返回生成设置"}
+              </button>
             </div>
           )}
           <div className="node-check-scope">
