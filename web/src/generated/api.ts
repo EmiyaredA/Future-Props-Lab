@@ -8457,8 +8457,15 @@ export interface components {
             id: string;
             /** Label */
             label: string;
+            /**
+             * Provider Kind
+             * @enum {string}
+             */
+            provider_kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
+            /** Slug */
+            slug: string;
         };
         /** AcceptanceOutputSnapshot */
         AcceptanceOutputSnapshot: {

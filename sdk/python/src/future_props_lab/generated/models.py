@@ -46,7 +46,9 @@ class AcceptanceModelListOut(WireModel):
 class AcceptanceModelOut(WireModel):
     id: str = Field(default=..., alias='id')
     label: str = Field(default=..., alias='label')
+    provider_kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
+    slug: str = Field(default=..., alias='slug')
 
 class AcceptanceOutputSnapshot(WireModel):
     asset_id: str | None = Field(default=..., alias='asset_id')

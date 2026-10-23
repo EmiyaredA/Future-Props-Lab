@@ -253,15 +253,41 @@
             "title": "Label",
             "type": "string"
           },
+          "provider_kind": {
+            "enum": [
+              "local_qwen_tts",
+              "volcengine_image",
+              "openai",
+              "deepseek",
+              "anthropic",
+              "senseaudio_image",
+              "volcengine_video",
+              "senseaudio_video",
+              "zealman_video",
+              "senseaudio_asr",
+              "senseaudio_asr_pro",
+              "senseaudio_realtime",
+              "senseaudio_music",
+              "senseaudio_sfx"
+            ],
+            "title": "Provider Kind",
+            "type": "string"
+          },
           "provider_name": {
             "title": "Provider Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
             "type": "string"
           }
         },
         "required": [
           "id",
           "label",
-          "provider_name"
+          "slug",
+          "provider_name",
+          "provider_kind"
         ],
         "title": "AcceptanceModelOut",
         "type": "object"

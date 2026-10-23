@@ -420,6 +420,8 @@ OpenAPI 或执行定时健康检查。
 
 ## 视觉创作工坊
 
+- `GET /v1/visual-workshop/acceptance-templates`：仅提供“动作迁移”内置模板，并返回当前 Workspace 自存模板；模板复制后成为独立项目标准。
+- `GET /v1/visual-workshop/projects/{project_id}/acceptance/models`：返回当前可用的 chat + vision 模型。每项包含 `id`、`label`、`slug`、`provider_name` 与 `provider_kind`；图标使用供应商类型，模型名称与实际调用标识分行展示，同名模型通过供应商名称区分。
 - `GET/POST /v1/visual-workshop/projects`：按最近更新时间读取项目或新建项目。
 - `GET/PATCH/DELETE /v1/visual-workshop/projects/{project_id}`：读取、修改或删除单个项目。
 - `GET /v1/visual-workshop/projects/{project_id}/snapshot` 与 `POST /v1/visual-workshop/projects/snapshot-imports`：下载可移植 ZIP，或上传 `file` 并创建全新副本。

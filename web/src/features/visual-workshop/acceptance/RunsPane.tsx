@@ -19,6 +19,7 @@ import {
 } from "./api";
 import { RunReview } from "./RunReview";
 import { AcceptanceNodePicker } from "./AcceptanceNodePicker";
+import { AcceptanceModelPicker } from "./AcceptanceModelPicker";
 export function RunsPane({
   projectId,
   nodes,
@@ -160,17 +161,10 @@ export function RunsPane({
             }}
           />
           {needsModel && (
-            <CustomSelect
-              ariaLabel="验收视觉模型"
+            <AcceptanceModelPicker
               value={model}
               onChange={setModel}
-              options={[
-                { value: "", label: "请选择视觉模型" },
-                ...(models.data?.items.map((model) => ({
-                  value: model.id,
-                  label: `${model.provider_name} · ${model.label}`,
-                })) ?? []),
-              ]}
+              models={models.data?.items ?? []}
             />
           )}
           <button

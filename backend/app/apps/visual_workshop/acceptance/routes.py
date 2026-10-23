@@ -96,7 +96,11 @@ async def list_acceptance_models(project_id: str, session: SessionDep, workspace
         return AcceptanceModelListOut(
             items=[
                 AcceptanceModelOut(
-                    id=model.id, label=model.label or model.slug, provider_name=provider.name
+                    id=model.id,
+                    label=model.label or model.slug,
+                    slug=model.slug,
+                    provider_name=provider.name,
+                    provider_kind=provider.kind,
                 )
                 for model, provider in await review_models(session, workspace_id)
             ]

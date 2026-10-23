@@ -39,6 +39,7 @@ export function CustomSelect({
   leadingIcon,
   showChevron = true,
   escapeClipping = true,
+  renderOption,
 }: {
   value: string;
   options: SelectOption[];
@@ -49,6 +50,7 @@ export function CustomSelect({
   leadingIcon?: ReactNode;
   showChevron?: boolean;
   escapeClipping?: boolean;
+  renderOption?: (option: SelectOption) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -180,7 +182,11 @@ export function CustomSelect({
       >
         <span className="custom-select-trigger-content">
           {leadingIcon}
-          <span>{selected?.label ?? "请选择"}</span>
+          {selected && renderOption ? (
+            renderOption(selected)
+          ) : (
+            <span>{selected?.label ?? "请选择"}</span>
+          )}
         </span>
         {showChevron ? <Chevron open={open} /> : null}
       </button>
@@ -202,6 +208,7 @@ export function CustomSelect({
               id={`${listId}-option-${index}`}
               type="button"
               role="option"
+              aria-label={renderOption ? option.label : undefined}
               aria-selected={option.value === value}
               className={
                 option.value === value || index === activeIndex
@@ -216,17 +223,25 @@ export function CustomSelect({
                 if (!option.disabled) setActiveIndex(index);
               }}
             >
-              <span>
-                {option.swatch ? (
-                  <i
-                    className="custom-select-swatch"
-                    style={{ background: option.swatch }}
-                    aria-hidden="true"
-                  />
-                ) : null}
-                {option.label}
-              </span>
-              {option.description ? <small>{option.description}</small> : null}
+              {renderOption ? (
+                renderOption(option)
+              ) : (
+                <>
+                  <span>
+                    {option.swatch ? (
+                      <i
+                        className="custom-select-swatch"
+                        style={{ background: option.swatch }}
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    {option.label}
+                  </span>
+                  {option.description ? (
+                    <small>{option.description}</small>
+                  ) : null}
+                </>
+              )}
             </button>
           ))}
         </div>

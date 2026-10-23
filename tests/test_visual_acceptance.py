@@ -399,6 +399,15 @@ async def test_ai_suggestion_needs_human_confirmation_and_invalid_evidence_fails
     ) as client:
         identity, base = await make_project(client)
         await publish(client, base, standard_document("ai"))
+        response = await client.get(f"{base}/acceptance/models")
+        assert response.status_code == 200, response.text
+        assert next(row for row in response.json()["items"] if row["id"] == model_id) == {
+            "id": model_id,
+            "label": "视觉测试",
+            "slug": "vision-test",
+            "provider_name": "验收假供应商",
+            "provider_kind": "openai",
+        }
         output = await add_output(client, base, identity)
         run = await start(client, base, output, model_id=model_id)
         await AcceptanceRunner(transport=transport("output")).process(run["id"])
