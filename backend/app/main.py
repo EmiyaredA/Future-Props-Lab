@@ -38,6 +38,7 @@ from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
 from app.console.governance.runtime_quotas import recover_admissions
 from app.console.governance.service import AccountError
+from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
 from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.inference.runner import InferenceRunner
 from app.llm.local_models.catalog import local_root
@@ -89,7 +90,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             ArticleSyncRunner(external_sync_actor_allowed),
             ModelTemplateSyncRunner(),
             VisualGenerationRunner(),
-            AcceptanceRunner(),
+            AcceptanceRunner(actor_allowed=acceptance_actor_allowed),
             ModelTestGenerationRunner(),
             InferenceRunner(local_runtime=local_runtime),
             ModelTestTranscriptionRunner(),

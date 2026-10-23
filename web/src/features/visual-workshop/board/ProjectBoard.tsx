@@ -53,13 +53,22 @@ export function ProjectBoard({
   onAcceptance,
   previews,
   onPreview,
+  acceptanceEntry,
 }: {
+  acceptanceEntry?: {
+    nodeId: string;
+    output?: VisualNodeOutput;
+    entry: number;
+  };
   controller: BoardController;
   onCanvas: () => void;
   onAcceptance?: (output?: VisualNodeOutput) => void;
   previews: Record<string, VisualNodeOutput | undefined>;
   onPreview: (nodeId: string, version?: VisualNodeOutput) => void;
 }) {
+  const [nodeTab, setNodeTab] = useState<"content" | "generate" | "acceptance">(
+    "generate",
+  );
   const [tab, setTab] = useState<"workbench" | "status">("workbench");
   const [search, setSearch] = useState("");
   const [action, setAction] = useState<TreeAction>();
@@ -467,7 +476,10 @@ export function ProjectBoard({
               }}
             />
           ) : selected ? (
-            <div className="board-workbench" key={selected.id}>
+            <div
+              className={`board-workbench ${selected.kind === "video" && nodeTab === "acceptance" ? "is-acceptance" : ""}`}
+              key={selected.id}
+            >
               <section className="board-editor">
                 <div className="board-node-heading">
                   <div className="board-node-topline">
@@ -500,20 +512,43 @@ export function ProjectBoard({
                     }
                   />
                 </div>
-                <NodeMetadata
-                  node={selected}
-                  categories={categories}
-                  onPatch={c.patchNode}
-                  open={metadataNodeId === selected.id}
-                  onOpenChange={(open) =>
-                    setMetadataNodeId(open ? selected.id : undefined)
-                  }
-                />
-                <InputReferences controller={c} nodeId={selected.id} />
+                <div
+                  className="board-generation-context"
+                  hidden={selected.kind === "video" && nodeTab === "acceptance"}
+                >
+                  <NodeMetadata
+                    node={selected}
+                    categories={categories}
+                    onPatch={c.patchNode}
+                    open={metadataNodeId === selected.id}
+                    onOpenChange={(open) =>
+                      setMetadataNodeId(open ? selected.id : undefined)
+                    }
+                  />
+                  <InputReferences controller={c} nodeId={selected.id} />
+                </div>
                 {selected.kind === "text" ? (
                   <TextWorkbench controller={c} node={selected} />
                 ) : (
                   <CanvasNodeInspector
+                    key={`${selected.id}:${acceptanceEntry?.nodeId === selected.id ? acceptanceEntry.entry : 0}`}
+                    initialTab={
+                      acceptanceEntry?.nodeId === selected.id
+                        ? "acceptance"
+                        : undefined
+                    }
+                    acceptanceOutput={
+                      previews[selected.id] ??
+                      (acceptanceEntry?.nodeId === selected.id
+                        ? acceptanceEntry.output
+                        : selected.final_output_id
+                          ? ({
+                              id: selected.final_output_id,
+                            } as VisualNodeOutput)
+                          : undefined)
+                    }
+                    onTabChange={setNodeTab}
+                    onAcceptanceTemplate={() => onAcceptance?.()}
                     generating={selectedStatus === "生成中"}
                     projectId={c.projectId}
                     node={selected}
@@ -534,12 +569,20 @@ export function ProjectBoard({
                 )}
               </section>
               <OutputHistory
+                acceptanceMode={
+                  selected.kind === "video" && nodeTab === "acceptance"
+                }
                 onAcceptance={onAcceptance}
                 controller={c}
                 nodeId={selected.id}
                 tasks={tasks.data ?? []}
                 batches={batches.data ?? []}
-                preview={previews[selected.id]}
+                preview={
+                  previews[selected.id] ??
+                  (acceptanceEntry?.nodeId === selected.id
+                    ? acceptanceEntry.output
+                    : undefined)
+                }
                 onPreview={(version) => onPreview(selected.id, version)}
               />
             </div>

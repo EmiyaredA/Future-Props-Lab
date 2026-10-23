@@ -16,6 +16,7 @@ export function acceptanceRun(changes: Partial<Run> = {}): Run {
     previous_run_id: null,
     standard_version: 1,
     model_id: "model",
+    scheme_id: "motion-transfer:api",
     status: "completed",
     decision: "pending",
     revision: 3,
@@ -23,6 +24,12 @@ export function acceptanceRun(changes: Partial<Run> = {}): Run {
     error_message: null,
     snapshot: {
       standard_version: 1,
+      scheme_id: "motion-transfer:api",
+      context_fingerprint: "a".repeat(64),
+      input_source: "node_settings",
+      inputs_version: 1,
+      scheme_version: 1,
+      result_contract_version: 1,
       standard_title: "镜头标准",
       criteria: [criterion],
       output: {

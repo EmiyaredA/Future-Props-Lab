@@ -7681,6 +7681,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/acceptance/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Acceptance Catalog */
+        get: operations["acceptance_catalog_v1_visual_workshop_acceptance_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/generation-batches": {
         parameters: {
             query?: never;
@@ -8010,6 +8027,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/acceptance/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Acceptance Summary */
+        get: operations["acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/asset-imports": {
         parameters: {
             query?: never;
@@ -8253,6 +8287,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Node Acceptance */
+        get: operations["get_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_get"];
+        /** Select Node Acceptance */
+        put: operations["select_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Node Acceptance */
+        post: operations["start_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output": {
         parameters: {
             query?: never;
@@ -8446,6 +8515,23 @@ export interface components {
             /** Source Asset Id */
             source_asset_id: string;
         };
+        /** AcceptanceInputOut */
+        AcceptanceInputOut: {
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video";
+            /** Label */
+            label: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "character" | "motion" | "output";
+        };
         /** AcceptanceModelListOut */
         AcceptanceModelListOut: {
             /** Items */
@@ -8578,6 +8664,10 @@ export interface components {
             error_message: string | null;
             /** Evidence */
             evidence: components["schemas"]["AcceptanceEvidence"][];
+            /** Execution Result */
+            execution_result?: {
+                [key: string]: unknown;
+            };
             /** Id */
             id: string;
             /** Model Id */
@@ -8592,6 +8682,11 @@ export interface components {
             results: components["schemas"]["AcceptanceResult"][];
             /** Revision */
             revision: number;
+            /**
+             * Scheme Id
+             * @default legacy
+             */
+            scheme_id: string;
             snapshot: components["schemas"]["AcceptanceSnapshot"];
             /** Standard Version */
             standard_version: number;
@@ -8610,14 +8705,77 @@ export interface components {
             /** Start Ms */
             start_ms: number;
         };
+        /** AcceptanceSchemeOut */
+        AcceptanceSchemeOut: {
+            /** Available */
+            available: boolean;
+            /** Connection Label */
+            connection_label: string;
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code";
+            /** Input Description */
+            input_description: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "model_api" | "code_agent";
+            /** Message */
+            message: string;
+            /**
+             * Model Slug
+             * @default
+             */
+            model_slug: string;
+            /** Output Description */
+            output_description: string;
+            /**
+             * Provider Kind
+             * @default
+             */
+            provider_kind: string;
+            /** Title */
+            title: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
         /** AcceptanceSnapshot */
         AcceptanceSnapshot: {
             /** Check Results */
             check_results?: components["schemas"]["AcceptanceResult"][];
+            /**
+             * Context Fingerprint
+             * @default
+             */
+            context_fingerprint: string;
             /** Coverage */
             coverage: string;
             /** Criteria */
             criteria: components["schemas"]["AcceptanceCriterion"][];
+            /** Executor */
+            executor?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Input Source
+             * @default legacy
+             */
+            input_source: string;
+            /** Inputs */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Inputs Version
+             * @default 1
+             */
+            inputs_version: number;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -8628,6 +8786,21 @@ export interface components {
              * @default
              */
             prompt: string;
+            /**
+             * Result Contract Version
+             * @default 1
+             */
+            result_contract_version: number;
+            /**
+             * Scheme Id
+             * @default legacy
+             */
+            scheme_id: string;
+            /**
+             * Scheme Version
+             * @default 1
+             */
+            scheme_version: number;
             /** Source Bytes */
             source_bytes?: number | null;
             /** Standard Title */
@@ -8672,6 +8845,38 @@ export interface components {
              * @default false
              */
             required: boolean;
+        };
+        /** AcceptanceSummaryItem */
+        AcceptanceSummaryItem: {
+            /** Final Version */
+            final_version?: number | null;
+            /**
+             * Issue
+             * @default
+             */
+            issue: string;
+            /** Kind */
+            kind: string;
+            /** Node Id */
+            node_id: string;
+            /** Output Asset Id */
+            output_asset_id?: string | null;
+            /** Output Id */
+            output_id?: string | null;
+            /** Output Version */
+            output_version?: number | null;
+            run?: components["schemas"]["AcceptanceRunOut"] | null;
+            /** Scheme Id */
+            scheme_id?: string | null;
+            /** State */
+            state: string;
+            /** Title */
+            title: string;
+        };
+        /** AcceptanceSummaryOut */
+        AcceptanceSummaryOut: {
+            /** Items */
+            items: components["schemas"]["AcceptanceSummaryItem"][];
         };
         /** AcceptanceTemplateListOut */
         AcceptanceTemplateListOut: {
@@ -18008,6 +18213,103 @@ export interface components {
              */
             type: "moveClip";
         };
+        /** NodeAcceptanceCatalogOut */
+        NodeAcceptanceCatalogOut: {
+            /** Items */
+            items: components["schemas"]["NodeAcceptanceTemplateOut"][];
+        };
+        /** NodeAcceptanceOut */
+        NodeAcceptanceOut: {
+            /** Canvas Revision */
+            canvas_revision: number;
+            /** Context Fingerprint */
+            context_fingerprint: string;
+            current_run?: components["schemas"]["AcceptanceRunOut"] | null;
+            /** Input Source */
+            input_source: string;
+            /** Inputs */
+            inputs?: components["schemas"]["AcceptanceInputOut"][];
+            /** Issues */
+            issues?: string[];
+            /** Node Id */
+            node_id: string;
+            /** Output Id */
+            output_id?: string | null;
+            /** Output Version */
+            output_version?: number | null;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
+            /**
+             * Result Is Current
+             * @default false
+             */
+            result_is_current: boolean;
+            /**
+             * Revision
+             * @default 0
+             */
+            revision: number;
+            /** Scheme Id */
+            scheme_id?: ("motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code") | null;
+            /** Specifications */
+            specifications?: {
+                [key: string]: unknown;
+            };
+        };
+        /** NodeAcceptanceSelectIn */
+        NodeAcceptanceSelectIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Scheme Id */
+            scheme_id: ("motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code") | null;
+        };
+        /** NodeAcceptanceStartIn */
+        NodeAcceptanceStartIn: {
+            /** Context Fingerprint */
+            context_fingerprint: string;
+            /** Expected Canvas Revision */
+            expected_canvas_revision: number;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Output Id */
+            output_id: string;
+            /** Previous Run Id */
+            previous_run_id?: string | null;
+            /** Request Id */
+            request_id: string;
+        };
+        /** NodeAcceptanceTemplateOut */
+        NodeAcceptanceTemplateOut: {
+            /** Criteria */
+            criteria: components["schemas"]["AcceptanceCriterion"][];
+            /**
+             * Id
+             * @default builtin:motion-transfer
+             */
+            id: string;
+            /** Kinds */
+            kinds?: string[];
+            /**
+             * Readonly
+             * @default true
+             */
+            readonly: boolean;
+            /** Schemes */
+            schemes: components["schemas"]["AcceptanceSchemeOut"][];
+            /**
+             * Title
+             * @default 动作迁移
+             */
+            title: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
         /** OperationBatchIn */
         OperationBatchIn: {
             /** Expectedrevision */
@@ -20857,7 +21159,7 @@ export interface components {
             /** Min Width */
             min_width?: number | null;
             /** Ratio */
-            ratio?: ("16:9" | "9:16" | "1:1" | "4:3" | "3:4") | null;
+            ratio?: ("16:9" | "9:16" | "1:1" | "4:3" | "3:4" | "21:9") | null;
             /**
              * Require Audio
              * @default false
@@ -42638,6 +42940,26 @@ export interface operations {
             };
         };
     };
+    acceptance_catalog_v1_visual_workshop_acceptance_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeAcceptanceCatalogOut"];
+                };
+            };
+        };
+    };
     list_generation_batches_v1_visual_workshop_generation_batches_get: {
         parameters: {
             query?: {
@@ -43444,6 +43766,37 @@ export interface operations {
             };
         };
     };
+    acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptanceSummaryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_assets_v1_visual_workshop_projects__project_id__asset_imports_post: {
         parameters: {
             query?: never;
@@ -44085,6 +44438,112 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualCanvasDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_get: {
+        parameters: {
+            query?: {
+                output_id?: string | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeAcceptanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    select_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodeAcceptanceSelectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeAcceptanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodeAcceptanceStartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptanceRunOut"];
                 };
             };
             /** @description Validation Error */

@@ -690,10 +690,10 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 `local-models/`；数据库备份恢复后可主动重新安装。语音输入与输出保存在对应空间的
 `model-inference/inputs/`、`model-inference/outputs/`，沿用 Workspace 备份和访问边界。
 
-## 视觉工坊通用验收
+## 视觉工坊节点验收
 
-`ReferenceMaterialRow.tsx` 为参考绑定与验收节点选择共用缩略图、类型、格式和整行操作；`AcceptanceNodePicker.tsx` 拥有节点列表的内联展开、当前选中态与焦点恢复，输出版本查询与批量选择仍归 `RunsPane.tsx`。参考素材不再提供额外预览浮窗。
+`backend/app/apps/visual_workshop/acceptance/` 拥有只读动作迁移定义、节点方案 CAS 绑定、自动生成依据、不可变输出验收记录、人工结论、证据、返修和快照兼容。`execution/` 负责无凭据任务包、专用媒体 MCP 和 Agent 报告转换。`runner.py` 复用短事务及 RunnerSupervisor，模型 API 与 Agent 专属结果分别保存。生成快照与上传版本的节点设置明确区分，验收不参与生成、上传、画布保存及最终输出采用的门禁。
 
-`backend/app/apps/visual_workshop/acceptance/` 拥有 Workspace 验收模板、项目标准及发布版本、输出版本验收记录、人工结论、参考与证据引用、返修草稿和历史快照迁移。`runner.py` 通过独立短事务和现有 RunnerSupervisor 执行规格检查及视觉模型辅助；媒体探测与解码由 `capabilities/media_rendering/inspection.py` 拥有，抽帧复用该能力的公开入口。输出登记和画布写入调用验收访问契约，强制项目新增结果为候选，不替换最终输出。
+`backend/app/capabilities/agents/cli/` 拥有 Codex、Claude Code 非交互执行参数、事件解析、环境过滤、取消、超时和父进程退出监督；不包含验收业务。`console/governance/visual_acceptance_access.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
 
-`web/src/features/visual-workshop/acceptance/` 拥有模板库、标准编辑、输出选择、逐项结果、证据播放和复验对比；公共布局、模板、标准与审阅样式分别维护。验收模块自绘视频控制以新版为时间主轴，短旧版停留末帧，取样证据与参考资料分区，人工判断草稿不随查询刷新重置。项目页保留原画布和看板实例，切换验收不改布局或视口；读写身份共用页面并按有效权限开放操作，缓存键仍归属 `queryKeys.ts`。
+`web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。

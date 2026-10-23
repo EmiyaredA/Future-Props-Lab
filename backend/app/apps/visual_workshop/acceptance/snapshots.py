@@ -10,6 +10,7 @@ from app.apps.visual_workshop.acceptance.models import (
     AcceptanceRun,
     AcceptanceStandard,
     AcceptanceStandardVersion,
+    NodeAcceptanceBinding,
 )
 from app.apps.visual_workshop.acceptance.schemas import (
     AcceptanceDocument,
@@ -23,8 +24,11 @@ from app.runtime.ids import new_id
 
 async def export_acceptance(session, project_id):
     standard = await session.get(AcceptanceStandard, project_id)
-    if standard is None:
-        return None, set()
+    bindings = list(
+        await session.scalars(
+            select(NodeAcceptanceBinding).where(NodeAcceptanceBinding.project_id == project_id)
+        )
+    )
     versions = list(
         await session.scalars(
             select(AcceptanceStandardVersion).where(
@@ -40,6 +44,8 @@ async def export_acceptance(session, project_id):
             select(AcceptanceRepairDraft).where(AcceptanceRepairDraft.project_id == project_id)
         )
     )
+    if standard is None and not runs and not bindings:
+        return None, set()
     refs = set(
         await session.scalars(
             select(AcceptanceAssetReference.asset_id).where(
@@ -49,13 +55,17 @@ async def export_acceptance(session, project_id):
     )
     refs.update(
         value
-        for item in standard.draft.get("criteria", [])
+        for item in (standard.draft if standard else {}).get("criteria", [])
         for value in item["reference_asset_ids"]
     )
     return {
-        "draft": standard.draft,
-        "required": standard.required,
-        "published_version": standard.published_version,
+        "format_version": 2,
+        "draft": standard.draft
+        if standard
+        else {"title": "历史标准", "criteria": [], "node_ids": []},
+        "required": False,
+        "published_version": standard.published_version if standard else 0,
+        "bindings": [{"node_id": row.node_id, "scheme_id": row.scheme_id} for row in bindings],
         "versions": [
             {"id": row.id, "version": row.version, "document": row.document} for row in versions
         ],
@@ -71,6 +81,8 @@ async def export_acceptance(session, project_id):
                 "evidence": row.evidence,
                 "decisions": row.decisions,
                 "status": row.status,
+                "scheme_id": row.scheme_id,
+                "execution_result": row.execution_result,
             }
             for row in runs
         ],
@@ -84,6 +96,28 @@ async def import_acceptance(
     if value is None:
         return
     try:
+        if value.get("format_version", 1) not in {1, 2}:
+            raise ValueError("未知验收快照版本")
+        seen_nodes = set()
+        from .catalog import SCHEMES
+
+        for binding in value.get("bindings", []):
+            node_id = node_ids[binding["node_id"]]
+            if node_id in seen_nodes or (
+                binding["scheme_id"] is not None and binding["scheme_id"] not in SCHEMES
+            ):
+                raise ValueError("节点方案绑定无效")
+            seen_nodes.add(node_id)
+            session.add(
+                NodeAcceptanceBinding(
+                    id=new_id(),
+                    workspace_id=workspace_id,
+                    project_id=project_id,
+                    node_id=node_id,
+                    scheme_id=binding["scheme_id"],
+                    revision=0,
+                )
+            )
         draft = AcceptanceDocument.model_validate(value["draft"]).model_dump(mode="json")
         version_ids = {item["id"]: new_id() for item in value["versions"]}
         run_ids = {item["id"]: new_id() for item in value["runs"]}
@@ -149,6 +183,17 @@ async def import_acceptance(
             snapshot["output"]["id"] = mapped(output_ids, item["output_id"])
             if snapshot["output"]["asset_id"]:
                 snapshot["output"]["asset_id"] = mapped(asset_ids, snapshot["output"]["asset_id"])
+            for entry in snapshot.get("inputs", {}).get("assets", []):
+                entry["asset_id"] = mapped(asset_ids, entry["asset_id"])
+            for entry in snapshot.get("inputs", {}).get("provenance", []):
+                for key, mapping in (
+                    ("asset_id", asset_ids),
+                    ("node_id", node_ids),
+                    ("output_id", output_ids),
+                ):
+                    if entry.get(key):
+                        entry[key] = mapped(mapping, entry[key])
+            snapshot["executor"] = {}
             evidence = deepcopy(item["evidence"])
             evidence_ids = {entry["id"]: new_id() for entry in evidence}
             for entry in evidence:
@@ -173,6 +218,15 @@ async def import_acceptance(
                 result["evidence_ids"] = [
                     mapped(evidence_ids, identity) for identity in result["evidence_ids"]
                 ]
+            execution_result = deepcopy(item.get("execution_result", {}))
+            for finding in execution_result.get("report", {}).get("findings", []):
+                finding["evidence_ids"] = [
+                    mapped(evidence_ids, identity) for identity in finding["evidence_ids"]
+                ]
+            for finding in execution_result.get("results", {}).get("results", []):
+                finding["evidence_ids"] = [
+                    mapped(evidence_ids, identity) for identity in finding["evidence_ids"]
+                ]
             row = AcceptanceRun(
                 id=run_ids[item["id"]],
                 workspace_id=workspace_id,
@@ -185,6 +239,8 @@ async def import_acceptance(
                 else None,
                 request_id=new_id(),
                 fingerprint="snapshot",
+                scheme_id=item.get("scheme_id", "legacy"),
+                execution_result=execution_result,
                 snapshot=snapshot,
                 results=results,
                 evidence=evidence,

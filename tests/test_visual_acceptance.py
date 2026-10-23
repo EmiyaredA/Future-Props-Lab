@@ -1,28 +1,34 @@
-"""Acceptance API journeys use only the isolated test database and synthetic media."""
+"""Node acceptance journeys use an isolated database, synthetic media and fake executors."""
 
 import io
 import json
+import subprocess
 from copy import deepcopy
 
 import httpx
 import pytest
 from PIL import Image
+from sqlalchemy import delete
 
-from app.apps.visual_workshop.acceptance.models import AcceptanceRun
 from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
+from app.apps.visual_workshop.models import VisualGenerationTask
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.llm.models import ModelEntry, ModelProvider
 from app.main import app
+from app.runtime.config import get_settings
+from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 
 
-@pytest.fixture(autouse=True)
-async def cleanup_acceptance_projects():
+@pytest.fixture
+async def client():
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
         original = {
             row["id"] for row in (await client.get("/v1/visual-workshop/projects")).json()["items"]
         }
-        yield
+        yield client
         for row in (await client.get("/v1/visual-workshop/projects")).json()["items"]:
             if row["id"] not in original:
                 result = await client.delete(
@@ -30,333 +36,20 @@ async def cleanup_acceptance_projects():
                     params={"expected_revision": row["revision"]},
                 )
                 assert result.status_code == 200, result.text
-        from sqlalchemy import delete
-
-        from app.llm.models import ModelProvider
-
         async with SessionLocal() as session:
             await session.execute(delete(ModelProvider).where(ModelProvider.name == "验收假供应商"))
             await session.commit()
 
 
-async def make_project(client, kind="image"):
-    result = await client.post(
-        "/v1/visual-workshop/projects", json={"title": "验收测试", "kind": "canvas"}
-    )
-    assert result.status_code == 200, result.text
-    identity = result.json()["id"]
-    base = f"/v1/visual-workshop/projects/{identity}"
-    state = await client.put(
-        f"{base}/canvas",
-        json={
-            "expected_revision": 0,
-            "nodes": [
-                {"id": "shot", "title": "测试镜头", "kind": kind, "position": {"x": 0, "y": 0}}
-            ],
-            "edges": [],
-        },
-    )
-    assert state.status_code == 200, state.text
-    return identity, base
-
-
-def standard_document(method="automatic"):
-    return {
-        "title": "交付验收",
-        "node_ids": ["shot"],
-        "criteria": [
-            {
-                "id": "rule",
-                "title": "输出要求",
-                "method": method,
-                "kinds": ["image"],
-                "required": True,
-                "requirement": "角色与参考一致",
-                "specifications": {"min_width": 64},
-            }
-        ],
-    }
-
-
-async def publish(client, base, document, required=False, revision=0):
-    response = await client.put(
-        f"{base}/acceptance/standard",
-        json={
-            "expected_revision": revision,
-            "document": document,
-            "publish": True,
-            "required": required,
-        },
-    )
-    assert response.status_code == 200, response.text
-    return response.json()
-
-
-async def add_output(client, base, project_id, size=64):
-    buffer = io.BytesIO()
-    Image.new("RGB", (size, size), "red").save(buffer, "PNG")
-    asset = await client.post(
-        "/v1/files",
-        data={"project_id": project_id},
-        files={"upload": ("test.png", buffer.getvalue(), "image/png")},
-    )
-    assert asset.status_code == 200, asset.text
-    state = (await client.get(f"{base}/canvas")).json()
-    result = await client.post(
-        f"{base}/nodes/shot/outputs",
-        json={"expected_revision": state["revision"], "asset_id": asset.json()["id"]},
-    )
-    assert result.status_code == 200, result.text
-    output = (await client.get(f"{base}/nodes/shot/outputs")).json()["items"][0]
-    return output
-
-
-async def start(client, base, output, request="check", **extra):
-    result = await client.post(
-        f"{base}/acceptance/runs",
-        json={
-            "expected_standard_version": 1,
-            "output_ids": [output["id"]],
-            "request_id": request,
-            **extra,
-        },
-    )
-    assert result.status_code == 200, result.text
-    return result.json()["items"][0]
-
-
-async def process(client, base, run):
-    await AcceptanceRunner().process(run["id"])
-    return (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()
-
-
-async def decide(client, base, run, **values):
-    result = await client.post(
-        f"{base}/acceptance/runs/{run['id']}/decisions",
-        json={"expected_revision": run["revision"], **values},
-    )
-    assert result.status_code == 200, result.text
-    return result.json()
-
-
-@pytest.mark.asyncio
-async def test_strict_candidate_adoption_cas_and_standard_invalidation():
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        identity, base = await make_project(client)
-        standard = await publish(client, base, standard_document(), required=True)
-        output = await add_output(client, base, identity)
-        state = (await client.get(f"{base}/canvas")).json()
-        assert state["nodes"][0].get("final_output_id") is None
-        assert output["is_final"] is False
-        rejected = await client.put(
-            f"{base}/nodes/shot/final-output",
-            json={"output_id": output["id"], "expected_revision": state["revision"]},
-        )
-        assert rejected.status_code == 409
-        forged = deepcopy(state)
-        forged["nodes"][0]["approved"] = True
-        rejected = await client.put(
-            f"{base}/canvas",
-            json={"expected_revision": state["revision"], "nodes": forged["nodes"], "edges": []},
-        )
-        assert rejected.status_code == 409
-        run = await start(client, base, output)
-        replay = await start(client, base, output)
-        assert replay["id"] == run["id"]
-        run = await process(client, base, run)
-        assert run["status"] == "completed", run
-        assert run["results"][0]["verdict"] == "passed"
-        stale = deepcopy(run)
-        run = await decide(client, base, run, finalize=True)
-        assert run["decision"] == "passed"
-        rejected = await client.post(
-            f"{base}/acceptance/runs/{run['id']}/decisions",
-            json={"expected_revision": stale["revision"], "finalize": True},
-        )
-        assert rejected.status_code == 409
-        state = (await client.get(f"{base}/canvas")).json()
-        result = await client.put(
-            f"{base}/nodes/shot/final-output",
-            json={"output_id": output["id"], "expected_revision": state["revision"]},
-        )
-        assert result.status_code == 200, result.text
-        state = (await client.get(f"{base}/canvas")).json()
-        state["nodes"][0]["approved"] = True
-        approved = await client.put(
-            f"{base}/canvas",
-            json={"expected_revision": state["revision"], "nodes": state["nodes"], "edges": []},
-        )
-        assert approved.status_code == 200, approved.text
-        run = await decide(
-            client, base, run, criterion_id="rule", verdict="failed", reason="复核发现规格不符"
-        )
-        state = (await client.get(f"{base}/canvas")).json()
-        assert state["nodes"][0]["approved"] is False
-        assert run["results"][0]["verdict"] == "failed"
-        assert run["snapshot"]["check_results"][0]["verdict"] == "passed"
-        assert state["nodes"][0]["final_output_id"] == output["id"]
-        run = await decide(
-            client, base, run, criterion_id="rule", verdict="passed", reason="重新核实通过"
-        )
-        await decide(client, base, run, finalize=True)
-        second = await add_output(client, base, identity)
-        assert not second["is_final"]
-        assert (await client.get(f"{base}/canvas")).json()["nodes"][0]["final_output_id"] == output[
-            "id"
-        ]
-        await publish(
-            client, base, standard_document(), required=True, revision=standard["revision"]
-        )
-        state = (await client.get(f"{base}/canvas")).json()
-        rejected = await client.put(
-            f"{base}/nodes/shot/final-output",
-            json={"output_id": output["id"], "expected_revision": state["revision"]},
-        )
-        assert rejected.status_code == 409
-        deleted = await client.delete(
-            f"{base}/nodes/shot/outputs/{output['id']}",
-            params={"expected_revision": state["revision"]},
-        )
-        assert deleted.status_code == 409
-
-
-@pytest.mark.asyncio
-async def test_manual_problem_repair_recheck_and_snapshot_roundtrip():
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        identity, base = await make_project(client)
-        await publish(client, base, standard_document("manual"), required=True)
-        output = await add_output(client, base, identity)
-        run = await process(client, base, await start(client, base, output))
-        result = await client.post(
-            f"{base}/acceptance/runs/{run['id']}/decisions",
-            json={"expected_revision": run["revision"], "finalize": True},
-        )
-        assert result.status_code == 422
-        run = await decide(
-            client,
-            base,
-            run,
-            criterion_id="rule",
-            verdict="failed",
-            reason="手部结构异常",
-            region=[0.1, 0.2, 0.3, 0.4],
-        )
-        run = await decide(client, base, run, finalize=True)
-        assert run["decision"] == "failed"
-        draft = await client.post(f"{base}/acceptance/runs/{run['id']}/repair-drafts", json={})
-        assert draft.status_code == 200, draft.text
-        assert "手部结构异常" in draft.json()["text"]
-        new_output = await add_output(client, base, identity)
-        new_run = await start(client, base, new_output, "recheck", previous_run_id=run["id"])
-        new_run = await process(client, base, new_run)
-        new_run = await decide(client, base, new_run, criterion_id="rule", verdict="passed")
-        new_run = await decide(client, base, new_run, finalize=True)
-        assert new_run["decision"] == "passed"
-        assert (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()[
-            "decision"
-        ] == "failed"
-        snapshot = await client.get(f"{base}/snapshot")
-        assert snapshot.status_code == 200, snapshot.text
-        imported = await client.post(
-            "/v1/visual-workshop/projects/snapshot-imports",
-            files={"file": ("acceptance.zip", snapshot.content, "application/zip")},
-        )
-        assert imported.status_code == 200, imported.text
-        new_base = f"/v1/visual-workshop/projects/{imported.json()['project']['id']}"
-        history = (await client.get(f"{new_base}/acceptance/runs")).json()["items"]
-        assert len(history) == 2
-        assert all(item["decision"] == "historical" for item in history)
-        assert not {item["id"] for item in history} & {run["id"], new_run["id"]}
-        deleted = await client.delete(
-            base, params={"expected_revision": (await client.get(base)).json()["revision"]}
-        )
-        assert deleted.status_code == 200, deleted.text
-
-
-@pytest.mark.asyncio
-async def test_only_motion_transfer_builtin_preserves_workspace_templates_and_project_standards():
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        _, base = await make_project(client)
-        document = standard_document("manual")
-        published = await publish(client, base, document)
-        saved = await client.post(
-            "/v1/visual-workshop/acceptance-templates",
-            json={"expected_revision": 0, "document": document},
-        )
-        assert saved.status_code == 200, saved.text
-        template_id = saved.json()["id"]
-        try:
-            response = await client.get("/v1/visual-workshop/acceptance-templates")
-            assert response.status_code == 200, response.text
-            items = response.json()["items"]
-            builtin = [item for item in items if item["builtin"]]
-            assert [(item["id"], item["title"]) for item in builtin] == [
-                ("builtin:motion-transfer", "动作迁移")
-            ]
-            criteria = builtin[0]["document"]["criteria"]
-            assert [item["method"] for item in criteria] == ["automatic", "ai", "ai", "manual"]
-            assert {item["reference_label"] for item in criteria if item["reference_label"]} == {
-                "角色基准图",
-                "原动作视频",
-            }
-            assert criteria[-1]["kinds"] == ["video"]
-            assert criteria[-1]["required"] is True
-            assert "完整播放" in criteria[-1]["requirement"]
-            assert builtin[0]["document"]["node_ids"] == []
-            assert all(not item["reference_asset_ids"] for item in criteria)
-            assert next(item for item in items if item["id"] == template_id) == saved.json()
-            assert (await client.get(f"{base}/acceptance/standard")).json() == published
-        finally:
-            response = await client.delete(
-                f"/v1/visual-workshop/acceptance-templates/{template_id}?expected_revision=0"
-            )
-            assert response.status_code == 200, response.text
-
-
-@pytest.mark.asyncio
-async def test_template_strips_bindings_and_revision_conflicts():
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        document = standard_document("manual")
-        document["criteria"][0]["reference_asset_ids"] = ["private-asset"]
-        result = await client.post(
-            "/v1/visual-workshop/acceptance-templates",
-            json={"expected_revision": 0, "document": document},
-        )
-        assert result.status_code == 200, result.text
-        template = result.json()
-        assert template["document"]["node_ids"] == []
-        assert template["document"]["criteria"][0]["reference_asset_ids"] == []
-        result = await client.put(
-            f"/v1/visual-workshop/acceptance-templates/{template['id']}",
-            json={"expected_revision": 0, "document": document},
-        )
-        assert result.status_code == 200
-        result = await client.delete(
-            f"/v1/visual-workshop/acceptance-templates/{template['id']}?expected_revision=0"
-        )
-        assert result.status_code == 409
-
-
-@pytest.mark.asyncio
-async def test_ai_suggestion_needs_human_confirmation_and_invalid_evidence_fails():
-    from app.llm.models import ModelEntry, ModelProvider
-    from app.runtime.credentials import encrypt_secret
-
+@pytest.fixture
+async def configured_model(monkeypatch):
     async with SessionLocal() as session:
         provider = ModelProvider(
             workspace_id="default",
             name="验收假供应商",
             kind="openai",
             base_url="https://example.com/v1",
-            api_key_ciphertext=encrypt_secret("fake-key"),
+            api_key_ciphertext=encrypt_secret("fake"),
         )
         session.add(provider)
         await session.flush()
@@ -369,75 +62,14 @@ async def test_ai_suggestion_needs_human_confirmation_and_invalid_evidence_fails
         )
         session.add(model)
         await session.commit()
-        model_id = model.id
-
-    def transport(evidence):
-        def handle(_request):
-            payload = {
-                "results": [
-                    {
-                        "criterion_id": "rule",
-                        "verdict": "passed",
-                        "explanation": "当前图片符合要求",
-                        "evidence_ids": [evidence],
-                    }
-                ]
-            }
-            chunk = {
-                "choices": [{"delta": {"content": json.dumps(payload)}, "finish_reason": "stop"}]
-            }
-            return httpx.Response(
-                200,
-                text="data: " + json.dumps(chunk) + "\n\ndata: [DONE]\n\n",
-                headers={"content-type": "text/event-stream"},
-            )
-
-        return httpx.MockTransport(handle)
-
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        identity, base = await make_project(client)
-        await publish(client, base, standard_document("ai"))
-        response = await client.get(f"{base}/acceptance/models")
-        assert response.status_code == 200, response.text
-        assert next(row for row in response.json()["items"] if row["id"] == model_id) == {
-            "id": model_id,
-            "label": "视觉测试",
-            "slug": "vision-test",
-            "provider_name": "验收假供应商",
-            "provider_kind": "openai",
-        }
-        output = await add_output(client, base, identity)
-        run = await start(client, base, output, model_id=model_id)
-        await AcceptanceRunner(transport=transport("output")).process(run["id"])
-        run = (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()
-        assert run["status"] == "completed", run
-        assert run["results"][0]["suggestion"] == "passed"
-        assert run["results"][0]["verdict"] == "pending"
-        invalid = await start(client, base, output, "bad-evidence", model_id=model_id)
-        await AcceptanceRunner(transport=transport("fabricated-frame")).process(invalid["id"])
-        invalid = (await client.get(f"{base}/acceptance/runs/{invalid['id']}")).json()
-        assert invalid["status"] == "failed", invalid
-        assert invalid["decision"] == "pending"
-        async with SessionLocal() as session:
-            row = await session.get(AcceptanceRun, run["id"])
-            row.status = "processing"
-            await session.commit()
-        await AcceptanceRunner().recover()
-        assert (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()[
-            "status"
-        ] == "failed"
+        identity = model.id
+    monkeypatch.setattr(get_settings(), "fpl_acceptance_model_workspace_id", "default")
+    monkeypatch.setattr(get_settings(), "fpl_acceptance_model_id", identity)
+    return identity
 
 
-@pytest.mark.asyncio
-async def test_video_specifications_sampling_and_evidence_protection(tmp_path):
-    import subprocess
-
-    from app.capabilities.asset_store.models import VisualAsset
-    from app.capabilities.asset_store.storage import AssetStorage
-    from app.runtime.config import get_settings
-
+@pytest.fixture
+def video(tmp_path):
     path = tmp_path / "synthetic.mp4"
     subprocess.run(
         [
@@ -457,124 +89,460 @@ async def test_video_specifications_sampling_and_evidence_protection(tmp_path):
         ],
         check=True,
     )
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        identity, base = await make_project(client, "video")
-        document = standard_document("automatic")
-        document["criteria"][0]["kinds"] = ["video"]
-        document["criteria"][0]["specifications"] = {"min_width": 64, "max_duration": 2}
-        await publish(client, base, document, required=True)
-        state = (await client.get(f"{base}/canvas")).json()
-        result = await client.post(
-            f"{base}/nodes/shot/output-uploads",
-            data={"expected_revision": state["revision"]},
-            files={"file": ("synthetic.mp4", path.read_bytes(), "video/mp4")},
+    return path.read_bytes()
+
+
+async def upload(client, project_id, data, kind):
+    response = await client.post(
+        "/v1/files",
+        data={"project_id": project_id},
+        files={
+            "upload": (f"reference.{kind}", data, "image/png" if kind == "png" else "video/mp4")
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["id"]
+
+
+async def setup(client, video, *, references=True, kind="video"):
+    response = await client.post(
+        "/v1/visual-workshop/projects", json={"title": "节点验收测试", "kind": "canvas"}
+    )
+    identity = response.json()["id"]
+    base = f"/v1/visual-workshop/projects/{identity}"
+    buffer = io.BytesIO()
+    Image.new("RGB", (64, 64), "blue").save(buffer, "PNG")
+    image = await upload(client, identity, buffer.getvalue(), "png")
+    motion = await upload(client, identity, video, "mp4")
+    # Filenames have no role semantics: explicit reference declarations determine their use.
+    draft = {
+        "prompt": "原始镜头要求",
+        "ratio": "adaptive",
+        "duration": -1,
+        "mode": "reference",
+        "reference_asset_ids": [image] if references else [],
+        "video_asset_ids": [motion] if references else [],
+    }
+    response = await client.put(
+        f"{base}/canvas",
+        json={
+            "expected_revision": 0,
+            "nodes": [
+                {
+                    "id": "shot",
+                    "title": "动作镜头",
+                    "kind": kind,
+                    "position": {"x": 0, "y": 0},
+                    **({"generation_draft": draft} if kind == "video" else {}),
+                }
+            ],
+            "edges": [],
+        },
+    )
+    assert response.status_code == 200, response.text
+    if kind == "video":
+        await add_output(client, base, video)
+    return identity, base, image, motion
+
+
+async def add_output(client, base, video):
+    canvas = (await client.get(f"{base}/canvas")).json()
+    response = await client.post(
+        f"{base}/nodes/shot/output-uploads",
+        data={"expected_revision": canvas["revision"]},
+        files={"file": ("output.mp4", video, "video/mp4")},
+    )
+    assert response.status_code == 200, response.text
+    return (await client.get(f"{base}/nodes/shot/outputs")).json()["items"][0]
+
+
+async def context(client, base):
+    response = await client.get(f"{base}/nodes/shot/acceptance")
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+async def select_scheme(client, base, scheme="api"):
+    value = await context(client, base)
+    response = await client.put(
+        f"{base}/nodes/shot/acceptance",
+        json={"expected_revision": value["revision"], "scheme_id": f"motion-transfer:{scheme}"},
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def submission(value, request="check", **extra):
+    return {
+        "expected_revision": value["revision"],
+        "expected_canvas_revision": value["canvas_revision"],
+        "context_fingerprint": value["context_fingerprint"],
+        "output_id": value["output_id"],
+        "request_id": request,
+        **extra,
+    }
+
+
+async def start(client, base, request="check", **extra):
+    value = await context(client, base)
+    response = await client.post(
+        f"{base}/nodes/shot/acceptance/runs", json=submission(value, request, **extra)
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def api_transport(*, invalid=False):
+    def handle(request):
+        content = json.loads(request.content)["messages"][-1]["content"]
+        text = next(item["text"] for item in content if item["type"] == "text")
+        payload = json.loads(text)
+        assert len(payload["evidence"]) >= 4
+        results = {
+            "results": [
+                {
+                    "criterion_id": item["id"],
+                    "verdict": "passed",
+                    "explanation": "仅基于所提供的抽样帧",
+                    "evidence_ids": ["fabricated" if invalid else payload["evidence"][0]["id"]],
+                }
+                for item in payload["criteria"]
+            ]
+        }
+        event = {"choices": [{"delta": {"content": json.dumps(results)}, "finish_reason": "stop"}]}
+        return httpx.Response(
+            200,
+            text="data: " + json.dumps(event) + "\n\ndata: [DONE]\n\n",
+            headers={"content-type": "text/event-stream"},
         )
-        assert result.status_code == 200, result.text
-        output = (await client.get(f"{base}/nodes/shot/outputs")).json()["items"][0]
-        run = await process(client, base, await start(client, base, output))
-        assert run["status"] == "completed", run
-        assert run["results"][0]["verdict"] == "passed"
-        sampled = await client.post(
-            f"{base}/acceptance/runs/{run['id']}/samples",
-            json={"expected_revision": run["revision"], "start_ms": 0, "end_ms": 800},
-        )
-        assert sampled.status_code == 200, sampled.text
-        run = sampled.json()
-        assert 1 <= len(run["evidence"]) <= 12
-        assert [item["position_ms"] for item in run["evidence"]] == sorted(
-            {item["position_ms"] for item in run["evidence"]}
-        )
-        evidence = run["evidence"][0]
-        assert (await client.get(f"/v1/files/{evidence['asset_id']}/content")).status_code == 200
-        deleted = await client.delete(
-            f"/v1/files/{evidence['asset_id']}", params={"expected_revision": 0}
-        )
-        assert deleted.status_code == 409, deleted.text
-        invalid = await client.post(
-            f"{base}/acceptance/runs/{run['id']}/samples",
-            json={"expected_revision": run["revision"], "start_ms": 0, "end_ms": 2000},
-        )
-        assert invalid.status_code == 422
-        async with SessionLocal() as session:
-            source = await session.get(VisualAsset, evidence["asset_id"])
-            assert AssetStorage(get_settings()).path_for(source).is_file()
-        # Existing output cannot be replaced through legacy canvas JSON either.
-        state = (await client.get(f"{base}/canvas")).json()
-        state["nodes"][0]["asset_id"] = output["asset_id"]
-        result = await client.put(
-            f"{base}/canvas",
-            json={"expected_revision": state["revision"], "nodes": state["nodes"], "edges": []},
-        )
-        assert result.status_code == 200, result.text
-        assert result.json()["nodes"][0]["final_output_id"] is None
+
+    return httpx.MockTransport(handle)
+
+
+async def process(client, base, run, **kwargs):
+    await AcceptanceRunner(**kwargs).process(run["id"])
+    return (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()
+
+
+async def decide(client, base, run, **values):
+    response = await client.post(
+        f"{base}/acceptance/runs/{run['id']}/decisions",
+        json={"expected_revision": run["revision"], **values},
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
 
 
 @pytest.mark.asyncio
-async def test_workspace_scope_and_unsupported_media_manual_only():
-    from sqlalchemy import delete
+async def test_readonly_catalog_retired_writes_and_unconfigured_connections(client, video):
+    _, base, *_ = await setup(client, video)
+    catalog = (await client.get("/v1/visual-workshop/acceptance/catalog")).json()["items"]
+    assert len(catalog) == 1 and catalog[0]["title"] == "动作迁移" and catalog[0]["readonly"]
+    assert len(catalog[0]["schemes"]) == 3 and not any(
+        s["available"] for s in catalog[0]["schemes"]
+    )
+    document = {"title": "旧标准", "criteria": [], "node_ids": []}
+    for method, path, body in [
+        (
+            "POST",
+            "/v1/visual-workshop/acceptance-templates",
+            {"expected_revision": 0, "document": document},
+        ),
+        (
+            "PUT",
+            f"{base}/acceptance/standard",
+            {"expected_revision": 0, "document": document, "publish": True},
+        ),
+        (
+            "POST",
+            f"{base}/acceptance/runs",
+            {"expected_standard_version": 1, "output_ids": ["old"], "request_id": "old"},
+        ),
+    ]:
+        response = await client.request(method, path, json=body)
+        assert response.status_code == 410, response.text
+    value = await select_scheme(client, base)
+    assert any("固定视觉模型" in message for message in value["issues"])
+    response = await client.post(f"{base}/nodes/shot/acceptance/runs", json=submission(value))
+    assert response.status_code == 409 and "executor_unavailable" in response.text
 
-    from app.apps.visual_workshop.acceptance.models import AcceptanceTemplate
-    from app.apps.visual_workshop.models import VisualWorkshopProject
-    from app.runtime.ids import new_id
 
-    project_id, template_id = new_id(), new_id()
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured_model")
+async def test_context_binding_cas_missing_materials_and_context_conflict(client, video):
+    _, base, image, motion = await setup(client, video)
+    value = await select_scheme(client, base)
+    assert value["issues"] == [] and value["input_source"] == "node_settings"
+    assert value["specifications"] == {}  # Adaptive duration/ratio are never guessed.
+    assert [(i["role"], i["asset_id"]) for i in value["inputs"][:2]] == [
+        ("character", image),
+        ("motion", motion),
+    ]
+    stale = await client.put(
+        f"{base}/nodes/shot/acceptance",
+        json={"expected_revision": 0, "scheme_id": "motion-transfer:api"},
+    )
+    assert stale.status_code == 409 and "current" in stale.text
+    response = await client.post(
+        f"{base}/nodes/shot/acceptance/runs",
+        json=submission({**value, "context_fingerprint": "0" * 64}),
+    )
+    assert response.status_code == 409 and "context_changed" in response.text
+    _, missing, *_ = await setup(client, video, references=False)
+    value = await select_scheme(client, missing)
+    assert any("角色基准图" in i for i in value["issues"])
+    assert any("原动作视频" in i for i in value["issues"])
+    response = await client.post(f"{missing}/nodes/shot/acceptance/runs", json=submission(value))
+    assert response.status_code == 422 and "inputs_not_ready" in response.text
+    _, image_base, *_ = await setup(client, video, kind="image")
+    response = await client.put(
+        f"{image_base}/nodes/shot/acceptance",
+        json={"expected_revision": 0, "scheme_id": "motion-transfer:api"},
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured_model")
+async def test_model_execution_human_review_repair_recheck_and_independent_adoption(client, video):
+    _, base, *_ = await setup(client, video)
+    await select_scheme(client, base)
+    value = await context(client, base)
+    run = await start(client, base)
+    replay = await client.post(f"{base}/nodes/shot/acceptance/runs", json=submission(value))
+    assert replay.json()["id"] == run["id"]
+    changed_request = await client.post(
+        f"{base}/nodes/shot/acceptance/runs", json=submission(value, output_id="other")
+    )
+    assert changed_request.status_code == 409 and "request_conflict" in changed_request.text
+    run = await process(client, base, run, transport=api_transport())
+    assert run["status"] == "completed", run
+    assert run["decision"] == "pending" and run["execution_result"]["kind"] == "model_api"
+    assert run["results"][1]["suggestion"] == "passed" and run["results"][1]["verdict"] == "pending"
+    finalized = await client.post(
+        f"{base}/acceptance/runs/{run['id']}/decisions",
+        json={"expected_revision": run["revision"], "finalize": True},
+    )
+    assert finalized.status_code == 422
+    old = deepcopy(run)
+    for result in run["results"]:
+        if result["verdict"] == "pending":
+            run = await decide(
+                client,
+                base,
+                run,
+                criterion_id=result["criterion_id"],
+                verdict="failed",
+                reason="需返修手部姿态",
+                start_ms=0,
+                end_ms=500,
+            )
+    run = await decide(client, base, run, finalize=True)
+    assert run["decision"] == "failed"
+    stale = await client.post(
+        f"{base}/acceptance/runs/{run['id']}/decisions",
+        json={"expected_revision": old["revision"], "finalize": True},
+    )
+    assert stale.status_code == 409
+    canvas = (await client.get(f"{base}/canvas")).json()
+    assert canvas["nodes"][0].get("final_output_id") == run["output_id"]
+    adopted = await client.put(
+        f"{base}/nodes/shot/final-output",
+        json={"expected_revision": canvas["revision"], "output_id": run["output_id"]},
+    )
+    assert adopted.status_code == 200, adopted.text
+    draft = await client.post(f"{base}/acceptance/runs/{run['id']}/repair-drafts", json={})
+    assert draft.status_code == 200 and "手部姿态" in draft.json()["text"]
+    canvas = (await client.get(f"{base}/canvas")).json()
+    saved = await client.put(
+        f"{base}/acceptance/repair-drafts/{draft.json()['id']}",
+        json={
+            "expected_revision": 0,
+            "text": draft.json()["text"],
+            "apply": True,
+            "expected_canvas_revision": canvas["revision"],
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    second = await add_output(client, base, video)
+    canvas = (await client.get(f"{base}/canvas")).json()
+    # Keep v1 as final before reviewing v2: acceptance must not adopt its target.
+    adopted = await client.put(
+        f"{base}/nodes/shot/final-output",
+        json={"expected_revision": canvas["revision"], "output_id": run["output_id"]},
+    )
+    assert adopted.status_code == 200 and second["id"] != run["output_id"]
+    recheck = await start(client, base, "recheck", previous_run_id=run["id"])
+    recheck = await process(client, base, recheck, transport=api_transport())
+    for result in recheck["results"]:
+        if result["verdict"] == "pending":
+            recheck = await decide(
+                client, base, recheck, criterion_id=result["criterion_id"], verdict="passed"
+            )
+    await decide(client, base, recheck, finalize=True)
+    summary = (await client.get(f"{base}/acceptance/summary")).json()["items"][0]
+    assert (
+        summary["state"] == "passed"
+        and summary["output_version"] == 2
+        and summary["final_version"] == 1
+    )
+    assert (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()["decision"] == "failed"
+    evidence = recheck["evidence"][0]
+    assert (await client.get(f"/v1/files/{evidence['asset_id']}/content")).status_code == 200
+    assert (
+        await client.delete(f"/v1/files/{evidence['asset_id']}", params={"expected_revision": 0})
+    ).status_code == 409
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured_model")
+async def test_generation_provenance_is_frozen_and_snapshot_import_is_history(client, video):
+    identity, base, image, motion = await setup(client, video)
+    value = await select_scheme(client, base)
     async with SessionLocal() as session:
-        session.add(
-            VisualWorkshopProject(
-                id=project_id, workspace_id="other-space", title="不可见", kind="canvas"
-            )
+        task = VisualGenerationTask(
+            workspace_id="default",
+            project_id=identity,
+            provider_kind="senseaudio_video",
+            provider_name="fake",
+            generation_kind="video",
+            model_slug="fake",
+            canvas_node_id="shot",
+            status="completed",
+            request_payload={
+                "prompt": "实际提交的提示词",
+                "reference_asset_ids": [image],
+                "video_asset_ids": [motion],
+                "ratio": "1:1",
+                "duration": 1,
+            },
         )
-        session.add(
-            AcceptanceTemplate(
-                id=template_id,
-                workspace_id="other-space",
-                title="不可见模板",
-                document=standard_document("manual"),
-            )
-        )
+        session.add(task)
+        await session.flush()
+        output = await session.get(VisualNodeOutput, value["output_id"])
+        output.generation_task_id = task.id
         await session.commit()
-    try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=app), base_url="http://test"
-        ) as client:
-            assert (
-                await client.get(f"/v1/visual-workshop/projects/{project_id}/acceptance/standard")
-            ).status_code == 404
-            templates = (await client.get("/v1/visual-workshop/acceptance-templates")).json()[
-                "items"
-            ]
-            assert template_id not in {row["id"] for row in templates}
-            result = await client.put(
-                f"/v1/visual-workshop/acceptance-templates/{template_id}",
-                json={"expected_revision": 0, "document": standard_document("manual")},
+    value = await context(client, base)
+    assert value["input_source"] == "generation_snapshot" and value["prompt"] == "实际提交的提示词"
+    assert value["specifications"]["ratio"] == "1:1"
+    run = await start(client, base)
+    canvas = (await client.get(f"{base}/canvas")).json()
+    canvas["nodes"][0]["generation_draft"]["prompt"] = "后续修改"
+    canvas["nodes"][0]["generation_draft"]["prompt_versions"][0]["prompt"] = "后续修改"
+    updated = await client.put(
+        f"{base}/canvas",
+        json={"expected_revision": canvas["revision"], "nodes": canvas["nodes"], "edges": []},
+    )
+    assert updated.status_code == 200, updated.text
+    assert (await context(client, base))["context_fingerprint"] == value["context_fingerprint"]
+    run = await process(client, base, run, transport=api_transport())
+    assert run["snapshot"]["prompt"] == "实际提交的提示词"
+    export = await client.get(f"{base}/snapshot")
+    assert export.status_code == 200, export.text
+    imported = await client.post(
+        "/v1/visual-workshop/projects/snapshot-imports",
+        files={"file": ("snapshot.zip", export.content, "application/zip")},
+    )
+    assert imported.status_code == 200, imported.text
+    imported_base = f"/v1/visual-workshop/projects/{imported.json()['project']['id']}"
+    imported_run = (await client.get(f"{imported_base}/acceptance/runs")).json()["items"][0]
+    assert (
+        imported_run["decision"] == "historical"
+        and imported_run["scheme_id"] == "motion-transfer:api"
+    )
+    assert imported_run["snapshot"]["executor"] == {}
+    response = await client.post(
+        f"{imported_base}/acceptance/runs/{imported_run['id']}/decisions",
+        json={"expected_revision": imported_run["revision"], "finalize": True},
+    )
+    assert response.status_code == 409 and "historical_readonly" in response.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured_model")
+async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, video):
+    _, base, *_ = await setup(client, video)
+    await select_scheme(client, base)
+    invalid = await process(
+        client, base, await start(client, base, "invalid"), transport=api_transport(invalid=True)
+    )
+    assert invalid["status"] == "failed" and invalid["decision"] == "pending"
+    queued = await start(client, base, "cancel")
+    cancelled = await client.post(
+        f"{base}/acceptance/runs/{queued['id']}/cancel?expected_revision={queued['revision']}",
+        json={},
+    )
+    assert cancelled.status_code == 200, cancelled.text
+    await AcceptanceRunner(transport=api_transport()).process(queued["id"])
+    assert (await client.get(f"{base}/acceptance/runs/{queued['id']}")).json()[
+        "status"
+    ] == "cancelled"
+    interrupted = await start(client, base, "interrupted")
+    await AcceptanceRunner().recover()
+    assert (await client.get(f"{base}/acceptance/runs/{interrupted['id']}")).json()[
+        "status"
+    ] == "failed"
+    from app.apps.visual_workshop.acceptance.access import AcceptanceError
+    from app.apps.visual_workshop.acceptance.nodes import NodeAcceptance
+
+    async with SessionLocal() as session:
+        with pytest.raises(AcceptanceError) as failure:
+            await NodeAcceptance(session, "other-workspace", "other-user").get(
+                base.split("/")[-1], "shot"
             )
-            assert result.status_code == 404
-            identity, base = await make_project(client, "text")
-            document = standard_document("ai")
-            document["criteria"][0]["kinds"] = ["audio"]
-            invalid = await client.put(
-                f"{base}/acceptance/standard",
-                json={"expected_revision": 0, "document": document, "publish": True},
-            )
-            assert invalid.status_code == 422
-            document["criteria"][0].update(method="manual", kinds=["text"])
-            await publish(client, base, document, required=True)
-            state = (await client.get(f"{base}/canvas")).json()
-            result = await client.post(
-                f"{base}/nodes/shot/outputs",
-                json={"expected_revision": state["revision"], "text": "候选台词"},
-            )
-            assert result.status_code == 200, result.text
-            assert result.json()["nodes"][0]["text"] == ""
-            assert result.json()["nodes"][0]["final_output_id"] is None
-    finally:
-        async with SessionLocal() as session:
-            await session.execute(
-                delete(AcceptanceTemplate).where(AcceptanceTemplate.id == template_id)
-            )
-            await session.execute(
-                delete(VisualWorkshopProject).where(VisualWorkshopProject.id == project_id)
-            )
-            await session.commit()
+        assert failure.value.status == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["codex", "claude-code"])
+async def test_agent_task_report_and_scoped_media_with_fake_executor(
+    client, video, monkeypatch, kind
+):
+    from app.apps.visual_workshop.acceptance.execution import agents
+    from app.apps.visual_workshop.acceptance.execution.task_tools import MediaTools
+
+    async def available(*_):
+        return True, "已连接"
+
+    monkeypatch.setattr(agents, "probe", available)
+    monkeypatch.setattr("app.apps.visual_workshop.acceptance.catalog.probe", available)
+    prefix = "codex" if kind == "codex" else "claude"
+    monkeypatch.setattr(get_settings(), f"fpl_acceptance_{prefix}_executable", "/fake/agent")
+    monkeypatch.setattr(get_settings(), f"fpl_acceptance_{prefix}_user_ids", "test-user")
+    _, base, *_ = await setup(client, video)
+    await select_scheme(client, base, kind)
+    roots = []
+
+    async def fake_executor(agent, executable, root, _schema, _tools, prompt, cancelled, **_kwargs):
+        assert agent == kind and executable == "/fake/agent" and "不可信数据" in prompt
+        assert not await cancelled()
+        roots.append(root)
+        media = MediaTools(root)
+        manifest = await media.manifest()
+        image = manifest["evidence"][0]["id"]
+        await media.image(image)
+        source = next(i for i in manifest["media"] if i["kind"] == "video")
+        extra = await media.sample(source["id"], 0, 800, 2)
+        extra_id = json.loads(extra[0].text)["evidence_id"]
+        return {
+            "summary": "仅对抽样画面进行验收",
+            "limitations": ["需人工播放核对连续性"],
+            "findings": [
+                {
+                    "criterion_id": c["id"],
+                    "suggestion": "passed",
+                    "explanation": "参考与输出抽样可辨认",
+                    "evidence_ids": [image, extra_id],
+                    "start_ms": None,
+                    "end_ms": None,
+                }
+                for c in manifest["task"]["criteria"]
+                if c["method"] == "ai"
+            ],
+        }
+
+    run = await process(client, base, await start(client, base), agent_executor=fake_executor)
+    assert run["status"] == "completed", run
+    assert run["execution_result"]["kind"] == "code_agent" and run["decision"] == "pending"
+    assert run["execution_result"]["report"]["limitations"]
+    assert not roots[0].exists()

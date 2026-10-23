@@ -1,8 +1,5 @@
-from contextlib import contextmanager
+from fastapi import APIRouter, HTTPException, Query
 
-from fastapi import APIRouter, HTTPException, Query, Request
-
-from app.apps.visual_workshop.acceptance.access import AcceptanceError
 from app.apps.visual_workshop.acceptance.reviews import Reviews, repair_out
 from app.apps.visual_workshop.acceptance.runs import Runs, review_models
 from app.apps.visual_workshop.acceptance.schemas import (
@@ -23,17 +20,11 @@ from app.apps.visual_workshop.acceptance.schemas import (
 )
 from app.apps.visual_workshop.acceptance.standards import Standards
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.llm.routes.model_capacity import task_admission
+
+from .http_errors import errors
+from .node_routes import router as node_router
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-workshop"])
-
-
-@contextmanager
-def errors():
-    try:
-        yield
-    except AcceptanceError as exc:
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
 
 
 @router.get("/acceptance-templates", response_model=AcceptanceTemplateListOut)
@@ -45,8 +36,15 @@ async def list_acceptance_templates(session: SessionDep, workspace_id: Workspace
 async def create_acceptance_template(
     body: AcceptanceTemplateWriteIn, session: SessionDep, workspace_id: WorkspaceDep
 ):
+    _ = body, session, workspace_id
     with errors():
-        return await Standards(session, workspace_id).write_template(body)
+        raise HTTPException(
+            410,
+            {
+                "code": "acceptance_readonly",
+                "message": "验收模板为固定只读定义，请在节点选择内置方案",
+            },
+        )
 
 
 @router.put("/acceptance-templates/{template_id}", response_model=AcceptanceTemplateOut)
@@ -56,8 +54,11 @@ async def update_acceptance_template(
     session: SessionDep,
     workspace_id: WorkspaceDep,
 ):
+    _ = template_id, body, session, workspace_id
     with errors():
-        return await Standards(session, workspace_id).write_template(body, template_id)
+        raise HTTPException(
+            410, {"code": "acceptance_readonly", "message": "验收模板为固定只读定义"}
+        )
 
 
 @router.delete("/acceptance-templates/{template_id}")
@@ -67,9 +68,11 @@ async def delete_acceptance_template(
     workspace_id: WorkspaceDep,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
+    _ = template_id, session, workspace_id, expected_revision
     with errors():
-        await Standards(session, workspace_id).delete_template(template_id, expected_revision)
-        return {"deleted": True}
+        raise HTTPException(
+            410, {"code": "acceptance_readonly", "message": "验收模板为固定只读定义"}
+        )
 
 
 @router.get("/projects/{project_id}/acceptance/standard", response_model=AcceptanceStandardOut)
@@ -85,8 +88,15 @@ async def save_acceptance_standard(
     session: SessionDep,
     workspace_id: WorkspaceDep,
 ):
+    _ = project_id, body, session, workspace_id
     with errors():
-        return await Standards(session, workspace_id).write(project_id, body)
+        raise HTTPException(
+            410,
+            {
+                "code": "acceptance_api_replaced",
+                "message": "项目标准已停止发布，请在节点选择验收方案",
+            },
+        )
 
 
 @router.get("/projects/{project_id}/acceptance/models", response_model=AcceptanceModelListOut)
@@ -123,13 +133,13 @@ async def list_acceptance_runs(
 async def start_acceptance_runs(
     project_id: str,
     body: AcceptanceRunCreateIn,
-    request: Request,
     session: SessionDep,
     workspace_id: WorkspaceDep,
 ):
+    _ = project_id, body, session, workspace_id
     with errors():
-        return await Runs(session, workspace_id).create(
-            project_id, body, task_admission(request, session, "visual_acceptance")
+        raise HTTPException(
+            410, {"code": "acceptance_api_replaced", "message": "请通过节点验收接口发起检查"}
         )
 
 
@@ -219,3 +229,6 @@ async def save_acceptance_repair(
 ):
     with errors():
         return await Reviews(session, workspace_id).write_repair(project_id, draft_id, body)
+
+
+router.include_router(node_router)

@@ -1,0 +1,78 @@
+from fastapi import APIRouter, HTTPException, Request
+
+from app.deps import SessionDep, StudioAuth
+from app.llm.routes.model_capacity import task_admission
+
+from .catalog import catalog
+from .http_errors import errors
+from .node_schemas import (
+    AcceptanceSummaryOut,
+    NodeAcceptanceCatalogOut,
+    NodeAcceptanceOut,
+    NodeAcceptanceSelectIn,
+    NodeAcceptanceStartIn,
+)
+from .nodes import NodeAcceptance
+from .schemas import AcceptanceRunOut
+
+router = APIRouter()
+
+
+@router.get("/acceptance/catalog", response_model=NodeAcceptanceCatalogOut)
+async def acceptance_catalog(session: SessionDep, principal: StudioAuth):
+    return await catalog(session, principal.workspace_id, principal.user_id)
+
+
+@router.get("/projects/{project_id}/acceptance/summary", response_model=AcceptanceSummaryOut)
+async def acceptance_summary(project_id: str, session: SessionDep, principal: StudioAuth):
+    with errors():
+        return await NodeAcceptance(session, principal.workspace_id, principal.user_id).summary(
+            project_id
+        )
+
+
+@router.get("/projects/{project_id}/nodes/{node_id}/acceptance", response_model=NodeAcceptanceOut)
+async def get_node_acceptance(
+    project_id: str,
+    node_id: str,
+    session: SessionDep,
+    principal: StudioAuth,
+    output_id: str | None = None,
+):
+    with errors():
+        return await NodeAcceptance(session, principal.workspace_id, principal.user_id).get(
+            project_id, node_id, output_id
+        )
+
+
+@router.put("/projects/{project_id}/nodes/{node_id}/acceptance", response_model=NodeAcceptanceOut)
+async def select_node_acceptance(
+    project_id: str,
+    node_id: str,
+    body: NodeAcceptanceSelectIn,
+    session: SessionDep,
+    principal: StudioAuth,
+):
+    with errors():
+        return await NodeAcceptance(session, principal.workspace_id, principal.user_id).select(
+            project_id, node_id, body
+        )
+
+
+@router.post(
+    "/projects/{project_id}/nodes/{node_id}/acceptance/runs", response_model=AcceptanceRunOut
+)
+async def start_node_acceptance(
+    project_id: str,
+    node_id: str,
+    body: NodeAcceptanceStartIn,
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+):
+    if not principal.allows("content.write"):
+        raise HTTPException(403, "需要内容写入权限")
+    with errors():
+        return await NodeAcceptance(session, principal.workspace_id, principal.user_id).start(
+            project_id, node_id, body, task_admission(request, session, "visual_acceptance")
+        )

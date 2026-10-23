@@ -131,13 +131,13 @@ export function RunReview({
             </span>
           </div>
           <p>
-            输出 v{run.snapshot.output.version} · 标准 v{run.standard_version} ·{" "}
-            {statusText}
+            输出 v{run.snapshot.output.version} · 方案 v
+            {run.snapshot.standard_version} · {statusText}
           </p>
           <small>
-            使用标准：{run.snapshot.standard_title}{" "}
+            使用模板：{run.snapshot.standard_title}{" "}
             <button className="acceptance-text-button" onClick={onViewStandard}>
-              查看标准
+              查看模板
             </button>{" "}
             · AI 建议需人工确认。
           </small>
@@ -399,6 +399,17 @@ export function RunReview({
                   取消检查
                 </button>
               )}
+            </div>
+          )}
+          {run.decision !== "passed" && (
+            <div className="acceptance-actions">
+              <button
+                disabled={!writable || busy}
+                onClick={() => void act(() => onAdopt(run))}
+              >
+                设为最终输出
+              </button>
+              <small>验收结果只记录质量，不限制输出采用。</small>
             </div>
           )}
           <details>

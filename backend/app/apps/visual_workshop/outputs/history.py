@@ -3,7 +3,6 @@ from copy import deepcopy
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError, require_passed, required_for
 from app.apps.visual_workshop.acceptance.models import AcceptanceRun
 from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
 from app.apps.visual_workshop.node_placement import automatic_node_position
@@ -68,15 +67,11 @@ async def register_output(
             )
         )
     ) or 0
-    candidate = await required_for(session, project_id, node["id"], node["kind"])
-    if not candidate:
-        await session.execute(
-            update(VisualNodeOutput)
-            .where(
-                VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id == node["id"]
-            )
-            .values(is_final=False)
-        )
+    await session.execute(
+        update(VisualNodeOutput)
+        .where(VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id == node["id"])
+        .values(is_final=False)
+    )
     row = VisualNodeOutput(
         id=new_id(),
         project_id=project_id,
@@ -89,15 +84,14 @@ async def register_output(
         source_key=source_key,
         generation_task_id=task_id,
         input_snapshot=input_snapshot or [],
-        is_final=not candidate,
+        is_final=True,
     )
     session.add(row)
     await session.flush()
     node["output_sequence"] = max((node.get("output_sequence") or 0), row.version)
-    if not candidate:
-        node.update(approved=False, final_output_id=row.id, final_version=row.version)
-        if node["kind"] != "text":
-            node["asset_id"] = asset_id
+    node.update(approved=False, final_output_id=row.id, final_version=row.version)
+    if node["kind"] != "text":
+        node["asset_id"] = asset_id
     return row
 
 
@@ -271,10 +265,6 @@ class NodeOutputs:
         if not row:
             raise OutputError("输出版本不存在", code="not_found", status=404)
         await self.claim(canvas, body.expected_revision)
-        try:
-            await require_passed(self.session, project_id, node_id, row.id)
-        except AcceptanceError as exc:
-            raise OutputError(str(exc), code=exc.code, status=exc.status) from None
         await self.session.execute(
             update(VisualNodeOutput)
             .where(VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id == node_id)
@@ -343,11 +333,6 @@ class NodeOutputs:
                 final_version=replacement.version if replacement else None,
                 asset_id=replacement.asset_id if replacement else None,
             )
-            if replacement and await required_for(self.session, project_id, node_id):
-                try:
-                    await require_passed(self.session, project_id, node_id, replacement.id)
-                except AcceptanceError as exc:
-                    raise OutputError(str(exc), code=exc.code, status=exc.status) from None
             if replacement:
                 replacement.is_final = True
             # Keep output_sequence so deleting the last version never reuses a number.

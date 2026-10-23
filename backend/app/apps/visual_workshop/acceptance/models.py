@@ -62,6 +62,8 @@ class AcceptanceRun(Base):
     request_id: Mapped[str] = mapped_column(String(100))
     fingerprint: Mapped[str] = mapped_column(String(64))
     model_id: Mapped[str | None] = mapped_column(String(36))
+    scheme_id: Mapped[str] = mapped_column(String(64), default="legacy")
+    execution_result: Mapped[dict] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(24), default="queued")
     decision: Mapped[str] = mapped_column(String(24), default="pending")
     snapshot: Mapped[dict] = mapped_column(JSON)
@@ -83,6 +85,19 @@ class AcceptanceAssetReference(Base):
     project_id: Mapped[str] = mapped_column(
         ForeignKey("visual_workshop_projects.id", ondelete="CASCADE"), index=True
     )
+
+
+class NodeAcceptanceBinding(Base):
+    __tablename__ = "visual_node_acceptance_bindings"
+    __table_args__ = (UniqueConstraint("project_id", "node_id"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
+    )
+    node_id: Mapped[str] = mapped_column(String(64))
+    scheme_id: Mapped[str | None] = mapped_column(String(64))
+    revision: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class AcceptanceRepairDraft(Base):

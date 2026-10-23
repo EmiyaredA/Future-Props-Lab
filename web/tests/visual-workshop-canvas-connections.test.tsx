@@ -395,7 +395,7 @@ test("merges direct linked assets into reference rows and prompt mentions", asyn
     targetVideo.querySelector<HTMLElement>(".canvas-node-media")!,
   );
   await user.click(screen.getByRole("button", { name: "替换素材" }));
-  await user.click(screen.getByRole("tab", { name: "AI 生成" }));
+  await user.click(screen.getByRole("tab", { name: "生成设置" }));
   expect(screen.getByRole("button", { name: "全能参考" })).toHaveAttribute(
     "aria-pressed",
     "true",

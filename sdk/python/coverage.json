@@ -3822,6 +3822,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/visual-workshop/acceptance/catalog",
+    "sdk": "client.visual.acceptance_catalog",
+    "document": "/docs.html?page=sdk-reference-visual#acceptance-catalog",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/visual-workshop/projects",
     "sdk": "client.visual.list_projects",
     "document": "/docs.html?page=sdk-reference-visual#list-projects",
@@ -3871,9 +3878,23 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/summary",
+    "sdk": "client.visual.acceptance_summary",
+    "document": "/docs.html?page=sdk-reference-visual#acceptance-summary",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/visual-workshop/projects/{project_id}/canvas",
     "sdk": "client.visual.get_canvas",
     "document": "/docs.html?page=sdk-reference-visual#get-canvas",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance",
+    "sdk": "client.visual.get_node_acceptance",
+    "document": "/docs.html?page=sdk-reference-visual#get-node-acceptance",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3997,6 +4018,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs",
+    "sdk": "client.visual.start_node_acceptance",
+    "document": "/docs.html?page=sdk-reference-visual#start-node-acceptance",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads",
     "sdk": "client.visual.upload_node_output",
     "document": "/docs.html?page=sdk-reference-visual#upload-node-output",
@@ -4042,6 +4070,13 @@
     "http": "PUT /v1/visual-workshop/projects/{project_id}/canvas",
     "sdk": "client.visual.put_canvas",
     "document": "/docs.html?page=sdk-reference-visual#put-canvas",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance",
+    "sdk": "client.visual.select_node_acceptance",
+    "document": "/docs.html?page=sdk-reference-visual#select-node-acceptance",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

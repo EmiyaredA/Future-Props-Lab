@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -215,3 +216,19 @@ def test_encoding_preserves_quotes_backslashes_and_newlines(tmp_path):
         publish(path, "overwrite")
     assert tomllib.loads(path.read_text()) == document
     assert not list(tmp_path.glob(".config-*.tmp"))
+
+
+def test_fixed_acceptance_connections_use_native_toml_and_empty_defaults(tmp_path):
+    config = tmp_path / "acceptance.toml"
+    config.write_text(
+        '[visual_acceptance]\nmodel_workspace_id="space"\nmodel_id="model"\n'
+        'codex_executable="/opt/codex"\ncodex_user_ids=["one","two"]\n'
+        'claude_executable="/opt/claude"\nclaude_user_ids=["three"]\n'
+    )
+    settings = Settings(_config_file=config, _read_environment=False, fpl_secrets_key=KEY)
+    assert settings.fpl_acceptance_model_workspace_id == "space"
+    assert settings.fpl_acceptance_model_id == "model"
+    assert settings.fpl_acceptance_codex_user_ids.split(os.pathsep) == ["one", "two"]
+    assert settings.fpl_acceptance_claude_user_ids == "three"
+    empty = Settings(_config_file=None, _read_environment=False, fpl_secrets_key=KEY)
+    assert not empty.fpl_acceptance_codex_executable

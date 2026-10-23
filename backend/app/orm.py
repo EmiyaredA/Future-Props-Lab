@@ -98,6 +98,7 @@ from app.apps.visual_workshop.acceptance.models import (
     AcceptanceStandard,
     AcceptanceStandardVersion,
     AcceptanceTemplate,
+    NodeAcceptanceBinding,
 )
 from app.apps.visual_workshop.models import (
     VisualAssistantAction,
@@ -269,6 +270,7 @@ _ = (
 )
 
 TENANT_MODELS = (
+    NodeAcceptanceBinding,
     InterviewRoom,
     InterviewPreparation,
     AcceptanceTemplate,

@@ -126,3 +126,5 @@ Apple Silicon Mac（macOS 15+）可在模型服务中按需安装 Qwen3-TTS Base
 使用参考录音克隆音色。默认安装、启动及升级不下载模型或 MLX 环境；平台管理员安装后，
 各 Workspace 主动接入并在模型测试中使用。无需系统 Python/uv；详见
 [桌面运行说明](docs/operations/desktop-macos.md#可选本地-qwen-语音)。
+
+视觉工坊的视频节点提供固定动作迁移验收：模型 API、Codex、Claude Code 的接入仅由 `[visual_acceptance]` 配置，界面只读展示。默认未配置，不自动安装或登录 CLI；项目负责模板说明和节点汇总，质量记录不限制最终输出采用。配置、版本要求与执行边界见[节点验收](docs/operations/node-acceptance.md)。

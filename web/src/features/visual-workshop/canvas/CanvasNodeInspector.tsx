@@ -1,3 +1,5 @@
+import { NodeAcceptancePanel } from "../acceptance/NodeAcceptancePanel";
+import type { VisualNodeOutput } from "../api";
 import { executionDetails } from "@shared/ui/taskExecutionPresentation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -101,6 +103,9 @@ export function CanvasNodeInspector({
   generating = false,
   initialTab,
   upstreamNodes = [],
+  acceptanceOutput,
+  onAcceptanceTemplate,
+  onTabChange,
 }: {
   projectId: string;
   node: MediaNode;
@@ -115,13 +120,21 @@ export function CanvasNodeInspector({
   embedded?: boolean;
   generationLayout?: "canvas" | "workbench";
   generating?: boolean;
-  initialTab?: "content" | "generate";
+  initialTab?: "content" | "generate" | "acceptance";
+  acceptanceOutput?: VisualNodeOutput;
+  onAcceptanceTemplate?: () => void;
+  onTabChange?: (tab: "content" | "generate" | "acceptance") => void;
   upstreamNodes?: MediaNode[];
 }) {
   const client = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
   const preferredTab = initialTab ?? (embedded ? "generate" : "content");
-  const [tab, setTab] = useState<"content" | "generate">(preferredTab);
+  const [tab, setTab] = useState<"content" | "generate" | "acceptance">(
+    preferredTab,
+  );
+  useEffect(() => {
+    onTabChange?.(tab);
+  }, [tab, onTabChange]);
   const { files, loading } = useProjectMedia(projectId, node.kind);
   const selected = files.find((file) => file.id === node.asset_id);
   const upload = useMutation({
@@ -205,7 +218,8 @@ export function CanvasNodeInspector({
   }, [batch.data, client, projectId, node.asset_id]);
 
   const Icon = mediaIcon(node.kind);
-  const isAttachedComposer = embedded && tab === "generate";
+  const isAttachedComposer =
+    embedded && (tab === "generate" || tab === "acceptance");
   return (
     <aside
       className={`canvas-node-inspector${embedded ? ` is-embedded is-${node.kind}` : ""}`}
@@ -234,7 +248,31 @@ export function CanvasNodeInspector({
           </button>
         </header>
       ) : null}
-      {!isAttachedComposer ? (
+      {embedded && node.kind === "video" && (
+        <nav
+          className="canvas-inspector-tabs"
+          role="tablist"
+          aria-label="视频节点操作"
+        >
+          <button
+            role="tab"
+            aria-selected={tab !== "acceptance"}
+            className={tab !== "acceptance" ? "active" : ""}
+            onClick={() => setTab("generate")}
+          >
+            生成设置
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === "acceptance"}
+            className={tab === "acceptance" ? "active" : ""}
+            onClick={() => setTab("acceptance")}
+          >
+            节点验收
+          </button>
+        </nav>
+      )}
+      {!isAttachedComposer && !(embedded && node.kind === "video") ? (
         <nav className="canvas-inspector-tabs" role="tablist">
           <button
             className={tab === "content" ? "active" : ""}
@@ -252,9 +290,28 @@ export function CanvasNodeInspector({
           >
             AI 生成
           </button>
+          {node.kind === "video" && (
+            <button
+              role="tab"
+              aria-selected={tab === "acceptance"}
+              className={tab === "acceptance" ? "active" : ""}
+              onClick={() => setTab("acceptance")}
+            >
+              节点验收
+            </button>
+          )}
         </nav>
       ) : null}
-      {tab === "generate" ? (
+      {tab === "acceptance" ? (
+        <NodeAcceptancePanel
+          projectId={projectId}
+          nodeId={node.id}
+          outputId={acceptanceOutput?.id}
+          prepareCanvas={onPrepareCanvas}
+          onGeneration={() => setTab("generate")}
+          onTemplates={onAcceptanceTemplate}
+        />
+      ) : tab === "generate" ? (
         <GenerationDrawer
           compact
           layout={generationLayout}

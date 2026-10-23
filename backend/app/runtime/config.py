@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     fpl_interview_codex_enabled: bool = False
     fpl_interview_codex_executable: str = ""
     fpl_interview_codex_user_id: str = ""
+    fpl_acceptance_model_workspace_id: str = ""
+    fpl_acceptance_model_id: str = ""
+    fpl_acceptance_codex_executable: str = ""
+    fpl_acceptance_codex_user_ids: str = ""
+    fpl_acceptance_claude_executable: str = ""
+    fpl_acceptance_claude_user_ids: str = ""
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
     fpl_secrets_key: str = ""
     legacy_fpl_studio_token: str = Field(

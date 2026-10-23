@@ -119,9 +119,7 @@ test("failed execution surfaces the error and requires an explicit retry", async
     { wrapper },
   );
   expect(screen.getByRole("alert")).toHaveTextContent("模型返回了未知证据");
-  expect(
-    screen.queryByRole("button", { name: "设为最终输出" }),
-  ).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "设为最终输出" })).toBeEnabled();
   expect(onRecheck).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "重新验收" }));
   expect(onRecheck).toHaveBeenCalledWith(run);

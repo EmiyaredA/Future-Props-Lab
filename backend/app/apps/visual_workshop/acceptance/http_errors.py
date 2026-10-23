@@ -1,0 +1,13 @@
+from contextlib import contextmanager
+
+from fastapi import HTTPException
+
+from .access import AcceptanceError
+
+
+@contextmanager
+def errors():
+    try:
+        yield
+    except AcceptanceError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

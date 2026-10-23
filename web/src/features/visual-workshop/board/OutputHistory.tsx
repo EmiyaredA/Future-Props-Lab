@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Check, Eye, Trash2, Upload } from "lucide-react";
+import { Check, Eye, Trash2, Upload, Circle, CircleDot } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import {
   getNodeOutputs,
@@ -19,6 +19,8 @@ import {
   GenerationSpinner,
 } from "../generation/GenerationActivity";
 import { visualWorkshopQueryKeys } from "../queryKeys";
+import { getNodeAcceptance, acceptanceStateNames } from "../acceptance/nodeApi";
+import { AcceptanceThumbnail } from "../acceptance/ReferenceMaterialRow";
 import { OutputPreview } from "./OutputPreview";
 import type { BoardController } from "./boardTypes";
 
@@ -30,7 +32,9 @@ export function OutputHistory({
   tasks = [],
   batches = [],
   onAcceptance,
+  acceptanceMode = false,
 }: {
+  acceptanceMode?: boolean;
   controller: BoardController;
   nodeId: string;
   preview?: VisualNodeOutput;
@@ -76,7 +80,33 @@ export function OutputHistory({
   const showing =
     (preview && preview.node_id === nodeId ? preview : undefined) ??
     final.data ??
-    items.find((item) => item.id === node.final_output_id);
+    items.find((item) => item.id === node.final_output_id) ??
+    items[0];
+  const acceptance = useQuery({
+    queryKey: visualWorkshopQueryKeys.nodeAcceptance(
+      controller.projectId,
+      nodeId,
+      showing?.id,
+    ),
+    queryFn: () => getNodeAcceptance(controller.projectId, nodeId, showing?.id),
+    enabled: acceptanceMode && node.kind === "video" && !!showing,
+    refetchInterval: (query) =>
+      ["queued", "processing"].includes(
+        query.state.data?.current_run?.status ?? "",
+      )
+        ? 1500
+        : false,
+  });
+  const inspection = acceptance.data?.current_run;
+  const quality = !inspection
+    ? "未验收"
+    : !acceptance.data?.result_is_current
+      ? "需重新验收"
+      : (acceptanceStateNames[
+          inspection.status === "completed"
+            ? inspection.decision
+            : inspection.status
+        ] ?? "待确认");
   const mutate = async (
     action: (revision: number) => Promise<VisualCanvasDocument>,
   ) => {
@@ -103,7 +133,7 @@ export function OutputHistory({
   };
   return (
     <section
-      className={`board-output-panel${activity ? " is-generating" : ""}`}
+      className={`board-output-panel${activity ? " is-generating" : ""}${acceptanceMode ? " is-acceptance" : ""}`}
       aria-label="节点输出历史"
     >
       <div className="board-output-heading">
@@ -118,6 +148,9 @@ export function OutputHistory({
                 <Eye size={12} />
                 正在预览 {showing ? `v${showing.version}` : "—"}
               </span>
+              {acceptanceMode && (
+                <span className="board-quality-badge">{quality}</span>
+              )}
               <span className="board-final-badge">
                 <Check size={12} />
                 最终输出{" "}
@@ -237,20 +270,39 @@ export function OutputHistory({
               className={`board-version-select${showing?.id === item.id ? " is-preview" : ""}`}
               onClick={() => onPreview(item)}
             >
+              {acceptanceMode &&
+                (showing?.id === item.id ? (
+                  <CircleDot className="board-version-radio" size={18} />
+                ) : (
+                  <Circle className="board-version-radio" size={18} />
+                ))}
               <div className="board-version-thumb">
-                <OutputPreview
-                  kind={item.kind}
-                  assetId={item.asset_id}
-                  text={item.text}
-                  compact
-                />
+                {acceptanceMode && item.asset_id ? (
+                  <AcceptanceThumbnail
+                    assetId={item.asset_id}
+                    kind={item.kind}
+                    alt=""
+                  />
+                ) : (
+                  <OutputPreview
+                    kind={item.kind}
+                    assetId={item.asset_id}
+                    text={item.text}
+                    compact
+                  />
+                )}
               </div>
-              <span>
+              <span className="board-version-copy">
                 <strong>
                   v{item.version}{" "}
                   {item.id === node.final_output_id && <em>最终输出</em>}
                 </strong>
-                <small>{outputSource(item.source)}</small>
+                <small>
+                  {outputSource(item.source)}
+                  {acceptanceMode && showing?.id === item.id
+                    ? ` · ${quality}`
+                    : ""}
+                </small>
               </span>
             </button>
             {item.source === "uploaded" && (

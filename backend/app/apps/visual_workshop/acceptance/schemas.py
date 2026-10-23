@@ -11,7 +11,7 @@ Verdict = Literal["passed", "failed", "pending", "not_applicable"]
 class Specification(BaseModel):
     min_width: int | None = Field(default=None, ge=1, le=16384)
     min_height: int | None = Field(default=None, ge=1, le=16384)
-    ratio: Literal["16:9", "9:16", "1:1", "4:3", "3:4"] | None = None
+    ratio: Literal["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"] | None = None
     min_duration: float | None = Field(default=None, ge=0, le=86400)
     max_duration: float | None = Field(default=None, gt=0, le=86400)
     require_audio: bool = False
@@ -38,7 +38,7 @@ class AcceptanceCriterion(BaseModel):
     required: bool = True
     specifications: Specification = Field(default_factory=Specification)
     reference_label: str = Field(default="", max_length=120)
-    reference_asset_ids: list[str] = Field(default_factory=list, max_length=6)
+    reference_asset_ids: list[str] = Field(default_factory=list, max_length=40)
 
     @model_validator(mode="after")
     def supported_method(self):
@@ -143,6 +143,14 @@ class AcceptanceSnapshot(BaseModel):
     source_bytes: int | None = None
     metadata: dict = Field(default_factory=dict)
     check_results: list[AcceptanceResult] = Field(default_factory=list)
+    scheme_id: str = "legacy"
+    context_fingerprint: str = ""
+    input_source: str = "legacy"
+    inputs_version: int = 1
+    scheme_version: int = 1
+    result_contract_version: int = 1
+    inputs: dict = Field(default_factory=dict)
+    executor: dict = Field(default_factory=dict)
 
 
 class AcceptanceRunOut(BaseModel):
@@ -161,6 +169,8 @@ class AcceptanceRunOut(BaseModel):
     error_message: str | None
     revision: int
     created_at: str
+    scheme_id: str = "legacy"
+    execution_result: dict = Field(default_factory=dict)
 
 
 class AcceptanceRunListOut(BaseModel):

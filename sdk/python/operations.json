@@ -1067,6 +1067,10 @@
     "method": "list_acceptance_templates",
     "resource": "visual"
   },
+  "GET /v1/visual-workshop/acceptance/catalog": {
+    "method": "acceptance_catalog",
+    "resource": "visual"
+  },
   "GET /v1/visual-workshop/generation-batches": {
     "method": "list_generation_batches",
     "resource": "generation"
@@ -1115,6 +1119,10 @@
     "method": "get_acceptance_standard",
     "resource": "visual"
   },
+  "GET /v1/visual-workshop/projects/{project_id}/acceptance/summary": {
+    "method": "acceptance_summary",
+    "resource": "visual"
+  },
   "GET /v1/visual-workshop/projects/{project_id}/canvas": {
     "method": "get_canvas",
     "resource": "visual"
@@ -1130,6 +1138,10 @@
   "GET /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
     "method": "get_conversation",
     "resource": "visual_assistant"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance": {
+    "method": "get_node_acceptance",
+    "resource": "visual"
   },
   "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs": {
     "method": "list_node_outputs",
@@ -2275,6 +2287,10 @@
     "method": "upload_material_node",
     "resource": "visual"
   },
+  "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs": {
+    "method": "start_node_acceptance",
+    "resource": "visual"
+  },
   "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads": {
     "method": "upload_node_output",
     "resource": "visual"
@@ -2389,6 +2405,10 @@
   },
   "PUT /v1/visual-workshop/projects/{project_id}/canvas": {
     "method": "put_canvas",
+    "resource": "visual"
+  },
+  "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance": {
+    "method": "select_node_acceptance",
     "resource": "visual"
   },
   "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output": {

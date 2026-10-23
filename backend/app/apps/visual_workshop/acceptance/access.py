@@ -1,16 +1,11 @@
-from copy import deepcopy
-
 from sqlalchemy import select, update
 
 from app.apps.visual_workshop.acceptance.models import (
-    AcceptanceRun,
     AcceptanceStandard,
-    AcceptanceStandardVersion,
 )
-from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
+from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetReference
 from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import utc_now
 
 
 class AcceptanceError(Exception):
@@ -65,61 +60,3 @@ async def cas(session, row, expected, current):
         snapshot = await current()
         raise RevisionConflictError(expected, snapshot.revision, snapshot.model_dump(mode="json"))
     await session.refresh(row)
-
-
-async def required_for(session, project_id, node_id, kind=None):
-    standard = await session.get(AcceptanceStandard, project_id)
-    if not standard or not standard.required:
-        return False
-    version = await session.scalar(
-        select(AcceptanceStandardVersion).where(
-            AcceptanceStandardVersion.project_id == project_id,
-            AcceptanceStandardVersion.version == standard.published_version,
-        )
-    )
-    if kind is None:
-        canvas = await session.get(VisualCanvasDocument, project_id)
-        node = (
-            next((node for node in canvas.nodes if node["id"] == node_id), None) if canvas else None
-        )
-        kind = node["kind"] if node else None
-    return bool(
-        version
-        and (not version.document["node_ids"] or node_id in version.document["node_ids"])
-        and any(kind in item["kinds"] for item in version.document["criteria"])
-    )
-
-
-async def require_passed(session, project_id, node_id, output_id):
-    if not await required_for(session, project_id, node_id):
-        return
-    standard = await session.get(AcceptanceStandard, project_id)
-    found = await session.scalar(
-        select(AcceptanceRun.id)
-        .join(AcceptanceStandardVersion, AcceptanceStandardVersion.id == AcceptanceRun.standard_id)
-        .where(
-            AcceptanceRun.project_id == project_id,
-            AcceptanceRun.node_id == node_id,
-            AcceptanceRun.output_id == output_id,
-            AcceptanceRun.status == "completed",
-            AcceptanceRun.decision == "passed",
-            AcceptanceStandardVersion.version == standard.published_version,
-        )
-    )
-    if not found:
-        raise AcceptanceError("当前输出尚未通过生效标准的验收", "acceptance_required", 409)
-
-
-async def clear_approvals(session, project_id):
-    await session.execute(
-        update(VisualCanvasDocument)
-        .where(VisualCanvasDocument.project_id == project_id)
-        .values(revision=VisualCanvasDocument.revision + 1, updated_at=utc_now())
-    )
-    canvas = await session.get(VisualCanvasDocument, project_id, populate_existing=True)
-    if canvas:
-        nodes = deepcopy(canvas.nodes)
-        for node in nodes:
-            if await required_for(session, project_id, node["id"]):
-                node["approved"] = False
-        canvas.nodes = nodes

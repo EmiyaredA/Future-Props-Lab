@@ -62,3 +62,21 @@
     flex-basis: 100%;
   }
 }
+
+.acceptance-software-icon {
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  background: var(--text-strong);
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+.acceptance-software-icon.codex {
+  mask-image: url("/providers/codex-logo.svg");
+}
+.acceptance-software-icon.claudecode {
+  mask-image: url("/providers/claudecode-logo.svg");
+  background: #d97757;
+}

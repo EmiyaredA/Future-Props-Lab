@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FileImage, FileText, Music, Video } from "lucide-react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { visualAssetDownloadPath } from "../api";
+import "./reference-material.css";
 
 function ThumbnailMedia({
   url,

@@ -105,7 +105,7 @@ test("renders video nodes as an attached 16:9 creation workspace", async () => {
   expect(screen.getByRole("complementary", { name: "节点检查器" })).toHaveClass(
     "is-embedded",
   );
-  expect(screen.getByRole("tab", { name: "AI 生成" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "生成设置" })).toBeInTheDocument();
 });
 
 test.each([0.5, 1, 2])(
@@ -287,7 +287,7 @@ test("creates video tasks with the selected canvas node link", async () => {
   )!;
   await user.click(node.querySelector<HTMLElement>(".canvas-node-media")!);
   await user.click(screen.getByRole("button", { name: "替换素材" }));
-  await user.click(screen.getByRole("tab", { name: "AI 生成" }));
+  await user.click(screen.getByRole("tab", { name: "生成设置" }));
   await user.click(await screen.findByRole("button", { name: "生成视频" }));
 
   await waitFor(() =>

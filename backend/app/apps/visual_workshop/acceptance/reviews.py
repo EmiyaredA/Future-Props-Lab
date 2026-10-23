@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from sqlalchemy import select
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError, cas, require_passed
+from app.apps.visual_workshop.acceptance.access import AcceptanceError, cas
 from app.apps.visual_workshop.acceptance.media import extract_evidence, flush_evidence, positions
 from app.apps.visual_workshop.acceptance.models import AcceptanceRepairDraft
 from app.apps.visual_workshop.acceptance.runs import Runs, run_out
@@ -16,25 +16,13 @@ from app.runtime.time import iso_utc, utc_now
 
 
 class Reviews(Runs):
-    async def invalidate_approval(self, row):
-        canvas = await self.session.get(VisualCanvasDocument, row.project_id)
-        node = next((node for node in canvas.nodes if node["id"] == row.node_id), None)
-        if not node or not node.get("approved") or node.get("final_output_id") != row.output_id:
-            return
-        try:
-            await require_passed(self.session, row.project_id, row.node_id, row.output_id)
-        except AcceptanceError as error:
-            if error.code != "acceptance_required":
-                raise
-            nodes = deepcopy(canvas.nodes)
-            next(node for node in nodes if node["id"] == row.node_id)["approved"] = False
-            canvas.nodes = nodes
-            canvas.revision += 1
-            canvas.updated_at = utc_now()
-
     async def sample(self, project_id, run_id, body):
 
         row = await self.row(project_id, run_id)
+        if row.scheme_id == "legacy" or row.decision == "historical":
+            raise AcceptanceError(
+                "历史验收记录只读，请选择内置方案重新验收", "historical_readonly", 409
+            )
         if row.status != "completed" or row.snapshot["output"]["kind"] != "video":
             raise AcceptanceError("仅已完成的视频验收支持区间取样")
         if body.end_ms > row.snapshot.get("metadata", {}).get("duration_ms", 0):
@@ -57,7 +45,6 @@ class Reviews(Runs):
             row.evidence = [*row.evidence, *evidence]
             row.decision = "pending"
             await flush_evidence(self.session)
-            await self.invalidate_approval(row)
             await self.session.commit()
         except BaseException:
             for path in paths:
@@ -67,6 +54,10 @@ class Reviews(Runs):
 
     async def decide(self, project_id, run_id, body, actor):
         row = await self.row(project_id, run_id)
+        if row.scheme_id == "legacy" or row.decision == "historical":
+            raise AcceptanceError(
+                "历史验收记录只读，请选择内置方案重新验收", "historical_readonly", 409
+            )
         await cas(self.session, row, body.expected_revision, lambda: self.get(project_id, run_id))
         if row.status != "completed":
             raise AcceptanceError("检查完成后才能记录结论", "invalid_state", 409)
@@ -121,12 +112,15 @@ class Reviews(Runs):
                 "decision": row.decision,
             },
         ]
-        await self.invalidate_approval(row)
         await self.session.commit()
         return run_out(row)
 
     async def repair(self, project_id, run_id):
         row = await self.row(project_id, run_id)
+        if row.scheme_id == "legacy" or row.decision == "historical":
+            raise AcceptanceError(
+                "历史验收记录只读，请选择内置方案重新验收", "historical_readonly", 409
+            )
         issues = [item for item in row.results if item["verdict"] == "failed"]
         if not issues:
             raise AcceptanceError("请先确认至少一个需要修改的问题")
@@ -168,6 +162,9 @@ class Reviews(Runs):
 
     async def write_repair(self, project_id, identity, body):
         row = await self.repair_row(project_id, identity)
+        run = await self.row(project_id, row.run_id)
+        if run.scheme_id == "legacy" or run.decision == "historical":
+            raise AcceptanceError("历史验收记录只读", "historical_readonly", 409)
 
         async def current():
             return repair_out(await self.repair_row(project_id, identity))

@@ -17,3 +17,13 @@ they identify the configured provider and do not imply endorsement.
 Brand references: [Qwen](https://qwen.ai/), [DeepSeek](https://www.deepseek.com/).
 The application serves these assets locally; displaying a provider does not
 contact the brand sites or the icon library.
+
+`codex-logo.svg` and `claudecode-logo.svg` identify the fixed native software
+connections in node acceptance. Retrieved on 2026-10-23 from the same MIT-licensed
+LobeHub Icons project (geometry unchanged, rendered as a theme-aware mask):
+
+- [Codex SVG](https://github.com/lobehub/lobe-icons/blob/master/packages/static-svg/icons/codex.svg)
+- [Claude Code SVG](https://github.com/lobehub/lobe-icons/blob/master/packages/static-svg/icons/claudecode.svg)
+
+Software trademarks remain with OpenAI and Anthropic respectively. These marks
+identify the selected software; they do not imply affiliation or endorsement.

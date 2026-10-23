@@ -3,8 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError, require_passed, required_for
-from app.apps.visual_workshop.acceptance.models import AcceptanceRun
+from app.apps.visual_workshop.acceptance.models import AcceptanceRun, NodeAcceptanceBinding
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualGenerationTask,
@@ -270,20 +269,6 @@ class VisualCanvasDocuments:
             node["final_output_id"] = previous.get("final_output_id")
             node["final_version"] = previous.get("final_version")
             if (
-                node["kind"] == "text"
-                and node.get("text") != previous.get("text")
-                and await required_for(self.session, project_id, node["id"], "text")
-            ):
-                await register_output(
-                    self.session,
-                    project_id,
-                    node,
-                    source="text",
-                    source_key=new_id(),
-                    text=node.get("text", ""),
-                )
-                node["text"] = previous.get("text", "")
-            if (
                 node["kind"] != "text"
                 and node.get("asset_id")
                 and node.get("asset_id") != previous.get("asset_id")
@@ -302,22 +287,6 @@ class VisualCanvasDocuments:
                 and previous.get("final_output_id")
             ):
                 node["asset_id"] = previous.get("asset_id")
-        for node in nodes:
-            if await required_for(self.session, project_id, node["id"]):
-                # Legacy canvas writes may register candidates, but never replace
-                # adopted content or forge approval through another API surface.
-                previous = old.get(node["id"], {})
-                if node["kind"] != "text":
-                    node["asset_id"] = previous.get("asset_id")
-                if node.get("approved"):
-                    try:
-                        await require_passed(
-                            self.session, project_id, node["id"], node.get("final_output_id")
-                        )
-                    except AcceptanceError as exc:
-                        raise VisualCanvasError(
-                            str(exc), code=exc.code, status=exc.status
-                        ) from None
         await self.session.execute(
             update(VisualCanvasDocument)
             .where(VisualCanvasDocument.project_id == project_id)
@@ -333,6 +302,13 @@ class VisualCanvasDocuments:
                     "节点被验收记录引用，不能直接删除", code="acceptance_in_use", status=409
                 )
             from sqlalchemy import delete
+
+            await self.session.execute(
+                delete(NodeAcceptanceBinding).where(
+                    NodeAcceptanceBinding.project_id == project_id,
+                    NodeAcceptanceBinding.node_id.in_(removed),
+                )
+            )
 
             await self.session.execute(
                 delete(VisualNodeOutput).where(

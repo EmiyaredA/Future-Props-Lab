@@ -629,6 +629,9 @@ OPERATIONS["configuration.manage"] += (
 
 OPERATIONS["content.read"] += (
     ("GET", "/v1/visual-workshop/acceptance-templates"),
+    ("GET", "/v1/visual-workshop/acceptance/catalog"),
+    ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/summary"),
+    ("GET", "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance"),
     ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/standard"),
     ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/models"),
     ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/runs"),
@@ -636,6 +639,7 @@ OPERATIONS["content.read"] += (
     ("GET", "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}"),
 )
 OPERATIONS["content.write"] += (
+    ("PUT", "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance"),
     ("POST", "/v1/visual-workshop/acceptance-templates"),
     ("PUT", "/v1/visual-workshop/acceptance-templates/{template_id}"),
     ("DELETE", "/v1/visual-workshop/acceptance-templates/{template_id}"),
@@ -646,7 +650,10 @@ OPERATIONS["content.write"] += (
     ("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts"),
     ("PUT", "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}"),
 )
-OPERATIONS["models.use"] += (("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs"),)
+OPERATIONS["models.use"] += (
+    ("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs"),
+    ("POST", "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs"),
+)
 
 ROUTE_PERMISSIONS = {
     operation: key for key, operations in OPERATIONS.items() for operation in operations

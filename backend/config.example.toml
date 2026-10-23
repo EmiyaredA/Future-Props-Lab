@@ -36,3 +36,14 @@ enabled = false
 executable = ""
 # 当前部署中获准使用本机 Codex 身份的 FPL 账号 ID。
 user_id = ""
+
+[visual_acceptance]
+# 验收连接只由部署配置指定；界面不提供修改入口。模型必须属于明确指定的空间。
+model_workspace_id = ""
+model_id = ""
+# 本机 CLI 已安装并登录后，填入绝对路径和获准使用该本机身份的账号 ID。
+# 空路径或空账号列表表示不可用；不会自动安装、登录或回退到其他连接。
+codex_executable = ""
+codex_user_ids = []
+claude_executable = ""
+claude_user_ids = []

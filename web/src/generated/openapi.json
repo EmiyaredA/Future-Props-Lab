@@ -38,7 +38,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 6,
+            "maxItems": 40,
             "title": "Reference Asset Ids",
             "type": "array"
           },
@@ -225,6 +225,43 @@
           "source_asset_id"
         ],
         "title": "AcceptanceEvidence",
+        "type": "object"
+      },
+      "AcceptanceInputOut": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "character",
+              "motion",
+              "output"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "label",
+          "kind",
+          "role"
+        ],
+        "title": "AcceptanceInputOut",
         "type": "object"
       },
       "AcceptanceModelListOut": {
@@ -642,6 +679,11 @@
             "title": "Evidence",
             "type": "array"
           },
+          "execution_result": {
+            "additionalProperties": true,
+            "title": "Execution Result",
+            "type": "object"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -686,6 +728,11 @@
           "revision": {
             "title": "Revision",
             "type": "integer"
+          },
+          "scheme_id": {
+            "default": "legacy",
+            "title": "Scheme Id",
+            "type": "string"
           },
           "snapshot": {
             "$ref": "#/components/schemas/AcceptanceSnapshot"
@@ -752,6 +799,78 @@
         "title": "AcceptanceSampleIn",
         "type": "object"
       },
+      "AcceptanceSchemeOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "connection_label": {
+            "title": "Connection Label",
+            "type": "string"
+          },
+          "id": {
+            "enum": [
+              "motion-transfer:api",
+              "motion-transfer:codex",
+              "motion-transfer:claude-code"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "input_description": {
+            "title": "Input Description",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "model_api",
+              "code_agent"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "model_slug": {
+            "default": "",
+            "title": "Model Slug",
+            "type": "string"
+          },
+          "output_description": {
+            "title": "Output Description",
+            "type": "string"
+          },
+          "provider_kind": {
+            "default": "",
+            "title": "Provider Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "available",
+          "message",
+          "connection_label",
+          "input_description",
+          "output_description"
+        ],
+        "title": "AcceptanceSchemeOut",
+        "type": "object"
+      },
       "AcceptanceSnapshot": {
         "properties": {
           "check_results": {
@@ -760,6 +879,11 @@
             },
             "title": "Check Results",
             "type": "array"
+          },
+          "context_fingerprint": {
+            "default": "",
+            "title": "Context Fingerprint",
+            "type": "string"
           },
           "coverage": {
             "title": "Coverage",
@@ -771,6 +895,26 @@
             },
             "title": "Criteria",
             "type": "array"
+          },
+          "executor": {
+            "additionalProperties": true,
+            "title": "Executor",
+            "type": "object"
+          },
+          "input_source": {
+            "default": "legacy",
+            "title": "Input Source",
+            "type": "string"
+          },
+          "inputs": {
+            "additionalProperties": true,
+            "title": "Inputs",
+            "type": "object"
+          },
+          "inputs_version": {
+            "default": 1,
+            "title": "Inputs Version",
+            "type": "integer"
           },
           "metadata": {
             "additionalProperties": true,
@@ -784,6 +928,21 @@
             "default": "",
             "title": "Prompt",
             "type": "string"
+          },
+          "result_contract_version": {
+            "default": 1,
+            "title": "Result Contract Version",
+            "type": "integer"
+          },
+          "scheme_id": {
+            "default": "legacy",
+            "title": "Scheme Id",
+            "type": "string"
+          },
+          "scheme_version": {
+            "default": 1,
+            "title": "Scheme Version",
+            "type": "integer"
           },
           "source_bytes": {
             "anyOf": [
@@ -882,6 +1041,120 @@
           "document"
         ],
         "title": "AcceptanceStandardWriteIn",
+        "type": "object"
+      },
+      "AcceptanceSummaryItem": {
+        "properties": {
+          "final_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Version"
+          },
+          "issue": {
+            "default": "",
+            "title": "Issue",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "output_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Asset Id"
+          },
+          "output_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Id"
+          },
+          "output_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Version"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AcceptanceRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scheme_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheme Id"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "node_id",
+          "title",
+          "kind",
+          "state"
+        ],
+        "title": "AcceptanceSummaryItem",
+        "type": "object"
+      },
+      "AcceptanceSummaryOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceSummaryItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AcceptanceSummaryOut",
         "type": "object"
       },
       "AcceptanceTemplateListOut": {
@@ -25809,6 +26082,266 @@
         "title": "MoveClipOperation",
         "type": "object"
       },
+      "NodeAcceptanceCatalogOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NodeAcceptanceTemplateOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "NodeAcceptanceCatalogOut",
+        "type": "object"
+      },
+      "NodeAcceptanceOut": {
+        "properties": {
+          "canvas_revision": {
+            "title": "Canvas Revision",
+            "type": "integer"
+          },
+          "context_fingerprint": {
+            "title": "Context Fingerprint",
+            "type": "string"
+          },
+          "current_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AcceptanceRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_source": {
+            "title": "Input Source",
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceInputOut"
+            },
+            "title": "Inputs",
+            "type": "array"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "node_id": {
+            "title": "Node Id",
+            "type": "string"
+          },
+          "output_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Id"
+          },
+          "output_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Version"
+          },
+          "prompt": {
+            "default": "",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "result_is_current": {
+            "default": false,
+            "title": "Result Is Current",
+            "type": "boolean"
+          },
+          "revision": {
+            "default": 0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "scheme_id": {
+            "anyOf": [
+              {
+                "enum": [
+                  "motion-transfer:api",
+                  "motion-transfer:codex",
+                  "motion-transfer:claude-code"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheme Id"
+          },
+          "specifications": {
+            "additionalProperties": true,
+            "title": "Specifications",
+            "type": "object"
+          }
+        },
+        "required": [
+          "node_id",
+          "canvas_revision",
+          "context_fingerprint",
+          "input_source"
+        ],
+        "title": "NodeAcceptanceOut",
+        "type": "object"
+      },
+      "NodeAcceptanceSelectIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "scheme_id": {
+            "anyOf": [
+              {
+                "enum": [
+                  "motion-transfer:api",
+                  "motion-transfer:codex",
+                  "motion-transfer:claude-code"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheme Id"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "scheme_id"
+        ],
+        "title": "NodeAcceptanceSelectIn",
+        "type": "object"
+      },
+      "NodeAcceptanceStartIn": {
+        "additionalProperties": false,
+        "properties": {
+          "context_fingerprint": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Context Fingerprint",
+            "type": "string"
+          },
+          "expected_canvas_revision": {
+            "minimum": 0.0,
+            "title": "Expected Canvas Revision",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "output_id": {
+            "title": "Output Id",
+            "type": "string"
+          },
+          "previous_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Run Id"
+          },
+          "request_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "expected_canvas_revision",
+          "context_fingerprint",
+          "output_id",
+          "request_id"
+        ],
+        "title": "NodeAcceptanceStartIn",
+        "type": "object"
+      },
+      "NodeAcceptanceTemplateOut": {
+        "properties": {
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceCriterion"
+            },
+            "title": "Criteria",
+            "type": "array"
+          },
+          "id": {
+            "default": "builtin:motion-transfer",
+            "title": "Id",
+            "type": "string"
+          },
+          "kinds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "readonly": {
+            "default": true,
+            "title": "Readonly",
+            "type": "boolean"
+          },
+          "schemes": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceSchemeOut"
+            },
+            "title": "Schemes",
+            "type": "array"
+          },
+          "title": {
+            "default": "动作迁移",
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "criteria",
+          "schemes"
+        ],
+        "title": "NodeAcceptanceTemplateOut",
+        "type": "object"
+      },
       "OperationBatchIn": {
         "properties": {
           "expectedRevision": {
@@ -33124,7 +33657,8 @@
                   "9:16",
                   "1:1",
                   "4:3",
-                  "3:4"
+                  "3:4",
+                  "21:9"
                 ],
                 "type": "string"
               },
@@ -69946,6 +70480,27 @@
         ]
       }
     },
+    "/v1/visual-workshop/acceptance/catalog": {
+      "get": {
+        "operationId": "acceptance_catalog_v1_visual_workshop_acceptance_catalog_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeAcceptanceCatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Acceptance Catalog",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
     "/v1/visual-workshop/generation-batches": {
       "get": {
         "operationId": "list_generation_batches_v1_visual_workshop_generation_batches_get",
@@ -71257,6 +71812,48 @@
         ]
       }
     },
+    "/v1/visual-workshop/projects/{project_id}/acceptance/summary": {
+      "get": {
+        "operationId": "acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceSummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Acceptance Summary",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
     "/v1/visual-workshop/projects/{project_id}/asset-imports": {
       "post": {
         "operationId": "import_assets_v1_visual_workshop_projects__project_id__asset_imports_post",
@@ -72286,6 +72883,193 @@
           }
         },
         "summary": "Upload Material Node",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance": {
+      "get": {
+        "operationId": "get_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "output_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Output Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeAcceptanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Node Acceptance",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "select_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeAcceptanceSelectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeAcceptanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Select Node Acceptance",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs": {
+      "post": {
+        "operationId": "start_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "node_id",
+            "required": true,
+            "schema": {
+              "title": "Node Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NodeAcceptanceStartIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceRunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Node Acceptance",
         "tags": [
           "visual-workshop"
         ]

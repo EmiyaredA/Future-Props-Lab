@@ -14,6 +14,7 @@
 | [delete_asset_reference](#delete-asset-reference) | `DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}` |
 | [delete_node_output](#delete-node-output) | `DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}` |
 | [list_acceptance_templates](#list-acceptance-templates) | `GET /v1/visual-workshop/acceptance-templates` |
+| [acceptance_catalog](#acceptance-catalog) | `GET /v1/visual-workshop/acceptance/catalog` |
 | [list_projects](#list-projects) | `GET /v1/visual-workshop/projects` |
 | [get_project](#get-project) | `GET /v1/visual-workshop/projects/{project_id}` |
 | [list_acceptance_models](#list-acceptance-models) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/models` |
@@ -21,7 +22,9 @@
 | [list_acceptance_runs](#list-acceptance-runs) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/runs` |
 | [get_acceptance_run](#get-acceptance-run) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}` |
 | [get_acceptance_standard](#get-acceptance-standard) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/standard` |
+| [acceptance_summary](#acceptance-summary) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/summary` |
 | [get_canvas](#get-canvas) | `GET /v1/visual-workshop/projects/{project_id}/canvas` |
+| [get_node_acceptance](#get-node-acceptance) | `GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance` |
 | [list_node_outputs](#list-node-outputs) | `GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` |
 | [get_node_output](#get-node-output) | `GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}` |
 | [export_project_snapshot](#export-project-snapshot) | `GET /v1/visual-workshop/projects/{project_id}/snapshot` |
@@ -39,6 +42,7 @@
 | [create_asset_reference](#create-asset-reference) | `POST /v1/visual-workshop/projects/{project_id}/asset-references` |
 | [apply_canvas_operations](#apply-canvas-operations) | `POST /v1/visual-workshop/projects/{project_id}/canvas/operations` |
 | [upload_material_node](#upload-material-node) | `POST /v1/visual-workshop/projects/{project_id}/node-uploads` |
+| [start_node_acceptance](#start-node-acceptance) | `POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs` |
 | [upload_node_output](#upload-node-output) | `POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads` |
 | [add_node_output](#add-node-output) | `POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` |
 | [reveal_project_folder](#reveal-project-folder) | `POST /v1/visual-workshop/projects/{project_id}/open-folder` |
@@ -46,6 +50,7 @@
 | [save_acceptance_repair](#save-acceptance-repair) | `PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}` |
 | [save_acceptance_standard](#save-acceptance-standard) | `PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard` |
 | [put_canvas](#put-canvas) | `PUT /v1/visual-workshop/projects/{project_id}/canvas` |
+| [select_node_acceptance](#select-node-acceptance) | `PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance` |
 | [set_node_final_output](#set-node-final-output) | `PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output` |
 
 ## delete_acceptance_template {#delete-acceptance-template}
@@ -146,6 +151,24 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `AcceptanceTemplateListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## acceptance_catalog {#acceptance-catalog}
+
+`client.visual.acceptance_catalog(...)`
+
+**接口**：`GET /v1/visual-workshop/acceptance/catalog`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `NodeAcceptanceCatalogOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -285,6 +308,25 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## acceptance_summary {#acceptance-summary}
+
+`client.visual.acceptance_summary(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/summary`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceSummaryOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## get_canvas {#get-canvas}
 
 `client.visual.get_canvas(...)`
@@ -301,6 +343,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VisualCanvasDocumentOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_node_acceptance {#get-node-acceptance}
+
+`client.visual.get_node_acceptance(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `node_id` | path | string | 是 |
+| `output_id` | query | string / null | 否 |
+
+**响应**：
+- `200` · `application/json` · `NodeAcceptanceOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -694,6 +757,33 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## start_node_acceptance {#start-node-acceptance}
+
+`client.visual.start_node_acceptance(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `node_id` | path | string | 是 |
+| `body` | application/json | NodeAcceptanceStartIn | 是 |
+| `body.context_fingerprint` | 请求体 | string | 是 |
+| `body.expected_canvas_revision` | 请求体 | integer | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.output_id` | 请求体 | string | 是 |
+| `body.previous_run_id` | 请求体 | string / null | 否 |
+| `body.request_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `AcceptanceRunOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## upload_node_output {#upload-node-output}
 
 `client.visual.upload_node_output(...)`
@@ -854,6 +944,29 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VisualCanvasDocumentOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## select_node_acceptance {#select-node-acceptance}
+
+`client.visual.select_node_acceptance(...)`
+
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `node_id` | path | string | 是 |
+| `body` | application/json | NodeAcceptanceSelectIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.scheme_id` | 请求体 | motion-transfer:api / motion-transfer:codex / motion-transfer:claude-code / null | 是 |
+
+**响应**：
+- `200` · `application/json` · `NodeAcceptanceOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

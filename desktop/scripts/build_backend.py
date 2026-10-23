@@ -340,6 +340,33 @@ def main() -> None:
         check=True,
     )
 
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "PyInstaller",
+            "--noconfirm",
+            "--clean",
+            "--onedir",
+            "--name",
+            "fpl-acceptance-tools",
+            "--target-arch",
+            "arm64",
+            "--distpath",
+            str(BUILD / "acceptance-tools"),
+            "--workpath",
+            str(BUILD / "acceptance-tools-pyinstaller"),
+            "--specpath",
+            str(BUILD),
+            "--paths",
+            str(ROOT / "backend"),
+            str(ROOT / "desktop/backend/acceptance_tools_entry.py"),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=True,
+    )
+
 
 if __name__ == "__main__":
     if sys.argv[1:] == ["--check-assets"]:

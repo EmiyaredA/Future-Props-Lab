@@ -1,4 +1,9 @@
 export const visualWorkshopQueryKeys = {
+  acceptanceCatalog: () => ["visual-acceptance-catalog"] as const,
+  acceptanceSummary: (project: string) =>
+    ["visual-acceptance-summary", project] as const,
+  nodeAcceptance: (project: string, node: string, output?: string) =>
+    ["visual-node-acceptance", project, node, output ?? "latest"] as const,
   acceptanceTemplates: () => ["visual-acceptance-templates"] as const,
   acceptanceStandard: (id: string) =>
     ["visual-acceptance-standard", id] as const,

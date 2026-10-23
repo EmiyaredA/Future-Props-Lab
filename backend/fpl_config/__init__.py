@@ -12,6 +12,14 @@ CONFIG_FILE = Path(os.environ.get("FPL_CONFIG_FILE", REPO_ROOT / "backend" / "co
 
 # TOML field -> (existing environment/Settings field, native TOML type).
 FIELDS = {
+    "visual_acceptance": {
+        "model_workspace_id": ("fpl_acceptance_model_workspace_id", str),
+        "model_id": ("fpl_acceptance_model_id", str),
+        "codex_executable": ("fpl_acceptance_codex_executable", str),
+        "codex_user_ids": ("fpl_acceptance_codex_user_ids", list),
+        "claude_executable": ("fpl_acceptance_claude_executable", str),
+        "claude_user_ids": ("fpl_acceptance_claude_user_ids", list),
+    },
     "interview_codex": {
         "enabled": ("fpl_interview_codex_enabled", bool),
         "executable": ("fpl_interview_codex_executable", str),

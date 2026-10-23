@@ -168,6 +168,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("0105_visual_acceptance",),
             ("0106_interview_preparation",),
             ("0107_deepseek_provider",),
+            ("0108_node_acceptance",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -258,3 +259,46 @@ def test_official_publication_migration_retains_existing_publication_behavior(
         assert connection.execute(
             "SELECT COUNT(*) FROM thought_official_import_receipts"
         ).fetchone() == (0,)
+
+
+def test_node_acceptance_upgrade_keeps_legacy_data_without_automatic_bindings(
+    tmp_path, monkeypatch
+):
+    database = tmp_path / "node-acceptance-upgrade.db"
+    with monkeypatch.context() as patch:
+        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:-1])
+        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[-2].migration_id)
+        apply_migrations(database)
+    with connect_database(database) as connection:
+        connection.execute(
+            "INSERT INTO visual_workshop_projects "
+            "(id,workspace_id,title,kind,status,revision,created_at,updated_at) "
+            "VALUES ('p','default','legacy','canvas','draft',2,'2026-01-01','2026-01-01')"
+        )
+        connection.execute(
+            "INSERT INTO visual_acceptance_standards "
+            "(project_id,workspace_id,draft,published_version,required,revision) "
+            "VALUES ('p','default','{}',1,1,3)"
+        )
+        connection.execute(
+            "INSERT INTO visual_acceptance_templates "
+            "(id,workspace_id,title,document,revision,created_at) "
+            "VALUES ('t','default','legacy','{}',4,'2026-01-01')"
+        )
+        connection.commit()
+    apply_migrations(database)
+    with connect_database(database) as connection:
+        assert connection.execute(
+            "SELECT required,revision FROM visual_acceptance_standards WHERE project_id='p'"
+        ).fetchone() == (1, 3)
+        assert connection.execute(
+            "SELECT revision FROM visual_acceptance_templates WHERE id='t'"
+        ).fetchone() == (4,)
+        assert connection.execute(
+            "SELECT count(*) FROM visual_node_acceptance_bindings"
+        ).fetchone() == (0,)
+        fields = {
+            row[1]: row[4]
+            for row in connection.execute("PRAGMA table_info(visual_acceptance_runs)")
+        }
+        assert fields["scheme_id"] == "'legacy'" and fields["execution_result"] == "'{}'"
