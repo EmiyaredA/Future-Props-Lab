@@ -32,7 +32,7 @@ WEB_ASSETS = (
 )
 EXPECTED_SHA256 = {
     Path("web/public/brand/interview-assistant-mark.png"): (
-        "07ae5493f7d260880570893fe2affb9ea22d1459d4a67e91cb72d3c8c9fead4c"
+        "94a126bece0c8a7593905347156abc800fa25ee946f16a3a17bba5f7dfba6074"
     ),
     Path("web/public/brand/amadeus/amadeus.fpllive2d"): (
         "9cd9d77c781fbe6d96e878cd48a5ac0709deeeb2b7e5ac876bc3d44d0ca97aac"
