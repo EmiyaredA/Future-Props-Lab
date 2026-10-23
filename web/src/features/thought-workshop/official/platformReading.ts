@@ -43,7 +43,7 @@ export const PLATFORM_READING: Record<
   },
   "general/models": {
     summary:
-      "配置供应商地址、凭证与模型能力，接入 Seedance 官方视频并用最小请求验证。",
+      "配置供应商地址、凭证与能力，接入 DeepSeek 官方对话和 Seedance 视频并验证。",
     related: [
       {
         libraryId: "general",
@@ -454,7 +454,7 @@ export const PLATFORM_READING: Record<
   },
   "visual-workshop/delivery": {
     summary:
-      "选择媒体下载或项目快照交付，保留节点关系并正确处理取帧、裁剪和跨应用素材。",
+      "通过缩略图、媒体格式和放大预览绑定验收参考，发布标准并复验输出，选择媒体下载或项目快照交付。",
     related: [
       {
         libraryId: "visual-workshop",

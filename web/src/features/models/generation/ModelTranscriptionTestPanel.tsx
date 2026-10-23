@@ -120,7 +120,7 @@ export function ModelTranscriptionTestPanel({
   const availableModes: Record<ModelTestMode, boolean> = {
     chat: models.some(
       (model) =>
-        ["openai", "anthropic"].includes(model.providerKind) &&
+        ["openai", "deepseek", "anthropic"].includes(model.providerKind) &&
         model.capabilities.includes("chat"),
     ),
     image: models.some((model) => modelGenerationKind(model) === "image"),

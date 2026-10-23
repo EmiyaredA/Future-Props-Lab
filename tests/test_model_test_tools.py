@@ -133,7 +133,7 @@ async def test_model_test_tool_rejects_duplicates_invalid_schema_and_size() -> N
         assert invalid_delay.status_code == 422
 
 
-@pytest.mark.parametrize("provider_kind", ["openai", "anthropic"])
+@pytest.mark.parametrize("provider_kind", ["openai", "deepseek", "anthropic"])
 @pytest.mark.asyncio
 async def test_model_test_conversation_runs_selected_mock_tool(
     monkeypatch, provider_kind: str

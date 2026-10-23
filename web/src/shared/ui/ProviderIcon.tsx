@@ -4,6 +4,7 @@ export function ProviderIcon({
 }: {
   kind:
     | "openai"
+    | "deepseek"
     | "anthropic"
     | "volcengine_image"
     | "volcengine_video"
@@ -18,6 +19,17 @@ export function ProviderIcon({
     | "local_qwen_tts";
   size?: number;
 }) {
+  if (kind === "local_qwen_tts" || kind === "deepseek")
+    return (
+      <img
+        className="provider-brand-icon"
+        src={`/providers/${kind === "local_qwen_tts" ? "qwen" : "deepseek"}-logo.svg`}
+        width={size}
+        height={size}
+        alt=""
+        aria-hidden="true"
+      />
+    );
   if (kind.startsWith("senseaudio_"))
     return (
       <img
@@ -38,12 +50,7 @@ export function ProviderIcon({
       aria-hidden="true"
       focusable="false"
     >
-      {kind === "local_qwen_tts" ? (
-        <path
-          fill="currentColor"
-          d="M6 4h12v16H6zM2 7h3v2H2zm0 8h3v2H2zm17-8h3v2h-3zm0 8h3v2h-3zM8 0h2v3H8zm6 0h2v3h-2zM8 21h2v3H8zm6 0h2v3h-2z"
-        />
-      ) : kind === "zealman_video" ? (
+      {kind === "zealman_video" ? (
         <path fill="var(--text-strong)" d="M3 4h18v3L8 17h13v3H3v-3L16 7H3Z" />
       ) : ["volcengine_image", "volcengine_video"].includes(kind) ? (
         <path

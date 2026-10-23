@@ -25,6 +25,7 @@ from app.llm.playground.attachments import (
 )
 from app.llm.playground.test_tools import ModelTestTools, call_out, tool_snapshot
 from app.llm.providers import ChatMessageInput, ImageInput
+from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.schemas.model_test import (
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,
@@ -357,7 +358,7 @@ class ModelTestService:
             provider is None
             or not provider.enabled
             or not model.enabled
-            or provider.kind not in {"openai", "anthropic"}
+            or provider.kind not in TEXT_PROVIDER_KINDS
         ):
             raise ModelUnavailableError("当前模型不可用，请重新选择已启用的文本模型")
         if require_vision and "vision" not in capabilities:

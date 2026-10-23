@@ -18,6 +18,7 @@ import {
   type Standard,
 } from "./api";
 import { RunReview } from "./RunReview";
+import { AcceptanceNodePicker } from "./AcceptanceNodePicker";
 export function RunsPane({
   projectId,
   nodes,
@@ -150,17 +151,13 @@ export function RunsPane({
           </button>
         </div>
         <div className="acceptance-start-options">
-          <CustomSelect
-            ariaLabel="验收节点"
+          <AcceptanceNodePicker
+            nodes={nodes}
             value={nodeId}
             onChange={(value) => {
               setNodeId(value);
               setVersionPage(1);
             }}
-            options={nodes.map((node) => ({
-              value: node.id,
-              label: node.title,
-            }))}
           />
           {needsModel && (
             <CustomSelect

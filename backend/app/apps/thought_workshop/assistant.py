@@ -13,6 +13,7 @@ from app.apps.thought_workshop.schemas.workshop import ThoughtAssistantIn, Thoug
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers import stream_text_completion
+from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.providers.streaming import ChatMessageInput
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
@@ -45,7 +46,7 @@ async def models(notes: Notes) -> list[ThoughtModelOut]:
     return [
         ThoughtModelOut(id=m.id, label=m.label or m.slug)
         for m, p in rows
-        if "chat" in m.capabilities and p.kind in {"openai", "anthropic"}
+        if "chat" in m.capabilities and p.kind in TEXT_PROVIDER_KINDS
     ]
 
 
@@ -100,7 +101,7 @@ async def prepare(
         not model.enabled
         or not provider.enabled
         or "chat" not in model.capabilities
-        or provider.kind not in {"openai", "anthropic"}
+        or provider.kind not in TEXT_PROVIDER_KINDS
     ):
         raise ThoughtError("请选择可用的文本生成模型")
     if body.selection and " ".join(body.selection.split()) not in " ".join(

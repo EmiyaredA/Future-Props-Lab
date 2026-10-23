@@ -12,12 +12,18 @@ from app.capabilities.agents.harness.contracts import (
     ModelEvent,
     ModelTextDelta,
     ModelTurnEnd,
+    ModelUsageUpdate,
     ToolCall,
     ToolSpec,
     Usage,
 )
 from app.demo_runtime.runtime import mock_transport
-from app.llm.providers.streaming import _data_lines, _integer
+from app.llm.providers.chat_completions import (
+    OPENAI_CHAT_KINDS,
+    chat_base_url,
+    chat_request_options,
+)
+from app.llm.providers.streaming import ProviderStreamError, _data_lines, _integer
 from app.runtime.outbound_urls import require_safe_provider_base_url
 
 __all__ = [
@@ -159,12 +165,13 @@ class HttpAgentAdapter:
         del round_index
         timeout = httpx.Timeout(120.0, connect=15.0)
         async with httpx.AsyncClient(timeout=timeout, transport=self.transport) as client:
-            if self.kind == "openai":
-                root = self.base_url or "https://api.openai.com/v1"
+            if self.kind in OPENAI_CHAT_KINDS:
+                root = chat_base_url(self.kind, self.base_url)
                 headers = {"Content-Type": "application/json"}
                 if self.api_key:
                     headers["Authorization"] = f"Bearer {self.api_key}"
                 body: dict[str, Any] = {
+                    **chat_request_options(self.kind),
                     "model": model,
                     "messages": self._openai_messages(system, messages),
                     "temperature": temperature,
@@ -187,6 +194,7 @@ class HttpAgentAdapter:
                     body["tool_choice"] = "auto"
                 calls: dict[int, dict[str, str]] = {}
                 usage = Usage()
+                completed = False
                 async with client.stream(
                     "POST",
                     f"{root.rstrip('/')}/chat/completions",
@@ -195,8 +203,15 @@ class HttpAgentAdapter:
                 ) as response:
                     response.raise_for_status()
                     async for payload in _data_lines(response):
+                        if "error" in payload or payload.get("type") == "error":
+                            raise ProviderStreamError("模型流式调用失败")
+                        if payload.get("type") == "_stream_done":
+                            completed = True
+                            break
                         choices = payload.get("choices") or []
                         if choices and isinstance(choices[0], dict):
+                            if choices[0].get("finish_reason"):
+                                completed = True
                             delta = choices[0].get("delta") or {}
                             text = delta.get("content") if isinstance(delta, dict) else ""
                             if text:
@@ -217,6 +232,9 @@ class HttpAgentAdapter:
                                 _integer(raw_usage.get("completion_tokens")),
                                 _integer(raw_usage.get("total_tokens")),
                             )
+                            yield ModelUsageUpdate(usage)
+                if not completed:
+                    raise ProviderStreamError("模型流式响应在完成前中断")
                 yield ModelTurnEnd(
                     tuple(
                         ToolCall(

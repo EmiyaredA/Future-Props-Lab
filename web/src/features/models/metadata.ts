@@ -14,6 +14,7 @@ export const providerMetadata = {
     optionLabel: "火山方舟 · Seedream 原生多图",
   },
   openai: { label: "OpenAI 兼容", optionLabel: "OpenAI 兼容" },
+  deepseek: { label: "DeepSeek 官方", optionLabel: "DeepSeek 官方" },
   anthropic: { label: "Anthropic", optionLabel: "Anthropic" },
   senseaudio_image: {
     label: "SenseAudio 图片",

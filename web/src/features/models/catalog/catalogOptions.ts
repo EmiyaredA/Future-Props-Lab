@@ -11,6 +11,7 @@ export function providerBaseUrlPlaceholder(kind: ProviderInput["kind"]) {
     return "https://ark.cn-beijing.volces.com/api/v3";
   if (kind === "zealman_video") return "https://your-panel.example:8443";
   if (kind === "openai") return "https://api.openai.com/v1";
+  if (kind === "deepseek") return "https://api.deepseek.com";
   if (kind === "anthropic") return "https://api.anthropic.com/v1";
   if (kind === "senseaudio_realtime") {
     return "wss://api.senseaudio.cn/ws/v1/realtime/voice-dialog";

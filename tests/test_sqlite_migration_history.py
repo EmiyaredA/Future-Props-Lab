@@ -167,6 +167,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("0104_presentation_free_connections",),
             ("0105_visual_acceptance",),
             ("0106_interview_preparation",),
+            ("0107_deepseek_provider",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

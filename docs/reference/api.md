@@ -154,6 +154,15 @@ Principal 相符，防止切换工作区时授权到错误空间。`POST /agent/
 - `PATCH/DELETE /v1/model-providers/{provider_id}`
 - `POST /v1/model-providers/{provider_id}/enabled`
 - `POST /v1/model-providers/{provider_id}/models`
+
+供应商 `kind` 支持 `deepseek`，用于 DeepSeek 官方 OpenAI 兼容对话接口。
+创建或更新时 `base_url` 留空保存为 `https://api.deepseek.com`，也可指定兼容代理根地址。
+凭证通过原 `api_key` 字段提交并加密保存，响应仅提供 `has_api_key` 与脱敏提示；编辑留空保留已有凭证。
+模型通过原模型 CRUD 添加；官方预设为 `deepseek-flash`（chat/tools/vision）和
+`deepseek-v4-pro`（chat/tools），默认分类为 `text_generation`。目录写操作继续使用
+`expected_catalog_revision`，缺失返回 422、冲突返回 409。
+诊断、文本推理、Agent 工具调用及日志复现均使用非思考模式，不新增思考字段或供应商私有 SSE 事件。
+调用日志查询 `provider_kind=deepseek` 可独立筛选官方连接；已有 OpenAI 兼容网关条目不转换。
 - `PATCH/DELETE /v1/model-entries/{model_id}`
 - `POST /v1/model-entries/{model_id}/test`
 

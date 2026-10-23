@@ -117,7 +117,9 @@ export function ProviderForm({
             <small>
               {kind === "zealman_video"
                 ? "填写 ZEALMAN 面板根地址，页面查询参数会自动移除。"
-                : "留空使用该协议的默认地址。"}
+                : kind === "deepseek"
+                  ? "留空使用 https://api.deepseek.com；当前接入使用非思考模式，支持对话和工具调用。"
+                  : "留空使用该协议的默认地址。"}
             </small>
           </label>
           <label>
@@ -187,6 +189,7 @@ export function ModelForm({
   const defaults: Partial<
     Record<CatalogProvider["kind"], ModelInput["capabilities"]>
   > = {
+    deepseek: ["chat", "tools"],
     volcengine_image: ["image_generation"],
     senseaudio_image: ["image_generation"],
     senseaudio_video: ["video_generation"],
@@ -258,6 +261,42 @@ export function ModelForm({
           }}
         />
       </label>
+      {selectedProvider?.kind === "deepseek" && !initial && (
+        <label>
+          <span>DeepSeek 模型预设</span>
+          <CustomSelect
+            ariaLabel="DeepSeek 模型预设"
+            value={
+              ["deepseek-flash", "deepseek-v4-pro"].includes(slug) ? slug : ""
+            }
+            options={[
+              { value: "", label: "自定义模型" },
+              {
+                value: "deepseek-flash",
+                label: "DeepSeek Flash · 支持图像理解",
+              },
+              { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro" },
+            ]}
+            onChange={(next) => {
+              setSlug(next);
+              setLabel(
+                next === "deepseek-flash"
+                  ? "DeepSeek Flash"
+                  : next
+                    ? "DeepSeek V4 Pro"
+                    : "",
+              );
+              setCapabilities(
+                next === "deepseek-flash"
+                  ? ["chat", "tools", "vision"]
+                  : ["chat", "tools"],
+              );
+              setCategories(["text_generation"]);
+            }}
+          />
+          <small>使用非思考模式；也可在下方直接填写官方提供的模型 ID。</small>
+        </label>
+      )}
       {selectedProvider?.kind === "volcengine_video" && !initial && (
         <label>
           <span>Seedance 模型预设</span>

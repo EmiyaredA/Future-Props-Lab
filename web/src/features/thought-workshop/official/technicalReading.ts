@@ -134,7 +134,7 @@ export const TECHNICAL_READING: Record<
   },
   providers: {
     summary:
-      "跟踪供应商协议与公共调用事件，并完成本地语音模型的安装、空间接入和测试。",
+      "跟踪 DeepSeek 请求适配、流式终止与用量结算，并完成本地语音的空间接入。",
     related: [
       {
         libraryId: "technical",

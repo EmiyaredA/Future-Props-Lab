@@ -119,10 +119,9 @@ test("视频证据、同步复验、参考绑定与返修草稿使用真实隔�
       .getByRole("radio", { name: "人工确认", exact: true })
       .click();
     await page.getByRole("button", { name: "选择参考", exact: true }).click();
-    await page.getByRole("combobox", { name: "选择项目参考素材" }).click();
     await page
-      .getByRole("option", {
-        name: title === "角色外观一致" ? "角色基准" : "S03 镜头",
+      .getByRole("button", {
+        name: title === "角色外观一致" ? "绑定 角色基准" : "绑定 S03 镜头",
         exact: true,
       })
       .click();

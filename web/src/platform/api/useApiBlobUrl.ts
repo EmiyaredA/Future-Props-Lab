@@ -5,12 +5,14 @@ export type ApiBlobUrlState = {
   url: string;
   loading: boolean;
   error: Error | null;
+  mimeType?: string;
 };
 
 const EMPTY_STATE: ApiBlobUrlState = {
   url: "",
   loading: false,
   error: null,
+  mimeType: "",
 };
 
 export function useApiBlobUrl(
@@ -28,13 +30,18 @@ export function useApiBlobUrl(
 
     const controller = new AbortController();
     let objectUrl = "";
-    setState({ url: "", loading: true, error: null });
+    setState({ url: "", loading: true, error: null, mimeType: "" });
     void fetchApiBlob(path, { signal: controller.signal })
       .then((blob) => {
         if (controller.signal.aborted || requestId.current !== currentRequest)
           return;
         objectUrl = URL.createObjectURL(blob);
-        setState({ url: objectUrl, loading: false, error: null });
+        setState({
+          url: objectUrl,
+          loading: false,
+          error: null,
+          mimeType: blob.type,
+        });
       })
       .catch((caught: unknown) => {
         if (controller.signal.aborted || requestId.current !== currentRequest)
@@ -43,6 +50,7 @@ export function useApiBlobUrl(
           url: "",
           loading: false,
           error: caught instanceof Error ? caught : new Error("文件读取失败"),
+          mimeType: "",
         });
       });
 

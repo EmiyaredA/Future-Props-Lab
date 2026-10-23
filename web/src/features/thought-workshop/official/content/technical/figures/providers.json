@@ -20,7 +20,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "供应商请求适配\n鉴权、版本能力与参数转换",
+      "text": "供应商请求适配\n鉴权、DeepSeek 非思考参数",
       "fill": "#edf2fb",
       "stroke": "#365f62",
       "icon": "server"
@@ -32,7 +32,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "外部模型服务\n供应商协议",
+      "text": "外部模型服务\n含 DeepSeek 官方对话",
       "fill": "#fff1dd",
       "stroke": "#365f62",
       "icon": "cloud"
@@ -56,7 +56,7 @@
       "y": 310,
       "width": 220,
       "height": 110,
-      "text": "响应适配\n增量、用量与错误",
+      "text": "响应适配\n用量快照与终止校验",
       "fill": "#edf2fb",
       "stroke": "#365f62",
       "icon": "server"

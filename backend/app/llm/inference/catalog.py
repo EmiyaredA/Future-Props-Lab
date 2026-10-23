@@ -8,6 +8,7 @@ from app.capabilities.transcription import (
 from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
 from app.llm.local_models.catalog import credential_ready, require_ready
 from app.llm.models import ModelEntry, ModelProvider
+from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.providers.local_qwen import speech_parameters
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
@@ -36,7 +37,7 @@ def modalities(model, provider):
     result = []
     if provider.kind == "local_qwen_tts" and "speech_synthesis" in model.capabilities:
         result.append("speech_synthesis")
-    if provider.kind in {"openai", "anthropic"} and "chat" in model.capabilities:
+    if provider.kind in TEXT_PROVIDER_KINDS and "chat" in model.capabilities:
         result.append("text")
     kind = GENERATION_KINDS.get(provider.kind)
     capability = "image" if kind == "image" else "video" if kind == "video" else "audio"

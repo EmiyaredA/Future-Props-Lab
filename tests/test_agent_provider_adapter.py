@@ -70,7 +70,7 @@ async def test_openai_agent_adapter_assembles_streamed_tool_arguments_and_usage(
         ]
         return httpx.Response(
             200,
-            text="".join(f"data: {json.dumps(item)}\n\n" for item in lines),
+            text="".join(f"data: {json.dumps(item)}\n\n" for item in lines) + "data: [DONE]\n\n",
         )
 
     adapter = HttpAgentAdapter(

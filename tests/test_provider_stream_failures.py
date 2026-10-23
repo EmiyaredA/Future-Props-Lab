@@ -29,12 +29,12 @@ def frame(payload):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("kind", ["openai", "anthropic"])
+@pytest.mark.parametrize("kind", ["openai", "deepseek", "anthropic"])
 @pytest.mark.parametrize("partial", [False, True])
 async def test_stream_error_does_not_complete_or_expose_provider_detail(kind, partial):
     delta = (
         {"choices": [{"delta": {"content": "partial"}}]}
-        if kind == "openai"
+        if kind in {"openai", "deepseek"}
         else {"type": "content_block_delta", "delta": {"type": "text_delta", "text": "partial"}}
     )
     error = {"error": {"message": "secret token private URL"}}
@@ -49,7 +49,7 @@ async def test_stream_error_does_not_complete_or_expose_provider_detail(kind, pa
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("kind", ["openai", "anthropic"])
+@pytest.mark.parametrize("kind", ["openai", "deepseek", "anthropic"])
 async def test_premature_eof_is_failure(kind):
     with pytest.raises(ProviderStreamError, match="中断"):
         async for _ in run_stream(kind, frame({"type": "ping"})):
@@ -57,7 +57,7 @@ async def test_premature_eof_is_failure(kind):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("kind", ["openai", "anthropic"])
+@pytest.mark.parametrize("kind", ["openai", "deepseek", "anthropic"])
 async def test_named_error_and_invalid_json_are_sanitized(kind):
     for data in ['event: error\ndata: {"message":"private"}\n\n', "data: private\n\n"]:
         with pytest.raises(ProviderStreamError) as captured:

@@ -9,10 +9,11 @@
 .acceptance-workspace [hidden] {
   display: none !important;
 }
-.acceptance-workspace :is(button, input, textarea) {
+.acceptance-workspace
+  :is(button, input, textarea):not(:where(.theme-toggle *)) {
   font: inherit;
 }
-.acceptance-workspace button {
+.acceptance-workspace button:not(:where(.theme-toggle *)) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -25,7 +26,7 @@
   color: var(--text);
   cursor: pointer;
 }
-.acceptance-workspace button:hover:not(:disabled) {
+.acceptance-workspace button:not(:where(.theme-toggle *)):hover:not(:disabled) {
   background: var(--surface-hover);
 }
 .acceptance-workspace button:disabled {
@@ -148,32 +149,9 @@
   font-size: 12px;
 }
 .acceptance-header .theme-toggle {
-  width: auto;
-  display: flex;
   margin-left: auto;
-  border: 0;
-  padding: 0;
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
   flex-shrink: 0;
-}
-.acceptance-header .theme-toggle button {
-  min-height: 30px;
-  padding: 4px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  box-shadow: none;
-  font-weight: 500;
-}
-.acceptance-header .theme-toggle button.active {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.acceptance-header .theme-toggle svg {
-  width: 16px;
-  height: 16px;
+  font-size: 12px;
 }
 .acceptance-navigation {
   height: 40px;

@@ -40,6 +40,7 @@ from app.llm.models import (
     ModelProvider,
 )
 from app.llm.providers import ChatMessageInput
+from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.runtime.config import Settings, get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
@@ -245,7 +246,7 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
                 .where(
                     ModelEntry.enabled.is_(True),
                     ModelProvider.enabled.is_(True),
-                    ModelProvider.kind.in_(("openai", "anthropic")),
+                    ModelProvider.kind.in_(TEXT_PROVIDER_KINDS),
                 )
                 .order_by(ModelProvider.sort_order, ModelEntry.sort_order, ModelEntry.slug)
             )

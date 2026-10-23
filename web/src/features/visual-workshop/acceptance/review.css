@@ -20,8 +20,27 @@
 .acceptance-start-options {
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
+}
+.acceptance-node-picker {
+  flex: 1 1 320px;
+  min-width: 0;
+  max-width: 640px;
+}
+.acceptance-workspace .acceptance-node-picker-trigger {
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+}
+.acceptance-node-picker-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acceptance-node-picker-trigger > svg {
+  flex-shrink: 0;
 }
 .acceptance-start-options .custom-select {
   min-width: 220px;

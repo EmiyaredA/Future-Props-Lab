@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.llm.providers.chat_completions import DEEPSEEK_BASE_URL
 from app.llm.schemas.model_supplier import ModelSupplierOut
 from app.runtime.outbound_urls import normalize_provider_base_url, normalize_provider_websocket_url
 
@@ -11,6 +12,7 @@ ProviderKind = Literal[
     "local_qwen_tts",
     "volcengine_image",
     "openai",
+    "deepseek",
     "anthropic",
     "senseaudio_image",
     "volcengine_video",
@@ -85,6 +87,8 @@ class ProviderIn(BaseModel):
             raise ValueError("托管本地模型不接受服务地址或 API Key")
         if self.kind == "volcengine_video" and not self.base_url.strip():
             self.base_url = "https://ark.cn-beijing.volces.com/api/v3"
+        if self.kind == "deepseek" and not self.base_url.strip():
+            self.base_url = DEEPSEEK_BASE_URL
         self.base_url = (
             normalize_provider_websocket_url(self.base_url)
             if self.kind == "senseaudio_realtime"

@@ -16,10 +16,11 @@
   color: var(--board-text);
   font-size: 13px;
 }
-.visual-project-board :is(button, input, textarea) {
+.visual-project-board
+  :is(button, input, textarea):not(:where(.theme-toggle *)) {
   font: inherit;
 }
-.visual-project-board button,
+.visual-project-board button:not(:where(.theme-toggle *)),
 .board-upload {
   border: 1px solid var(--board-border);
   border-radius: 8px;
@@ -36,7 +37,7 @@
     border-color 140ms,
     box-shadow 140ms;
 }
-.visual-project-board button:hover:not(:disabled) {
+.visual-project-board button:not(:where(.theme-toggle *)):hover:not(:disabled) {
   background: var(--board-soft);
 }
 .visual-project-board button:disabled {

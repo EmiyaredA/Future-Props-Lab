@@ -18,6 +18,7 @@ from app.apps.visual_workshop.acceptance.standards import Standards
 from app.apps.visual_workshop.models import VisualCanvasDocument
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.llm.models import ModelEntry, ModelProvider
+from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.runtime.ids import new_id
 from app.runtime.time import iso_utc
 
@@ -52,7 +53,7 @@ async def review_models(session, workspace_id):
                 ModelProvider.workspace_id == workspace_id,
                 ModelEntry.enabled.is_(True),
                 ModelProvider.enabled.is_(True),
-                ModelProvider.kind.in_(["openai", "anthropic"]),
+                ModelProvider.kind.in_(TEXT_PROVIDER_KINDS),
             )
         )
     ).all()

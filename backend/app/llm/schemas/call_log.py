@@ -68,7 +68,7 @@ CALL_SOURCE_PATTERN = (
     "visual_workshop_generation|thought_workshop_assistant|audio_annotation|desktop_pet_chat)$"
 )
 PROVIDER_KIND_PATTERN = (
-    "^(|openai|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$"
+    "^(|openai|deepseek|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$"
 )
 API_KEY_FILTER_PATTERN = r"^(|session|[0-9a-fA-F-]{36})$"
 

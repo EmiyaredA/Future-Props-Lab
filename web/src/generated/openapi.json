@@ -29399,6 +29399,7 @@
               "local_qwen_tts",
               "volcengine_image",
               "openai",
+              "deepseek",
               "anthropic",
               "senseaudio_image",
               "volcengine_video",
@@ -29483,6 +29484,7 @@
               "local_qwen_tts",
               "volcengine_image",
               "openai",
+              "deepseek",
               "anthropic",
               "senseaudio_image",
               "volcengine_video",
@@ -30334,6 +30336,7 @@
               "local_qwen_tts",
               "volcengine_image",
               "openai",
+              "deepseek",
               "anthropic",
               "senseaudio_image",
               "volcengine_video",
@@ -34077,6 +34080,7 @@
               "local_qwen_tts",
               "volcengine_image",
               "openai",
+              "deepseek",
               "anthropic",
               "senseaudio_image",
               "volcengine_video",
@@ -34158,6 +34162,7 @@
               "local_qwen_tts",
               "volcengine_image",
               "openai",
+              "deepseek",
               "anthropic",
               "senseaudio_image",
               "volcengine_video",
@@ -42489,7 +42494,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|openai|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$",
+              "pattern": "^(|openai|deepseek|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$",
               "title": "Provider Kind",
               "type": "string"
             }
@@ -56349,7 +56354,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|openai|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$",
+              "pattern": "^(|openai|deepseek|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$",
               "title": "Provider Kind",
               "type": "string"
             }

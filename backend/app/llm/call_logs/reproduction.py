@@ -10,6 +10,12 @@ from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 from app.llm.models import LlmCallLog
+from app.llm.providers.chat_completions import (
+    OPENAI_CHAT_KINDS,
+    TEXT_PROVIDER_KINDS,
+    chat_base_url,
+    chat_request_options,
+)
 
 
 class ReproductionUnavailableError(ValueError):
@@ -77,7 +83,7 @@ def _safe_base_url(value: str, fallback: str) -> str:
 
 def reproduction_support(row: LlmCallLog) -> tuple[bool, str]:
     payload = dict(row.request_payload or {})
-    if row.provider_kind not in {"openai", "anthropic"}:
+    if row.provider_kind not in TEXT_PROVIDER_KINDS:
         return False, "该供应商日志没有保存可直接重放的 HTTP 文本请求。"
     if payload.get("mode") == "realtime_voice":
         return False, "实时语音日志不保存转写正文和音频，无法生成等价复现请求。"
@@ -100,7 +106,7 @@ def _tools(payload: dict[str, Any], provider_kind: str) -> list[dict[str, Any]]:
     for item in source:
         if not isinstance(item, dict) or not item.get("name"):
             continue
-        if provider_kind == "openai":
+        if provider_kind in OPENAI_CHAT_KINDS:
             result.append(
                 {
                     "type": "function",
@@ -141,10 +147,14 @@ def _request_body(row: LlmCallLog) -> tuple[str, dict[str, Any], list[str]]:
     if tools:
         warnings.append("复现脚本只重放首个模型 HTTP 请求，不执行模型返回的本地工具调用。")
 
-    if row.provider_kind == "openai":
+    if row.provider_kind in OPENAI_CHAT_KINDS:
         if system:
             messages.insert(0, {"role": "system", "content": system})
-        body: dict[str, Any] = {"model": row.model, "messages": messages}
+        body: dict[str, Any] = {
+            "model": row.model,
+            "messages": messages,
+            **chat_request_options(row.provider_kind),
+        }
         endpoint = "/chat/completions"
         if temperature is not None:
             body["temperature"] = temperature
@@ -417,8 +427,8 @@ def build_reproduction_bundle(row: LlmCallLog, *, base_url: str) -> Reproduction
         raise ReproductionUnavailableError(reason)
     endpoint, body, warnings = _request_body(row)
     default_url = (
-        "https://api.openai.com/v1"
-        if row.provider_kind == "openai"
+        chat_base_url(row.provider_kind, "")
+        if row.provider_kind in OPENAI_CHAT_KINDS
         else "https://api.anthropic.com/v1"
     )
     request = {

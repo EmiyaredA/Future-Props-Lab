@@ -6,6 +6,7 @@ import time
 from collections.abc import AsyncIterator
 from uuid import uuid4
 
+import anyio
 from sqlalchemy import select, update
 
 from app.capabilities.agents.harness import (
@@ -18,6 +19,7 @@ from app.capabilities.agents.harness import (
     RunStatus,
     ToolBinding,
 )
+from app.capabilities.agents.harness.contracts import Usage
 from app.llm.models import (
     LlmCallLog,
     ModelTestConversation,
@@ -323,6 +325,14 @@ async def tool_generation_events(prepared: PreparedGeneration) -> AsyncIterator[
     task = asyncio.create_task(worker())
     content = ""
     rounds = 0
+    round_usage: dict[int, Usage] = {}
+
+    def partial_usage() -> Usage:
+        total = Usage()
+        for snapshot in round_usage.values():
+            total = total.merged(snapshot)
+        return total
+
     try:
         while True:
             kind, item = await queue.get()
@@ -343,6 +353,8 @@ async def tool_generation_events(prepared: PreparedGeneration) -> AsyncIterator[
                     calls = await _persist_event(prepared, event)
                     yield _event("step", sequence, {"run_id": harness.run_id, "tool_calls": calls})
                     sequence += 1
+                elif event.type == "model_usage_updated":
+                    round_usage[event.round_index] = Usage(**event.payload)
                 continue
             if kind == "exception":
                 if isinstance(item, BaseException):
@@ -403,11 +415,53 @@ async def tool_generation_events(prepared: PreparedGeneration) -> AsyncIterator[
                 },
             )
             return
-    except asyncio.CancelledError:
-        await harness.abort()
-        task.cancel()
-        await _persist_event(prepared, AgentEvent("run_cancelled", harness.run_id))
+    except (asyncio.CancelledError, GeneratorExit):
+        # Starlette cancels the surrounding AnyIO scope on disconnect. Protect
+        # both tool cleanup and message settlement from repeated cancellation.
+        with anyio.CancelScope(shield=True):
+            await harness.abort()
+            task.cancel()
+            await _persist_event(prepared, AgentEvent("run_cancelled", harness.run_id))
+            await asyncio.shield(
+                _settle(
+                    prepared,
+                    content=content,
+                    status="cancelled",
+                    run_status="cancelled",
+                    error_message="用户停止生成",
+                    trace_id=trace_id,
+                    run_id=harness.run_id,
+                    started=started,
+                    rounds=rounds,
+                    usage=partial_usage(),
+                )
+            )
         raise
+    except Exception:
+        message, log, revision = await _settle(
+            prepared,
+            content=content,
+            status="error",
+            run_status="failed",
+            error_message="模型调用失败",
+            trace_id=trace_id,
+            run_id=harness.run_id,
+            started=started,
+            rounds=rounds,
+            usage=partial_usage(),
+        )
+        yield _event(
+            "error",
+            sequence,
+            {
+                "code": "model_call_failed",
+                "message": "模型调用失败",
+                "message_state": message_out(message).model_dump(mode="json"),
+                "log_id": log.id,
+                "trace_id": trace_id,
+                "revision": revision,
+            },
+        )
     finally:
         if not task.done():
             task.cancel()

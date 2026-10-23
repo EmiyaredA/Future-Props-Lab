@@ -4,7 +4,7 @@ import asyncio
 import inspect
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from uuid import uuid4
 
 from app.capabilities.agents.harness.approval import ApprovalBroker
@@ -14,6 +14,7 @@ from app.capabilities.agents.harness.contracts import (
     ModelAdapter,
     ModelTextDelta,
     ModelTurnEnd,
+    ModelUsageUpdate,
 )
 from app.capabilities.agents.harness.types import (
     AgentDefinition,
@@ -88,8 +89,18 @@ async def model_turn_phase(
                         listener,
                         AgentEvent("model_text_delta", run_id, round_index, {"text": event.text}),
                     )
-                else:
-                    turn_end = event
+                elif isinstance(event, (ModelUsageUpdate, ModelTurnEnd)):
+                    if isinstance(event, ModelTurnEnd):
+                        turn_end = event
+                    await emit_event(
+                        listener,
+                        AgentEvent(
+                            "model_usage_updated",
+                            run_id,
+                            round_index,
+                            asdict(event.usage),
+                        ),
+                    )
     except TimeoutError as exc:
         raise RuntimeError("model_turn_timeout") from exc
     completed = turn_end or ModelTurnEnd()

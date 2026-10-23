@@ -132,6 +132,9 @@
 .acceptance-reference-list {
   display: grid;
   gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 .acceptance-reference-row {
   display: flex;
@@ -142,7 +145,7 @@
   border-radius: 6px;
   min-width: 0;
 }
-.acceptance-reference-row > div {
+.acceptance-reference-row > .acceptance-reference-summary {
   flex: 1;
   min-width: 0;
 }
@@ -183,13 +186,64 @@
   font-size: 11px;
 }
 .acceptance-reference-picker {
-  display: flex;
-  gap: 8px;
+  padding: 8px;
   margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
 }
-.acceptance-reference-picker .custom-select {
+.acceptance-reference-picker:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.acceptance-reference-options {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 2px;
+  display: grid;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.acceptance-reference-options .acceptance-reference-row {
+  padding: 0;
+  background: var(--surface);
+}
+.acceptance-reference-summary,
+.acceptance-workspace .acceptance-reference-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex: 1;
   min-width: 0;
+}
+.acceptance-workspace .acceptance-reference-select {
+  padding: 8px;
+  align-self: stretch;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  white-space: normal;
+}
+.acceptance-workspace .acceptance-reference-select[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.acceptance-reference-copy {
+  flex: 1;
+  min-width: 0;
+}
+.acceptance-reference-row .acceptance-reference-copy strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.acceptance-reference-copy small {
+  color: var(--muted);
+  font-size: 12px;
 }
 .acceptance-level-field {
   display: flex;
@@ -247,7 +301,10 @@
   .acceptance-reference-row {
     flex-wrap: wrap;
   }
-  .acceptance-reference-row > div {
-    min-width: 120px;
+  .acceptance-reference-row > .acceptance-reference-summary {
+    min-width: 100px;
+  }
+  .acceptance-reference-options .acceptance-reference-row {
+    flex-wrap: nowrap;
   }
 }

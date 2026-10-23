@@ -118,7 +118,7 @@ export function ModelTestPage({
     () =>
       availableModels.filter(
         (model) =>
-          ["openai", "anthropic"].includes(model.providerKind) &&
+          ["openai", "deepseek", "anthropic"].includes(model.providerKind) &&
           model.capabilities.includes("chat"),
       ),
     [availableModels],

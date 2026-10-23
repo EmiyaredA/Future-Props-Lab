@@ -61,12 +61,19 @@ class ModelTextDelta:
 
 
 @dataclass(frozen=True)
+class ModelUsageUpdate:
+    """Latest usage snapshot for one model turn, including incomplete turns."""
+
+    usage: Usage
+
+
+@dataclass(frozen=True)
 class ModelTurnEnd:
     tool_calls: tuple[ToolCall, ...] = ()
     usage: Usage = field(default_factory=Usage)
 
 
-ModelEvent = ModelTextDelta | ModelTurnEnd
+ModelEvent = ModelTextDelta | ModelUsageUpdate | ModelTurnEnd
 
 
 class ModelAdapter(Protocol):

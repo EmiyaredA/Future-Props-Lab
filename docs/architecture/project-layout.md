@@ -159,7 +159,8 @@ Future-Props-Lab/
 - `capabilities/agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
   Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；`phases.py` 原子化上下文编译、
   模型回合、工具提案、执行与审批阶段并保持事件顺序；不拥有项目数据，也不提供通用
-  `/v1/agents` 管理接口。`llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
+  `/v1/agents` 管理接口。`llm/providers/chat_completions.py` 拥有 OpenAI 兼容文本协议的供应商集合、默认地址与 DeepSeek 非思考请求选项；诊断、流式对话、Agent 与日志复现复用该契约。
+  `llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
   定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
 - `llm/playground/` 拥有模型测试会话、测试工具、调用快照与流式结算。测试工具只执行 Workspace 内的
@@ -690,6 +691,8 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 `model-inference/inputs/`、`model-inference/outputs/`，沿用 Workspace 备份和访问边界。
 
 ## 视觉工坊通用验收
+
+`ReferenceMaterialRow.tsx` 为参考绑定与验收节点选择共用缩略图、类型、格式和整行操作；`AcceptanceNodePicker.tsx` 拥有节点列表的内联展开、当前选中态与焦点恢复，输出版本查询与批量选择仍归 `RunsPane.tsx`。参考素材不再提供额外预览浮窗。
 
 `backend/app/apps/visual_workshop/acceptance/` 拥有 Workspace 验收模板、项目标准及发布版本、输出版本验收记录、人工结论、参考与证据引用、返修草稿和历史快照迁移。`runner.py` 通过独立短事务和现有 RunnerSupervisor 执行规格检查及视觉模型辅助；媒体探测与解码由 `capabilities/media_rendering/inspection.py` 拥有，抽帧复用该能力的公开入口。输出登记和画布写入调用验收访问契约，强制项目新增结果为候选，不替换最终输出。
 

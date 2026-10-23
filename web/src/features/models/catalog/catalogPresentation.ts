@@ -73,7 +73,7 @@ export function catalogModelStatus(
 export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
   if (model.availability && model.availability !== "ready") return null;
   if (
-    ["openai", "anthropic"].includes(provider.kind) &&
+    ["openai", "deepseek", "anthropic"].includes(provider.kind) &&
     model.capabilities.includes("chat")
   )
     return "chat";

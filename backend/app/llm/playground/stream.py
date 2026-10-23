@@ -4,6 +4,7 @@ import asyncio
 import json
 import time
 from collections.abc import AsyncIterator
+from contextlib import aclosing
 from uuid import uuid4
 
 import httpx
@@ -104,8 +105,9 @@ async def _settle(
 
 async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes]:
     if prepared.tool_snapshots:
-        async for event in tool_generation_events(prepared):
-            yield event
+        async with aclosing(tool_generation_events(prepared)) as events:
+            async for event in events:
+                yield event
         return
     sequence = 0
     trace_id = str(uuid4())

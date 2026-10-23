@@ -9,6 +9,11 @@ import httpx
 
 from app.capabilities.agents.harness.contracts import ImageInput
 from app.demo_runtime.runtime import mock_transport
+from app.llm.providers.chat_completions import (
+    OPENAI_CHAT_KINDS,
+    chat_base_url,
+    chat_request_options,
+)
 from app.runtime.outbound_urls import require_safe_provider_base_url
 
 
@@ -84,8 +89,8 @@ async def stream_text_completion(
     transport = mock_transport(base_url, transport)
     timeout = httpx.Timeout(120.0, connect=15.0)
     async with httpx.AsyncClient(timeout=timeout, transport=transport) as client:
-        if kind == "openai":
-            root = base_url or "https://api.openai.com/v1"
+        if kind in OPENAI_CHAT_KINDS:
+            root = chat_base_url(kind, base_url)
             headers = {"Content-Type": "application/json"}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
@@ -114,6 +119,7 @@ async def stream_text_completion(
                 f"{root.rstrip('/')}/chat/completions",
                 headers=headers,
                 json={
+                    **chat_request_options(kind),
                     "model": model,
                     "messages": request_messages,
                     "temperature": temperature,

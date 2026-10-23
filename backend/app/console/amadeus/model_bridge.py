@@ -83,6 +83,8 @@ async def stream_model_turn(
     credential: CredentialSnapshot | None = None,
 ) -> AsyncIterator[str]:
     model, provider = await get_model(session, workspace_id, body.model_id, "text")
+    if any(item.get("images") for item in body.messages) and "vision" not in model.capabilities:
+        raise OperationError("模型不支持图像输入", "unsupported_modality", 422)
     # Snapshot ORM scalars before releasing the request session; rollback expires
     # instances, and lazy loads from the generator finally-block raise MissingGreenlet.
     slug = model.slug
@@ -140,16 +142,17 @@ async def stream_model_turn(
             if hasattr(event, "text"):
                 text += event.text
                 yield json.dumps({"type": "delta", "text": event.text}, ensure_ascii=False) + "\n"
-            if hasattr(event, "tool_calls"):
-                calls = [
-                    {"id": call.id, "name": call.name, "arguments": call.arguments}
-                    for call in event.tool_calls
-                ]
+            if hasattr(event, "usage"):
                 usage = {
                     "prompt_tokens": event.usage.prompt_tokens,
                     "completion_tokens": event.usage.completion_tokens,
                     "total_tokens": event.usage.total_tokens,
                 }
+            if hasattr(event, "tool_calls"):
+                calls = [
+                    {"id": call.id, "name": call.name, "arguments": call.arguments}
+                    for call in event.tool_calls
+                ]
                 success = True
                 yield (
                     json.dumps(
