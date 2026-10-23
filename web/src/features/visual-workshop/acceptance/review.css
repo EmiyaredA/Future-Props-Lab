@@ -28,6 +28,9 @@
   min-width: 0;
   max-width: 640px;
 }
+.acceptance-node-picker .acceptance-reference-options {
+  margin: 0;
+}
 .acceptance-workspace .acceptance-node-picker-trigger {
   width: 100%;
   justify-content: space-between;

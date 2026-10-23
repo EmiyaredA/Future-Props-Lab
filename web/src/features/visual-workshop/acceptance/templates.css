@@ -36,7 +36,7 @@
 }
 .acceptance-template-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 .acceptance-workspace .acceptance-template {
@@ -75,22 +75,6 @@
 .acceptance-template-icon.coral {
   color: var(--accent);
   background: var(--accent-soft);
-}
-.acceptance-template-icon.violet {
-  color: #9671b5;
-  background: #9671b514;
-}
-.acceptance-template-icon.sage {
-  color: #688a79;
-  background: #688a7914;
-}
-.acceptance-template-icon.blue {
-  color: #638ea6;
-  background: #638ea614;
-}
-.acceptance-template-icon.amber {
-  color: #b38b4d;
-  background: #b38b4d14;
 }
 .acceptance-table-scroll {
   max-width: 100%;

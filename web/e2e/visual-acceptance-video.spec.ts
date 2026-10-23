@@ -221,7 +221,7 @@ test("视频证据、同步复验、参考绑定与返修草稿使用真实隔�
         .evaluate((video: HTMLVideoElement) => video.currentTime),
     )
     .toBeCloseTo(2, 1);
-  for (const title of ["角色外观一致", "动作与道具", "表演与情绪"]) {
+  for (const title of ["角色外观一致", "动作与道具", "动作连贯与节奏"]) {
     await page.getByRole("button", { name: new RegExp(title) }).click();
     await page.getByRole("button", { name: "确认通过", exact: true }).click();
   }

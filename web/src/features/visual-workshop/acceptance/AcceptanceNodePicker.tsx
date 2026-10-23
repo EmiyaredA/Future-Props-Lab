@@ -54,12 +54,6 @@ export function AcceptanceNodePicker({
             }
           }}
         >
-          <div className="acceptance-list-heading">
-            <strong>选择验收节点</strong>
-            <button type="button" onClick={close}>
-              取消
-            </button>
-          </div>
           <ul
             className="acceptance-reference-options"
             aria-label="项目验收节点"

@@ -11,12 +11,12 @@ import {
 import { useState } from "react";
 
 const template: Template = {
-  id: "builtin:sample",
-  title: "视频镜头通用",
+  id: "builtin:motion-transfer",
+  title: "动作迁移",
   builtin: true,
   revision: 0,
   document: {
-    title: "视频镜头通用",
+    title: "动作迁移",
     node_ids: [],
     criteria: [
       { ...newCriterion(), id: "rule", title: "角色外观一致", method: "ai" },
@@ -35,6 +35,13 @@ test("template selection copies editable requirements and supports empty standar
       writable
     />,
   );
+  expect(
+    screen.getByRole("button", { name: /动作迁移.*复现原视频动作/ }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByText(/准备角色基准图和原动作视频/)).toBeVisible();
+  expect(
+    screen.getByText(/连续动作、节奏与音画同步需人工完整播放核对/),
+  ).toBeVisible();
   await user.click(screen.getByRole("button", { name: "使用模板并配置" }));
   expect(onUse).toHaveBeenCalledWith(template.document);
   expect(onUse.mock.calls[0][0]).not.toBe(template.document);
@@ -121,7 +128,7 @@ test("template filters search requirements and separate real workspace templates
     />,
   );
   await user.type(screen.getByLabelText("搜索验收模板"), "眼镜");
-  expect(screen.getByRole("heading", { name: "视频镜头通用" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "动作迁移" })).toBeVisible();
   expect(
     screen.queryByRole("button", { name: "台词验收" }),
   ).not.toBeInTheDocument();

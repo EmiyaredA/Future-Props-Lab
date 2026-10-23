@@ -287,11 +287,17 @@ test("node picker keyboard cancel restores focus and text/audio rows do not fetc
   expect(screen.getByRole("region", { name: "选择验收节点" })).toHaveFocus();
   expect(screen.getByText("文本")).toBeVisible();
   expect(fetchBlob).not.toHaveBeenCalled();
+  expect(
+    screen.queryByRole("button", { name: "取消" }),
+  ).not.toBeInTheDocument();
   await userEvent.keyboard("{Escape}");
   expect(trigger).toHaveFocus();
   expect(onChange).not.toHaveBeenCalled();
   await userEvent.keyboard("{Enter}");
-  await userEvent.click(screen.getByRole("button", { name: "取消" }));
+  await userEvent.click(trigger);
   expect(trigger).toHaveFocus();
+  expect(
+    screen.queryByRole("region", { name: "选择验收节点" }),
+  ).not.toBeInTheDocument();
   expect(onChange).not.toHaveBeenCalled();
 });

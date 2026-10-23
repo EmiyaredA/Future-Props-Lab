@@ -1,16 +1,5 @@
 import { useState } from "react";
-import {
-  Activity,
-  AudioLines,
-  BookOpen,
-  Copy,
-  FileCheck2,
-  Plus,
-  Search,
-  Trash2,
-  UserRound,
-  Video,
-} from "lucide-react";
+import { Activity, Copy, FileCheck2, Plus, Search, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { methodNames, type Template, type StandardDocument } from "./api";
 import { AcceptanceChoice } from "./AcceptanceChoice";
@@ -28,35 +17,11 @@ const media = (template: Template) => [
 ];
 function appearance(template: Template) {
   const id = template.id.replace("builtin:", "");
-  if (id === "video")
-    return {
-      Icon: Video,
-      tone: "coral",
-      description: "文件规格、角色外观、动作与表演",
-    };
-  if (id === "character")
-    return {
-      Icon: UserRound,
-      tone: "violet",
-      description: "身份、服装、比例与视觉风格",
-    };
-  if (id === "continuity")
+  if (id === "motion-transfer")
     return {
       Icon: Activity,
-      tone: "sage",
-      description: "关键动作、道具状态与镜头表现",
-    };
-  if (id === "sound")
-    return {
-      Icon: AudioLines,
-      tone: "blue",
-      description: "台词、字幕、口型与声音清晰度",
-    };
-  if (id === "story")
-    return {
-      Icon: BookOpen,
-      tone: "amber",
-      description: "信息呈现、因果关系与情绪节奏",
+      tone: "coral",
+      description: "让目标角色复现原视频动作，核对外观、姿态与动作节奏",
     };
   return {
     Icon: FileCheck2,
@@ -130,7 +95,9 @@ export function TemplateLibrary({
         className={`acceptance-surface acceptance-library ${pane === "list" ? "is-compact-active" : ""}`}
       >
         <h2>选择参考模板</h2>
-        <p className="acceptance-muted">复制一套清单，再按你的项目调整要求。</p>
+        <p className="acceptance-muted">
+          从动作迁移模板开始，准备角色基准图和原动作视频，再配置项目要求。
+        </p>
         <div className="acceptance-library-toolbar">
           <label className="acceptance-search">
             <Search size={16} />
@@ -302,7 +269,10 @@ export function TemplateLibrary({
                 ))}
               </section>
             )}
-            <small>音频、台词与跨镜头检查由人工完成。</small>
+            <small>
+              AI
+              仅辅助检查抽样画面；连续动作、节奏与音画同步需人工完整播放核对。
+            </small>
             <button
               className="acceptance-primary"
               disabled={!writable}

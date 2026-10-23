@@ -278,6 +278,48 @@ async def test_manual_problem_repair_recheck_and_snapshot_roundtrip():
 
 
 @pytest.mark.asyncio
+async def test_only_motion_transfer_builtin_preserves_workspace_templates_and_project_standards():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        _, base = await make_project(client)
+        document = standard_document("manual")
+        published = await publish(client, base, document)
+        saved = await client.post(
+            "/v1/visual-workshop/acceptance-templates",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+        template_id = saved.json()["id"]
+        try:
+            response = await client.get("/v1/visual-workshop/acceptance-templates")
+            assert response.status_code == 200, response.text
+            items = response.json()["items"]
+            builtin = [item for item in items if item["builtin"]]
+            assert [(item["id"], item["title"]) for item in builtin] == [
+                ("builtin:motion-transfer", "动作迁移")
+            ]
+            criteria = builtin[0]["document"]["criteria"]
+            assert [item["method"] for item in criteria] == ["automatic", "ai", "ai", "manual"]
+            assert {item["reference_label"] for item in criteria if item["reference_label"]} == {
+                "角色基准图",
+                "原动作视频",
+            }
+            assert criteria[-1]["kinds"] == ["video"]
+            assert criteria[-1]["required"] is True
+            assert "完整播放" in criteria[-1]["requirement"]
+            assert builtin[0]["document"]["node_ids"] == []
+            assert all(not item["reference_asset_ids"] for item in criteria)
+            assert next(item for item in items if item["id"] == template_id) == saved.json()
+            assert (await client.get(f"{base}/acceptance/standard")).json() == published
+        finally:
+            response = await client.delete(
+                f"/v1/visual-workshop/acceptance-templates/{template_id}?expected_revision=0"
+            )
+            assert response.status_code == 200, response.text
+
+
+@pytest.mark.asyncio
 async def test_template_strips_bindings_and_revision_conflicts():
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

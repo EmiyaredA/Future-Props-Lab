@@ -36,6 +36,32 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
   await expect(
     page.getByRole("heading", { name: "选择参考模板" }),
   ).toBeVisible();
+  await expect(page.locator(".acceptance-template")).toHaveCount(1);
+  await expect(
+    page.getByRole("heading", { name: "动作迁移", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".acceptance-preparation")).toContainText(
+    "角色基准图",
+  );
+  await expect(page.locator(".acceptance-preparation")).toContainText(
+    "原动作视频",
+  );
+  for (const width of [390, 768, 1600]) {
+    await page.setViewportSize({ width, height: 1000 });
+    if (width < 1200) {
+      await page.getByRole("button", { name: "模板预览", exact: true }).click();
+    }
+    await expect(
+      page.getByRole("button", { name: "使用模板并配置" }),
+    ).toBeInViewport();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBeTruthy();
+  }
   await page.screenshot({
     path: resolve(directory, "template-library.png"),
     fullPage: true,
@@ -142,7 +168,7 @@ test("模板配置、版本验收、返修复验与最终采用形成闭环", as
   await expect(
     page.getByText("输出 v3 · 标准 v1 · 检查完成", { exact: true }),
   ).toBeVisible({ timeout: 20000 });
-  for (const title of ["角色外观一致", "动作与道具", "表演与情绪"]) {
+  for (const title of ["角色外观一致", "动作与道具"]) {
     await page.getByRole("button", { name: new RegExp(title) }).click();
     await page.getByRole("button", { name: "确认通过", exact: true }).click();
   }
