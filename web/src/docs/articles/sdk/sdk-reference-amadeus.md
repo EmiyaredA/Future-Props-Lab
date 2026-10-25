@@ -507,10 +507,12 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `conversation_id` | path | string | 是 |
 | `body` | application/json | RunCreateIn | 是 |
+| `body.agent_id` | 请求体 | codex / claude-code | 是 |
+| `body.agent_model` | 请求体 | string | 否 |
 | `body.capabilities` | 请求体 | array | 否 |
 | `body.context` | 请求体 | array | 否 |
 | `body.mode` | 请求体 | agent / plan | 否 |
-| `body.model_id` | 请求体 | string | 是 |
+| `body.model_id` | 请求体 | string | 否 |
 | `body.references` | 请求体 | array | 否 |
 | `body.source_run_id` | 请求体 | string / null | 否 |
 

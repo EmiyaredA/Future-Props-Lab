@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 7, "title": "桌面初始化与本地 Agent 接入方法参考", "lead": "client.desktop 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 8, "title": "桌面初始化与本地 Agent 接入方法参考", "lead": "client.desktop 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 桌面初始化与本地 Agent 接入方法参考
 

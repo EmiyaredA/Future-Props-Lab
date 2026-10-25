@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 29, "title": "视频剪辑方法参考", "lead": "client.video 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 30, "title": "视频剪辑方法参考", "lead": "client.video 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 视频剪辑方法参考
 
@@ -18,6 +18,8 @@
 | [get_asset_bake](#get-asset-bake) | `GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}` |
 | [list_assets](#list-assets) | `GET /v1/video-editor/projects/{project_id}/assets` |
 | [asset_variant](#asset-variant) | `GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}` |
+| [list_clip_merges](#list-clip-merges) | `GET /v1/video-editor/projects/{project_id}/clip-merges` |
+| [get_clip_merge](#get-clip-merge) | `GET /v1/video-editor/projects/{project_id}/clip-merges/{task_id}` |
 | [exact_frame](#exact-frame) | `GET /v1/video-editor/projects/{project_id}/preview/frame` |
 | [list_renders](#list-renders) | `GET /v1/video-editor/projects/{project_id}/renders` |
 | [get_render](#get-render) | `GET /v1/video-editor/projects/{project_id}/renders/{task_id}` |
@@ -36,6 +38,8 @@
 | [create_asset_bake](#create-asset-bake) | `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes` |
 | [retry_proxy](#retry-proxy) | `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry` |
 | [audio_seam_candidates](#audio-seam-candidates) | `POST /v1/video-editor/projects/{project_id}/audio-seams/candidates` |
+| [create_clip_merge](#create-clip-merge) | `POST /v1/video-editor/projects/{project_id}/clip-merges` |
+| [cancel_clip_merge](#cancel-clip-merge) | `POST /v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel` |
 | [reveal_project_folder](#reveal-project-folder) | `POST /v1/video-editor/projects/{project_id}/open-folder` |
 | [create_render](#create-render) | `POST /v1/video-editor/projects/{project_id}/renders` |
 | [render_preflight](#render-preflight) | `POST /v1/video-editor/projects/{project_id}/renders/preflight` |
@@ -217,6 +221,45 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_clip_merges {#list-clip-merges}
+
+`client.video.list_clip_merges(...)`
+
+**接口**：`GET /v1/video-editor/projects/{project_id}/clip-merges`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorTaskListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_clip_merge {#get-clip-merge}
+
+`client.video.get_clip_merge(...)`
+
+**接口**：`GET /v1/video-editor/projects/{project_id}/clip-merges/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `task_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorTaskOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -597,6 +640,50 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `AudioSeamCandidatesOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_clip_merge {#create-clip-merge}
+
+`client.video.create_clip_merge(...)`
+
+**接口**：`POST /v1/video-editor/projects/{project_id}/clip-merges`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | VideoEditorClipMergeCreateIn | 是 |
+| `body.clipIds` | 请求体 | array | 是 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+| `body.name` | 请求体 | string | 是 |
+| `body.requestId` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorTaskOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## cancel_clip_merge {#cancel-clip-merge}
+
+`client.video.cancel_clip_merge(...)`
+
+**接口**：`POST /v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `task_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorTaskOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
