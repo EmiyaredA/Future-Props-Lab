@@ -219,6 +219,10 @@ export function copySlide(slide: Slide): Slide {
   const mapping = new Map(
     slide.elements.map((e, i) => [e.id, result.elements[i].id]),
   );
+  if (result.layout_source)
+    result.layout_source.objects = result.layout_source.objects?.map(
+      (link) => ({ ...link, element_id: mapping.get(link.element_id)! }),
+    );
   result.elements = result.elements.map((e) =>
     e.link?.type === "slide" && e.link.target === slide.id
       ? { ...e, link: { ...e.link, target: id } }

@@ -1,0 +1,328 @@
+/* Native template studio: one compact shell around the existing slide canvas. */
+.master-native-designer .master-header {
+  flex: 0 0 56px;
+  gap: 8px;
+  padding: 8px 14px;
+}
+.master-native-designer .master-header > .icon-btn,
+.master-native-designer .master-header .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+.master-native-designer .master-header > div {
+  padding-left: 14px;
+}
+.master-native-designer .master-header input {
+  font-size: 17px;
+  letter-spacing: 0;
+}
+.master-native-designer .master-header svg,
+.master-canvas-tools svg {
+  flex-shrink: 0;
+}
+.master-native-designer .master-designer-body {
+  grid-template-columns: 160px minmax(0, 1fr) 288px;
+}
+.master-native-designer[data-left-open="false"] .master-designer-body {
+  grid-template-columns: minmax(0, 1fr) 288px;
+}
+.master-native-designer[data-right-open="false"] .master-designer-body {
+  grid-template-columns: 160px minmax(0, 1fr);
+}
+.master-native-designer[data-left-open="false"][data-right-open="false"]
+  .master-designer-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+.master-canvas-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  min-height: 42px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.master-canvas-tools > button,
+.master-canvas-status button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 8px;
+  height: 30px;
+  min-width: 30px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--text);
+  background: transparent;
+  white-space: nowrap;
+  font-size: 12px;
+  cursor: pointer;
+}
+.master-canvas-tools > button:hover,
+.master-canvas-status button:hover {
+  background: var(--hover);
+  border-color: var(--border);
+}
+.master-canvas-tools button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.master-canvas-tools .custom-select {
+  min-width: 116px;
+}
+.master-tool-spacer {
+  flex: 1;
+}
+.master-native-designer .master-page-types {
+  padding: 12px 10px;
+  gap: 12px;
+}
+.master-native-designer .master-page-type-thumbnail {
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+  padding: 2px;
+  border-radius: 4px;
+}
+.master-native-designer
+  .master-page-types
+  > button[aria-pressed="true"]
+  .master-page-type-thumbnail {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.master-native-designer .master-thumbnail-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 20px;
+  padding-inline: 2px;
+}
+.master-thumbnail-label small {
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.master-native-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 80%, var(--border));
+}
+.master-native-stage .presentation-canvas-area {
+  flex: 1;
+  min-height: 0;
+  padding: 24px;
+}
+.master-native-stage .presentation-canvas {
+  box-shadow: 0 4px 24px #0002;
+}
+.master-canvas-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  height: 36px;
+  padding: 2px 10px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface);
+}
+.master-canvas-status > span:first-child {
+  margin-right: auto;
+}
+.master-canvas-inspector {
+  padding: 12px;
+  font-size: 12px;
+}
+.master-inspector-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+.master-inspector-heading span {
+  color: var(--accent);
+  font-size: 11px;
+}
+.master-scope-notice {
+  padding: 8px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+.master-native-designer .master-slot-editor {
+  padding: 0;
+}
+.master-native-designer .master-inline-field,
+.master-native-designer .master-field,
+.master-native-designer .master-color {
+  margin: 0 0 8px;
+}
+.master-native-designer .master-inline-field {
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 6px;
+}
+.master-native-designer .master-type-row {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.master-native-designer .master-type-row .master-field {
+  margin: 0;
+}
+.master-native-designer .master-field input,
+.master-native-designer .master-field textarea {
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+.master-native-designer .master-field textarea {
+  resize: vertical;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.master-native-designer .master-toggle,
+.master-native-designer .master-segmented {
+  height: 32px;
+}
+.master-native-designer .master-coordinates {
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.master-native-designer .master-geometry-label {
+  margin: 12px 0 6px;
+  font-size: 11px;
+}
+.master-native-designer .master-check {
+  gap: 6px;
+  padding-block: 5px;
+  margin: 0;
+  font-size: 11px;
+}
+.master-object-list {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+.master-object-list summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+.master-object-list small {
+  display: block;
+  color: var(--muted);
+  padding-block: 10px 4px;
+}
+.master-object-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--text);
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.master-object-list button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+@media (max-width: 1000px) {
+  .master-native-designer .master-save-state {
+    display: none;
+  }
+  .master-native-designer .master-designer-body {
+    grid-template-columns: 128px minmax(0, 1fr) 240px;
+  }
+  .master-native-designer[data-left-open="false"] .master-designer-body {
+    grid-template-columns: minmax(0, 1fr) 240px;
+  }
+  .master-native-designer[data-right-open="false"] .master-designer-body {
+    grid-template-columns: 128px minmax(0, 1fr);
+  }
+}
+@media (max-width: 767px) {
+  .master-native-designer .master-header {
+    gap: 4px;
+    padding: 8px;
+  }
+  .master-native-designer .master-header > .icon-btn span {
+    display: none;
+  }
+  .master-native-designer .master-header > div {
+    border: 0;
+    padding: 0;
+  }
+  .master-native-designer .master-header input {
+    font-size: 14px;
+  }
+  .master-native-designer .master-header .btn {
+    padding-inline: 6px;
+    font-size: 11px;
+  }
+  .master-native-designer .master-designer-body,
+  .master-native-designer[data-left-open="false"] .master-designer-body,
+  .master-native-designer[data-right-open="false"] .master-designer-body,
+  .master-native-designer[data-left-open="false"][data-right-open="false"]
+    .master-designer-body {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+  .master-native-designer .master-page-types {
+    flex-direction: row;
+    min-height: 112px;
+    max-height: 130px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .master-native-designer .master-page-types > button {
+    width: 125px;
+  }
+  .master-native-stage {
+    flex: 0 0 360px;
+  }
+  .master-native-designer .master-properties {
+    flex-shrink: 0;
+    overflow: visible;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .master-canvas-status > span:first-child {
+    display: none;
+  }
+  .master-native-designer .master-header > .icon-btn,
+  .master-native-designer .master-header .btn,
+  .master-canvas-tools > button {
+    min-height: 36px;
+  }
+}
+@media (pointer: coarse) {
+  .master-native-designer button,
+  .master-native-designer .master-field input {
+    min-height: 40px;
+  }
+}

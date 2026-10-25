@@ -60,3 +60,14 @@ Amadeus 的选定原画和去表情底画保存在 `web/src/features/amadeus/art
 ## Live2D 工坊头像
 
 - `web/public/brand/live2d-workshop-mark.png`：Live2D 工坊卡片、侧栏与项目入口共用；内置 ImageGen，参考现有徽章与用户指定 Amadeus 形象。[来源与提示词](live2d-workshop-avatar.md)。沿用内部开发交接范围。SHA256：`e8b8839472bdfc9923aba39987568392d0619ad834e41b7c96cd039352d6eecd`。
+
+## 演示模板内置插画
+
+四张图片用于模板设计器预览和用户主动导入的无品牌示例包，由 ImageGen 按原创技术卡片与抽象丝带提示词生成；无外部 Logo、角色或第三方图片。来源、提示词及使用边界见 [素材说明](presentation-template-art.md)。Web 构建检查物化状态与校验值。
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `web/public/presentation-templates/html-template.png` | `a7e045177e4a2a929242eb3d19f9f75f65ba7d0605b5cf7b366ee7495de31064` |
+| `web/public/presentation-templates/report-background.png` | `8764dfd16e900a269513238f8b0a9091afe759c3fa8f5373a0459aeff8bbf097` |
+| `web/public/presentation-templates/structured-template.png` | `79a17d73ce31893e308d8c19b5c0c20642b665bae11db890949865f0b99dbd39` |
+| `web/public/presentation-templates/visual-generation.png` | `63ee9a0da25572e40b4cf55834935b1cbc6e207281ff73ca7ee2cdeda5c33671` |

@@ -17,6 +17,10 @@ def group_members(slide, root):
 
 
 def prune(slide, removed):
+    if slide.get("layout_source"):
+        slide["layout_source"]["objects"] = [
+            o for o in slide["layout_source"]["objects"] if o["element_id"] not in removed
+        ]
     slide["animations"] = [a for a in slide.get("animations", []) if a["element_id"] not in removed]
     for annotation in slide.get("annotations", []):
         if annotation.get("element_id") in removed:
@@ -86,6 +90,9 @@ def remap(slide, namespace, *, offset=0):
         annotation["element_id"] = mapping.get(annotation.get("element_id"))
         for reply_index, reply in enumerate(annotation["replies"]):
             reply["id"] = f"{namespace[:30]}-n{index}r{reply_index}"
+    if result.get("layout_source"):
+        for link in result["layout_source"]["objects"]:
+            link["element_id"] = mapping[link["element_id"]]
     return result
 
 

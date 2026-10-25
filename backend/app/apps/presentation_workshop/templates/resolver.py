@@ -4,6 +4,7 @@ from app.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
     PresentationElement,
 )
+from app.apps.presentation_workshop.templates.native_scene import expand_page
 from app.apps.presentation_workshop.templates.schema import (
     TemplateOverrides,
     TemplateTextStyle,
@@ -94,6 +95,54 @@ def resolve_document(document: PresentationDocument):
     entries = chapter_entries(document)
     pages, issues = [], []
     for index, source in enumerate(document.slides):
+        if definition.version == 2:
+            slide = expand_page(document, source, index, definition, entries, chapters)
+            pages.append(slide)
+            layout = definition.layouts[source.page_type]
+            titles = [
+                e
+                for e in slide.elements
+                if e.id.startswith(f"master-{index}-page-title-") and not e.hidden
+            ]
+            if any(
+                not e.hidden
+                and any(
+                    e.x < t.x + t.width
+                    and e.x + e.width > t.x
+                    and e.y < t.y + t.height
+                    and e.y + e.height > t.y
+                    for t in titles
+                )
+                for e in source.elements
+            ):
+                issues.append(
+                    {
+                        "slide_id": source.id,
+                        "code": "body_overlap",
+                        "message": "正文与模板标题区域可能重叠；正文位置未自动调整",
+                    }
+                )
+            if (
+                source.page_type == "toc"
+                and any(
+                    e.id.startswith(f"master-{index}-page-toc-") and not e.hidden
+                    for e in slide.elements
+                )
+                and len(entries) > source.toc_offset + layout.toc_capacity
+                and not any(
+                    s.page_type == "toc" and s.toc_offset == source.toc_offset + layout.toc_capacity
+                    for s in document.slides
+                )
+            ):
+                issues.append(
+                    {
+                        "slide_id": source.id,
+                        "code": "toc_overflow",
+                        "message": "目录未完全展示，请添加目录续页",
+                        "next_offset": source.toc_offset + layout.toc_capacity,
+                    }
+                )
+            continue
         slide = source.model_copy(deep=True)
         layout = definition.layouts[slide.page_type]
         hidden = set(slide.template_hidden)
@@ -187,10 +236,28 @@ def resolve_document(document: PresentationDocument):
 def materialize(document):
     expanded, _ = resolve_document(document)
     for slide in expanded.slides:
+        ids = {
+            item.id: "native-" + item.id
+            for collection in (slide.elements, slide.groups, slide.connections, slide.infographics)
+            for item in collection
+            if item.id.startswith("master-")
+        }
         for item in slide.elements:
             if item.id.startswith("master-"):
                 item.locked = False
                 item.id = "native-" + item.id
+        for group in slide.groups:
+            group.id = ids.get(group.id, group.id)
+            group.parent_id = ids.get(group.parent_id, group.parent_id)
+            group.element_ids = [ids.get(i, i) for i in group.element_ids]
+        for edge in slide.connections:
+            edge.id = ids.get(edge.id, edge.id)
+            edge.source_id = ids.get(edge.source_id, edge.source_id)
+            edge.target_id = ids.get(edge.target_id, edge.target_id)
+        for info in slide.infographics:
+            info.id = ids.get(info.id, info.id)
+            info.group_id = ids.get(info.group_id, info.group_id)
+        slide.layout_source = None
     expanded.template = None
 
     expanded.template_overrides = TemplateOverrides()

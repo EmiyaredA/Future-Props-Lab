@@ -150,6 +150,14 @@ export function cleanScene(slide: Slide): Slide {
   }
   return {
     ...slide,
+    layout_source: slide.layout_source
+      ? {
+          ...slide.layout_source,
+          objects: slide.layout_source.objects?.filter((o) =>
+            ids.has(o.element_id),
+          ),
+        }
+      : slide.layout_source,
     animations: (slide.animations ?? []).filter((a) => ids.has(a.element_id)),
     annotations: (slide.annotations ?? []).map((a) =>
       a.element_id && !ids.has(a.element_id) ? { ...a, element_id: null } : a,

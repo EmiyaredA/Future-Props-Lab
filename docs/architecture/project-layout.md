@@ -468,7 +468,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 ## 演示工坊
 
 `backend/app/apps/presentation_workshop/` 拥有文稿项目、图片归属校验、引用同步和请求内导出。
-`templates/` 拥有 Workspace 模板／完整示例、素材引用、v4 页面语义与模板快照、纯解析器以及显式绑定预览事务。`schema.py` 不依赖文稿或数据库；`resolver.py` 生成临时模板层，`binding.py` 按文稿与目标模板 revision 校验后应用，保留正文与文稿覆盖。`library.py` 管理模板／示例 CAS 与入门包原子导入。迁移 `r0111_presentation_templates` 仅追加模板、示例及各自素材引用表，不回写旧文稿。
+`templates/` 拥有 Workspace 模板／完整示例、素材引用、v4 页面语义与模板快照、纯解析器以及显式绑定预览事务。`schema.py` 不依赖文稿或数据库；`schemas/elements.py` 拥有模板与文稿共用的原生元素契约，`templates/scenes.py` 保存 v2 原生场景、动态语义和 v5 页面版式关联；`native_scene.py` 统一重映射分组与连线，`layout_application.py` 只按明确映射向指定页面转移几何／可选文字样式；`legacy.py` 保留旧槽位覆盖。`resolver.py` 生成临时模板层，`binding.py` 按文稿与目标模板 revision 校验后应用，保留正文与文稿覆盖。`library.py` 管理模板／示例 CAS 与入门包原子导入。迁移 `r0111_presentation_templates` 仅追加模板、示例及各自素材引用表，不回写旧文稿；`r0112_presentation_native_templates` 只增加模板 v2 与文稿／示例 v5 的降级保护，不自动重排内容。
 
 `projects.py` 处理 Workspace 限定加载与整体 CAS；`exports.py` 负责只读版本快照、
 两路导出并发、私有临时文件和取消清理；`pptx_export.py` 组装 python-pptx 导出，`pptx_styles.py` 映射 DrawingML 样式，
@@ -482,7 +482,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 `web/src/features/presentation-workshop/` 拥有文稿列表、模板与示例库、单页版式、DOM/SVG 页面渲染、
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
-`master/` 拥有模板设计器、文稿绑定与覆盖面板、共享配置控件及 Web 纯解析器；`SlideSurface` 接收文稿上下文并解析模板，画布正文选择与修改仍使用源页面。全局模板变更进入原历史队列，预览应用通过正式 API 后保留撤销历史；新增模板页登记响应式验收。
+`master/` 拥有独立路由的聚焦模板设计器、文稿绑定与覆盖面板、共享配置控件及 Web 纯解析器；`canvas/` 拥有原生模板图层适配、对象属性、手势历史与紧凑画布样式，设计器复用 `SlideCanvas` 的几何与吸附；`nativeScenes.ts` 明确转换旧槽位、解析固定场景并为新页克隆默认正文，`studioPreview.ts` 保存五种真实布局，预览和创建共用这些数据。`LayoutApplicationPanel.tsx` 负责选页、显式映射及双版本预览／应用；普通文稿固定层仍受保护。`web/public/presentation-templates/` 保存内置生成插画，`bundledAssets.ts` 仅在显式保存／导入时上传被引用素材并重映射为当前 Workspace 的托管 ID；`SlideSurface` 接收文稿上下文并解析模板，画布正文选择与修改仍使用源页面。全局模板变更进入原历史队列，预览应用通过正式 API 后保留撤销历史；新增模板页登记响应式验收。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
 `presentation-dialog.css` 统一工坊弹窗尺寸、控件密度和固定标题／操作栏；内容区局部滚动，各编辑器继续独立拥有草稿与焦点生命周期。
 `presentationHistory.ts` 解析历史快照的页面与元素定位；`usePresentationDraft` 持有本次会话的 100 步历史与保存队列，`usePresentationHistory` 统一键盘、按钮、字段合并边界、输入法与未提交手势取消。历史定位和分组提示只存在内存，不进入文稿、HTTP 或 SDK 契约。

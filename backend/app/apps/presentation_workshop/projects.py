@@ -60,7 +60,7 @@ def summary_slide(row):
     pages[0] = row.first_slide
     document = PresentationDocument.model_validate(
         {
-            "version": 4,
+            "version": 5 if row.template.get("snapshot", {}).get("version") == 2 else 4,
             "width": row.width,
             "height": row.height,
             "slides": pages,
@@ -209,6 +209,23 @@ class Presentations:
         )
 
     async def normalize_template_source(self, document):
+        sources = {
+            s.layout_source.template_id
+            for s in document.slides
+            if s.layout_source and s.layout_source.template_id
+        }
+        if sources:
+            accessible = set(
+                await self.session.scalars(
+                    select(PresentationTemplate.id).where(
+                        PresentationTemplate.id.in_(sources),
+                        PresentationTemplate.workspace_id == self.workspace_id,
+                    )
+                )
+            )
+            for slide in document.slides:
+                if slide.layout_source and slide.layout_source.template_id not in accessible:
+                    slide.layout_source.template_id = None
         if document.template and document.template.template_id:
             identity = await self.session.scalar(
                 select(PresentationTemplate.id).where(
@@ -235,6 +252,10 @@ class Presentations:
         self, project_id: str, body: PresentationProjectPut, *, commit: bool = True
     ) -> PresentationProjectOut:
         current = await self.row(project_id)
+        if body.document.source_version < 5 and current.document.get("version", 3) >= 5:
+            raise PresentationError(
+                "当前文稿包含原生模板布局，请更新客户端后保存", 422, "document_downgrade"
+            )
         if (
             body.document.source_version < 4
             and PresentationDocument.model_validate(current.document).needs_v4()

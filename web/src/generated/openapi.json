@@ -21238,6 +21238,29 @@
         "title": "KnowledgeTopic",
         "type": "object"
       },
+      "LayoutObjectLink": {
+        "additionalProperties": false,
+        "properties": {
+          "default_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Default Id",
+            "type": "string"
+          },
+          "element_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Element Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "element_id",
+          "default_id"
+        ],
+        "title": "LayoutObjectLink",
+        "type": "object"
+      },
       "LegacyTarget": {
         "properties": {
           "excerpt": {
@@ -28343,7 +28366,8 @@
             "enum": [
               2,
               3,
-              4
+              4,
+              5
             ],
             "title": "Version",
             "type": "integer"
@@ -29052,6 +29076,16 @@
             "title": "Infographics",
             "type": "array"
           },
+          "layout_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationLayoutSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "notes": {
             "default": "",
             "title": "Notes",
@@ -29104,7 +29138,7 @@
               "minLength": 1,
               "type": "string"
             },
-            "maxItems": 45,
+            "maxItems": 110,
             "title": "Template Hidden",
             "type": "array"
           },
@@ -29289,6 +29323,52 @@
           "source"
         ],
         "title": "PresentationInfographic",
+        "type": "object"
+      },
+      "PresentationLayoutSource": {
+        "additionalProperties": false,
+        "properties": {
+          "objects": {
+            "items": {
+              "$ref": "#/components/schemas/LayoutObjectLink"
+            },
+            "maxItems": 200,
+            "title": "Objects",
+            "type": "array"
+          },
+          "page_type": {
+            "enum": [
+              "cover",
+              "toc",
+              "section",
+              "content",
+              "ending"
+            ],
+            "title": "Page Type",
+            "type": "string"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "template_revision": {
+            "minimum": 0.0,
+            "title": "Template Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "template_revision",
+          "page_type"
+        ],
+        "title": "PresentationLayoutSource",
         "type": "object"
       },
       "PresentationLink": {
@@ -30055,6 +30135,16 @@
             "title": "Infographics",
             "type": "array"
           },
+          "layout_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationLayoutSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "notes": {
             "maxLength": 20000,
             "title": "Notes",
@@ -30107,7 +30197,7 @@
               "minLength": 1,
               "type": "string"
             },
-            "maxItems": 45,
+            "maxItems": 110,
             "title": "Template Hidden",
             "type": "array"
           },
@@ -35126,10 +35216,15 @@
             "enum": [
               "bind",
               "update",
-              "unbind"
+              "unbind",
+              "layout"
             ],
             "title": "Action",
             "type": "string"
+          },
+          "apply_text_style": {
+            "title": "Apply Text Style",
+            "type": "boolean"
           },
           "chapters": {
             "anyOf": [
@@ -35150,6 +35245,14 @@
             "minimum": 0.0,
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "layout_mappings": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateLayoutMapping"
+            },
+            "maxItems": 100,
+            "title": "Layout Mappings",
+            "type": "array"
           },
           "mappings": {
             "items": {
@@ -35204,10 +35307,15 @@
             "enum": [
               "bind",
               "update",
-              "unbind"
+              "unbind",
+              "layout"
             ],
             "title": "Action",
             "type": "string"
+          },
+          "apply_text_style": {
+            "title": "Apply Text Style",
+            "type": "boolean"
           },
           "chapters": {
             "anyOf": [
@@ -35228,6 +35336,14 @@
             "minimum": 0.0,
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "layout_mappings": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateLayoutMapping"
+            },
+            "maxItems": 100,
+            "title": "Layout Mappings",
+            "type": "array"
           },
           "mappings": {
             "items": {
@@ -35382,6 +35498,9 @@
             "title": "Foreground",
             "type": "string"
           },
+          "global_scene": {
+            "$ref": "#/components/schemas/TemplateScene"
+          },
           "height": {
             "default": 720,
             "maximum": 4096.0,
@@ -35433,8 +35552,11 @@
             "type": "boolean"
           },
           "version": {
-            "const": 1,
             "default": 1,
+            "enum": [
+              1,
+              2
+            ],
             "title": "Version",
             "type": "integer"
           },
@@ -35623,6 +35745,44 @@
           "document"
         ],
         "title": "TemplateIn",
+        "type": "object"
+      },
+      "TemplateLayoutMapping": {
+        "additionalProperties": false,
+        "properties": {
+          "objects": {
+            "items": {
+              "$ref": "#/components/schemas/LayoutObjectLink"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Objects",
+            "type": "array"
+          },
+          "page_type": {
+            "enum": [
+              "cover",
+              "toc",
+              "section",
+              "content",
+              "ending"
+            ],
+            "title": "Page Type",
+            "type": "string"
+          },
+          "slide_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Slide Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slide_id",
+          "page_type",
+          "objects"
+        ],
+        "title": "TemplateLayoutMapping",
         "type": "object"
       },
       "TemplateModel": {
@@ -35843,6 +36003,16 @@
             ],
             "title": "Foreground"
           },
+          "global_scene": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TemplateScene"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "layouts": {
             "additionalProperties": {
               "$ref": "#/components/schemas/TemplatePageLayout"
@@ -35941,8 +36111,14 @@
           "chapter": {
             "$ref": "#/components/schemas/TemplateSlot"
           },
+          "defaults": {
+            "$ref": "#/components/schemas/TemplateScene"
+          },
           "number": {
             "$ref": "#/components/schemas/TemplateSlot"
+          },
+          "scene": {
+            "$ref": "#/components/schemas/TemplateScene"
           },
           "title": {
             "$ref": "#/components/schemas/TemplateSlot"
@@ -36274,6 +36450,103 @@
           "document"
         ],
         "title": "TemplatePut",
+        "type": "object"
+      },
+      "TemplateScene": {
+        "additionalProperties": false,
+        "properties": {
+          "connections": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationConnection"
+            },
+            "maxItems": 100,
+            "title": "Connections",
+            "type": "array"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationElement"
+            },
+            "maxItems": 100,
+            "title": "Elements",
+            "type": "array"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationGroup"
+            },
+            "maxItems": 100,
+            "title": "Groups",
+            "type": "array"
+          },
+          "infographics": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationInfographic"
+            },
+            "maxItems": 30,
+            "title": "Infographics",
+            "type": "array"
+          },
+          "page_types": {
+            "additionalProperties": {
+              "items": {
+                "enum": [
+                  "cover",
+                  "toc",
+                  "section",
+                  "content",
+                  "ending"
+                ],
+                "type": "string"
+              },
+              "maxItems": 5,
+              "type": "array"
+            },
+            "maxProperties": 100,
+            "propertyNames": {
+              "maxLength": 64,
+              "minLength": 1
+            },
+            "title": "Page Types",
+            "type": "object"
+          },
+          "semantics": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateSemantic"
+            },
+            "maxItems": 4,
+            "title": "Semantics",
+            "type": "array"
+          }
+        },
+        "title": "TemplateScene",
+        "type": "object"
+      },
+      "TemplateSemantic": {
+        "additionalProperties": false,
+        "properties": {
+          "element_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Element Id",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "chapter",
+              "title",
+              "number",
+              "toc"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "element_id",
+          "role"
+        ],
+        "title": "TemplateSemantic",
         "type": "object"
       },
       "TemplateSlot": {

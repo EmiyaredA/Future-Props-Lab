@@ -3290,6 +3290,10 @@ class KnowledgeTopic(WireModel):
     title: str = Field(default=..., alias='title')
     version: str | None = Field(default=..., alias='version')
 
+class LayoutObjectLink(WireModel):
+    default_id: str = Field(default=..., alias='default_id', min_length=1, max_length=64)
+    element_id: str = Field(default=..., alias='element_id', min_length=1, max_length=64)
+
 class LegacyTarget(WireModel):
     excerpt: str = Field(default=..., alias='excerpt')
     note_id: str = Field(default=..., alias='note_id')
@@ -4399,7 +4403,7 @@ class PresentationDocument(WireModel):
     slides: list[PresentationSlide] = Field(default=..., alias='slides', min_length=1, max_length=100)
     template: TemplateBinding | None = Field(default=None, alias='template')
     template_overrides: TemplateOverrides | None = Field(default=None, alias='template_overrides')
-    version: Literal[2, 3, 4] = Field(default=..., alias='version')
+    version: Literal[2, 3, 4, 5] = Field(default=..., alias='version')
     width: int = Field(default=..., alias='width', ge=320.0, le=4096.0)
 
 class PresentationElement(WireModel):
@@ -4493,12 +4497,13 @@ class PresentationFragment(WireModel):
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     image_asset_id: str | None = Field(default=None, alias='image_asset_id')
     infographics: list[PresentationInfographic] | None = Field(default=None, alias='infographics', max_length=50)
+    layout_source: PresentationLayoutSource | None = Field(default=None, alias='layout_source')
     notes: str = Field(default='', alias='notes')
     notes_rich: list[PresentationParagraph] | None = Field(default=None, alias='notes_rich')
     page_type: Literal['cover', 'toc', 'section', 'content', 'ending'] | None = Field(default=None, alias='page_type')
     reference: PresentationReference | None = Field(default=None, alias='reference')
     section: str | None = Field(default=None, alias='section', max_length=120)
-    template_hidden: list[str] | None = Field(default=None, alias='template_hidden', max_length=45)
+    template_hidden: list[str] | None = Field(default=None, alias='template_hidden', max_length=110)
     title: str | None = Field(default=None, alias='title', max_length=500)
     toc_offset: int | None = Field(default=None, alias='toc_offset', ge=0.0, le=100.0)
     transition: PresentationTransition | None = Field(default=None, alias='transition')
@@ -4524,6 +4529,12 @@ class PresentationInfographic(WireModel):
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     source: str = Field(default=..., alias='source', max_length=50000)
     template: str = Field(default='', alias='template', max_length=120)
+
+class PresentationLayoutSource(WireModel):
+    objects: list[LayoutObjectLink] | None = Field(default=None, alias='objects', max_length=200)
+    page_type: Literal['cover', 'toc', 'section', 'content', 'ending'] = Field(default=..., alias='page_type')
+    template_id: str | None = Field(default=None, alias='template_id')
+    template_revision: int = Field(default=..., alias='template_revision', ge=0.0)
 
 class PresentationLink(WireModel):
     target: str = Field(default=..., alias='target', min_length=1, max_length=2048)
@@ -4649,12 +4660,13 @@ class PresentationSlide(WireModel):
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     image_asset_id: str | None = Field(default=None, alias='image_asset_id')
     infographics: list[PresentationInfographic] | None = Field(default=None, alias='infographics', max_length=50)
+    layout_source: PresentationLayoutSource | None = Field(default=None, alias='layout_source')
     notes: str = Field(default=..., alias='notes', max_length=20000)
     notes_rich: list[PresentationParagraph] | None = Field(default=None, alias='notes_rich')
     page_type: Literal['cover', 'toc', 'section', 'content', 'ending'] | None = Field(default=None, alias='page_type')
     reference: PresentationReference | None = Field(default=None, alias='reference')
     section: str | None = Field(default=None, alias='section', max_length=120)
-    template_hidden: list[str] | None = Field(default=None, alias='template_hidden', max_length=45)
+    template_hidden: list[str] | None = Field(default=None, alias='template_hidden', max_length=110)
     title: str | None = Field(default=None, alias='title', max_length=500)
     toc_offset: int | None = Field(default=None, alias='toc_offset', ge=0.0, le=100.0)
     transition: PresentationTransition | None = Field(default=None, alias='transition')
@@ -5505,18 +5517,22 @@ class TemplateBundleOut(WireModel):
     template: PresentationTemplateOut = Field(default=..., alias='template')
 
 class TemplateChangeApply(WireModel):
-    action: Literal['bind', 'update', 'unbind'] = Field(default='bind', alias='action')
+    action: Literal['bind', 'update', 'unbind', 'layout'] = Field(default='bind', alias='action')
+    apply_text_style: bool | None = Field(default=None, alias='apply_text_style')
     chapters: list[PresentationChapter] | None = Field(default=None, alias='chapters')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    layout_mappings: list[TemplateLayoutMapping] | None = Field(default=None, alias='layout_mappings', max_length=100)
     mappings: list[TemplatePageMapping] | None = Field(default=None, alias='mappings', max_length=100)
     preview_token: str = Field(default=..., alias='preview_token', repr=False, min_length=64, max_length=64)
     template_id: str | None = Field(default=None, alias='template_id')
     template_revision: int | None = Field(default=None, alias='template_revision')
 
 class TemplateChangeIn(WireModel):
-    action: Literal['bind', 'update', 'unbind'] = Field(default='bind', alias='action')
+    action: Literal['bind', 'update', 'unbind', 'layout'] = Field(default='bind', alias='action')
+    apply_text_style: bool | None = Field(default=None, alias='apply_text_style')
     chapters: list[PresentationChapter] | None = Field(default=None, alias='chapters')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    layout_mappings: list[TemplateLayoutMapping] | None = Field(default=None, alias='layout_mappings', max_length=100)
     mappings: list[TemplatePageMapping] | None = Field(default=None, alias='mappings', max_length=100)
     template_id: str | None = Field(default=None, alias='template_id')
     template_revision: int | None = Field(default=None, alias='template_revision')
@@ -5539,12 +5555,13 @@ class TemplateDefinition(WireModel):
     fixed: list[TemplateFixedElement] | None = Field(default=None, alias='fixed', max_length=40)
     font: Literal['Microsoft YaHei', 'Arial', 'Consolas'] = Field(default='Microsoft YaHei', alias='font')
     foreground: str = Field(default='#142B45', alias='foreground')
+    global_scene: TemplateScene | None = Field(default=None, alias='global_scene')
     height: int = Field(default=720, alias='height', ge=240.0, le=4096.0)
     layouts: dict[str, TemplatePageLayout] | None = Field(default=None, alias='layouts')
     number_hidden_types: list[Literal['cover', 'toc', 'section', 'content', 'ending']] | None = Field(default=None, alias='number_hidden_types', max_length=5)
     number_start: int = Field(default=1, alias='number_start', ge=0.0, le=9999.0)
     number_total: bool = Field(default=False, alias='number_total')
-    version: Literal[1] = Field(default=1, alias='version')
+    version: Literal[1, 2] = Field(default=1, alias='version')
     width: int = Field(default=1280, alias='width', ge=320.0, le=4096.0)
 
 class TemplateFixedElement(WireModel):
@@ -5570,6 +5587,11 @@ class TemplateIn(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
+
+class TemplateLayoutMapping(WireModel):
+    objects: list[LayoutObjectLink] = Field(default=..., alias='objects', min_length=1, max_length=200)
+    page_type: Literal['cover', 'toc', 'section', 'content', 'ending'] = Field(default=..., alias='page_type')
+    slide_id: str = Field(default=..., alias='slide_id', min_length=1, max_length=64)
 
 class TemplateModel(WireModel):
     capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
@@ -5598,6 +5620,7 @@ class TemplateOverrides(WireModel):
     fixed: list[TemplateFixedElement] | None = Field(default=None, alias='fixed')
     font: Literal['Microsoft YaHei', 'Arial', 'Consolas'] | None = Field(default=None, alias='font')
     foreground: str | None = Field(default=None, alias='foreground')
+    global_scene: TemplateScene | None = Field(default=None, alias='global_scene')
     layouts: dict[str, TemplatePageLayout] | None = Field(default=None, alias='layouts')
     number_hidden_types: list[Literal['cover', 'toc', 'section', 'content', 'ending']] | None = Field(default=None, alias='number_hidden_types')
     number_start: int | None = Field(default=None, alias='number_start')
@@ -5608,7 +5631,9 @@ class TemplatePageLayout(WireModel):
     background_asset_id: str | None = Field(default=None, alias='background_asset_id')
     body_top: float = Field(default=176, alias='body_top', ge=0.0, le=4096.0)
     chapter: TemplateSlot | None = Field(default=None, alias='chapter')
+    defaults: TemplateScene | None = Field(default=None, alias='defaults')
     number: TemplateSlot | None = Field(default=None, alias='number')
+    scene: TemplateScene | None = Field(default=None, alias='scene')
     title: TemplateSlot | None = Field(default=None, alias='title')
     toc: TemplateSlot | None = Field(default=None, alias='toc')
     toc_capacity: int = Field(default=7, alias='toc_capacity', ge=1.0, le=20.0)
@@ -5656,6 +5681,18 @@ class TemplatePut(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
+
+class TemplateScene(WireModel):
+    connections: list[PresentationConnection] | None = Field(default=None, alias='connections', max_length=100)
+    elements: list[PresentationElement] | None = Field(default=None, alias='elements', max_length=100)
+    groups: list[PresentationGroup] | None = Field(default=None, alias='groups', max_length=100)
+    infographics: list[PresentationInfographic] | None = Field(default=None, alias='infographics', max_length=30)
+    page_types: dict[str, list[Literal['cover', 'toc', 'section', 'content', 'ending']]] | None = Field(default=None, alias='page_types')
+    semantics: list[TemplateSemantic] | None = Field(default=None, alias='semantics', max_length=4)
+
+class TemplateSemantic(WireModel):
+    element_id: str = Field(default=..., alias='element_id', min_length=1, max_length=64)
+    role: Literal['chapter', 'title', 'number', 'toc'] = Field(default=..., alias='role')
 
 class TemplateSlot(WireModel):
     height: float = Field(default=64, alias='height', ge=1.0, le=4096.0)
@@ -7326,6 +7363,7 @@ KnowledgeBaseOut.model_rebuild()
 KnowledgeBasePut.model_rebuild()
 KnowledgeNoteCreate.model_rebuild()
 KnowledgeTopic.model_rebuild()
+LayoutObjectLink.model_rebuild()
 LegacyTarget.model_rebuild()
 LibraryAssetImportIn.model_rebuild()
 LibraryExportSnapshot.model_rebuild()
@@ -7488,6 +7526,7 @@ PresentationFragment.model_rebuild()
 PresentationGroup.model_rebuild()
 PresentationImageEffects.model_rebuild()
 PresentationInfographic.model_rebuild()
+PresentationLayoutSource.model_rebuild()
 PresentationLink.model_rebuild()
 PresentationMedia.model_rebuild()
 PresentationOperationsIn.model_rebuild()
@@ -7647,6 +7686,7 @@ TemplateCreateDocument.model_rebuild()
 TemplateDefinition.model_rebuild()
 TemplateFixedElement.model_rebuild()
 TemplateIn.model_rebuild()
+TemplateLayoutMapping.model_rebuild()
 TemplateModel.model_rebuild()
 TemplateOut.model_rebuild()
 TemplateOverrides.model_rebuild()
@@ -7656,6 +7696,8 @@ TemplatePreviewIn.model_rebuild()
 TemplateProvider_Input.model_rebuild()
 TemplateProvider_Output.model_rebuild()
 TemplatePut.model_rebuild()
+TemplateScene.model_rebuild()
+TemplateSemantic.model_rebuild()
 TemplateSlot.model_rebuild()
 TemplateSupplier.model_rebuild()
 TemplateSyncIn.model_rebuild()

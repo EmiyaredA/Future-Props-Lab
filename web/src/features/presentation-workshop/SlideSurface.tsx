@@ -353,7 +353,11 @@ export const SlideSurface = memo(function SlideSurface({
             key={element.id}
             data-template-role={
               element.id.startsWith("master-")
-                ? element.id.split("-")[2]
+                ? element.id.split("-")[
+                    ["page", "global"].includes(element.id.split("-")[2])
+                      ? 3
+                      : 2
+                  ]
                 : undefined
             }
             onPointerDown={
@@ -367,7 +371,13 @@ export const SlideSurface = memo(function SlideSurface({
                 event.currentTarget.dispatchEvent(
                   new CustomEvent("presentation-template-edit", {
                     bubbles: true,
-                    detail: { role: element.id.split("-")[2] },
+                    detail: {
+                      role: element.id.split("-")[
+                        ["page", "global"].includes(element.id.split("-")[2])
+                          ? 3
+                          : 2
+                      ],
+                    },
                   }),
                 );
               }

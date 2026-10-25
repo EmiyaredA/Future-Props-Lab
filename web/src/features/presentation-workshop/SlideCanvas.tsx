@@ -92,8 +92,12 @@ export function SlideCanvas({
   onDrawCancel,
   onFormulaEdit,
   boxSelect = false,
+  assetUrls,
+  onTransient,
   onBoxSelectEnd,
 }: {
+  assetUrls?: Record<string, string>;
+  onTransient?: (slide: Slide | null) => void;
   size?: PageSize;
   grid?: boolean;
   rulers?: boolean;
@@ -152,6 +156,9 @@ export function SlideCanvas({
   const lastPressCanEdit = useRef(false);
   const [transient, setTransient] = useState<Slide | null>(null);
   const [gesturing, setGesturing] = useState(false);
+  useEffect(() => {
+    onTransient?.(transient);
+  }, [transient, onTransient]);
   const [guides, setGuides] = useState<LayoutGuide[]>([]);
   const [routeError, setRouteError] = useState("");
   const [marquee, setMarquee] = useState<{
@@ -676,6 +683,7 @@ export function SlideCanvas({
         >
           <CanvasGuides size={size} scale={scale} grid={grid} rulers={rulers} />
           <SlideSurface
+            assetUrls={assetUrls}
             size={size}
             slide={
               previewConnection

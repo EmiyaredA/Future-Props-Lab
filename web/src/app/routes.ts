@@ -36,6 +36,7 @@ export type WorkshopPage =
   | "interview-assistant-session"
   | "presentation-workshop-projects"
   | "presentation-workshop-templates"
+  | "presentation-workshop-template-editor"
   | "presentation-workshop-editor"
   | "thought-workshop-notes"
   | "thought-workshop-editor"
@@ -238,6 +239,8 @@ export function pathFor(
     "interview-assistant-session": "/apps/interview-assistant",
     "presentation-workshop-projects": "/apps/presentation-workshop",
     "presentation-workshop-templates": "/apps/presentation-workshop/templates",
+    "presentation-workshop-template-editor":
+      "/apps/presentation-workshop/templates",
     "presentation-workshop-editor": "/apps/presentation-workshop",
     "thought-workshop-notes": "/apps/thought-workshop",
     "thought-workshop-editor": "/apps/thought-workshop",

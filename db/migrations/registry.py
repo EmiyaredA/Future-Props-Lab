@@ -113,6 +113,7 @@ from db.migrations.versions import (
     r0109_code_agents,
     r0110_video_editor_clip_merges,
     r0111_presentation_templates,
+    r0112_presentation_native_templates,
 )
 
 
@@ -516,6 +517,12 @@ MIGRATIONS += (
 
 MIGRATIONS += (
     Migration(r0111_presentation_templates.MIGRATION_ID, r0111_presentation_templates.SQL),
+)
+
+MIGRATIONS += (
+    Migration(
+        r0112_presentation_native_templates.MIGRATION_ID, r0112_presentation_native_templates.SQL
+    ),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

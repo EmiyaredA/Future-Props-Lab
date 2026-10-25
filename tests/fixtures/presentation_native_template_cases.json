@@ -1,0 +1,1877 @@
+{
+  "document": {
+    "version": 5,
+    "width": 1280,
+    "height": 720,
+    "slides": [
+      {
+        "layout_source": {
+          "template_id": "template",
+          "template_revision": 0,
+          "page_type": "content",
+          "objects": [
+            {
+              "element_id": "page-1-object-0",
+              "default_id": "body-default"
+            }
+          ]
+        },
+        "id": "page-1",
+        "background": "#FAF8F3",
+        "notes": "不可丢失的备注",
+        "elements": [
+          {
+            "id": "page-1-object-0",
+            "name": "",
+            "hidden": false,
+            "kind": "text",
+            "x": 60.0,
+            "y": 200.0,
+            "width": 400.0,
+            "height": 180.0,
+            "rotation": 0.0,
+            "opacity": 1.0,
+            "flip_x": false,
+            "flip_y": false,
+            "vector_color": null,
+            "image_border": false,
+            "locked": false,
+            "fill": "#5474E5",
+            "stroke": "#17334A",
+            "stroke_width": 2.0,
+            "fill_opacity": 1.0,
+            "stroke_dash": "solid",
+            "start_arrow": "none",
+            "end_arrow": "none",
+            "corner_radius": null,
+            "paragraphs": [
+              {
+                "runs": [
+                  {
+                    "text": "中文标题 Native PPTX",
+                    "font": "Microsoft YaHei",
+                    "size": 36.0,
+                    "color": "#17334A",
+                    "bold": true,
+                    "italic": false,
+                    "underline": false,
+                    "strike": false,
+                    "highlight": null,
+                    "script": "normal",
+                    "code": false
+                  }
+                ],
+                "align": "left",
+                "line_height": 1.3,
+                "bullet": false,
+                "numbered": false,
+                "indent": 0,
+                "first_line_indent": 0.0,
+                "space_before": 0.0,
+                "space_after": 0.0
+              }
+            ],
+            "asset_id": null,
+            "crop": {
+              "left": 0.0,
+              "top": 0.0,
+              "right": 0.0,
+              "bottom": 0.0
+            },
+            "table": null,
+            "chart": null,
+            "formula": null,
+            "media": null,
+            "paint": null,
+            "shadow": null,
+            "text_layout": null,
+            "image_effects": null,
+            "path": null,
+            "link": null
+          }
+        ],
+        "groups": [],
+        "connections": [],
+        "infographics": [],
+        "reference": null,
+        "image_asset_id": null,
+        "animations": [],
+        "transition": null,
+        "background_style": null,
+        "section": "",
+        "page_type": "content",
+        "title": "真实标题",
+        "chapter_id": null,
+        "template_hidden": [],
+        "toc_offset": 0,
+        "notes_rich": null,
+        "annotations": []
+      },
+      {
+        "layout_source": {
+          "template_id": "template",
+          "template_revision": 0,
+          "page_type": "content",
+          "objects": [
+            {
+              "element_id": "page-2-object-0",
+              "default_id": "body-default"
+            }
+          ]
+        },
+        "id": "page-2",
+        "background": "#FAF8F3",
+        "notes": "",
+        "elements": [
+          {
+            "id": "page-2-object-0",
+            "name": "",
+            "hidden": false,
+            "kind": "text",
+            "x": 60.0,
+            "y": 200.0,
+            "width": 400.0,
+            "height": 180.0,
+            "rotation": 0.0,
+            "opacity": 1.0,
+            "flip_x": false,
+            "flip_y": false,
+            "vector_color": null,
+            "image_border": false,
+            "locked": false,
+            "fill": "#5474E5",
+            "stroke": "#17334A",
+            "stroke_width": 2.0,
+            "fill_opacity": 1.0,
+            "stroke_dash": "solid",
+            "start_arrow": "none",
+            "end_arrow": "none",
+            "corner_radius": null,
+            "paragraphs": [
+              {
+                "runs": [
+                  {
+                    "text": "中文标题 Native PPTX",
+                    "font": "Microsoft YaHei",
+                    "size": 36.0,
+                    "color": "#17334A",
+                    "bold": true,
+                    "italic": false,
+                    "underline": false,
+                    "strike": false,
+                    "highlight": null,
+                    "script": "normal",
+                    "code": false
+                  }
+                ],
+                "align": "left",
+                "line_height": 1.3,
+                "bullet": false,
+                "numbered": false,
+                "indent": 0,
+                "first_line_indent": 0.0,
+                "space_before": 0.0,
+                "space_after": 0.0
+              }
+            ],
+            "asset_id": null,
+            "crop": {
+              "left": 0.0,
+              "top": 0.0,
+              "right": 0.0,
+              "bottom": 0.0
+            },
+            "table": null,
+            "chart": null,
+            "formula": null,
+            "media": null,
+            "paint": null,
+            "shadow": null,
+            "text_layout": null,
+            "image_effects": null,
+            "path": null,
+            "link": null
+          }
+        ],
+        "groups": [],
+        "connections": [],
+        "infographics": [],
+        "reference": null,
+        "image_asset_id": null,
+        "animations": [],
+        "transition": null,
+        "background_style": null,
+        "section": "",
+        "page_type": "content",
+        "title": "",
+        "chapter_id": null,
+        "template_hidden": [],
+        "toc_offset": 0,
+        "notes_rich": null,
+        "annotations": []
+      }
+    ],
+    "template": {
+      "template_id": "template",
+      "template_revision": 0,
+      "name": "native",
+      "snapshot": {
+        "version": 2,
+        "global_scene": {
+          "page_types": {},
+          "elements": [],
+          "groups": [],
+          "connections": [],
+          "infographics": [],
+          "semantics": []
+        },
+        "width": 1280,
+        "height": 720,
+        "font": "Microsoft YaHei",
+        "foreground": "#142B45",
+        "accent": "#EC805B",
+        "number_start": 1,
+        "number_total": false,
+        "number_hidden_types": [
+          "cover"
+        ],
+        "layouts": {
+          "cover": {
+            "scene": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "heading",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 48.0,
+                  "y": 80.0,
+                  "width": 650.0,
+                  "height": 60.0,
+                  "rotation": 4.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                },
+                {
+                  "id": "number",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 1176.0,
+                  "y": 676.0,
+                  "width": 56.0,
+                  "height": 22.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 14.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [
+                {
+                  "id": "title-group",
+                  "name": "章节签",
+                  "element_ids": [
+                    "heading"
+                  ],
+                  "parent_id": null
+                }
+              ],
+              "connections": [],
+              "infographics": [],
+              "semantics": [
+                {
+                  "element_id": "heading",
+                  "role": "title"
+                },
+                {
+                  "element_id": "number",
+                  "role": "number"
+                }
+              ]
+            },
+            "defaults": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "body-default",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 60.0,
+                  "y": 200.0,
+                  "width": 400.0,
+                  "height": 180.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [],
+              "connections": [],
+              "infographics": [],
+              "semantics": []
+            },
+            "background": "#FAF8F3",
+            "background_asset_id": null,
+            "chapter": {
+              "x": 64.0,
+              "y": 208.0,
+              "width": 1152.0,
+              "height": 32.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 20.0,
+                "color": "#EC805B",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "title": {
+              "x": 64.0,
+              "y": 264.0,
+              "width": 1152.0,
+              "height": 100.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 56.0,
+                "color": "#142B45",
+                "bold": true,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "number": {
+              "x": 1116.0,
+              "y": 672.0,
+              "width": 100.0,
+              "height": 24.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 14.0,
+                "color": "#7B8794",
+                "bold": false,
+                "align": "right"
+              },
+              "visible": true
+            },
+            "toc": {
+              "x": 64.0,
+              "y": 192.0,
+              "width": 1152.0,
+              "height": 408.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 28.0,
+                "color": "#142B45",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "toc_capacity": 7,
+            "body_top": 400.0
+          },
+          "toc": {
+            "scene": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "heading",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 48.0,
+                  "y": 80.0,
+                  "width": 650.0,
+                  "height": 60.0,
+                  "rotation": 4.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                },
+                {
+                  "id": "number",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 1176.0,
+                  "y": 676.0,
+                  "width": 56.0,
+                  "height": 22.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 14.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [
+                {
+                  "id": "title-group",
+                  "name": "章节签",
+                  "element_ids": [
+                    "heading"
+                  ],
+                  "parent_id": null
+                }
+              ],
+              "connections": [],
+              "infographics": [],
+              "semantics": [
+                {
+                  "element_id": "heading",
+                  "role": "title"
+                },
+                {
+                  "element_id": "number",
+                  "role": "number"
+                }
+              ]
+            },
+            "defaults": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "body-default",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 60.0,
+                  "y": 200.0,
+                  "width": 400.0,
+                  "height": 180.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [],
+              "connections": [],
+              "infographics": [],
+              "semantics": []
+            },
+            "background": "#FAF8F3",
+            "background_asset_id": null,
+            "chapter": {
+              "x": 64.0,
+              "y": 36.0,
+              "width": 1152.0,
+              "height": 32.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 20.0,
+                "color": "#EC805B",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "title": {
+              "x": 64.0,
+              "y": 88.0,
+              "width": 1152.0,
+              "height": 64.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 44.0,
+                "color": "#142B45",
+                "bold": true,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "number": {
+              "x": 1116.0,
+              "y": 672.0,
+              "width": 100.0,
+              "height": 24.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 14.0,
+                "color": "#7B8794",
+                "bold": false,
+                "align": "right"
+              },
+              "visible": true
+            },
+            "toc": {
+              "x": 64.0,
+              "y": 192.0,
+              "width": 1152.0,
+              "height": 408.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 28.0,
+                "color": "#142B45",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "toc_capacity": 7,
+            "body_top": 176.0
+          },
+          "section": {
+            "scene": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "heading",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 48.0,
+                  "y": 80.0,
+                  "width": 650.0,
+                  "height": 60.0,
+                  "rotation": 4.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                },
+                {
+                  "id": "number",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 1176.0,
+                  "y": 676.0,
+                  "width": 56.0,
+                  "height": 22.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 14.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [
+                {
+                  "id": "title-group",
+                  "name": "章节签",
+                  "element_ids": [
+                    "heading"
+                  ],
+                  "parent_id": null
+                }
+              ],
+              "connections": [],
+              "infographics": [],
+              "semantics": [
+                {
+                  "element_id": "heading",
+                  "role": "title"
+                },
+                {
+                  "element_id": "number",
+                  "role": "number"
+                }
+              ]
+            },
+            "defaults": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "body-default",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 60.0,
+                  "y": 200.0,
+                  "width": 400.0,
+                  "height": 180.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [],
+              "connections": [],
+              "infographics": [],
+              "semantics": []
+            },
+            "background": "#FAF8F3",
+            "background_asset_id": null,
+            "chapter": {
+              "x": 64.0,
+              "y": 208.0,
+              "width": 1152.0,
+              "height": 32.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 20.0,
+                "color": "#EC805B",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "title": {
+              "x": 64.0,
+              "y": 264.0,
+              "width": 1152.0,
+              "height": 100.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 56.0,
+                "color": "#142B45",
+                "bold": true,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "number": {
+              "x": 1116.0,
+              "y": 672.0,
+              "width": 100.0,
+              "height": 24.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 14.0,
+                "color": "#7B8794",
+                "bold": false,
+                "align": "right"
+              },
+              "visible": true
+            },
+            "toc": {
+              "x": 64.0,
+              "y": 192.0,
+              "width": 1152.0,
+              "height": 408.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 28.0,
+                "color": "#142B45",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "toc_capacity": 7,
+            "body_top": 400.0
+          },
+          "content": {
+            "scene": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "heading",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 48.0,
+                  "y": 80.0,
+                  "width": 650.0,
+                  "height": 60.0,
+                  "rotation": 4.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                },
+                {
+                  "id": "number",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 1176.0,
+                  "y": 676.0,
+                  "width": 56.0,
+                  "height": 22.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 14.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [
+                {
+                  "id": "title-group",
+                  "name": "章节签",
+                  "element_ids": [
+                    "heading"
+                  ],
+                  "parent_id": null
+                }
+              ],
+              "connections": [],
+              "infographics": [],
+              "semantics": [
+                {
+                  "element_id": "heading",
+                  "role": "title"
+                },
+                {
+                  "element_id": "number",
+                  "role": "number"
+                }
+              ]
+            },
+            "defaults": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "body-default",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 60.0,
+                  "y": 200.0,
+                  "width": 400.0,
+                  "height": 180.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [],
+              "connections": [],
+              "infographics": [],
+              "semantics": []
+            },
+            "background": "#FAF8F3",
+            "background_asset_id": null,
+            "chapter": {
+              "x": 64.0,
+              "y": 36.0,
+              "width": 1152.0,
+              "height": 32.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 20.0,
+                "color": "#EC805B",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "title": {
+              "x": 64.0,
+              "y": 88.0,
+              "width": 1152.0,
+              "height": 64.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 44.0,
+                "color": "#142B45",
+                "bold": true,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "number": {
+              "x": 1116.0,
+              "y": 672.0,
+              "width": 100.0,
+              "height": 24.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 14.0,
+                "color": "#7B8794",
+                "bold": false,
+                "align": "right"
+              },
+              "visible": true
+            },
+            "toc": {
+              "x": 64.0,
+              "y": 192.0,
+              "width": 1152.0,
+              "height": 408.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 28.0,
+                "color": "#142B45",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "toc_capacity": 7,
+            "body_top": 176.0
+          },
+          "ending": {
+            "scene": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "heading",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 48.0,
+                  "y": 80.0,
+                  "width": 650.0,
+                  "height": 60.0,
+                  "rotation": 4.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                },
+                {
+                  "id": "number",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 1176.0,
+                  "y": 676.0,
+                  "width": 56.0,
+                  "height": 22.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 14.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [
+                {
+                  "id": "title-group",
+                  "name": "章节签",
+                  "element_ids": [
+                    "heading"
+                  ],
+                  "parent_id": null
+                }
+              ],
+              "connections": [],
+              "infographics": [],
+              "semantics": [
+                {
+                  "element_id": "heading",
+                  "role": "title"
+                },
+                {
+                  "element_id": "number",
+                  "role": "number"
+                }
+              ]
+            },
+            "defaults": {
+              "page_types": {},
+              "elements": [
+                {
+                  "id": "body-default",
+                  "name": "",
+                  "hidden": false,
+                  "kind": "text",
+                  "x": 60.0,
+                  "y": 200.0,
+                  "width": 400.0,
+                  "height": 180.0,
+                  "rotation": 0.0,
+                  "opacity": 1.0,
+                  "flip_x": false,
+                  "flip_y": false,
+                  "vector_color": null,
+                  "image_border": false,
+                  "locked": false,
+                  "fill": "#5474E5",
+                  "stroke": "#17334A",
+                  "stroke_width": 2.0,
+                  "fill_opacity": 1.0,
+                  "stroke_dash": "solid",
+                  "start_arrow": "none",
+                  "end_arrow": "none",
+                  "corner_radius": null,
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "中文标题 Native PPTX",
+                          "font": "Microsoft YaHei",
+                          "size": 36.0,
+                          "color": "#17334A",
+                          "bold": true,
+                          "italic": false,
+                          "underline": false,
+                          "strike": false,
+                          "highlight": null,
+                          "script": "normal",
+                          "code": false
+                        }
+                      ],
+                      "align": "left",
+                      "line_height": 1.3,
+                      "bullet": false,
+                      "numbered": false,
+                      "indent": 0,
+                      "first_line_indent": 0.0,
+                      "space_before": 0.0,
+                      "space_after": 0.0
+                    }
+                  ],
+                  "asset_id": null,
+                  "crop": {
+                    "left": 0.0,
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0
+                  },
+                  "table": null,
+                  "chart": null,
+                  "formula": null,
+                  "media": null,
+                  "paint": null,
+                  "shadow": null,
+                  "text_layout": null,
+                  "image_effects": null,
+                  "path": null,
+                  "link": null
+                }
+              ],
+              "groups": [],
+              "connections": [],
+              "infographics": [],
+              "semantics": []
+            },
+            "background": "#FAF8F3",
+            "background_asset_id": null,
+            "chapter": {
+              "x": 64.0,
+              "y": 208.0,
+              "width": 1152.0,
+              "height": 32.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 20.0,
+                "color": "#EC805B",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": false
+            },
+            "title": {
+              "x": 64.0,
+              "y": 264.0,
+              "width": 1152.0,
+              "height": 100.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 56.0,
+                "color": "#142B45",
+                "bold": true,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "number": {
+              "x": 1116.0,
+              "y": 672.0,
+              "width": 100.0,
+              "height": 24.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 14.0,
+                "color": "#7B8794",
+                "bold": false,
+                "align": "right"
+              },
+              "visible": true
+            },
+            "toc": {
+              "x": 64.0,
+              "y": 192.0,
+              "width": 1152.0,
+              "height": 408.0,
+              "style": {
+                "font": "Microsoft YaHei",
+                "size": 28.0,
+                "color": "#142B45",
+                "bold": false,
+                "align": "left"
+              },
+              "visible": true
+            },
+            "toc_capacity": 7,
+            "body_top": 400.0
+          }
+        },
+        "fixed": []
+      }
+    },
+    "template_overrides": {
+      "font": null,
+      "foreground": null,
+      "accent": null,
+      "number_start": null,
+      "number_total": null,
+      "number_hidden_types": null,
+      "layouts": {},
+      "fixed": null,
+      "global_scene": null
+    },
+    "chapters": []
+  },
+  "resolved": [
+    {
+      "elements": [
+        {
+          "id": "master-0-page-title-0",
+          "x": 48.0,
+          "y": 80.0,
+          "width": 650.0,
+          "height": 60.0,
+          "rotation": 4.0,
+          "hidden": false,
+          "locked": true,
+          "text": "真实标题"
+        },
+        {
+          "id": "master-0-page-number-1",
+          "x": 1176.0,
+          "y": 676.0,
+          "width": 56.0,
+          "height": 22.0,
+          "rotation": 0.0,
+          "hidden": false,
+          "locked": true,
+          "text": "1"
+        },
+        {
+          "id": "page-1-object-0",
+          "x": 60.0,
+          "y": 200.0,
+          "width": 400.0,
+          "height": 180.0,
+          "rotation": 0.0,
+          "hidden": false,
+          "locked": false,
+          "text": "中文标题 Native PPTX"
+        }
+      ],
+      "groups": [
+        {
+          "id": "master-0-page-object-2",
+          "name": "章节签",
+          "element_ids": [
+            "master-0-page-title-0"
+          ],
+          "parent_id": null
+        }
+      ]
+    },
+    {
+      "elements": [
+        {
+          "id": "master-1-page-title-0",
+          "x": 48.0,
+          "y": 80.0,
+          "width": 650.0,
+          "height": 60.0,
+          "rotation": 4.0,
+          "hidden": true,
+          "locked": true,
+          "text": ""
+        },
+        {
+          "id": "master-1-page-number-1",
+          "x": 1176.0,
+          "y": 676.0,
+          "width": 56.0,
+          "height": 22.0,
+          "rotation": 0.0,
+          "hidden": false,
+          "locked": true,
+          "text": "2"
+        },
+        {
+          "id": "page-2-object-0",
+          "x": 60.0,
+          "y": 200.0,
+          "width": 400.0,
+          "height": 180.0,
+          "rotation": 0.0,
+          "hidden": false,
+          "locked": false,
+          "text": "中文标题 Native PPTX"
+        }
+      ],
+      "groups": [
+        {
+          "id": "master-1-page-object-2",
+          "name": "章节签",
+          "element_ids": [
+            "master-1-page-title-0"
+          ],
+          "parent_id": null
+        }
+      ]
+    }
+  ]
+}

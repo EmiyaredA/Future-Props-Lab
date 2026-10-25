@@ -17,6 +17,10 @@ BACKEND_ASSETS = (
     Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"),
 )
 WEB_ASSETS = (
+    Path("web/public/presentation-templates/html-template.png"),
+    Path("web/public/presentation-templates/report-background.png"),
+    Path("web/public/presentation-templates/structured-template.png"),
+    Path("web/public/presentation-templates/visual-generation.png"),
     Path("web/public/brand/amadeus/amadeus.fpllive2d"),
     Path("web/public/brand/amadeus/amadeus-poster.png"),
     Path("web/public/brand/amadeus/amadeus-stage-poster.png"),
@@ -31,6 +35,18 @@ WEB_ASSETS = (
     Path("web/public/voice-vad/ort-wasm-simd-threaded.wasm"),
 )
 EXPECTED_SHA256 = {
+    Path(
+        "web/public/presentation-templates/html-template.png"
+    ): "a7e045177e4a2a929242eb3d19f9f75f65ba7d0605b5cf7b366ee7495de31064",
+    Path(
+        "web/public/presentation-templates/report-background.png"
+    ): "8764dfd16e900a269513238f8b0a9091afe759c3fa8f5373a0459aeff8bbf097",
+    Path(
+        "web/public/presentation-templates/structured-template.png"
+    ): "79a17d73ce31893e308d8c19b5c0c20642b665bae11db890949865f0b99dbd39",
+    Path(
+        "web/public/presentation-templates/visual-generation.png"
+    ): "63ee9a0da25572e40b4cf55834935b1cbc6e207281ff73ca7ee2cdeda5c33671",
     Path("web/public/brand/interview-assistant-mark.png"): (
         "94a126bece0c8a7593905347156abc800fa25ee946f16a3a17bba5f7dfba6074"
     ),
@@ -244,7 +260,7 @@ def main() -> None:
     if args.web or args.all:
         require_materialized(
             WEB_ASSETS,
-            "web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,"
+            "web/public/presentation-templates/*,web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,"
             "web/public/brand/presentation-workshop-mark.png,"
             "web/public/brand/audio-annotation-mark.png,"
             "web/public/brand/director-desk-mark.png,web/public/brand/live2d-workshop-mark.png,"

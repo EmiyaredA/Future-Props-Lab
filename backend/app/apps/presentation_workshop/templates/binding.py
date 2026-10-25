@@ -11,6 +11,8 @@ from app.apps.presentation_workshop.schemas.document import (
     PresentationProjectPut,
 )
 from app.apps.presentation_workshop.templates.contracts import TemplateChangePreview
+from app.apps.presentation_workshop.templates.layout_application import apply_layouts
+from app.apps.presentation_workshop.templates.legacy import preserve_legacy_overrides
 from app.apps.presentation_workshop.templates.models import PresentationTemplate
 from app.apps.presentation_workshop.templates.resolver import materialize, resolve_document
 from app.apps.presentation_workshop.templates.schema import TemplateBinding
@@ -26,6 +28,7 @@ async def preview_change(library, project_id, body):
     document = project.document.model_copy(deep=True)
     changes = []
     target = None
+    layout_issues = []
     if body.action == "unbind":
         if not document.template:
             raise PresentationError("当前文稿尚未绑定模板")
@@ -46,7 +49,7 @@ async def preview_change(library, project_id, body):
             raise RevisionConflictError(
                 body.template_revision, target.revision, target.model_dump(mode="json")
             )
-        if body.action == "update" and (
+        if body.action in {"update", "layout"} and (
             not document.template or document.template.template_id != target.id
         ):
             raise PresentationError(
@@ -71,6 +74,18 @@ async def preview_change(library, project_id, body):
             for key, value in next_definition.items()
             if previous.get(key) != value
         ]
+        if body.action == "layout":
+            if body.mappings or body.chapters is not None:
+                raise PresentationError("正文套版不能同时修改章节或转换标题")
+            layout_issues = apply_layouts(
+                document, target, body.layout_mappings, body.apply_text_style
+            )
+            changes = [
+                "仅应用指定页面的明确版式映射",
+                "同步文字样式" if body.apply_text_style else "保留文字样式、正文、素材、裁剪和备注",
+            ]
+        elif body.layout_mappings:
+            raise PresentationError("正文版式必须单独预览应用，不能混入绑定变更")
         if not document.template and len(body.mappings) != len(document.slides):
             raise PresentationError("首次绑定必须逐页确认标题对象与章节；不能自动猜测正文")
         mappings = {mapping.slide_id: mapping for mapping in body.mappings}
@@ -102,15 +117,18 @@ async def preview_change(library, project_id, body):
                 mapping.chapter_id,
                 mapping.page_type,
             )
-        document.version = 4
-        document.template = TemplateBinding(
-            template_id=target.id,
-            template_revision=target.revision,
-            name=target.title,
-            snapshot=target.definition,
-        )
+        if body.action != "layout":
+            preserve_legacy_overrides(document, target.definition)
+            document.version = max(document.version, 5 if target.definition.version == 2 else 4)
+            document.template = TemplateBinding(
+                template_id=target.id,
+                template_revision=target.revision,
+                name=target.title,
+                snapshot=target.definition,
+            )
         document = PresentationDocument.model_validate(document.model_dump())
     after, issues = resolve_document(document)
+    issues += layout_issues
     before, _ = resolve_document(project.document)
     previous_pages = {s.id: s.model_dump() for s in before.slides}
     affected = [s.id for s in after.slides if s.model_dump() != previous_pages.get(s.id)]

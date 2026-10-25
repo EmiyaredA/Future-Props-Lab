@@ -225,12 +225,15 @@ export function usePresentationDraft(
     adopt,
     acceptExternal: (project: Project) => {
       if (
-        project.document.version === 4 &&
-        latest.current.document.version !== 4
+        project.document.version >= 4 &&
+        latest.current.document.version < project.document.version
       )
         latest.current = {
           ...latest.current,
-          document: { ...latest.current.document, version: 4 },
+          document: {
+            ...latest.current.document,
+            version: project.document.version,
+          },
         };
       commit(() => ({ title: project.title, document: project.document }));
       saved.current = project;

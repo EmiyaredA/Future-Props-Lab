@@ -1,5 +1,5 @@
+import { TemplateDesignerPage } from "./master/TemplateDesignerPage";
 import { TemplateLibrary } from "./master/TemplateLibrary";
-import "./master/master.css";
 import { Audience } from "./playback/Audience";
 import { useQuery } from "@tanstack/react-query";
 import { getProject } from "./api";
@@ -12,9 +12,13 @@ import "./presentation-library.css";
 import "./presentation-canvas.css";
 import "./presentation-controls.css";
 import "./presentation-dialog.css";
+import "./master/master.css";
+import "./master/master-studio.css";
 
 export function PresentationWorkshopPage({
   projectId,
+  templateId,
+  onEditTemplate,
   templates = false,
   onOpen,
   onBack,
@@ -22,6 +26,8 @@ export function PresentationWorkshopPage({
   registerNavigationGuard,
 }: {
   projectId?: string;
+  templateId?: string;
+  onEditTemplate?: (id: string) => void;
   templates?: boolean;
   onOpen: (id: string) => void;
   onBack: () => void;
@@ -38,12 +44,22 @@ export function PresentationWorkshopPage({
   });
   if (audience && projectId)
     return <Audience sessionId={audience} projectId={projectId} />;
+  if (templateId)
+    return (
+      <TemplateDesignerPage
+        id={templateId}
+        onBack={onBack}
+        onOpen={onEditTemplate!}
+        readOnly={readOnly}
+        registerNavigationGuard={registerNavigationGuard}
+      />
+    );
   if (templates)
     return (
       <TemplateLibrary
         onOpen={onOpen}
         readOnly={readOnly}
-        registerNavigationGuard={registerNavigationGuard}
+        onEdit={onEditTemplate!}
       />
     );
   if (!projectId)

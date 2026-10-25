@@ -1,187 +1,38 @@
+import { Palette, Type, Image, ChevronRight, ChevronDown } from "lucide-react";
+import { Numeric, Color } from "./StyleFields";
+import { TemplateSlotEditor } from "./TemplateSlotEditor";
 import { PresentationImages } from "../PresentationImages";
 import { useEffect, useRef, useState } from "react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { uploadImage } from "../api";
 import { newId } from "../templates";
-import {
-  pageTypes,
-  type Definition,
-  type Slot,
-  type Fixed,
-  type PageType,
-} from "./model";
+import { pageTypes, type Definition, type Fixed, type PageType } from "./model";
 
-export function Numeric({
-  label,
-  value,
-  onChange,
-  min = 0,
-  max = 4096,
-}: {
-  label: string;
-  value: number;
-  onChange: (n: number) => void;
-  min?: number;
-  max?: number;
-}) {
-  return (
-    <label className="master-field">
-      {label}
-      <input
-        aria-label={label}
-        type="number"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => {
-          const n = e.currentTarget.valueAsNumber;
-          if (Number.isFinite(n) && n >= min && n <= max) onChange(n);
-        }}
-      />
-    </label>
-  );
-}
-function Color({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="master-color">
-      {label}
-      <CustomColorPicker ariaLabel={label} value={value} onChange={onChange} />
-    </label>
-  );
-}
-function SlotControls({
-  name,
-  slot,
-  onChange,
-  width,
-  height,
-}: {
-  name: string;
-  slot: Slot;
-  onChange: (s: Slot) => void;
-  width: number;
-  height: number;
-}) {
-  const patch = (value: Partial<Slot>) => onChange({ ...slot, ...value });
-  return (
-    <fieldset className="master-settings-group">
-      <legend>{name}</legend>
-      <label className="master-check">
-        <input
-          type="checkbox"
-          checked={slot.visible !== false}
-          onChange={(e) => patch({ visible: e.target.checked })}
-        />
-        显示{name}
-      </label>
-      <div className="master-field-grid">
-        <Numeric
-          label={`${name} X`}
-          value={slot.x}
-          max={width - slot.width}
-          onChange={(x) => patch({ x })}
-        />
-        <Numeric
-          label={`${name} Y`}
-          value={slot.y}
-          max={height - slot.height}
-          onChange={(y) => patch({ y })}
-        />
-        <Numeric
-          label={`${name}宽度`}
-          value={slot.width}
-          min={1}
-          max={width - slot.x}
-          onChange={(width) => patch({ width })}
-        />
-        <Numeric
-          label={`${name}高度`}
-          value={slot.height}
-          min={1}
-          max={height - slot.y}
-          onChange={(height) => patch({ height })}
-        />
-      </div>
-      <label className="master-field">
-        字体
-        <CustomSelect
-          ariaLabel={`${name}字体`}
-          value={slot.style.font}
-          options={["Microsoft YaHei", "Arial", "Consolas"].map((value) => ({
-            value,
-            label: value,
-          }))}
-          onChange={(font) =>
-            patch({
-              style: { ...slot.style, font: font as Slot["style"]["font"] },
-            })
-          }
-        />
-      </label>
-      <div className="master-field-grid">
-        <Numeric
-          label={`${name}字号`}
-          value={slot.style.size}
-          min={6}
-          max={240}
-          onChange={(size) => patch({ style: { ...slot.style, size } })}
-        />
-        <Color
-          label={`${name}颜色`}
-          value={slot.style.color}
-          onChange={(color) => patch({ style: { ...slot.style, color } })}
-        />
-      </div>
-      <label className="master-check">
-        <input
-          type="checkbox"
-          checked={slot.style.bold}
-          onChange={(e) =>
-            patch({ style: { ...slot.style, bold: e.target.checked } })
-          }
-        />
-        加粗
-      </label>
-      <CustomSelect
-        ariaLabel={`${name}对齐`}
-        value={slot.style.align}
-        options={[
-          { value: "left", label: "左对齐" },
-          { value: "center", label: "居中" },
-          { value: "right", label: "右对齐" },
-        ]}
-        onChange={(align) =>
-          patch({
-            style: { ...slot.style, align: align as Slot["style"]["align"] },
-          })
-        }
-      />
-    </fieldset>
-  );
-}
 export function StyleControls({
   definition,
   onChange,
   pageType,
   onBusyChange,
+  onSlotChange,
+  selectedSlot,
 }: {
   definition: Definition;
   onChange: (d: Definition) => void;
   pageType: PageType;
   onBusyChange?: (busy: boolean) => void;
+  selectedSlot?: "chapter" | "title" | "number";
+  onSlotChange?: (slot: "chapter" | "title" | "number") => void;
 }) {
+  const [localSlot, setActiveSlot] = useState<"chapter" | "title" | "number">(
+    "title",
+  );
+  const activeSlot = selectedSlot ?? localSlot;
   const [tab, setTab] = useState("titles"),
     [error, setError] = useState(""),
     [uploading, setUploading] = useState(false);
+  useEffect(() => {
+    if (selectedSlot) setTab("titles");
+  }, [selectedSlot]);
   useEffect(() => {
     onBusyChange?.(uploading);
     return () => onBusyChange?.(false);
@@ -218,11 +69,44 @@ export function StyleControls({
         ].map(([id, label]) => (
           <button
             role="tab"
+            aria-label={label}
             aria-selected={tab === id}
+            tabIndex={tab === id ? 0 : -1}
+            onKeyDown={(event) => {
+              const ids = ["theme", "titles", "background"];
+              const index = ids.indexOf(id);
+              const next =
+                event.key === "ArrowRight"
+                  ? (index + 1) % 3
+                  : event.key === "ArrowLeft"
+                    ? (index + 2) % 3
+                    : event.key === "Home"
+                      ? 0
+                      : event.key === "End"
+                        ? 2
+                        : -1;
+              if (next < 0) return;
+              event.preventDefault();
+              setTab(ids[next]);
+              const buttons =
+                event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                  "button",
+                );
+              buttons?.item(next).focus();
+            }}
             key={id}
             onClick={() => setTab(id)}
           >
-            {label}
+            {id === "theme" ? (
+              <Palette size={21} />
+            ) : id === "titles" ? (
+              <Type size={22} />
+            ) : (
+              <Image size={21} />
+            )}
+            <span>
+              {id === "theme" ? "主题" : id === "titles" ? "标题" : "背景"}
+            </span>
           </button>
         ))}
       </div>
@@ -327,7 +211,7 @@ export function StyleControls({
             }
           />
           <button
-            className="btn"
+            className="btn master-apply-all"
             onClick={() =>
               patch({
                 layouts: Object.fromEntries(
@@ -345,81 +229,110 @@ export function StyleControls({
       )}
       {tab === "titles" && (
         <>
-          <p>
-            正在配置：{pageTypes.find((p) => p.value === pageType)?.label}
-            。章节来自页面所属章节，页标题来自页面内容。
-          </p>
-          {(["chapter", "title", "number"] as const).map((key, i) => (
-            <SlotControls
-              key={key}
-              name={["章节标题", "页标题", "页码"][i]}
-              slot={layout[key]}
-              width={definition.width}
-              height={definition.height}
-              onChange={(slot) => page({ [key]: slot })}
+          <div className="master-slot-list">
+            {(["chapter", "title", "number"] as const).map((key, i) => {
+              const name = ["章节标题", "页标题", "页码"][i],
+                open = activeSlot === key;
+              return (
+                <section
+                  key={key}
+                  className={`master-slot-section ${open ? "is-open" : ""}`}
+                >
+                  <button
+                    className="master-slot-heading"
+                    aria-expanded={open}
+                    aria-label={`配置${name}`}
+                    onClick={() => {
+                      setActiveSlot(key);
+                      onSlotChange?.(key);
+                    }}
+                  >
+                    <ChevronRight size={14} />
+                    <strong>{name}</strong>
+                    <span>{layout[key].style.size} px</span>
+                    {open ? (
+                      <ChevronDown size={15} />
+                    ) : (
+                      <ChevronRight size={15} />
+                    )}
+                  </button>
+                  {open && (
+                    <TemplateSlotEditor
+                      name={name}
+                      slot={layout[key]}
+                      width={definition.width}
+                      height={definition.height}
+                      onChange={(slot) => page({ [key]: slot })}
+                    />
+                  )}
+                </section>
+              );
+            })}
+          </div>
+          <details className="master-advanced">
+            <summary>页码与显示规则</summary>
+            <Numeric
+              label="页码起始值"
+              value={definition.number_start}
+              max={9999}
+              onChange={(number_start) => patch({ number_start })}
             />
-          ))}
-          <Numeric
-            label="页码起始值"
-            value={definition.number_start}
-            max={9999}
-            onChange={(number_start) => patch({ number_start })}
-          />
-          <label className="master-check">
-            <input
-              type="checkbox"
-              checked={definition.number_total}
-              onChange={(e) => patch({ number_total: e.target.checked })}
-            />
-            显示总页数
-          </label>
-          <fieldset className="master-settings-group">
-            <legend>隐藏页码的页型（仍计入序号）</legend>
-            {pageTypes.map((p) => (
-              <label className="master-check" key={p.value}>
-                <input
-                  type="checkbox"
-                  checked={definition.number_hidden_types?.includes(p.value)}
-                  onChange={(e) =>
-                    patch({
-                      number_hidden_types: e.target.checked
-                        ? [...(definition.number_hidden_types ?? []), p.value]
-                        : (definition.number_hidden_types ?? []).filter(
-                            (t) => t !== p.value,
-                          ),
-                    })
-                  }
+            <label className="master-check">
+              <input
+                type="checkbox"
+                checked={definition.number_total}
+                onChange={(e) => patch({ number_total: e.target.checked })}
+              />
+              显示总页数
+            </label>
+            <fieldset className="master-settings-group">
+              <legend>隐藏页码的页型（仍计入序号）</legend>
+              {pageTypes.map((p) => (
+                <label className="master-check" key={p.value}>
+                  <input
+                    type="checkbox"
+                    checked={definition.number_hidden_types?.includes(p.value)}
+                    onChange={(e) =>
+                      patch({
+                        number_hidden_types: e.target.checked
+                          ? [...(definition.number_hidden_types ?? []), p.value]
+                          : (definition.number_hidden_types ?? []).filter(
+                              (t) => t !== p.value,
+                            ),
+                      })
+                    }
+                  />
+                  {p.label}
+                </label>
+              ))}
+            </fieldset>
+            {pageType === "toc" && (
+              <>
+                <TemplateSlotEditor
+                  name="目录内容"
+                  slot={layout.toc}
+                  width={definition.width}
+                  height={definition.height}
+                  onChange={(toc) => page({ toc })}
                 />
-                {p.label}
-              </label>
-            ))}
-          </fieldset>
-          {pageType === "toc" && (
-            <>
-              <SlotControls
-                name="目录内容"
-                slot={layout.toc}
-                width={definition.width}
-                height={definition.height}
-                onChange={(toc) => page({ toc })}
-              />
-              <Numeric
-                label="每页目录项"
-                value={layout.toc_capacity}
-                min={1}
-                max={20}
-                onChange={(toc_capacity) => page({ toc_capacity })}
-              />
-            </>
-          )}
-          <Numeric
-            label="正文安全区起点"
-            value={layout.body_top}
-            max={definition.height}
-            onChange={(body_top) => page({ body_top })}
-          />
+                <Numeric
+                  label="每页目录项"
+                  value={layout.toc_capacity}
+                  min={1}
+                  max={20}
+                  onChange={(toc_capacity) => page({ toc_capacity })}
+                />
+              </>
+            )}
+            <Numeric
+              label="正文安全区起点"
+              value={layout.body_top}
+              max={definition.height}
+              onChange={(body_top) => page({ body_top })}
+            />
+          </details>
           <button
-            className="btn"
+            className="btn master-apply-all"
             onClick={() =>
               patch({
                 layouts: Object.fromEntries(
@@ -597,7 +510,11 @@ export function StyleControls({
           {definition.fixed?.map((item, index) => (
             <fieldset className="master-settings-group" key={item.id}>
               <legend>
-                {item.kind === "image" ? "固定图片 / Logo" : "固定文字"}{" "}
+                {item.kind === "image"
+                  ? "固定图片 / Logo"
+                  : item.kind === "rect"
+                    ? "固定图形"
+                    : "固定文字"}{" "}
                 {index + 1}
               </legend>
               {item.kind === "text" && (
@@ -651,6 +568,19 @@ export function StyleControls({
                   />
                 </>
               )}
+              {item.kind === "rect" && (
+                <Color
+                  label={`固定图形 ${index + 1} 颜色`}
+                  value={item.fill}
+                  onChange={(fill) => fixed(index, { fill })}
+                />
+              )}
+              <Numeric
+                label={`固定元素 ${index + 1} 不透明度`}
+                value={Math.round((item.opacity ?? 1) * 100)}
+                max={100}
+                onChange={(opacity) => fixed(index, { opacity: opacity / 100 })}
+              />
               <CustomSelect
                 ariaLabel="固定元素层级"
                 value={item.layer}

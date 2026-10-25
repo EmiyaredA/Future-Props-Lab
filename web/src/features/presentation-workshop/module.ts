@@ -36,6 +36,14 @@ const definition = {
     ],
   },
   matchPath(path: string) {
+    const template = path.match(
+      /^\/apps\/presentation-workshop\/templates\/([^/]+)\/?$/,
+    );
+    if (template)
+      return {
+        page: "presentation-workshop-template-editor",
+        projectId: decodeURIComponent(template[1]),
+      };
     if (/^\/apps\/presentation-workshop\/templates\/?$/.test(path))
       return { page: "presentation-workshop-templates" };
     const match = path.match(
@@ -50,6 +58,8 @@ const definition = {
       return { page: "presentation-workshop-projects" };
   },
   pathFor(page: string, id?: string) {
+    if (page === "presentation-workshop-template-editor" && id)
+      return `/apps/presentation-workshop/templates/${encodeURIComponent(id)}`;
     if (page === "presentation-workshop-templates")
       return "/apps/presentation-workshop/templates";
     if (page === "presentation-workshop-editor" && id)

@@ -20,6 +20,7 @@ from app.apps.presentation_workshop.templates.models import (
     PresentationTemplate,
     PresentationTemplateAsset,
 )
+from app.apps.presentation_workshop.templates.native_scene import default_page
 from app.apps.presentation_workshop.templates.schema import TemplateBinding
 from app.runtime.project_records import (
     delete_revisioned_project,
@@ -33,7 +34,7 @@ from app.runtime.time import utc_now
 def template_document(definition, name="模板预览"):
     return PresentationDocument.model_validate(
         {
-            "version": 4,
+            "version": 5 if definition.version == 2 else 4,
             "width": definition.width,
             "height": definition.height,
             "template": {"name": name, "snapshot": definition.model_dump()},
@@ -128,6 +129,22 @@ class TemplateLibrary:
     async def put(self, kind, identity, body):
         current = await self.row(kind, identity)
         if (
+            kind == "templates"
+            and current.definition.get("version") == 2
+            and body.definition.version < 2
+        ):
+            raise PresentationError(
+                "当前模板包含原生场景，请更新客户端后保存", 422, "template_downgrade"
+            )
+        if (
+            kind == "examples"
+            and body.document.source_version < 5
+            and current.document.get("version", 3) >= 5
+        ):
+            raise PresentationError(
+                "当前示例包含原生模板布局，请更新客户端后保存", 422, "document_downgrade"
+            )
+        if (
             kind == "examples"
             and body.document.source_version < 4
             and PresentationDocument.model_validate(current.document).needs_v4()
@@ -186,6 +203,10 @@ class TemplateLibrary:
                 snapshot=source.definition,
             )
             document.slides[0].page_type = "cover"
+            if source.definition.version == 2:
+                document.slides[0] = default_page(
+                    source.definition, "cover", document.slides[0].id, source.id, source.revision
+                )
             document.slides[0].title = body.title
         else:
             document = source.document.model_copy(deep=True)
@@ -204,7 +225,7 @@ class TemplateLibrary:
         try:
             template = await self.create("templates", body.template, commit=False)
             document = body.example.document.model_copy(deep=True)
-            document.version = 4
+            document.version = 5 if template.definition.version == 2 else max(4, document.version)
             document.template = TemplateBinding(
                 template_id=template.id,
                 template_revision=template.revision,

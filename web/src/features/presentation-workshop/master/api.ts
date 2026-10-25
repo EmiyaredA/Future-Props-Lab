@@ -1,3 +1,4 @@
+import { managedBundle } from "./bundledAssets";
 import { api, unwrap } from "@platform/api/client";
 import type { Change, Definition, Example } from "./model";
 export const listTemplates = async (signal?: AbortSignal) =>
@@ -23,7 +24,7 @@ export const getTemplate = async (id: string) =>
 export const createTemplate = async (title: string, definition: Definition) =>
   unwrap(
     await api.POST("/v1/presentation-workshop/templates", {
-      body: { title, definition, description: "" },
+      body: await managedBundle({ title, definition, description: "" }),
     }),
   );
 export const saveTemplate = async (
@@ -31,11 +32,17 @@ export const saveTemplate = async (
   title: string,
   definition: Definition,
   revision: number,
+  description = "",
 ) =>
   unwrap(
     await api.PUT("/v1/presentation-workshop/templates/{template_id}", {
       params: { path: { template_id: id } },
-      body: { title, definition, description: "", expected_revision: revision },
+      body: await managedBundle({
+        title,
+        definition,
+        description,
+        expected_revision: revision,
+      }),
     }),
   );
 export const removeTemplate = async (id: string, revision: number) =>
@@ -117,4 +124,8 @@ export const applyChange = async (
 export const importBundle = async (
   body: import("@generated/api").components["schemas"]["TemplateBundleIn"],
 ) =>
-  unwrap(await api.POST("/v1/presentation-workshop/library/import", { body }));
+  unwrap(
+    await api.POST("/v1/presentation-workshop/library/import", {
+      body: await managedBundle(body),
+    }),
+  );

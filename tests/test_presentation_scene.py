@@ -82,6 +82,7 @@ def test_v2_migration_preserves_order_content_and_revision(tmp_path):
             "chapter_id",
             "template_hidden",
             "toc_offset",
+            "layout_source",
         ):
             if key not in source:
                 page.pop(key)

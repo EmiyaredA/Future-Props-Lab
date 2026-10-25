@@ -116,6 +116,9 @@ async def import_presentation(
     document = parsed.document.model_dump()
     if document.get("template"):
         document["template"]["template_id"] = None
+    for slide in document["slides"]:
+        if slide.get("layout_source"):
+            slide["layout_source"]["template_id"] = None
     used = asset_ids(document)
     identities = {}
     await projects.session.rollback()

@@ -1,3 +1,4 @@
+import { PresentationWorkshopRoute } from "@app/layout/PresentationWorkshopRoute";
 import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
 import { ModelServiceRoute } from "@app/layout/ModelServiceRoute";
 import type { KnowledgeSection } from "@features/thought-workshop/KnowledgeSections";
@@ -26,7 +27,6 @@ import {
   APPLICATION_DEFINITIONS,
   AUDIO_ANNOTATION_MODULE,
   DIRECTOR_DESK_MODULE,
-  PRESENTATION_WORKSHOP_MODULE,
   THOUGHT_WORKSHOP_MODULE,
   GALGAME_WORKSHOP_MODULE,
   VISUAL_WORKSHOP_MODULE,
@@ -49,9 +49,6 @@ import {
   type WorkshopPage,
 } from "@app/routes";
 
-const PresentationWorkshopPage = lazy(
-  PRESENTATION_WORKSHOP_MODULE.pages.workspace,
-);
 const InterviewAssistantPage = lazy(INTERVIEW_ASSISTANT_MODULE.pages.workspace);
 
 const HomePage = lazy(() =>
@@ -450,37 +447,14 @@ export default function App() {
       </WorkshopShell>
     );
 
-  if (
-    page === "presentation-workshop-projects" ||
-    page === "presentation-workshop-templates"
-  )
-    return (
-      <WorkshopShell
-        module={PRESENTATION_WORKSHOP_MODULE}
-        page={page}
-        navigate={(next) => navigate(next as WorkshopPage)}
-        onBack={() => navigate("apps")}
-      >
-        <PageBoundary>
-          <PresentationWorkshopPage
-            templates={page === "presentation-workshop-templates"}
-            readOnly={!workspaceAllows(me.workspace, "content.write")}
-            onOpen={(id) => navigate("presentation-workshop-editor", id)}
-            onBack={() => navigate("apps")}
-            registerNavigationGuard={registerNavigationGuard}
-          />
-        </PageBoundary>
-      </WorkshopShell>
-    );
-
-  if (page === "presentation-workshop-editor")
+  if (page.startsWith("presentation-workshop-"))
     return (
       <PageBoundary>
-        <PresentationWorkshopPage
+        <PresentationWorkshopRoute
+          page={page as WorkshopPage}
           projectId={route.projectId}
           readOnly={!workspaceAllows(me.workspace, "content.write")}
-          onOpen={(id) => navigate("presentation-workshop-editor", id)}
-          onBack={() => navigate("presentation-workshop-projects")}
+          navigate={navigate}
           registerNavigationGuard={registerNavigationGuard}
         />
       </PageBoundary>

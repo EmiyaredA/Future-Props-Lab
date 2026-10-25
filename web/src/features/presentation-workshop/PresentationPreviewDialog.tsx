@@ -7,6 +7,7 @@ import type { PageSize, Slide } from "./types";
 
 export function PresentationPreviewDialog({
   size,
+  assetUrls,
   title,
   slides,
   loading,
@@ -18,6 +19,7 @@ export function PresentationPreviewDialog({
   returnFocus,
 }: {
   size?: PageSize;
+  assetUrls?: Record<string, string>;
   title: string;
   slides?: Slide[];
   loading: boolean;
@@ -107,7 +109,11 @@ export function PresentationPreviewDialog({
                   className="presentation-preview-stage"
                   aria-label={`第 ${current + 1} 页完整预览`}
                 >
-                  <SlidePreview slide={slides[current]} size={size} />
+                  <SlidePreview
+                    slide={slides[current]}
+                    size={size}
+                    assetUrls={assetUrls}
+                  />
                 </div>
                 <nav
                   className="presentation-preview-filmstrip"
@@ -120,7 +126,11 @@ export function PresentationPreviewDialog({
                       aria-current={page === current ? "page" : undefined}
                       onClick={() => setIndex(page)}
                     >
-                      <SlidePreview slide={slide} size={size} />
+                      <SlidePreview
+                        slide={slide}
+                        size={size}
+                        assetUrls={assetUrls}
+                      />
                       <span>{page + 1}</span>
                     </button>
                   ))}

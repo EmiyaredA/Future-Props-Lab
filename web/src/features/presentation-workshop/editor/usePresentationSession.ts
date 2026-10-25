@@ -11,6 +11,8 @@ import { usePresentationHistory } from "../usePresentationHistory";
 import { download, exportProject, imageBlob } from "../api";
 import { presentationKeys } from "../queryKeys";
 import { copySlide, newSlide, newId } from "../templates";
+import { effectiveDefinition } from "../master/model";
+import { defaultPage } from "../master/nativeScenes";
 import { boundedElement } from "../geometry";
 import {
   applyLayout,
@@ -368,7 +370,7 @@ export function usePresentationSession({
       setError("文稿最多 100 页");
       return;
     }
-    const next = copy
+    let next = copy
       ? copySlide(draft.draft.document.slides.find((s) => s.id === copy)!)
       : applyPageStyle(newSlide(layout), themeSource);
     if (!copy && draft.draft.document.template) {
@@ -376,6 +378,16 @@ export function usePresentationSession({
       next.title = layout === "ending" ? "总结与下一步" : "新幻灯片";
       next.page_type =
         layout === "cover" || layout === "ending" ? layout : "content";
+      const definition = effectiveDefinition(draft.draft.document)!;
+      if (definition.version === 2)
+        next = {
+          ...defaultPage(
+            definition,
+            next.page_type,
+            draft.draft.document.template,
+          ),
+          title: next.title,
+        };
       next.chapter_id = slide.chapter_id;
     }
     commit((d) => {

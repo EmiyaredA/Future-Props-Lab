@@ -172,6 +172,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("0109_code_agents",),
             ("r0110_video_editor_clip_merges",),
             ("r0111_presentation_templates",),
+            ("r0112_presentation_native_templates",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

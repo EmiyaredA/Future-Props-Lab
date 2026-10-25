@@ -1,6 +1,7 @@
 import type { components } from "@generated/api";
 import type { Deck, Slide, SlideElement } from "../types";
 import { newElement, newSlide } from "../templates";
+import { resolveNativeSlide } from "./nativeScenes";
 export type Definition = Omit<
   components["schemas"]["TemplateDefinition"],
   "layouts"
@@ -207,6 +208,14 @@ export function resolveSlide(
   )
     return source;
   const type = source.page_type ?? "content";
+  if (definition.version === 2)
+    return resolveNativeSlide(
+      deck,
+      source,
+      index,
+      definition,
+      chapterEntries(deck),
+    );
   const layout = definition.layouts[type]!;
   const hidden = source.template_hidden ?? [];
   const prefix = `master-${index}`;

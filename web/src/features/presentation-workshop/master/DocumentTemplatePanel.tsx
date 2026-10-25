@@ -9,6 +9,9 @@ import { presentationKeys } from "../queryKeys";
 import { newId, newSlide } from "../templates";
 import type { PresentationSession } from "../editor/usePresentationSession";
 import { StyleControls } from "./StyleControls";
+import { TemplateDesigner } from "./TemplateDesigner";
+import { editableDefinition } from "./nativeScenes";
+import { LayoutApplicationPanel } from "./LayoutApplicationPanel";
 import {
   createExample,
   listTemplates,
@@ -86,6 +89,7 @@ function DocumentTemplatePanel({
     [type, setType] = useState<PageType>(slide.page_type ?? "content"),
     [example, setExample] = useState(false),
     [newChapter, setNewChapter] = useState(false);
+  const [layoutEditor, setLayoutEditor] = useState(false);
   const initialChapters = useRef(
     deck.chapters?.length
       ? deck.chapters
@@ -160,12 +164,15 @@ function DocumentTemplatePanel({
       setRequest(body);
       setPreview(result);
     });
-  const saveGlobal = () => {
-    if (!global || !deck.template) return;
-    const base = deck.template.snapshot;
+  const saveGlobal = (value: Definition | null = global) => {
+    if (!value || !deck.template) return;
+    const base =
+      value.version === 2
+        ? editableDefinition(deck.template.snapshot as Definition)
+        : deck.template.snapshot;
     const overrides = {
       ...Object.fromEntries(
-        Object.entries(global).filter(
+        Object.entries(value).filter(
           ([key, value]) =>
             !["version", "width", "height", "layouts"].includes(key) &&
             JSON.stringify(value) !==
@@ -173,7 +180,7 @@ function DocumentTemplatePanel({
         ),
       ),
       layouts: Object.fromEntries(
-        Object.entries(global.layouts).filter(
+        Object.entries(value.layouts).filter(
           ([key, value]) =>
             JSON.stringify(value) !==
             JSON.stringify(base.layouts?.[key as PageType]),
@@ -182,11 +189,43 @@ function DocumentTemplatePanel({
     };
     commit((d) => ({
       ...d,
-      document: { ...d.document, template_overrides: overrides },
+      document: {
+        ...d.document,
+        version: value.version === 2 ? 5 : d.document.version,
+        template: { ...d.document.template!, snapshot: base },
+        template_overrides: overrides,
+      },
     }));
     setGlobal(null);
     setPreview(null);
+    setLayoutEditor(false);
   };
+  if (layoutEditor && effective && deck.template)
+    return (
+      <div
+        className="master-layout-modal"
+        ref={root}
+        role="dialog"
+        aria-modal="true"
+        aria-label="编辑当前文稿模板布局"
+      >
+        <TemplateDesigner
+          initial={{
+            id: deck.template.template_id ?? "document",
+            title: deck.template.name,
+            description: "当前文稿覆盖",
+            revision: deck.template.template_revision ?? 0,
+            created_at: "",
+            updated_at: "",
+            definition: effective,
+          }}
+          onClose={() => setLayoutEditor(false)}
+          onSaved={() => {}}
+          onSaveDefinition={saveGlobal}
+          readOnly={readOnly}
+        />
+      </div>
+    );
   return (
     <div className="presentation-modal-backdrop">
       <div
@@ -278,247 +317,274 @@ function DocumentTemplatePanel({
                 <button
                   className="btn btn-primary"
                   disabled={mediaBusy}
-                  onClick={saveGlobal}
+                  onClick={() => saveGlobal()}
                 >
                   应用全稿样式
                 </button>
               </>
             ) : (
               <>
-                <h4>模板绑定</h4>
-                {templates.isError ? (
+                {deck.template && (
                   <button
-                    className="btn"
-                    onClick={() => void templates.refetch()}
-                  >
-                    模板加载失败，重试
-                  </button>
-                ) : (
-                  <CustomSelect
-                    ariaLabel="选择文稿模板"
-                    value={selected}
-                    options={[
-                      { value: "", label: "选择模板" },
-                      ...(templates.data?.items ?? []).map((t) => ({
-                        value: t.id,
-                        label: `${t.title} · v${t.revision + 1}`,
-                      })),
-                    ]}
-                    onChange={(value) => {
-                      setSelected(value);
+                    className="btn master-edit-global"
+                    onClick={() => {
+                      if (effective?.version === 2) setLayoutEditor(true);
+                      else setGlobal(effective);
                       setPreview(null);
                     }}
-                  />
+                  >
+                    <LayoutTemplate size={16} />
+                    编辑全稿样式
+                  </button>
                 )}
                 {deck.template && (
-                  <>
+                  <button className="btn" onClick={() => setLayoutEditor(true)}>
+                    编辑模板布局
+                  </button>
+                )}
+                {deck.template && target?.definition.version === 2 && (
+                  <LayoutApplicationPanel
+                    session={session}
+                    target={target}
+                    readOnly={readOnly}
+                  />
+                )}
+                <details
+                  className="master-document-rules"
+                  open={deck.template ? undefined : true}
+                >
+                  <summary>模板绑定与更新</summary>
+                  {templates.isError ? (
                     <button
                       className="btn"
-                      onClick={() => {
-                        setGlobal(effective);
+                      onClick={() => void templates.refetch()}
+                    >
+                      模板加载失败，重试
+                    </button>
+                  ) : (
+                    <CustomSelect
+                      ariaLabel="选择文稿模板"
+                      value={selected}
+                      options={[
+                        { value: "", label: "选择模板" },
+                        ...(templates.data?.items ?? []).map((t) => ({
+                          value: t.id,
+                          label: `${t.title} · v${t.revision + 1}`,
+                        })),
+                      ]}
+                      onChange={(value) => {
+                        setSelected(value);
                         setPreview(null);
                       }}
-                    >
-                      编辑全稿样式
-                    </button>
-                    <button
-                      className="btn"
-                      onClick={() =>
-                        commit((d) => ({
-                          ...d,
-                          document: { ...d.document, template_overrides: {} },
-                        }))
-                      }
-                    >
-                      清除文稿覆盖，恢复跟随快照
-                    </button>
-                    {!templates.isPending &&
-                      !templates.data?.items.some(
-                        (t) => t.id === deck.template?.template_id,
-                      ) && <p>源模板已删除或不可访问，内嵌快照仍然可用。</p>}
-                  </>
-                )}
-                {!deck.template && (
-                  <>
-                    <p>
-                      逐页确认页标题和章节。只转换勾选的文字对象；正文不做自动识别。
-                    </p>
-                    <fieldset className="master-settings-group">
-                      <legend>章节信息</legend>
-                      {chapters.map((c) => (
-                        <label className="master-field" key={c.id}>
-                          章节名称
-                          <input
-                            aria-label={`章节 ${c.title}`}
-                            value={c.title}
-                            maxLength={120}
-                            onChange={(e) =>
-                              updateChapters(
-                                chapters.map((item) =>
-                                  item.id === c.id
-                                    ? {
-                                        ...item,
-                                        title: e.target.value || "未命名章节",
-                                      }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                      ))}
+                    />
+                  )}
+                  {deck.template && (
+                    <>
                       <button
                         className="btn"
-                        onClick={() => setNewChapter(true)}
+                        onClick={() =>
+                          commit((d) => ({
+                            ...d,
+                            document: { ...d.document, template_overrides: {} },
+                          }))
+                        }
                       >
-                        添加章节
+                        清除文稿覆盖，恢复跟随快照
                       </button>
-                    </fieldset>
-                    {mappings.map((mapping, index) => {
-                      const page = deck.slides.find(
-                        (s) => s.id === mapping.slide_id,
-                      )!;
-                      const patch = (v: Partial<typeof mapping>) => {
-                        setMappings((items) =>
-                          items.map((item, i) =>
-                            i === index ? { ...item, ...v } : item,
-                          ),
-                        );
-                        setPreview(null);
-                      };
-                      return (
-                        <details
-                          className="master-settings-group"
-                          key={page.id}
-                        >
-                          <summary>
-                            第 {index + 1} 页：{mapping.title || "待确认标题"}
-                          </summary>
-                          <label className="master-field">
-                            页标题
+                      {!templates.isPending &&
+                        !templates.data?.items.some(
+                          (t) => t.id === deck.template?.template_id,
+                        ) && <p>源模板已删除或不可访问，内嵌快照仍然可用。</p>}
+                    </>
+                  )}
+                  {!deck.template && (
+                    <>
+                      <p>
+                        逐页确认页标题和章节。只转换勾选的文字对象；正文不做自动识别。
+                      </p>
+                      <fieldset className="master-settings-group">
+                        <legend>章节信息</legend>
+                        {chapters.map((c) => (
+                          <label className="master-field" key={c.id}>
+                            章节名称
                             <input
-                              aria-label={`第 ${index + 1} 页标题`}
-                              maxLength={500}
-                              value={mapping.title}
-                              onChange={(e) => patch({ title: e.target.value })}
+                              aria-label={`章节 ${c.title}`}
+                              value={c.title}
+                              maxLength={120}
+                              onChange={(e) =>
+                                updateChapters(
+                                  chapters.map((item) =>
+                                    item.id === c.id
+                                      ? {
+                                          ...item,
+                                          title: e.target.value || "未命名章节",
+                                        }
+                                      : item,
+                                  ),
+                                )
+                              }
                             />
                           </label>
-                          <CustomSelect
-                            ariaLabel={`第 ${index + 1} 页章节`}
-                            value={mapping.chapter_id ?? ""}
-                            options={[
-                              { value: "", label: "不属于章节" },
-                              ...chapters.map((c) => ({
-                                value: c.id,
-                                label: c.title,
-                              })),
-                            ]}
-                            onChange={(chapter_id) =>
-                              patch({ chapter_id: chapter_id || null })
-                            }
-                          />
-                          <CustomSelect
-                            ariaLabel={`第 ${index + 1} 页型`}
-                            value={mapping.page_type ?? "content"}
-                            options={pageTypes}
-                            onChange={(page_type) =>
-                              patch({ page_type: page_type as PageType })
-                            }
-                          />
-                          <p>选择转为模板标题的原文字对象：</p>
-                          {page.elements
-                            .filter((e) => e.kind === "text")
-                            .map((element) => (
-                              <label className="master-check" key={element.id}>
-                                <input
-                                  type="checkbox"
-                                  checked={mapping.title_element_ids?.includes(
-                                    element.id,
-                                  )}
-                                  onChange={(e) => {
-                                    const ids = e.target.checked
-                                      ? [
-                                          ...(mapping.title_element_ids ?? []),
-                                          element.id,
-                                        ]
-                                      : (
-                                          mapping.title_element_ids ?? []
-                                        ).filter((id) => id !== element.id);
-                                    patch({
-                                      title_element_ids: ids,
-                                      ...(!mapping.title && e.target.checked
-                                        ? {
-                                            title: element.paragraphs
-                                              .map((p) =>
-                                                p.runs
-                                                  .map((r) => r.text)
-                                                  .join(""),
-                                              )
-                                              .join("\n"),
-                                          }
-                                        : {}),
-                                    });
-                                  }}
-                                />
-                                {element.paragraphs
-                                  .map((p) =>
-                                    p.runs.map((r) => r.text).join(""),
-                                  )
-                                  .join(" / ")
-                                  .slice(0, 100)}
-                              </label>
-                            ))}
-                        </details>
-                      );
-                    })}
-                  </>
-                )}
-                <div className="master-actions">
-                  <button
-                    className="btn btn-primary"
-                    disabled={!target}
-                    onClick={() =>
-                      void makePreview(
-                        deck.template?.template_id === selected
-                          ? "update"
-                          : "bind",
-                      )
-                    }
-                  >
-                    {deck.template?.template_id === selected
-                      ? "预览模板更新"
-                      : "预览套用模板"}
-                  </button>
-                  {deck.template && (
+                        ))}
+                        <button
+                          className="btn"
+                          onClick={() => setNewChapter(true)}
+                        >
+                          添加章节
+                        </button>
+                      </fieldset>
+                      {mappings.map((mapping, index) => {
+                        const page = deck.slides.find(
+                          (s) => s.id === mapping.slide_id,
+                        )!;
+                        const patch = (v: Partial<typeof mapping>) => {
+                          setMappings((items) =>
+                            items.map((item, i) =>
+                              i === index ? { ...item, ...v } : item,
+                            ),
+                          );
+                          setPreview(null);
+                        };
+                        return (
+                          <details
+                            className="master-settings-group"
+                            key={page.id}
+                          >
+                            <summary>
+                              第 {index + 1} 页：{mapping.title || "待确认标题"}
+                            </summary>
+                            <label className="master-field">
+                              页标题
+                              <input
+                                aria-label={`第 ${index + 1} 页标题`}
+                                maxLength={500}
+                                value={mapping.title}
+                                onChange={(e) =>
+                                  patch({ title: e.target.value })
+                                }
+                              />
+                            </label>
+                            <CustomSelect
+                              ariaLabel={`第 ${index + 1} 页章节`}
+                              value={mapping.chapter_id ?? ""}
+                              options={[
+                                { value: "", label: "不属于章节" },
+                                ...chapters.map((c) => ({
+                                  value: c.id,
+                                  label: c.title,
+                                })),
+                              ]}
+                              onChange={(chapter_id) =>
+                                patch({ chapter_id: chapter_id || null })
+                              }
+                            />
+                            <CustomSelect
+                              ariaLabel={`第 ${index + 1} 页型`}
+                              value={mapping.page_type ?? "content"}
+                              options={pageTypes}
+                              onChange={(page_type) =>
+                                patch({ page_type: page_type as PageType })
+                              }
+                            />
+                            <p>选择转为模板标题的原文字对象：</p>
+                            {page.elements
+                              .filter((e) => e.kind === "text")
+                              .map((element) => (
+                                <label
+                                  className="master-check"
+                                  key={element.id}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={mapping.title_element_ids?.includes(
+                                      element.id,
+                                    )}
+                                    onChange={(e) => {
+                                      const ids = e.target.checked
+                                        ? [
+                                            ...(mapping.title_element_ids ??
+                                              []),
+                                            element.id,
+                                          ]
+                                        : (
+                                            mapping.title_element_ids ?? []
+                                          ).filter((id) => id !== element.id);
+                                      patch({
+                                        title_element_ids: ids,
+                                        ...(!mapping.title && e.target.checked
+                                          ? {
+                                              title: element.paragraphs
+                                                .map((p) =>
+                                                  p.runs
+                                                    .map((r) => r.text)
+                                                    .join(""),
+                                                )
+                                                .join("\n"),
+                                            }
+                                          : {}),
+                                      });
+                                    }}
+                                  />
+                                  {element.paragraphs
+                                    .map((p) =>
+                                      p.runs.map((r) => r.text).join(""),
+                                    )
+                                    .join(" / ")
+                                    .slice(0, 100)}
+                                </label>
+                              ))}
+                          </details>
+                        );
+                      })}
+                    </>
+                  )}
+                  <div className="master-actions">
                     <button
-                      className="btn"
-                      onClick={() => void makePreview("unbind")}
+                      className="btn btn-primary"
+                      disabled={!target}
+                      onClick={() =>
+                        void makePreview(
+                          deck.template?.template_id === selected
+                            ? "update"
+                            : "bind",
+                        )
+                      }
                     >
-                      预览解除绑定
+                      {deck.template?.template_id === selected
+                        ? "预览模板更新"
+                        : "预览套用模板"}
+                    </button>
+                    {deck.template && (
+                      <button
+                        className="btn"
+                        onClick={() => void makePreview("unbind")}
+                      >
+                        预览解除绑定
+                      </button>
+                    )}
+                  </div>
+                  {preview && request && (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() =>
+                        void work(async () => {
+                          if (draft.isDirty())
+                            throw new Error("文稿已修改，请重新预览");
+                          const project = await applyChange(
+                            session.projectId,
+                            request,
+                            preview.preview_token,
+                          );
+                          draft.acceptExternal(project);
+                          setPreview(null);
+                          setRequest(null);
+                        })
+                      }
+                    >
+                      确认应用到当前文稿
                     </button>
                   )}
-                </div>
-                {preview && request && (
-                  <button
-                    className="btn btn-primary"
-                    onClick={() =>
-                      void work(async () => {
-                        if (draft.isDirty())
-                          throw new Error("文稿已修改，请重新预览");
-                        const project = await applyChange(
-                          session.projectId,
-                          request,
-                          preview.preview_token,
-                        );
-                        draft.acceptExternal(project);
-                        setPreview(null);
-                        setRequest(null);
-                      })
-                    }
-                  >
-                    确认应用到当前文稿
-                  </button>
-                )}
+                </details>
                 {deck.template && (
                   <fieldset className="master-settings-group">
                     <legend>当前页内容与章节</legend>
@@ -551,99 +617,123 @@ function DocumentTemplatePanel({
                         updatePage({ chapter_id: chapter_id || null })
                       }
                     />
-                    {(deck.chapters ?? []).map((c) => (
-                      <div className="master-field" key={c.id}>
-                        <label>
-                          章节名称
-                          <input
-                            aria-label={`重命名章节 ${c.title}`}
-                            value={c.title}
-                            maxLength={120}
-                            onChange={(e) =>
-                              updateChapters(
-                                (deck.chapters ?? []).map((item) =>
-                                  item.id === c.id
-                                    ? {
-                                        ...item,
-                                        title: e.target.value || "未命名章节",
-                                      }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                        <button
-                          className="btn"
-                          onClick={() => {
-                            commit((d) => ({
-                              ...d,
-                              document: {
-                                ...d.document,
-                                chapters: d.document.chapters?.filter(
-                                  (item) => item.id !== c.id,
-                                ),
-                                slides: d.document.slides.map((s) =>
-                                  s.chapter_id === c.id
-                                    ? { ...s, chapter_id: null }
-                                    : s,
-                                ),
-                              },
-                            }));
-                            setChapters(
-                              chapters.filter((item) => item.id !== c.id),
-                            );
-                          }}
-                        >
-                          删除章节关联
-                        </button>
-                      </div>
-                    ))}
+                    <details className="master-document-rules">
+                      <summary>
+                        管理章节（{deck.chapters?.length ?? 0}）
+                      </summary>
+                      {(deck.chapters ?? []).map((c) => (
+                        <div className="master-field" key={c.id}>
+                          <label>
+                            章节名称
+                            <input
+                              aria-label={`重命名章节 ${c.title}`}
+                              value={c.title}
+                              maxLength={120}
+                              onChange={(e) =>
+                                updateChapters(
+                                  (deck.chapters ?? []).map((item) =>
+                                    item.id === c.id
+                                      ? {
+                                          ...item,
+                                          title: e.target.value || "未命名章节",
+                                        }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                          </label>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              commit((d) => ({
+                                ...d,
+                                document: {
+                                  ...d.document,
+                                  chapters: d.document.chapters?.filter(
+                                    (item) => item.id !== c.id,
+                                  ),
+                                  slides: d.document.slides.map((s) =>
+                                    s.chapter_id === c.id
+                                      ? { ...s, chapter_id: null }
+                                      : s,
+                                  ),
+                                },
+                              }));
+                              setChapters(
+                                chapters.filter((item) => item.id !== c.id),
+                              );
+                            }}
+                          >
+                            删除章节关联
+                          </button>
+                        </div>
+                      ))}
+                    </details>
                     <button className="btn" onClick={() => setNewChapter(true)}>
                       添加章节
                     </button>
-                    <h4>当前页隐藏模板元素</h4>
-                    {[
-                      ...[
-                        { id: "chapter", text: "章节标题" },
-                        { id: "title", text: "页标题" },
-                        { id: "number", text: "页码" },
-                        { id: "toc", text: "目录" },
-                        { id: "background", text: "背景图" },
-                      ],
-                      ...(effective?.fixed ?? []).map((item, i) => ({
-                        id: item.id,
-                        text:
-                          item.kind === "image"
-                            ? `固定图片 ${i + 1}`
-                            : item.text,
-                      })),
-                    ].map((item) => (
-                      <label className="master-check" key={item.id}>
-                        <input
-                          type="checkbox"
-                          checked={
-                            slide.template_hidden?.includes(item.id) ?? false
-                          }
-                          onChange={(e) =>
-                            updatePage({
-                              template_hidden: e.target.checked
-                                ? [...(slide.template_hidden ?? []), item.id]
-                                : (slide.template_hidden ?? []).filter(
-                                    (id) => id !== item.id,
+                    <details className="master-document-rules">
+                      <summary>本页显示规则</summary>
+                      <p>勾选要在本页隐藏的模板元素。</p>
+                      {[
+                        ...[
+                          { id: "chapter", text: "章节标题" },
+                          { id: "title", text: "页标题" },
+                          { id: "number", text: "页码" },
+                          { id: "toc", text: "目录" },
+                          { id: "background", text: "背景图" },
+                        ],
+                        ...(effective?.fixed ?? []).map((item, i) => ({
+                          id: item.id,
+                          text:
+                            item.kind === "image"
+                              ? `固定图片 ${i + 1}`
+                              : item.text,
+                        })),
+                        ...(effective?.version === 2
+                          ? [
+                              ...(effective.global_scene?.elements ?? []),
+                              ...(
+                                effective.layouts[slide.page_type ?? "content"]
+                                  .scene?.elements ?? []
+                              ).filter(
+                                (e) =>
+                                  !effective.layouts[
+                                    slide.page_type ?? "content"
+                                  ].scene?.semantics?.some(
+                                    (s) => s.element_id === e.id,
                                   ),
-                            })
-                          }
-                        />
-                        {item.text}
-                      </label>
-                    ))}
-                    <button
-                      className="btn"
-                      onClick={() => updatePage({ template_hidden: [] })}
-                    >
-                      本页恢复跟随模板
-                    </button>
+                              ),
+                            ].map((e) => ({ id: e.id, text: e.name || e.kind }))
+                          : []),
+                      ].map((item) => (
+                        <label className="master-check" key={item.id}>
+                          <input
+                            type="checkbox"
+                            checked={
+                              slide.template_hidden?.includes(item.id) ?? false
+                            }
+                            onChange={(e) =>
+                              updatePage({
+                                template_hidden: e.target.checked
+                                  ? [...(slide.template_hidden ?? []), item.id]
+                                  : (slide.template_hidden ?? []).filter(
+                                      (id) => id !== item.id,
+                                    ),
+                              })
+                            }
+                          />
+                          {item.text}
+                        </label>
+                      ))}
+                      <button
+                        className="btn"
+                        onClick={() => updatePage({ template_hidden: [] })}
+                      >
+                        本页恢复跟随模板
+                      </button>
+                    </details>
                     {tocOverflow(deck, slide) && (
                       <div role="alert">
                         <p>目录超出本页容量，请添加续页以展示全部章节。</p>

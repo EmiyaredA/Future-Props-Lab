@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from app.apps.presentation_workshop.schemas.values import Color, Identifier, SlideModel
+from app.apps.presentation_workshop.templates.scenes import TemplateScene
 
 PageType = Literal["cover", "toc", "section", "content", "ending"]
 PAGE_TYPES = ["cover", "toc", "section", "content", "ending"]
@@ -51,6 +52,8 @@ class TemplateFixedElement(SlideModel):
 
 
 class TemplatePageLayout(SlideModel):
+    scene: TemplateScene = Field(default_factory=TemplateScene)
+    defaults: TemplateScene = Field(default_factory=TemplateScene)
     background: Color = "#FAF8F3"
     background_asset_id: Identifier | None = None
     chapter: TemplateSlot = Field(
@@ -90,7 +93,8 @@ def default_layouts():
 
 
 class TemplateDefinition(SlideModel):
-    version: Literal[1] = 1
+    version: Literal[1, 2] = 1
+    global_scene: TemplateScene = Field(default_factory=TemplateScene)
     width: int = Field(default=1280, ge=320, le=4096)
     height: int = Field(default=720, ge=240, le=4096)
     font: Font = "Microsoft YaHei"
@@ -104,6 +108,18 @@ class TemplateDefinition(SlideModel):
 
     @model_validator(mode="after")
     def complete(self):
+        if self.version == 1 and (
+            self.global_scene != TemplateScene()
+            or any(
+                layout.scene != TemplateScene() or layout.defaults != TemplateScene()
+                for layout in self.layouts.values()
+            )
+        ):
+            raise ValueError("原生模板场景需要 v2 模板")
+        if self.global_scene.semantics or any(
+            layout.defaults.semantics for layout in self.layouts.values()
+        ):
+            raise ValueError("动态槽位只属于页型固定层")
         if set(self.layouts) != set(PAGE_TYPES):
             raise ValueError("模板必须包含封面、目录、章节、内容和结束五种页型")
         ids = [item.id for item in self.fixed]
@@ -116,6 +132,10 @@ class TemplateDefinition(SlideModel):
         }:
             raise ValueError("固定元素 ID 必须唯一，且不能使用保留槽位名称")
         for layout in self.layouts.values():
+            if {e.id for e in self.global_scene.elements} & {e.id for e in layout.scene.elements}:
+                raise ValueError("全局固定层与页型固定层不能使用相同对象 ID")
+            if len(self.global_scene.elements) + len(layout.scene.elements) > 100:
+                raise ValueError("全局固定层和页型固定层合计最多 100 个对象")
             for slot in (layout.chapter, layout.title, layout.number, layout.toc):
                 if slot.x + slot.width > self.width or slot.y + slot.height > self.height:
                     raise ValueError("模板槽位不能超出页面")
@@ -148,13 +168,16 @@ class TemplateOverrides(SlideModel):
     number_hidden_types: list[PageType] | None = Field(default=None, max_length=5)
     layouts: dict[PageType, TemplatePageLayout] = Field(default_factory=dict)
     fixed: list[TemplateFixedElement] | None = Field(default=None, max_length=40)
+    global_scene: TemplateScene | None = None
 
 
 def effective_template(
     binding: TemplateBinding, overrides: TemplateOverrides
 ) -> TemplateDefinition:
     data = binding.snapshot.model_dump()
-    for key, value in overrides.model_dump(exclude_none=True).items():
+    for key, value in overrides.model_dump().items():
+        if value is None:
+            continue
         if key == "layouts":
             data[key].update(value)
         else:

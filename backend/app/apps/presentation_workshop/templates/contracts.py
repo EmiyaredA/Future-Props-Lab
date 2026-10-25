@@ -5,11 +5,18 @@ from pydantic import Field
 
 from app.apps.presentation_workshop.schemas.document import PresentationDocument
 from app.apps.presentation_workshop.schemas.values import Identifier, SlideModel
+from app.apps.presentation_workshop.templates.scenes import LayoutObjectLink
 from app.apps.presentation_workshop.templates.schema import (
     PageType,
     PresentationChapter,
     TemplateDefinition,
 )
+
+
+class TemplateLayoutMapping(SlideModel):
+    slide_id: Identifier
+    page_type: PageType
+    objects: list[LayoutObjectLink] = Field(min_length=1, max_length=200)
 
 
 class PresentationTemplateIn(SlideModel):
@@ -74,7 +81,9 @@ class TemplateChangeIn(SlideModel):
     expected_revision: int = Field(ge=0)
     template_id: str | None = None
     template_revision: int | None = Field(default=None, ge=0)
-    action: Literal["bind", "update", "unbind"] = "bind"
+    action: Literal["bind", "update", "unbind", "layout"] = "bind"
+    layout_mappings: list[TemplateLayoutMapping] = Field(default_factory=list, max_length=100)
+    apply_text_style: bool = Field(default_factory=lambda: False)
     mappings: list[TemplatePageMapping] = Field(default_factory=list, max_length=100)
     chapters: list[PresentationChapter] | None = Field(default=None, max_length=100)
 

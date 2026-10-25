@@ -16618,6 +16618,13 @@ export interface components {
             /** Version */
             version: string | null;
         };
+        /** LayoutObjectLink */
+        LayoutObjectLink: {
+            /** Default Id */
+            default_id: string;
+            /** Element Id */
+            element_id: string;
+        };
         /** LegacyTarget */
         LegacyTarget: {
             /** Excerpt */
@@ -19323,7 +19330,7 @@ export interface components {
              * Version
              * @enum {integer}
              */
-            version: 2 | 3 | 4;
+            version: 2 | 3 | 4 | 5;
             /** Width */
             width: number;
         };
@@ -19559,6 +19566,7 @@ export interface components {
             image_asset_id?: string | null;
             /** Infographics */
             infographics?: components["schemas"]["PresentationInfographic"][];
+            layout_source?: components["schemas"]["PresentationLayoutSource"] | null;
             /**
              * Notes
              * @default
@@ -19650,6 +19658,20 @@ export interface components {
              * @default
              */
             template: string;
+        };
+        /** PresentationLayoutSource */
+        PresentationLayoutSource: {
+            /** Objects */
+            objects?: components["schemas"]["LayoutObjectLink"][];
+            /**
+             * Page Type
+             * @enum {string}
+             */
+            page_type: "cover" | "toc" | "section" | "content" | "ending";
+            /** Template Id */
+            template_id?: string | null;
+            /** Template Revision */
+            template_revision: number;
         };
         /** PresentationLink */
         PresentationLink: {
@@ -19967,6 +19989,7 @@ export interface components {
             image_asset_id?: string | null;
             /** Infographics */
             infographics?: components["schemas"]["PresentationInfographic"][];
+            layout_source?: components["schemas"]["PresentationLayoutSource"] | null;
             /** Notes */
             notes: string;
             /** Notes Rich */
@@ -21979,11 +22002,15 @@ export interface components {
              * @default bind
              * @enum {string}
              */
-            action: "bind" | "update" | "unbind";
+            action: "bind" | "update" | "unbind" | "layout";
+            /** Apply Text Style */
+            apply_text_style?: boolean;
             /** Chapters */
             chapters?: components["schemas"]["PresentationChapter"][] | null;
             /** Expected Revision */
             expected_revision: number;
+            /** Layout Mappings */
+            layout_mappings?: components["schemas"]["TemplateLayoutMapping"][];
             /** Mappings */
             mappings?: components["schemas"]["TemplatePageMapping"][];
             /** Preview Token */
@@ -22000,11 +22027,15 @@ export interface components {
              * @default bind
              * @enum {string}
              */
-            action: "bind" | "update" | "unbind";
+            action: "bind" | "update" | "unbind" | "layout";
+            /** Apply Text Style */
+            apply_text_style?: boolean;
             /** Chapters */
             chapters?: components["schemas"]["PresentationChapter"][] | null;
             /** Expected Revision */
             expected_revision: number;
+            /** Layout Mappings */
+            layout_mappings?: components["schemas"]["TemplateLayoutMapping"][];
             /** Mappings */
             mappings?: components["schemas"]["TemplatePageMapping"][];
             /** Template Id */
@@ -22057,6 +22088,7 @@ export interface components {
              * @default #142B45
              */
             foreground: string;
+            global_scene?: components["schemas"]["TemplateScene"];
             /**
              * Height
              * @default 720
@@ -22081,9 +22113,9 @@ export interface components {
             /**
              * Version
              * @default 1
-             * @constant
+             * @enum {integer}
              */
-            version: 1;
+            version: 1 | 2;
             /**
              * Width
              * @default 1280
@@ -22175,6 +22207,18 @@ export interface components {
             /** Tags */
             tags?: string[];
         };
+        /** TemplateLayoutMapping */
+        TemplateLayoutMapping: {
+            /** Objects */
+            objects: components["schemas"]["LayoutObjectLink"][];
+            /**
+             * Page Type
+             * @enum {string}
+             */
+            page_type: "cover" | "toc" | "section" | "content" | "ending";
+            /** Slide Id */
+            slide_id: string;
+        };
         /** TemplateModel */
         TemplateModel: {
             /** Capabilities */
@@ -22256,6 +22300,7 @@ export interface components {
             font?: ("Microsoft YaHei" | "Arial" | "Consolas") | null;
             /** Foreground */
             foreground?: string | null;
+            global_scene?: components["schemas"]["TemplateScene"] | null;
             /** Layouts */
             layouts?: {
                 [key: string]: components["schemas"]["TemplatePageLayout"];
@@ -22282,7 +22327,9 @@ export interface components {
              */
             body_top: number;
             chapter?: components["schemas"]["TemplateSlot"];
+            defaults?: components["schemas"]["TemplateScene"];
             number?: components["schemas"]["TemplateSlot"];
+            scene?: components["schemas"]["TemplateScene"];
             title?: components["schemas"]["TemplateSlot"];
             toc?: components["schemas"]["TemplateSlot"];
             /**
@@ -22427,6 +22474,33 @@ export interface components {
             schema_version: 2 | 3;
             /** Tags */
             tags?: string[];
+        };
+        /** TemplateScene */
+        TemplateScene: {
+            /** Connections */
+            connections?: components["schemas"]["PresentationConnection"][];
+            /** Elements */
+            elements?: components["schemas"]["PresentationElement"][];
+            /** Groups */
+            groups?: components["schemas"]["PresentationGroup"][];
+            /** Infographics */
+            infographics?: components["schemas"]["PresentationInfographic"][];
+            /** Page Types */
+            page_types?: {
+                [key: string]: ("cover" | "toc" | "section" | "content" | "ending")[];
+            };
+            /** Semantics */
+            semantics?: components["schemas"]["TemplateSemantic"][];
+        };
+        /** TemplateSemantic */
+        TemplateSemantic: {
+            /** Element Id */
+            element_id: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "chapter" | "title" | "number" | "toc";
         };
         /** TemplateSlot */
         TemplateSlot: {

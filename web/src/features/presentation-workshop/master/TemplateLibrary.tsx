@@ -1,3 +1,10 @@
+import {
+  studioDefinition,
+  studioPreview,
+  studioAssets,
+  previewPage,
+  starterDocument,
+} from "./studioPreview";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, LayoutTemplate, Copy, Pencil, Trash2 } from "lucide-react";
@@ -6,10 +13,8 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { SlidePreview } from "../SlideSurface";
 import { PresentationPreviewDialog } from "../PresentationPreviewDialog";
-import { newSlide, newElement } from "../templates";
-import type { Deck, NavigationGuard } from "../types";
+import type { Deck } from "../types";
 import { presentationKeys } from "../queryKeys";
-import { TemplateDesigner } from "./TemplateDesigner";
 import {
   listTemplates,
   listExamples,
@@ -20,8 +25,7 @@ import {
   importBundle,
 } from "./api";
 import {
-  defaultDefinition,
-  templatePreview,
+  type Definition,
   resolveSlide,
   type Template,
   type Example,
@@ -30,11 +34,11 @@ import {
 export function TemplateLibrary({
   onOpen,
   readOnly,
-  registerNavigationGuard,
+  onEdit,
 }: {
   onOpen: (id: string) => void;
   readOnly: boolean;
-  registerNavigationGuard?: NavigationGuard;
+  onEdit: (id: string) => void;
 }) {
   const templates = useQuery({
       queryKey: presentationKeys.templates,
@@ -45,8 +49,7 @@ export function TemplateLibrary({
       queryFn: ({ signal }) => listExamples(signal),
     }),
     cache = useQueryClient();
-  const [editing, setEditing] = useState<Template | "new" | null>(null),
-    [use, setUse] = useState<{
+  const [use, setUse] = useState<{
       kind: "template" | "example";
       item: Template | Example;
     } | null>(null),
@@ -80,23 +83,6 @@ export function TemplateLibrary({
       setBusy(false);
     }
   };
-  if (editing)
-    return (
-      <TemplateDesigner
-        key={editing === "new" ? "new" : editing.id}
-        initial={editing === "new" ? null : editing}
-        onClose={() => {
-          setEditing(null);
-          void refresh();
-        }}
-        onSaved={(t) => {
-          setEditing(t);
-          void refresh();
-        }}
-        readOnly={readOnly}
-        registerNavigationGuard={registerNavigationGuard}
-      />
-    );
   return (
     <div className="presentation-library master-library workshop-page">
       <WorkshopAppChrome
@@ -110,7 +96,7 @@ export function TemplateLibrary({
               </button>
               <button
                 className="workshop-primary"
-                onClick={() => setEditing("new")}
+                onClick={() => onEdit("new")}
               >
                 <Plus size={18} />
                 新建模板
@@ -145,9 +131,7 @@ export function TemplateLibrary({
           ) : (
             <div className="master-card-grid">
               {templates.data.items.map((t) => {
-                const d = templatePreview(
-                  t.definition as ReturnType<typeof defaultDefinition>,
-                );
+                const d = studioPreview(t.definition as Definition);
                 return (
                   <article className="master-card" key={t.id}>
                     <button
@@ -158,30 +142,34 @@ export function TemplateLibrary({
                           title: t.title,
                           deck: {
                             ...d,
-                            slides: [
-                              "cover",
-                              "toc",
-                              "section",
-                              "content",
-                              "ending",
-                            ].map((_, i) => ({
-                              ...d.slides[0],
-                              id: `preview-${i}`,
-                              page_type: (
-                                [
-                                  "cover",
-                                  "toc",
-                                  "section",
-                                  "content",
-                                  "ending",
-                                ] as const
-                              )[i],
-                            })),
+                            template: null,
+                            slides: (
+                              [
+                                "cover",
+                                "toc",
+                                "section",
+                                "content",
+                                "ending",
+                              ] as const
+                            ).map((type) => {
+                              const page = studioPreview(
+                                t.definition as Definition,
+                                type,
+                              );
+                              return {
+                                ...resolveSlide(page, previewPage(page)),
+                                id: `preview-${type}`,
+                              };
+                            }),
                           },
                         })
                       }
                     >
-                      <SlidePreview slide={d.slides[0]} size={d} />
+                      <SlidePreview
+                        slide={previewPage(d)}
+                        size={d}
+                        assetUrls={studioAssets}
+                      />
                       <span className="master-badge">5 种页型 · 全局样式</span>
                     </button>
                     <div className="master-card-body">
@@ -193,7 +181,7 @@ export function TemplateLibrary({
                         <button
                           className="btn"
                           disabled={busy}
-                          onClick={() => setEditing(t)}
+                          onClick={() => onEdit(t.id)}
                         >
                           <Pencil size={14} />
                           {readOnly ? "查看配置" : "编辑模板"}
@@ -361,57 +349,7 @@ export function TemplateLibrary({
         onCancel={() => setStarter(false)}
         onConfirm={() =>
           perform(async () => {
-            const definition = defaultDefinition();
-            const d = templatePreview(definition, "cover");
-            d.chapters = [
-              { id: "intro", title: "项目背景" },
-              { id: "practice", title: "技术实践" },
-            ];
-            d.slides = (
-              ["cover", "toc", "section", "content", "ending"] as const
-            ).map((page_type, i) => ({
-              ...newSlide("blank"),
-              page_type,
-              title: [
-                "技术实践与交付",
-                "目录",
-                "从问题到实现",
-                "关键技术与验证",
-                "总结与下一步",
-              ][i],
-              chapter_id:
-                i === 2 || i === 3 ? "practice" : i === 0 ? "intro" : null,
-              elements:
-                i === 3
-                  ? [
-                      newElement("text", {
-                        x: 64,
-                        y: 220,
-                        width: 1100,
-                        height: 220,
-                        paragraphs: [
-                          {
-                            runs: [
-                              {
-                                text: "明确问题 → 方案取舍 → 实现产物 → 验证证据",
-                                font: "Microsoft YaHei",
-                                size: 30,
-                                color: "#142B45",
-                                bold: false,
-                                italic: false,
-                                underline: false,
-                              },
-                            ],
-                            align: "left",
-                            line_height: 1.3,
-                            bullet: false,
-                            numbered: false,
-                          },
-                        ],
-                      }),
-                    ]
-                  : [],
-            }));
+            const definition = studioDefinition();
             await importBundle({
               template: {
                 title: "简洁技术汇报",
@@ -420,8 +358,8 @@ export function TemplateLibrary({
               },
               example: {
                 title: "技术实践 · 五页示例",
-                description: "从背景到交付的五页完整示例",
-                document: d,
+                description: "从背景到交付的完整技术汇报示例",
+                document: starterDocument(definition),
               },
             });
             setStarter(false);
@@ -430,6 +368,7 @@ export function TemplateLibrary({
       />
       {preview && (
         <PresentationPreviewDialog
+          assetUrls={studioAssets}
           title={preview.title}
           slides={preview.deck.slides.map((s, i) =>
             resolveSlide(preview.deck, s, i),
