@@ -73,8 +73,10 @@ export function VideoEditorTimeline({
   onContentViewportWidthChange,
   audioSeam,
   onCheckGaps,
+  onRequestClipMerge,
 }: {
   onCheckGaps?: () => void;
+  onRequestClipMerge?: (clipIds: string[]) => void;
   draggingAsset?: VideoEditorAsset;
   timeline: Timeline;
   assets: VideoEditorAsset[];
@@ -565,6 +567,11 @@ export function VideoEditorTimeline({
         onRippleDelete={() => deleteSelected(true)}
         onToggleSnap={() => setSnapEnabled(!snapEnabled)}
         onCheckGaps={onCheckGaps}
+        onMerge={
+          onRequestClipMerge
+            ? () => onRequestClipMerge(selectedClipIds)
+            : undefined
+        }
       />
       <div
         className="ve-timeline-viewport"
@@ -981,6 +988,7 @@ export function VideoEditorTimeline({
           resolveActionClips={resolveActionClips}
           deleteSelected={deleteSelected}
           exportSelectedVideos={exportSelectedVideos}
+          onRequestClipMerge={onRequestClipMerge}
           onRequestSegmentExport={onRequestSegmentExport}
           splitSelected={splitSelected}
           separateClips={separateClips}

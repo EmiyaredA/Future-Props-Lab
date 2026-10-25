@@ -223,6 +223,27 @@ export function usePresentationDraft(
     redo,
     flush,
     adopt,
+    acceptExternal: (project: Project) => {
+      if (
+        project.document.version === 4 &&
+        latest.current.document.version !== 4
+      )
+        latest.current = {
+          ...latest.current,
+          document: { ...latest.current.document, version: 4 },
+        };
+      commit(() => ({ title: project.title, document: project.document }));
+      saved.current = project;
+      persisted.current = generation.current;
+      setState("saved");
+      endGroup();
+      callback.current(project);
+      publishResourceRevision({
+        kind: "presentation-project",
+        id: project.id,
+        revision: project.revision,
+      });
+    },
     setComposition,
     endGroup,
     restoreVersion,

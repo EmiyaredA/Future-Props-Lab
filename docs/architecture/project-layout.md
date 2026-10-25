@@ -218,6 +218,7 @@ Future-Props-Lab/
   FFmpeg/Pillow 合成和取消控制。`animated_image.py` 拥有有界、可取消的 GIF 单次动画到无声 MP4 转换；视觉工坊 `outputs/video_uploads.py` 拥有上传适配与临时输入，转换完成后才进入既有素材／输出 CAS 事务。`video_sampling.py` 按源视频 PTS 选择包含当前时刻的画面区间，
   精确停帧与导出共享该采样规则。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   `spin_blur.py` 拥有旋转模糊的角向采样；Web 的 `video-editor/spinBlurCanvas.ts` 使用相同的角度、采样数与覆盖缩放，`VideoEditorEffectImage.tsx` 复用图片和文字图层的已加载素材。
+  `directional_transitions.py` 拥有甩镜九点方向采样与漏光滤色配方；Web 的 `video-editor/directionalTransitionCanvas.ts` 对齐像素规则，`VideoEditorLightLeak.tsx` 在节目画布上只叠加一次光带。`video-editor/transitionCatalog.ts` 维护可复用转场的分类、名称与默认时长，面板和检查器共同消费。
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
@@ -237,6 +238,8 @@ Future-Props-Lab/
 临时草稿和提交取消，`VideoEditorTransformBox.tsx` 显示固定屏幕尺寸操作手柄。
 `VideoEditorTransformFields.tsx` 将同一编辑契约接入属性检查器；草稿经编辑器显式传给预览与检查器，
 不进入持久时间线。媒体层按画布裁切，操作框独立覆盖精确帧；所有写入仍经过时间线 CAS 保存队列。
+
+视频剪辑的 `clip_merging/` 拥有连续视频片段选择校验、不可变任务快照、透明素材生成与原子替换规则。共享媒体渲染器提供显式透明画布与 ProRes 4444 输出；合并结果经代理就绪和规格校验后发布，替换与撤销通过时间线 CAS 操作执行。`VideoEditorClipMergeDialog.tsx` 拥有提交、进度、取消和当前编辑会话内的替换，任务中心只展示与取消任务，不自动修改时间线。项目名称编辑由 `VideoEditorProjectTitle.tsx` 拥有。
 
 视频剪辑时间线工具栏由 `VideoEditorTimelineTools.tsx` 拥有；`timelineGaps.ts` 检测可见画面轨的内部微秒空隙，
 `gapEditPlan.ts` 规划延长与前移的关联片段最终状态，`gapFreeze.ts` 规划和准备显式定帧素材。
@@ -465,6 +468,8 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 ## 演示工坊
 
 `backend/app/apps/presentation_workshop/` 拥有文稿项目、图片归属校验、引用同步和请求内导出。
+`templates/` 拥有 Workspace 模板／完整示例、素材引用、v4 页面语义与模板快照、纯解析器以及显式绑定预览事务。`schema.py` 不依赖文稿或数据库；`resolver.py` 生成临时模板层，`binding.py` 按文稿与目标模板 revision 校验后应用，保留正文与文稿覆盖。`library.py` 管理模板／示例 CAS 与入门包原子导入。迁移 `r0111_presentation_templates` 仅追加模板、示例及各自素材引用表，不回写旧文稿。
+
 `projects.py` 处理 Workspace 限定加载与整体 CAS；`exports.py` 负责只读版本快照、
 两路导出并发、私有临时文件和取消清理；`pptx_export.py` 组装 python-pptx 导出，`pptx_styles.py` 映射 DrawingML 样式，
 `pptx_media.py` 拥有 SVG 扩展嵌入、PNG 兼容图与图片外观，`native_shapes.py` 构造可编辑自由形状。
@@ -475,8 +480,9 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 迁移 `0056_presentation_workshop` 仅追加这两张表；图片沿用公共文件库并参与删除保护，
 不增加独立项目素材目录或持久导出任务。API 不接收 Workspace ID。
 
-`web/src/features/presentation-workshop/` 拥有项目列表、五种版式、DOM/SVG 页面渲染、
+`web/src/features/presentation-workshop/` 拥有文稿列表、模板与示例库、单页版式、DOM/SVG 页面渲染、
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
+`master/` 拥有模板设计器、文稿绑定与覆盖面板、共享配置控件及 Web 纯解析器；`SlideSurface` 接收文稿上下文并解析模板，画布正文选择与修改仍使用源页面。全局模板变更进入原历史队列，预览应用通过正式 API 后保留撤销历史；新增模板页登记响应式验收。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
 `presentation-dialog.css` 统一工坊弹窗尺寸、控件密度和固定标题／操作栏；内容区局部滚动，各编辑器继续独立拥有草稿与焦点生命周期。
 `presentationHistory.ts` 解析历史快照的页面与元素定位；`usePresentationDraft` 持有本次会话的 100 步历史与保存队列，`usePresentationHistory` 统一键盘、按钮、字段合并边界、输入法与未提交手势取消。历史定位和分组提示只存在内存，不进入文稿、HTTP 或 SDK 契约。

@@ -19,9 +19,11 @@ import {
   X,
 } from "lucide-react";
 import {
+  cancelVideoEditorClipMerge,
   deleteVideoEditorRender,
   listVideoEditorProjects,
   listVideoEditorRenders,
+  listVideoEditorClipMerges,
   listVideoEditorSegmentExports,
 } from "./api";
 import { SegmentExportDownloads } from "./SegmentExportDownloads";
@@ -46,6 +48,8 @@ const filters = [
 const isActive = (task: VideoEditorTask) =>
   ["queued", "running"].includes(task.status);
 function taskTitle(task: VideoEditorTask) {
+  if (task.kind === "clip_merge")
+    return `片段合并：${task.resultDetail?.name ?? "视频"}`;
   return task.kind === "segment_export"
     ? task.resultDetail?.importRequested === false
       ? "分段导出"
@@ -93,6 +97,14 @@ export function VideoEditorTasksPage({
       );
     },
   });
+  const cancelMerge = useMutation({
+    mutationFn: (task: VideoEditorTask) =>
+      cancelVideoEditorClipMerge(task.projectId, task.id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: videoEditorQueryKeys.allTasks,
+      }),
+  });
   const projects = useQuery({
     queryKey: videoEditorQueryKeys.projects,
     queryFn: listVideoEditorProjects,
@@ -108,12 +120,16 @@ export function VideoEditorTasksPage({
         (projects.data?.items ?? []).flatMap((project) => [
           listVideoEditorRenders(project.id),
           listVideoEditorSegmentExports(project.id),
+          listVideoEditorClipMerges(project.id),
         ]),
       );
       return lists
         .flatMap((list) => list.items)
         .filter(
-          (task) => task.kind === "render" || task.kind === "segment_export",
+          (task) =>
+            task.kind === "render" ||
+            task.kind === "segment_export" ||
+            task.kind === "clip_merge",
         )
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     },
@@ -237,7 +253,11 @@ export function VideoEditorTasksPage({
                       {projectNames.get(task.projectId) ?? "剪辑项目"}
                     </span>
                     <span>
-                      {task.kind === "segment_export" ? "分段" : "成片"}
+                      {task.kind === "segment_export"
+                        ? "分段"
+                        : task.kind === "clip_merge"
+                          ? "合并"
+                          : "成片"}
                     </span>
                     <time dateTime={task.createdAt}>
                       {taskDate(task.createdAt)}
@@ -277,7 +297,19 @@ export function VideoEditorTasksPage({
                   {task.error}
                 </p>
               ) : null}
+              {cancelMerge.error && cancelMerge.variables?.id === task.id ? (
+                <p role="alert">{cancelMerge.error.message}</p>
+              ) : null}
               <div className="ve-task-actions">
+                {canWrite && task.kind === "clip_merge" && active ? (
+                  <button
+                    className="ve-task-button"
+                    disabled={cancelMerge.isPending}
+                    onClick={() => cancelMerge.mutate(task)}
+                  >
+                    取消合并
+                  </button>
+                ) : null}
                 <button
                   className="ve-task-button secondary"
                   onClick={() => onOpenProject(task.projectId)}

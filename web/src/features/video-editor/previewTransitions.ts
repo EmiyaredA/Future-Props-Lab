@@ -4,6 +4,11 @@ import type {
   VideoEditorTrack,
   VideoEditorTransition,
 } from "./types";
+import type {
+  LightLeakEffect,
+  WhipPanEffect,
+  TransitionDirection,
+} from "./directionalTransitionCanvas";
 
 export type PreviewTransitionEffect = {
   opacityMultiplier: number;
@@ -11,6 +16,8 @@ export type PreviewTransitionEffect = {
   blurPx: number;
   /** Signed angular blur: outgoing clockwise, incoming counterclockwise. */
   spinBlur?: number;
+  whipPan?: WhipPanEffect;
+  lightLeak?: LightLeakEffect;
   clipPath?: string;
   overlayColor?: "#000000" | "#ffffff";
   overlayOpacity: number;
@@ -63,7 +70,8 @@ function effectForVisualKind(
     opacityMultiplier:
       normalizedKind === "wipe" ||
       normalizedKind === "fade-black" ||
-      normalizedKind === "fade-white"
+      normalizedKind === "fade-white" ||
+      normalizedKind === "light-leak"
         ? 1
         : visibility,
     scaleMultiplier: 1,
@@ -82,6 +90,18 @@ function effectForVisualKind(
   }
   if (normalizedKind === "spin-blur") {
     effect.spinBlur = spinSign * Math.max(0, Math.min(1, 1 - visibility));
+  }
+  if (normalizedKind === "whip-pan") {
+    effect.whipPan = {
+      amount: spinSign * (1 - visibility),
+      direction: direction as TransitionDirection,
+    };
+  }
+  if (normalizedKind === "light-leak") {
+    effect.lightLeak = {
+      progress: spinSign < 0 ? (1 + visibility) / 2 : (1 - visibility) / 2,
+      direction: direction as TransitionDirection,
+    };
   }
   if (normalizedKind === "wipe") {
     const legacyDirection =
@@ -124,6 +144,8 @@ function multiplyEffects(
     scaleMultiplier: base.scaleMultiplier * extra.scaleMultiplier,
     blurPx: Math.max(base.blurPx, extra.blurPx),
     spinBlur: base.spinBlur ?? extra.spinBlur,
+    whipPan: base.whipPan ?? extra.whipPan,
+    lightLeak: base.lightLeak ?? extra.lightLeak,
     clipPath: extra.clipPath ?? base.clipPath,
     overlayColor: overlay.overlayColor,
     overlayOpacity: overlay.overlayOpacity,
@@ -256,6 +278,41 @@ export function previewTransitionEffectForClip(
           between.durationUs,
           between.easing,
         );
+        if (between.kind === "light-leak" || between.kind === "whip-pan") {
+          const active = progress < 0.5 ? left : right;
+          if (clip.id !== active.id)
+            return { ...identityEffect(), opacityMultiplier: 0 };
+          return multiplyEffects(
+            {
+              ...identityEffect(),
+              lightLeak:
+                between.kind === "light-leak"
+                  ? {
+                      progress,
+                      direction: between.direction as TransitionDirection,
+                    }
+                  : undefined,
+              whipPan:
+                between.kind === "whip-pan"
+                  ? {
+                      amount:
+                        progress < 0.5 ? progress * 2 : -2 * (1 - progress),
+                      direction: between.direction as TransitionDirection,
+                    }
+                  : undefined,
+              forceLocalUs: mediaLocalUs(
+                active,
+                playheadUs,
+                transitions,
+                clipsById,
+              ),
+            },
+            clipEdgePreviewEffect(
+              active,
+              playheadUs - active.timelineStartUs,
+            ) ?? identityEffect(),
+          );
+        }
         if (between.kind === "eyelid") {
           const active = progress < 0.5 ? left : right;
           if (clip.id !== active.id) {
@@ -478,7 +535,7 @@ export function previewVisualLayers(
 }
 
 export function mergeTransitionOverlay(layers: PreviewVisualLayer[]) {
-  return layers.reduce(
+  const overlay = layers.reduce(
     (current, layer) =>
       layer.effect.eyelidProgress !== undefined
         ? { ...current, eyelidProgress: layer.effect.eyelidProgress }
@@ -495,6 +552,10 @@ export function mergeTransitionOverlay(layers: PreviewVisualLayer[]) {
       eyelidProgress: undefined as number | undefined,
     },
   );
+  const lightLeak = [...layers]
+    .reverse()
+    .find((layer) => layer.effect.lightLeak)?.effect.lightLeak;
+  return { ...overlay, lightLeak };
 }
 
 export function eyelidOverlayPaths(opening: number) {

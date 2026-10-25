@@ -77,6 +77,11 @@ def test_v2_migration_preserves_order_content_and_revision(tmp_path):
             "section",
             "notes_rich",
             "annotations",
+            "page_type",
+            "title",
+            "chapter_id",
+            "template_hidden",
+            "toc_offset",
         ):
             if key not in source:
                 page.pop(key)

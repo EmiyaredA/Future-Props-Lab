@@ -108,6 +108,26 @@ async def inspect_projects():
 `pair_desktop_async(...)`；回调只收到核对信息，返回值不含密钥。
 业务方法继续使用已有生成 SDK。既有 `Client(base_url=..., api_key=...)` Web 接入不变。
 
+视觉节点的输出版本可通过 `visual.list_node_outputs` / `visual.get_node_output` 查询，
+`visual.upload_node_output` 上传本地成片，或 `visual.add_node_output` 将已属于当前项目的素材
+追加为新版本。写入必须传最新 `expected_revision`；新版本成为当前最终输出，旧版本仍保留，
+质量认可状态会重置。`visual.set_node_final_output` 可选择已有版本，同样使用 revision CAS。
+这些操作沿用当前工作区、项目归属与读写授权，不触发模型生成。输出版本删除未向桌面 Agent 开放。
+
+```python
+with desktop_client() as app:
+    canvas = app.visual.get_canvas(project_id=project_id)
+    with open(video_path, "rb") as stream:
+        saved = app.visual.upload_node_output(
+            project_id=project_id,
+            node_id=node_id,
+            body={"expected_revision": canvas.revision},
+            files={"file": ("result.mp4", stream, "video/mp4")},
+        )
+    history = app.visual.list_node_outputs(project_id=project_id, node_id=node_id)
+    assert history.total >= 1
+```
+
 ## 安全与生命周期
 
 正式版数据根下新增 `agent/`，权限 0700：`settings.json` 记录开关，`connection.json` 是无密钥的

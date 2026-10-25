@@ -1,3 +1,5 @@
+import { TemplateLibrary } from "./master/TemplateLibrary";
+import "./master/master.css";
 import { Audience } from "./playback/Audience";
 import { useQuery } from "@tanstack/react-query";
 import { getProject } from "./api";
@@ -13,12 +15,14 @@ import "./presentation-dialog.css";
 
 export function PresentationWorkshopPage({
   projectId,
+  templates = false,
   onOpen,
   onBack,
   readOnly = false,
   registerNavigationGuard,
 }: {
   projectId?: string;
+  templates?: boolean;
   onOpen: (id: string) => void;
   onBack: () => void;
   readOnly?: boolean;
@@ -34,6 +38,14 @@ export function PresentationWorkshopPage({
   });
   if (audience && projectId)
     return <Audience sessionId={audience} projectId={projectId} />;
+  if (templates)
+    return (
+      <TemplateLibrary
+        onOpen={onOpen}
+        readOnly={readOnly}
+        registerNavigationGuard={registerNavigationGuard}
+      />
+    );
   if (!projectId)
     return <PresentationLibrary onOpen={onOpen} readOnly={readOnly} />;
   if (project.isPending)

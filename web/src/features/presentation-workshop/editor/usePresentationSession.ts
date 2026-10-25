@@ -371,6 +371,13 @@ export function usePresentationSession({
     const next = copy
       ? copySlide(draft.draft.document.slides.find((s) => s.id === copy)!)
       : applyPageStyle(newSlide(layout), themeSource);
+    if (!copy && draft.draft.document.template) {
+      next.elements = [];
+      next.title = layout === "ending" ? "总结与下一步" : "新幻灯片";
+      next.page_type =
+        layout === "cover" || layout === "ending" ? layout : "content";
+      next.chapter_id = slide.chapter_id;
+    }
     commit((d) => {
       const slides = [...d.document.slides];
       slides.splice(slideIndex + 1, 0, next);
@@ -530,6 +537,7 @@ export function usePresentationSession({
     },
   });
   return {
+    projectId: initial.id,
     deletePages,
     copyPages,
     reorderPages,

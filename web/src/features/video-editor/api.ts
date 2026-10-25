@@ -384,3 +384,47 @@ export const textLayerPath = (
     "/v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer" satisfies keyof paths;
   return `${path.replace("{project_id}", encodeURIComponent(projectId)).replace("{clip_id}", encodeURIComponent(clipId))}?revision=${revision}&renderVersion=2`;
 };
+
+export const createVideoEditorClipMerge = async (
+  projectId: string,
+  body: components["schemas"]["VideoEditorClipMergeCreateIn"],
+) =>
+  unwrap(
+    await api.POST("/v1/video-editor/projects/{project_id}/clip-merges", {
+      params: { path: { project_id: projectId } },
+      body,
+    }),
+  );
+
+export const getVideoEditorClipMerge = async (
+  projectId: string,
+  taskId: string,
+) =>
+  unwrap(
+    await api.GET(
+      "/v1/video-editor/projects/{project_id}/clip-merges/{task_id}",
+      {
+        params: { path: { project_id: projectId, task_id: taskId } },
+      },
+    ),
+  );
+
+export const listVideoEditorClipMerges = async (projectId: string) =>
+  unwrap(
+    await api.GET("/v1/video-editor/projects/{project_id}/clip-merges", {
+      params: { path: { project_id: projectId } },
+    }),
+  );
+
+export const cancelVideoEditorClipMerge = async (
+  projectId: string,
+  taskId: string,
+) =>
+  unwrap(
+    await api.POST(
+      "/v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel",
+      {
+        params: { path: { project_id: projectId, task_id: taskId } },
+      },
+    ),
+  );

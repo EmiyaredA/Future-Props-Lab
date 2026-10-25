@@ -450,7 +450,10 @@ export default function App() {
       </WorkshopShell>
     );
 
-  if (page === "presentation-workshop-projects")
+  if (
+    page === "presentation-workshop-projects" ||
+    page === "presentation-workshop-templates"
+  )
     return (
       <WorkshopShell
         module={PRESENTATION_WORKSHOP_MODULE}
@@ -460,6 +463,7 @@ export default function App() {
       >
         <PageBoundary>
           <PresentationWorkshopPage
+            templates={page === "presentation-workshop-templates"}
             readOnly={!workspaceAllows(me.workspace, "content.write")}
             onOpen={(id) => navigate("presentation-workshop-editor", id)}
             onBack={() => navigate("apps")}

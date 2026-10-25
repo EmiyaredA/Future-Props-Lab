@@ -104,3 +104,25 @@ async def test_export_poll_leaves_a_media_only_queue_untouched() -> None:
     async with SessionLocal() as session:
         assert (await session.get(VideoEditorTask, media_id)).status == "queued"
         assert (await session.get(VideoEditorTask, render_id)).status == "running"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("cancel_requested", [False, True])
+async def test_clip_merge_recovery_preserves_snapshot_and_cancellation(
+    cancel_requested: bool,
+) -> None:
+    render_id, _media_id = await _tasks("running")
+    async with SessionLocal() as session:
+        task = await session.get(VideoEditorTask, render_id)
+        task.kind = "clip_merge"
+        task.cancel_requested = cancel_requested
+        task.snapshot_document = {"tracks": [], "frozen": True}
+        task.request_payload = {"clipIds": ["a", "b"]}
+        await session.commit()
+    await VideoEditorRunner(lane="export").recover()
+    async with SessionLocal() as session:
+        task = await session.get(VideoEditorTask, render_id)
+        assert task.status == ("cancelled" if cancel_requested else "queued")
+        assert task.snapshot_document == {"tracks": [], "frozen": True}
+        assert task.request_payload == {"clipIds": ["a", "b"]}
+        assert task.output_asset_id is None

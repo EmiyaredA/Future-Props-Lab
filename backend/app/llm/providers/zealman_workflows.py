@@ -51,8 +51,16 @@ def normalize_request(
         result.get("reference_asset_ids") or result.get("video_asset_ids")
     ):
         raise ValueError("参考音频需要搭配至少一张图片或一个视频")
-    unsupported = explicit_fields & {"resolution", "watermark", "generate_audio"}
-    if not caps["supports_ratio"] and "ratio" in explicit_fields:
+    unsupported = {
+        name
+        for name in explicit_fields & {"resolution", "watermark", "generate_audio"}
+        if result.get(name) is not None
+    }
+    if (
+        not caps["supports_ratio"]
+        and "ratio" in explicit_fields
+        and result.get("ratio") is not None
+    ):
         unsupported.add("ratio")
     if unsupported:
         raise ValueError("当前工作流不支持参数：" + ", ".join(sorted(unsupported)))
@@ -100,11 +108,15 @@ def parameter_options(model: str) -> dict[str, Any]:
 
 def normalize_parameters(model: str, values: dict[str, Any]) -> dict[str, Any]:
     specs = parameter_options(model)["parameters"]
-    if set(values) - specs.keys():
+    known = {name for workflow in WORKFLOWS for name in parameter_options(workflow)["parameters"]}
+    # Shared nullable schemas round-trip every workflow's fields through canvas drafts.
+    # Null is absent; an actual value for another workflow remains unsupported.
+    supplied = {name: value for name, value in values.items() if value is not None}
+    if set(values) - known or set(supplied) - specs.keys():
         raise ValueError("当前工作流不支持这些参数")
     result = {}
     for name, spec in specs.items():
-        value = values.get(name, spec["default"])
+        value = supplied.get(name, spec["default"])
         if name == "seed" and value is None:
             value = secrets.randbelow(2**50 + 1)
         if isinstance(value, bool) or not isinstance(value, (int, float)):

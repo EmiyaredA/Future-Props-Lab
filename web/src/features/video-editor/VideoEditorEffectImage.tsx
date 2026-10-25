@@ -1,6 +1,10 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { paintChromaCanvas } from "./chromaCanvas";
 import { paintSpinBlurCanvas } from "./spinBlurCanvas";
+import {
+  paintWhipPanCanvas,
+  type WhipPanEffect,
+} from "./directionalTransitionCanvas";
 import type { VideoEditorClip } from "./types";
 
 /** Reuse the loaded image for chroma key and angular blur, including text PNGs. */
@@ -9,17 +13,19 @@ export function VideoEditorEffectImage({
   alt = "",
   chromaKey,
   spinBlur = 0,
+  whipPan,
   onSize,
 }: {
   source: string;
   alt?: string;
   chromaKey?: VideoEditorClip["chromaKey"];
   spinBlur?: number;
+  whipPan?: WhipPanEffect;
   onSize?: (size: { width: number; height: number }) => void;
 }) {
   const image = useRef<HTMLImageElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const processed = Boolean(chromaKey?.enabled || spinBlur);
+  const processed = Boolean(chromaKey?.enabled || spinBlur || whipPan);
   const paint = useCallback(() => {
     const node = image.current;
     const surface = canvas.current;
@@ -49,7 +55,15 @@ export function VideoEditorEffectImage({
         spinBlur,
       );
     }
-  }, [chromaKey, spinBlur]);
+    if (whipPan)
+      paintWhipPanCanvas(
+        surface,
+        surface,
+        surface.width,
+        surface.height,
+        whipPan,
+      );
+  }, [chromaKey, spinBlur, whipPan]);
   useLayoutEffect(paint, [paint, source]);
   return (
     <>

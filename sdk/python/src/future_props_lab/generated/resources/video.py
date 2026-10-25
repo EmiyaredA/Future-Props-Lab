@@ -79,6 +79,22 @@ class Video:
         'Audio Seam Candidates. POST /v1/video-editor/projects/{project_id}/audio-seams/candidates'
         return self._client._call('POST', '/v1/video-editor/projects/{project_id}/audio-seams/candidates', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.AudioSeamCandidatesOut)
 
+    def list_clip_merges(self, *, project_id: str) -> models.VideoEditorTaskListOut:
+        'List Clip Merges. GET /v1/video-editor/projects/{project_id}/clip-merges'
+        return self._client._call('GET', '/v1/video-editor/projects/{project_id}/clip-merges', parameters=[('project_id', 'path', project_id)], response_type=models.VideoEditorTaskListOut)
+
+    def create_clip_merge(self, *, project_id: str, body: models.VideoEditorClipMergeCreateIn | dict) -> models.VideoEditorTaskOut:
+        'Create Clip Merge. POST /v1/video-editor/projects/{project_id}/clip-merges'
+        return self._client._call('POST', '/v1/video-editor/projects/{project_id}/clip-merges', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VideoEditorTaskOut)
+
+    def get_clip_merge(self, *, project_id: str, task_id: str) -> models.VideoEditorTaskOut:
+        'Get Clip Merge. GET /v1/video-editor/projects/{project_id}/clip-merges/{task_id}'
+        return self._client._call('GET', '/v1/video-editor/projects/{project_id}/clip-merges/{task_id}', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=models.VideoEditorTaskOut)
+
+    def cancel_clip_merge(self, *, project_id: str, task_id: str) -> models.VideoEditorTaskOut:
+        'Cancel Clip Merge. POST /v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel'
+        return self._client._call('POST', '/v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=models.VideoEditorTaskOut)
+
     def reveal_project_folder(self, *, project_id: str) -> models.ProjectFolderOpenOut:
         'Reveal Project Folder. POST /v1/video-editor/projects/{project_id}/open-folder'
         return self._client._call('POST', '/v1/video-editor/projects/{project_id}/open-folder', parameters=[('project_id', 'path', project_id)], response_type=models.ProjectFolderOpenOut)
@@ -218,6 +234,22 @@ class AsyncVideo:
     async def audio_seam_candidates(self, *, project_id: str, body: models.AudioSeamCandidatesIn | dict) -> models.AudioSeamCandidatesOut:
         'Audio Seam Candidates. POST /v1/video-editor/projects/{project_id}/audio-seams/candidates'
         return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/audio-seams/candidates', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.AudioSeamCandidatesOut)
+
+    async def list_clip_merges(self, *, project_id: str) -> models.VideoEditorTaskListOut:
+        'List Clip Merges. GET /v1/video-editor/projects/{project_id}/clip-merges'
+        return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/clip-merges', parameters=[('project_id', 'path', project_id)], response_type=models.VideoEditorTaskListOut)
+
+    async def create_clip_merge(self, *, project_id: str, body: models.VideoEditorClipMergeCreateIn | dict) -> models.VideoEditorTaskOut:
+        'Create Clip Merge. POST /v1/video-editor/projects/{project_id}/clip-merges'
+        return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/clip-merges', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VideoEditorTaskOut)
+
+    async def get_clip_merge(self, *, project_id: str, task_id: str) -> models.VideoEditorTaskOut:
+        'Get Clip Merge. GET /v1/video-editor/projects/{project_id}/clip-merges/{task_id}'
+        return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/clip-merges/{task_id}', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=models.VideoEditorTaskOut)
+
+    async def cancel_clip_merge(self, *, project_id: str, task_id: str) -> models.VideoEditorTaskOut:
+        'Cancel Clip Merge. POST /v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel'
+        return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=models.VideoEditorTaskOut)
 
     async def reveal_project_folder(self, *, project_id: str) -> models.ProjectFolderOpenOut:
         'Reveal Project Folder. POST /v1/video-editor/projects/{project_id}/open-folder'

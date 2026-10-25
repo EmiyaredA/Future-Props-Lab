@@ -82,10 +82,10 @@ export function canvasPasteError(
   current: { nodes: VisualCanvasNode[]; edges: VisualCanvasEdge[] },
   added: { nodes: VisualCanvasNode[]; edges: VisualCanvasEdge[] },
 ): string | undefined {
-  if (current.nodes.length + added.nodes.length > 500)
-    return "粘贴后将超过画布的 500 个节点上限";
-  if (current.edges.length + added.edges.length > 1000)
-    return "粘贴后将超过画布的 1000 条连线上限";
+  if (current.nodes.length + added.nodes.length > 1000)
+    return "粘贴后将超过画布的 1000 个节点上限";
+  if (current.edges.length + added.edges.length > 2000)
+    return "粘贴后将超过画布的 2000 条连线上限";
   if (
     added.nodes.some((node) =>
       [node.position.x, node.position.y].some(

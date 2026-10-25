@@ -539,6 +539,34 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/code-agents",
+    "sdk": "client.code_agents.list_code_agents",
+    "document": "/docs.html?page=sdk-reference-code-agents#list-code-agents",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/code-agents/grants",
+    "sdk": "client.code_agents.get_code_agent_grants",
+    "document": "/docs.html?page=sdk-reference-code-agents#get-code-agent-grants",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/code-agents/detect",
+    "sdk": "client.code_agents.detect_code_agents",
+    "document": "/docs.html?page=sdk-reference-code-agents#detect-code-agents",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/code-agents/grants",
+    "sdk": "client.code_agents.put_code_agent_grants",
+    "document": "/docs.html?page=sdk-reference-code-agents#put-code-agent-grants",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/creative-workshop/items",
     "sdk": "client.creative_workshop.list_items",
     "document": "/docs.html?page=sdk-reference-creative-workshop#list-items",
@@ -2583,9 +2611,37 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/presentation-workshop/examples/{example_id}",
+    "sdk": "client.presentation.delete_example",
+    "document": "/docs.html?page=sdk-reference-presentation#delete-example",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/presentation-workshop/projects/{project_id}",
     "sdk": "client.presentation.delete_project",
     "document": "/docs.html?page=sdk-reference-presentation#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/presentation-workshop/templates/{template_id}",
+    "sdk": "client.presentation.delete_template",
+    "document": "/docs.html?page=sdk-reference-presentation#delete-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/presentation-workshop/examples",
+    "sdk": "client.presentation.list_examples",
+    "document": "/docs.html?page=sdk-reference-presentation#list-examples",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/presentation-workshop/examples/{example_id}",
+    "sdk": "client.presentation.get_example",
+    "document": "/docs.html?page=sdk-reference-presentation#get-example",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -2604,6 +2660,34 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/presentation-workshop/templates",
+    "sdk": "client.presentation.list_templates",
+    "document": "/docs.html?page=sdk-reference-presentation#list-templates",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/presentation-workshop/templates/{template_id}",
+    "sdk": "client.presentation.get_template",
+    "document": "/docs.html?page=sdk-reference-presentation#get-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/examples",
+    "sdk": "client.presentation.create_example",
+    "document": "/docs.html?page=sdk-reference-presentation#create-example",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/examples/{example_id}/documents",
+    "sdk": "client.presentation.create_from_example",
+    "document": "/docs.html?page=sdk-reference-presentation#create-from-example",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/presentation-workshop/imports",
     "sdk": "client.presentation.import_project",
     "document": "/docs.html?page=sdk-reference-presentation#import-project",
@@ -2614,6 +2698,13 @@
     "http": "POST /v1/presentation-workshop/imports/preview",
     "sdk": "client.presentation.preview_import",
     "document": "/docs.html?page=sdk-reference-presentation#preview-import",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/library/import",
+    "sdk": "client.presentation.import_template_bundle",
+    "document": "/docs.html?page=sdk-reference-presentation#import-template-bundle",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -2653,9 +2744,51 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/presentation-workshop/projects/{project_id}/template/apply",
+    "sdk": "client.presentation.apply_template_change",
+    "document": "/docs.html?page=sdk-reference-presentation#apply-template-change",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/projects/{project_id}/template/preview",
+    "sdk": "client.presentation.preview_template_change",
+    "document": "/docs.html?page=sdk-reference-presentation#preview-template-change",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/templates",
+    "sdk": "client.presentation.create_template",
+    "document": "/docs.html?page=sdk-reference-presentation#create-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/templates/{template_id}/documents",
+    "sdk": "client.presentation.create_from_template",
+    "document": "/docs.html?page=sdk-reference-presentation#create-from-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/presentation-workshop/examples/{example_id}",
+    "sdk": "client.presentation.put_example",
+    "document": "/docs.html?page=sdk-reference-presentation#put-example",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PUT /v1/presentation-workshop/projects/{project_id}",
     "sdk": "client.presentation.put_project",
     "document": "/docs.html?page=sdk-reference-presentation#put-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/presentation-workshop/templates/{template_id}",
+    "sdk": "client.presentation.put_template",
+    "document": "/docs.html?page=sdk-reference-presentation#put-template",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3612,6 +3745,20 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/video-editor/projects/{project_id}/clip-merges",
+    "sdk": "client.video.list_clip_merges",
+    "document": "/docs.html?page=sdk-reference-video#list-clip-merges",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/clip-merges/{task_id}",
+    "sdk": "client.video.get_clip_merge",
+    "document": "/docs.html?page=sdk-reference-video#get-clip-merge",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/video-editor/projects/{project_id}/preview/frame",
     "sdk": "client.video.exact_frame",
     "document": "/docs.html?page=sdk-reference-video#exact-frame",
@@ -3734,6 +3881,20 @@
     "http": "POST /v1/video-editor/projects/{project_id}/audio-seams/candidates",
     "sdk": "client.video.audio_seam_candidates",
     "document": "/docs.html?page=sdk-reference-video#audio-seam-candidates",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/clip-merges",
+    "sdk": "client.video.create_clip_merge",
+    "document": "/docs.html?page=sdk-reference-video#create-clip-merge",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel",
+    "sdk": "client.video.cancel_clip_merge",
+    "document": "/docs.html?page=sdk-reference-video#cancel-clip-merge",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

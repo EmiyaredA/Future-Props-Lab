@@ -12,8 +12,67 @@ from app.llm.providers.zealman_workflows import (
     U17,
     WORKFLOWS,
     normalize_parameters,
+    normalize_request,
     prepare_input_values,
 )
+from app.llm.schemas.workflow_video import WorkflowVideoParameters
+
+
+@pytest.mark.parametrize(
+    "model,parameters,expected",
+    [
+        (
+            U17,
+            {"megapixels": 0.5, "upscale_factor": 1.2},
+            {"megapixels": 0.5, "upscale_factor": 1.2},
+        ),
+        (U06, {"width": 640, "height": 480, "seed": 0}, {"width": 640, "height": 480, "seed": 0}),
+    ],
+)
+def test_canvas_parameter_roundtrip_omits_null_fields_without_losing_values(
+    model, parameters, expected
+):
+    serialized = WorkflowVideoParameters(**parameters).model_dump(mode="json")
+    before = dict(serialized)
+    assert normalize_parameters(model, serialized) == expected
+    assert serialized == before
+
+
+def test_null_workflow_parameters_use_defaults_but_unknown_names_stay_invalid():
+    assert normalize_parameters(U17, WorkflowVideoParameters().model_dump()) == {
+        "megapixels": 0.9,
+        "upscale_factor": 1.5,
+    }
+    for parameters in ({"unknown": None}, {"width": 640}):
+        with pytest.raises(ValueError, match="不支持"):
+            normalize_parameters(U17, parameters)
+
+
+@pytest.mark.parametrize("model", [U17, U06])
+def test_nullable_generic_video_fields_are_absent_for_workflows(model):
+    payload = {
+        "prompt": "test",
+        "duration": 4,
+        "mode": "reference",
+        "ratio": None,
+        "resolution": None,
+        "watermark": None,
+        "generate_audio": None,
+    }
+    normalized = normalize_request(model, payload, set(payload))
+    assert not {"resolution", "watermark", "generate_audio"} & normalized.keys()
+    assert normalized.get("ratio") == ("16:9" if model == U17 else None)
+    with pytest.raises(ValueError, match="不支持"):
+        normalize_request(model, {**payload, "generate_audio": False}, set(payload))
+
+
+def test_implicit_schema_ratio_is_not_a_requested_u06_parameter():
+    normalized = normalize_request(
+        U06,
+        {"prompt": "test", "duration": 4, "mode": "text", "ratio": "16:9"},
+        {"prompt", "duration", "mode"},
+    )
+    assert "ratio" not in normalized
 
 
 @pytest.mark.parametrize("model", [U06, U17])
@@ -164,6 +223,86 @@ async def test_submission_timeout_is_not_retried():
             transport=httpx.MockTransport(respond),
         )
     assert submitted == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("endpoint", ["result", "history"])
+@pytest.mark.parametrize("failure", ["http", "transport"])
+@pytest.mark.parametrize(
+    "bucket,expected", [("queue_running", "processing"), ("queue_pending", "pending")]
+)
+async def test_polling_failure_preserves_job_with_positive_queue_evidence(
+    endpoint, failure, bucket, expected
+):
+    requests = []
+
+    def respond(request):
+        requests.append(request)
+        if request.url.path.endswith("/" + endpoint):
+            if failure == "transport":
+                raise httpx.ReadTimeout("query timeout", request=request)
+            return httpx.Response(500, json={"error": "ComfyUI history request timeout"})
+        if request.url.path.endswith("/result"):
+            return httpx.Response(200, json={"pending": True})
+        if request.url.path.endswith("/tasks/task"):
+            return httpx.Response(200, json={"task": {"status": "running", "progress": 78}})
+        if request.url.path.endswith("/queue"):
+            return httpx.Response(200, json={bucket: [[0, "task", {}]]})
+        return httpx.Response(404)
+
+    status = await get_task(
+        base_url="https://example.test",
+        api_key="",
+        task_id="task",
+        transport=httpx.MockTransport(respond),
+    )
+    assert status.status == expected
+    assert status.execution_info.reported_progress == 78
+    assert all(request.method == "GET" for request in requests)
+    assert sum(request.url.path.endswith("/" + endpoint) for request in requests) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "evidence,expected",
+    [("missing", None), ("stale", None), ("completed", "completed"), ("failed", "failed")],
+)
+async def test_polling_failure_requires_live_evidence_or_definitive_ledger(evidence, expected):
+    def respond(request):
+        if request.url.path.endswith("/result"):
+            return httpx.Response(500, json={"error": "history request timeout"})
+        if request.url.path.endswith("/tasks/task"):
+            task = {"status": "running"} if evidence == "stale" else {}
+            if evidence == "completed":
+                task = {
+                    "status": "completed",
+                    "outputs": [{"type": "video", "url": "/output/late.mp4"}],
+                }
+            if evidence == "failed":
+                task = {"status": "failed", "error": "actual execution failure"}
+            return httpx.Response(200, json={"task": task})
+        return httpx.Response(200, json={"queue_running": [], "queue_pending": []})
+
+    if expected is None:
+        with pytest.raises(httpx.HTTPStatusError):
+            await get_task(
+                base_url="https://example.test",
+                api_key="",
+                task_id="task",
+                transport=httpx.MockTransport(respond),
+            )
+    else:
+        status = await get_task(
+            base_url="https://example.test",
+            api_key="",
+            task_id="task",
+            transport=httpx.MockTransport(respond),
+        )
+        assert status.status == expected
+        if expected == "completed":
+            assert status.result_url == "https://example.test/output/late.mp4"
+        else:
+            assert status.error_message == "actual execution failure"
 
 
 @pytest.mark.asyncio

@@ -195,16 +195,16 @@ test("checks node, edge and coordinate boundaries before adding anything", () =>
   );
   expect(
     canvasPasteError(
-      { nodes: Array(498).fill(nodes[0]), edges: Array(999).fill(edges[0]) },
+      { nodes: Array(998).fill(nodes[0]), edges: Array(1999).fill(edges[0]) },
       added,
     ),
   ).toBeUndefined();
   expect(
-    canvasPasteError({ nodes: Array(499).fill(nodes[0]), edges: [] }, added),
-  ).toContain("500");
-  expect(
-    canvasPasteError({ nodes: [], edges: Array(1000).fill(edges[0]) }, added),
+    canvasPasteError({ nodes: Array(999).fill(nodes[0]), edges: [] }, added),
   ).toContain("1000");
+  expect(
+    canvasPasteError({ nodes: [], edges: Array(2000).fill(edges[0]) }, added),
+  ).toContain("2000");
   for (const x of [-1_000_001, 1_000_001, Infinity, NaN]) {
     expect(
       canvasPasteError(

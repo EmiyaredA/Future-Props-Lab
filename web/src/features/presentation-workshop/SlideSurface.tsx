@@ -1,3 +1,5 @@
+import { resolveSlide } from "./master/model";
+import type { Deck } from "./types";
 import { PaintLayer } from "./objects/paint";
 import { shadowFilter } from "./objects/paintStyle";
 import { lazy, Suspense } from "react";
@@ -308,6 +310,7 @@ export const SlideSurface = memo(function SlideSurface({
   onMoveConnection?: React.ComponentProps<typeof Connections>["onMoveStart"];
   onMoveConnectionKey?: React.ComponentProps<typeof Connections>["onMoveKey"];
 }) {
+  if ("slides" in size) slide = resolveSlide(size as Deck, slide);
   const elements = new Map(
     slide.elements.map((element) => [element.id, element]),
   );
@@ -348,6 +351,27 @@ export const SlideSurface = memo(function SlideSurface({
         return (
           <div
             key={element.id}
+            data-template-role={
+              element.id.startsWith("master-")
+                ? element.id.split("-")[2]
+                : undefined
+            }
+            onPointerDown={
+              element.id.startsWith("master-")
+                ? (event) => event.stopPropagation()
+                : undefined
+            }
+            onDoubleClick={(event) => {
+              if (!playMedia && element.id.startsWith("master-")) {
+                event.stopPropagation();
+                event.currentTarget.dispatchEvent(
+                  new CustomEvent("presentation-template-edit", {
+                    bubbles: true,
+                    detail: { role: element.id.split("-")[2] },
+                  }),
+                );
+              }
+            }}
             role={playMedia && element.link ? "link" : undefined}
             tabIndex={playMedia && element.link ? 0 : undefined}
             onClick={() => {

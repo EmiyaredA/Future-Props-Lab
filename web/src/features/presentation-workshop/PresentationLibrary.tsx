@@ -1,5 +1,5 @@
 import { ImportButton } from "./exchange/ImportButton";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -22,8 +22,7 @@ import {
 } from "./api";
 import { presentationKeys } from "./queryKeys";
 import { PresentationMenu } from "./PresentationMenu";
-import { newSlide, newDeck } from "./templates";
-import { SlidePreview } from "./SlideSurface";
+import { newDeck } from "./templates";
 import { PresentationPreviewCard } from "./PresentationPreviewCard";
 import type { ProjectSummary } from "./types";
 
@@ -41,15 +40,6 @@ export function PresentationLibrary({
     [rename, setRename] = useState<ProjectSummary | "new" | null>(null),
     [remove, setRemove] = useState<ProjectSummary | null>(null);
   const [initialLayout, setInitialLayout] = useState("cover");
-  const starters = useMemo(
-    () => [
-      { value: "blank", label: "空白", slide: newSlide("blank") },
-      { value: "cover", label: "封面", slide: newSlide("cover") },
-      { value: "body", label: "标题正文", slide: newSlide("body") },
-      { value: "columns", label: "图文双栏", slide: newSlide("columns") },
-    ],
-    [],
-  );
   const startNew = (layout = "cover") => {
     setInitialLayout(layout);
     setRename("new");
@@ -99,47 +89,6 @@ export function PresentationLibrary({
           <h2>让想法，成为精彩的演示</h2>
           <p>从一个清晰的想法开始，构建你的下一次表达。</p>
         </div>
-        {!readOnly && (
-          <section className="presentation-starters" aria-label="基础版式">
-            <h3>从基础版式开始</h3>
-            <div className="presentation-starter-grid">
-              {starters.map((starter) =>
-                starter.value === "blank" ? (
-                  <button
-                    type="button"
-                    key={starter.value}
-                    className="presentation-starter-blank"
-                    aria-label="从空白新建文稿"
-                    disabled={busy}
-                    onClick={() => startNew("blank")}
-                  >
-                    <div className="presentation-starter-preview">
-                      <SlidePreview slide={starter.slide} />
-                      <span
-                        className="presentation-starter-blank-mark"
-                        aria-hidden
-                      >
-                        <Plus size={22} />
-                      </span>
-                    </div>
-                    <span>{starter.label}</span>
-                  </button>
-                ) : (
-                  <PresentationPreviewCard
-                    key={starter.value}
-                    title={starter.label}
-                    firstSlide={starter.slide}
-                    slides={[starter.slide]}
-                    disabled={busy}
-                    actionLabel="使用此版式"
-                    onUse={() => startNew(starter.value)}
-                    className="presentation-starter-card"
-                  />
-                ),
-              )}
-            </div>
-          </section>
-        )}
 
         <div className="presentation-library-tools">
           <h3>

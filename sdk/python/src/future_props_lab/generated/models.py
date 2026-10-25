@@ -1044,6 +1044,11 @@ class ClipIdOperation(WireModel):
     new_clip_id: str | None = Field(default=None, alias='newClipId')
     type: Literal['removeClip', 'duplicateClip', 'rippleDelete', 'unlinkClips'] = Field(default=..., alias='type')
 
+class ClipMergeOperation(WireModel):
+    new_clip_id: str = Field(default=..., alias='newClipId', min_length=1, max_length=64)
+    task_id: str = Field(default=..., alias='taskId', min_length=1, max_length=64)
+    type: Literal['applyClipMerge', 'undoClipMerge'] = Field(default=..., alias='type')
+
 class CodexSourceRestore(WireModel):
     expected_revision: str = Field(default=..., alias='expected_revision', min_length=1)
 
@@ -4350,6 +4355,10 @@ class PresentationCell(WireModel):
     text: str = Field(default='', alias='text', max_length=20000)
     underline: bool = Field(default=False, alias='underline')
 
+class PresentationChapter(WireModel):
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
 class PresentationChart(WireModel):
     axis_color: str = Field(default='#56677A', alias='axis_color')
     categories: list[str] = Field(default=..., alias='categories', min_length=1, max_length=200)
@@ -4365,7 +4374,7 @@ class PresentationConnection(WireModel):
     color: str = Field(default='#365F62', alias='color')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     label: str = Field(default='', alias='label', max_length=500)
-    layer: int = Field(default=0, alias='layer', ge=0.0, le=200.0)
+    layer: int = Field(default=0, alias='layer', ge=0.0, le=300.0)
     source_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='right', alias='source_anchor')
     source_id: str | None = Field(default=None, alias='source_id')
     source_offset: float = Field(default=0.5, alias='source_offset', ge=0.0, le=1.0)
@@ -4385,9 +4394,12 @@ class PresentationCrop(WireModel):
     top: float = Field(default=..., alias='top', ge=0.0, lt=1.0)
 
 class PresentationDocument(WireModel):
+    chapters: list[PresentationChapter] | None = Field(default=None, alias='chapters', max_length=100)
     height: int = Field(default=..., alias='height', ge=240.0, le=4096.0)
     slides: list[PresentationSlide] = Field(default=..., alias='slides', min_length=1, max_length=100)
-    version: Literal[2, 3] = Field(default=..., alias='version')
+    template: TemplateBinding | None = Field(default=None, alias='template')
+    template_overrides: TemplateOverrides | None = Field(default=None, alias='template_overrides')
+    version: Literal[2, 3, 4] = Field(default=..., alias='version')
     width: int = Field(default=..., alias='width', ge=320.0, le=4096.0)
 
 class PresentationElement(WireModel):
@@ -4437,6 +4449,30 @@ class PresentationEntityOperation(WireModel):
     parent_id: str | None = Field(default=None, alias='parent_id')
     value: dict[str, Any] | None = Field(default=None, alias='value')
 
+class PresentationExampleIn(WireModel):
+    description: str = Field(default='', alias='description', max_length=1000)
+    document: PresentationDocument = Field(default=..., alias='document')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class PresentationExampleList(WireModel):
+    items: list[PresentationExampleOut] = Field(default=..., alias='items')
+    total: int = Field(default=..., alias='total')
+
+class PresentationExampleOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    description: str = Field(default='', alias='description', max_length=1000)
+    document: PresentationDocument = Field(default=..., alias='document')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class PresentationExamplePut(WireModel):
+    description: str = Field(default='', alias='description', max_length=1000)
+    document: PresentationDocument = Field(default=..., alias='document')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
 class PresentationExportIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
@@ -4450,16 +4486,21 @@ class PresentationFragment(WireModel):
     annotations: list[PresentationAnnotation] | None = Field(default=None, alias='annotations', max_length=200)
     background: str = Field(default='#FFFFFF', alias='background')
     background_style: PresentationPaint | None = Field(default=None, alias='background_style')
+    chapter_id: str | None = Field(default=None, alias='chapter_id')
     connections: list[PresentationConnection] | None = Field(default=None, alias='connections', max_length=200)
-    elements: list[PresentationElement] = Field(default=..., alias='elements', max_length=200)
+    elements: list[PresentationElement] = Field(default=..., alias='elements', max_length=300)
     groups: list[PresentationGroup] | None = Field(default=None, alias='groups', max_length=200)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     image_asset_id: str | None = Field(default=None, alias='image_asset_id')
     infographics: list[PresentationInfographic] | None = Field(default=None, alias='infographics', max_length=50)
     notes: str = Field(default='', alias='notes')
     notes_rich: list[PresentationParagraph] | None = Field(default=None, alias='notes_rich')
+    page_type: Literal['cover', 'toc', 'section', 'content', 'ending'] | None = Field(default=None, alias='page_type')
     reference: PresentationReference | None = Field(default=None, alias='reference')
     section: str | None = Field(default=None, alias='section', max_length=120)
+    template_hidden: list[str] | None = Field(default=None, alias='template_hidden', max_length=45)
+    title: str | None = Field(default=None, alias='title', max_length=500)
+    toc_offset: int | None = Field(default=None, alias='toc_offset', ge=0.0, le=100.0)
     transition: PresentationTransition | None = Field(default=None, alias='transition')
 
 class PresentationGroup(WireModel):
@@ -4601,16 +4642,21 @@ class PresentationSlide(WireModel):
     annotations: list[PresentationAnnotation] | None = Field(default=None, alias='annotations', max_length=200)
     background: str = Field(default=..., alias='background')
     background_style: PresentationPaint | None = Field(default=None, alias='background_style')
+    chapter_id: str | None = Field(default=None, alias='chapter_id')
     connections: list[PresentationConnection] | None = Field(default=None, alias='connections', max_length=200)
-    elements: list[PresentationElement] = Field(default=..., alias='elements', max_length=200)
+    elements: list[PresentationElement] = Field(default=..., alias='elements', max_length=300)
     groups: list[PresentationGroup] | None = Field(default=None, alias='groups', max_length=200)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     image_asset_id: str | None = Field(default=None, alias='image_asset_id')
     infographics: list[PresentationInfographic] | None = Field(default=None, alias='infographics', max_length=50)
     notes: str = Field(default=..., alias='notes', max_length=20000)
     notes_rich: list[PresentationParagraph] | None = Field(default=None, alias='notes_rich')
+    page_type: Literal['cover', 'toc', 'section', 'content', 'ending'] | None = Field(default=None, alias='page_type')
     reference: PresentationReference | None = Field(default=None, alias='reference')
     section: str | None = Field(default=None, alias='section', max_length=120)
+    template_hidden: list[str] | None = Field(default=None, alias='template_hidden', max_length=45)
+    title: str | None = Field(default=None, alias='title', max_length=500)
+    toc_offset: int | None = Field(default=None, alias='toc_offset', ge=0.0, le=100.0)
     transition: PresentationTransition | None = Field(default=None, alias='transition')
 
 class PresentationTable(WireModel):
@@ -4619,6 +4665,30 @@ class PresentationTable(WireModel):
     column_widths: list[float] = Field(default=..., alias='column_widths', min_length=1, max_length=30)
     font_size: float = Field(default=20, alias='font_size', ge=6.0, le=240.0)
     rows: list[list[PresentationCell]] = Field(default=..., alias='rows', min_length=1, max_length=100)
+
+class PresentationTemplateIn(WireModel):
+    definition: TemplateDefinition = Field(default=..., alias='definition')
+    description: str = Field(default='', alias='description', max_length=1000)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class PresentationTemplateList(WireModel):
+    items: list[PresentationTemplateOut] = Field(default=..., alias='items')
+    total: int = Field(default=..., alias='total')
+
+class PresentationTemplateOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    definition: TemplateDefinition = Field(default=..., alias='definition')
+    description: str = Field(default='', alias='description', max_length=1000)
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class PresentationTemplatePut(WireModel):
+    definition: TemplateDefinition = Field(default=..., alias='definition')
+    description: str = Field(default='', alias='description', max_length=1000)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class PresentationTextLayout(WireModel):
     align: Literal['top', 'middle', 'bottom'] = Field(default='top', alias='align')
@@ -5420,6 +5490,78 @@ class TemplateApply(WireModel):
     parent_id: str | None = Field(default=None, alias='parent_id')
     title: str = Field(default=..., alias='title', min_length=1, max_length=240)
 
+class TemplateBinding(WireModel):
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    snapshot: TemplateDefinition = Field(default=..., alias='snapshot')
+    template_id: str | None = Field(default=None, alias='template_id')
+    template_revision: int = Field(default=0, alias='template_revision', ge=0.0)
+
+class TemplateBundleIn(WireModel):
+    example: PresentationExampleIn = Field(default=..., alias='example')
+    template: PresentationTemplateIn = Field(default=..., alias='template')
+
+class TemplateBundleOut(WireModel):
+    example: PresentationExampleOut = Field(default=..., alias='example')
+    template: PresentationTemplateOut = Field(default=..., alias='template')
+
+class TemplateChangeApply(WireModel):
+    action: Literal['bind', 'update', 'unbind'] = Field(default='bind', alias='action')
+    chapters: list[PresentationChapter] | None = Field(default=None, alias='chapters')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    mappings: list[TemplatePageMapping] | None = Field(default=None, alias='mappings', max_length=100)
+    preview_token: str = Field(default=..., alias='preview_token', repr=False, min_length=64, max_length=64)
+    template_id: str | None = Field(default=None, alias='template_id')
+    template_revision: int | None = Field(default=None, alias='template_revision')
+
+class TemplateChangeIn(WireModel):
+    action: Literal['bind', 'update', 'unbind'] = Field(default='bind', alias='action')
+    chapters: list[PresentationChapter] | None = Field(default=None, alias='chapters')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    mappings: list[TemplatePageMapping] | None = Field(default=None, alias='mappings', max_length=100)
+    template_id: str | None = Field(default=None, alias='template_id')
+    template_revision: int | None = Field(default=None, alias='template_revision')
+
+class TemplateChangePreview(WireModel):
+    affected_slides: list[str] = Field(default=..., alias='affected_slides')
+    changes: list[str] = Field(default=..., alias='changes')
+    document: PresentationDocument = Field(default=..., alias='document')
+    document_revision: int = Field(default=..., alias='document_revision')
+    issues: list[dict[str, Any]] = Field(default=..., alias='issues')
+    preview_token: str = Field(default=..., alias='preview_token', repr=False)
+    template_revision: int | None = Field(default=..., alias='template_revision')
+
+class TemplateCreateDocument(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class TemplateDefinition(WireModel):
+    accent: str = Field(default='#EC805B', alias='accent')
+    fixed: list[TemplateFixedElement] | None = Field(default=None, alias='fixed', max_length=40)
+    font: Literal['Microsoft YaHei', 'Arial', 'Consolas'] = Field(default='Microsoft YaHei', alias='font')
+    foreground: str = Field(default='#142B45', alias='foreground')
+    height: int = Field(default=720, alias='height', ge=240.0, le=4096.0)
+    layouts: dict[str, TemplatePageLayout] | None = Field(default=None, alias='layouts')
+    number_hidden_types: list[Literal['cover', 'toc', 'section', 'content', 'ending']] | None = Field(default=None, alias='number_hidden_types', max_length=5)
+    number_start: int = Field(default=1, alias='number_start', ge=0.0, le=9999.0)
+    number_total: bool = Field(default=False, alias='number_total')
+    version: Literal[1] = Field(default=1, alias='version')
+    width: int = Field(default=1280, alias='width', ge=320.0, le=4096.0)
+
+class TemplateFixedElement(WireModel):
+    asset_id: str | None = Field(default=None, alias='asset_id')
+    fill: str = Field(default='#FFFFFF', alias='fill')
+    height: float = Field(default=40, alias='height', ge=1.0, le=4096.0)
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    kind: Literal['text', 'image', 'rect'] = Field(default='text', alias='kind')
+    layer: Literal['behind', 'front'] = Field(default='front', alias='layer')
+    opacity: float = Field(default=1, alias='opacity', ge=0.0, le=1.0)
+    page_types: list[Literal['cover', 'toc', 'section', 'content', 'ending']] | None = Field(default=None, alias='page_types', max_length=5)
+    style: TemplateTextStyle | None = Field(default=None, alias='style')
+    text: str = Field(default='', alias='text', max_length=2000)
+    width: float = Field(default=160, alias='width', ge=1.0, le=4096.0)
+    x: float = Field(default=64, alias='x', ge=0.0, le=4096.0)
+    y: float = Field(default=640, alias='y', ge=0.0, le=4096.0)
+
 class TemplateIn(WireModel):
     description: str = Field(default='', alias='description', max_length=2000)
     document: dict[str, Any] = Field(default=..., alias='document')
@@ -5450,6 +5592,33 @@ class TemplateOut(WireModel):
     schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
     updated_at: datetime = Field(default=..., alias='updated_at')
+
+class TemplateOverrides(WireModel):
+    accent: str | None = Field(default=None, alias='accent')
+    fixed: list[TemplateFixedElement] | None = Field(default=None, alias='fixed')
+    font: Literal['Microsoft YaHei', 'Arial', 'Consolas'] | None = Field(default=None, alias='font')
+    foreground: str | None = Field(default=None, alias='foreground')
+    layouts: dict[str, TemplatePageLayout] | None = Field(default=None, alias='layouts')
+    number_hidden_types: list[Literal['cover', 'toc', 'section', 'content', 'ending']] | None = Field(default=None, alias='number_hidden_types')
+    number_start: int | None = Field(default=None, alias='number_start')
+    number_total: bool | None = Field(default=None, alias='number_total')
+
+class TemplatePageLayout(WireModel):
+    background: str = Field(default='#FAF8F3', alias='background')
+    background_asset_id: str | None = Field(default=None, alias='background_asset_id')
+    body_top: float = Field(default=176, alias='body_top', ge=0.0, le=4096.0)
+    chapter: TemplateSlot | None = Field(default=None, alias='chapter')
+    number: TemplateSlot | None = Field(default=None, alias='number')
+    title: TemplateSlot | None = Field(default=None, alias='title')
+    toc: TemplateSlot | None = Field(default=None, alias='toc')
+    toc_capacity: int = Field(default=7, alias='toc_capacity', ge=1.0, le=20.0)
+
+class TemplatePageMapping(WireModel):
+    chapter_id: str | None = Field(default=None, alias='chapter_id')
+    page_type: Literal['cover', 'toc', 'section', 'content', 'ending'] = Field(default='content', alias='page_type')
+    slide_id: str = Field(default=..., alias='slide_id', min_length=1, max_length=64)
+    title: str = Field(default='', alias='title', max_length=500)
+    title_element_ids: list[str] | None = Field(default=None, alias='title_element_ids', max_length=30)
 
 class TemplatePreviewIn(WireModel):
     expected_template_revision: int = Field(default=..., alias='expected_template_revision', ge=0.0)
@@ -5488,6 +5657,14 @@ class TemplatePut(WireModel):
     schema_version: Literal[2, 3] = Field(default=3, alias='schema_version')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=30)
 
+class TemplateSlot(WireModel):
+    height: float = Field(default=64, alias='height', ge=1.0, le=4096.0)
+    style: TemplateTextStyle | None = Field(default=None, alias='style')
+    visible: bool = Field(default=True, alias='visible')
+    width: float = Field(default=1152, alias='width', ge=1.0, le=4096.0)
+    x: float = Field(default=64, alias='x', ge=0.0, le=4096.0)
+    y: float = Field(default=88, alias='y', ge=0.0, le=4096.0)
+
 class TemplateSupplier(WireModel):
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     template_key: str = Field(default=..., alias='template_key', min_length=1, max_length=100)
@@ -5512,6 +5689,13 @@ class TemplateSyncJobOut(WireModel):
     role: Literal['super_admin', 'admin', 'member'] = Field(default=..., alias='role')
     status: str = Field(default=..., alias='status')
     template_revision: int = Field(default=..., alias='template_revision')
+
+class TemplateTextStyle(WireModel):
+    align: Literal['left', 'center', 'right'] = Field(default='left', alias='align')
+    bold: bool = Field(default=False, alias='bold')
+    color: str = Field(default='#142B45', alias='color')
+    font: Literal['Microsoft YaHei', 'Arial', 'Consolas'] = Field(default='Microsoft YaHei', alias='font')
+    size: float = Field(default=32, alias='size', ge=6.0, le=240.0)
 
 class TestModelOut(WireModel):
     latency_ms: int = Field(default=..., alias='latency_ms')
@@ -5945,6 +6129,12 @@ class VideoEditorClip(WireModel):
     transition_out: VideoEditorTransition | None = Field(default=None, alias='transitionOut')
     volume: float = Field(default=1, alias='volume', ge=0.0, le=4.0)
 
+class VideoEditorClipMergeCreateIn(WireModel):
+    clip_ids: list[str] = Field(default=..., alias='clipIds', min_length=2, max_length=100)
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=255)
+    request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
+
 class VideoEditorDefaultEffects(WireModel):
     chroma_key: VideoEditorChromaKey | None = Field(default=None, alias='chromaKey')
 
@@ -6044,7 +6234,7 @@ class VideoEditorTaskOut(WireModel):
     created_at: str = Field(default=..., alias='createdAt')
     error: str | None = Field(default=None, alias='error')
     id: str = Field(default=..., alias='id')
-    kind: Literal['media', 'render', 'segment_export', 'asset_bake'] = Field(default=..., alias='kind')
+    kind: Literal['media', 'render', 'segment_export', 'asset_bake', 'clip_merge'] = Field(default=..., alias='kind')
     output_asset_id: str | None = Field(default=None, alias='outputAssetId')
     progress: int = Field(default=..., alias='progress', ge=0.0, le=100.0)
     project_id: str = Field(default=..., alias='projectId')
@@ -6063,7 +6253,7 @@ class VideoEditorTextStyle(WireModel):
 
 class VideoEditorTimelineBatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    operations: list[AddTrackOperation | UpdateSettingsOperation | SetAssetOrganizationOperation | UpdateTrackOperation | RemoveTrackOperation | ReorderTrackOperation | AddClipOperation | UpdateClipOperation | ClipIdOperation | MoveClipOperation | TrimClipOperation | SplitClipOperation | SetClipSpeedOperation | AlignAudioSeamOperation | SetAudioTransitionOperation | RestoreClipStatesOperation | LinkClipsOperation | SeparateClipOperation | KeyframeOperation | SetTransitionOperation | AddTransitionOperation | UpdateTransitionOperation | RemoveTransitionOperation] = Field(default=..., alias='operations', min_length=1, max_length=200)
+    operations: list[AddTrackOperation | ClipMergeOperation | UpdateSettingsOperation | SetAssetOrganizationOperation | UpdateTrackOperation | RemoveTrackOperation | ReorderTrackOperation | AddClipOperation | UpdateClipOperation | ClipIdOperation | MoveClipOperation | TrimClipOperation | SplitClipOperation | SetClipSpeedOperation | AlignAudioSeamOperation | SetAudioTransitionOperation | RestoreClipStatesOperation | LinkClipsOperation | SeparateClipOperation | KeyframeOperation | SetTransitionOperation | AddTransitionOperation | UpdateTransitionOperation | RemoveTransitionOperation] = Field(default=..., alias='operations', min_length=1, max_length=200)
     request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
 
 class VideoEditorTimelineDocument(WireModel):
@@ -6085,7 +6275,7 @@ class VideoEditorTimelineTransition(WireModel):
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
     from_clip_id: str = Field(default=..., alias='fromClipId', min_length=1, max_length=64)
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
-    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'spin-blur', 'flash', 'eyelid', 'audio-crossfade', 'audio-equal-power', 'audio-dip', 'audio-filter-sweep'] = Field(default=..., alias='kind')
+    kind: Literal['crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'spin-blur', 'whip-pan', 'light-leak', 'flash', 'eyelid', 'audio-crossfade', 'audio-equal-power', 'audio-dip', 'audio-filter-sweep'] = Field(default=..., alias='kind')
     placement: Literal['between'] = Field(default='between', alias='placement')
     to_clip_id: str = Field(default=..., alias='toClipId', min_length=1, max_length=64)
 
@@ -6113,7 +6303,7 @@ class VideoEditorTransition(WireModel):
     direction: Literal['left', 'right', 'up', 'down', 'in', 'out'] = Field(default='left', alias='direction')
     duration_us: int = Field(default=..., alias='durationUs', ge=0.0, le=10000000.0)
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
-    kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'spin-blur', 'flash', 'eyelid', 'audio-crossfade'] = Field(default=..., alias='kind')
+    kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'spin-blur', 'whip-pan', 'light-leak', 'flash', 'eyelid', 'audio-crossfade'] = Field(default=..., alias='kind')
 
 class VideoFramesIn(WireModel):
     max_width: int = Field(default=1280, alias='max_width', ge=64.0, le=1920.0)
@@ -6372,9 +6562,9 @@ class VisualCanvasDocumentOut(WireModel):
 
 class VisualCanvasDocumentPutIn(WireModel):
     categories: list[VisualMaterialCategory] | None = Field(default=None, alias='categories')
-    edges: list[VisualCanvasEdge] | None = Field(default=None, alias='edges', max_length=1000)
+    edges: list[VisualCanvasEdge] | None = Field(default=None, alias='edges', max_length=2000)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    nodes: list[VisualCanvasTextNode | VisualCanvasImageNode | VisualCanvasVideoNode | VisualCanvasAudioNode] = Field(default=..., alias='nodes', max_length=500)
+    nodes: list[VisualCanvasTextNode | VisualCanvasImageNode | VisualCanvasVideoNode | VisualCanvasAudioNode] = Field(default=..., alias='nodes', max_length=1000)
 
 class VisualCanvasEdge(WireModel):
     binding: Literal['final', 'fixed'] = Field(default='final', alias='binding')
@@ -6816,6 +7006,7 @@ CheckpointIn.model_rebuild()
 CheckpointOut.model_rebuild()
 CheckpointPut.model_rebuild()
 ClipIdOperation.model_rebuild()
+ClipMergeOperation.model_rebuild()
 CodexSourceRestore.model_rebuild()
 CodexSourceState.model_rebuild()
 CodexSourceUpdate.model_rebuild()
@@ -7280,12 +7471,17 @@ PreparationSource.model_rebuild()
 PresentationAnimation.model_rebuild()
 PresentationAnnotation.model_rebuild()
 PresentationCell.model_rebuild()
+PresentationChapter.model_rebuild()
 PresentationChart.model_rebuild()
 PresentationConnection.model_rebuild()
 PresentationCrop.model_rebuild()
 PresentationDocument.model_rebuild()
 PresentationElement.model_rebuild()
 PresentationEntityOperation.model_rebuild()
+PresentationExampleIn.model_rebuild()
+PresentationExampleList.model_rebuild()
+PresentationExampleOut.model_rebuild()
+PresentationExamplePut.model_rebuild()
 PresentationExportIn.model_rebuild()
 PresentationFormula.model_rebuild()
 PresentationFragment.model_rebuild()
@@ -7312,6 +7508,10 @@ PresentationSeries.model_rebuild()
 PresentationShadow.model_rebuild()
 PresentationSlide.model_rebuild()
 PresentationTable.model_rebuild()
+PresentationTemplateIn.model_rebuild()
+PresentationTemplateList.model_rebuild()
+PresentationTemplateOut.model_rebuild()
+PresentationTemplatePut.model_rebuild()
 PresentationTextLayout.model_rebuild()
 PresentationTransition.model_rebuild()
 ProjectCreateIn.model_rebuild()
@@ -7437,17 +7637,31 @@ TablePut.model_rebuild()
 TableSpec.model_rebuild()
 TaskExecutionInfo.model_rebuild()
 TemplateApply.model_rebuild()
+TemplateBinding.model_rebuild()
+TemplateBundleIn.model_rebuild()
+TemplateBundleOut.model_rebuild()
+TemplateChangeApply.model_rebuild()
+TemplateChangeIn.model_rebuild()
+TemplateChangePreview.model_rebuild()
+TemplateCreateDocument.model_rebuild()
+TemplateDefinition.model_rebuild()
+TemplateFixedElement.model_rebuild()
 TemplateIn.model_rebuild()
 TemplateModel.model_rebuild()
 TemplateOut.model_rebuild()
+TemplateOverrides.model_rebuild()
+TemplatePageLayout.model_rebuild()
+TemplatePageMapping.model_rebuild()
 TemplatePreviewIn.model_rebuild()
 TemplateProvider_Input.model_rebuild()
 TemplateProvider_Output.model_rebuild()
 TemplatePut.model_rebuild()
+TemplateSlot.model_rebuild()
 TemplateSupplier.model_rebuild()
 TemplateSyncIn.model_rebuild()
 TemplateSyncItemOut.model_rebuild()
 TemplateSyncJobOut.model_rebuild()
+TemplateTextStyle.model_rebuild()
 TestModelOut.model_rebuild()
 ThoughtAssistantIn.model_rebuild()
 ThoughtAttachmentOut.model_rebuild()
@@ -7504,6 +7718,7 @@ VideoEditorAvailableAssetListOut.model_rebuild()
 VideoEditorAvailableAssetOut.model_rebuild()
 VideoEditorChromaKey.model_rebuild()
 VideoEditorClip.model_rebuild()
+VideoEditorClipMergeCreateIn.model_rebuild()
 VideoEditorDefaultEffects.model_rebuild()
 VideoEditorKeyframe.model_rebuild()
 VideoEditorProjectCreateIn.model_rebuild()

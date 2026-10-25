@@ -38,6 +38,7 @@ export function PresentationInspector({
   styleDisabled = false,
   selectionPanel,
   pageControls,
+  templateBound = false,
   onObjectEdit,
   animationPanel,
   appearancePanel,
@@ -61,6 +62,7 @@ export function PresentationInspector({
   styleDisabled?: boolean;
   selectionPanel?: ReactNode;
   pageControls?: ReactNode;
+  templateBound?: boolean;
   onObjectEdit?: (element: SlideElement) => void;
   animationPanel?: ReactNode;
   appearancePanel?: ReactNode;
@@ -238,28 +240,35 @@ export function PresentationInspector({
                 <span className="presentation-page-ratio">16:9 宽屏</span>
               </div>
             )}
-            <label className="presentation-field">
-              页面背景
-              <CustomColorPicker
-                ariaLabel="页面背景颜色"
-                value={slide.background}
-                onChange={background}
-                disabled={readOnly}
-              />
-            </label>
-            <div className="presentation-page-colors" aria-label="背景快捷色板">
-              {colors.map((color) => (
-                <button
-                  key={color}
-                  aria-label={`页面背景 ${color}`}
-                  aria-pressed={slide.background.toUpperCase() === color}
-                  disabled={readOnly}
-                  style={{ backgroundColor: color }}
-                  onClick={() => background(color)}
-                />
-              ))}
-            </div>
-            {onStyle && (
+            {!templateBound && (
+              <>
+                <label className="presentation-field">
+                  页面背景
+                  <CustomColorPicker
+                    ariaLabel="页面背景颜色"
+                    value={slide.background}
+                    onChange={background}
+                    disabled={readOnly}
+                  />
+                </label>
+                <div
+                  className="presentation-page-colors"
+                  aria-label="背景快捷色板"
+                >
+                  {colors.map((color) => (
+                    <button
+                      key={color}
+                      aria-label={`页面背景 ${color}`}
+                      aria-pressed={slide.background.toUpperCase() === color}
+                      disabled={readOnly}
+                      style={{ backgroundColor: color }}
+                      onClick={() => background(color)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+            {!templateBound && onStyle && (
               <button
                 className="btn presentation-theme-button"
                 disabled={readOnly || styleDisabled}

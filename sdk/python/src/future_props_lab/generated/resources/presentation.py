@@ -11,6 +11,30 @@ class Presentation:
     def __init__(self, client):
         self._client = client
 
+    def list_examples(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.PresentationExampleList:
+        'List Examples. GET /v1/presentation-workshop/examples'
+        return self._client._call('GET', '/v1/presentation-workshop/examples', parameters=[('query', 'query', query), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=models.PresentationExampleList)
+
+    def create_example(self, *, body: models.PresentationExampleIn | dict) -> models.PresentationExampleOut:
+        'Create Example. POST /v1/presentation-workshop/examples'
+        return self._client._call('POST', '/v1/presentation-workshop/examples', parameters=[], body=body, media_type='application/json', response_type=models.PresentationExampleOut)
+
+    def delete_example(self, *, example_id: str, expected_revision: int) -> dict[str, bool]:
+        'Delete Example. DELETE /v1/presentation-workshop/examples/{example_id}'
+        return self._client._call('DELETE', '/v1/presentation-workshop/examples/{example_id}', parameters=[('example_id', 'path', example_id), ('expected_revision', 'query', expected_revision)], response_type=dict[str, bool])
+
+    def get_example(self, *, example_id: str) -> models.PresentationExampleOut:
+        'Get Example. GET /v1/presentation-workshop/examples/{example_id}'
+        return self._client._call('GET', '/v1/presentation-workshop/examples/{example_id}', parameters=[('example_id', 'path', example_id)], response_type=models.PresentationExampleOut)
+
+    def put_example(self, *, example_id: str, body: models.PresentationExamplePut | dict) -> models.PresentationExampleOut:
+        'Put Example. PUT /v1/presentation-workshop/examples/{example_id}'
+        return self._client._call('PUT', '/v1/presentation-workshop/examples/{example_id}', parameters=[('example_id', 'path', example_id)], body=body, media_type='application/json', response_type=models.PresentationExampleOut)
+
+    def create_from_example(self, *, example_id: str, body: models.TemplateCreateDocument | dict) -> models.PresentationProjectOut:
+        'Create From Example. POST /v1/presentation-workshop/examples/{example_id}/documents'
+        return self._client._call('POST', '/v1/presentation-workshop/examples/{example_id}/documents', parameters=[('example_id', 'path', example_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
+
     def import_project(self, *, body: models.Body_create_import_v1_presentation_workshop_imports_post | dict, files: dict | list | None = None) -> models.PresentationProjectOut:
         'Create Import. POST /v1/presentation-workshop/imports'
         return self._client._call('POST', '/v1/presentation-workshop/imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.PresentationProjectOut)
@@ -18,6 +42,10 @@ class Presentation:
     def preview_import(self, *, body: models.Body_preview_import_v1_presentation_workshop_imports_preview_post | dict, files: dict | list | None = None) -> models.ImportPreview:
         'Preview Import. POST /v1/presentation-workshop/imports/preview'
         return self._client._call('POST', '/v1/presentation-workshop/imports/preview', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.ImportPreview)
+
+    def import_template_bundle(self, *, body: models.TemplateBundleIn | dict) -> models.TemplateBundleOut:
+        'Import Template Bundle. POST /v1/presentation-workshop/library/import'
+        return self._client._call('POST', '/v1/presentation-workshop/library/import', parameters=[], body=body, media_type='application/json', response_type=models.TemplateBundleOut)
 
     def list_projects(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.PresentationProjectList:
         'List Projects. GET /v1/presentation-workshop/projects'
@@ -55,9 +83,65 @@ class Presentation:
         'Apply Presentation Operations. POST /v1/presentation-workshop/projects/{project_id}/operations'
         return self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
 
+    def apply_template_change(self, *, project_id: str, body: models.TemplateChangeApply | dict) -> models.PresentationProjectOut:
+        'Apply Template Change. POST /v1/presentation-workshop/projects/{project_id}/template/apply'
+        return self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/template/apply', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
+
+    def preview_template_change(self, *, project_id: str, body: models.TemplateChangeIn | dict) -> models.TemplateChangePreview:
+        'Preview Template Change. POST /v1/presentation-workshop/projects/{project_id}/template/preview'
+        return self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/template/preview', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.TemplateChangePreview)
+
+    def list_templates(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.PresentationTemplateList:
+        'List Templates. GET /v1/presentation-workshop/templates'
+        return self._client._call('GET', '/v1/presentation-workshop/templates', parameters=[('query', 'query', query), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=models.PresentationTemplateList)
+
+    def create_template(self, *, body: models.PresentationTemplateIn | dict) -> models.PresentationTemplateOut:
+        'Create Template. POST /v1/presentation-workshop/templates'
+        return self._client._call('POST', '/v1/presentation-workshop/templates', parameters=[], body=body, media_type='application/json', response_type=models.PresentationTemplateOut)
+
+    def delete_template(self, *, template_id: str, expected_revision: int) -> dict[str, bool]:
+        'Delete Template. DELETE /v1/presentation-workshop/templates/{template_id}'
+        return self._client._call('DELETE', '/v1/presentation-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id), ('expected_revision', 'query', expected_revision)], response_type=dict[str, bool])
+
+    def get_template(self, *, template_id: str) -> models.PresentationTemplateOut:
+        'Get Template. GET /v1/presentation-workshop/templates/{template_id}'
+        return self._client._call('GET', '/v1/presentation-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id)], response_type=models.PresentationTemplateOut)
+
+    def put_template(self, *, template_id: str, body: models.PresentationTemplatePut | dict) -> models.PresentationTemplateOut:
+        'Put Template. PUT /v1/presentation-workshop/templates/{template_id}'
+        return self._client._call('PUT', '/v1/presentation-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.PresentationTemplateOut)
+
+    def create_from_template(self, *, template_id: str, body: models.TemplateCreateDocument | dict) -> models.PresentationProjectOut:
+        'Create From Template. POST /v1/presentation-workshop/templates/{template_id}/documents'
+        return self._client._call('POST', '/v1/presentation-workshop/templates/{template_id}/documents', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
+
 class AsyncPresentation:
     def __init__(self, client):
         self._client = client
+
+    async def list_examples(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.PresentationExampleList:
+        'List Examples. GET /v1/presentation-workshop/examples'
+        return await self._client._call('GET', '/v1/presentation-workshop/examples', parameters=[('query', 'query', query), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=models.PresentationExampleList)
+
+    async def create_example(self, *, body: models.PresentationExampleIn | dict) -> models.PresentationExampleOut:
+        'Create Example. POST /v1/presentation-workshop/examples'
+        return await self._client._call('POST', '/v1/presentation-workshop/examples', parameters=[], body=body, media_type='application/json', response_type=models.PresentationExampleOut)
+
+    async def delete_example(self, *, example_id: str, expected_revision: int) -> dict[str, bool]:
+        'Delete Example. DELETE /v1/presentation-workshop/examples/{example_id}'
+        return await self._client._call('DELETE', '/v1/presentation-workshop/examples/{example_id}', parameters=[('example_id', 'path', example_id), ('expected_revision', 'query', expected_revision)], response_type=dict[str, bool])
+
+    async def get_example(self, *, example_id: str) -> models.PresentationExampleOut:
+        'Get Example. GET /v1/presentation-workshop/examples/{example_id}'
+        return await self._client._call('GET', '/v1/presentation-workshop/examples/{example_id}', parameters=[('example_id', 'path', example_id)], response_type=models.PresentationExampleOut)
+
+    async def put_example(self, *, example_id: str, body: models.PresentationExamplePut | dict) -> models.PresentationExampleOut:
+        'Put Example. PUT /v1/presentation-workshop/examples/{example_id}'
+        return await self._client._call('PUT', '/v1/presentation-workshop/examples/{example_id}', parameters=[('example_id', 'path', example_id)], body=body, media_type='application/json', response_type=models.PresentationExampleOut)
+
+    async def create_from_example(self, *, example_id: str, body: models.TemplateCreateDocument | dict) -> models.PresentationProjectOut:
+        'Create From Example. POST /v1/presentation-workshop/examples/{example_id}/documents'
+        return await self._client._call('POST', '/v1/presentation-workshop/examples/{example_id}/documents', parameters=[('example_id', 'path', example_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
 
     async def import_project(self, *, body: models.Body_create_import_v1_presentation_workshop_imports_post | dict, files: dict | list | None = None) -> models.PresentationProjectOut:
         'Create Import. POST /v1/presentation-workshop/imports'
@@ -66,6 +150,10 @@ class AsyncPresentation:
     async def preview_import(self, *, body: models.Body_preview_import_v1_presentation_workshop_imports_preview_post | dict, files: dict | list | None = None) -> models.ImportPreview:
         'Preview Import. POST /v1/presentation-workshop/imports/preview'
         return await self._client._call('POST', '/v1/presentation-workshop/imports/preview', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.ImportPreview)
+
+    async def import_template_bundle(self, *, body: models.TemplateBundleIn | dict) -> models.TemplateBundleOut:
+        'Import Template Bundle. POST /v1/presentation-workshop/library/import'
+        return await self._client._call('POST', '/v1/presentation-workshop/library/import', parameters=[], body=body, media_type='application/json', response_type=models.TemplateBundleOut)
 
     async def list_projects(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.PresentationProjectList:
         'List Projects. GET /v1/presentation-workshop/projects'
@@ -102,3 +190,35 @@ class AsyncPresentation:
     async def apply_presentation_operations(self, *, project_id: str, body: models.PresentationOperationsIn | dict) -> models.PresentationProjectOut:
         'Apply Presentation Operations. POST /v1/presentation-workshop/projects/{project_id}/operations'
         return await self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
+
+    async def apply_template_change(self, *, project_id: str, body: models.TemplateChangeApply | dict) -> models.PresentationProjectOut:
+        'Apply Template Change. POST /v1/presentation-workshop/projects/{project_id}/template/apply'
+        return await self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/template/apply', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)
+
+    async def preview_template_change(self, *, project_id: str, body: models.TemplateChangeIn | dict) -> models.TemplateChangePreview:
+        'Preview Template Change. POST /v1/presentation-workshop/projects/{project_id}/template/preview'
+        return await self._client._call('POST', '/v1/presentation-workshop/projects/{project_id}/template/preview', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.TemplateChangePreview)
+
+    async def list_templates(self, *, query: str | Unset = UNSET, offset: int | Unset = UNSET, limit: int | Unset = UNSET) -> models.PresentationTemplateList:
+        'List Templates. GET /v1/presentation-workshop/templates'
+        return await self._client._call('GET', '/v1/presentation-workshop/templates', parameters=[('query', 'query', query), ('offset', 'query', offset), ('limit', 'query', limit)], response_type=models.PresentationTemplateList)
+
+    async def create_template(self, *, body: models.PresentationTemplateIn | dict) -> models.PresentationTemplateOut:
+        'Create Template. POST /v1/presentation-workshop/templates'
+        return await self._client._call('POST', '/v1/presentation-workshop/templates', parameters=[], body=body, media_type='application/json', response_type=models.PresentationTemplateOut)
+
+    async def delete_template(self, *, template_id: str, expected_revision: int) -> dict[str, bool]:
+        'Delete Template. DELETE /v1/presentation-workshop/templates/{template_id}'
+        return await self._client._call('DELETE', '/v1/presentation-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id), ('expected_revision', 'query', expected_revision)], response_type=dict[str, bool])
+
+    async def get_template(self, *, template_id: str) -> models.PresentationTemplateOut:
+        'Get Template. GET /v1/presentation-workshop/templates/{template_id}'
+        return await self._client._call('GET', '/v1/presentation-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id)], response_type=models.PresentationTemplateOut)
+
+    async def put_template(self, *, template_id: str, body: models.PresentationTemplatePut | dict) -> models.PresentationTemplateOut:
+        'Put Template. PUT /v1/presentation-workshop/templates/{template_id}'
+        return await self._client._call('PUT', '/v1/presentation-workshop/templates/{template_id}', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.PresentationTemplateOut)
+
+    async def create_from_template(self, *, template_id: str, body: models.TemplateCreateDocument | dict) -> models.PresentationProjectOut:
+        'Create From Template. POST /v1/presentation-workshop/templates/{template_id}/documents'
+        return await self._client._call('POST', '/v1/presentation-workshop/templates/{template_id}/documents', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.PresentationProjectOut)

@@ -11,6 +11,7 @@ import { VideoEditorEffectImage } from "./VideoEditorEffectImage";
 import { textPosition, textPositionOperations } from "./textModel";
 import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
+import type { WhipPanEffect } from "./directionalTransitionCanvas";
 import "./video-editor-text.css";
 
 export function VideoEditorTextLayer({
@@ -19,6 +20,7 @@ export function VideoEditorTextLayer({
   clip,
   style,
   spinBlur,
+  whipPan,
   canvasWidth,
   canvasHeight,
   stageRef,
@@ -35,6 +37,7 @@ export function VideoEditorTextLayer({
   clip: VideoEditorClip;
   style: CSSProperties;
   spinBlur?: number;
+  whipPan?: WhipPanEffect;
   canvasWidth: number;
   canvasHeight: number;
   stageRef: RefObject<HTMLDivElement | null>;
@@ -136,6 +139,7 @@ export function VideoEditorTextLayer({
             source={url}
             alt={clip.text ?? "文字"}
             spinBlur={spinBlur}
+            whipPan={whipPan}
             onSize={setSize}
           />
         )}

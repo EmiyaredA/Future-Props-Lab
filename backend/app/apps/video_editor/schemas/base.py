@@ -225,7 +225,7 @@ class VideoEditorTaskOut(BaseModel):
     id: str
     project_id: str = Field(alias="projectId")
     request_id: str = Field(alias="requestId")
-    kind: Literal["media", "render", "segment_export", "asset_bake"]
+    kind: Literal["media", "render", "segment_export", "asset_bake", "clip_merge"]
     status: VideoEditorTaskStatus
     progress: int = Field(ge=0, le=100)
     output_asset_id: str | None = Field(default=None, alias="outputAssetId")

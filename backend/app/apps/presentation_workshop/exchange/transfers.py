@@ -18,6 +18,7 @@ from app.apps.presentation_workshop.exchange.pptx_import import read_pptx
 from app.apps.presentation_workshop.projects import PresentationError, Presentations
 from app.apps.presentation_workshop.scene_edits import remap
 from app.apps.presentation_workshop.schemas.document import PresentationProjectIn
+from app.apps.presentation_workshop.templates.resolver import resolve_document
 from app.capabilities.asset_store import AssetStorage, IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.svg import normalize_svg
@@ -89,7 +90,10 @@ def asset_ids(document):
     def visit(value):
         if isinstance(value, dict):
             for key, item in value.items():
-                if key in {"asset_id", "poster_asset_id", "image_asset_id"} and item:
+                if (
+                    key in {"asset_id", "poster_asset_id", "image_asset_id", "background_asset_id"}
+                    and item
+                ):
                     result.add(item)
                 else:
                     visit(item)
@@ -110,6 +114,8 @@ async def import_presentation(
     staged = []
     paths = []
     document = parsed.document.model_dump()
+    if document.get("template"):
+        document["template"]["template_id"] = None
     used = asset_ids(document)
     identities = {}
     await projects.session.rollback()
@@ -150,7 +156,9 @@ async def import_presentation(
                 if isinstance(value, dict):
                     return {
                         key: identities.get(item, item)
-                        if key in {"asset_id", "poster_asset_id", "image_asset_id"} and item
+                        if key
+                        in {"asset_id", "poster_asset_id", "image_asset_id", "background_asset_id"}
+                        and item
                         else replace(item)
                         for key, item in value.items()
                     }
@@ -190,7 +198,12 @@ async def snapshot_at(projects, project_id, revision):
 
 async def export_preview(projects, project_id, revision):
     snapshot = await snapshot_at(projects, project_id, revision)
-    issues = []
+
+    _, template_issues = resolve_document(snapshot.document)
+    issues = [
+        ConversionIssue(slide_id=i["slide_id"], code=i["code"], message=i["message"])
+        for i in template_issues
+    ]
     for slide in snapshot.document.slides:
         if slide.animations or slide.transition:
             issues.append(

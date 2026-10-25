@@ -6455,6 +6455,37 @@
         "title": "ClipIdOperation",
         "type": "object"
       },
+      "ClipMergeOperation": {
+        "properties": {
+          "newClipId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Newclipid",
+            "type": "string"
+          },
+          "taskId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Taskid",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "applyClipMerge",
+              "undoClipMerge"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "taskId",
+          "newClipId"
+        ],
+        "title": "ClipMergeOperation",
+        "type": "object"
+      },
       "CodexSourceRestore": {
         "properties": {
           "expected_revision": {
@@ -27980,6 +28011,29 @@
         "title": "PresentationCell",
         "type": "object"
       },
+      "PresentationChapter": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "PresentationChapter",
+        "type": "object"
+      },
       "PresentationChart": {
         "additionalProperties": false,
         "properties": {
@@ -28089,7 +28143,7 @@
           },
           "layer": {
             "default": 0,
-            "maximum": 200.0,
+            "maximum": 300.0,
             "minimum": 0.0,
             "title": "Layer",
             "type": "integer"
@@ -28249,6 +28303,14 @@
       "PresentationDocument": {
         "additionalProperties": false,
         "properties": {
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationChapter"
+            },
+            "maxItems": 100,
+            "title": "Chapters",
+            "type": "array"
+          },
           "height": {
             "maximum": 4096.0,
             "minimum": 240.0,
@@ -28264,10 +28326,24 @@
             "title": "Slides",
             "type": "array"
           },
+          "template": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TemplateBinding"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "template_overrides": {
+            "$ref": "#/components/schemas/TemplateOverrides"
+          },
           "version": {
             "enum": [
               2,
-              3
+              3,
+              4
             ],
             "title": "Version",
             "type": "integer"
@@ -28704,6 +28780,134 @@
         "title": "PresentationEntityOperation",
         "type": "object"
       },
+      "PresentationExampleIn": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/PresentationDocument"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "document"
+        ],
+        "title": "PresentationExampleIn",
+        "type": "object"
+      },
+      "PresentationExampleList": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationExampleOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "PresentationExampleList",
+        "type": "object"
+      },
+      "PresentationExampleOut": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/PresentationDocument"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "document",
+          "id",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PresentationExampleOut",
+        "type": "object"
+      },
+      "PresentationExamplePut": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/PresentationDocument"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "document",
+          "expected_revision"
+        ],
+        "title": "PresentationExamplePut",
+        "type": "object"
+      },
       "PresentationExportIn": {
         "additionalProperties": false,
         "properties": {
@@ -28783,6 +28987,19 @@
               }
             ]
           },
+          "chapter_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Id"
+          },
           "connections": {
             "items": {
               "$ref": "#/components/schemas/PresentationConnection"
@@ -28795,7 +29012,7 @@
             "items": {
               "$ref": "#/components/schemas/PresentationElement"
             },
-            "maxItems": 200,
+            "maxItems": 300,
             "title": "Elements",
             "type": "array"
           },
@@ -28855,6 +29072,17 @@
             ],
             "title": "Notes Rich"
           },
+          "page_type": {
+            "enum": [
+              "cover",
+              "toc",
+              "section",
+              "content",
+              "ending"
+            ],
+            "title": "Page Type",
+            "type": "string"
+          },
           "reference": {
             "anyOf": [
               {
@@ -28869,6 +29097,27 @@
             "maxLength": 120,
             "title": "Section",
             "type": "string"
+          },
+          "template_hidden": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 45,
+            "title": "Template Hidden",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 500,
+            "title": "Title",
+            "type": "string"
+          },
+          "toc_offset": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Toc Offset",
+            "type": "integer"
           },
           "transition": {
             "anyOf": [
@@ -29741,6 +29990,19 @@
               }
             ]
           },
+          "chapter_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Id"
+          },
           "connections": {
             "items": {
               "$ref": "#/components/schemas/PresentationConnection"
@@ -29753,7 +30015,7 @@
             "items": {
               "$ref": "#/components/schemas/PresentationElement"
             },
-            "maxItems": 200,
+            "maxItems": 300,
             "title": "Elements",
             "type": "array"
           },
@@ -29813,6 +30075,17 @@
             ],
             "title": "Notes Rich"
           },
+          "page_type": {
+            "enum": [
+              "cover",
+              "toc",
+              "section",
+              "content",
+              "ending"
+            ],
+            "title": "Page Type",
+            "type": "string"
+          },
           "reference": {
             "anyOf": [
               {
@@ -29827,6 +30100,27 @@
             "maxLength": 120,
             "title": "Section",
             "type": "string"
+          },
+          "template_hidden": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 45,
+            "title": "Template Hidden",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 500,
+            "title": "Title",
+            "type": "string"
+          },
+          "toc_offset": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Toc Offset",
+            "type": "integer"
           },
           "transition": {
             "anyOf": [
@@ -29898,6 +30192,134 @@
           "column_widths"
         ],
         "title": "PresentationTable",
+        "type": "object"
+      },
+      "PresentationTemplateIn": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/TemplateDefinition"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "definition"
+        ],
+        "title": "PresentationTemplateIn",
+        "type": "object"
+      },
+      "PresentationTemplateList": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationTemplateOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "PresentationTemplateList",
+        "type": "object"
+      },
+      "PresentationTemplateOut": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/TemplateDefinition"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "definition",
+          "id",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PresentationTemplateOut",
+        "type": "object"
+      },
+      "PresentationTemplatePut": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/TemplateDefinition"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "definition",
+          "expected_revision"
+        ],
+        "title": "PresentationTemplatePut",
         "type": "object"
       },
       "PresentationTextLayout": {
@@ -34625,6 +35047,521 @@
         "title": "TemplateApply",
         "type": "object"
       },
+      "TemplateBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/TemplateDefinition"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "template_revision": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Template Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "snapshot"
+        ],
+        "title": "TemplateBinding",
+        "type": "object"
+      },
+      "TemplateBundleIn": {
+        "additionalProperties": false,
+        "properties": {
+          "example": {
+            "$ref": "#/components/schemas/PresentationExampleIn"
+          },
+          "template": {
+            "$ref": "#/components/schemas/PresentationTemplateIn"
+          }
+        },
+        "required": [
+          "template",
+          "example"
+        ],
+        "title": "TemplateBundleIn",
+        "type": "object"
+      },
+      "TemplateBundleOut": {
+        "additionalProperties": false,
+        "properties": {
+          "example": {
+            "$ref": "#/components/schemas/PresentationExampleOut"
+          },
+          "template": {
+            "$ref": "#/components/schemas/PresentationTemplateOut"
+          }
+        },
+        "required": [
+          "template",
+          "example"
+        ],
+        "title": "TemplateBundleOut",
+        "type": "object"
+      },
+      "TemplateChangeApply": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "default": "bind",
+            "enum": [
+              "bind",
+              "update",
+              "unbind"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "chapters": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PresentationChapter"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapters"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/TemplatePageMapping"
+            },
+            "maxItems": 100,
+            "title": "Mappings",
+            "type": "array"
+          },
+          "preview_token": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Preview Token",
+            "type": "string"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "template_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Revision"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "preview_token"
+        ],
+        "title": "TemplateChangeApply",
+        "type": "object"
+      },
+      "TemplateChangeIn": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "default": "bind",
+            "enum": [
+              "bind",
+              "update",
+              "unbind"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "chapters": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PresentationChapter"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapters"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/TemplatePageMapping"
+            },
+            "maxItems": 100,
+            "title": "Mappings",
+            "type": "array"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "template_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Revision"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "TemplateChangeIn",
+        "type": "object"
+      },
+      "TemplateChangePreview": {
+        "additionalProperties": false,
+        "properties": {
+          "affected_slides": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Affected Slides",
+            "type": "array"
+          },
+          "changes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "document": {
+            "$ref": "#/components/schemas/PresentationDocument"
+          },
+          "document_revision": {
+            "title": "Document Revision",
+            "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "preview_token": {
+            "title": "Preview Token",
+            "type": "string"
+          },
+          "template_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Revision"
+          }
+        },
+        "required": [
+          "document_revision",
+          "template_revision",
+          "preview_token",
+          "changes",
+          "affected_slides",
+          "issues",
+          "document"
+        ],
+        "title": "TemplateChangePreview",
+        "type": "object"
+      },
+      "TemplateCreateDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "expected_revision"
+        ],
+        "title": "TemplateCreateDocument",
+        "type": "object"
+      },
+      "TemplateDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "accent": {
+            "default": "#EC805B",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Accent",
+            "type": "string"
+          },
+          "fixed": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateFixedElement"
+            },
+            "maxItems": 40,
+            "title": "Fixed",
+            "type": "array"
+          },
+          "font": {
+            "default": "Microsoft YaHei",
+            "enum": [
+              "Microsoft YaHei",
+              "Arial",
+              "Consolas"
+            ],
+            "title": "Font",
+            "type": "string"
+          },
+          "foreground": {
+            "default": "#142B45",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Foreground",
+            "type": "string"
+          },
+          "height": {
+            "default": 720,
+            "maximum": 4096.0,
+            "minimum": 240.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "layouts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TemplatePageLayout"
+            },
+            "propertyNames": {
+              "enum": [
+                "cover",
+                "toc",
+                "section",
+                "content",
+                "ending"
+              ]
+            },
+            "title": "Layouts",
+            "type": "object"
+          },
+          "number_hidden_types": {
+            "items": {
+              "enum": [
+                "cover",
+                "toc",
+                "section",
+                "content",
+                "ending"
+              ],
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Number Hidden Types",
+            "type": "array"
+          },
+          "number_start": {
+            "default": 1,
+            "maximum": 9999.0,
+            "minimum": 0.0,
+            "title": "Number Start",
+            "type": "integer"
+          },
+          "number_total": {
+            "default": false,
+            "title": "Number Total",
+            "type": "boolean"
+          },
+          "version": {
+            "const": 1,
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "width": {
+            "default": 1280,
+            "maximum": 4096.0,
+            "minimum": 320.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "title": "TemplateDefinition",
+        "type": "object"
+      },
+      "TemplateFixedElement": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "fill": {
+            "default": "#FFFFFF",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Fill",
+            "type": "string"
+          },
+          "height": {
+            "default": 40,
+            "maximum": 4096.0,
+            "minimum": 1.0,
+            "title": "Height",
+            "type": "number"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "default": "text",
+            "enum": [
+              "text",
+              "image",
+              "rect"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "layer": {
+            "default": "front",
+            "enum": [
+              "behind",
+              "front"
+            ],
+            "title": "Layer",
+            "type": "string"
+          },
+          "opacity": {
+            "default": 1,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Opacity",
+            "type": "number"
+          },
+          "page_types": {
+            "items": {
+              "enum": [
+                "cover",
+                "toc",
+                "section",
+                "content",
+                "ending"
+              ],
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Page Types",
+            "type": "array"
+          },
+          "style": {
+            "$ref": "#/components/schemas/TemplateTextStyle"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Text",
+            "type": "string"
+          },
+          "width": {
+            "default": 160,
+            "maximum": 4096.0,
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "default": 64,
+            "maximum": 4096.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 640,
+            "maximum": 4096.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "TemplateFixedElement",
+        "type": "object"
+      },
       "TemplateIn": {
         "additionalProperties": false,
         "properties": {
@@ -34845,6 +35782,240 @@
           "updated_at"
         ],
         "title": "TemplateOut",
+        "type": "object"
+      },
+      "TemplateOverrides": {
+        "additionalProperties": false,
+        "description": "Explicit replacement fields; absence follows the pinned template.",
+        "properties": {
+          "accent": {
+            "anyOf": [
+              {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accent"
+          },
+          "fixed": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TemplateFixedElement"
+                },
+                "maxItems": 40,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed"
+          },
+          "font": {
+            "anyOf": [
+              {
+                "enum": [
+                  "Microsoft YaHei",
+                  "Arial",
+                  "Consolas"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Font"
+          },
+          "foreground": {
+            "anyOf": [
+              {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foreground"
+          },
+          "layouts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TemplatePageLayout"
+            },
+            "propertyNames": {
+              "enum": [
+                "cover",
+                "toc",
+                "section",
+                "content",
+                "ending"
+              ]
+            },
+            "title": "Layouts",
+            "type": "object"
+          },
+          "number_hidden_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "cover",
+                    "toc",
+                    "section",
+                    "content",
+                    "ending"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number Hidden Types"
+          },
+          "number_start": {
+            "anyOf": [
+              {
+                "maximum": 9999.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number Start"
+          },
+          "number_total": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number Total"
+          }
+        },
+        "title": "TemplateOverrides",
+        "type": "object"
+      },
+      "TemplatePageLayout": {
+        "additionalProperties": false,
+        "properties": {
+          "background": {
+            "default": "#FAF8F3",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Background",
+            "type": "string"
+          },
+          "background_asset_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background Asset Id"
+          },
+          "body_top": {
+            "default": 176,
+            "maximum": 4096.0,
+            "minimum": 0.0,
+            "title": "Body Top",
+            "type": "number"
+          },
+          "chapter": {
+            "$ref": "#/components/schemas/TemplateSlot"
+          },
+          "number": {
+            "$ref": "#/components/schemas/TemplateSlot"
+          },
+          "title": {
+            "$ref": "#/components/schemas/TemplateSlot"
+          },
+          "toc": {
+            "$ref": "#/components/schemas/TemplateSlot"
+          },
+          "toc_capacity": {
+            "default": 7,
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Toc Capacity",
+            "type": "integer"
+          }
+        },
+        "title": "TemplatePageLayout",
+        "type": "object"
+      },
+      "TemplatePageMapping": {
+        "additionalProperties": false,
+        "properties": {
+          "chapter_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Id"
+          },
+          "page_type": {
+            "default": "content",
+            "enum": [
+              "cover",
+              "toc",
+              "section",
+              "content",
+              "ending"
+            ],
+            "title": "Page Type",
+            "type": "string"
+          },
+          "slide_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Slide Id",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Title",
+            "type": "string"
+          },
+          "title_element_ids": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Title Element Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "slide_id"
+        ],
+        "title": "TemplatePageMapping",
         "type": "object"
       },
       "TemplatePreviewIn": {
@@ -35105,6 +36276,49 @@
         "title": "TemplatePut",
         "type": "object"
       },
+      "TemplateSlot": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "default": 64,
+            "maximum": 4096.0,
+            "minimum": 1.0,
+            "title": "Height",
+            "type": "number"
+          },
+          "style": {
+            "$ref": "#/components/schemas/TemplateTextStyle"
+          },
+          "visible": {
+            "default": true,
+            "title": "Visible",
+            "type": "boolean"
+          },
+          "width": {
+            "default": 1152,
+            "maximum": 4096.0,
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "default": 64,
+            "maximum": 4096.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 88,
+            "maximum": 4096.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "title": "TemplateSlot",
+        "type": "object"
+      },
       "TemplateSupplier": {
         "properties": {
           "name": {
@@ -35240,6 +36454,51 @@
           "items"
         ],
         "title": "TemplateSyncJobOut",
+        "type": "object"
+      },
+      "TemplateTextStyle": {
+        "additionalProperties": false,
+        "properties": {
+          "align": {
+            "default": "left",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ],
+            "title": "Align",
+            "type": "string"
+          },
+          "bold": {
+            "default": false,
+            "title": "Bold",
+            "type": "boolean"
+          },
+          "color": {
+            "default": "#142B45",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "font": {
+            "default": "Microsoft YaHei",
+            "enum": [
+              "Microsoft YaHei",
+              "Arial",
+              "Consolas"
+            ],
+            "title": "Font",
+            "type": "string"
+          },
+          "size": {
+            "default": 32,
+            "maximum": 240.0,
+            "minimum": 6.0,
+            "title": "Size",
+            "type": "number"
+          }
+        },
+        "title": "TemplateTextStyle",
         "type": "object"
       },
       "TestModelOut": {
@@ -37898,6 +39157,44 @@
         "title": "VideoEditorClip",
         "type": "object"
       },
+      "VideoEditorClipMergeCreateIn": {
+        "properties": {
+          "clipIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 2,
+            "title": "Clipids",
+            "type": "array"
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId",
+          "clipIds",
+          "name"
+        ],
+        "title": "VideoEditorClipMergeCreateIn",
+        "type": "object"
+      },
       "VideoEditorDefaultEffects": {
         "properties": {
           "chromaKey": {
@@ -38565,7 +39862,8 @@
               "media",
               "render",
               "segment_export",
-              "asset_bake"
+              "asset_bake",
+              "clip_merge"
             ],
             "title": "Kind",
             "type": "string"
@@ -38692,6 +39990,7 @@
                   "addTrack": "#/components/schemas/AddTrackOperation",
                   "addTransition": "#/components/schemas/AddTransitionOperation",
                   "alignAudioSeam": "#/components/schemas/AlignAudioSeamOperation",
+                  "applyClipMerge": "#/components/schemas/ClipMergeOperation",
                   "duplicateClip": "#/components/schemas/ClipIdOperation",
                   "linkClips": "#/components/schemas/LinkClipsOperation",
                   "moveClip": "#/components/schemas/MoveClipOperation",
@@ -38709,6 +40008,7 @@
                   "setTransition": "#/components/schemas/SetTransitionOperation",
                   "splitClip": "#/components/schemas/SplitClipOperation",
                   "trimClip": "#/components/schemas/TrimClipOperation",
+                  "undoClipMerge": "#/components/schemas/ClipMergeOperation",
                   "unlinkClips": "#/components/schemas/ClipIdOperation",
                   "updateClip": "#/components/schemas/UpdateClipOperation",
                   "updateKeyframe": "#/components/schemas/KeyframeOperation",
@@ -38721,6 +40021,9 @@
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/AddTrackOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/ClipMergeOperation"
                 },
                 {
                   "$ref": "#/components/schemas/UpdateSettingsOperation"
@@ -38925,6 +40228,8 @@
               "zoom",
               "blur",
               "spin-blur",
+              "whip-pan",
+              "light-leak",
               "flash",
               "eyelid",
               "audio-crossfade",
@@ -39124,6 +40429,8 @@
               "zoom",
               "blur",
               "spin-blur",
+              "whip-pan",
+              "light-leak",
               "flash",
               "eyelid",
               "audio-crossfade"
@@ -40984,7 +42291,7 @@
             "items": {
               "$ref": "#/components/schemas/VisualCanvasEdge"
             },
-            "maxItems": 1000,
+            "maxItems": 2000,
             "title": "Edges",
             "type": "array"
           },
@@ -41019,7 +42326,7 @@
                 }
               ]
             },
-            "maxItems": 500,
+            "maxItems": 1000,
             "title": "Nodes",
             "type": "array"
           }
@@ -62888,6 +64195,310 @@
         ]
       }
     },
+    "/v1/presentation-workshop/examples": {
+      "get": {
+        "operationId": "list_examples_v1_presentation_workshop_examples_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 120,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationExampleList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Examples",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_example_v1_presentation_workshop_examples_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentationExampleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationExampleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Example",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/examples/{example_id}": {
+      "delete": {
+        "operationId": "delete_example_v1_presentation_workshop_examples__example_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "example_id",
+            "required": true,
+            "schema": {
+              "title": "Example Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Example V1 Presentation Workshop Examples  Example Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Example",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_example_v1_presentation_workshop_examples__example_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "example_id",
+            "required": true,
+            "schema": {
+              "title": "Example Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationExampleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Example",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_example_v1_presentation_workshop_examples__example_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "example_id",
+            "required": true,
+            "schema": {
+              "title": "Example Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentationExamplePut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationExampleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Example",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/examples/{example_id}/documents": {
+      "post": {
+        "operationId": "create_from_example_v1_presentation_workshop_examples__example_id__documents_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "example_id",
+            "required": true,
+            "schema": {
+              "title": "Example Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateCreateDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create From Example",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
     "/v1/presentation-workshop/imports": {
       "post": {
         "operationId": "create_import_v1_presentation_workshop_imports_post",
@@ -62965,6 +64576,47 @@
           }
         },
         "summary": "Preview Import",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/library/import": {
+      "post": {
+        "operationId": "import_template_bundle_v1_presentation_workshop_library_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateBundleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateBundleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Template Bundle",
         "tags": [
           "presentation-workshop"
         ]
@@ -63446,6 +65098,414 @@
           }
         },
         "summary": "Apply Presentation Operations",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/projects/{project_id}/template/apply": {
+      "post": {
+        "operationId": "apply_template_change_v1_presentation_workshop_projects__project_id__template_apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateChangeApply"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Template Change",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/projects/{project_id}/template/preview": {
+      "post": {
+        "operationId": "preview_template_change_v1_presentation_workshop_projects__project_id__template_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateChangeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateChangePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Template Change",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/templates": {
+      "get": {
+        "operationId": "list_templates_v1_presentation_workshop_templates_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 120,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationTemplateList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Templates",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_template_v1_presentation_workshop_templates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentationTemplateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationTemplateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Template",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/templates/{template_id}": {
+      "delete": {
+        "operationId": "delete_template_v1_presentation_workshop_templates__template_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Template V1 Presentation Workshop Templates  Template Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Template",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_template_v1_presentation_workshop_templates__template_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationTemplateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Template",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_template_v1_presentation_workshop_templates__template_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentationTemplatePut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationTemplateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Template",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/templates/{template_id}/documents": {
+      "post": {
+        "operationId": "create_from_template_v1_presentation_workshop_templates__template_id__documents_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateCreateDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create From Template",
         "tags": [
           "presentation-workshop"
         ]
@@ -69797,6 +71857,200 @@
           }
         },
         "summary": "Audio Seam Candidates",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/clip-merges": {
+      "get": {
+        "operationId": "list_clip_merges_v1_video_editor_projects__project_id__clip_merges_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Clip Merges",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "post": {
+        "operationId": "create_clip_merge_v1_video_editor_projects__project_id__clip_merges_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorClipMergeCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Clip Merge",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/clip-merges/{task_id}": {
+      "get": {
+        "operationId": "get_clip_merge_v1_video_editor_projects__project_id__clip_merges__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Clip Merge",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_clip_merge_v1_video_editor_projects__project_id__clip_merges__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Clip Merge",
         "tags": [
           "video-editor"
         ]

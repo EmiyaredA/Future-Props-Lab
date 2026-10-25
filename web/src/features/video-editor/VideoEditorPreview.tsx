@@ -5,6 +5,7 @@ import { VideoEditorTextLayer } from "./VideoEditorTextLayer";
 import { VideoEditorSourceMonitor } from "./VideoEditorSourceMonitor";
 import { syncMediaClock } from "./previewClock";
 import { VideoEditorMediaLayer } from "./VideoEditorMediaLayer";
+import { VideoEditorLightLeak } from "./VideoEditorLightLeak";
 import { VideoEditorPreciseFrame } from "./VideoEditorPreciseFrame";
 import { previewVideoPlaybackKeys } from "./previewPlayback";
 import type { TimelineEditBuilder } from "./timelineSaveQueue";
@@ -600,6 +601,7 @@ export function VideoEditorPreview({
                     clip={clip}
                     style={style}
                     spinBlur={effect.spinBlur}
+                    whipPan={effect.whipPan}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
                     stageRef={stageRef}
@@ -628,6 +630,7 @@ export function VideoEditorPreview({
                   geometry={geometry}
                   style={style}
                   spinBlur={effect.spinBlur}
+                  whipPan={effect.whipPan}
                   localUs={localUs}
                   playing={playing}
                   selected={selectedClipId === clip.id}
@@ -658,6 +661,13 @@ export function VideoEditorPreview({
                   d={eyelidOverlayPaths(transitionOverlay.eyelidProgress).lower}
                 />
               </svg>
+            ) : null}
+            {transitionOverlay.lightLeak ? (
+              <VideoEditorLightLeak
+                effect={transitionOverlay.lightLeak}
+                width={canvasWidth}
+                height={canvasHeight}
+              />
             ) : null}
             {preciseFrame &&
             !playing &&

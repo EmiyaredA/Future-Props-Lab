@@ -1,5 +1,8 @@
 """All managed references, including decorations and non-rendered archives."""
 
+from app.apps.presentation_workshop.templates.resolver import resolve_document
+from app.apps.presentation_workshop.templates.schema import effective_template
+
 
 def document_references(document):
     references = {}
@@ -8,6 +11,15 @@ def document_references(document):
         if identity:
             references.setdefault(identity, set()).add(kind)
 
+    if document.template:
+        for definition in (
+            document.template.snapshot,
+            effective_template(document.template, document.template_overrides),
+        ):
+            for layout in definition.layouts.values():
+                add(layout.background_asset_id, "image")
+            for item in definition.fixed:
+                add(item.asset_id, "image")
     for slide in document.slides:
         add(slide.reference.asset_id if slide.reference else None, "image")
         add(slide.image_asset_id, "image")
@@ -21,6 +33,8 @@ def document_references(document):
 
 def rendered_asset_ids(document):
     """Static output needs visible content, while storage protects every reference."""
+
+    document, _ = resolve_document(document)
     result = set()
     for slide in document.slides:
         if slide.background_style and slide.background_style.asset_id:

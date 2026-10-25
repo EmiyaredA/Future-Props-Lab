@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +15,8 @@ from app.apps.presentation_workshop.schemas.document import (
     PresentationProjectPut,
     PresentationProjectSummary,
 )
+from app.apps.presentation_workshop.templates.models import PresentationTemplate
+from app.apps.presentation_workshop.templates.resolver import resolve_document
 from app.capabilities.asset_store import AssetStorage
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.svg import normalize_svg
@@ -36,6 +40,36 @@ def project_out(row: PresentationProject) -> PresentationProjectOut:
     return PresentationProjectOut(
         **{key: getattr(row, key) for key in PresentationProjectOut.model_fields}
     )
+
+
+def summary_slide(row):
+    if not row.template:
+        return row.first_slide
+
+    semantics = json.loads(row.semantics)
+    pages = [
+        {
+            "id": item["id"],
+            "chapter_id": item["chapter_id"],
+            "background": "#FFFFFF",
+            "notes": "",
+            "elements": [],
+        }
+        for item in semantics
+    ]
+    pages[0] = row.first_slide
+    document = PresentationDocument.model_validate(
+        {
+            "version": 4,
+            "width": row.width,
+            "height": row.height,
+            "slides": pages,
+            "template": row.template,
+            "template_overrides": row.template_overrides or {},
+            "chapters": row.chapters or [],
+        }
+    )
+    return resolve_document(document)[0].slides[0]
 
 
 class Presentations:
@@ -64,6 +98,22 @@ class Presentations:
             select(func.count()).select_from(PresentationProject).where(*filters)
         )
         # Project cards only need one slide; avoid deserializing every full deck.
+        slide_values = func.json_each(PresentationProject.document["slides"]).table_valued("value")
+        semantics = (
+            select(
+                func.json_group_array(
+                    func.json_object(
+                        "id",
+                        func.json_extract(slide_values.c.value, "$.id"),
+                        "chapter_id",
+                        func.json_extract(slide_values.c.value, "$.chapter_id"),
+                    )
+                )
+            )
+            .select_from(slide_values)
+            .correlate(PresentationProject)
+            .scalar_subquery()
+        )
         rows = await self.session.execute(
             select(
                 PresentationProject.id,
@@ -74,6 +124,10 @@ class Presentations:
                 PresentationProject.document["slides"][0].label("first_slide"),
                 PresentationProject.document["width"].label("width"),
                 PresentationProject.document["height"].label("height"),
+                PresentationProject.document["template"].label("template"),
+                PresentationProject.document["template_overrides"].label("template_overrides"),
+                PresentationProject.document["chapters"].label("chapters"),
+                semantics.label("semantics"),
             )
             .where(*filters)
             .order_by(PresentationProject.updated_at.desc(), PresentationProject.id)
@@ -89,7 +143,7 @@ class Presentations:
                     revision=row.revision,
                     updated_at=row.updated_at,
                     slide_count=row.slide_count,
-                    first_slide=row.first_slide,
+                    first_slide=summary_slide(row),
                     width=row.width,
                     height=row.height,
                 )
@@ -154,7 +208,19 @@ class Presentations:
             PresentationAssetReference(project_id=project_id, asset_id=a.id) for a in assets
         )
 
+    async def normalize_template_source(self, document):
+        if document.template and document.template.template_id:
+            identity = await self.session.scalar(
+                select(PresentationTemplate.id).where(
+                    PresentationTemplate.id == document.template.template_id,
+                    PresentationTemplate.workspace_id == self.workspace_id,
+                )
+            )
+            if identity is None:
+                document.template.template_id = None
+
     async def create(self, body: PresentationProjectIn) -> PresentationProjectOut:
+        await self.normalize_template_source(body.document)
         await self.assets(body.document)
         row = PresentationProject(
             workspace_id=self.workspace_id, title=body.title, document=body.document.model_dump()
@@ -170,12 +236,20 @@ class Presentations:
     ) -> PresentationProjectOut:
         current = await self.row(project_id)
         if (
+            body.document.source_version < 4
+            and PresentationDocument.model_validate(current.document).needs_v4()
+        ):
+            raise PresentationError(
+                "当前文稿包含模板数据，请更新客户端后保存", 422, "document_downgrade"
+            )
+        if (
             body.document.source_version < 3
             and PresentationDocument.model_validate(current.document).needs_v3()
         ):
             raise PresentationError(
                 "当前文稿包含新版内容，请更新客户端后保存", 422, "document_downgrade"
             )
+        await self.normalize_template_source(body.document)
         await patch_revisioned_project(
             self.session,
             PresentationProject,

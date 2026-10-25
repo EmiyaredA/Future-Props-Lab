@@ -15,6 +15,8 @@ export const videoEditorQueryKeys = {
     ["video-editor-segment-exports", projectId] as const,
   segmentExport: (projectId: string, taskId: string) =>
     ["video-editor-segment-export", projectId, taskId] as const,
+  clipMerge: (projectId: string, taskId: string) =>
+    ["video-editor-clip-merge", projectId, taskId] as const,
   allTasks: ["video-editor-all-tasks"] as const,
   allRenders: (projectIds: unknown) =>
     ["video-editor-all-renders", projectIds] as const,

@@ -66,6 +66,7 @@ export const responsiveOwners = {
   "galgame-workshop-editor": "editors",
   "galgame-workshop-preview": "editors",
   "presentation-workshop-projects": "shell",
+  "presentation-workshop-templates": "shell", // presentation-templates.spec.ts covers designer and binding at 390/768/1600px.
   "presentation-workshop-editor": "editors",
   "video-editor-projects": "shell",
   "video-editor-editor": "editors",

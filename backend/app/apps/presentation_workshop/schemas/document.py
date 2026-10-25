@@ -34,6 +34,13 @@ from app.apps.presentation_workshop.schemas.scene import (
     validate_scene,
 )
 from app.apps.presentation_workshop.schemas.values import Color, Identifier, SlideModel
+from app.apps.presentation_workshop.templates.schema import (
+    PageType,
+    PresentationChapter,
+    TemplateBinding,
+    TemplateOverrides,
+    effective_template,
+)
 
 Font = Literal["Microsoft YaHei", "Arial", "Consolas"]
 
@@ -199,7 +206,7 @@ class PresentationSlide(SlideModel):
     id: Identifier
     background: Color
     notes: str = Field(max_length=20000)
-    elements: list[PresentationElement] = Field(max_length=200)
+    elements: list[PresentationElement] = Field(max_length=300)
     groups: list[PresentationGroup] = Field(default_factory=list, max_length=200)
     connections: list[PresentationConnection] = Field(default_factory=list, max_length=200)
     infographics: list[PresentationInfographic] = Field(default_factory=list, max_length=50)
@@ -212,6 +219,11 @@ class PresentationSlide(SlideModel):
     transition: PresentationTransition | None = None
     background_style: PresentationPaint | None = None
     section: str = Field(default_factory=str, max_length=120)
+    page_type: PageType = Field(default_factory=lambda: "content")
+    title: str = Field(default_factory=str, max_length=500)
+    chapter_id: Identifier | None = None
+    template_hidden: list[Identifier] = Field(default_factory=list, max_length=45)
+    toc_offset: int = Field(default_factory=lambda: 0, ge=0, le=100)
     notes_rich: list[PresentationParagraph] | None = Field(default=None, max_length=200)
     annotations: list[PresentationAnnotation] = Field(default_factory=list, max_length=200)
 
@@ -232,16 +244,19 @@ class PresentationSlide(SlideModel):
 
 
 class PresentationDocument(SlideModel):
-    version: Literal[2, 3]
+    version: Literal[2, 3, 4]
     width: int = Field(ge=320, le=4096)
     height: int = Field(ge=240, le=4096)
     slides: list[PresentationSlide] = Field(min_length=1, max_length=100)
+    template: TemplateBinding | None = None
+    template_overrides: TemplateOverrides = Field(default_factory=TemplateOverrides)
+    chapters: list[PresentationChapter] = Field(default_factory=list, max_length=100)
     _source_version: int = PrivateAttr(default=3)
 
     @model_validator(mode="wrap")
     @classmethod
     def upgrade_legacy(cls, value, handler):
-        version = value.get("version") if isinstance(value, dict) else 3
+        version = value.get("version") if isinstance(value, dict) else getattr(value, "version", 3)
         result = handler({**value, "version": 3} if version in {1, 2} else value)
         result._source_version = version
         return result
@@ -249,6 +264,21 @@ class PresentationDocument(SlideModel):
     @property
     def source_version(self):
         return self._source_version
+
+    def needs_v4(self):
+        return bool(
+            self.template
+            or self.chapters
+            or self.template_overrides != TemplateOverrides()
+            or any(
+                s.title
+                or s.chapter_id
+                or s.page_type != "content"
+                or s.template_hidden
+                or s.toc_offset
+                for s in self.slides
+            )
+        )
 
     def needs_v3(self):
         return (
@@ -290,6 +320,27 @@ class PresentationDocument(SlideModel):
 
     @model_validator(mode="after")
     def unique_ids_and_size(self):
+        if self.version < 4 and self.needs_v4():
+            raise ValueError("模板和页面语义需要 v4 文稿")
+        if any(len(s.elements) > 200 for s in self.slides) and (self.version < 4 or self.template):
+            raise ValueError("正文每页最多 200 个元素；解绑后的模板外观最多可保留 300 个元素")
+        if (self.version < 4 or self.template) and any(
+            c.layer > 200 for s in self.slides for c in s.connections
+        ):
+            raise ValueError("正文连接层级不能超过 200")
+        chapter_ids = [chapter.id for chapter in self.chapters]
+        if len(chapter_ids) != len(set(chapter_ids)):
+            raise ValueError("章节 ID 必须唯一")
+        if any(s.chapter_id and s.chapter_id not in chapter_ids for s in self.slides):
+            raise ValueError("页面引用的章节不存在")
+        if self.template:
+            definition = effective_template(self.template, self.template_overrides)
+            if (definition.width, definition.height) != (self.width, self.height):
+                raise ValueError("模板尺寸必须与文稿一致")
+        if self.template and any(
+            e.id.startswith("master-") for s in self.slides for e in s.elements
+        ):
+            raise ValueError("master- 为模板解析层保留的元素前缀")
         ids = [slide.id for slide in self.slides]
         ids += [element.id for slide in self.slides for element in slide.elements]
         ids += [

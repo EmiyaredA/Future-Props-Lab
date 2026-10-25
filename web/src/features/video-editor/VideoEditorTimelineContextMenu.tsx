@@ -44,6 +44,7 @@ export function VideoEditorTimelineContextMenu({
   onRequestSegmentExport,
   splitSelected,
   separateClips,
+  onRequestClipMerge,
 }: {
   contextMenu: TimelineContextMenuState;
   contextMenuRef: RefObject<HTMLDivElement | null>;
@@ -71,6 +72,7 @@ export function VideoEditorTimelineContextMenu({
   onRequestSegmentExport?: (clipIds: string[]) => void;
   splitSelected: () => void;
   separateClips: (clip: VideoEditorClip) => void;
+  onRequestClipMerge?: (clipIds: string[]) => void;
 }) {
   return (
     <div
@@ -119,6 +121,19 @@ export function VideoEditorTimelineContextMenu({
         </>
       ) : (
         <>
+          {onRequestClipMerge ? (
+            <button
+              role="menuitem"
+              onClick={() => {
+                onRequestClipMerge(
+                  resolveActionClips(contextMenu.clip).map((clip) => clip.id),
+                );
+                onClose();
+              }}
+            >
+              合并片段
+            </button>
+          ) : null}
           <button
             role="menuitem"
             onClick={() => toggleClipsMute(contextMenu.clip)}

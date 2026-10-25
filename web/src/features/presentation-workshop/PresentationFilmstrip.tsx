@@ -55,6 +55,8 @@ export function PresentationFilmstrip({
     }
     onSelect(id);
   };
+  const sectionName = (s: (typeof deck.slides)[number]) =>
+    deck.chapters?.find((c) => c.id === s.chapter_id)?.title ?? s.section;
   return (
     <aside
       className="presentation-filmstrip"
@@ -141,11 +143,11 @@ export function PresentationFilmstrip({
             dragged.current = null;
           }}
         >
-          {!!slide.section &&
+          {!!sectionName(slide) &&
             (index === 0 ||
-              deck.slides[index - 1].section !== slide.section) && (
+              sectionName(deck.slides[index - 1]) !== sectionName(slide)) && (
               <div className="presentation-section-heading">
-                {slide.section}
+                {sectionName(slide)}
               </div>
             )}
           <span className="presentation-slide-number">{index + 1}</span>

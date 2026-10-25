@@ -1,3 +1,4 @@
+import { tocOverflow } from "../master/model";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { toBlob, toJpeg } from "html-to-image";
@@ -7,6 +8,12 @@ import { download } from "../api";
 import type { Project } from "../types";
 
 async function renderPage(project: Project, index: number, host: HTMLElement) {
+  if (
+    project.document.slides.some((slide) =>
+      tocOverflow(project.document, slide),
+    )
+  )
+    throw new Error("目录未完全展示，请先添加目录续页");
   const root = createRoot(host);
   flushSync(() =>
     root.render(

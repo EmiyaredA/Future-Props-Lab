@@ -334,3 +334,35 @@
   border-radius: 50%;
   filter: blur(1px);
 }
+
+.ve-transition-thumb.effect-whip-pan {
+  background: repeating-linear-gradient(
+    0deg,
+    #504874 0 9%,
+    #a99ee5 14% 19%,
+    #665c99 22% 36%
+  );
+  transform: skewX(-12deg);
+  filter: blur(2px);
+}
+
+.ve-transition-thumb.effect-light-leak {
+  background: linear-gradient(
+    105deg,
+    #4d607e 0%,
+    #b6ca6a 30%,
+    #e8f5b4 45%,
+    #fffff4 57%,
+    #d5e4a1 70%,
+    #6d7993 100%
+  );
+}
+
+.ve-transition-light-leak {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}

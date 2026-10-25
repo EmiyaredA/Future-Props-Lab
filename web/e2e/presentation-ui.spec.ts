@@ -21,18 +21,14 @@ async function noOverflow(page: Page) {
   ).toBe(true);
 }
 
-test("首页版式、卡片菜单与独立真实页面截图", async ({ page }, info) => {
+test("文稿列表、卡片菜单与独立真实页面截图", async ({ page }, info) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   const title = await create(page, "未命名演示");
   await page.getByRole("button", { name: "返回文稿列表" }).click();
   await expect(
     page.getByRole("button", { name: `打开 ${title}`, exact: true }),
   ).toBeVisible();
-  await expect(
-    page
-      .locator(".presentation-starters")
-      .getByText("让想法，被看见", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".presentation-starters")).toHaveCount(0);
   const card = page.locator(".presentation-project-card").first();
   await expect(card.getByText("让想法，被看见", { exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath("presentation-library.png") });
@@ -41,21 +37,17 @@ test("首页版式、卡片菜单与独立真实页面截图", async ({ page }, 
   await expect(rename).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(card.getByRole("button", { name: /文稿操作/ })).toBeFocused();
-  await page.getByRole("button", { name: "预览 图文双栏" }).click();
-  await page.getByRole("button", { name: "使用此版式" }).click();
+  await page.getByRole("button", { name: "新建演示文稿", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "确认", exact: true })
     .click();
+  await page.getByRole("button", { name: "新幻灯片版式", exact: true }).click();
+  await page.getByRole("menuitem", { name: "图文双栏", exact: true }).click();
   await expect(
     page.locator(".presentation-canvas [data-element-id]"),
   ).toHaveCount(5);
-  await page.getByRole("button", { name: "返回文稿列表" }).click();
-  await page.getByRole("button", { name: "从空白新建文稿" }).click();
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "取消", exact: true })
-    .click();
+  await page.getByRole("button", { name: "返回文稿列表", exact: true }).click();
   for (const theme of ["light", "dark"]) {
     await page.evaluate((value) => {
       document.documentElement.dataset.theme = value;

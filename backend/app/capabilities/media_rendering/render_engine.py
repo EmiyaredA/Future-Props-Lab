@@ -356,6 +356,7 @@ def _render_segment(
     cancel: threading.Event,
     progress: Callable[[int], None],
     capture_frame: RenderCaptureFrame,
+    transparent: bool = False,
 ) -> None:
     width, height, fps = RENDER_PRESETS[preset]
     canvas_size = (document.settings.width, document.settings.height)
@@ -415,6 +416,7 @@ def _render_segment(
             image_for_clip=image_for_clip,
             font_for_clip=lambda clip: asset_paths.get(clip.font_asset_id or ""),
         ),
+        transparent=transparent,
     )
     encoder = subprocess.Popen(
         [
@@ -425,7 +427,7 @@ def _render_segment(
             "-f",
             "rawvideo",
             "-pix_fmt",
-            "rgb24",
+            "rgba" if transparent else "rgb24",
             "-s",
             f"{width}x{height}",
             "-r",
@@ -434,13 +436,19 @@ def _render_segment(
             "pipe:0",
             "-an",
             "-c:v",
-            "libx264",
-            "-preset",
-            "medium",
-            "-crf",
-            "18",
-            "-pix_fmt",
-            "yuv420p",
+            *(
+                ["prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le"]
+                if transparent
+                else [
+                    "libx264",
+                    "-preset",
+                    "medium",
+                    "-crf",
+                    "18",
+                    "-pix_fmt",
+                    "yuv420p",
+                ]
+            ),
             "-r",
             str(fps),
             "-g",
@@ -742,14 +750,21 @@ def render_document(
     cancel: threading.Event,
     progress: Callable[[int], None],
     capture_frame: RenderCaptureFrame = RenderCaptureFrame(),
+    transparent: bool = False,
 ) -> None:
     _width, _height, fps = RENDER_PRESETS[preset]
-    total_frames = round((end_us - start_us) / 1_000_000 * fps)
+    # An intermediate asset must cover even a partial final frame so the original
+    # microsecond timeline duration never exceeds its source duration.
+    total_frames = (
+        ((end_us - start_us) * fps + 999_999) // 1_000_000
+        if transparent
+        else round((end_us - start_us) / 1_000_000 * fps)
+    )
     with TemporaryDirectory(prefix="video-editor-render-") as temp:
         root = Path(temp)
         # One continuous encode: internal 30s chunk+concat restarted decoders with
         # input-side -ss, which jumped back ~1 GOP at each boundary (e.g. 2:00).
-        silent_video = root / "picture.mp4"
+        silent_video = root / ("picture.mov" if transparent else "picture.mp4")
         _render_segment(
             document,
             asset_paths,
@@ -762,6 +777,7 @@ def render_document(
             cancel=cancel,
             progress=progress,
             capture_frame=capture_frame,
+            transparent=transparent,
         )
         progress(88)
         _mux_audio(

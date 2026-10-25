@@ -97,6 +97,7 @@ class VideoEditorTask(Base):
         String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE")
     )
     request_id: Mapped[str] = mapped_column(String(64))
+    # media, render, segment_export, asset_bake, or frozen clip_merge.
     kind: Mapped[str] = mapped_column(String(16))
     status: Mapped[str] = mapped_column(String(16), default="queued")
     progress: Mapped[int] = mapped_column(Integer, default=0)

@@ -1,3 +1,5 @@
+import { VideoEditorProjectTitle } from "./VideoEditorProjectTitle";
+import { VideoEditorClipMergeDialog } from "./VideoEditorClipMergeDialog";
 import { VideoEditorGapPanel } from "./VideoEditorGapPanel";
 import { VideoEditorFitActions } from "./VideoEditorFitActions";
 import { VideoEditorSaveGuard } from "./VideoEditorSaveGuard";
@@ -5,7 +7,7 @@ import { textClipOperations, type TextPreset } from "./textModel";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { useVideoEditorLayout } from "./useVideoEditorLayout";
 import { VideoEditorSeparator } from "./VideoEditorSeparator";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -87,12 +89,12 @@ export function VideoEditorPage({
   const [clipEdgeFocus, setClipEdgeFocus] = useState<"in" | "out">("in");
   const workspaceLayout = useVideoEditorLayout(editor.layout, editor.setLayout);
   const [gapPanelOpen, setGapPanelOpen] = useState(false);
+  const [mergeClipIds, setMergeClipIds] = useState<string[]>();
   const [exportOpen, setExportOpen] = useState(false);
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
   const [segmentExportClipIds, setSegmentExportClipIds] = useState<string[]>();
   const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
   const [previewingAssetId, setPreviewingAssetId] = useState<string>();
-  const [titleDraft, setTitleDraft] = useState<string | null>(null);
   const [contentViewportWidthPx, setContentViewportWidthPx] = useState(0);
   const [subtitleImport, setSubtitleImport] = useState<{
     fileName: string;
@@ -100,7 +102,6 @@ export function VideoEditorPage({
     error?: string;
   }>();
   const [subtitleImportPending, setSubtitleImportPending] = useState(false);
-  const discardTitle = useRef(false);
   const {
     zoom: editorZoom,
     setZoom: editorSetZoom,
@@ -465,31 +466,9 @@ export function VideoEditorPage({
           <div className="ve-editor-title">
             <Film aria-hidden />
             <div>
-              <input
-                aria-label="项目名称"
-                maxLength={120}
-                value={titleDraft ?? project.title}
-                onFocus={() => setTitleDraft(project.title)}
-                onChange={(event) => setTitleDraft(event.target.value)}
-                onBlur={() => {
-                  if (discardTitle.current) {
-                    discardTitle.current = false;
-                    setTitleDraft(null);
-                    return;
-                  }
-                  const title = (titleDraft ?? project.title).trim();
-                  if (title && title !== project.title)
-                    void editor.renameProject(title);
-                  setTitleDraft(null);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") event.currentTarget.blur();
-                  if (event.key === "Escape") {
-                    discardTitle.current = true;
-                    setTitleDraft(null);
-                    event.currentTarget.blur();
-                  }
-                }}
+              <VideoEditorProjectTitle
+                title={project.title}
+                rename={editor.renameProject}
               />
               <small>视频剪辑工坊 · revision {timeline.revision}</small>
             </div>
@@ -869,6 +848,14 @@ export function VideoEditorPage({
         </div>
         <VideoEditorTimeline
           onCheckGaps={() => setGapPanelOpen(true)}
+          onRequestClipMerge={
+            editor.canWrite
+              ? (ids) => {
+                  editor.setPlaying(false);
+                  setMergeClipIds(ids);
+                }
+              : undefined
+          }
           timeline={timeline}
           assets={assets}
           audioSeam={
@@ -944,6 +931,22 @@ export function VideoEditorPage({
             projectId={projectId}
             revision={timeline.revision}
             onClose={() => setExportOpen(false)}
+          />
+        ) : null}
+        {mergeClipIds ? (
+          <VideoEditorClipMergeDialog
+            projectId={projectId}
+            timeline={timeline}
+            assets={assets}
+            clipIds={mergeClipIds}
+            disabled={editor.saving || !editor.canWrite}
+            commit={editor.commit}
+            onClose={() => setMergeClipIds(undefined)}
+            onApplied={(id) => {
+              selectClip(id);
+              setMergeClipIds(undefined);
+              editor.setNotice("已合并片段，可撤销恢复原片段");
+            }}
           />
         ) : null}
         {segmentExportOpen ? (

@@ -5559,6 +5559,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/presentation-workshop/examples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Examples */
+        get: operations["list_examples_v1_presentation_workshop_examples_get"];
+        put?: never;
+        /** Create Example */
+        post: operations["create_example_v1_presentation_workshop_examples_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/examples/{example_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Example */
+        get: operations["get_example_v1_presentation_workshop_examples__example_id__get"];
+        /** Put Example */
+        put: operations["put_example_v1_presentation_workshop_examples__example_id__put"];
+        post?: never;
+        /** Delete Example */
+        delete: operations["delete_example_v1_presentation_workshop_examples__example_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/examples/{example_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create From Example */
+        post: operations["create_from_example_v1_presentation_workshop_examples__example_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/presentation-workshop/imports": {
         parameters: {
             query?: never;
@@ -5587,6 +5641,23 @@ export interface paths {
         put?: never;
         /** Preview Import */
         post: operations["preview_import_v1_presentation_workshop_imports_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/library/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Template Bundle */
+        post: operations["import_template_bundle_v1_presentation_workshop_library_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5692,6 +5763,94 @@ export interface paths {
         put?: never;
         /** Apply Presentation Operations */
         post: operations["apply_presentation_operations_v1_presentation_workshop_projects__project_id__operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/projects/{project_id}/template/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Template Change */
+        post: operations["apply_template_change_v1_presentation_workshop_projects__project_id__template_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/projects/{project_id}/template/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Template Change */
+        post: operations["preview_template_change_v1_presentation_workshop_projects__project_id__template_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Templates */
+        get: operations["list_templates_v1_presentation_workshop_templates_get"];
+        put?: never;
+        /** Create Template */
+        post: operations["create_template_v1_presentation_workshop_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Template */
+        get: operations["get_template_v1_presentation_workshop_templates__template_id__get"];
+        /** Put Template */
+        put: operations["put_template_v1_presentation_workshop_templates__template_id__put"];
+        post?: never;
+        /** Delete Template */
+        delete: operations["delete_template_v1_presentation_workshop_templates__template_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/templates/{template_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create From Template */
+        post: operations["create_from_template_v1_presentation_workshop_templates__template_id__documents_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7450,6 +7609,58 @@ export interface paths {
         put?: never;
         /** Audio Seam Candidates */
         post: operations["audio_seam_candidates_v1_video_editor_projects__project_id__audio_seams_candidates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/clip-merges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Clip Merges */
+        get: operations["list_clip_merges_v1_video_editor_projects__project_id__clip_merges_get"];
+        put?: never;
+        /** Create Clip Merge */
+        post: operations["create_clip_merge_v1_video_editor_projects__project_id__clip_merges_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/clip-merges/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Clip Merge */
+        get: operations["get_clip_merge_v1_video_editor_projects__project_id__clip_merges__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Clip Merge */
+        post: operations["cancel_clip_merge_v1_video_editor_projects__project_id__clip_merges__task_id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10827,6 +11038,18 @@ export interface components {
              * @enum {string}
              */
             type: "duplicateClip" | "removeClip" | "rippleDelete" | "unlinkClips";
+        };
+        /** ClipMergeOperation */
+        ClipMergeOperation: {
+            /** Newclipid */
+            newClipId: string;
+            /** Taskid */
+            taskId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "applyClipMerge" | "undoClipMerge";
         };
         /** CodexSourceRestore */
         CodexSourceRestore: {
@@ -18959,6 +19182,13 @@ export interface components {
              */
             underline: boolean;
         };
+        /** PresentationChapter */
+        PresentationChapter: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+        };
         /** PresentationChart */
         PresentationChart: {
             /**
@@ -19081,15 +19311,19 @@ export interface components {
         };
         /** PresentationDocument */
         PresentationDocument: {
+            /** Chapters */
+            chapters?: components["schemas"]["PresentationChapter"][];
             /** Height */
             height: number;
             /** Slides */
             slides: components["schemas"]["PresentationSlide"][];
+            template?: components["schemas"]["TemplateBinding"] | null;
+            template_overrides?: components["schemas"]["TemplateOverrides"];
             /**
              * Version
              * @enum {integer}
              */
-            version: 2 | 3;
+            version: 2 | 3 | 4;
             /** Width */
             width: number;
         };
@@ -19217,6 +19451,62 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** PresentationExampleIn */
+        PresentationExampleIn: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            document: components["schemas"]["PresentationDocument"];
+            /** Title */
+            title: string;
+        };
+        /** PresentationExampleList */
+        PresentationExampleList: {
+            /** Items */
+            items: components["schemas"]["PresentationExampleOut"][];
+            /** Total */
+            total: number;
+        };
+        /** PresentationExampleOut */
+        PresentationExampleOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            document: components["schemas"]["PresentationDocument"];
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PresentationExamplePut */
+        PresentationExamplePut: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            document: components["schemas"]["PresentationDocument"];
+            /** Expected Revision */
+            expected_revision: number;
+            /** Title */
+            title: string;
+        };
         /** PresentationExportIn */
         PresentationExportIn: {
             /** Expected Revision */
@@ -19252,6 +19542,8 @@ export interface components {
              */
             background: string;
             background_style?: components["schemas"]["PresentationPaint"] | null;
+            /** Chapter Id */
+            chapter_id?: string | null;
             /** Connections */
             connections?: components["schemas"]["PresentationConnection"][];
             /** Elements */
@@ -19274,9 +19566,20 @@ export interface components {
             notes: string;
             /** Notes Rich */
             notes_rich?: components["schemas"]["PresentationParagraph"][] | null;
+            /**
+             * Page Type
+             * @enum {string}
+             */
+            page_type?: "cover" | "toc" | "section" | "content" | "ending";
             reference?: components["schemas"]["PresentationReference"] | null;
             /** Section */
             section?: string;
+            /** Template Hidden */
+            template_hidden?: string[];
+            /** Title */
+            title?: string;
+            /** Toc Offset */
+            toc_offset?: number;
             transition?: components["schemas"]["PresentationTransition"] | null;
         };
         /** PresentationGroup */
@@ -19647,6 +19950,8 @@ export interface components {
             /** Background */
             background: string;
             background_style?: components["schemas"]["PresentationPaint"] | null;
+            /** Chapter Id */
+            chapter_id?: string | null;
             /** Connections */
             connections?: components["schemas"]["PresentationConnection"][];
             /** Elements */
@@ -19666,9 +19971,20 @@ export interface components {
             notes: string;
             /** Notes Rich */
             notes_rich?: components["schemas"]["PresentationParagraph"][] | null;
+            /**
+             * Page Type
+             * @enum {string}
+             */
+            page_type?: "cover" | "toc" | "section" | "content" | "ending";
             reference?: components["schemas"]["PresentationReference"] | null;
             /** Section */
             section?: string;
+            /** Template Hidden */
+            template_hidden?: string[];
+            /** Title */
+            title?: string;
+            /** Toc Offset */
+            toc_offset?: number;
             transition?: components["schemas"]["PresentationTransition"] | null;
         };
         /** PresentationTable */
@@ -19692,6 +20008,62 @@ export interface components {
             font_size: number;
             /** Rows */
             rows: components["schemas"]["PresentationCell"][][];
+        };
+        /** PresentationTemplateIn */
+        PresentationTemplateIn: {
+            definition: components["schemas"]["TemplateDefinition"];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Title */
+            title: string;
+        };
+        /** PresentationTemplateList */
+        PresentationTemplateList: {
+            /** Items */
+            items: components["schemas"]["PresentationTemplateOut"][];
+            /** Total */
+            total: number;
+        };
+        /** PresentationTemplateOut */
+        PresentationTemplateOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            definition: components["schemas"]["TemplateDefinition"];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PresentationTemplatePut */
+        PresentationTemplatePut: {
+            definition: components["schemas"]["TemplateDefinition"];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Title */
+            title: string;
         };
         /** PresentationTextLayout */
         PresentationTextLayout: {
@@ -21577,6 +21949,204 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** TemplateBinding */
+        TemplateBinding: {
+            /** Name */
+            name: string;
+            snapshot: components["schemas"]["TemplateDefinition"];
+            /** Template Id */
+            template_id?: string | null;
+            /**
+             * Template Revision
+             * @default 0
+             */
+            template_revision: number;
+        };
+        /** TemplateBundleIn */
+        TemplateBundleIn: {
+            example: components["schemas"]["PresentationExampleIn"];
+            template: components["schemas"]["PresentationTemplateIn"];
+        };
+        /** TemplateBundleOut */
+        TemplateBundleOut: {
+            example: components["schemas"]["PresentationExampleOut"];
+            template: components["schemas"]["PresentationTemplateOut"];
+        };
+        /** TemplateChangeApply */
+        TemplateChangeApply: {
+            /**
+             * Action
+             * @default bind
+             * @enum {string}
+             */
+            action: "bind" | "update" | "unbind";
+            /** Chapters */
+            chapters?: components["schemas"]["PresentationChapter"][] | null;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Mappings */
+            mappings?: components["schemas"]["TemplatePageMapping"][];
+            /** Preview Token */
+            preview_token: string;
+            /** Template Id */
+            template_id?: string | null;
+            /** Template Revision */
+            template_revision?: number | null;
+        };
+        /** TemplateChangeIn */
+        TemplateChangeIn: {
+            /**
+             * Action
+             * @default bind
+             * @enum {string}
+             */
+            action: "bind" | "update" | "unbind";
+            /** Chapters */
+            chapters?: components["schemas"]["PresentationChapter"][] | null;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Mappings */
+            mappings?: components["schemas"]["TemplatePageMapping"][];
+            /** Template Id */
+            template_id?: string | null;
+            /** Template Revision */
+            template_revision?: number | null;
+        };
+        /** TemplateChangePreview */
+        TemplateChangePreview: {
+            /** Affected Slides */
+            affected_slides: string[];
+            /** Changes */
+            changes: string[];
+            document: components["schemas"]["PresentationDocument"];
+            /** Document Revision */
+            document_revision: number;
+            /** Issues */
+            issues: {
+                [key: string]: unknown;
+            }[];
+            /** Preview Token */
+            preview_token: string;
+            /** Template Revision */
+            template_revision: number | null;
+        };
+        /** TemplateCreateDocument */
+        TemplateCreateDocument: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Title */
+            title: string;
+        };
+        /** TemplateDefinition */
+        TemplateDefinition: {
+            /**
+             * Accent
+             * @default #EC805B
+             */
+            accent: string;
+            /** Fixed */
+            fixed?: components["schemas"]["TemplateFixedElement"][];
+            /**
+             * Font
+             * @default Microsoft YaHei
+             * @enum {string}
+             */
+            font: "Microsoft YaHei" | "Arial" | "Consolas";
+            /**
+             * Foreground
+             * @default #142B45
+             */
+            foreground: string;
+            /**
+             * Height
+             * @default 720
+             */
+            height: number;
+            /** Layouts */
+            layouts?: {
+                [key: string]: components["schemas"]["TemplatePageLayout"];
+            };
+            /** Number Hidden Types */
+            number_hidden_types?: ("cover" | "toc" | "section" | "content" | "ending")[];
+            /**
+             * Number Start
+             * @default 1
+             */
+            number_start: number;
+            /**
+             * Number Total
+             * @default false
+             */
+            number_total: boolean;
+            /**
+             * Version
+             * @default 1
+             * @constant
+             */
+            version: 1;
+            /**
+             * Width
+             * @default 1280
+             */
+            width: number;
+        };
+        /** TemplateFixedElement */
+        TemplateFixedElement: {
+            /** Asset Id */
+            asset_id?: string | null;
+            /**
+             * Fill
+             * @default #FFFFFF
+             */
+            fill: string;
+            /**
+             * Height
+             * @default 40
+             */
+            height: number;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @default text
+             * @enum {string}
+             */
+            kind: "text" | "image" | "rect";
+            /**
+             * Layer
+             * @default front
+             * @enum {string}
+             */
+            layer: "behind" | "front";
+            /**
+             * Opacity
+             * @default 1
+             */
+            opacity: number;
+            /** Page Types */
+            page_types?: ("cover" | "toc" | "section" | "content" | "ending")[];
+            style?: components["schemas"]["TemplateTextStyle"];
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /**
+             * Width
+             * @default 160
+             */
+            width: number;
+            /**
+             * X
+             * @default 64
+             */
+            x: number;
+            /**
+             * Y
+             * @default 640
+             */
+            y: number;
+        };
         /** TemplateIn */
         TemplateIn: {
             /**
@@ -21672,6 +22242,74 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * TemplateOverrides
+         * @description Explicit replacement fields; absence follows the pinned template.
+         */
+        TemplateOverrides: {
+            /** Accent */
+            accent?: string | null;
+            /** Fixed */
+            fixed?: components["schemas"]["TemplateFixedElement"][] | null;
+            /** Font */
+            font?: ("Microsoft YaHei" | "Arial" | "Consolas") | null;
+            /** Foreground */
+            foreground?: string | null;
+            /** Layouts */
+            layouts?: {
+                [key: string]: components["schemas"]["TemplatePageLayout"];
+            };
+            /** Number Hidden Types */
+            number_hidden_types?: ("cover" | "toc" | "section" | "content" | "ending")[] | null;
+            /** Number Start */
+            number_start?: number | null;
+            /** Number Total */
+            number_total?: boolean | null;
+        };
+        /** TemplatePageLayout */
+        TemplatePageLayout: {
+            /**
+             * Background
+             * @default #FAF8F3
+             */
+            background: string;
+            /** Background Asset Id */
+            background_asset_id?: string | null;
+            /**
+             * Body Top
+             * @default 176
+             */
+            body_top: number;
+            chapter?: components["schemas"]["TemplateSlot"];
+            number?: components["schemas"]["TemplateSlot"];
+            title?: components["schemas"]["TemplateSlot"];
+            toc?: components["schemas"]["TemplateSlot"];
+            /**
+             * Toc Capacity
+             * @default 7
+             */
+            toc_capacity: number;
+        };
+        /** TemplatePageMapping */
+        TemplatePageMapping: {
+            /** Chapter Id */
+            chapter_id?: string | null;
+            /**
+             * Page Type
+             * @default content
+             * @enum {string}
+             */
+            page_type: "cover" | "toc" | "section" | "content" | "ending";
+            /** Slide Id */
+            slide_id: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /** Title Element Ids */
+            title_element_ids?: string[];
         };
         /** TemplatePreviewIn */
         TemplatePreviewIn: {
@@ -21790,6 +22428,35 @@ export interface components {
             /** Tags */
             tags?: string[];
         };
+        /** TemplateSlot */
+        TemplateSlot: {
+            /**
+             * Height
+             * @default 64
+             */
+            height: number;
+            style?: components["schemas"]["TemplateTextStyle"];
+            /**
+             * Visible
+             * @default true
+             */
+            visible: boolean;
+            /**
+             * Width
+             * @default 1152
+             */
+            width: number;
+            /**
+             * X
+             * @default 64
+             */
+            x: number;
+            /**
+             * Y
+             * @default 88
+             */
+            y: number;
+        };
         /** TemplateSupplier */
         TemplateSupplier: {
             /** Name */
@@ -21843,6 +22510,36 @@ export interface components {
             status: string;
             /** Template Revision */
             template_revision: number;
+        };
+        /** TemplateTextStyle */
+        TemplateTextStyle: {
+            /**
+             * Align
+             * @default left
+             * @enum {string}
+             */
+            align: "left" | "center" | "right";
+            /**
+             * Bold
+             * @default false
+             */
+            bold: boolean;
+            /**
+             * Color
+             * @default #142B45
+             */
+            color: string;
+            /**
+             * Font
+             * @default Microsoft YaHei
+             * @enum {string}
+             */
+            font: "Microsoft YaHei" | "Arial" | "Consolas";
+            /**
+             * Size
+             * @default 32
+             */
+            size: number;
         };
         /** TestModelOut */
         TestModelOut: {
@@ -22918,6 +23615,17 @@ export interface components {
              */
             volume: number;
         };
+        /** VideoEditorClipMergeCreateIn */
+        VideoEditorClipMergeCreateIn: {
+            /** Clipids */
+            clipIds: string[];
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Name */
+            name: string;
+            /** Requestid */
+            requestId: string;
+        };
         /** VideoEditorDefaultEffects */
         VideoEditorDefaultEffects: {
             chromaKey?: components["schemas"]["VideoEditorChromaKey"] | null;
@@ -23159,7 +23867,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "media" | "render" | "segment_export" | "asset_bake";
+            kind: "media" | "render" | "segment_export" | "asset_bake" | "clip_merge";
             /** Outputassetid */
             outputAssetId?: string | null;
             /** Progress */
@@ -23216,7 +23924,7 @@ export interface components {
             /** Expectedrevision */
             expectedRevision: number;
             /** Operations */
-            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["AlignAudioSeamOperation"] | components["schemas"]["SetAudioTransitionOperation"] | components["schemas"]["RestoreClipStatesOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"] | components["schemas"]["AddTransitionOperation"] | components["schemas"]["UpdateTransitionOperation"] | components["schemas"]["RemoveTransitionOperation"])[];
+            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["ClipMergeOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["AlignAudioSeamOperation"] | components["schemas"]["SetAudioTransitionOperation"] | components["schemas"]["RestoreClipStatesOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"] | components["schemas"]["AddTransitionOperation"] | components["schemas"]["UpdateTransitionOperation"] | components["schemas"]["RemoveTransitionOperation"])[];
             /** Requestid */
             requestId: string;
         };
@@ -23272,7 +23980,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "flash" | "eyelid" | "audio-crossfade" | "audio-equal-power" | "audio-dip" | "audio-filter-sweep";
+            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "whip-pan" | "light-leak" | "flash" | "eyelid" | "audio-crossfade" | "audio-equal-power" | "audio-dip" | "audio-filter-sweep";
             /**
              * Placement
              * @default between
@@ -23380,7 +24088,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "flash" | "eyelid" | "audio-crossfade";
+            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "whip-pan" | "light-leak" | "flash" | "eyelid" | "audio-crossfade";
         };
         /** VideoFramesIn */
         VideoFramesIn: {
@@ -38041,6 +38749,208 @@ export interface operations {
             };
         };
     };
+    list_examples_v1_presentation_workshop_examples_get: {
+        parameters: {
+            query?: {
+                query?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationExampleList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_example_v1_presentation_workshop_examples_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationExampleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationExampleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_example_v1_presentation_workshop_examples__example_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                example_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationExampleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_example_v1_presentation_workshop_examples__example_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                example_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationExamplePut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationExampleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_example_v1_presentation_workshop_examples__example_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                example_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_from_example_v1_presentation_workshop_examples__example_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                example_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateCreateDocument"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_import_v1_presentation_workshop_imports_post: {
         parameters: {
             query?: never;
@@ -38094,6 +39004,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_template_bundle_v1_presentation_workshop_library_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateBundleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateBundleOut"];
                 };
             };
             /** @description Validation Error */
@@ -38393,6 +39336,278 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PresentationOperationsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_template_change_v1_presentation_workshop_projects__project_id__template_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateChangeApply"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_template_change_v1_presentation_workshop_projects__project_id__template_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateChangeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateChangePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_templates_v1_presentation_workshop_templates_get: {
+        parameters: {
+            query?: {
+                query?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationTemplateList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_template_v1_presentation_workshop_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationTemplateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationTemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_template_v1_presentation_workshop_templates__template_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationTemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_template_v1_presentation_workshop_templates__template_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationTemplatePut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationTemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_template_v1_presentation_workshop_templates__template_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_from_template_v1_presentation_workshop_templates__template_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateCreateDocument"];
             };
         };
         responses: {
@@ -42494,6 +43709,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AudioSeamCandidatesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_clip_merges_v1_video_editor_projects__project_id__clip_merges_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_clip_merge_v1_video_editor_projects__project_id__clip_merges_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorClipMergeCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_clip_merge_v1_video_editor_projects__project_id__clip_merges__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_clip_merge_v1_video_editor_projects__project_id__clip_merges__task_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
                 };
             };
             /** @description Validation Error */

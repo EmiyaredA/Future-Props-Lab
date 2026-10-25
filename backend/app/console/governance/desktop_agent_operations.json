@@ -49,8 +49,16 @@
       "method": "delete_task",
       "resource": "inference"
     },
+    "DELETE /v1/presentation-workshop/examples/{example_id}": {
+      "method": "delete_example",
+      "resource": "presentation"
+    },
     "DELETE /v1/presentation-workshop/projects/{project_id}": {
       "method": "delete_project",
+      "resource": "presentation"
+    },
+    "DELETE /v1/presentation-workshop/templates/{template_id}": {
+      "method": "delete_template",
       "resource": "presentation"
     },
     "DELETE /v1/thought-workshop/knowledge-bases/{project_id}": {
@@ -305,12 +313,28 @@
       "method": "download_result",
       "resource": "inference"
     },
+    "GET /v1/presentation-workshop/examples": {
+      "method": "list_examples",
+      "resource": "presentation"
+    },
+    "GET /v1/presentation-workshop/examples/{example_id}": {
+      "method": "get_example",
+      "resource": "presentation"
+    },
     "GET /v1/presentation-workshop/projects": {
       "method": "list_projects",
       "resource": "presentation"
     },
     "GET /v1/presentation-workshop/projects/{project_id}": {
       "method": "get_project",
+      "resource": "presentation"
+    },
+    "GET /v1/presentation-workshop/templates": {
+      "method": "list_templates",
+      "resource": "presentation"
+    },
+    "GET /v1/presentation-workshop/templates/{template_id}": {
+      "method": "get_template",
       "resource": "presentation"
     },
     "GET /v1/thought-workshop/backup": {
@@ -511,6 +535,14 @@
     },
     "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance": {
       "method": "get_node_acceptance",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs": {
+      "method": "list_node_outputs",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}": {
+      "method": "get_node_output",
       "resource": "visual"
     },
     "GET /v1/visual-workshop/projects/{project_id}/snapshot": {
@@ -793,12 +825,24 @@
       "method": "stream_text",
       "resource": "inference"
     },
+    "POST /v1/presentation-workshop/examples": {
+      "method": "create_example",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/examples/{example_id}/documents": {
+      "method": "create_from_example",
+      "resource": "presentation"
+    },
     "POST /v1/presentation-workshop/imports": {
       "method": "import_project",
       "resource": "presentation"
     },
     "POST /v1/presentation-workshop/imports/preview": {
       "method": "preview_import",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/library/import": {
+      "method": "import_template_bundle",
       "resource": "presentation"
     },
     "POST /v1/presentation-workshop/projects": {
@@ -819,6 +863,22 @@
     },
     "POST /v1/presentation-workshop/projects/{project_id}/operations": {
       "method": "apply_presentation_operations",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/projects/{project_id}/template/apply": {
+      "method": "apply_template_change",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/projects/{project_id}/template/preview": {
+      "method": "preview_template_change",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/templates": {
+      "method": "create_template",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/templates/{template_id}/documents": {
+      "method": "create_from_template",
       "resource": "presentation"
     },
     "POST /v1/thought-workshop/attachments": {
@@ -1029,6 +1089,14 @@
       "method": "start_node_acceptance",
       "resource": "visual"
     },
+    "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads": {
+      "method": "upload_node_output",
+      "resource": "visual"
+    },
+    "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs": {
+      "method": "add_node_output",
+      "resource": "visual"
+    },
     "POST /v1/visual-workshop/projects/{project_id}/open-folder": {
       "method": "reveal_project_folder",
       "resource": "visual"
@@ -1049,8 +1117,16 @@
       "method": "put_story",
       "resource": "galgame"
     },
+    "PUT /v1/presentation-workshop/examples/{example_id}": {
+      "method": "put_example",
+      "resource": "presentation"
+    },
     "PUT /v1/presentation-workshop/projects/{project_id}": {
       "method": "put_project",
+      "resource": "presentation"
+    },
+    "PUT /v1/presentation-workshop/templates/{template_id}": {
+      "method": "put_template",
       "resource": "presentation"
     },
     "PUT /v1/thought-workshop/knowledge-bases/{project_id}": {
@@ -1079,6 +1155,10 @@
     },
     "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance": {
       "method": "select_node_acceptance",
+      "resource": "visual"
+    },
+    "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output": {
+      "method": "set_node_final_output",
       "resource": "visual"
     }
   }

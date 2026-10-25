@@ -4,26 +4,19 @@ import {
   newSlide,
 } from "../src/features/presentation-workshop/templates";
 
-test("基础版式先完整预览，再选择使用，取消不会创建", async ({ page }) => {
-  await page.goto("/apps/presentation-workshop");
-  const trigger = page.getByRole("button", {
-    name: "预览 图文双栏",
-    exact: true,
-  });
-  await trigger.hover();
-  await page.waitForTimeout(500);
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await trigger.click();
-  const preview = page.getByRole("dialog", { name: "图文双栏", exact: true });
-  await expect(preview.getByLabel("第 1 页完整预览")).toBeVisible();
-  await preview.getByRole("button", { name: "使用此版式" }).click();
-  const naming = page.getByRole("dialog", {
-    name: "新建演示文稿",
-    exact: true,
-  });
-  await expect(naming.getByRole("textbox")).toBeFocused();
-  await naming.getByRole("button", { name: "取消", exact: true }).click();
-  await expect(page).toHaveURL(/\/apps\/presentation-workshop$/);
+test("新建模板取消不会创建文稿，模板入口与单页版式分离", async ({ page }) => {
+  await page.goto("/apps/presentation-workshop/templates");
+  await page.getByRole("button", { name: "新建模板", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "模板名称", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "返回模板库", exact: true }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "放弃修改并离开", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/apps\/presentation-workshop\/templates$/);
+  await expect(page.locator(".master-designer")).toHaveCount(0);
 });
 
 test("文稿直接打开、独立预览及明暗主题响应式", async ({ page }, testInfo) => {

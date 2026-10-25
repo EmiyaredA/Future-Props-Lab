@@ -26,6 +26,16 @@ async def protect_document_references(session: AsyncSession, asset_ids: list[str
     ):
         raise AssetError("文件正在被演示文稿使用", code="asset_in_use", status=409)
 
+    for table_name, owner in (
+        ("presentation_template_assets", "template_id"),
+        ("presentation_example_assets", "example_id"),
+    ):
+        table = Base.metadata.tables.get(table_name)
+        if table is not None and await session.scalar(
+            select(table.c[owner]).where(table.c.asset_id.in_(asset_ids)).limit(1)
+        ):
+            raise AssetError("文件正在被演示模板或示例使用", code="asset_in_use", status=409)
+
     history_assets = Base.metadata.tables.get("thought_history_assets")
     if history_assets is not None and await session.scalar(
         select(history_assets.c.history_id).where(history_assets.c.asset_id.in_(asset_ids)).limit(1)

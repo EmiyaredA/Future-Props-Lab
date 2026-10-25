@@ -416,7 +416,7 @@ test("blocks additional pastes until the save conflict is resolved", async () =>
 
 test("rejects an oversized group without changing the canvas or history", async () => {
   seedCanvas(
-    Array.from({ length: 251 }, (_, index) => ({
+    Array.from({ length: 501 }, (_, index) => ({
       id: `text-${index}`,
       kind: "text",
       title: `说明${index}`,
@@ -430,8 +430,8 @@ test("rejects an oversized group without changing the canvas or history", async 
   fireEvent.keyDown(surface, { key: "v", ctrlKey: true });
   expect(
     await screen.findByRole("alert", { name: "画布复制粘贴状态" }),
-  ).toHaveTextContent("500 个节点上限");
-  expect(container.querySelectorAll(".canvas-node")).toHaveLength(251);
+  ).toHaveTextContent("1000 个节点上限");
+  expect(container.querySelectorAll(".canvas-node")).toHaveLength(501);
   fireEvent.keyDown(surface, { key: "z", ctrlKey: true });
   expect(putVisualCanvas).not.toHaveBeenCalled();
 });

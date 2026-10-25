@@ -35,6 +35,7 @@ export type StudioPage =
 export type WorkshopPage =
   | "interview-assistant-session"
   | "presentation-workshop-projects"
+  | "presentation-workshop-templates"
   | "presentation-workshop-editor"
   | "thought-workshop-notes"
   | "thought-workshop-editor"
@@ -236,6 +237,7 @@ export function pathFor(
   const paths: Record<AppPage, string> = {
     "interview-assistant-session": "/apps/interview-assistant",
     "presentation-workshop-projects": "/apps/presentation-workshop",
+    "presentation-workshop-templates": "/apps/presentation-workshop/templates",
     "presentation-workshop-editor": "/apps/presentation-workshop",
     "thought-workshop-notes": "/apps/thought-workshop",
     "thought-workshop-editor": "/apps/thought-workshop",

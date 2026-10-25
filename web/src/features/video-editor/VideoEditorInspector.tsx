@@ -1,3 +1,4 @@
+import { transitionLabel } from "./transitionCatalog";
 import { VideoEditorTransformFields } from "./VideoEditorTransformFields";
 import type { TransformDraft } from "./transformModel";
 import { VideoEditorTextInspector } from "./VideoEditorTextInspector";
@@ -23,21 +24,6 @@ const clipKindLabels: Record<VideoEditorClip["kind"], string> = {
   image: "图片片段",
   text: "文字片段",
   color: "色彩片段",
-};
-
-const visualTransitionLabels: Record<string, string> = {
-  crossfade: "交叉淡化",
-  "fade-black": "黑场过渡",
-  "fade-white": "白场过渡",
-  wipe: "擦除",
-  "wipe-left": "擦除",
-  "wipe-right": "擦除",
-  zoom: "镜头缩放",
-  blur: "径向模糊",
-  flash: "闪白",
-  eyelid: "闭眼睁眼",
-  "spin-blur": "旋转模糊",
-  "audio-crossfade": "音频淡化",
 };
 
 export function VideoEditorInspector({
@@ -502,7 +488,7 @@ export function VideoEditorInspector({
                 );
                 const edgeLabel = edge === "in" ? "片段头" : "片段尾";
                 const kindLabel = transition
-                  ? (visualTransitionLabels[transition.kind] ?? transition.kind)
+                  ? transitionLabel(transition.kind)
                   : "未设置";
                 return (
                   <div

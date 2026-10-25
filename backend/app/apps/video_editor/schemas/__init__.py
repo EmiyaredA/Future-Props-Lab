@@ -33,6 +33,10 @@ from app.apps.video_editor.schemas.base import (
     VideoEditorTaskOut,
     VideoEditorTaskStatus,
 )
+from app.apps.video_editor.schemas.clip_merge import (
+    ClipMergeOperation,
+    VideoEditorClipMergeCreateIn,
+)
 from app.apps.video_editor.schemas.timeline import (
     AddClipOperation,
     AddTrackOperation,
@@ -85,6 +89,8 @@ __all__ = [
     "AddClipOperation",
     "AddTrackOperation",
     "ClipIdOperation",
+    "ClipMergeOperation",
+    "VideoEditorClipMergeCreateIn",
     "KeyframeOperation",
     "LinkClipsOperation",
     "MoveClipOperation",

@@ -216,6 +216,98 @@ def test_expiry_rate_limit_and_manifest_default_deny():
         assert not any(x in operation for x in ("/account/", "/model-providers"))
 
 
+@pytest.mark.parametrize("kind", ["image", "video"])
+def test_desktop_sdk_node_output_versions_preserve_history_and_permissions(connected, kind):
+    from future_props_lab import ApiError
+
+    backend, data = connected
+    approve(backend, data)
+    filename, payload, mime = (
+        ("version.mp4", b"\x00\x00\x00\x18ftypmp42video", "video/mp4")
+        if kind == "video"
+        else ("version.png", b"\x89PNG\r\n\x1a\noutput-version", "image/png")
+    )
+    with desktop_client(data_dir=data) as sdk:
+        project = sdk.visual.create_project(body={"title": "版本回填", "kind": "canvas"})
+        canvas = sdk.visual.put_canvas(
+            project_id=project.id,
+            body={
+                "expected_revision": 0,
+                "nodes": [
+                    {
+                        "id": identity,
+                        "kind": kind,
+                        "title": identity,
+                        "position": {"x": 0, "y": 0},
+                    }
+                    for identity in ("target", "other")
+                ],
+                "edges": [],
+            },
+        )
+        target = {"project_id": project.id, "node_id": "target"}
+        first_revision = canvas.revision
+        for _ in range(2):
+            canvas = sdk.visual.upload_node_output(
+                **target,
+                body={"expected_revision": canvas.revision},
+                files={"file": (filename, io.BytesIO(payload), mime)},
+            )
+        history = sdk.visual.list_node_outputs(**target, page_size=1)
+        assert history.total == 2 and len(history.items) == 1
+        latest = history.items[0]
+        assert latest.version == 2 and latest.is_final and latest.source == "uploaded"
+        assert sdk.visual.get_node_output(**target, output_id=latest.id) == latest
+        with pytest.raises(ApiError) as stale:
+            sdk.visual.add_node_output(
+                **target, body={"expected_revision": first_revision, "asset_id": latest.asset_id}
+            )
+        assert stale.value.status == 409
+        assert sdk.visual.list_node_outputs(**target).total == 2
+        canvas = sdk.visual.add_node_output(
+            **target, body={"expected_revision": canvas.revision, "asset_id": latest.asset_id}
+        )
+        versions = sdk.visual.list_node_outputs(**target).items
+        assert [item.version for item in versions] == [3, 2, 1]
+        assert {item.id for item in versions} >= {latest.id}
+        canvas = sdk.visual.set_node_final_output(
+            **target, body={"expected_revision": canvas.revision, "output_id": versions[-1].id}
+        )
+        node = next(node for node in canvas.nodes if node.id == "target")
+        assert node.final_version == 1 and node.approved is False
+        assert sdk.visual.list_node_outputs(**target).total == 3
+        for wrong in [{**target, "node_id": "other"}, {**target, "project_id": "missing"}]:
+            with pytest.raises(ApiError) as missing:
+                sdk.visual.get_node_output(**wrong, output_id=latest.id)
+            assert missing.value.status == 404
+        # Only the five explicit version operations are opened, without a namespace wildcard.
+        assert not allows_agent(
+            "DELETE", f"/v1/visual-workshop/projects/{project.id}/nodes/target/outputs/{latest.id}"
+        )
+    approve(backend, data, write=False, profile="reader")
+    with desktop_client(data_dir=data, profile="reader") as reader:
+        assert reader.visual.list_node_outputs(**target).total == 3
+        assert reader.visual.get_node_output(**target, output_id=latest.id).id == latest.id
+        mutations = [
+            lambda: reader.visual.add_node_output(
+                **target, body={"expected_revision": canvas.revision, "asset_id": latest.asset_id}
+            ),
+            lambda: reader.visual.upload_node_output(
+                **target,
+                body={"expected_revision": canvas.revision},
+                files={"file": (filename, io.BytesIO(payload), mime)},
+            ),
+            lambda: reader.visual.set_node_final_output(
+                **target, body={"expected_revision": canvas.revision, "output_id": latest.id}
+            ),
+        ]
+        for mutate in mutations:
+            with pytest.raises(ApiError) as denied:
+                mutate()
+            assert denied.value.status == 403
+        assert reader.visual.list_node_outputs(**target).total == 3
+
+
 def test_pair_claim_once_and_decision_csrf(connected):
     backend, data = connected
     with httpx.Client(

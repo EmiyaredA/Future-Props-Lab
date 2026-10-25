@@ -7,6 +7,7 @@ from app.apps.presentation_workshop.exports import export_project
 from app.apps.presentation_workshop.operations import apply_operations as presentation_operations
 from app.apps.presentation_workshop.projects import PresentationError, Presentations
 from app.apps.presentation_workshop.routes.exchange import router as exchange_router
+from app.apps.presentation_workshop.routes.templates import router as templates_router
 from app.apps.presentation_workshop.schemas.document import (
     PresentationExportIn,
     PresentationProjectIn,
@@ -22,6 +23,8 @@ from app.runtime.operation_receipts import OperationError
 
 router = APIRouter(prefix="/presentation-workshop", tags=["presentation-workshop"])
 router.include_router(exchange_router)
+
+router.include_router(templates_router)
 
 
 def mapped(exc: PresentationError | OperationError):

@@ -21,6 +21,7 @@ export function VideoEditorTimelineTools({
   onRippleDelete,
   onToggleSnap,
   onCheckGaps,
+  onMerge,
 }: {
   playheadUs: number;
   hasSelection: boolean;
@@ -34,6 +35,7 @@ export function VideoEditorTimelineTools({
   onRippleDelete: () => void;
   onToggleSnap: () => void;
   onCheckGaps?: () => void;
+  onMerge?: () => void;
 }) {
   return (
     <header className="ve-timeline-tools">
@@ -42,6 +44,11 @@ export function VideoEditorTimelineTools({
       <button disabled={!hasSelection} onClick={onSplit}>
         <Scissors aria-hidden /> 分割
       </button>
+      {onMerge ? (
+        <button disabled={!hasSelection} onClick={onMerge}>
+          合并片段
+        </button>
+      ) : null}
       <button disabled={!hasSelection || !canCopy} onClick={onCopy}>
         <Copy aria-hidden /> 复制
       </button>

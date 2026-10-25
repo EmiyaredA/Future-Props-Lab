@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.apps.video_editor.schemas.clip_merge import ClipMergeOperation
 from app.capabilities.media_rendering.timeline_document import (
     VideoEditorAssetOrganization,
     VideoEditorClip,
@@ -193,6 +194,7 @@ class RemoveTransitionOperation(BaseModel):
 
 VideoEditorTimelineOperation = Annotated[
     AddTrackOperation
+    | ClipMergeOperation
     | UpdateSettingsOperation
     | SetAssetOrganizationOperation
     | UpdateTrackOperation

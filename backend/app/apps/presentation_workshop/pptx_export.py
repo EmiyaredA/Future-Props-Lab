@@ -25,6 +25,7 @@ from app.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
     PresentationElement,
 )
+from app.apps.presentation_workshop.templates.resolver import resolve_document
 from app.apps.presentation_workshop.visible_scene import visible_scene
 
 SHAPES = {
@@ -161,6 +162,10 @@ def add_text(shape, element: PresentationElement):
 def write_pptx(
     document: PresentationDocument, images: dict[str, Path], target: Path, *, media_types=None
 ):
+
+    document, issues = resolve_document(document)
+    if any(issue["code"] == "toc_overflow" for issue in issues):
+        raise ValueError("目录超出页面容量，请先添加目录续页")
     deck = Presentation()
     shape_maps = []
     deck.slide_width, deck.slide_height = px(document.width), px(document.height)

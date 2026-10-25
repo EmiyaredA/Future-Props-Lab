@@ -43,7 +43,7 @@ class PresentationConnection(SlideModel):
     width: float = Field(default=2, ge=0.5, le=30)
     arrow: bool = True
     # Number of page elements below this connection; ties follow connection order.
-    layer: int = Field(default=0, ge=0, le=200)
+    layer: int = Field(default=0, ge=0, le=300)
     waypoints: list[PresentationPoint] = Field(default_factory=list, max_length=32)
 
     @model_validator(mode="after")

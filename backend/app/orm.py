@@ -46,6 +46,12 @@ from app.apps.presentation_workshop.models import (
     PresentationAssetReference,
     PresentationProject,
 )
+from app.apps.presentation_workshop.templates.models import (
+    PresentationExample,
+    PresentationExampleAsset,
+    PresentationTemplate,
+    PresentationTemplateAsset,
+)
 from app.apps.thought_workshop.external_sync.models import (
     ArticleSyncAsset,  # noqa: F401 — register child metadata
     ArticleSyncBinding,
@@ -232,6 +238,8 @@ LAYOUT_PROJECT_MODELS: dict[str, type] = {
 
 # Ensure reference mappers are registered on Base.metadata for capability queries.
 _ = (
+    PresentationTemplateAsset,
+    PresentationExampleAsset,
     PresentationAssetReference,
     AudioAnnotationDocument,
     AudioAnnotationWaveform,
@@ -300,6 +308,8 @@ TENANT_MODELS = (
     ModelInferenceTask,
     ProjectOperationReceipt,
     PresentationProject,
+    PresentationTemplate,
+    PresentationExample,
     DirectorDeskProject,
     DirectorDeskUserMotion,
     AudioAnnotationProject,

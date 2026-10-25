@@ -13,6 +13,7 @@ from app.apps.presentation_workshop.asset_references import document_references,
 from app.apps.presentation_workshop.pptx_export import write_pptx
 from app.apps.presentation_workshop.projects import PresentationError, Presentations
 from app.apps.presentation_workshop.schemas.document import PresentationProjectOut
+from app.apps.presentation_workshop.templates.resolver import resolve_document
 from app.capabilities.asset_store import AssetStorage
 from app.capabilities.asset_store.svg import normalize_svg
 from app.runtime.revisions import RevisionConflictError
@@ -47,6 +48,10 @@ def build_export(
         snapshot.title.replace("/", "_").replace("\\", "_") + ".pptx",
     )
     try:
+        expanded, issues = resolve_document(snapshot.document)
+        if any(issue["code"] == "toc_overflow" for issue in issues):
+            raise PresentationError("目录未完全展示，请先添加目录续页", 422, "toc_overflow")
+        snapshot = snapshot.model_copy(update={"document": expanded})
         vectors = [
             e
             for s in snapshot.document.slides
@@ -67,7 +72,7 @@ def build_export(
             if e.kind in {"audio", "video"}
         }
         images = {}
-        rendered_ids = rendered_asset_ids(snapshot.document)
+        rendered_ids = rendered_asset_ids(snapshot.document.model_copy(update={"template": None}))
         excluded_ids = set(document_references(snapshot.document)) - rendered_ids
         for asset_id, source in assets.items():
             if asset_id in excluded_ids:

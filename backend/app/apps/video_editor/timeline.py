@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.video_editor.audio_seam_edit import align_audio_seam
 from app.apps.video_editor.audio_transition_edit import set_audio_transition
+from app.apps.video_editor.clip_merging.document import replace_selection
+from app.apps.video_editor.clip_merging.tasks import VideoEditorClipMerges
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
@@ -116,7 +118,9 @@ def _reconcile_audio_crossfades(document: dict) -> None:
     document["transitions"] = reconciled
 
 
-def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
+def apply_operations(
+    document: dict, body: VideoEditorTimelineBatchIn, merge_contexts: dict[str, dict] | None = None
+) -> dict:
     result = deepcopy(document)
     for operation in body.operations:
         data = operation.model_dump(mode="json", by_alias=True, exclude_none=True)
@@ -174,7 +178,14 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
             )
             if track.get("locked") and touches_locked:
                 raise VideoEditorValidationError("轨道已锁定", code="track_locked")
-        if kind == "updateSettings":
+        if kind in {"applyClipMerge", "undoClipMerge"}:
+            context = (merge_contexts or {}).get(data["taskId"])
+            if context is None:
+                raise VideoEditorValidationError("合并任务尚未校验", code="merge_not_ready")
+            result = replace_selection(
+                result, context, data["newClipId"], undo=kind == "undoClipMerge"
+            )
+        elif kind == "updateSettings":
             allowed = {"fps", "backgroundColor", "videoFitPolicyVersion"}
             result["settings"].update(
                 {key: value for key, value in data["patch"].items() if key in allowed}
@@ -806,8 +817,11 @@ class VideoEditorTimelines:
         operations = [
             op.model_dump(mode="json", by_alias=True, exclude_none=True) for op in body.operations
         ]
+        merge_contexts = await VideoEditorClipMerges(
+            self.session, self.workspace_id
+        ).operation_contexts(project_id, body.operations)
         document = await validate_timeline(
-            self.session, project_id, apply_operations(row.document, body)
+            self.session, project_id, apply_operations(row.document, body, merge_contexts)
         )
         for operation in body.operations:
             if operation.type != "alignAudioSeam":

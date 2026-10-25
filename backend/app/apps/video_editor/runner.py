@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.apps.video_editor.asset_bakes import insert_baked_asset_in_organization
+from app.apps.video_editor.clip_merging.runner import process_clip_merge
 from app.apps.video_editor.media import probe_media
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
@@ -235,7 +236,9 @@ class VideoEditorRunner(PollingTaskRunner):
                 ).scalars()
             )
             for row in rows:
-                row.status = "queued"
+                row.status = (
+                    "cancelled" if row.kind == "clip_merge" and row.cancel_requested else "queued"
+                )
                 row.cancel_requested = False
                 row.error = None
                 row.revision += 1
@@ -312,6 +315,18 @@ class VideoEditorRunner(PollingTaskRunner):
                 await self._process_media(task_id)
             elif kind == "segment_export":
                 await self._process_segment_export(task_id)
+            elif kind == "clip_merge":
+                await process_clip_merge(
+                    task_id,
+                    session_factory=self.session_factory,
+                    settings=self.settings,
+                    storage=self.storage,
+                    get_task=self._get,
+                    set_task=self._set,
+                    cancel_watch=self._cancel_watch,
+                    raise_if_cancelled=self._raise_if_cancelled,
+                    prepare_media=_prepare_media,
+                )
             elif kind == "asset_bake":
                 await self._process_asset_bake(task_id)
             else:

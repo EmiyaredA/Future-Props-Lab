@@ -8,6 +8,7 @@ from starlette.background import BackgroundTask
 
 from app.apps.video_editor.asset_bakes import VideoEditorAssetBakes
 from app.apps.video_editor.audio_matching import VideoEditorAudioMatching
+from app.apps.video_editor.clip_merging.tasks import VideoEditorClipMerges
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.frames import VideoEditorFrames
 from app.apps.video_editor.media import VideoEditorMedia, guessed_mime
@@ -36,6 +37,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorTimelineBatchIn,
     VideoEditorTimelineOut,
 )
+from app.apps.video_editor.schemas.clip_merge import VideoEditorClipMergeCreateIn
 from app.apps.video_editor.segment_exports import VideoEditorSegmentExports
 from app.apps.video_editor.segment_files import download_segments
 from app.apps.video_editor.snapshots import VideoEditorProjectSnapshots
@@ -532,3 +534,48 @@ async def download_segment_export(
         filename=f"segments-{task_id[:8]}.zip",
         background=BackgroundTask(path.unlink, missing_ok=True),
     )
+
+
+@router.post("/projects/{project_id}/clip-merges", response_model=VideoEditorTaskOut)
+async def create_clip_merge(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    body: VideoEditorClipMergeCreateIn,
+) -> VideoEditorTaskOut:
+    try:
+        return await VideoEditorClipMerges(session, workspace_id).create(project_id, body)
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None
+
+
+@router.get("/projects/{project_id}/clip-merges", response_model=VideoEditorTaskListOut)
+async def list_clip_merges(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> VideoEditorTaskListOut:
+    try:
+        return await VideoEditorClipMerges(session, workspace_id).list(project_id)
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None
+
+
+@router.get("/projects/{project_id}/clip-merges/{task_id}", response_model=VideoEditorTaskOut)
+async def get_clip_merge(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
+) -> VideoEditorTaskOut:
+    try:
+        return await VideoEditorClipMerges(session, workspace_id).get(project_id, task_id)
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/projects/{project_id}/clip-merges/{task_id}/cancel", response_model=VideoEditorTaskOut
+)
+async def cancel_clip_merge(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
+) -> VideoEditorTaskOut:
+    try:
+        return await VideoEditorClipMerges(session, workspace_id).cancel(project_id, task_id)
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None

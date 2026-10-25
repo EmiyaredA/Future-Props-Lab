@@ -12,6 +12,7 @@ vi.mock("@features/video-editor/api", async (original) => ({
   listVideoEditorProjects: vi.fn(),
   listVideoEditorRenders: vi.fn(),
   listVideoEditorSegmentExports: vi.fn(),
+  listVideoEditorClipMerges: vi.fn().mockResolvedValue({ items: [] }),
   deleteVideoEditorRender: vi.fn(),
 }));
 
@@ -31,6 +32,7 @@ const task: VideoEditorTask = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(api.listVideoEditorClipMerges).mockResolvedValue({ items: [] });
   vi.mocked(api.listVideoEditorProjects).mockResolvedValue({
     items: [
       {

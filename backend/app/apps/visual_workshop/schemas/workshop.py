@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -312,20 +313,22 @@ def _validate_canvas_edges(nodes: list[VisualCanvasNode], edges: list[VisualCanv
                 raise ValueError("音效生成不接收上游素材")
         outgoing[source.id].append(target.id)
 
-    state: dict[str, int] = {}
-
-    def visit(node_id: str) -> None:
-        if state.get(node_id) == 1:
-            raise ValueError("画布连线不能形成依赖环")
-        if state.get(node_id) == 2:
-            return
-        state[node_id] = 1
+    # Iterative topological traversal also handles a maximum-size dependency chain.
+    incoming = {node_id: 0 for node_id in node_by_id}
+    for targets in outgoing.values():
+        for target_id in targets:
+            incoming[target_id] += 1
+    ready = deque(node_id for node_id, count in incoming.items() if count == 0)
+    visited = 0
+    while ready:
+        node_id = ready.popleft()
+        visited += 1
         for target_id in outgoing[node_id]:
-            visit(target_id)
-        state[node_id] = 2
-
-    for node_id in node_by_id:
-        visit(node_id)
+            incoming[target_id] -= 1
+            if incoming[target_id] == 0:
+                ready.append(target_id)
+    if visited != len(node_by_id):
+        raise ValueError("画布连线不能形成依赖环")
 
 
 class VisualMaterialCategory(BaseModel):
@@ -352,8 +355,8 @@ def default_material_categories() -> list[VisualMaterialCategory]:
 
 class VisualCanvasDocumentPutIn(BaseModel):
     expected_revision: int = Field(ge=0)
-    nodes: list[VisualCanvasNode] = Field(max_length=500)
-    edges: list[VisualCanvasEdge] = Field(default_factory=list, max_length=1000)
+    nodes: list[VisualCanvasNode] = Field(max_length=1000)
+    edges: list[VisualCanvasEdge] = Field(default_factory=list, max_length=2000)
     categories: list[VisualMaterialCategory] | None = Field(default=None, max_length=100)
 
     @field_validator("nodes")

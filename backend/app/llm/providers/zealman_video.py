@@ -124,6 +124,31 @@ def result_status(body: dict[str, Any], root: str) -> ProviderTaskStatus | None:
     return None
 
 
+def polling_json(response: httpx.Response) -> dict[str, Any]:
+    if response.status_code in {408, 429} or response.status_code >= 500:
+        response.raise_for_status()
+    return response_json(response)
+
+
+async def recover_polling_status(
+    client: httpx.AsyncClient, root: str, api_key: str, task_id: str
+) -> ProviderTaskStatus | None:
+    ledger = await optional_json(client, f"{root}/api/tasks/{quote(task_id, safe='')}", api_key)
+    task = ledger.get("task", ledger) if ledger else {}
+    if not isinstance(task, dict):
+        task = {}
+    status = result_status(task, root)
+    if status:
+        return status
+    queue = await optional_json(client, f"{root}/api/comfy/proxy/queue", api_key)
+    info = execution_info(task_id, task, queue)
+    if info.phase in {"running", "queued", "finalizing"}:
+        return ProviderTaskStatus(
+            "pending" if info.phase == "queued" else "processing", execution_info=info
+        )
+    return None
+
+
 async def get_task(
     *,
     base_url: str,
@@ -134,24 +159,34 @@ async def get_task(
 ) -> ProviderTaskStatus:
     root = root_url(base_url)
     async with httpx.AsyncClient(timeout=30, transport=transport) as client:
-        body = response_json(
-            await client.get(
-                f"{root}/api/workflow/result",
+        try:
+            body = polling_json(
+                await client.get(
+                    f"{root}/api/workflow/result",
+                    params={"prompt_id": task_id},
+                    headers=headers(api_key),
+                )
+            )
+            status = result_status(body, root)
+            if status:
+                if monitor:
+                    await monitor.forget(root, task_id)
+                return status
+            history_response = await client.get(
+                f"{root}/api/comfy/proxy/history",
                 params={"prompt_id": task_id},
                 headers=headers(api_key),
             )
-        )
-        status = result_status(body, root)
-        if status:
-            if monitor:
+            history = polling_json(history_response).get(task_id, {})
+        except (httpx.TransportError, httpx.HTTPStatusError):
+            # A failed query cannot establish that the accepted GPU job failed.
+            # Only continue polling with positive queue/ledger evidence.
+            recovered = await recover_polling_status(client, root, api_key, task_id)
+            if recovered is None:
+                raise
+            if monitor and recovered.status in {"completed", "failed"}:
                 await monitor.forget(root, task_id)
-            return status
-        history_response = await client.get(
-            f"{root}/api/comfy/proxy/history",
-            params={"prompt_id": task_id},
-            headers=headers(api_key),
-        )
-        history = response_json(history_response).get(task_id, {})
+            return recovered
         execution = history.get("status", {})
         if execution.get("status_str") == "error":
             messages = execution.get("messages", [])

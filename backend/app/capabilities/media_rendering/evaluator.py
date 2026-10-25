@@ -10,6 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
 from app.capabilities.media_rendering.chroma_key import apply_chroma_key
+from app.capabilities.media_rendering.directional_transitions import light_leak, whip_pan
 from app.capabilities.media_rendering.spin_blur import spin_blur
 from app.capabilities.media_rendering.text_layer import render_text_layer
 from app.capabilities.media_rendering.timeline_document import (
@@ -19,7 +20,7 @@ from app.capabilities.media_rendering.timeline_document import (
 )
 
 # Invalidate exact-frame caches when compositing geometry changes.
-FRAME_COMPOSITOR_VERSION = 2
+FRAME_COMPOSITOR_VERSION = 3
 
 
 def timeline_duration_us(document: VideoEditorTimelineDocument) -> int:
@@ -78,6 +79,7 @@ class ClipEdgeVisual:
     direction: str
     overlay_color: tuple[int, int, int] | None
     overlay_alpha: int
+    incoming: bool = False
 
 
 def _edge_overlay(kind: str, visibility: float) -> tuple[tuple[int, int, int] | None, int]:
@@ -91,7 +93,7 @@ def _edge_overlay(kind: str, visibility: float) -> tuple[tuple[int, int, int] | 
 
 
 def _edge_opacity(kind: str, visibility: float) -> float:
-    return 1 if kind in {"fade-black", "fade-white", "wipe", "eyelid"} else visibility
+    return 1 if kind in {"fade-black", "fade-white", "wipe", "eyelid", "light-leak"} else visibility
 
 
 def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | None:
@@ -113,6 +115,7 @@ def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | N
             direction="in" if edge.kind == "spin-blur" else edge.direction,
             overlay_color=overlay_color,
             overlay_alpha=overlay_alpha,
+            incoming=True,
         )
     if (
         clip.transition_out
@@ -184,22 +187,26 @@ class TimelineFrameRenderer:
         source: FrameSource,
         *,
         without_chroma_clip_id: str | None = None,
+        transparent: bool = False,
     ) -> None:
+        self.transparent = transparent
         self.document = document
         self.source = source
         self.without_chroma_clip_id = without_chroma_clip_id
         self._portrait_ground_ratio_by_asset: dict[str, float] = {}
         self._frame_overlay: tuple[tuple[int, int, int], int] | None = None
         self._eyelid_progress: float | None = None
+        self._light_leak: tuple[float, str] | None = None
 
     def render(self, time_us: int, *, size: tuple[int, int] | None = None) -> Image.Image:
         settings = self.document.settings
         self._frame_overlay = None
         self._eyelid_progress = None
+        self._light_leak = None
         canvas = Image.new(
             "RGBA",
             (settings.width, settings.height),
-            ImageColor.getrgb(settings.background_color) + (255,),
+            ImageColor.getrgb(settings.background_color) + (0 if self.transparent else 255,),
         )
         tracks = sorted(
             (
@@ -261,6 +268,27 @@ class TimelineFrameRenderer:
                             handled_between.add(between.id)
                             seam_drawn_clips.add(left.id)
                             seam_drawn_clips.add(right.id)
+                            if between.kind in {"light-leak", "whip-pan"}:
+                                active = left if progress < 0.5 else right
+                                active_local_us = _media_local_us(active, time_us, transitions)
+                                active_layer = self._layer(active, active_local_us)
+                                if active_layer is not None:
+                                    self._composite_with_edge(
+                                        canvas,
+                                        active_layer,
+                                        active,
+                                        active_local_us,
+                                        edge_local_us=max(0, time_us - active.timeline_start_us),
+                                        whip=(
+                                            progress * 2 if progress < 0.5 else -2 * (1 - progress),
+                                            between.direction,
+                                        )
+                                        if between.kind == "whip-pan"
+                                        else None,
+                                    )
+                                if between.kind == "light-leak":
+                                    self._light_leak = (progress, between.direction)
+                                continue
                             if between.kind == "flash":
                                 # 前半在片段尾升白，后半从片段头退白。
                                 if time_us < seam_us:
@@ -417,9 +445,11 @@ class TimelineFrameRenderer:
         if self._frame_overlay is not None:
             color, alpha = self._frame_overlay
             canvas.alpha_composite(Image.new("RGBA", canvas.size, (*color, alpha)))
+        if self._light_leak is not None:
+            canvas = light_leak(canvas, *self._light_leak)
         if size and canvas.size != size:
             canvas = canvas.resize(size, Image.Resampling.LANCZOS)
-        return canvas.convert("RGB")
+        return canvas if self.transparent else canvas.convert("RGB")
 
     @staticmethod
     def _draw_eyelid_overlay(canvas: Image.Image, opening: float) -> None:
@@ -530,6 +560,7 @@ class TimelineFrameRenderer:
         transition_progress: float | None = None,
         direction: str = "left",
         edge_local_us: int | None = None,
+        whip: tuple[float, str] | None = None,
     ) -> None:
         """Composite a layer, multiplying any active clip-local edge transition."""
         edge = clip_edge_visual(clip, local_us if edge_local_us is None else edge_local_us)
@@ -543,10 +574,16 @@ class TimelineFrameRenderer:
                 transition_kind=transition_kind,
                 transition_progress=transition_progress,
                 direction=direction,
+                whip=whip,
             )
             return
         if edge.kind == "eyelid":
             self._eyelid_progress = edge.progress
+        if edge.kind == "light-leak":
+            self._light_leak = (
+                (1 + edge.progress) / 2 if edge.incoming else (1 - edge.progress) / 2,
+                edge.direction,
+            )
         # Prefer seam wipe/zoom kind when both apply; still multiply visibility / flash.
         self._composite(
             canvas,
@@ -564,6 +601,12 @@ class TimelineFrameRenderer:
                 if edge.kind == "spin-blur" and transition_kind != "spin-blur"
                 else 0
             ),
+            whip=whip
+            or (
+                ((1 - edge.progress) * (-1 if edge.incoming else 1), edge.direction)
+                if edge.kind == "whip-pan"
+                else None
+            ),
         )
         if edge.overlay_color and edge.overlay_alpha:
             self._queue_frame_overlay(edge.overlay_color, edge.overlay_alpha)
@@ -580,6 +623,7 @@ class TimelineFrameRenderer:
         transition_progress: float | None = None,
         direction: str = "left",
         edge_spin_amount: float = 0,
+        whip: tuple[float, str] | None = None,
     ) -> None:
         transform = clip.transform
         canvas_width, canvas_height = canvas.size
@@ -615,6 +659,8 @@ class TimelineFrameRenderer:
             layer = spin_blur(layer, amount)
         elif edge_spin_amount:
             layer = spin_blur(layer, edge_spin_amount)
+        if whip is not None:
+            layer = whip_pan(layer, *whip)
         if clip.flip_x:
             layer = layer.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         scale_x = property_at(clip, "scaleX", local_us, transform.scale_x)

@@ -218,6 +218,7 @@ export function PresentationEditor(props: EditorProps) {
           />
         </main>
         <PresentationInspector
+          templateBound={!!draft.draft.document.template}
           connectionPanel={scene.connectionPanel}
           connectionId={scene.edgeId}
           connectionSelectionVersion={scene.connectionSelectionVersion}
@@ -276,29 +277,43 @@ export function PresentationEditor(props: EditorProps) {
           onObjectEdit={objects.edit}
           pageControls={
             <>
-              <label className="presentation-field presentation-page-section">
-                <span>页面分节</span>
-                <input
-                  aria-label="页面分节"
-                  value={slide.section ?? ""}
-                  maxLength={120}
-                  disabled={readOnly || !!cropSession}
-                  onChange={(event) =>
-                    changeSlide((s) => ({ ...s, section: event.target.value }))
-                  }
-                />
-              </label>
-              <PaintEditor
-                label="页面背景填充"
-                value={slide.background_style}
-                disabled={readOnly || !!cropSession}
-                change={(background_style) =>
-                  changeSlide((s) => ({ ...s, background_style }))
-                }
-              />
+              {draft.draft.document.template ? (
+                <p className="muted">
+                  章节、标题与背景由顶部“文稿模板”统一管理。页面尺寸跟随模板。
+                </p>
+              ) : (
+                <>
+                  {" "}
+                  <label className="presentation-field presentation-page-section">
+                    <span>页面分节</span>
+                    <input
+                      aria-label="页面分节"
+                      value={slide.section ?? ""}
+                      maxLength={120}
+                      disabled={readOnly || !!cropSession}
+                      onChange={(event) =>
+                        changeSlide((s) => ({
+                          ...s,
+                          section: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <PaintEditor
+                    label="页面背景填充"
+                    value={slide.background_style}
+                    disabled={readOnly || !!cropSession}
+                    change={(background_style) =>
+                      changeSlide((s) => ({ ...s, background_style }))
+                    }
+                  />
+                </>
+              )}
               <PageDesignControls
                 size={draft.draft.document}
-                readOnly={readOnly || !!cropSession}
+                readOnly={
+                  readOnly || !!cropSession || !!draft.draft.document.template
+                }
                 change={(size) =>
                   session.commit((d) => ({
                     ...d,

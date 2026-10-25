@@ -111,6 +111,8 @@ from db.migrations.versions import (
     r0107_deepseek_provider,
     r0108_node_acceptance,
     r0109_code_agents,
+    r0110_video_editor_clip_merges,
+    r0111_presentation_templates,
 )
 
 
@@ -506,5 +508,14 @@ MIGRATIONS += (
 MIGRATIONS += (Migration(r0108_node_acceptance.MIGRATION_ID, r0108_node_acceptance.SQL),)
 
 MIGRATIONS += (Migration(r0109_code_agents.MIGRATION_ID, r0109_code_agents.SQL),)
+
+MIGRATIONS += (
+    Migration(r0110_video_editor_clip_merges.MIGRATION_ID, r0110_video_editor_clip_merges.SQL),
+)
+
+
+MIGRATIONS += (
+    Migration(r0111_presentation_templates.MIGRATION_ID, r0111_presentation_templates.SQL),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

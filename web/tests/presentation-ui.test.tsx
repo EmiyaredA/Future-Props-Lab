@@ -72,38 +72,24 @@ function library(readOnly = false) {
   );
   return onOpen;
 }
-it.each(["空白", "封面", "标题正文", "图文双栏"])(
-  "从%s版式创建真实文稿",
-  async (label) => {
-    const onOpen = library();
-    const user = userEvent.setup();
-    await user.click(
-      screen.getByRole("button", {
-        name: label === "空白" ? "从空白新建文稿" : `预览 ${label}`,
-      }),
-    );
-    if (label !== "空白") {
-      expect(api.createProject).not.toHaveBeenCalled();
-      await user.click(screen.getByRole("button", { name: "使用此版式" }));
-    }
-    const dialog = screen.getByRole("dialog", { name: "新建演示文稿" });
-    await user.click(within(dialog).getByRole("button", { name: "确认" }));
-    await waitFor(() => expect(onOpen).toHaveBeenCalledWith("project"));
-    const document = vi.mocked(api.createProject).mock.calls[0][0].document;
-    expect(document.width / document.height).toBeCloseTo(16 / 9);
-    expect(document.slides).toHaveLength(1);
-    expect(document.slides[0].elements).toHaveLength(
-      label === "空白" ? 0 : label === "图文双栏" ? 5 : 3,
-    );
-    expect(document.slides[0].background).toBe(
-      label === "封面" ? "#142D40" : "#FBFCFD",
-    );
-  },
-);
+it("文稿列表创建独立文稿，不再把单页版式当作模板", async () => {
+  const onOpen = library();
+  const user = userEvent.setup();
+  expect(
+    screen.queryByRole("region", { name: "基础版式" }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "新建演示文稿" }));
+  const dialog = screen.getByRole("dialog", { name: "新建演示文稿" });
+  await user.click(within(dialog).getByRole("button", { name: "确认" }));
+  await waitFor(() => expect(onOpen).toHaveBeenCalledWith("project"));
+  expect(
+    vi.mocked(api.createProject).mock.calls[0][0].document.slides,
+  ).toHaveLength(1);
+});
 it("取消命名不创建，顶部新建默认封面", async () => {
   library();
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "从空白新建文稿" }));
+  await user.click(screen.getByRole("button", { name: "新建演示文稿" }));
   await user.click(screen.getByRole("button", { name: "取消" }));
   expect(api.createProject).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "新建演示文稿" }));

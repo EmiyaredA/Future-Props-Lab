@@ -1,4 +1,4 @@
-import { Presentation } from "lucide-react";
+import { Presentation, LayoutTemplate } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const definition = {
@@ -20,16 +20,24 @@ const definition = {
     navigation: [
       {
         page: "presentation-workshop-projects",
-        label: "演示文稿",
+        label: "我的文稿",
         icon: Presentation,
         activePages: [
           "presentation-workshop-projects",
           "presentation-workshop-editor",
         ],
       },
+      {
+        page: "presentation-workshop-templates",
+        label: "模板与示例",
+        icon: LayoutTemplate,
+        activePages: ["presentation-workshop-templates"],
+      },
     ],
   },
   matchPath(path: string) {
+    if (/^\/apps\/presentation-workshop\/templates\/?$/.test(path))
+      return { page: "presentation-workshop-templates" };
     const match = path.match(
       /^\/apps\/presentation-workshop\/projects\/([^/]+)\/?$/,
     );
@@ -42,6 +50,8 @@ const definition = {
       return { page: "presentation-workshop-projects" };
   },
   pathFor(page: string, id?: string) {
+    if (page === "presentation-workshop-templates")
+      return "/apps/presentation-workshop/templates";
     if (page === "presentation-workshop-editor" && id)
       return `/apps/presentation-workshop/projects/${encodeURIComponent(id)}`;
     if (page === "presentation-workshop-projects")

@@ -40,6 +40,7 @@ vi.mock("@features/video-editor/api", async () => {
     downloadVideoEditorSegments: vi.fn(),
     listVideoEditorRenders: vi.fn(),
     listVideoEditorSegmentExports: vi.fn(),
+    listVideoEditorClipMerges: vi.fn().mockResolvedValue({ items: [] }),
     createVideoEditorSegmentExport: vi.fn(),
     getVideoEditorSegmentExport: vi.fn(),
     exportVideoEditorProjectSnapshot: vi.fn(),

@@ -12,6 +12,7 @@ from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers._senseaudio import ProviderTaskStatus
 from app.llm.providers.zealman_video import create_task
 from app.llm.providers.zealman_workflows import U06, U17
+from app.llm.schemas.workflow_video import WorkflowVideoParameters
 from app.llm.task_execution import TaskExecutionInfo
 from app.main import app
 from app.runtime.db import SessionLocal
@@ -173,7 +174,9 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
                     "prompt": "actual prompt",
                     "canvas_node_id": "target",
                     "expected_canvas_revision": canvas.json()["revision"],
-                    "workflow_parameters": {"width": 640} if slug == U06 else {"megapixels": 0.5},
+                    "workflow_parameters": WorkflowVideoParameters(
+                        **({"width": 640} if slug == U06 else {"megapixels": 0.5})
+                    ).model_dump(mode="json"),
                     "mode": "reference",
                     "reference_asset_ids": [image2, image1],
                     "audio_asset_ids": [audio],

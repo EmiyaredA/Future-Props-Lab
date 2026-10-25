@@ -1,3 +1,4 @@
+import { DocumentTemplateButton } from "../master/DocumentTemplatePanel";
 import {
   ArrowLeft,
   ChevronDown,
@@ -68,6 +69,7 @@ export function EditorHeader({
             }[draft.state]}
       </span>
       <div className="presentation-topbar-actions">
+        <DocumentTemplateButton session={session} readOnly={readOnly} />
         <button
           className="btn"
           aria-label="查找与替换"

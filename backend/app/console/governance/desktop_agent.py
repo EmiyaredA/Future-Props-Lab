@@ -1,4 +1,9 @@
-"""Ephemeral desktop pairing. Persistent keys use the existing governance use case."""
+"""Ephemeral pairing and an explicit business-operation allowlist.
+
+Node output queries, uploads and final-version selection are individually registered
+in the manifest; version deletion and unknown future routes remain default-deny.
+Persistent keys use the existing governance use case.
+"""
 
 import asyncio
 import hashlib
