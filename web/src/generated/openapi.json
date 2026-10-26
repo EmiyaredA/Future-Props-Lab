@@ -39377,6 +39377,14 @@
               }
             ]
           },
+          "timedEffects": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorTimedEffect"
+            },
+            "maxItems": 100,
+            "title": "Timedeffects",
+            "type": "array"
+          },
           "timelineStartUs": {
             "minimum": 0.0,
             "title": "Timelinestartus",
@@ -40245,6 +40253,83 @@
           }
         },
         "title": "VideoEditorTextStyle",
+        "type": "object"
+      },
+      "VideoEditorTimedEffect": {
+        "description": "A single-clip visual pulse, timed without splitting or resampling its source.",
+        "properties": {
+          "direction": {
+            "default": "left",
+            "enum": [
+              "left",
+              "right",
+              "up",
+              "down"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "durationUs": {
+            "exclusiveMinimum": 0.0,
+            "title": "Durationus",
+            "type": "integer"
+          },
+          "easing": {
+            "default": "linear",
+            "enum": [
+              "linear",
+              "ease-in",
+              "ease-out",
+              "ease-in-out"
+            ],
+            "title": "Easing",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "flash",
+              "whip-pan",
+              "light-leak",
+              "spin-blur",
+              "zoom",
+              "blur"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "progressEnd": {
+            "default": 1,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Progressend",
+            "type": "number"
+          },
+          "progressStart": {
+            "default": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Progressstart",
+            "type": "number"
+          },
+          "startUs": {
+            "minimum": 0.0,
+            "title": "Startus",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "startUs",
+          "durationUs"
+        ],
+        "title": "VideoEditorTimedEffect",
         "type": "object"
       },
       "VideoEditorTimelineBatchIn": {

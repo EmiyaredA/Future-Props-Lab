@@ -1,5 +1,6 @@
 import { frameUs } from "./editorModel";
 import { linkedClipIds, snapClipPosition } from "./timelineSnap";
+import { trimTimedEffects } from "./timedEffects";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
@@ -93,6 +94,11 @@ export function clipTrimPreview({
   );
   const states = originals.map((item) => ({
     ...item,
+    timedEffects: trimTimedEffects(
+      item.timedEffects ?? [],
+      edge === "start" ? delta : 0,
+      item.durationUs + (edge === "start" ? -delta : delta),
+    ),
     timelineStartUs: item.timelineStartUs + (edge === "start" ? delta : 0),
     durationUs: item.durationUs + (edge === "start" ? -delta : delta),
     sourceInUs:

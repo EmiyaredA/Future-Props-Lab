@@ -219,6 +219,7 @@ Future-Props-Lab/
   精确停帧与导出共享该采样规则。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   `spin_blur.py` 拥有旋转模糊的角向采样；Web 的 `video-editor/spinBlurCanvas.ts` 使用相同的角度、采样数与覆盖缩放，`VideoEditorEffectImage.tsx` 复用图片和文字图层的已加载素材。
   `directional_transitions.py` 拥有甩镜九点方向采样与漏光滤色配方；Web 的 `video-editor/directionalTransitionCanvas.ts` 对齐像素规则，`VideoEditorLightLeak.tsx` 在节目画布上只叠加一次光带。`video-editor/transitionCatalog.ts` 维护可复用转场的分类、名称与默认时长，面板和检查器共同消费。
+  `media_rendering/timed_effects.py` 拥有复合片段内定时视觉脉冲，不改变素材采样或片段区间；`video_editor/timed_effect_edit.py` 在裁剪、分割和变速时维护局部区间及原始变化阶段。Web 的 `video-editor/timedEffects.ts` 与 `timedEffectsCanvas.ts` 对齐求值和像素处理。
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级

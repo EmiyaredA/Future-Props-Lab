@@ -23676,6 +23676,8 @@ export interface components {
             /** Textmaxwidth */
             textMaxWidth?: number | null;
             textStyle?: components["schemas"]["VideoEditorTextStyle"] | null;
+            /** Timedeffects */
+            timedEffects?: components["schemas"]["VideoEditorTimedEffect"][];
             /** Timelinestartus */
             timelineStartUs: number;
             /** Trackid */
@@ -23992,6 +23994,45 @@ export interface components {
              * @default 0
              */
             strokeWidth: number;
+        };
+        /**
+         * VideoEditorTimedEffect
+         * @description A single-clip visual pulse, timed without splitting or resampling its source.
+         */
+        VideoEditorTimedEffect: {
+            /**
+             * Direction
+             * @default left
+             * @enum {string}
+             */
+            direction: "left" | "right" | "up" | "down";
+            /** Durationus */
+            durationUs: number;
+            /**
+             * Easing
+             * @default linear
+             * @enum {string}
+             */
+            easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "flash" | "whip-pan" | "light-leak" | "spin-blur" | "zoom" | "blur";
+            /**
+             * Progressend
+             * @default 1
+             */
+            progressEnd: number;
+            /**
+             * Progressstart
+             * @default 0
+             */
+            progressStart: number;
+            /** Startus */
+            startUs: number;
         };
         /** VideoEditorTimelineBatchIn */
         VideoEditorTimelineBatchIn: {

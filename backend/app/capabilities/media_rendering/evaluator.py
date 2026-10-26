@@ -13,6 +13,7 @@ from app.capabilities.media_rendering.chroma_key import apply_chroma_key
 from app.capabilities.media_rendering.directional_transitions import light_leak, whip_pan
 from app.capabilities.media_rendering.spin_blur import spin_blur
 from app.capabilities.media_rendering.text_layer import render_text_layer
+from app.capabilities.media_rendering.timed_effects import apply_timed_effects
 from app.capabilities.media_rendering.timeline_document import (
     VideoEditorClip,
     VideoEditorTimelineDocument,
@@ -20,7 +21,7 @@ from app.capabilities.media_rendering.timeline_document import (
 )
 
 # Invalidate exact-frame caches when compositing geometry changes.
-FRAME_COMPOSITOR_VERSION = 3
+FRAME_COMPOSITOR_VERSION = 4
 
 
 def timeline_duration_us(document: VideoEditorTimelineDocument) -> int:
@@ -197,8 +198,10 @@ class TimelineFrameRenderer:
         self._frame_overlay: tuple[tuple[int, int, int], int] | None = None
         self._eyelid_progress: float | None = None
         self._light_leak: tuple[float, str] | None = None
+        self._time_us = 0
 
     def render(self, time_us: int, *, size: tuple[int, int] | None = None) -> Image.Image:
+        self._time_us = time_us
         settings = self.document.settings
         self._frame_overlay = None
         self._eyelid_progress = None
@@ -654,6 +657,12 @@ class TimelineFrameRenderer:
             if ground_ratio is None:
                 ground_ratio = self._visible_alpha_bottom(layer) / max(1, layer.height)
                 self._portrait_ground_ratio_by_asset[ground_key] = ground_ratio
+        layer = apply_timed_effects(
+            layer,
+            clip.timed_effects,
+            self._time_us - clip.timeline_start_us,
+            frame_duration_us=1_000_000 / self.document.settings.fps,
+        )
         if transition_kind == "spin-blur" and transition_progress is not None:
             amount = (1 - transition_progress) * (-1 if direction == "in" else 1)
             layer = spin_blur(layer, amount)

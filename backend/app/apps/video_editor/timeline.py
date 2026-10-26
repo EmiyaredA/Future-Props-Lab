@@ -25,6 +25,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorTimelineDocument,
     VideoEditorTimelineOut,
 )
+from app.apps.video_editor.timed_effect_edit import crop_timed_effects, scale_timed_effects
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
 from app.capabilities.media_rendering.timeline_document import (
@@ -245,6 +246,7 @@ def apply_operations(
                 "heightPercent",
                 "transform",
                 "chromaKey",
+                "timedEffects",
             }
             clip.update({key: value for key, value in data["patch"].items() if key in allowed})
         elif kind == "moveClip":
@@ -276,6 +278,7 @@ def apply_operations(
                     "轨道已锁定，无法调整片段时长", code="track_locked"
                 )
             offset = data["timelineStartUs"] - clip["timelineStartUs"]
+            clip["timedEffects"] = crop_timed_effects(clip, offset, data["durationUs"])
             clip["keyframes"] = [
                 {**key, "timeUs": key["timeUs"] - offset}
                 for key in clip.get("keyframes", [])
@@ -344,6 +347,7 @@ def apply_operations(
                         raise VideoEditorValidationError("只有视频和音频 Clip 可以变速")
                     ratio = clip.get("playbackRate", 1) / data["playbackRate"]
                     duration = max(1, floor(clip["durationUs"] * ratio))
+                    clip["timedEffects"] = scale_timed_effects(clip, ratio, duration)
                     for key in clip.get("keyframes", []):
                         key["timeUs"] = min(duration, round(key["timeUs"] * ratio))
                     for edge in ("transitionIn", "transitionOut"):
@@ -397,6 +401,10 @@ def apply_operations(
                     else linked_ids.get(clip["id"]) or f"{data['newClipId'][:48]}-{index}"
                 )
                 right = deepcopy(clip)
+                right["timedEffects"] = crop_timed_effects(
+                    clip, offset, clip["durationUs"] - offset
+                )
+                clip["timedEffects"] = crop_timed_effects(clip, 0, offset)
                 right.update(
                     id=new_id,
                     timelineStartUs=data["atUs"],
@@ -471,6 +479,7 @@ def apply_operations(
             picture.pop("muted", None)
             picture["muted"] = clip.get("muted", False)
             sound = deepcopy(clip)
+            sound.pop("timedEffects", None)
             sound.update(
                 id=data["audioClipId"],
                 trackId=audio["id"],

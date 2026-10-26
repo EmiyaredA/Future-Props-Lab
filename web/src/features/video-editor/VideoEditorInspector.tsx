@@ -13,6 +13,7 @@ import type { TimelineEditBuilder } from "./timelineSaveQueue";
 import { ClipSpeedControl } from "./ClipSpeedControl";
 import { ClipVolumeControl } from "./ClipVolumeControl";
 import { VideoEditorChromaInspector } from "./VideoEditorChromaInspector";
+import { VideoEditorTimedEffects } from "./VideoEditorTimedEffects";
 import "./video-editor-inspector.css";
 
 const numberValue = (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -121,6 +122,13 @@ export function VideoEditorInspector({
         </button>
       </header>
       <fieldset className="ve-inspector-fields" disabled={disabled}>
+        <VideoEditorTimedEffects
+          key={`timed-${clip.id}`}
+          clip={clip}
+          playheadUs={playheadUs}
+          disabled={disabled}
+          commit={commit}
+        />
         {clip.kind === "text" && (
           <VideoEditorTextInspector
             key={clip.id}

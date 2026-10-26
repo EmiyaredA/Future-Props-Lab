@@ -5,6 +5,7 @@ import { VideoEditorTextLayer } from "./VideoEditorTextLayer";
 import { VideoEditorSourceMonitor } from "./VideoEditorSourceMonitor";
 import { syncMediaClock } from "./previewClock";
 import { VideoEditorMediaLayer } from "./VideoEditorMediaLayer";
+import { activeTimedEffects } from "./timedEffects";
 import { VideoEditorLightLeak } from "./VideoEditorLightLeak";
 import { VideoEditorPreciseFrame } from "./VideoEditorPreciseFrame";
 import { previewVideoPlaybackKeys } from "./previewPlayback";
@@ -632,6 +633,11 @@ export function VideoEditorPreview({
                   spinBlur={effect.spinBlur}
                   whipPan={effect.whipPan}
                   localUs={localUs}
+                  timedEffects={activeTimedEffects(
+                    clip,
+                    playheadUs - clip.timelineStartUs,
+                    timeline.document.settings?.fps ?? 30,
+                  )}
                   playing={playing}
                   selected={selectedClipId === clip.id}
                 />

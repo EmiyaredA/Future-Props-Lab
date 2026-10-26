@@ -32,6 +32,7 @@ export function freezeGapTemplate(
     linkGroupId: null,
     transitionIn: null,
     transitionOut: null,
+    timedEffects: [],
   };
 }
 

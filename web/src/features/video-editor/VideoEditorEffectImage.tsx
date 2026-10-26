@@ -6,6 +6,8 @@ import {
   type WhipPanEffect,
 } from "./directionalTransitionCanvas";
 import type { VideoEditorClip } from "./types";
+import { noTimedEffects, type ActiveTimedEffect } from "./timedEffects";
+import { paintTimedEffectsCanvas } from "./timedEffectsCanvas";
 
 /** Reuse the loaded image for chroma key and angular blur, including text PNGs. */
 export function VideoEditorEffectImage({
@@ -14,6 +16,8 @@ export function VideoEditorEffectImage({
   chromaKey,
   spinBlur = 0,
   whipPan,
+  timedEffects = noTimedEffects,
+  fittedWidth,
   onSize,
 }: {
   source: string;
@@ -21,11 +25,15 @@ export function VideoEditorEffectImage({
   chromaKey?: VideoEditorClip["chromaKey"];
   spinBlur?: number;
   whipPan?: WhipPanEffect;
+  timedEffects?: ActiveTimedEffect[];
+  fittedWidth?: number;
   onSize?: (size: { width: number; height: number }) => void;
 }) {
   const image = useRef<HTMLImageElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const processed = Boolean(chromaKey?.enabled || spinBlur || whipPan);
+  const processed = Boolean(
+    chromaKey?.enabled || spinBlur || whipPan || timedEffects.length,
+  );
   const paint = useCallback(() => {
     const node = image.current;
     const surface = canvas.current;
@@ -38,6 +46,8 @@ export function VideoEditorEffectImage({
         node.naturalHeight,
         chromaKey,
       );
+      if (timedEffects.length)
+        paintTimedEffectsCanvas(surface, timedEffects, fittedWidth);
       if (spinBlur)
         paintSpinBlurCanvas(
           surface,
@@ -52,8 +62,19 @@ export function VideoEditorEffectImage({
         node,
         node.naturalWidth,
         node.naturalHeight,
-        spinBlur,
+        timedEffects.length ? 0 : spinBlur,
       );
+      if (timedEffects.length) {
+        paintTimedEffectsCanvas(surface, timedEffects, fittedWidth);
+        if (spinBlur)
+          paintSpinBlurCanvas(
+            surface,
+            surface,
+            surface.width,
+            surface.height,
+            spinBlur,
+          );
+      }
     }
     if (whipPan)
       paintWhipPanCanvas(
@@ -63,7 +84,7 @@ export function VideoEditorEffectImage({
         surface.height,
         whipPan,
       );
-  }, [chromaKey, spinBlur, whipPan]);
+  }, [chromaKey, spinBlur, whipPan, timedEffects, fittedWidth]);
   useLayoutEffect(paint, [paint, source]);
   return (
     <>

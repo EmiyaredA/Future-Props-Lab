@@ -178,6 +178,25 @@ class VideoEditorTimelineTransition(BaseModel):
         return self
 
 
+class VideoEditorTimedEffect(BaseModel):
+    """A single-clip visual pulse, timed without splitting or resampling its source."""
+
+    id: str = Field(min_length=1, max_length=64)
+    kind: Literal["flash", "whip-pan", "light-leak", "spin-blur", "zoom", "blur"]
+    start_us: int = Field(alias="startUs", ge=0)
+    duration_us: int = Field(alias="durationUs", gt=0)
+    direction: Literal["left", "right", "up", "down"] = "left"
+    easing: Literal["linear", "ease-in", "ease-out", "ease-in-out"] = "linear"
+    progress_start: float = Field(default=0, alias="progressStart", ge=0, le=1)
+    progress_end: float = Field(default=1, alias="progressEnd", ge=0, le=1)
+
+    @model_validator(mode="after")
+    def valid_phase(self) -> VideoEditorTimedEffect:
+        if self.progress_start >= self.progress_end:
+            raise ValueError("效果进度区间必须递增")
+        return self
+
+
 class VideoEditorTextStyle(BaseModel):
     align: Literal["left", "center", "right"] = "center"
     stroke_color: str = Field(default="#000000", alias="strokeColor", pattern=r"^#[0-9a-fA-F]{6}$")
@@ -226,6 +245,9 @@ class VideoEditorClip(BaseModel):
     keyframes: list[VideoEditorKeyframe] = Field(default_factory=list, max_length=1000)
     transition_in: VideoEditorTransition | None = Field(default=None, alias="transitionIn")
     transition_out: VideoEditorTransition | None = Field(default=None, alias="transitionOut")
+    timed_effects: list[VideoEditorTimedEffect] = Field(
+        default_factory=list, alias="timedEffects", max_length=100
+    )
     link_group_id: str | None = Field(default=None, alias="linkGroupId", max_length=64)
 
     @model_validator(mode="after")
@@ -242,6 +264,14 @@ class VideoEditorClip(BaseModel):
             raise ValueError("纯色 Clip 必须指定颜色")
         if any(key.time_us > self.duration_us for key in self.keyframes):
             raise ValueError("关键帧必须位于 Clip 范围内")
+        if self.timed_effects and self.kind not in {"video", "image"}:
+            raise ValueError("只有视频和图片 Clip 可以添加定时视觉效果")
+        if len({effect.id for effect in self.timed_effects}) != len(self.timed_effects):
+            raise ValueError("同一 Clip 的定时效果 ID 必须唯一")
+        if any(
+            effect.start_us + effect.duration_us > self.duration_us for effect in self.timed_effects
+        ):
+            raise ValueError("定时效果必须位于 Clip 范围内")
         return self
 
 

@@ -4,6 +4,7 @@ import { VideoEditorProxyVideo } from "./VideoEditorProxyVideo";
 import type { PreviewMediaGeometry } from "./previewGeometry";
 import type { VideoEditorClip, VideoEditorAsset } from "./types";
 import type { WhipPanEffect } from "./directionalTransitionCanvas";
+import type { ActiveTimedEffect } from "./timedEffects";
 export function VideoEditorMediaLayer({
   clip,
   asset,
@@ -14,6 +15,7 @@ export function VideoEditorMediaLayer({
   selected,
   spinBlur,
   whipPan,
+  timedEffects,
 }: {
   clip: VideoEditorClip;
   asset?: VideoEditorAsset;
@@ -24,6 +26,7 @@ export function VideoEditorMediaLayer({
   selected: boolean;
   spinBlur?: number;
   whipPan?: WhipPanEffect;
+  timedEffects?: ActiveTimedEffect[];
 }) {
   return (
     <div
@@ -45,6 +48,8 @@ export function VideoEditorMediaLayer({
               chromaKey={clip.chromaKey}
               spinBlur={spinBlur}
               whipPan={whipPan}
+              timedEffects={timedEffects}
+              fittedWidth={geometry?.width}
             />
           </div>
         ) : clip.kind === "video" && asset && !asset.proxyUrl ? (
@@ -59,6 +64,8 @@ export function VideoEditorMediaLayer({
             chromaKey={clip.chromaKey}
             spinBlur={spinBlur}
             whipPan={whipPan}
+            timedEffects={timedEffects}
+            fittedWidth={geometry?.width}
           />
         ) : clip.kind === "color" ? (
           <i style={{ background: clip.color ?? "#000" }} />

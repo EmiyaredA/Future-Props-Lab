@@ -6159,6 +6159,7 @@ class VideoEditorClip(WireModel):
     text_color: str = Field(default='#ffffff', alias='textColor')
     text_max_width: int | None = Field(default=None, alias='textMaxWidth')
     text_style: VideoEditorTextStyle | None = Field(default=None, alias='textStyle')
+    timed_effects: list[VideoEditorTimedEffect] | None = Field(default=None, alias='timedEffects', max_length=100)
     timeline_start_us: int = Field(default=..., alias='timelineStartUs', ge=0.0)
     track_id: str = Field(default=..., alias='trackId', min_length=1, max_length=64)
     transform: VideoEditorTransform | None = Field(default=None, alias='transform')
@@ -6287,6 +6288,16 @@ class VideoEditorTextStyle(WireModel):
     background_opacity: float = Field(default=0, alias='backgroundOpacity', ge=0.0, le=1.0)
     stroke_color: str = Field(default='#000000', alias='strokeColor')
     stroke_width: int = Field(default=0, alias='strokeWidth', ge=0.0, le=20.0)
+
+class VideoEditorTimedEffect(WireModel):
+    direction: Literal['left', 'right', 'up', 'down'] = Field(default='left', alias='direction')
+    duration_us: int = Field(default=..., alias='durationUs', gt=0.0)
+    easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    kind: Literal['flash', 'whip-pan', 'light-leak', 'spin-blur', 'zoom', 'blur'] = Field(default=..., alias='kind')
+    progress_end: float = Field(default=1, alias='progressEnd', ge=0.0, le=1.0)
+    progress_start: float = Field(default=0, alias='progressStart', ge=0.0, le=1.0)
+    start_us: int = Field(default=..., alias='startUs', ge=0.0)
 
 class VideoEditorTimelineBatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
@@ -7779,6 +7790,7 @@ VideoEditorSegmentExportTarget.model_rebuild()
 VideoEditorTaskListOut.model_rebuild()
 VideoEditorTaskOut.model_rebuild()
 VideoEditorTextStyle.model_rebuild()
+VideoEditorTimedEffect.model_rebuild()
 VideoEditorTimelineBatchIn.model_rebuild()
 VideoEditorTimelineDocument.model_rebuild()
 VideoEditorTimelineOut.model_rebuild()

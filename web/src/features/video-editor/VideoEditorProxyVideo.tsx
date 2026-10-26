@@ -11,6 +11,8 @@ import {
 } from "./directionalTransitionCanvas";
 import type { VideoProxyCrop } from "./previewGeometry";
 import type { VideoEditorClip } from "./types";
+import { noTimedEffects, type ActiveTimedEffect } from "./timedEffects";
+import { paintTimedEffectsCanvas } from "./timedEffectsCanvas";
 
 /** Present only positioned frames; keep the last decoded frame across cuts. */
 export function VideoEditorProxyVideo({
@@ -22,6 +24,8 @@ export function VideoEditorProxyVideo({
   chromaKey,
   spinBlur = 0,
   whipPan,
+  timedEffects = noTimedEffects,
+  fittedWidth,
 }: {
   source: string;
   clip: VideoEditorClip;
@@ -31,6 +35,8 @@ export function VideoEditorProxyVideo({
   chromaKey?: VideoEditorClip["chromaKey"];
   spinBlur?: number;
   whipPan?: WhipPanEffect;
+  timedEffects?: ActiveTimedEffect[];
+  fittedWidth?: number;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -47,6 +53,8 @@ export function VideoEditorProxyVideo({
     chromaKey,
     spinBlur,
     whipPan,
+    timedEffects,
+    fittedWidth,
     crop,
   });
   const previous = useRef<
@@ -56,6 +64,7 @@ export function VideoEditorProxyVideo({
         playing: boolean;
         spinBlur: number;
         whipPan?: WhipPanEffect;
+        timedEffects?: ActiveTimedEffect[];
       }
     | undefined
   >(undefined);
@@ -78,10 +87,18 @@ export function VideoEditorProxyVideo({
       prior?.clip.chromaKey !== chromaKey ||
       prior?.spinBlur !== spinBlur ||
       prior?.whipPan?.amount !== whipPan?.amount ||
-      prior?.whipPan?.direction !== whipPan?.direction
+      prior?.whipPan?.direction !== whipPan?.direction ||
+      prior?.timedEffects !== timedEffects
     )
       paintedTime.current = Number.NaN;
-    previous.current = { clip, source, playing: advancing, spinBlur, whipPan };
+    previous.current = {
+      clip,
+      source,
+      playing: advancing,
+      spinBlur,
+      whipPan,
+      timedEffects,
+    };
     frame.current = {
       target,
       start,
@@ -92,10 +109,23 @@ export function VideoEditorProxyVideo({
       chromaKey,
       spinBlur,
       whipPan,
+      timedEffects,
+      fittedWidth,
       crop,
     };
     updatePlayback.current?.();
-  }, [clip, localUs, playing, source, chromaKey, spinBlur, whipPan, crop]);
+  }, [
+    clip,
+    localUs,
+    playing,
+    source,
+    chromaKey,
+    spinBlur,
+    whipPan,
+    timedEffects,
+    fittedWidth,
+    crop,
+  ]);
   useLayoutEffect(() => {
     const node = video.current;
     const surface = canvas.current;
@@ -119,8 +149,17 @@ export function VideoEditorProxyVideo({
       );
     };
     const paint = (mediaTime = node.currentTime) => {
-      const { start, end, target, chromaKey, spinBlur, whipPan, crop } =
-        frame.current;
+      const {
+        start,
+        end,
+        target,
+        chromaKey,
+        spinBlur,
+        whipPan,
+        timedEffects,
+        fittedWidth,
+        crop,
+      } = frame.current;
       if (!positioned() || !node.videoWidth || !node.videoHeight) return;
       if (
         mediaTime < start ||
@@ -147,7 +186,7 @@ export function VideoEditorProxyVideo({
           surface.height = node.videoHeight;
         surface.getContext("2d")?.drawImage(node, 0, 0);
       }
-      if (spinBlur || whipPan) {
+      if (spinBlur || whipPan || timedEffects.length) {
         // Remove letterboxing before sampling so proxy padding never becomes a trail.
         const width = (surface.width * 100) / crop.widthPercent;
         const height = (surface.height * 100) / crop.heightPercent;
@@ -157,16 +196,27 @@ export function VideoEditorProxyVideo({
           width,
           height,
         };
+        if (timedEffects.length) {
+          paintSpinBlurCanvas(surface, surface, width, height, 0, area);
+          paintTimedEffectsCanvas(surface, timedEffects, fittedWidth);
+        }
         if (spinBlur)
-          paintSpinBlurCanvas(surface, surface, width, height, spinBlur, area);
+          paintSpinBlurCanvas(
+            surface,
+            surface,
+            timedEffects.length ? surface.width : width,
+            timedEffects.length ? surface.height : height,
+            spinBlur,
+            timedEffects.length ? undefined : area,
+          );
         if (whipPan)
           paintWhipPanCanvas(
             surface,
             surface,
-            spinBlur ? surface.width : width,
-            spinBlur ? surface.height : height,
+            spinBlur || timedEffects.length ? surface.width : width,
+            spinBlur || timedEffects.length ? surface.height : height,
             whipPan,
-            spinBlur ? undefined : area,
+            spinBlur || timedEffects.length ? undefined : area,
           );
       }
     };
@@ -251,7 +301,7 @@ export function VideoEditorProxyVideo({
         ref={canvas}
         className="ve-keyed-media"
         style={
-          spinBlur || whipPan
+          spinBlur || whipPan || timedEffects.length
             ? { left: 0, top: 0, width: "100%", height: "100%" }
             : placement
         }
