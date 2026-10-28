@@ -451,6 +451,20 @@
   background: var(--board-accent);
   color: #fff;
 }
+.visual-project-board
+  .workbench-generation
+  .video-composer-submit:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--board-accent) 90%, #000);
+  color: #fff;
+  transform: none;
+}
+.visual-project-board .workbench-generation .video-composer-submit:disabled {
+  border-color: var(--board-border);
+  background: var(--board-soft);
+  color: var(--board-muted);
+  box-shadow: none;
+  opacity: 1;
+}
 .workbench-generation
   :is(.video-composer-model, .video-composer-parameters, .image-composer-count)
   summary {

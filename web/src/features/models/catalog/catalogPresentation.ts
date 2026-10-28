@@ -80,9 +80,12 @@ export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
   if (["senseaudio_image", "volcengine_image"].includes(provider.kind))
     return "image";
   if (
-    ["senseaudio_video", "zealman_video", "volcengine_video", "autodl_video"].includes(
-      provider.kind,
-    )
+    [
+      "senseaudio_video",
+      "zealman_video",
+      "volcengine_video",
+      "autodl_video",
+    ].includes(provider.kind)
   )
     return "video";
   if (

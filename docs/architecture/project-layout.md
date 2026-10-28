@@ -677,6 +677,20 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 视觉节点的 `approved` 人工确认标记由画布节点 JSON 持久化，`NodeApproval.tsx` 提供工作台、状态卡与画布共用入口，素材菜单复用相同画布更新契约。输出登记／切换／删除在 `outputs/history.py` 清除确认；正文变更由画布写入校验清除。迁移 `r0094_visual_node_approval` 为旧节点补默认值，不改已有布局、版本或 revision。
 
+## AutoDL zealman 工作流
+
+`backend/app/llm/providers/autodl_workflows.py` 固定登记 AutoDL 页面署名 zealman 的 12 个工作流，
+拥有模式、提示词、素材格式及数量、时长语义、输出尺寸组合、种子范围和请求字段映射。
+`autodl_video.py` 拥有原始 Authorization Token、提交与结果轮询协议。三个入口共用
+`VideoCapabilitiesOut` 与准入归一化，并复用 GenerationTaskDriver；图片、音频与动作视频直接编码
+为 Base64，业务记录保留素材 ID 和参数，不保存编码内容。迁移 `0113_autodl_video` 扩展连接、
+测试任务及工坊任务类型约束，保留历史和外键。
+
+视觉工坊 `outputs/references.py` 在显式启用双帧槽位时将画布图片连线解析为首帧、尾帧，并保留
+输入快照与 CAS；视频草稿使用 `VisualVideoPromptVersion` 保存最长 20000 字符的版本。
+Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装与校验，`VideoSeedControl.tsx`
+拥有可选随机种子输入；工坊 `generation/useVideoDefaults.ts` 负责首次选择与不兼容草稿的默认参数恢复；`catalog/autodlPresets.ts` 只保存模型预设的展示名称和 ID。
+
 ## Seedance 官方视频接入
 
 `llm/providers/volcengine_video.py` 拥有方舟视频创建／查询协议及状态归一化；

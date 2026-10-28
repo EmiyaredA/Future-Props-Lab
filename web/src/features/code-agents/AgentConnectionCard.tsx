@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Check, ChevronDown, Copy, Terminal } from "lucide-react";
+import { Check, ChevronDown, Copy } from "lucide-react";
 import type { Agent } from "./api";
+import { AgentLogo } from "./AgentLogo";
 
 const states: Record<string, { label: string; tone: string }> = {
   ready: { label: "已连接", tone: "ok" },
@@ -13,11 +14,20 @@ const states: Record<string, { label: string; tone: string }> = {
   unsupported_platform: { label: "平台不支持", tone: "muted" },
 };
 
+export function AgentStatus({ agent }: { agent: Agent }) {
+  const status = states[agent.status] ?? { label: "状态未知", tone: "muted" };
+  return (
+    <span className={`code-agent-status is-${status.tone}`}>
+      <span aria-hidden />
+      {status.label}
+    </span>
+  );
+}
+
 export function AgentConnectionCard({ agent }: { agent: Agent }) {
   const [details, setDetails] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
-  const status = states[agent.status] ?? { label: "状态未知", tone: "muted" };
   const command = agent.id === "codex" ? "codex login" : "claude auth login";
   const copy = async () => {
     setError("");
@@ -32,48 +42,34 @@ export function AgentConnectionCard({ agent }: { agent: Agent }) {
   return (
     <article className="code-agent-card" aria-label={`${agent.name} 连接`}>
       <div className="code-agent-card-heading">
-        <span className="code-agent-terminal">
-          <Terminal size={24} aria-hidden />
-        </span>
+        <AgentLogo id={agent.id} size={22} />
         <div className="code-agent-identity">
           <h2>{agent.name}</h2>
           <p>本机 CLI{agent.version && <> · v{agent.version}</>}</p>
         </div>
-        <span className={`code-agent-status is-${status.tone}`}>
-          <span aria-hidden />
-          {status.label}
-        </span>
+        <AgentStatus agent={agent} />
       </div>
       <p className="code-agent-message">
         {agent.message || "连接由部署配置管理"}
       </p>
-      <div className="code-agent-commands">
-        <code>{command}</code>
-        <button
-          type="button"
-          className="code-agent-copy"
-          aria-label={`复制 ${agent.name} 登录命令`}
-          onClick={() => void copy()}
-        >
-          {copied ? (
-            <Check size={16} aria-hidden />
-          ) : (
-            <Copy size={16} aria-hidden />
-          )}
-        </button>
-      </div>
-      {copied && (
-        <span className="code-agent-muted" role="status">
-          登录命令已复制
-        </span>
-      )}
-      {error && (
-        <p className="code-agent-error" role="alert">
-          {error}
-        </p>
-      )}
-      <div className="code-agent-card-footer">
-        <span>安装或登录后重新检测</span>
+      <div className="code-agent-login-row">
+        <span className="code-agent-field-label">登录命令</span>
+        <div className="code-agent-commands">
+          <code>{command}</code>
+          <button
+            type="button"
+            className="code-agent-copy"
+            aria-label={`复制 ${agent.name} 登录命令`}
+            onClick={() => void copy()}
+          >
+            {copied ? (
+              <Check size={16} aria-hidden />
+            ) : (
+              <Copy size={16} aria-hidden />
+            )}
+          </button>
+        </div>
+        <span className="code-agent-login-help">安装或登录后重新检测</span>
         {agent.executable && (
           <button
             type="button"
@@ -91,6 +87,16 @@ export function AgentConnectionCard({ agent }: { agent: Agent }) {
           </button>
         )}
       </div>
+      {copied && (
+        <span className="code-agent-muted" role="status">
+          登录命令已复制
+        </span>
+      )}
+      {error && (
+        <p className="code-agent-error" role="alert">
+          {error}
+        </p>
+      )}
       {agent.executable && details && (
         <div id={`agent-details-${agent.id}`} className="code-agent-details">
           <span>可执行文件</span>

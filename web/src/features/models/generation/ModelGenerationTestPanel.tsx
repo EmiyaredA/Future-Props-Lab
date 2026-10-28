@@ -277,7 +277,7 @@ export function ModelGenerationTestPanel({
           kind: "video",
           model_id: modelId,
           prompt: videoCaps?.supports_prompt === false ? "" : prompt.trim(),
-          ...(videoCaps?.supports_duration === false ? {} : { duration }),
+          duration,
           ...(videoCaps
             ? {
                 mode: videoMode,
@@ -409,6 +409,11 @@ export function ModelGenerationTestPanel({
       }
       const invalid = videoSelectionError(videoCaps, {
         mode: videoMode,
+        files: referenceFiles.map((item) => ({
+          media_kind: item.kind,
+          mime_type: item.file.type,
+          byte_size: item.file.size,
+        })),
         prompt,
         seed: workflowValues.seed,
         duration,
@@ -441,7 +446,7 @@ export function ModelGenerationTestPanel({
         (videoCaps?.reference_mime_types?.[kind]?.length &&
           !videoCaps.reference_mime_types[kind].includes(file.type))
       ) {
-        setError("只支持 JPG、PNG、WebP、GIF、MP3、WAV、MP4 和 MOV 参考素材");
+        setError("当前模型不支持此参考素材格式，请按模型要求选择。");
         continue;
       }
       if (

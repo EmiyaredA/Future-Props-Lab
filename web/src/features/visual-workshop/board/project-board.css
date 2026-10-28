@@ -367,10 +367,22 @@
 .board-material-thumb {
   width: 34px;
   height: 34px;
+  display: grid;
+  place-items: center;
   border-radius: 6px;
   background: var(--board-stage);
   overflow: hidden;
   flex-shrink: 0;
+}
+.board-material-thumb.is-text {
+  background: var(--board-soft);
+  color: var(--board-muted);
+  box-shadow: inset 0 0 0 1px var(--board-border);
+}
+.board-material-thumb svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.6;
 }
 .board-material > span {
   min-width: 0;

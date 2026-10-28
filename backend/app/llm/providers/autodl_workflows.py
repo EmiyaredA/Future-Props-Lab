@@ -34,26 +34,35 @@ class Workflow:
 
 WORKFLOWS = {
     PREFIX + "zm_nono": Workflow(
-        "H3 影视画质", audio_max=3, resolutions=("480p", "768p", "960p"), seed_min=None, flac=False
+        "H3多图多音频生视频(影视画质)",
+        audio_max=3,
+        resolutions=("480p", "768p", "960p"),
+        seed_min=None,
+        flac=False,
     ),
     PREFIX + "zm_u30": Workflow(
-        "H3 超清画质", audio_max=3, resolutions=("480p", "768p", "960p"), seed_min=0
+        "H3多图多音频生视频(超清画质)",
+        audio_max=3,
+        resolutions=("480p", "768p", "960p"),
+        seed_min=0,
     ),
-    PREFIX + "zm_u24": Workflow("H3 升级画质", audio_max=3, square=True, seed_min=0),
-    PREFIX + "zm_u08": Workflow("H3 高速版", audio_max=3, square=True, seed_min=0),
+    PREFIX + "zm_u24": Workflow(
+        "H3多图多音频生视频(升级画质)", audio_max=3, square=True, seed_min=0
+    ),
+    PREFIX + "zm_u08": Workflow("H3多图多音频生视频(高速版)", audio_max=3, square=True, seed_min=0),
     PREFIX + "image_audio_to_video_v2_15s": Workflow(
-        "H3 多图多音频 15 秒", images_min=0, audio_max=3
+        "H3多图多音频生视频15秒", images_min=0, audio_max=3
     ),
-    PREFIX + "lightx2v_v5_15s": Workflow("H3 多图 15 秒", square=True),
+    PREFIX + "lightx2v_v5_15s": Workflow("H3多图生视频15秒", square=True),
     PREFIX + "image_audio_to_video_v2": Workflow(
-        "H3 多图多音频",
+        "H3多图多音频生视频",
         images_min=0,
         audio_max=3,
         duration_max=10,
         resolutions=("480p", "768p", "1080p"),
     ),
     PREFIX + "image_audio_to_video": Workflow(
-        "H3 音频同步／自动对口型",
+        "H3图生视频-音频同步(自动对口型)",
         images_max=1,
         audio_min=1,
         audio_max=1,
@@ -62,17 +71,15 @@ WORKFLOWS = {
         prompt=False,
     ),
     PREFIX + "lightx2v_v5": Workflow(
-        "H3 多图参考", duration_max=10, resolutions=("480p", "768p", "1080p"), square=True
+        "H3多图参考生视频", duration_max=10, resolutions=("480p", "768p", "1080p"), square=True
     ),
     PREFIX + "lightx2v_no_pic": Workflow(
-        "H3 文生视频", images_min=0, images_max=0, square=True, mode="text"
+        "H3文生视频", images_min=0, images_max=0, square=True, mode="text"
     ),
     PREFIX + "lightx2v": Workflow(
-        "H3 首尾帧", images_min=2, images_max=2, square=True, mode="frames"
+        "H3首尾帧生成视频", images_min=2, images_max=2, square=True, mode="frames"
     ),
-    MOTION: Workflow(
-        "Wan 动作迁移", images_max=1, resolutions=("464x832", "832x464"), prompt=False
-    ),
+    MOTION: Workflow("动作迁移", images_max=1, resolutions=("464x832", "832x464"), prompt=False),
 }
 
 
@@ -104,10 +111,12 @@ def capabilities(model: str) -> VideoCapabilitiesOut:
             "video": ["video/mp4", "video/webm"],
         },
         audio_only=spec.images_min == 0,
+        default_generate_audio=False,
         supported_modes=["text", "reference"]
         if spec.images_min == 0 and spec.audio_max
         else [spec.mode],
         supports_prompt=spec.prompt,
+        prompt_required=spec.prompt,
         max_prompt_length=20000,
         supports_duration=not motion,
         duration_label="音频截取时长" if not spec.prompt and not motion else "时长",
@@ -200,7 +209,9 @@ def validate_references(model: str, references: list[tuple[str, str, int]]) -> N
     caps = capabilities(model)
     if sum(size for _, _, size in references) > MAX_REFERENCE_BYTES:
         raise ValueError("AutoDL 参考素材总大小不能超过 45 MB")
-    for kind, mime, _ in references:
+    for kind, mime, size in references:
+        if kind in {"image", "audio"} and size > (30 if kind == "image" else 15) * 1024 * 1024:
+            raise ValueError("AutoDL 单图最多 30 MB，单音频最多 15 MB")
         if mime not in caps.reference_mime_types.get(kind, []):
             raise ValueError("当前 AutoDL 工作流不支持此参考素材格式")
 
@@ -229,6 +240,9 @@ def prepare_payload(
         value = item.get("url") if kind == "image" else item.get(f"{kind}_url")
         if not isinstance(value, str) or not value:
             raise ValueError("AutoDL 参考素材缺少有效内容")
+        value = value.replace("data:audio/x-wav;", "data:audio/wav;", 1).replace(
+            "data:audio/x-flac;", "data:audio/flac;", 1
+        )
         if model == MOTION:
             name = f"ref_{kind}"
         elif spec.mode == "frames":

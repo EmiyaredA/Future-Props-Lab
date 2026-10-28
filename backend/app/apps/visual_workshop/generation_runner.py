@@ -328,18 +328,22 @@ class VisualGenerationRunner(PollingTaskRunner):
             provider_task_id=task.provider_task_id,
         )
 
-    async def _asset_data_uri(self, asset_id: str, workspace_id: str) -> str:
+    async def _asset_data_uri(
+        self, asset_id: str, workspace_id: str, *, expected_kind: str | None = None
+    ) -> str:
         async with self.session_factory() as session:
             bind_workspace(session, workspace_id)
             asset = await session.get(VisualAsset, asset_id)
-            if asset is None or asset.media_kind not in {"image", "audio"}:
+            allowed = {expected_kind} if expected_kind else {"image", "audio"}
+            if asset is None or asset.media_kind not in allowed:
                 raise ValueError("参考图片已不存在")
             path = self.storage.path_for(asset)
             mime_type = asset.mime_type
             byte_size = asset.byte_size
-        if byte_size > 30 * 1024 * 1024:
-            raise ValueError("参考图片超过 SenseAudio 的 30 MB 限制")
-        return await read_data_uri(path=path, mime_type=mime_type, max_bytes=30 * 1024 * 1024)
+        limit = (45 if expected_kind == "video" else 30) * 1024 * 1024
+        if byte_size > limit:
+            raise ValueError("参考素材超过内联大小限制")
+        return await read_data_uri(path=path, mime_type=mime_type, max_bytes=limit)
 
     async def _temporary_asset_url(
         self,
@@ -499,7 +503,9 @@ class VisualGenerationRunner(PollingTaskRunner):
                 content.append(
                     {
                         "type": "video",
-                        "video_url": await self._asset_data_uri(str(asset_id), workspace_id)
+                        "video_url": await self._asset_data_uri(
+                            str(asset_id), workspace_id, expected_kind="video"
+                        )
                         if provider_kind == "autodl_video"
                         else await self._temporary_asset_url(
                             str(asset_id),

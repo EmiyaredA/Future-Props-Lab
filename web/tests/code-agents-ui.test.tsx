@@ -189,6 +189,32 @@ test("connection details are collapsed and login commands have copy feedback", a
   expect(writeText).toHaveBeenCalledWith("codex login");
 });
 
+test("selecting an agent shows its connection without carrying over disclosure or copy feedback", async () => {
+  setup(false);
+  const codexCard = await screen.findByRole("article", { name: "Codex 连接" });
+  fireEvent.click(within(codexCard).getByRole("button", { name: "连接详情" }));
+  fireEvent.click(
+    within(codexCard).getByRole("button", { name: "复制 Codex 登录命令" }),
+  );
+  await screen.findByText("登录命令已复制");
+
+  fireEvent.click(screen.getByRole("button", { name: "Claude Code 已连接" }));
+  const claudeCard = screen.getByRole("article", { name: "Claude Code 连接" });
+  expect(within(claudeCard).getByText("claude auth login")).toBeVisible();
+  expect(
+    within(claudeCard).queryByText(claude.executable),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText("登录命令已复制")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("article", { name: "Codex 连接" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Claude Code 已连接" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(detectAgents).not.toHaveBeenCalled();
+  expect(putGrants).not.toHaveBeenCalled();
+});
+
 test("matrix preserves other legacy members and disables account selection during save", async () => {
   let complete: ((value: Grants) => void) | undefined;
   vi.mocked(putGrants).mockImplementation(

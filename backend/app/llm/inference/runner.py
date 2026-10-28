@@ -186,7 +186,8 @@ class InferenceRunner(PollingTaskRunner):
                     {
                         "type": kind,
                         f"{kind}_url": await image_url(identity)
-                        if kind == "audio" and task.provider_kind == "volcengine_video"
+                        if task.provider_kind == "autodl_video"
+                        or (kind == "audio" and task.provider_kind == "volcengine_video")
                         else await media_url(identity),
                     }
                 )

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ShieldCheck, Terminal } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
 import { ApiError, apiErrorMessage } from "@platform/api/errors";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
+import { AgentLogo } from "./AgentLogo";
 import {
   codeAgentKeys,
   getGrants,
@@ -177,8 +178,10 @@ export function AgentGrants({
                   {agents.map((agent) => (
                     <tr key={agent.id}>
                       <th scope="row">
-                        <Terminal size={18} aria-hidden />
-                        {agent.name}
+                        <span className="code-agent-grant-name">
+                          <AgentLogo id={agent.id} size={16} />
+                          {agent.name}
+                        </span>
                       </th>
                       {purposes.map((p) => {
                         const supported =

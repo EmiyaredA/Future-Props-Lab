@@ -18,6 +18,7 @@ class VideoCapabilitiesOut(BaseModel):
     reference_minimums: dict[str, int] = Field(default_factory=dict)
     reference_mime_types: dict[str, list[str]] = Field(default_factory=dict)
     supports_prompt: bool = True
+    prompt_required: bool = False
     max_prompt_length: int = 6000
     supports_duration: bool = True
     duration_label: str = "时长"

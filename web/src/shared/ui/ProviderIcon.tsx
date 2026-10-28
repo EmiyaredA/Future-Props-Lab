@@ -11,6 +11,7 @@ export function ProviderIcon({
     | "senseaudio_image"
     | "senseaudio_video"
     | "zealman_video"
+    | "autodl_video"
     | "senseaudio_music"
     | "senseaudio_sfx"
     | "senseaudio_asr"
@@ -50,7 +51,12 @@ export function ProviderIcon({
       aria-hidden="true"
       focusable="false"
     >
-      {kind === "zealman_video" ? (
+      {kind === "autodl_video" ? (
+        <path
+          fill="var(--text-strong)"
+          d="M8 3h8l6 9-6 9H8l-6-9Zm2 4-4 5 4 5h4l4-5-4-5Zm0 3h4v4h-4Z"
+        />
+      ) : kind === "zealman_video" ? (
         <path fill="var(--text-strong)" d="M3 4h18v3L8 17h13v3H3v-3L16 7H3Z" />
       ) : ["volcengine_image", "volcengine_video"].includes(kind) ? (
         <path

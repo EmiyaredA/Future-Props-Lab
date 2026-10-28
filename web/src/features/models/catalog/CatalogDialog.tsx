@@ -13,6 +13,9 @@ export function CatalogDialog({
   disabled = false,
   label = "保存",
   hideSave = false,
+  className = "",
+  subtitle,
+  icon,
 }: {
   title: string;
   children: ReactNode;
@@ -22,6 +25,9 @@ export function CatalogDialog({
   disabled?: boolean;
   label?: string;
   hideSave?: boolean;
+  className?: string;
+  subtitle?: string;
+  icon?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -51,7 +57,7 @@ export function CatalogDialog({
       }}
     >
       <form
-        className="mc-dialog"
+        className={`mc-dialog ${className}`}
         ref={focus}
         role="dialog"
         aria-modal="true"
@@ -59,7 +65,17 @@ export function CatalogDialog({
         onSubmit={(event) => void submit(event)}
       >
         <header>
-          <h2>{title}</h2>
+          <div className="mc-dialog-heading">
+            {icon ? (
+              <span className="mc-dialog-heading-icon" aria-hidden>
+                {icon}
+              </span>
+            ) : null}
+            <div>
+              <h2>{title}</h2>
+              {subtitle ? <p>{subtitle}</p> : null}
+            </div>
+          </div>
           <button
             type="button"
             className="mc-icon"
@@ -70,9 +86,11 @@ export function CatalogDialog({
             <X size={20} />
           </button>
         </header>
-        <fieldset className="mc-dialog-body" disabled={busy}>
-          {children}
-        </fieldset>
+        <div className="mc-dialog-scroll">
+          <fieldset className="mc-dialog-body" disabled={busy}>
+            {children}
+          </fieldset>
+        </div>
         {error && (
           <p className="mc-error" role="alert">
             {error}

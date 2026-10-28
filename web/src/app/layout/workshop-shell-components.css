@@ -9,7 +9,7 @@
 .workshop-page {
   width: min(1360px, 100%);
   margin: 0 auto;
-  padding: 18px clamp(16px, 2vw, 34px) 48px;
+  padding: 14px var(--page-gutter) 32px;
 }
 
 .workshop-page:has(> .workshop-app-chrome) {
@@ -21,7 +21,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .workshop-page-header > div > span {
@@ -34,7 +34,7 @@
 .workshop-page-header h1 {
   margin: 0 0 2px;
   color: var(--text-strong);
-  font-size: 20px;
+  font-size: 18px;
   letter-spacing: -0.04em;
   line-height: 1.25;
 }

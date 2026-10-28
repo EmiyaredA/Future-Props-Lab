@@ -6,19 +6,19 @@
 .code-agents-page.model-infrastructure-page {
   max-width: none;
   margin: 0;
-  padding: 28px;
+  padding: 20px var(--page-gutter);
 }
 .model-infrastructure-header {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 360px minmax(160px, 1fr);
+  grid-template-columns: minmax(180px, 1fr) 320px minmax(140px, 1fr);
   align-items: center;
-  gap: 24px;
-  margin-bottom: 26px;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 .model-infrastructure-heading h1 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: var(--text-strong);
-  font-size: 26px;
+  font-size: 22px;
   line-height: 1.25;
 }
 .model-infrastructure-heading p {
@@ -41,14 +41,14 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  min-height: 38px;
-  padding: 6px 12px;
+  min-height: var(--ui-control-height);
+  padding: 4px 10px;
   border: 0;
   border-radius: 9px;
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 650;
   cursor: pointer;
 }
@@ -70,7 +70,7 @@
   min-width: 0;
 }
 .model-infrastructure-actions .btn {
-  min-height: 40px;
+  min-height: var(--ui-control-height);
   white-space: nowrap;
 }
 @container model-infrastructure (max-width: 920px) {

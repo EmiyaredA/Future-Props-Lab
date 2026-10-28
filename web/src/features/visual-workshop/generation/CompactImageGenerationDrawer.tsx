@@ -145,6 +145,7 @@ export function CompactImageGenerationDrawer({
           </span>
           <CustomSelect
             className="video-composer-model"
+            menuMinWidth={320}
             ariaLabel="生成模型"
             value={modelId}
             disabled={options.isLoading || models.length === 0}

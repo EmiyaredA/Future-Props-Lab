@@ -41,6 +41,7 @@ export function videoSelectionError(
     mode?: string;
     prompt?: string;
     seed?: string;
+    files?: Array<{ media_kind: string; mime_type: string; byte_size: number }>;
   },
 ) {
   const choices = videoChoices(
@@ -57,7 +58,8 @@ export function videoSelectionError(
   if (
     values.prompt !== undefined &&
     caps?.supports_prompt !== false &&
-    (!values.prompt.trim() ||
+    (((caps?.prompt_required || values.mode === "text") &&
+      !values.prompt.trim()) ||
       values.prompt.length > (caps?.max_prompt_length ?? 6000))
   )
     return `请输入 1 至 ${caps?.max_prompt_length ?? 6000} 个字符的提示词。`;
@@ -89,6 +91,26 @@ export function videoSelectionError(
     return "参考音频需要搭配至少一张图片或一个视频。";
   if (caps && values.video > 0 && !caps.reference_video_upload_configured)
     return "参考视频需要先配置临时素材上传服务（temp_media_upload_url）。";
+  if (
+    caps?.reference_mime_types &&
+    Object.keys(caps.reference_mime_types).length &&
+    values.files
+  ) {
+    if (
+      values.files.some(
+        (file) =>
+          !caps.reference_mime_types?.[file.media_kind]?.includes(
+            file.mime_type,
+          ),
+      )
+    )
+      return "当前模型不支持所选参考素材格式。";
+    if (
+      values.files.reduce((sum, file) => sum + file.byte_size, 0) >
+      45 * 1024 * 1024
+    )
+      return "参考素材总大小不能超过 45 MB。";
+  }
   if (
     caps?.supports_seed &&
     values.seed &&

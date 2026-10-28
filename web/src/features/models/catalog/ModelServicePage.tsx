@@ -140,6 +140,7 @@ export function ModelServicePage({
         </header>
       )}
       <div
+        className="model-service-content"
         id={renderHeader ? "model-infrastructure-content" : undefined}
         role={renderHeader ? "tabpanel" : undefined}
         aria-labelledby={

@@ -77,10 +77,10 @@
 }
 
 .nav-group {
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: 36px;
+  padding: 7px 10px;
   color: var(--text);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -91,11 +91,11 @@
 }
 
 .nav-primary {
-  min-height: 42px;
+  min-height: 36px;
   margin-bottom: 3px;
-  padding: 10px 12px;
+  padding: 7px 10px;
   color: var(--text);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -155,9 +155,9 @@
 }
 
 .nav-sub button {
-  min-height: 38px;
-  padding: 8px 12px;
-  font-size: 13px;
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 .nav-sub button.active {
@@ -292,28 +292,28 @@
   width: min(1500px, 100%);
   min-height: 100vh;
   margin: auto;
-  padding: 24px clamp(18px, 2.2vw, 32px) 40px;
+  padding: 18px var(--page-gutter) 28px;
 }
 
 .page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .page-header h1 {
-  margin: 5px 0 7px;
+  margin: 3px 0 5px;
   color: var(--text-strong);
-  font-size: clamp(22px, 2vw, 28px);
+  font-size: clamp(20px, 1.7vw, 24px);
   letter-spacing: -0.035em;
 }
 
 .page-header p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .eyebrow {
@@ -331,8 +331,8 @@
 }
 
 .btn {
-  min-height: 36px;
-  padding: 0 13px;
+  min-height: var(--ui-control-height);
+  padding: 0 11px;
   border: 1px solid var(--border-strong);
   border-radius: 9px;
   background: var(--surface);
@@ -382,8 +382,8 @@
 }
 
 .icon-btn {
-  width: 36px;
-  height: 36px;
+  width: var(--ui-control-height);
+  height: var(--ui-control-height);
   padding: 0;
   border: 0;
   border-radius: 9px;
@@ -484,7 +484,7 @@
 .auth-card input,
 .settings-section input {
   width: 100%;
-  min-height: 36px;
+  min-height: var(--ui-control-height);
   padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 9px;

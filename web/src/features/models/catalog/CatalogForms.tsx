@@ -1,5 +1,17 @@
 import { autodlPresets } from "./autodlPresets";
 import { useState } from "react";
+import {
+  AudioLines,
+  Check,
+  Cpu,
+  Eye,
+  Image,
+  MessageSquare,
+  Mic,
+  Music2,
+  Video,
+  Wrench,
+} from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   capabilityLabel,
@@ -21,6 +33,18 @@ type Shared = Pick<
   ModelCatalogEditorProps,
   "value" | "actions" | "permissions" | "categories" | "onRefresh"
 > & { onClose: () => void; unavailable?: boolean };
+
+const capabilityIcons = {
+  speech_synthesis: AudioLines,
+  chat: MessageSquare,
+  vision: Eye,
+  tools: Wrench,
+  image_generation: Image,
+  video_generation: Video,
+  audio_generation: Music2,
+  speech_recognition: Mic,
+  voice: AudioLines,
+};
 
 export function ProviderForm({
   initial,
@@ -229,6 +253,9 @@ export function ModelForm({
   return (
     <CatalogDialog
       title={copy ? "复制为自建模型" : initial ? "编辑模型" : "添加模型"}
+      className="mc-model-dialog"
+      subtitle="配置模型信息、支持能力与工作台用途"
+      icon={<Cpu size={22} />}
       onClose={onClose}
       onRefresh={onRefresh}
       onSave={save}
@@ -241,187 +268,208 @@ export function ModelForm({
         (!initial && !writableProviders.some((p) => p.id === connection))
       }
     >
-      <label>
-        <span>接入连接</span>
-        <CustomSelect
-          ariaLabel="接入连接"
-          value={connection}
-          disabled={!!initial}
-          options={[
-            { value: "", label: "选择接入连接" },
-            ...(initial ? value.providers : writableProviders).map((p) => ({
-              value: p.id,
-              label: p.name,
-            })),
-          ]}
-          onChange={(next) => {
-            setConnection(next);
-            if (!source) {
-              const provider = value.providers.find((p) => p.id === next);
-              setCapabilities(defaults[provider?.kind ?? "openai"] ?? ["chat"]);
-            }
-          }}
-        />
-      </label>
-      {selectedProvider?.kind === "deepseek" && !initial && (
-        <label>
-          <span>DeepSeek 模型预设</span>
+      <section className="mc-model-identity" aria-label="基本信息">
+        <h3>基本信息</h3>
+        <label className="mc-model-connection">
+          <span>接入连接</span>
           <CustomSelect
-            ariaLabel="DeepSeek 模型预设"
-            value={
-              ["deepseek-flash", "deepseek-v4-pro"].includes(slug) ? slug : ""
-            }
+            ariaLabel="接入连接"
+            value={connection}
+            disabled={!!initial}
             options={[
-              { value: "", label: "自定义模型" },
-              {
-                value: "deepseek-flash",
-                label: "DeepSeek Flash · 支持图像理解",
-              },
-              { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro" },
+              { value: "", label: "选择接入连接" },
+              ...(initial ? value.providers : writableProviders).map((p) => ({
+                value: p.id,
+                label: p.name,
+              })),
             ]}
             onChange={(next) => {
-              setSlug(next);
-              setLabel(
-                next === "deepseek-flash"
-                  ? "DeepSeek Flash"
-                  : next
-                    ? "DeepSeek V4 Pro"
-                    : "",
-              );
-              setCapabilities(
-                next === "deepseek-flash"
-                  ? ["chat", "tools", "vision"]
-                  : ["chat", "tools"],
-              );
-              setCategories(["text_generation"]);
+              setConnection(next);
+              if (!source) {
+                const provider = value.providers.find((p) => p.id === next);
+                setCapabilities(
+                  defaults[provider?.kind ?? "openai"] ?? ["chat"],
+                );
+              }
             }}
           />
-          <small>使用非思考模式；也可在下方直接填写官方提供的模型 ID。</small>
         </label>
-      )}
-      {selectedProvider?.kind === "volcengine_video" && !initial && (
-        <label>
-          <span>Seedance 模型预设</span>
-          <CustomSelect
-            ariaLabel="Seedance 模型预设"
+        {selectedProvider?.kind === "deepseek" && !initial && (
+          <label>
+            <span>DeepSeek 模型预设</span>
+            <CustomSelect
+              ariaLabel="DeepSeek 模型预设"
+              value={
+                ["deepseek-flash", "deepseek-v4-pro"].includes(slug) ? slug : ""
+              }
+              options={[
+                { value: "", label: "自定义模型" },
+                {
+                  value: "deepseek-flash",
+                  label: "DeepSeek Flash · 支持图像理解",
+                },
+                { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro" },
+              ]}
+              onChange={(next) => {
+                setSlug(next);
+                setLabel(
+                  next === "deepseek-flash"
+                    ? "DeepSeek Flash"
+                    : next
+                      ? "DeepSeek V4 Pro"
+                      : "",
+                );
+                setCapabilities(
+                  next === "deepseek-flash"
+                    ? ["chat", "tools", "vision"]
+                    : ["chat", "tools"],
+                );
+                setCategories(["text_generation"]);
+              }}
+            />
+            <small>使用非思考模式；也可在下方直接填写官方提供的模型 ID。</small>
+          </label>
+        )}
+        {selectedProvider?.kind === "volcengine_video" && !initial && (
+          <label>
+            <span>Seedance 模型预设</span>
+            <CustomSelect
+              ariaLabel="Seedance 模型预设"
+              value={slug}
+              options={[
+                { value: "", label: "选择 Seedance 版本" },
+                { value: "doubao-seedance-2-0-260128", label: "Seedance 2.0" },
+                { value: "doubao-seedance-2-5-260628", label: "Seedance 2.5" },
+              ]}
+              onChange={(value) => {
+                setSlug(value);
+                setLabel(
+                  value.includes("2-5") ? "Seedance 2.5" : "Seedance 2.0",
+                );
+                setCapabilities(["video_generation"]);
+                setCategories(["video_generation"]);
+              }}
+            />
+            <small>在火山方舟开通对应模型后，使用方舟 API Key 调用。</small>
+          </label>
+        )}
+        {selectedProvider?.kind === "autodl_video" && !initial && (
+          <label>
+            <span>AutoDL 工作流预设</span>
+            <CustomSelect
+              ariaLabel="AutoDL 工作流预设"
+              value={slug}
+              options={[{ value: "", label: "选择工作流" }, ...autodlPresets]}
+              onChange={(value) => {
+                const preset = autodlPresets.find(
+                  (item) => item.value === value,
+                );
+                setSlug(value);
+                setLabel(preset?.label ?? value);
+                setDescription(preset?.description ?? "");
+                setCapabilities(["video_generation"]);
+                setCategories(["video_generation"]);
+              }}
+            />
+            <small>
+              使用 AutoDL ComfyUI 分组令牌，Authorization 直接发送原始 Token。
+            </small>
+          </label>
+        )}
+        {selectedProvider?.kind === "zealman_video" && !initial && (
+          <label>
+            <span>已支持的工作流</span>
+            <CustomSelect
+              ariaLabel="已支持的工作流"
+              value={slug}
+              options={[
+                { value: "", label: "选择工作流" },
+                ...["U17-9图1视频3音频V1-api", "U06-9图3音频-V5"].map(
+                  (value) => ({ value, label: value }),
+                ),
+              ]}
+              onChange={(value) => {
+                setSlug(value);
+                setLabel(value);
+                setCapabilities(["video_generation"]);
+                setCategories(["video_generation"]);
+              }}
+            />
+          </label>
+        )}
+        <label className="mc-model-id">
+          <span>模型标识</span>
+          <input
             value={slug}
-            options={[
-              { value: "", label: "选择 Seedance 版本" },
-              { value: "doubao-seedance-2-0-260128", label: "Seedance 2.0" },
-              { value: "doubao-seedance-2-5-260628", label: "Seedance 2.5" },
-            ]}
-            onChange={(value) => {
-              setSlug(value);
-              setLabel(value.includes("2-5") ? "Seedance 2.5" : "Seedance 2.0");
-              setCapabilities(["video_generation"]);
-              setCategories(["video_generation"]);
-            }}
+            required
+            maxLength={160}
+            disabled={!editable("slug")}
+            onChange={(event) => setSlug(event.target.value)}
+            placeholder={
+              selectedProvider?.kind === "volcengine_image"
+                ? "doubao-seedream-4-5-251128"
+                : "原样发送给服务端的模型 ID"
+            }
           />
-          <small>在火山方舟开通对应模型后，使用方舟 API Key 调用。</small>
         </label>
-      )}
-      {selectedProvider?.kind === "autodl_video" && !initial && (
-        <label>
-          <span>AutoDL 工作流预设</span>
-          <CustomSelect
-            ariaLabel="AutoDL 工作流预设"
-            value={slug}
-            options={[{ value: "", label: "选择工作流" }, ...autodlPresets]}
-            onChange={(value) => {
-              setSlug(value);
-              setLabel(
-                autodlPresets.find((item) => item.value === value)?.label ??
-                  value,
-              );
-              setCapabilities(["video_generation"]);
-              setCategories(["video_generation"]);
-            }}
-          />
+        {selectedProvider?.kind === "volcengine_image" && (
           <small>
-            使用 AutoDL ComfyUI 分组令牌，Authorization 直接发送原始 Token。
+            当前支持 Seedream 4.5（doubao-seedream-4-5-251128），最多 14
+            张原生参考图。
           </small>
-        </label>
-      )}
-      {selectedProvider?.kind === "zealman_video" && !initial && (
-        <label>
-          <span>已支持的工作流</span>
-          <CustomSelect
-            ariaLabel="已支持的工作流"
-            value={slug}
-            options={[
-              { value: "", label: "选择工作流" },
-              ...["U17-9图1视频3音频V1-api", "U06-9图3音频-V5"].map(
-                (value) => ({ value, label: value }),
-              ),
-            ]}
-            onChange={(value) => {
-              setSlug(value);
-              setLabel(value);
-              setCapabilities(["video_generation"]);
-              setCategories(["video_generation"]);
-            }}
+        )}
+        <label className="mc-model-name">
+          <span>显示名称</span>
+          <input
+            value={label}
+            maxLength={160}
+            disabled={!editable("label")}
+            onChange={(event) => setLabel(event.target.value)}
           />
         </label>
-      )}
-      <label>
-        <span>模型标识</span>
-        <input
-          value={slug}
-          required
-          maxLength={160}
-          disabled={!editable("slug")}
-          onChange={(event) => setSlug(event.target.value)}
-          placeholder={
-            selectedProvider?.kind === "volcengine_image"
-              ? "doubao-seedream-4-5-251128"
-              : "原样发送给服务端的模型 ID"
-          }
-        />
-      </label>
-      {selectedProvider?.kind === "volcengine_image" && (
-        <small>
-          当前支持 Seedream 4.5（doubao-seedream-4-5-251128），最多 14
-          张原生参考图。
-        </small>
-      )}
-      <label>
-        <span>显示名称</span>
-        <input
-          value={label}
-          maxLength={160}
-          disabled={!editable("label")}
-          onChange={(event) => setLabel(event.target.value)}
-        />
-      </label>
-      <label>
-        <span>说明</span>
-        <input
-          value={description}
-          maxLength={255}
-          disabled={!editable("description")}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </label>
+        <label className="mc-model-description">
+          <span>说明</span>
+          <textarea
+            value={description}
+            rows={2}
+            placeholder="添加模型用途或工作流说明…"
+            maxLength={255}
+            disabled={!editable("description")}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </label>
+      </section>
       <fieldset className="mc-choices" disabled={!editable("capabilities")}>
         <legend>支持能力</legend>
-        {modelCapabilities.map((capability) => (
-          <button
-            type="button"
-            key={capability}
-            aria-pressed={capabilities?.includes(capability)}
-            onClick={() =>
-              setCapabilities((current = []) =>
-                current.includes(capability)
-                  ? current.filter((item) => item !== capability)
-                  : [...current, capability],
-              )
-            }
-          >
-            {capabilityLabel[capability]}
-          </button>
-        ))}
+        <p className="mc-help">选择模型实际支持的能力，决定可用的调用方式。</p>
+        <div className="mc-capability-grid">
+          {modelCapabilities.map((capability) => {
+            const Icon = capabilityIcons[capability];
+            return (
+              <button
+                type="button"
+                key={capability}
+                aria-pressed={capabilities?.includes(capability)}
+                onClick={() =>
+                  setCapabilities((current = []) =>
+                    current.includes(capability)
+                      ? current.filter((item) => item !== capability)
+                      : [...current, capability],
+                  )
+                }
+              >
+                <Icon size={17} aria-hidden />
+                {capabilityLabel[capability]}
+                <Check className="mc-choice-check" size={14} aria-hidden />
+              </button>
+            );
+          })}
+        </div>
       </fieldset>
-      <fieldset className="mc-choices" disabled={!editable("categories")}>
+      <fieldset
+        className="mc-choices mc-model-categories"
+        disabled={!editable("categories")}
+      >
         <legend>用途分类</legend>
         <p className="mc-help">可多选；留空由接入类型确定默认用途。</p>
         {categoryOptions.map((category) => (
@@ -441,14 +489,18 @@ export function ModelForm({
           </button>
         ))}
       </fieldset>
-      <label className="mc-check">
+      <label className="mc-check mc-model-enabled">
+        <span className="mc-model-enabled-copy">
+          <strong>启用此模型</strong>
+          <small>在模型测试与创作工坊中显示</small>
+        </span>
         <input
           type="checkbox"
+          aria-label="启用此模型"
           checked={enabled}
           disabled={!editable("enabled")}
           onChange={(event) => setEnabled(event.target.checked)}
         />
-        <span>启用此模型</span>
       </label>
       {unavailable && (
         <p role="alert">模型或所属连接已被删除，请关闭后重新选择。</p>

@@ -31,18 +31,18 @@
   z-index: 20;
   display: flex;
   align-self: stretch;
-  min-width: 76px;
+  min-width: var(--studio-rail-width);
   min-height: 0;
   overflow: hidden;
 }
 
 .studio-sidebar.has-secondary {
-  min-width: calc(76px + 220px);
+  min-width: calc(var(--studio-rail-width) + var(--studio-secondary-width));
 }
 
 .studio-sidebar__rail {
   display: flex;
-  width: 76px;
+  width: var(--studio-rail-width);
   flex: none;
   flex-direction: column;
   min-height: 0;
@@ -67,12 +67,12 @@
 
 .studio-secondary {
   display: flex;
-  width: 220px;
+  width: var(--studio-secondary-width);
   min-width: 0;
   flex: none;
   flex-direction: column;
   min-height: 0;
-  padding: 14px 12px;
+  padding: 10px 8px;
   background: transparent;
   overflow: hidden;
 }
@@ -80,13 +80,13 @@
 .studio-secondary__header {
   display: flex;
   align-items: center;
-  min-height: 36px;
-  padding: 0 10px 12px;
+  min-height: 32px;
+  padding: 0 8px 8px;
 }
 
 .studio-secondary__header strong {
   color: var(--text-strong);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -96,7 +96,7 @@
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -104,17 +104,17 @@
 
 .studio-secondary__item {
   width: 100%;
-  min-height: 42px;
+  min-height: 36px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 6px 10px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 9px;
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -150,8 +150,8 @@
 }
 
 .studio-secondary__item-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -205,7 +205,7 @@
   }
 
   .studio-sidebar.has-secondary {
-    min-width: 76px;
+    min-width: var(--studio-rail-width);
   }
 
   .studio-sidebar.has-secondary .studio-secondary {

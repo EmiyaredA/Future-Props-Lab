@@ -39,6 +39,7 @@ export function CustomSelect({
   leadingIcon,
   showChevron = true,
   escapeClipping = true,
+  menuMinWidth = 180,
   renderOption,
 }: {
   value: string;
@@ -50,6 +51,7 @@ export function CustomSelect({
   leadingIcon?: ReactNode;
   showChevron?: boolean;
   escapeClipping?: boolean;
+  menuMinWidth?: number;
   renderOption?: (option: SelectOption) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -57,7 +59,7 @@ export function CustomSelect({
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
-  useSelectPopover(open && escapeClipping, trigger, menu);
+  useSelectPopover(open && escapeClipping, trigger, menu, 280, menuMinWidth);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const listId = useId();
   const selected = options.find((option) => option.value === value);
@@ -147,6 +149,7 @@ export function CustomSelect({
         role="combobox"
         className="custom-select-trigger"
         aria-label={ariaLabel}
+        title={selected?.label}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -210,6 +213,11 @@ export function CustomSelect({
               role="option"
               aria-label={renderOption ? option.label : undefined}
               aria-selected={option.value === value}
+              title={
+                option.description
+                  ? `${option.label} · ${option.description}`
+                  : option.label
+              }
               className={
                 option.value === value || index === activeIndex
                   ? "selected"

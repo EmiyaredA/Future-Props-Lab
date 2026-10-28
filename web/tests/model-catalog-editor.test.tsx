@@ -13,6 +13,7 @@ import {
   modelTestMode,
 } from "@features/models/catalog/catalogPresentation";
 import type { ModelCategory } from "@features/models/api";
+import { ModelForm } from "@features/models/catalog/CatalogForms";
 
 const categories: ModelCategory[] = [
   { id: "text_generation", label: "文本生成", type: "text" },
@@ -135,6 +136,57 @@ function renderEditor(data = value(), callbacks = actions(), canWrite = true) {
 }
 
 describe("model directory", () => {
+  test("AutoDL presets fill official names and descriptions while keeping the workflow ID", async () => {
+    const user = userEvent.setup();
+    const callbacks = actions();
+    const data = value();
+    data.providers = [
+      { ...data.providers[0], kind: "autodl_video", models: [] },
+    ];
+    render(
+      <ModelForm
+        initial={null}
+        providerId="p1"
+        value={data}
+        actions={callbacks}
+        permissions={{ canWrite: true, canTest: true }}
+        categories={categories}
+        onClose={vi.fn()}
+      />,
+    );
+    await user.click(
+      screen.getByRole("combobox", { name: "AutoDL 工作流预设" }),
+    );
+    await user.click(
+      screen.getByRole("option", { name: /^H3多图多音频生视频\(影视画质\)/ }),
+    );
+    expect(screen.getByRole("textbox", { name: "模型标识" })).toHaveValue(
+      "minimax_h3_zm_nono",
+    );
+    expect(screen.getByRole("textbox", { name: "显示名称" })).toHaveValue(
+      "H3多图多音频生视频(影视画质)",
+    );
+    expect(screen.getByRole("textbox", { name: "说明" })).toHaveValue(
+      "MiniMax H3多图参考生成视频，最长支持15秒视频",
+    );
+    await user.clear(screen.getByRole("textbox", { name: "说明" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "说明" }),
+      "项目视频工作流",
+    );
+    await user.click(screen.getByRole("button", { name: "保存" }));
+    expect(callbacks.createModel).toHaveBeenCalledWith(
+      "p1",
+      expect.objectContaining({
+        slug: "minimax_h3_zm_nono",
+        label: "H3多图多音频生视频(影视画质)",
+        description: "项目视频工作流",
+        capabilities: ["video_generation"],
+        categories: ["video_generation"],
+      }),
+    );
+  });
+
   test("separates image understanding from generation and keeps model identity across filters", () => {
     const rows = catalogRows(value());
     const filtered = filterCatalogRows(rows, categories, {

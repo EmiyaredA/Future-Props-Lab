@@ -23399,6 +23399,11 @@ export interface components {
              * @default 6000
              */
             max_prompt_length: number;
+            /**
+             * Prompt Required
+             * @default false
+             */
+            prompt_required: boolean;
             /** Ratios */
             ratios: string[];
             /** Reference Limits */
@@ -25054,7 +25059,7 @@ export interface components {
                 [key: string]: string;
             };
             /** Prompt Versions */
-            prompt_versions?: components["schemas"]["VisualPromptVersion"][];
+            prompt_versions?: components["schemas"]["VisualVideoPromptVersion"][];
             /**
              * Ratio
              * @default 16:9
@@ -25218,6 +25223,18 @@ export interface components {
         };
         /** VisualPromptVersion */
         VisualPromptVersion: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
+        };
+        /** VisualVideoPromptVersion */
+        VisualVideoPromptVersion: {
             /** Id */
             id: string;
             /** Name */

@@ -2,20 +2,20 @@
   position: relative;
   z-index: 40;
   flex: none;
-  min-height: 48px;
+  min-height: 40px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin: 0;
-  padding: 8px clamp(14px, 2vw, 24px);
+  padding: 4px var(--page-gutter);
 }
 .studio-header-start,
 .studio-header-theme,
 .studio-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 .studio-header-start {
   margin-right: auto;

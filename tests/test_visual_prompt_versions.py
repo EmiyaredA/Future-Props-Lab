@@ -68,7 +68,9 @@ def test_prompt_version_validation(shape, invalid):
     elif invalid == "limit":
         data["prompt_versions"] = [{"id": str(i), "name": "v", "prompt": ""} for i in range(21)]
     elif invalid == "long":
-        data["prompt_versions"][0]["prompt"] = "x" * 6001
+        data["prompt_versions"][0]["prompt"] = "x" * (
+            20001 if shape is VisualCanvasVideoGenerationDraft else 6001
+        )
     else:
         data["prompt_versions"][0]["name"] = " "
     with pytest.raises(ValidationError):

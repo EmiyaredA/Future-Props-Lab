@@ -41,6 +41,21 @@ vi.mock("@features/models/api", async (original) => ({
 }));
 
 const caps: VideoCapabilities = {
+  supported_modes: ["text", "frames", "reference"],
+  reference_minimums: {},
+  reference_mime_types: {},
+  supports_prompt: true,
+  prompt_required: false,
+  max_prompt_length: 6000,
+  supports_duration: true,
+  duration_label: "时长",
+  supports_ratio: true,
+  supports_watermark: true,
+  supports_generate_audio: true,
+  supports_seed: false,
+  seed_minimum: 0,
+  seed_maximum: 999999999999999,
+  resolution_ratios: {},
   duration_min: 4,
   duration_max: 30,
   supports_auto_duration: true,
@@ -139,9 +154,20 @@ test.each([false, true])(
     );
     if (compact)
       await user.click(screen.getByRole("button", { name: "视频参数" }));
-    expect(
-      screen.getByRole("combobox", { name: compact ? "时长" : "视频时长" }),
-    ).toHaveTextContent("30 秒");
+    if (compact) {
+      const duration = screen.getByRole("slider", { name: "时长" });
+      expect(duration).toHaveValue("30");
+      expect(duration).toHaveAttribute("min", "4");
+      expect(duration).toHaveAttribute("max", "30");
+      await user.click(screen.getByRole("button", { name: "自动时长" }));
+      expect(duration).toBeDisabled();
+      await user.click(screen.getByRole("button", { name: "自动时长" }));
+      fireEvent.change(duration, { target: { value: "30" } });
+    } else {
+      expect(
+        screen.getByRole("combobox", { name: "视频时长" }),
+      ).toHaveTextContent("30 秒");
+    }
     await user.click(
       screen.getByRole("button", {
         name: compact ? "生成视频" : "创建生成任务",

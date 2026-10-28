@@ -6037,6 +6037,7 @@ class VideoCapabilitiesOut(WireModel):
     duration_min: int = Field(default=4, alias='duration_min')
     frames_require_adaptive_ratio: bool = Field(default=False, alias='frames_require_adaptive_ratio')
     max_prompt_length: int = Field(default=6000, alias='max_prompt_length')
+    prompt_required: bool = Field(default=False, alias='prompt_required')
     ratios: list[str] = Field(default=..., alias='ratios')
     reference_limits: dict[str, int] = Field(default=..., alias='reference_limits')
     reference_mime_types: dict[str, list[str]] | None = Field(default=None, alias='reference_mime_types')
@@ -6698,7 +6699,7 @@ class VisualCanvasVideoGenerationDraft(WireModel):
     model_id: str | None = Field(default=None, alias='model_id')
     prompt: str = Field(default='', alias='prompt', max_length=20000)
     prompt_reference_names: dict[str, str] | None = Field(default=None, alias='prompt_reference_names')
-    prompt_versions: list[VisualPromptVersion] | None = Field(default=None, alias='prompt_versions', min_length=1, max_length=20)
+    prompt_versions: list[VisualVideoPromptVersion] | None = Field(default=None, alias='prompt_versions', min_length=1, max_length=20)
     ratio: Literal['16:9', '9:16', '4:3', '3:4', '1:1', '21:9', 'adaptive'] = Field(default='16:9', alias='ratio')
     reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=30)
     resolution: Literal['480p', '720p', '1080p', '4k', '768p', '960p', '464x832', '832x464'] = Field(default='720p', alias='resolution')
@@ -6774,6 +6775,11 @@ class VisualPromptVersion(WireModel):
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     prompt: str = Field(default='', alias='prompt', max_length=6000)
+
+class VisualVideoPromptVersion(WireModel):
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
+    prompt: str = Field(default='', alias='prompt', max_length=20000)
 
 class VisualWorkshopProjectCreateIn(WireModel):
     kind: Literal['image', 'video', 'canvas'] = Field(default=..., alias='kind')
@@ -7862,6 +7868,7 @@ VisualNodeOutputOut.model_rebuild()
 VisualOperationsIn.model_rebuild()
 VisualProjectSnapshotImportOut.model_rebuild()
 VisualPromptVersion.model_rebuild()
+VisualVideoPromptVersion.model_rebuild()
 VisualWorkshopProjectCreateIn.model_rebuild()
 VisualWorkshopProjectListOut.model_rebuild()
 VisualWorkshopProjectOut.model_rebuild()

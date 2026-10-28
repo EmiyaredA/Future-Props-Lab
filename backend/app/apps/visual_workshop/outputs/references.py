@@ -10,7 +10,12 @@ from app.llm.schemas.generation_tasks import (
 
 
 async def resolve_references(
-    session: AsyncSession, project_id: str, body, *, frame_constraints: bool = True
+    session: AsyncSession,
+    project_id: str,
+    body,
+    *,
+    frame_constraints: bool = True,
+    frame_reference_slots: bool = False,
 ):
     if body.canvas_node_id is None:
         return body, {}, []
@@ -105,6 +110,17 @@ async def resolve_references(
             ("audio", "audio_asset_ids"),
         ):
             payload[field] = list(dict.fromkeys([*payload[field], *linked[kind]]))
+        if frame_reference_slots:
+            supplied = [payload.get("first_frame_asset_id"), payload.get("last_frame_asset_id")]
+            remaining = [
+                identity for identity in payload["reference_asset_ids"] if identity not in supplied
+            ]
+            for field in ("first_frame_asset_id", "last_frame_asset_id"):
+                if not payload.get(field) and remaining:
+                    payload[field] = remaining.pop(0)
+            if remaining:
+                raise OutputError("首尾帧工作流最多接受两张图片")
+            payload["reference_asset_ids"] = []
         if payload.get("first_frame_asset_id") or payload.get("last_frame_asset_id"):
             payload["mode"] = "frames"
         elif any(

@@ -1,5 +1,7 @@
 """Seedance version policy; entry points share validation, not provider wire data."""
 
+from app.llm.providers.autodl_workflows import capabilities as autodl_capabilities
+from app.llm.providers.autodl_workflows import normalize_request as normalize_autodl_request
 from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
 
 SEEDANCE_MODELS = {
@@ -11,9 +13,7 @@ VIDEO_RATIOS = ["16:9", "9:16", "4:3", "3:4", "1:1", "21:9", "adaptive"]
 
 def video_capabilities(kind: str, slug: str, *, upload_configured=False):
     if kind == "autodl_video":
-        from app.llm.providers.autodl_workflows import capabilities
-
-        return capabilities(slug)
+        return autodl_capabilities(slug)
     if kind != "volcengine_video":
         return None
     if slug not in SEEDANCE_MODELS:
@@ -36,9 +36,7 @@ def video_capabilities(kind: str, slug: str, *, upload_configured=False):
 
 def normalize_video_parameters(kind: str, slug: str, payload: dict) -> dict:
     if kind == "autodl_video":
-        from app.llm.providers.autodl_workflows import normalize_request
-
-        return normalize_request(slug, payload)
+        return normalize_autodl_request(slug, payload)
     if len(str(payload.get("prompt") or "")) > 6000:
         raise ValueError("当前模型提示词最多支持 6000 个字符")
     result = dict(payload)

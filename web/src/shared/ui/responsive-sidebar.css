@@ -38,7 +38,7 @@
 }
 .studio-shell:has(> .responsive-sidebar-track.is-collapsed),
 .workshop-shell:has(> .responsive-sidebar-track.is-collapsed) {
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: var(--studio-rail-width) minmax(0, 1fr);
 }
 .responsive-sidebar-track.is-collapsed .studio-sidebar:not(.is-rail),
 .responsive-sidebar-track.is-collapsed .workshop-sidebar {
@@ -143,7 +143,7 @@
   .studio-shell:has(> .responsive-sidebar-track),
   .workshop-shell:has(> .responsive-sidebar-track) {
     display: grid;
-    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-columns: var(--studio-rail-width) minmax(0, 1fr);
   }
   .responsive-sidebar-track,
   .responsive-sidebar-panel {

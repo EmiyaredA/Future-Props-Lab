@@ -2,12 +2,12 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  margin: 0 calc(-1 * clamp(16px, 2vw, 34px)) 10px;
-  padding: 8px clamp(16px, 2vw, 34px);
+  margin: 0 calc(-1 * var(--page-gutter)) 8px;
+  padding: 6px var(--page-gutter);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   border-bottom: 1px solid var(--border);
   background: color-mix(
     in srgb,
@@ -34,7 +34,7 @@
 .workshop-app-chrome h1 {
   margin: 0 0 2px;
   color: var(--text-strong);
-  font-size: 20px;
+  font-size: 18px;
   letter-spacing: -0.04em;
   line-height: 1.25;
 }
@@ -69,10 +69,10 @@
 }
 
 .page .workshop-app-chrome {
-  margin-left: calc(-1 * clamp(18px, 2.2vw, 32px));
-  margin-right: calc(-1 * clamp(18px, 2.2vw, 32px));
-  padding-left: clamp(18px, 2.2vw, 32px);
-  padding-right: clamp(18px, 2.2vw, 32px);
+  margin-left: calc(-1 * var(--page-gutter));
+  margin-right: calc(-1 * var(--page-gutter));
+  padding-left: var(--page-gutter);
+  padding-right: var(--page-gutter);
 }
 
 .page:has(> .workshop-app-chrome) {

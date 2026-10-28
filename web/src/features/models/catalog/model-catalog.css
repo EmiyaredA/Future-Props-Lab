@@ -9,14 +9,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 12px;
   padding-bottom: 8px;
 }
 .mc-tabs {
   display: flex;
-  gap: 24px;
+  gap: 18px;
   border-bottom: 1px solid var(--border);
 }
 .mc-view-toolbar > .mc-tabs {
@@ -27,7 +27,7 @@
   border-bottom: 3px solid transparent;
   background: transparent;
   color: var(--muted);
-  padding: 14px 4px;
+  padding: 10px 4px;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -38,12 +38,13 @@
 .mc-category-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin: 0 0 20px;
-  padding-bottom: 14px;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding-bottom: 10px;
 }
 .mc-category-tabs button {
-  padding: 9px 22px;
+  min-height: var(--ui-control-height);
+  padding: 6px 16px;
   border: 1px solid var(--border);
   border-radius: 24px;
   background: var(--surface);
@@ -60,8 +61,8 @@
     minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr)
     auto;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 12px;
   min-width: 0;
   max-width: 100%;
 }
@@ -82,8 +83,8 @@
 .mc-search input {
   width: 100%;
   min-width: 0;
-  min-height: 42px;
-  padding: 10px 8px;
+  min-height: var(--ui-control-height);
+  padding: 6px 8px;
   border: 0;
   background: transparent;
   color: var(--text);
@@ -117,7 +118,7 @@
 }
 .mc-model-table th {
   text-align: left;
-  padding: 15px 16px;
+  padding: 10px 12px;
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);
@@ -141,7 +142,7 @@
   border-radius: 0 12px 0 0;
 }
 .mc-model-table td {
-  padding: 20px 16px;
+  padding: 12px;
   border-top: 1px solid var(--border);
   vertical-align: middle;
   font-size: 13px;
@@ -216,14 +217,14 @@
 }
 .mc-model-table small {
   display: block;
-  margin-top: 5px;
+  margin-top: 3px;
   color: var(--muted);
   font-size: 11px;
 }
 .mc-model-name {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
   min-width: 0;
 }
 .mc-model-name > div {
@@ -237,19 +238,19 @@
 .mc-model-name code {
   display: block;
   color: var(--muted);
-  margin-top: 5px;
+  margin-top: 3px;
   font-size: 11px;
   overflow-wrap: anywhere;
 }
 .mc-provider-icon {
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   flex: none;
   color: var(--accent);
   border: 1px solid var(--accent-line);
-  border-radius: 12px;
+  border-radius: 9px;
   background: var(--accent-soft);
 }
 .mc-badges {
@@ -307,9 +308,9 @@
   flex-wrap: wrap;
 }
 .mc-row-actions .btn {
-  padding: 7px 9px;
+  padding: 4px 8px;
   font-size: 12px;
-  min-height: 34px;
+  min-height: var(--ui-control-height);
   white-space: nowrap;
 }
 .mc-editor .btn {
@@ -415,7 +416,7 @@
   }
   .mc-model-table th,
   .mc-model-table td {
-    padding: 14px 10px;
+    padding: 10px;
   }
 }
 @media (max-width: 900px) {
@@ -449,7 +450,7 @@
     gap: 6px;
   }
   .mc-category-tabs button {
-    padding: 8px 15px;
+    padding: 6px 12px;
   }
   .mc-filters {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

@@ -110,6 +110,7 @@ export function StandardGenerationDrawer({
                 ? models.map((model) => ({
                     value: model.id,
                     label: model.label,
+                    description: kind === "video" ? model.slug : undefined,
                   }))
                 : [{ value: "", label: "暂无可用模型", disabled: true }]
             }

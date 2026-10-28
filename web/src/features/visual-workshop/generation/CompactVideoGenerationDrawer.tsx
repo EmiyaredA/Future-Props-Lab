@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useId, useState, type CSSProperties } from "react";
 import {
   ArrowUp,
   ChevronDown,
@@ -81,6 +81,18 @@ export function CompactVideoGenerationDrawer({
     controller.videoCapabilities?.duration_min ??
     (workflowCapabilities ? 4 : 2);
   const maximumDuration = controller.videoCapabilities?.duration_max ?? 15;
+  const durationInputId = useId();
+  const durationLabel = controller.videoCapabilities?.duration_label ?? "时长";
+  const sliderDuration = Math.max(
+    minimumDuration,
+    Math.min(maximumDuration, duration),
+  );
+  const durationProgress =
+    maximumDuration > minimumDuration
+      ? ((sliderDuration - minimumDuration) /
+          (maximumDuration - minimumDuration)) *
+        100
+      : 0;
   const hasFrameReferences = firstFrame.length > 0 || lastFrame.length > 0;
   const hasOmniReferences =
     references.length > 0 ||
@@ -166,10 +178,14 @@ export function CompactVideoGenerationDrawer({
                   className={videoMode === mode.value ? "active" : ""}
                   aria-pressed={videoMode === mode.value}
                   disabled={
-                    hasLinkedVideoReferences && mode.value !== "reference"
+                    hasLinkedVideoReferences &&
+                    !controller.framesOnly &&
+                    mode.value !== "reference"
                   }
                   title={
-                    hasLinkedVideoReferences && mode.value !== "reference"
+                    hasLinkedVideoReferences &&
+                    !controller.framesOnly &&
+                    mode.value !== "reference"
                       ? "存在画布连线素材时需使用全能参考"
                       : undefined
                   }
@@ -406,6 +422,7 @@ export function CompactVideoGenerationDrawer({
           </span>
           <CustomSelect
             className="video-composer-model"
+            menuMinWidth={320}
             ariaLabel="生成模型"
             value={modelId}
             disabled={options.isLoading || models.length === 0}
@@ -414,7 +431,7 @@ export function CompactVideoGenerationDrawer({
                 ? models.map((model) => ({
                     value: model.id,
                     label: model.label,
-                    description: model.provider_name,
+                    description: model.slug,
                   }))
                 : [{ value: "", label: "暂无可用模型", disabled: true }]
             }
@@ -423,60 +440,72 @@ export function CompactVideoGenerationDrawer({
           <details className="video-composer-parameters">
             <summary role="button" aria-label="视频参数">
               <Settings2 aria-hidden />
-              {workflowCapabilities
-                ? `${duration}S · ${workflowCapabilities.supports_ratio ? ratio : `${controller.workflowValues.width ?? workflowCapabilities.parameters.width?.default} × ${controller.workflowValues.height ?? workflowCapabilities.parameters.height?.default}`}`
-                : `${controller.effectiveRatio === "adaptive" ? "自适应" : controller.effectiveRatio} · ${duration === -1 ? "自动时长" : `${duration}S`} · ${resolution.toUpperCase()}`}
+              {controller.videoCapabilities?.supports_duration === false
+                ? `${resolution.replace("x", " × ")} · 随输入视频`
+                : workflowCapabilities
+                  ? `${duration}S · ${workflowCapabilities.supports_ratio ? ratio : `${controller.workflowValues.width ?? workflowCapabilities.parameters.width?.default} × ${controller.workflowValues.height ?? workflowCapabilities.parameters.height?.default}`}`
+                  : `${controller.effectiveRatio === "adaptive" ? "自适应" : controller.effectiveRatio} · ${duration === -1 ? "自动时长" : `${duration}S`} · ${resolution.toUpperCase()}`}
               <ChevronDown aria-hidden />
             </summary>
             <div className="video-parameter-popover">
               {controller.videoCapabilities?.supports_duration === false ? (
                 <p>时长随输入视频</p>
-              ) : controller.videoCapabilities ? (
-                <label>
-                  <span>
-                    {controller.videoCapabilities?.duration_label ?? "时长"}
-                  </span>
-                  <CustomSelect
-                    ariaLabel="时长"
-                    value={String(duration)}
-                    options={controller.videoOptions.durations}
-                    onChange={(value) => {
-                      setDuration(Number(value));
-                      persistDraft({ duration: Number(value) }, true);
-                    }}
-                  />
-                </label>
               ) : (
-                <label className="video-duration-control">
-                  <span className="video-duration-head">
-                    <span>时长</span>
-                    <output>{duration} 秒</output>
-                  </span>
-                  <input
-                    type="range"
-                    aria-label="时长"
-                    min={minimumDuration}
-                    max={maximumDuration}
-                    step="1"
-                    value={duration}
-                    style={
-                      {
-                        "--video-duration-progress": `${((duration - minimumDuration) / (maximumDuration - minimumDuration)) * 100}%`,
-                      } as CSSProperties
-                    }
-                    onChange={(event) => {
-                      const value = Number(event.target.value);
-                      setDuration(value);
-                      persistDraft({ duration: value });
-                    }}
-                    onPointerUp={() => persistDraft({}, true)}
-                    onBlur={() => persistDraft({}, true)}
-                  />
+                <div className="video-duration-control">
+                  <div className="video-duration-head">
+                    <label htmlFor={durationInputId}>{durationLabel}</label>
+                    <span className="video-duration-value">
+                      {controller.videoCapabilities?.supports_auto_duration && (
+                        <button
+                          type="button"
+                          className="video-duration-auto"
+                          aria-pressed={duration === -1}
+                          onClick={() => {
+                            const value =
+                              duration === -1 ? minimumDuration : -1;
+                            setDuration(value);
+                            persistDraft({ duration: value }, true);
+                          }}
+                        >
+                          自动时长
+                        </button>
+                      )}
+                      <output htmlFor={durationInputId}>
+                        {duration === -1 ? "自动" : `${duration} 秒`}
+                      </output>
+                    </span>
+                  </div>
+                  <div className="video-duration-track">
+                    <input
+                      id={durationInputId}
+                      type="range"
+                      aria-label={durationLabel}
+                      min={minimumDuration}
+                      max={maximumDuration}
+                      step="1"
+                      value={sliderDuration}
+                      disabled={
+                        duration === -1 || maximumDuration === minimumDuration
+                      }
+                      style={
+                        {
+                          "--video-duration-progress": `${durationProgress}%`,
+                        } as CSSProperties
+                      }
+                      onChange={(event) => {
+                        const value = Number(event.target.value);
+                        setDuration(value);
+                        persistDraft({ duration: value });
+                      }}
+                      onPointerUp={() => persistDraft({}, true)}
+                      onBlur={() => persistDraft({}, true)}
+                    />
+                  </div>
                   <span className="video-duration-limits" aria-hidden="true">
                     <span>{minimumDuration} 秒</span>
                     <span>{maximumDuration} 秒</span>
                   </span>
-                </label>
+                </div>
               )}
               {controller.videoCapabilities?.supports_ratio !== false &&
                 (!workflowCapabilities ||
@@ -486,6 +515,7 @@ export function CompactVideoGenerationDrawer({
                     <CustomSelect
                       ariaLabel="画面比例"
                       className="video-parameter-select"
+                      menuMinWidth={0}
                       value={controller.effectiveRatio}
                       options={controller.videoOptions.ratios.map((value) => ({
                         value,
@@ -506,6 +536,7 @@ export function CompactVideoGenerationDrawer({
                     <CustomSelect
                       ariaLabel="清晰度"
                       className="video-parameter-select"
+                      menuMinWidth={0}
                       value={resolution}
                       options={controller.videoOptions.resolutions.map(
                         (value) => ({ value, label: value.toUpperCase() }),
@@ -561,13 +592,13 @@ export function CompactVideoGenerationDrawer({
                     ...controller.workflowValues,
                     seed,
                   });
-                  persistDraft(
-                    {
-                      workflow_parameters: seed ? { seed: Number(seed) } : null,
-                    },
-                    true,
-                  );
                 }}
+                onCommit={(seed) =>
+                  persistDraft(
+                    { workflow_parameters: seed === null ? null : { seed } },
+                    true,
+                  )
+                }
               />
               {workflowCapabilities && (
                 <WorkflowVideoControls
@@ -585,6 +616,8 @@ export function CompactVideoGenerationDrawer({
               generating ||
               !modelId ||
               (controller.videoCapabilities?.supports_prompt !== false &&
+                (videoMode === "text" ||
+                  controller.videoCapabilities?.prompt_required) &&
                 !prompt.trim())
             }
             type="submit"

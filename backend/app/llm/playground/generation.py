@@ -270,6 +270,17 @@ class ModelTestGeneration:
                 )
             except ValueError as exc:
                 raise ModelTestGenerationError(str(exc), code="invalid_reference") from None
+        if isinstance(body, ModelTestVideoGenerationIn) and provider.kind != "autodl_video":
+            for identity in [*body.audio_asset_ids, *body.video_asset_ids]:
+                asset = await self.session.get(ModelTestGenerationAsset, identity)
+                if asset is not None and asset.mime_type in {
+                    "audio/flac",
+                    "audio/x-flac",
+                    "video/webm",
+                }:
+                    raise ModelTestGenerationError(
+                        "当前模型不支持此素材格式", code="invalid_reference"
+                    )
         if provider.kind == "autodl_video":
             ids = [
                 *body.reference_asset_ids,

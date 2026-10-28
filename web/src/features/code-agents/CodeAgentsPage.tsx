@@ -1,12 +1,13 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { apiErrorMessage } from "@platform/api/errors";
 import { codeAgentKeys, detectAgents, getAgents } from "./api";
-import { AgentConnectionCard } from "./AgentConnectionCard";
+import { AgentConnectionCard, AgentStatus } from "./AgentConnectionCard";
 import { AgentGrants } from "./AgentGrants";
 import { ExternalAgentAccess } from "./ExternalAgentAccess";
+import { AgentLogo } from "./AgentLogo";
 import "./code-agents.css";
 
 export function CodeAgentsPage({
@@ -18,6 +19,7 @@ export function CodeAgentsPage({
   scope: string;
   renderHeader?: (actions: ReactNode) => ReactNode;
 }) {
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const client = useQueryClient();
   const agents = useQuery({
     queryKey: codeAgentKeys.catalog(scope),
@@ -29,15 +31,18 @@ export function CodeAgentsPage({
     onSuccess: (data) =>
       client.setQueryData(codeAgentKeys.catalog(scope), data),
   });
+  const selectedAgent =
+    agents.data?.items.find((agent) => agent.id === selectedAgentId) ??
+    agents.data?.items[0];
   const actions = (
     <button
       type="button"
-      className="btn"
+      className="code-agent-detect"
       disabled={detect.isPending || agents.isFetching}
       onClick={() => detect.mutate()}
     >
       <RefreshCw
-        size={16}
+        size={14}
         aria-hidden
         className={detect.isPending ? "code-agent-spinning" : undefined}
       />
@@ -49,14 +54,14 @@ export function CodeAgentsPage({
       className={`code-agents-page${renderHeader ? " model-infrastructure-page" : ""}`}
     >
       {renderHeader ? (
-        renderHeader(actions)
+        renderHeader(selectedAgent ? null : actions)
       ) : (
         <header className="code-agents-heading">
           <div>
             <h1>编程智能体</h1>
             <p>连接 Codex 或 Claude Code，供 Amadeus 与工坊使用。</p>
           </div>
-          {actions}
+          {!selectedAgent && actions}
         </header>
       )}
       <div
@@ -81,25 +86,61 @@ export function CodeAgentsPage({
             连接状态已更新
           </p>
         )}
-        {agents.data && (
-          <>
-            {agents.data.items.length ? (
-              <div className="code-agents-grid">
-                {agents.data.items.map((agent) => (
-                  <AgentConnectionCard key={agent.id} agent={agent} />
-                ))}
-              </div>
-            ) : (
-              <p className="code-agent-empty">
-                暂无编程智能体连接，请检查部署配置后重新检测。
-              </p>
-            )}
-            {canManage && (
-              <AgentGrants scope={scope} agents={agents.data.items} />
-            )}
-          </>
-        )}
-        <ExternalAgentAccess />
+        <div
+          className={`code-agent-console${selectedAgent ? "" : " is-empty"}`}
+        >
+          {agents.data && (
+            <>
+              {agents.data.items.length ? (
+                <>
+                  <div
+                    className="code-agent-roster"
+                    role="group"
+                    aria-label="本机编程智能体"
+                  >
+                    {agents.data.items.map((agent) => {
+                      const selected = agent.id === selectedAgent?.id;
+                      return (
+                        <button
+                          type="button"
+                          key={agent.id}
+                          className="code-agent-roster-item"
+                          aria-pressed={selected}
+                          onClick={() => setSelectedAgentId(agent.id)}
+                        >
+                          <span className="code-agent-roster-icon">
+                            <AgentLogo id={agent.id} size={20} />
+                          </span>
+                          <span className="code-agent-roster-copy">
+                            <strong>{agent.name}</strong>
+                            <AgentStatus agent={agent} />
+                          </span>
+                        </button>
+                      );
+                    })}
+                    <div className="code-agent-roster-footer">{actions}</div>
+                  </div>
+                  <div className="code-agent-settings">
+                    {selectedAgent && (
+                      <AgentConnectionCard
+                        key={selectedAgent.id}
+                        agent={selectedAgent}
+                      />
+                    )}
+                    {canManage && (
+                      <AgentGrants scope={scope} agents={agents.data.items} />
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="code-agent-empty">
+                  暂无编程智能体连接，请检查部署配置后重新检测。
+                </p>
+              )}
+            </>
+          )}
+          <ExternalAgentAccess />
+        </div>
       </div>
     </section>
   );

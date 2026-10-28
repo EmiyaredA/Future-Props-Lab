@@ -38600,6 +38600,11 @@
             "title": "Max Prompt Length",
             "type": "integer"
           },
+          "prompt_required": {
+            "default": false,
+            "title": "Prompt Required",
+            "type": "boolean"
+          },
           "ratios": {
             "items": {
               "type": "string"
@@ -43376,7 +43381,7 @@
           },
           "prompt_versions": {
             "items": {
-              "$ref": "#/components/schemas/VisualPromptVersion"
+              "$ref": "#/components/schemas/VisualVideoPromptVersion"
             },
             "maxItems": 20,
             "minItems": 1,
@@ -43932,6 +43937,34 @@
           "name"
         ],
         "title": "VisualPromptVersion",
+        "type": "object"
+      },
+      "VisualVideoPromptVersion": {
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "prompt": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "VisualVideoPromptVersion",
         "type": "object"
       },
       "VisualWorkshopProjectCreateIn": {

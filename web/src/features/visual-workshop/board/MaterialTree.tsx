@@ -72,7 +72,9 @@ export function MaterialTree({
         }}
         onClick={() => onSelect(node.id)}
       >
-        <div className="board-material-thumb">
+        <div
+          className={`board-material-thumb${node.kind === "text" ? " is-text" : ""}`}
+        >
           <OutputPreview
             kind={node.kind}
             assetId={node.kind !== "text" ? node.asset_id : undefined}

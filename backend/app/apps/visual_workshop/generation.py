@@ -70,8 +70,6 @@ REFERENCE_MIME_TYPES = {
         "audio/mp4",
         "audio/x-m4a",
         "audio/ogg",
-        "audio/flac",
-        "audio/x-flac",
     },
     "video": {"video/mp4", "video/quicktime", "video/webm"},
 }
@@ -244,15 +242,19 @@ class VisualGeneration:
         return model, provider
 
     async def _reference_asset(
-        self, project_id: str, asset_id: str, expected_kind: str
+        self,
+        project_id: str,
+        asset_id: str,
+        expected_kind: str,
+        *,
+        accepted_mimes: set[str] | None = None,
     ) -> VisualAsset:
         asset = await self.session.get(VisualAsset, asset_id)
         label = {"image": "参考图片", "audio": "参考音频", "video": "参考视频"}[expected_kind]
         if asset is None:
             raise GenerationError(f"{label}不存在", code="invalid_reference", status=404)
-        if (
-            asset.media_kind != expected_kind
-            or asset.mime_type not in REFERENCE_MIME_TYPES[expected_kind]
+        if asset.media_kind != expected_kind or asset.mime_type not in (
+            accepted_mimes if accepted_mimes is not None else REFERENCE_MIME_TYPES[expected_kind]
         ):
             raise GenerationError(f"{label}格式不受支持", code="invalid_reference")
         in_scope = asset.project_id == project_id
@@ -315,10 +317,16 @@ class VisualGeneration:
                 "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
             )
 
-    async def _resolve_canvas_references(self, project_id, body, *, frame_constraints=True):
+    async def _resolve_canvas_references(
+        self, project_id, body, *, frame_constraints=True, frame_reference_slots=False
+    ):
         try:
             return await resolve_references(
-                self.session, project_id, body, frame_constraints=frame_constraints
+                self.session,
+                project_id,
+                body,
+                frame_constraints=frame_constraints,
+                frame_reference_slots=frame_reference_slots,
             )
         except OutputError as exc:
             raise GenerationError(str(exc), code=exc.code, status=exc.status) from None
@@ -334,7 +342,11 @@ class VisualGeneration:
             body.mode if isinstance(body, AudioGenerationTaskCreateIn) else None,
         )
         body, reference_titles, input_snapshot = await self._resolve_canvas_references(
-            project_id, body, frame_constraints=provider.kind != "zealman_video"
+            project_id,
+            body,
+            frame_constraints=provider.kind != "zealman_video",
+            frame_reference_slots=provider.kind == "autodl_video"
+            and model.slug == "minimax_h3_lightx2v",
         )
         payload = body.model_dump(
             mode="json",
@@ -426,7 +438,14 @@ class VisualGeneration:
                 )
             for asset_id in body.audio_asset_ids:
                 reference_assets[asset_id] = await self._reference_asset(
-                    project_id, asset_id, "audio"
+                    project_id,
+                    asset_id,
+                    "audio",
+                    accepted_mimes=set(
+                        autodl_workflows.capabilities(model.slug).reference_mime_types["audio"]
+                    )
+                    if provider.kind == "autodl_video"
+                    else None,
                 )
             for asset_id in body.video_asset_ids:
                 reference_assets[asset_id] = await self._reference_asset(

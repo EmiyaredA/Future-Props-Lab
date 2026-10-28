@@ -1,8 +1,10 @@
+import { useVideoDefaults } from "./useVideoDefaults";
 import {
   videoRequestParameters,
   workflowSelectionError,
+  videoSelectionError,
+  videoChoices,
 } from "@features/models";
-import { videoSelectionError, videoChoices } from "@features/models";
 import {
   type FormEvent,
   useCallback,
@@ -249,6 +251,16 @@ export function useGenerationDrawerController({
   );
   const selectedModel = models.find((model) => model.id === modelId);
   const videoCapabilities = selectedModel?.video_capabilities;
+  const framesOnly =
+    videoCapabilities?.supported_modes?.length === 1 &&
+    videoCapabilities.supported_modes[0] === "frames";
+  const linkedFrames = framesOnly
+    ? uniqueAssetIds(firstFrame, lastFrame, linkedAssetIds.image)
+    : [];
+  const effectiveFirstFrame =
+    firstFrame[0] ?? linkedFrames.find((id) => id !== lastFrame[0]);
+  const effectiveLastFrame =
+    lastFrame[0] ?? linkedFrames.find((id) => id !== effectiveFirstFrame);
   const videoFrames = videoMode === "frames" || videoMode === "image";
   const effectiveRatio =
     videoCapabilities?.frames_require_adaptive_ratio && videoFrames
@@ -256,21 +268,14 @@ export function useGenerationDrawerController({
       : ratio;
   const videoOptions = videoChoices(videoCapabilities, videoFrames, resolution);
   const workflowCapabilities = selectedModel?.workflow_capabilities;
-  useEffect(() => {
-    if (videoDraft?.model_id || !videoCapabilities?.default_resolution) return;
-    setResolution(videoCapabilities.default_resolution as typeof resolution);
-    setRatio((videoCapabilities.default_ratio ?? "9:16") as typeof ratio);
-    setVideoMode(
-      (videoCapabilities.supported_modes?.[0] ?? "reference") as VideoMode,
-    );
-  }, [videoCapabilities, videoDraft?.model_id]);
-  useEffect(() => {
-    if (
-      videoCapabilities &&
-      (!videoDraft?.model_id || videoDraft?.generate_audio == null)
-    )
-      setGenerateAudio(true);
-  }, [videoCapabilities, videoDraft?.generate_audio, videoDraft?.model_id]);
+  useVideoDefaults(
+    videoCapabilities,
+    videoDraft,
+    setResolution,
+    setRatio,
+    setVideoMode,
+    setGenerateAudio,
+  );
   const workflowParameters = useMemo(
     () =>
       Object.fromEntries(
@@ -417,12 +422,17 @@ export function useGenerationDrawerController({
         changes.ratio = "adaptive";
     }
     if (
-      model?.workflow_capabilities &&
+      (model?.workflow_capabilities ||
+        caps?.supported_modes?.[0] === "reference") &&
       (videoMode === "frames" || videoMode === "image")
     ) {
       const images = uniqueAssetIds(references, firstFrame, lastFrame);
       const mode =
-        images.length || hasLinkedVideoReferences ? "reference" : "text";
+        images.length ||
+        hasLinkedVideoReferences ||
+        caps?.supported_modes?.[0] === "reference"
+          ? "reference"
+          : "text";
       setVideoMode(mode);
       setReferences(images);
       setFirstFrame([]);
@@ -563,15 +573,16 @@ export function useGenerationDrawerController({
     promptReferenceNames,
     resolvedLinkedReferenceNames,
   ]);
-  const hasLinkedVideoReferences = Boolean(
-    linkedAssetIds.image.length ||
-    linkedAssetIds.video.length ||
-    linkedAssetIds.audio.length,
+  const hasLinkedVideoReferences = Object.values(linkedAssetIds).some(
+    (ids) => ids.length > 0,
   );
   useEffect(() => {
     if (
       lockedKind !== "video" ||
+      options.isLoading ||
+      !selectedModel ||
       !hasLinkedVideoReferences ||
+      framesOnly ||
       videoMode === "reference"
     )
       return;
@@ -584,7 +595,15 @@ export function useGenerationDrawerController({
       },
       true,
     );
-  }, [hasLinkedVideoReferences, lockedKind, persistDraft, videoMode]);
+  }, [
+    hasLinkedVideoReferences,
+    options.isLoading,
+    selectedModel,
+    framesOnly,
+    lockedKind,
+    persistDraft,
+    videoMode,
+  ]);
   const invalidSelection = useCallback(() => {
     setNotice("部分已选择素材已失效，已从当前草稿移除。");
   }, []);
@@ -751,6 +770,9 @@ export function useGenerationDrawerController({
     if (kind === "video" && !workflowCapabilities) {
       const error = videoSelectionError(videoCapabilities, {
         mode: videoMode === "image" ? "frames" : videoMode,
+        files: selectedPromptAssetIds.flatMap((id) =>
+          promptFiles[id] ? [promptFiles[id]] : [],
+        ),
         prompt,
         seed: workflowValues.seed,
         duration,
@@ -759,7 +781,9 @@ export function useGenerationDrawerController({
         image:
           videoMode === "reference"
             ? orderedReferenceIds(references, linkedAssetIds.image).length
-            : firstFrame.length + lastFrame.length,
+            : framesOnly
+              ? linkedFrames.length
+              : firstFrame.length + lastFrame.length,
         audio:
           videoMode === "reference"
             ? orderedReferenceIds(audioReferences, linkedAssetIds.audio).length
@@ -845,7 +869,7 @@ export function useGenerationDrawerController({
         model_id: modelId,
         prompt: videoCapabilities?.supports_prompt === false ? "" : prompt,
         mode: videoMode === "image" ? "frames" : videoMode,
-        ...(videoCapabilities?.supports_duration === false ? {} : { duration }),
+        duration,
         ...(workflowCapabilities
           ? {
               workflow_parameters: workflowParameters,
@@ -862,10 +886,10 @@ export function useGenerationDrawerController({
             }),
         first_frame_asset_id:
           videoMode === "frames" || videoMode === "image"
-            ? (firstFrame[0] ?? null)
+            ? (effectiveFirstFrame ?? null)
             : null,
         last_frame_asset_id:
-          videoMode === "frames" ? (lastFrame[0] ?? null) : null,
+          videoMode === "frames" ? (effectiveLastFrame ?? null) : null,
         reference_asset_ids:
           videoMode === "reference"
             ? canvasNodeId
@@ -913,6 +937,7 @@ export function useGenerationDrawerController({
     selectModel,
     workflowCapabilities,
     referenceLimits,
+    framesOnly,
     workflowValues,
     setWorkflowValues,
     changeWorkflowValues,

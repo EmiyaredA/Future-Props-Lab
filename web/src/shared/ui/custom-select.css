@@ -5,12 +5,12 @@
 
 .custom-select-trigger {
   width: 100%;
-  min-height: 36px;
-  padding: 0 10px;
+  min-height: var(--ui-control-height);
+  padding: 0 9px;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid var(--border-strong);
   border-radius: 9px;
   background: var(--surface-raised, var(--surface));
