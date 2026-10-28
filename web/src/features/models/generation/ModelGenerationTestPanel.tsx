@@ -1,3 +1,5 @@
+import { VideoSeedControl } from "./VideoSeedControl";
+import { videoRequestParameters } from "./videoCapabilities";
 import { videoChoices, videoSelectionError } from "./videoCapabilities";
 import { executionDetails } from "@shared/ui/taskExecutionPresentation";
 import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
@@ -140,12 +142,20 @@ export function ModelGenerationTestPanel({
     (item) => item.id === modelId,
   );
   const videoCaps = selectedOption?.video_capabilities;
-  const choices = videoChoices(videoCaps, videoMode === "frames");
+  const choices = videoChoices(videoCaps, videoMode === "frames", resolution);
   const effectiveRatio =
     videoCaps?.frames_require_adaptive_ratio && videoMode === "frames"
       ? "adaptive"
       : ratio;
   const workflow = selectedOption?.workflow_capabilities;
+  useEffect(() => {
+    if (!videoCaps?.default_resolution) return;
+    setResolution(videoCaps.default_resolution as Resolution);
+    setRatio((videoCaps.default_ratio ?? "9:16") as Ratio);
+    setVideoMode(
+      (videoCaps.supported_modes?.[0] ?? "reference") as typeof videoMode,
+    );
+  }, [modelId, videoCaps]);
   const limits =
     workflow?.reference_limits ??
     videoCaps?.reference_limits ??
@@ -266,8 +276,8 @@ export function ModelGenerationTestPanel({
         return await createModelTestGenerationTask({
           kind: "video",
           model_id: modelId,
-          prompt: prompt.trim(),
-          duration,
+          prompt: videoCaps?.supports_prompt === false ? "" : prompt.trim(),
+          ...(videoCaps?.supports_duration === false ? {} : { duration }),
           ...(videoCaps
             ? {
                 mode: videoMode,
@@ -291,10 +301,13 @@ export function ModelGenerationTestPanel({
                 ),
               }
             : {
-                resolution,
-                ratio: effectiveRatio,
-                watermark,
-                generate_audio: generateAudio,
+                ...videoRequestParameters(videoCaps, {
+                  resolution,
+                  ratio: effectiveRatio,
+                  watermark,
+                  generateAudio,
+                  seed: workflowValues.seed,
+                }),
               }),
           reference_asset_ids: uploaded
             .filter(
@@ -361,7 +374,11 @@ export function ModelGenerationTestPanel({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!prompt.trim() || !selectedOption) return;
+    if (
+      (!prompt.trim() && videoCaps?.supports_prompt !== false) ||
+      !selectedOption
+    )
+      return;
     const hasAudio = referenceFiles.some((item) => item.kind === "audio");
     const hasVisualReference = referenceFiles.some(
       (item) => item.kind === "image" || item.kind === "video",
@@ -391,11 +408,16 @@ export function ModelGenerationTestPanel({
         return;
       }
       const invalid = videoSelectionError(videoCaps, {
+        mode: videoMode,
+        prompt,
+        seed: workflowValues.seed,
         duration,
         resolution,
         ratio: effectiveRatio,
         image:
-          videoMode === "frames" && videoCaps
+          videoMode === "frames" &&
+          videoCaps &&
+          !videoCaps.reference_minimums?.image
             ? 0
             : referenceFiles.filter((i) => i.kind === "image").length,
         audio: referenceFiles.filter((i) => i.kind === "audio").length,
@@ -414,7 +436,11 @@ export function ModelGenerationTestPanel({
     let totalBytes = next.reduce((sum, item) => sum + item.file.size, 0);
     for (const file of Array.from(files)) {
       const kind = referenceKind(file);
-      if (!kind) {
+      if (
+        !kind ||
+        (videoCaps?.reference_mime_types?.[kind]?.length &&
+          !videoCaps.reference_mime_types[kind].includes(file.type))
+      ) {
         setError("只支持 JPG、PNG、WebP、GIF、MP3、WAV、MP4 和 MOV 参考素材");
         continue;
       }
@@ -699,24 +725,29 @@ export function ModelGenerationTestPanel({
             <span>{generationKind === "image" ? "图片" : "视频"}</span>
           </div>
           <form onSubmit={submit}>
-            <label className="generation-prompt-field">
-              <span className="generation-field-head">
-                <span>提示词</span>
-                <small>{prompt.length} / 6000</small>
-              </span>
-              <textarea
-                required
-                maxLength={6000}
-                rows={7}
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                placeholder={
-                  generationKind === "image"
-                    ? "描述要生成的画面…"
-                    : "描述镜头、动作和氛围…"
-                }
-              />
-            </label>
+            {(generationKind === "image" ||
+              videoCaps?.supports_prompt !== false) && (
+              <label className="generation-prompt-field">
+                <span className="generation-field-head">
+                  <span>提示词</span>
+                  <small>
+                    {prompt.length} / {videoCaps?.max_prompt_length ?? 6000}
+                  </small>
+                </span>
+                <textarea
+                  required
+                  maxLength={videoCaps?.max_prompt_length ?? 6000}
+                  rows={7}
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  placeholder={
+                    generationKind === "image"
+                      ? "描述要生成的画面…"
+                      : "描述镜头、动作和氛围…"
+                  }
+                />
+              </label>
+            )}
             {generationKind === "image" ? (
               <>
                 <label>
@@ -756,7 +787,11 @@ export function ModelGenerationTestPanel({
                         { value: "text", label: "纯文本" },
                         { value: "frames", label: "首帧 / 首尾帧" },
                         { value: "reference", label: "参考素材" },
-                      ]}
+                      ].filter(
+                        (item) =>
+                          !videoCaps.supported_modes ||
+                          videoCaps.supported_modes.includes(item.value),
+                      )}
                     />
                   </label>
                 )}
@@ -769,7 +804,14 @@ export function ModelGenerationTestPanel({
                     className="sr-only"
                     type="file"
                     multiple
-                    accept="image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,video/mp4,video/quicktime"
+                    accept={
+                      videoCaps?.reference_mime_types &&
+                      Object.keys(videoCaps.reference_mime_types).length
+                        ? Object.values(videoCaps.reference_mime_types)
+                            .flat()
+                            .join(",")
+                        : "image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,video/mp4,video/quicktime"
+                    }
                     aria-label="上传参考图片、音频或视频"
                     onChange={(event) => addReferenceFiles(event.target.files)}
                   />
@@ -783,7 +825,10 @@ export function ModelGenerationTestPanel({
                       <strong>上传参考图片、音频或视频</strong>
                       <small>
                         {videoCaps
-                          ? "图片/音频编码请求不超过 64 MB；参考视频需配置临时上传"
+                          ? videoCaps.reference_mime_types &&
+                            Object.keys(videoCaps.reference_mime_types).length
+                            ? "素材直接编码发送，请按工作流要求选择"
+                            : "图片/音频编码请求不超过 64 MB；参考视频需配置临时上传"
                           : "可多选，本地素材合计不超过 45 MB"}
                       </small>
                     </span>
@@ -800,16 +845,25 @@ export function ModelGenerationTestPanel({
                     {limits.audio} 音频、{limits.video} 视频。
                   </p>
                 </fieldset>
-                <label>
-                  <span>时长</span>
-                  <CustomSelect
-                    ariaLabel="时长"
-                    className="generation-parameter-select generation-duration-select"
-                    value={String(duration)}
-                    options={choices.durations}
-                    onChange={(value) => setDuration(Number(value))}
-                  />
-                </label>
+                {videoCaps?.supports_duration !== false && (
+                  <label>
+                    <span>{videoCaps?.duration_label ?? "时长"}</span>
+                    <CustomSelect
+                      ariaLabel="时长"
+                      className="generation-parameter-select generation-duration-select"
+                      value={String(duration)}
+                      options={choices.durations}
+                      onChange={(value) => setDuration(Number(value))}
+                    />
+                  </label>
+                )}
+                <VideoSeedControl
+                  capabilities={videoCaps}
+                  value={workflowValues.seed ?? ""}
+                  onChange={(seed) =>
+                    setWorkflowValues({ ...workflowValues, seed })
+                  }
+                />
                 {workflow ? (
                   <WorkflowVideoControls
                     capabilities={workflow}
@@ -838,69 +892,76 @@ export function ModelGenerationTestPanel({
                     </div>
                   </fieldset>
                 )}
-                {(!workflow || workflow.supports_ratio) && (
-                  <fieldset className="generation-fieldset">
-                    <legend>比例</legend>
-                    <div
-                      className="generation-ratio-options"
-                      role="group"
-                      aria-label="比例"
-                    >
-                      {choices.ratios.map((item) => (
-                        <button
-                          type="button"
-                          aria-pressed={effectiveRatio === item}
-                          className={effectiveRatio === item ? "active" : ""}
-                          key={item}
-                          onClick={() => setRatio(item as Ratio)}
-                        >
-                          <i
-                            className={`generation-ratio-shape ratio-${item.replace(":", "-")}`}
-                            aria-hidden
-                          />
-                          <span>{item === "adaptive" ? "自适应" : item}</span>
-                        </button>
-                      ))}
+                {videoCaps?.supports_ratio !== false &&
+                  (!workflow || workflow.supports_ratio) && (
+                    <fieldset className="generation-fieldset">
+                      <legend>比例</legend>
+                      <div
+                        className="generation-ratio-options"
+                        role="group"
+                        aria-label="比例"
+                      >
+                        {choices.ratios.map((item) => (
+                          <button
+                            type="button"
+                            aria-pressed={effectiveRatio === item}
+                            className={effectiveRatio === item ? "active" : ""}
+                            key={item}
+                            onClick={() => setRatio(item as Ratio)}
+                          >
+                            <i
+                              className={`generation-ratio-shape ratio-${item.replace(":", "-")}`}
+                              aria-hidden
+                            />
+                            <span>{item === "adaptive" ? "自适应" : item}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
+                {!workflow &&
+                  videoCaps?.supports_watermark !== false &&
+                  videoCaps?.supports_generate_audio !== false && (
+                    <div className="generation-switches">
+                      <label className="generation-switch-row">
+                        <span>
+                          <strong>生成音频</strong>
+                          <small>为视频同步生成声音</small>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={generateAudio}
+                          onChange={(event) =>
+                            setGenerateAudio(event.target.checked)
+                          }
+                        />
+                        <i aria-hidden />
+                      </label>
+                      <label className="generation-switch-row">
+                        <span>
+                          <strong>保留水印</strong>
+                          <small>在生成结果中保留平台标记</small>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={watermark}
+                          onChange={(event) =>
+                            setWatermark(event.target.checked)
+                          }
+                        />
+                        <i aria-hidden />
+                      </label>
                     </div>
-                  </fieldset>
-                )}
-                {!workflow && (
-                  <div className="generation-switches">
-                    <label className="generation-switch-row">
-                      <span>
-                        <strong>生成音频</strong>
-                        <small>为视频同步生成声音</small>
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={generateAudio}
-                        onChange={(event) =>
-                          setGenerateAudio(event.target.checked)
-                        }
-                      />
-                      <i aria-hidden />
-                    </label>
-                    <label className="generation-switch-row">
-                      <span>
-                        <strong>保留水印</strong>
-                        <small>在生成结果中保留平台标记</small>
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={watermark}
-                        onChange={(event) => setWatermark(event.target.checked)}
-                      />
-                      <i aria-hidden />
-                    </label>
-                  </div>
-                )}
+                  )}
               </>
             )}
             <div className="generation-submit-wrap">
               <button
                 className="generation-test-submit"
                 disabled={
-                  createMutation.isPending || !prompt.trim() || !selectedOption
+                  createMutation.isPending ||
+                  (!prompt.trim() && videoCaps?.supports_prompt !== false) ||
+                  !selectedOption
                 }
               >
                 {createMutation.isPending ? (

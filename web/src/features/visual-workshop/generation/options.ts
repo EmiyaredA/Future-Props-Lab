@@ -7,7 +7,7 @@ export type VideoMode = "text" | "image" | "frames" | "reference";
 export const MEDIA_ACCEPT: Record<"image" | "video" | "audio", string> = {
   image: "image/jpeg,image/png,image/webp,image/gif",
   video: "video/mp4,video/webm,video/quicktime",
-  audio: "audio/mpeg,audio/wav,audio/mp4,audio/ogg",
+  audio: "audio/mpeg,audio/wav,audio/mp4,audio/ogg,audio/flac,audio/x-flac",
 };
 
 export const VIDEO_RATIO_OPTIONS: SelectOption[] = [

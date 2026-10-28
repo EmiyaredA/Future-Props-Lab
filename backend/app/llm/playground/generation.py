@@ -16,6 +16,7 @@ from app.llm.playground.generation_assets import (
     GenerationAssetError,
     ModelTestGenerationAssets,
 )
+from app.llm.providers import autodl_workflows
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
@@ -94,7 +95,7 @@ class ModelTestGeneration:
             not in (
                 {expected_provider_kind, "volcengine_image"}
                 if kind == "image"
-                else {expected_provider_kind, "zealman_video", "volcengine_video"}
+                else {expected_provider_kind, "zealman_video", "volcengine_video", "autodl_video"}
             )
         ):
             raise ModelTestGenerationError(
@@ -129,6 +130,7 @@ class ModelTestGeneration:
                             "senseaudio_video",
                             "volcengine_video",
                             "zealman_video",
+                            "autodl_video",
                         )
                     ),
                 )
@@ -163,6 +165,7 @@ class ModelTestGeneration:
                 )
                 for model, provider in rows
                 if (provider.kind != "zealman_video" or model.slug in WORKFLOWS)
+                and (provider.kind != "autodl_video" or model.slug in autodl_workflows.WORKFLOWS)
                 and (
                     provider.kind != "volcengine_video"
                     or model.slug in {"doubao-seedance-2-0-260128", "doubao-seedance-2-5-260628"}
@@ -180,7 +183,11 @@ class ModelTestGeneration:
         model, provider = await self._model(body.model_id, body.kind)
         payload = body.model_dump(mode="json")
         if isinstance(body, ModelTestVideoGenerationIn):
-            if provider.kind != "volcengine_video" and (body.duration < 4 or body.mode == "frames"):
+            if provider.kind != "autodl_video" and not body.prompt:
+                raise ModelTestGenerationError("提示词不能为空", code="unsupported_parameter")
+            if provider.kind not in {"volcengine_video", "autodl_video"} and (
+                body.duration < 4 or body.mode == "frames"
+            ):
                 raise ModelTestGenerationError(
                     "当前测试模型不支持所选时长或首尾帧模式", code="unsupported_parameter"
                 )
@@ -188,12 +195,16 @@ class ModelTestGeneration:
                 payload = normalize_video_parameters(provider.kind, model.slug, payload)
             except ValueError as exc:
                 raise ModelTestGenerationError(str(exc), code="unsupported_parameter") from None
-            for field, default in {
-                "resolution": "720p",
-                "ratio": "16:9",
-                "watermark": True,
-                "generate_audio": False,
-            }.items():
+            for field, default in (
+                {
+                    "resolution": "720p",
+                    "ratio": "16:9",
+                    "watermark": True,
+                    "generate_audio": False,
+                }
+                if provider.kind != "autodl_video"
+                else {}
+            ).items():
                 if payload[field] is None:
                     payload[field] = default
         if isinstance(body, ModelTestImageGenerationIn):
@@ -227,7 +238,7 @@ class ModelTestGeneration:
                     payload = normalize_request(model.slug, payload, body.model_fields_set)
                 except ValueError as exc:
                     raise ModelTestGenerationError(str(exc), code="unsupported_parameter") from None
-            elif body.workflow_parameters is not None:
+            elif provider.kind != "autodl_video" and body.workflow_parameters is not None:
                 raise ModelTestGenerationError(
                     "当前模型不支持工作流参数", code="unsupported_parameter"
                 )
@@ -257,6 +268,30 @@ class ModelTestGeneration:
                 await validate_seedance_references(
                     model.slug, payload, references, self.settings.fpl_temp_media_upload_url
                 )
+            except ValueError as exc:
+                raise ModelTestGenerationError(str(exc), code="invalid_reference") from None
+        if provider.kind == "autodl_video":
+            ids = [
+                *body.reference_asset_ids,
+                *body.audio_asset_ids,
+                *body.video_asset_ids,
+                *([body.first_frame_asset_id] if body.first_frame_asset_id else []),
+                *([body.last_frame_asset_id] if body.last_frame_asset_id else []),
+            ]
+            refs = []
+            for identity in ids:
+                asset = await self.session.get(ModelTestGenerationAsset, identity)
+                if (
+                    asset is None
+                    or asset.workspace_id != self.workspace_id
+                    or asset.task_id is not None
+                ):
+                    raise ModelTestGenerationError(
+                        "参考素材不存在或已被使用", code="reference_asset_missing", status=404
+                    )
+                refs.append((asset.media_kind, asset.mime_type, asset.byte_size))
+            try:
+                autodl_workflows.validate_references(model.slug, refs)
             except ValueError as exc:
                 raise ModelTestGenerationError(str(exc), code="invalid_reference") from None
         snap = credential or CredentialSnapshot()

@@ -44,10 +44,12 @@ class ImageGenerationTaskCreateIn(BaseModel):
 class VideoGenerationTaskCreateIn(BaseModel):
     kind: Literal["video"]
     model_id: str
-    prompt: str = Field(default="", max_length=6000)
+    prompt: str = Field(default="", max_length=20000)
     mode: Literal["text", "frames", "reference"] = "text"
     duration: int = Field(default=5, ge=-1, le=30)
-    resolution: Literal["480p", "720p", "1080p", "4k"] | None = None
+    resolution: (
+        Literal["480p", "720p", "1080p", "4k", "768p", "960p", "464x832", "832x464"] | None
+    ) = None
     ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1", "21:9", "adaptive"] | None = None
     watermark: bool | None = None
     generate_audio: bool | None = None

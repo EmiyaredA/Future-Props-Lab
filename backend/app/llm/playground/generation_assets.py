@@ -44,6 +44,8 @@ ALLOWED_REFERENCES: dict[str, tuple[str, set[str]]] = {
     ".mp3": ("audio", {"audio/mpeg"}),
     ".wav": ("audio", {"audio/wav", "audio/x-wav"}),
     ".mp4": ("video", {"video/mp4"}),
+    ".flac": ("audio", {"audio/flac", "audio/x-flac"}),
+    ".webm": ("video", {"video/webm"}),
     ".mov": ("video", {"video/quicktime"}),
 }
 
@@ -97,8 +99,8 @@ def _looks_like(kind: str, head: bytes) -> bool:
             head.startswith(b"RIFF") and head[8:12] == b"WEBP"
         )
     if kind == "audio":
-        return head.startswith((b"ID3", b"RIFF", b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"))
-    return b"ftyp" in head[4:16]
+        return head.startswith((b"fLaC", b"ID3", b"RIFF", b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"))
+    return head.startswith(b"\x1a\x45\xdf\xa3") or b"ftyp" in head[4:16]
 
 
 class ModelTestGenerationAssets:

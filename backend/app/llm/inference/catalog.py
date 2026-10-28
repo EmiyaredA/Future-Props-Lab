@@ -8,6 +8,7 @@ from app.capabilities.transcription import (
 from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
 from app.llm.local_models.catalog import credential_ready, require_ready
 from app.llm.models import ModelEntry, ModelProvider
+from app.llm.providers import autodl_workflows
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.providers.local_qwen import speech_parameters
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
@@ -28,6 +29,7 @@ GENERATION_KINDS = {
     "volcengine_image": "image",
     "senseaudio_video": "video",
     "volcengine_video": "video",
+    "autodl_video": "video",
     "senseaudio_music": "music",
     "senseaudio_sfx": "sound_effect",
 }
@@ -106,7 +108,7 @@ async def options(session, workspace_id):
         parameters = {}
         if "speech_synthesis" in kinds:
             parameters["speech_synthesis"] = speech_parameters()
-        if "video" in kinds and provider.kind == "volcengine_video":
+        if "video" in kinds and provider.kind in {"volcengine_video", "autodl_video"}:
             try:
                 caps = video_capabilities(
                     provider.kind,
@@ -248,6 +250,10 @@ def normalize_parameters(body, model, provider, assets):
     if body.kind == "video":
         try:
             payload = normalize_video_parameters(provider.kind, model.slug, payload)
+            if provider.kind == "autodl_video":
+                autodl_workflows.validate_references(
+                    model.slug, [(a.media_kind, a.mime_type, a.byte_size) for a in assets]
+                )
         except ValueError as exc:
             raise OperationError(str(exc)) from None
     return payload

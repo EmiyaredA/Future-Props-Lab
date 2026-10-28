@@ -114,6 +114,7 @@ from db.migrations.versions import (
     r0110_video_editor_clip_merges,
     r0111_presentation_templates,
     r0112_presentation_native_templates,
+    r0113_autodl_video,
 )
 
 
@@ -523,6 +524,10 @@ MIGRATIONS += (
     Migration(
         r0112_presentation_native_templates.MIGRATION_ID, r0112_presentation_native_templates.SQL
     ),
+)
+
+MIGRATIONS += (
+    Migration(r0113_autodl_video.MIGRATION_ID, r0113_autodl_video.SQL, foreign_keys_off=True),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

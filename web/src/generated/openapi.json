@@ -301,6 +301,7 @@
               "volcengine_video",
               "senseaudio_video",
               "zealman_video",
+              "autodl_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -19198,6 +19199,7 @@
               "volcengine_video",
               "senseaudio_video",
               "zealman_video",
+              "autodl_video",
               "senseaudio_music",
               "senseaudio_sfx"
             ],
@@ -23896,7 +23898,8 @@
               "volcengine_image",
               "senseaudio_video",
               "volcengine_video",
-              "zealman_video"
+              "zealman_video",
+              "autodl_video"
             ],
             "title": "Provider Kind",
             "type": "string"
@@ -25618,8 +25621,8 @@
             "type": "string"
           },
           "prompt": {
-            "maxLength": 6000,
-            "minLength": 1,
+            "default": "",
+            "maxLength": 20000,
             "title": "Prompt",
             "type": "string"
           },
@@ -25658,7 +25661,11 @@
                   "480p",
                   "720p",
                   "1080p",
-                  "4k"
+                  "4k",
+                  "768p",
+                  "960p",
+                  "464x832",
+                  "832x464"
                 ],
                 "type": "string"
               },
@@ -25700,8 +25707,7 @@
         },
         "required": [
           "kind",
-          "model_id",
-          "prompt"
+          "model_id"
         ],
         "title": "ModelTestVideoGenerationIn",
         "type": "object"
@@ -30701,6 +30707,7 @@
               "volcengine_video",
               "senseaudio_video",
               "zealman_video",
+              "autodl_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -30786,6 +30793,7 @@
               "volcengine_video",
               "senseaudio_video",
               "zealman_video",
+              "autodl_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -31638,6 +31646,7 @@
               "volcengine_video",
               "senseaudio_video",
               "zealman_video",
+              "autodl_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -36253,6 +36262,7 @@
               "volcengine_video",
               "senseaudio_video",
               "zealman_video",
+              "autodl_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -36335,6 +36345,7 @@
               "volcengine_video",
               "senseaudio_video",
               "zealman_video",
+              "autodl_video",
               "senseaudio_asr",
               "senseaudio_asr_pro",
               "senseaudio_realtime",
@@ -38543,6 +38554,33 @@
             "title": "Default Generate Audio",
             "type": "boolean"
           },
+          "default_ratio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Ratio"
+          },
+          "default_resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Resolution"
+          },
+          "duration_label": {
+            "default": "时长",
+            "title": "Duration Label",
+            "type": "string"
+          },
           "duration_max": {
             "title": "Duration Max",
             "type": "integer"
@@ -38556,6 +38594,11 @@
             "default": false,
             "title": "Frames Require Adaptive Ratio",
             "type": "boolean"
+          },
+          "max_prompt_length": {
+            "default": 6000,
+            "title": "Max Prompt Length",
+            "type": "integer"
           },
           "ratios": {
             "items": {
@@ -38571,10 +38614,37 @@
             "title": "Reference Limits",
             "type": "object"
           },
+          "reference_mime_types": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Reference Mime Types",
+            "type": "object"
+          },
+          "reference_minimums": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Reference Minimums",
+            "type": "object"
+          },
           "reference_video_upload_configured": {
             "default": false,
             "title": "Reference Video Upload Configured",
             "type": "boolean"
+          },
+          "resolution_ratios": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Resolution Ratios",
+            "type": "object"
           },
           "resolutions": {
             "items": {
@@ -38583,9 +38653,56 @@
             "title": "Resolutions",
             "type": "array"
           },
+          "seed_maximum": {
+            "default": 999999999999999,
+            "title": "Seed Maximum",
+            "type": "integer"
+          },
+          "seed_minimum": {
+            "default": 0,
+            "title": "Seed Minimum",
+            "type": "integer"
+          },
+          "supported_modes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Supported Modes",
+            "type": "array"
+          },
           "supports_auto_duration": {
             "default": true,
             "title": "Supports Auto Duration",
+            "type": "boolean"
+          },
+          "supports_duration": {
+            "default": true,
+            "title": "Supports Duration",
+            "type": "boolean"
+          },
+          "supports_generate_audio": {
+            "default": true,
+            "title": "Supports Generate Audio",
+            "type": "boolean"
+          },
+          "supports_prompt": {
+            "default": true,
+            "title": "Supports Prompt",
+            "type": "boolean"
+          },
+          "supports_ratio": {
+            "default": true,
+            "title": "Supports Ratio",
+            "type": "boolean"
+          },
+          "supports_seed": {
+            "default": false,
+            "title": "Supports Seed",
+            "type": "boolean"
+          },
+          "supports_watermark": {
+            "default": true,
+            "title": "Supports Watermark",
             "type": "boolean"
           }
         },
@@ -40937,7 +41054,7 @@
           },
           "prompt": {
             "default": "",
-            "maxLength": 6000,
+            "maxLength": 20000,
             "title": "Prompt",
             "type": "string"
           },
@@ -40976,7 +41093,11 @@
                   "480p",
                   "720p",
                   "1080p",
-                  "4k"
+                  "4k",
+                  "768p",
+                  "960p",
+                  "464x832",
+                  "832x464"
                 ],
                 "type": "string"
               },
@@ -43241,7 +43362,7 @@
           },
           "prompt": {
             "default": "",
-            "maxLength": 6000,
+            "maxLength": 20000,
             "title": "Prompt",
             "type": "string"
           },
@@ -43290,7 +43411,11 @@
               "480p",
               "720p",
               "1080p",
-              "4k"
+              "4k",
+              "768p",
+              "960p",
+              "464x832",
+              "832x464"
             ],
             "title": "Resolution",
             "type": "string"

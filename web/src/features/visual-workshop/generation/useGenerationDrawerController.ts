@@ -1,3 +1,7 @@
+import {
+  videoRequestParameters,
+  workflowSelectionError,
+} from "@features/models";
 import { videoSelectionError, videoChoices } from "@features/models";
 import {
   type FormEvent,
@@ -115,7 +119,7 @@ export function useGenerationDrawerController({
   );
   const [duration, setDuration] = useState(videoDraft?.duration ?? 5);
   const [resolution, setResolution] = useState<
-    "480p" | "720p" | "1080p" | "4k"
+    "480p" | "720p" | "1080p" | "4k" | "768p" | "960p" | "464x832" | "832x464"
   >(videoDraft?.resolution ?? "720p");
   const [ratio, setRatio] = useState<
     "16:9" | "9:16" | "4:3" | "3:4" | "1:1" | "21:9" | "adaptive"
@@ -250,8 +254,16 @@ export function useGenerationDrawerController({
     videoCapabilities?.frames_require_adaptive_ratio && videoFrames
       ? "adaptive"
       : ratio;
-  const videoOptions = videoChoices(videoCapabilities, videoFrames);
+  const videoOptions = videoChoices(videoCapabilities, videoFrames, resolution);
   const workflowCapabilities = selectedModel?.workflow_capabilities;
+  useEffect(() => {
+    if (videoDraft?.model_id || !videoCapabilities?.default_resolution) return;
+    setResolution(videoCapabilities.default_resolution as typeof resolution);
+    setRatio((videoCapabilities.default_ratio ?? "9:16") as typeof ratio);
+    setVideoMode(
+      (videoCapabilities.supported_modes?.[0] ?? "reference") as VideoMode,
+    );
+  }, [videoCapabilities, videoDraft?.model_id]);
   useEffect(() => {
     if (
       videoCapabilities &&
@@ -381,8 +393,22 @@ export function useGenerationDrawerController({
     setNotice(
       "已保留提示词与素材；请确认当前模型支持所选时长、分辨率和参考数量。",
     );
+    const caps = model?.video_capabilities;
+    if (caps?.default_resolution) {
+      setResolution(caps.default_resolution as typeof resolution);
+      setRatio((caps.default_ratio ?? "9:16") as typeof ratio);
+      const mode = (caps.supported_modes?.[0] ?? "reference") as VideoMode;
+      setVideoMode(mode);
+    }
     const changes: Record<string, unknown> = {
       model_id: id,
+      ...(caps?.default_resolution
+        ? {
+            resolution: caps.default_resolution,
+            ratio: caps.default_ratio ?? "9:16",
+            mode: caps.supported_modes?.[0] ?? "reference",
+          }
+        : {}),
       workflow_parameters: null,
     };
     if (model?.video_capabilities) {
@@ -724,13 +750,16 @@ export function useGenerationDrawerController({
     }
     if (kind === "video" && !workflowCapabilities) {
       const error = videoSelectionError(videoCapabilities, {
+        mode: videoMode === "image" ? "frames" : videoMode,
+        prompt,
+        seed: workflowValues.seed,
         duration,
         resolution,
         ratio: effectiveRatio,
         image:
           videoMode === "reference"
             ? orderedReferenceIds(references, linkedAssetIds.image).length
-            : 0,
+            : firstFrame.length + lastFrame.length,
         audio:
           videoMode === "reference"
             ? orderedReferenceIds(audioReferences, linkedAssetIds.audio).length
@@ -746,49 +775,24 @@ export function useGenerationDrawerController({
       }
     }
     if (kind === "video" && workflowCapabilities) {
-      let referenceBytes = 0;
-      if (!prompt.trim()) {
-        setNotice("请输入生成提示词。");
-        return;
-      }
-      if (duration < 4 || duration > 15) {
-        setNotice("工作流视频时长必须为 4 至 15 秒。");
-        return;
-      }
-      if (videoMode === "frames" || videoMode === "image") {
-        setNotice("当前工作流请使用文生视频或全能参考。");
-        return;
-      }
-      for (const [media, ids] of Object.entries({
-        image: orderedReferenceIds(references, linkedAssetIds.image),
-        video: orderedReferenceIds(videoReferences, linkedAssetIds.video),
-        audio: orderedReferenceIds(audioReferences, linkedAssetIds.audio),
-      })) {
-        if (ids.length > (referenceLimits[media] ?? 0)) {
-          setNotice(
-            `当前工作流最多支持 ${referenceLimits[media] ?? 0} 个${({ image: "图片", video: "视频", audio: "音频" } as Record<string, string>)[media]}参考素材。`,
-          );
-          return;
-        }
-        for (const id of ids) {
-          const file = promptFiles[id];
-          if (!file) continue;
-          referenceBytes += file.byte_size;
-          const accepted = workflowCapabilities.reference_mime_types?.[media];
-          if (accepted?.length && !accepted.includes(file.mime_type)) {
-            setNotice(`当前工作流不支持素材格式：${file.display_name}`);
-            return;
-          }
-        }
-      }
-      if (
-        workflowCapabilities.max_reference_bytes &&
-        referenceBytes > workflowCapabilities.max_reference_bytes
-      ) {
-        setNotice("参考素材总大小不能超过 45 MB。");
+      const error = workflowSelectionError(
+        workflowCapabilities,
+        duration,
+        prompt,
+        videoMode,
+        {
+          image: orderedReferenceIds(references, linkedAssetIds.image),
+          audio: orderedReferenceIds(audioReferences, linkedAssetIds.audio),
+          video: orderedReferenceIds(videoReferences, linkedAssetIds.video),
+        },
+        promptFiles,
+      );
+      if (error) {
+        setNotice(error);
         return;
       }
     }
+
     try {
       persistDraft({}, true);
       const canvasRevision = await onBeforeSubmit?.();
@@ -839,19 +843,22 @@ export function useGenerationDrawerController({
       const body = {
         kind: "video",
         model_id: modelId,
-        prompt,
+        prompt: videoCapabilities?.supports_prompt === false ? "" : prompt,
         mode: videoMode === "image" ? "frames" : videoMode,
-        duration,
+        ...(videoCapabilities?.supports_duration === false ? {} : { duration }),
         ...(workflowCapabilities
           ? {
               workflow_parameters: workflowParameters,
               ...(workflowCapabilities.supports_ratio ? { ratio } : {}),
             }
           : {
-              resolution,
-              ratio: effectiveRatio,
-              watermark,
-              generate_audio: generateAudio,
+              ...videoRequestParameters(videoCapabilities, {
+                resolution,
+                ratio: effectiveRatio,
+                watermark,
+                generateAudio,
+                seed: workflowValues.seed,
+              }),
             }),
         first_frame_asset_id:
           videoMode === "frames" || videoMode === "image"
@@ -907,6 +914,7 @@ export function useGenerationDrawerController({
     workflowCapabilities,
     referenceLimits,
     workflowValues,
+    setWorkflowValues,
     changeWorkflowValues,
     prompt,
     setPrompt,

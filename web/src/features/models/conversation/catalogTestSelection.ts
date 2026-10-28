@@ -68,7 +68,7 @@ export function preferredModeModel(
     return (
       mode === "image"
         ? ["senseaudio_image", "volcengine_image"]
-        : ["senseaudio_video", "zealman_video", "volcengine_video"]
+        : ["senseaudio_video", "zealman_video", "volcengine_video", "autodl_video"]
     ).includes(model.providerKind);
   });
   return (

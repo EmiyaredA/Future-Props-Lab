@@ -8810,7 +8810,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -15885,7 +15885,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "volcengine_image" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "volcengine_image" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Provider Task Id */
@@ -17609,7 +17609,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "senseaudio_image" | "volcengine_image" | "senseaudio_video" | "volcengine_video" | "zealman_video";
+            provider_kind: "senseaudio_image" | "volcengine_image" | "senseaudio_video" | "volcengine_video" | "zealman_video" | "autodl_video";
             /** Provider Name */
             provider_name: string;
             /** Request Payload */
@@ -18249,14 +18249,17 @@ export interface components {
             mode: "text" | "frames" | "reference";
             /** Model Id */
             model_id: string;
-            /** Prompt */
+            /**
+             * Prompt
+             * @default
+             */
             prompt: string;
             /** Ratio */
             ratio?: ("16:9" | "9:16" | "4:3" | "3:4" | "1:1" | "21:9" | "adaptive") | null;
             /** Reference Asset Ids */
             reference_asset_ids?: string[];
             /** Resolution */
-            resolution?: ("480p" | "720p" | "1080p" | "4k") | null;
+            resolution?: ("480p" | "720p" | "1080p" | "4k" | "768p" | "960p" | "464x832" | "832x464") | null;
             /** Video Asset Ids */
             video_asset_ids?: string[];
             /** Watermark */
@@ -20232,7 +20235,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
             /** Supplier Id */
@@ -20260,7 +20263,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Managed Fields */
             managed_fields?: string[];
             /** Models */
@@ -20626,7 +20629,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -22399,7 +22402,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -22435,7 +22438,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -23370,6 +23373,15 @@ export interface components {
              * @default true
              */
             default_generate_audio: boolean;
+            /** Default Ratio */
+            default_ratio?: string | null;
+            /** Default Resolution */
+            default_resolution?: string | null;
+            /**
+             * Duration Label
+             * @default 时长
+             */
+            duration_label: string;
             /** Duration Max */
             duration_max: number;
             /**
@@ -23382,10 +23394,23 @@ export interface components {
              * @default false
              */
             frames_require_adaptive_ratio: boolean;
+            /**
+             * Max Prompt Length
+             * @default 6000
+             */
+            max_prompt_length: number;
             /** Ratios */
             ratios: string[];
             /** Reference Limits */
             reference_limits: {
+                [key: string]: number;
+            };
+            /** Reference Mime Types */
+            reference_mime_types?: {
+                [key: string]: string[];
+            };
+            /** Reference Minimums */
+            reference_minimums?: {
                 [key: string]: number;
             };
             /**
@@ -23393,13 +23418,59 @@ export interface components {
              * @default false
              */
             reference_video_upload_configured: boolean;
+            /** Resolution Ratios */
+            resolution_ratios?: {
+                [key: string]: string[];
+            };
             /** Resolutions */
             resolutions: string[];
+            /**
+             * Seed Maximum
+             * @default 999999999999999
+             */
+            seed_maximum: number;
+            /**
+             * Seed Minimum
+             * @default 0
+             */
+            seed_minimum: number;
+            /** Supported Modes */
+            supported_modes?: string[];
             /**
              * Supports Auto Duration
              * @default true
              */
             supports_auto_duration: boolean;
+            /**
+             * Supports Duration
+             * @default true
+             */
+            supports_duration: boolean;
+            /**
+             * Supports Generate Audio
+             * @default true
+             */
+            supports_generate_audio: boolean;
+            /**
+             * Supports Prompt
+             * @default true
+             */
+            supports_prompt: boolean;
+            /**
+             * Supports Ratio
+             * @default true
+             */
+            supports_ratio: boolean;
+            /**
+             * Supports Seed
+             * @default false
+             */
+            supports_seed: boolean;
+            /**
+             * Supports Watermark
+             * @default true
+             */
+            supports_watermark: boolean;
         };
         /** VideoDownloadAssetOut */
         VideoDownloadAssetOut: {
@@ -24263,7 +24334,7 @@ export interface components {
             /** Reference Asset Ids */
             reference_asset_ids?: string[];
             /** Resolution */
-            resolution?: ("480p" | "720p" | "1080p" | "4k") | null;
+            resolution?: ("480p" | "720p" | "1080p" | "4k" | "768p" | "960p" | "464x832" | "832x464") | null;
             /** Video Asset Ids */
             video_asset_ids?: string[];
             /** Watermark */
@@ -24997,7 +25068,7 @@ export interface components {
              * @default 720p
              * @enum {string}
              */
-            resolution: "480p" | "720p" | "1080p" | "4k";
+            resolution: "480p" | "720p" | "1080p" | "4k" | "768p" | "960p" | "464x832" | "832x464";
             /** Video Asset Ids */
             video_asset_ids?: string[];
             /**

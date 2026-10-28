@@ -486,7 +486,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                     {
                         "type": "audio",
                         "audio_url": await self._asset_data_uri(str(asset_id), workspace_id)
-                        if provider_kind == "volcengine_video"
+                        if provider_kind in {"volcengine_video", "autodl_video"}
                         else await self._temporary_asset_url(
                             str(asset_id),
                             "audio",
@@ -499,7 +499,9 @@ class VisualGenerationRunner(PollingTaskRunner):
                 content.append(
                     {
                         "type": "video",
-                        "video_url": await self._temporary_asset_url(
+                        "video_url": await self._asset_data_uri(str(asset_id), workspace_id)
+                        if provider_kind == "autodl_video"
+                        else await self._temporary_asset_url(
                             str(asset_id),
                             "video",
                             workspace_id,

@@ -40,6 +40,7 @@ export function GenerationPromptEditor({
   onChange,
   onBlur,
   canvasHistoryShortcuts = false,
+  maxLength = 6000,
 }: {
   value: string;
   assets: ManagedFile[];
@@ -48,6 +49,7 @@ export function GenerationPromptEditor({
   onChange: (value: string) => void;
   onBlur?: () => void;
   canvasHistoryShortcuts?: boolean;
+  maxLength?: number;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const lastCaret = useRef<PromptCaret | undefined>(undefined);
@@ -136,7 +138,7 @@ export function GenerationPromptEditor({
       ? resolvePromptReferences(next, assets)
       : normalizePromptParts(next);
     const projected = promptProjection(normalized);
-    if (projected.length > 6000) {
+    if (projected.length > maxLength) {
       pendingDomSync.current = true;
       setParts((current) => [...current]);
       return;
@@ -373,7 +375,7 @@ export function GenerationPromptEditor({
     if (caret) lastCaret.current = caret;
     const normalized = normalizePromptParts(next);
     const projected = promptProjection(normalized);
-    if (projected.length > 6000) {
+    if (projected.length > maxLength) {
       pendingDomSync.current = true;
       if (caret) pendingCaret.current = caret;
       setParts((current) => [...current]);
@@ -547,7 +549,9 @@ export function GenerationPromptEditor({
           if (key) removeAsset(key);
         }}
       />
-      <small>{promptProjection(parts).length}/6000</small>
+      <small>
+        {promptProjection(parts).length}/{maxLength}
+      </small>
       {mention ? (
         <div
           className="generation-prompt-mention-menu"

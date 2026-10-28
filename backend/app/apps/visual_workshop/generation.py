@@ -43,6 +43,7 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
+from app.llm.providers import autodl_workflows
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
@@ -62,7 +63,16 @@ from app.runtime.time import iso_utc, utc_now
 ACTIVE_TASK_STATUSES = ("queued", "submitting", "pending", "processing")
 REFERENCE_MIME_TYPES = {
     "image": {"image/jpeg", "image/png", "image/webp", "image/gif"},
-    "audio": {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/x-m4a", "audio/ogg"},
+    "audio": {
+        "audio/mpeg",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/mp4",
+        "audio/x-m4a",
+        "audio/ogg",
+        "audio/flac",
+        "audio/x-flac",
+    },
     "video": {"video/mp4", "video/quicktime", "video/webm"},
 }
 
@@ -126,6 +136,7 @@ class VisualGeneration:
                             "senseaudio_video",
                             "volcengine_video",
                             "zealman_video",
+                            "autodl_video",
                             "senseaudio_music",
                             "senseaudio_sfx",
                         )
@@ -145,7 +156,7 @@ class VisualGeneration:
                         if provider.kind in {"senseaudio_image", "volcengine_image"}
                         else "video"
                         if provider.kind
-                        in {"senseaudio_video", "zealman_video", "volcengine_video"}
+                        in {"senseaudio_video", "zealman_video", "volcengine_video", "autodl_video"}
                         else "audio"
                     ),
                     slug=model.slug,
@@ -162,11 +173,13 @@ class VisualGeneration:
                     if provider.kind == "volcengine_video"
                     and model.slug == "doubao-seedance-2-5-260628"
                     else 9
-                    if provider.kind in {"zealman_video", "volcengine_video"}
+                    if provider.kind in {"zealman_video", "volcengine_video", "autodl_video"}
                     else 1,
                     supports_seed=provider.kind not in {"volcengine_image", "volcengine_video"},
-                    max_prompt_length=6000
-                    if provider.kind == "zealman_video"
+                    max_prompt_length=20000
+                    if provider.kind == "autodl_video"
+                    else 6000
+                    if provider.kind in {"zealman_video", "autodl_video"}
                     or model.slug == "senseaudio-image-2.0-260319"
                     else 2000,
                     video_capabilities=video_capabilities(
@@ -180,6 +193,7 @@ class VisualGeneration:
                 )
                 for model, provider in rows
                 if (provider.kind != "zealman_video" or model.slug in WORKFLOWS)
+                and (provider.kind != "autodl_video" or model.slug in autodl_workflows.WORKFLOWS)
                 and (
                     provider.kind != "volcengine_video"
                     or model.slug in {"doubao-seedance-2-0-260128", "doubao-seedance-2-5-260628"}
@@ -212,7 +226,7 @@ class VisualGeneration:
             not in (
                 {"senseaudio_image", "volcengine_image"}
                 if kind == "image"
-                else {"senseaudio_video", "zealman_video", "volcengine_video"}
+                else {"senseaudio_video", "zealman_video", "volcengine_video", "autodl_video"}
                 if kind == "video"
                 else {expected_provider_kind}
             )
@@ -386,9 +400,9 @@ class VisualGeneration:
                     payload = normalize_request(model.slug, payload, explicit_fields)
                 except ValueError as exc:
                     raise GenerationError(str(exc), code="unsupported_parameter") from None
-            elif body.workflow_parameters is not None:
+            elif provider.kind != "autodl_video" and body.workflow_parameters is not None:
                 raise GenerationError("当前模型不支持工作流参数", code="unsupported_parameter")
-            if provider.kind != "zealman_video":
+            if provider.kind not in {"zealman_video", "autodl_video"}:
                 for field, default in {
                     "resolution": "720p",
                     "ratio": "16:9",
@@ -428,6 +442,17 @@ class VisualGeneration:
                     for asset in reference_assets.values()
                 ):
                     raise GenerationError("工作流不支持所选素材格式", code="invalid_reference")
+            if provider.kind == "autodl_video":
+                try:
+                    autodl_workflows.validate_references(
+                        model.slug,
+                        [
+                            (a.media_kind, a.mime_type, a.byte_size)
+                            for a in reference_assets.values()
+                        ],
+                    )
+                except ValueError as exc:
+                    raise GenerationError(str(exc), code="invalid_reference") from None
             if provider.kind == "volcengine_video":
                 try:
                     await validate_seedance_references(

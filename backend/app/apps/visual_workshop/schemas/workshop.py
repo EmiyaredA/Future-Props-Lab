@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.apps.visual_workshop.schemas.prompts import VisualPromptDraft
+from app.apps.visual_workshop.schemas.prompts import VisualPromptDraft, VisualVideoPromptVersion
 from app.capabilities.asset_store.schemas.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
@@ -142,10 +142,17 @@ class VisualCanvasImageGenerationDraft(VisualPromptDraft):
 
 
 class VisualCanvasVideoGenerationDraft(VisualPromptDraft):
+    version_type = VisualVideoPromptVersion
+    prompt_versions: list[VisualVideoPromptVersion] = Field(
+        default_factory=list, min_length=1, max_length=20
+    )
+    prompt: str = Field(default="", max_length=20000)
     model_id: str | None = None
     mode: Literal["text", "image", "frames", "reference"] = "text"
     duration: int = Field(default=5, ge=-1, le=30)
-    resolution: Literal["480p", "720p", "1080p", "4k"] = "720p"
+    resolution: Literal["480p", "720p", "1080p", "4k", "768p", "960p", "464x832", "832x464"] = (
+        "720p"
+    )
     ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1", "21:9", "adaptive"] = "16:9"
     watermark: bool = True
     generate_audio: bool = False
@@ -596,6 +603,7 @@ class GenerationTaskOut(BaseModel):
         "volcengine_video",
         "senseaudio_video",
         "zealman_video",
+        "autodl_video",
         "senseaudio_music",
         "senseaudio_sfx",
     ]

@@ -137,7 +137,9 @@ class ModelTestGenerationRunner(PollingTaskRunner):
                 model_slug=task.model_slug,
                 payload=task.payload,
             )
-        content: list[dict[str, object]] = [{"type": "text", "text": str(task.payload["prompt"])}]
+        content: list[dict[str, object]] = [
+            {"type": "text", "text": str(task.payload.get("prompt", ""))}
+        ]
         for field, role in (
             ("first_frame_asset_id", "first_frame"),
             ("last_frame_asset_id", "last_frame"),
@@ -165,7 +167,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
                 {
                     "type": "audio",
                     "audio_url": await self._asset_data_uri(task.task_id, str(asset_id), "audio")
-                    if task.provider_kind == "volcengine_video"
+                    if task.provider_kind in {"volcengine_video", "autodl_video"}
                     else await self._temporary_asset_url(task.task_id, str(asset_id), "audio"),
                 }
             )
@@ -173,9 +175,9 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             content.append(
                 {
                     "type": "video",
-                    "video_url": await self._temporary_asset_url(
-                        task.task_id, str(asset_id), "video"
-                    ),
+                    "video_url": await self._asset_data_uri(task.task_id, str(asset_id), "video")
+                    if task.provider_kind == "autodl_video"
+                    else await self._temporary_asset_url(task.task_id, str(asset_id), "video"),
                 }
             )
         return await submit_generation_task(

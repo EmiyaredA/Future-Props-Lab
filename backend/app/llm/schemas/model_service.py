@@ -18,6 +18,7 @@ ProviderKind = Literal[
     "volcengine_video",
     "senseaudio_video",
     "zealman_video",
+    "autodl_video",
     "senseaudio_asr",
     "senseaudio_asr_pro",
     "senseaudio_realtime",
@@ -85,6 +86,8 @@ class ProviderIn(BaseModel):
     def valid_base_url(self) -> ProviderIn:
         if self.kind == "local_qwen_tts" and (self.base_url.strip() or self.api_key.strip()):
             raise ValueError("托管本地模型不接受服务地址或 API Key")
+        if self.kind == "autodl_video" and not self.base_url.strip():
+            self.base_url = "https://www.autodl.art"
         if self.kind == "volcengine_video" and not self.base_url.strip():
             self.base_url = "https://ark.cn-beijing.volces.com/api/v3"
         if self.kind == "deepseek" and not self.base_url.strip():

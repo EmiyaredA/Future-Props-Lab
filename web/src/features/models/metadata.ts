@@ -20,6 +20,10 @@ export const providerMetadata = {
     label: "SenseAudio 图片",
     optionLabel: "SenseAudio 图片生成",
   },
+  autodl_video: {
+    label: "AutoDL 工作流",
+    optionLabel: "AutoDL · zealman 视频工作流",
+  },
   zealman_video: {
     label: "ZEALMAN 视频",
     optionLabel: "ZEALMAN · H3 工作流视频",

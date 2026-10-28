@@ -7,7 +7,7 @@ import {
   Settings2,
   Video,
 } from "lucide-react";
-import { WorkflowVideoControls } from "@features/models";
+import { VideoSeedControl, WorkflowVideoControls } from "@features/models";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { type VideoMode } from "@features/visual-workshop/generation/options";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
@@ -152,9 +152,13 @@ export function CompactVideoGenerationDrawer({
             {modeLabels
               .filter(
                 (mode) =>
-                  !workflowCapabilities ||
-                  mode.value === "text" ||
-                  mode.value === "reference",
+                  (!workflowCapabilities ||
+                    mode.value === "text" ||
+                    mode.value === "reference") &&
+                  (!controller.videoCapabilities?.supported_modes ||
+                    controller.videoCapabilities.supported_modes.includes(
+                      mode.value,
+                    )),
               )
               .map((mode) => (
                 <button
@@ -365,20 +369,25 @@ export function CompactVideoGenerationDrawer({
             </div>
           ) : null}
           <ReferenceDropNotice notice={dropNotice} />
-          <div className="video-composer-prompt">
-            {controller.promptVersions && (
-              <PromptVersionControls versions={controller.promptVersions} />
-            )}
-            <GenerationPromptEditor
-              value={prompt}
-              assets={promptAssets}
-              label="视频提示词"
-              placeholder="描述您的修改或生成需求…"
-              canvasHistoryShortcuts
-              onChange={setPrompt}
-              onBlur={() => persistDraft({}, true)}
-            />
-          </div>
+          {controller.videoCapabilities?.supports_prompt !== false && (
+            <div className="video-composer-prompt">
+              {controller.promptVersions && (
+                <PromptVersionControls versions={controller.promptVersions} />
+              )}
+              <GenerationPromptEditor
+                value={prompt}
+                maxLength={
+                  controller.videoCapabilities?.max_prompt_length ?? 6000
+                }
+                assets={promptAssets}
+                label="视频提示词"
+                placeholder="描述您的修改或生成需求…"
+                canvasHistoryShortcuts
+                onChange={setPrompt}
+                onBlur={() => persistDraft({}, true)}
+              />
+            </div>
+          )}
         </div>
 
         {notice ? (
@@ -420,9 +429,13 @@ export function CompactVideoGenerationDrawer({
               <ChevronDown aria-hidden />
             </summary>
             <div className="video-parameter-popover">
-              {controller.videoCapabilities ? (
+              {controller.videoCapabilities?.supports_duration === false ? (
+                <p>时长随输入视频</p>
+              ) : controller.videoCapabilities ? (
                 <label>
-                  <span>时长</span>
+                  <span>
+                    {controller.videoCapabilities?.duration_label ?? "时长"}
+                  </span>
                   <CustomSelect
                     ariaLabel="时长"
                     value={String(duration)}
@@ -465,26 +478,27 @@ export function CompactVideoGenerationDrawer({
                   </span>
                 </label>
               )}
-              {(!workflowCapabilities ||
-                workflowCapabilities.supports_ratio) && (
-                <label>
-                  <span>画面比例</span>
-                  <CustomSelect
-                    ariaLabel="画面比例"
-                    className="video-parameter-select"
-                    value={controller.effectiveRatio}
-                    options={controller.videoOptions.ratios.map((value) => ({
-                      value,
-                      label: value === "adaptive" ? "自适应" : value,
-                    }))}
-                    onChange={(value) => {
-                      const next = value as typeof ratio;
-                      setRatio(next);
-                      persistDraft({ ratio: next }, true);
-                    }}
-                  />
-                </label>
-              )}
+              {controller.videoCapabilities?.supports_ratio !== false &&
+                (!workflowCapabilities ||
+                  workflowCapabilities.supports_ratio) && (
+                  <label>
+                    <span>画面比例</span>
+                    <CustomSelect
+                      ariaLabel="画面比例"
+                      className="video-parameter-select"
+                      value={controller.effectiveRatio}
+                      options={controller.videoOptions.ratios.map((value) => ({
+                        value,
+                        label: value === "adaptive" ? "自适应" : value,
+                      }))}
+                      onChange={(value) => {
+                        const next = value as typeof ratio;
+                        setRatio(next);
+                        persistDraft({ ratio: next }, true);
+                      }}
+                    />
+                  </label>
+                )}
               {!workflowCapabilities && (
                 <>
                   <label>
@@ -503,38 +517,58 @@ export function CompactVideoGenerationDrawer({
                       }}
                     />
                   </label>
-                  <div className="video-parameter-switches">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={generateAudio}
-                        onChange={(event) => {
-                          setGenerateAudio(event.target.checked);
-                          persistDraft(
-                            { generate_audio: event.target.checked },
-                            true,
-                          );
-                        }}
-                      />
-                      生成音频
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={watermark}
-                        onChange={(event) => {
-                          setWatermark(event.target.checked);
-                          persistDraft(
-                            { watermark: event.target.checked },
-                            true,
-                          );
-                        }}
-                      />
-                      保留水印
-                    </label>
-                  </div>
+                  {controller.videoCapabilities?.supports_watermark !== false &&
+                    controller.videoCapabilities?.supports_generate_audio !==
+                      false && (
+                      <div className="video-parameter-switches">
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={generateAudio}
+                            onChange={(event) => {
+                              setGenerateAudio(event.target.checked);
+                              persistDraft(
+                                { generate_audio: event.target.checked },
+                                true,
+                              );
+                            }}
+                          />
+                          生成音频
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={watermark}
+                            onChange={(event) => {
+                              setWatermark(event.target.checked);
+                              persistDraft(
+                                { watermark: event.target.checked },
+                                true,
+                              );
+                            }}
+                          />
+                          保留水印
+                        </label>
+                      </div>
+                    )}
                 </>
               )}
+              <VideoSeedControl
+                capabilities={controller.videoCapabilities}
+                value={controller.workflowValues.seed ?? ""}
+                onChange={(seed) => {
+                  controller.setWorkflowValues({
+                    ...controller.workflowValues,
+                    seed,
+                  });
+                  persistDraft(
+                    {
+                      workflow_parameters: seed ? { seed: Number(seed) } : null,
+                    },
+                    true,
+                  );
+                }}
+              />
               {workflowCapabilities && (
                 <WorkflowVideoControls
                   capabilities={workflowCapabilities}
@@ -550,7 +584,8 @@ export function CompactVideoGenerationDrawer({
               createMutation.isPending ||
               generating ||
               !modelId ||
-              (videoMode === "text" && !prompt.trim())
+              (controller.videoCapabilities?.supports_prompt !== false &&
+                !prompt.trim())
             }
             type="submit"
             aria-label={

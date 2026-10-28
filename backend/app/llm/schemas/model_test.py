@@ -186,9 +186,11 @@ class ModelTestVideoGenerationIn(BaseModel):
     last_frame_asset_id: str | None = None
     kind: Literal["video"]
     model_id: str
-    prompt: str = Field(min_length=1, max_length=6000)
+    prompt: str = Field(default="", max_length=20000)
     duration: int = Field(default=5, ge=-1, le=30)
-    resolution: Literal["480p", "720p", "1080p", "4k"] | None = None
+    resolution: (
+        Literal["480p", "720p", "1080p", "4k", "768p", "960p", "464x832", "832x464"] | None
+    ) = None
     ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1", "21:9", "adaptive"] | None = None
     watermark: bool | None = None
     generate_audio: bool | None = None
@@ -200,8 +202,6 @@ class ModelTestVideoGenerationIn(BaseModel):
     @model_validator(mode="after")
     def clean_prompt(self) -> ModelTestVideoGenerationIn:
         self.prompt = self.prompt.strip()
-        if not self.prompt:
-            raise ValueError("提示词不能为空")
         all_asset_ids = [
             *([self.first_frame_asset_id] if self.first_frame_asset_id else []),
             *([self.last_frame_asset_id] if self.last_frame_asset_id else []),
@@ -239,6 +239,7 @@ class ModelTestGenerationTaskOut(BaseModel):
         "senseaudio_video",
         "volcengine_video",
         "zealman_video",
+        "autodl_video",
     ]
     kind: Literal["image", "video"]
     provider_name: str

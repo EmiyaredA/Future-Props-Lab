@@ -1,5 +1,7 @@
 """Editable prompt variants shared by the three media generation drafts."""
 
+from typing import ClassVar
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -16,7 +18,12 @@ class VisualPromptVersion(BaseModel):
         return value.strip()
 
 
+class VisualVideoPromptVersion(VisualPromptVersion):
+    prompt: str = Field(default="", max_length=20000)
+
+
 class VisualPromptDraft(BaseModel):
+    version_type: ClassVar[type[VisualPromptVersion]] = VisualPromptVersion
     prompt: str = Field(default="", max_length=6000)
     prompt_versions: list[VisualPromptVersion] = Field(
         default_factory=list, min_length=1, max_length=20
@@ -31,7 +38,7 @@ class VisualPromptDraft(BaseModel):
             object.__setattr__(
                 self,
                 "prompt_versions",
-                [VisualPromptVersion(id="v1", name="v1", prompt=self.prompt)],
+                [self.version_type(id="v1", name="v1", prompt=self.prompt)],
             )
             object.__setattr__(self, "active_prompt_version_id", "v1")
             return self

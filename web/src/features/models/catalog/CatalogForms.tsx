@@ -1,3 +1,4 @@
+import { autodlPresets } from "./autodlPresets";
 import { useState } from "react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
@@ -195,6 +196,7 @@ export function ModelForm({
     senseaudio_video: ["video_generation"],
     volcengine_video: ["video_generation"],
     zealman_video: ["video_generation"],
+    autodl_video: ["video_generation"],
     local_qwen_tts: ["speech_synthesis"],
     senseaudio_asr: ["speech_recognition"],
     senseaudio_asr_pro: ["speech_recognition"],
@@ -316,6 +318,28 @@ export function ModelForm({
             }}
           />
           <small>在火山方舟开通对应模型后，使用方舟 API Key 调用。</small>
+        </label>
+      )}
+      {selectedProvider?.kind === "autodl_video" && !initial && (
+        <label>
+          <span>AutoDL 工作流预设</span>
+          <CustomSelect
+            ariaLabel="AutoDL 工作流预设"
+            value={slug}
+            options={[{ value: "", label: "选择工作流" }, ...autodlPresets]}
+            onChange={(value) => {
+              setSlug(value);
+              setLabel(
+                autodlPresets.find((item) => item.value === value)?.label ??
+                  value,
+              );
+              setCapabilities(["video_generation"]);
+              setCategories(["video_generation"]);
+            }}
+          />
+          <small>
+            使用 AutoDL ComfyUI 分组令牌，Authorization 直接发送原始 Token。
+          </small>
         </label>
       )}
       {selectedProvider?.kind === "zealman_video" && !initial && (

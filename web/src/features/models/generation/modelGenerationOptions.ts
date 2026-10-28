@@ -3,7 +3,8 @@ import type { ModelTestGenerationTask } from "@features/models/api";
 import { formatFileSize } from "@shared/lib/fileSize";
 
 export type GenerationKind = "image" | "video";
-export type Resolution = "480p" | "720p" | "1080p" | "4k";
+export type Resolution =
+  "480p" | "720p" | "1080p" | "4k" | "768p" | "960p" | "464x832" | "832x464";
 export type Ratio =
   "16:9" | "9:16" | "4:3" | "3:4" | "1:1" | "21:9" | "adaptive";
 export type ReferenceKind = "image" | "audio" | "video";
@@ -59,6 +60,9 @@ const referenceMimeTypes = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+  "audio/flac",
+  "audio/x-flac",
+  "video/webm",
   "audio/mpeg",
   "audio/wav",
   "audio/x-wav",
@@ -82,9 +86,12 @@ export function modelGenerationKind(model: TestModel): GenerationKind | null {
   if (["senseaudio_image", "volcengine_image"].includes(model.providerKind))
     return "image";
   if (
-    ["senseaudio_video", "zealman_video", "volcengine_video"].includes(
-      model.providerKind,
-    )
+    [
+      "senseaudio_video",
+      "zealman_video",
+      "volcengine_video",
+      "autodl_video",
+    ].includes(model.providerKind)
   )
     return "video";
   return null;

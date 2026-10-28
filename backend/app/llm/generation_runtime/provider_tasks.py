@@ -8,6 +8,7 @@ import httpx
 from app.llm.generation_runtime.driver import ImmediateGenerationResult
 from app.llm.generation_runtime.media import GenerationMaterializationError
 from app.llm.providers import (
+    autodl_video,
     create_image_task,
     create_music_task,
     create_sound_effect,
@@ -59,6 +60,14 @@ async def submit_generation_task(
 ) -> str | ImmediateGenerationResult:
     """Submit a normalized image, video, music, or sound-effect task."""
     base_url = require_safe_provider_base_url(base_url)
+    if provider_kind == "autodl_video":
+        return await autodl_video.create_task(
+            base_url=base_url,
+            api_key=api_key,
+            model=model_slug,
+            payload=payload,
+            content=video_content or [],
+        )
     if provider_kind == "volcengine_image":
         return ImmediateGenerationResult(
             await generate_image(
@@ -131,6 +140,10 @@ async def poll_generation_task(
     *, provider_kind: str, base_url: str, api_key: str, provider_task_id: str
 ):
     base_url = require_safe_provider_base_url(base_url)
+    if provider_kind == "autodl_video":
+        return await autodl_video.get_task(
+            base_url=base_url, api_key=api_key, task_id=provider_task_id
+        )
     if provider_kind == "volcengine_video":
         return await volcengine_video.get_task(
             base_url=base_url, api_key=api_key, task_id=provider_task_id
