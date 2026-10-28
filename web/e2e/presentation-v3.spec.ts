@@ -104,6 +104,7 @@ test("新元素创建、公式上传、保存重开与文稿包交付", async ({
   const file = await downloaded;
   expect(file.suggestedFilename()).toMatch(/\.fplppt$/);
   const content = await readFile((await file.path())!);
+  await dialog.getByRole("button", { name: "完成", exact: true }).click();
   await page.getByRole("button", { name: "返回文稿列表" }).click();
   await page.getByLabel("选择导入文稿", { exact: true }).setInputFiles({
     name: "roundtrip.fplppt",

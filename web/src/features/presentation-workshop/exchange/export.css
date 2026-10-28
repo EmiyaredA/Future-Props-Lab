@@ -1,0 +1,43 @@
+.presentation-export-progress,
+.presentation-export-result {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.presentation-export-progress p,
+.presentation-export-result p {
+  margin: 0 0 10px;
+}
+.presentation-export-progress [role="progressbar"] {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+}
+.presentation-export-progress [role="progressbar"] span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  animation: presentation-export-pending 1.4s ease-in-out infinite alternate;
+}
+.presentation-export-path {
+  overflow-wrap: anywhere;
+  user-select: text;
+  font-size: 12px;
+}
+@keyframes presentation-export-pending {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(185%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .presentation-export-progress [role="progressbar"] span {
+    animation: none;
+  }
+}

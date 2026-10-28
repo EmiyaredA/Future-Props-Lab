@@ -30,6 +30,7 @@ import { NodeRunReview } from "./NodeRunReview";
 import "./acceptance.css";
 import "./review.css";
 import "./node-acceptance.css";
+import "./node-panel.css";
 
 export function NodeAcceptancePanel({
   projectId,
@@ -173,7 +174,7 @@ export function NodeAcceptancePanel({
           onError={setError}
         />
       ) : (
-        <>
+        <div className="node-acceptance-setup">
           <div className="node-acceptance-heading">
             <div>
               <h2>
@@ -216,31 +217,35 @@ export function NodeAcceptancePanel({
             </p>
           )}
           {context.isPending && <p role="status">正在读取节点验收依据…</p>}
-          <div className="node-acceptance-select-heading">
-            <label className="node-acceptance-field">选择验收方案</label>
-            {onTemplates && <button onClick={onTemplates}>查看模板说明</button>}
-          </div>
-          <AcceptanceSchemePicker
-            schemes={schemes}
-            value={value?.scheme_id}
-            disabled={!canWrite || selection.isPending || !value}
-            onChange={(identity) => {
-              setError("");
-              selection.mutate(identity);
-            }}
-          />
-          {scheme && (
-            <div className="node-fixed-connection">
-              <SchemeIcon scheme={scheme} />
-              <span>
-                <strong>{scheme.connection_label}</strong>
-                <small>{scheme.message}</small>
-              </span>
-              <span className="acceptance-badge neutral">
-                <LockKeyhole size={12} /> 固定接入
-              </span>
+          <div className="node-acceptance-scheme">
+            <div className="node-acceptance-select-heading">
+              <label className="node-acceptance-field">选择验收方案</label>
+              {onTemplates && (
+                <button onClick={onTemplates}>查看模板说明</button>
+              )}
             </div>
-          )}
+            <AcceptanceSchemePicker
+              schemes={schemes}
+              value={value?.scheme_id}
+              disabled={!canWrite || selection.isPending || !value}
+              onChange={(identity) => {
+                setError("");
+                selection.mutate(identity);
+              }}
+            />
+            {scheme && (
+              <div className="node-fixed-connection">
+                <SchemeIcon scheme={scheme} />
+                <span>
+                  <strong>{scheme.connection_label}</strong>
+                  <small>{scheme.message}</small>
+                </span>
+                <span className="acceptance-badge neutral">
+                  <LockKeyhole size={12} /> 固定接入
+                </span>
+              </div>
+            )}
+          </div>
           <div className="node-acceptance-inputs">
             <h3>
               已自动读取{" "}
@@ -321,23 +326,25 @@ export function NodeAcceptancePanel({
               </button>
             </div>
           )}
-          <div className="node-check-scope">
-            <strong>本次将检查</strong>
-            <CheckScope criteria={catalog.data?.items[0]?.criteria ?? []} />
-          </div>
-          {scheme && (
-            <div className="node-return-scope">
-              <strong>本方案返回</strong>
-              <span>
-                <FileText size={19} />
-                {scheme.output_description}
-              </span>
+          <div className="node-acceptance-scope">
+            <div className="node-check-scope">
+              <strong>本次将检查</strong>
+              <CheckScope criteria={catalog.data?.items[0]?.criteria ?? []} />
             </div>
-          )}
-          <p className="node-acceptance-info">
-            <Info size={17} />
-            所需信息已从节点整理，无需重复填写。验收不限制最终输出选择。
-          </p>
+            {scheme && (
+              <div className="node-return-scope">
+                <strong>本方案返回</strong>
+                <span>
+                  <FileText size={19} />
+                  {scheme.output_description}
+                </span>
+              </div>
+            )}
+            <p className="node-acceptance-info">
+              <Info size={17} />
+              所需信息已从节点整理，无需重复填写。验收不限制最终输出选择。
+            </p>
+          </div>
           {value?.current_run && (
             <div className="node-acceptance-latest">
               <strong>
@@ -427,7 +434,7 @@ export function NodeAcceptancePanel({
               </div>
             </section>
           )}
-        </>
+        </div>
       )}
     </section>
   );

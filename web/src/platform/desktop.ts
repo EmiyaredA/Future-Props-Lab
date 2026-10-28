@@ -26,6 +26,11 @@ export type DesktopBridge = {
   minimize: () => Promise<void>;
   close: () => Promise<void>;
   openNewWindow: () => Promise<void>;
+  saveExportFile?: (
+    filename: string,
+    bytes: Uint8Array,
+  ) => Promise<{ id: string; path: string } | null>;
+  revealExportFile?: (receiptId: string) => Promise<void>;
   pickStorageDirectory?: () => Promise<string | null>;
   openPresentationAudience?: (
     projectId: string,

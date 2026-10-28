@@ -60,7 +60,7 @@ test("home is the default route and tools stay responsive", async ({
   await expect(navItems.nth(2)).toContainText("文件管理");
   await expect(navItems.nth(3)).toContainText("工具导航");
   await expect(navItems.nth(4)).toContainText("集成中心");
-  await expect(navItems.nth(5)).toContainText("基模型");
+  await expect(navItems.nth(5)).toContainText("AI 能力");
   await expect(page.locator(".tool-grid")).toHaveCSS(
     "grid-template-columns",
     /\S+px \S+px \S+px/,

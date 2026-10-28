@@ -292,8 +292,8 @@ function StudioChrome({
     },
     {
       id: "base-models",
-      label: "基模型",
-      shortLabel: "基模型",
+      label: "AI 能力",
+      shortLabel: "AI 能力",
       icon: <CubeIcon />,
       active: infrastructureActive,
       children: modelItems,

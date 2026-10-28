@@ -1,0 +1,356 @@
+.node-acceptance.acceptance-workspace {
+  container: node-acceptance / inline-size;
+  min-height: 0;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.node-acceptance-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.node-acceptance-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.node-acceptance-heading > div {
+  min-width: 0;
+}
+.node-acceptance h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 20px;
+}
+.node-acceptance-heading p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+.node-acceptance .node-acceptance-heading > button {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  flex: 0 0 34px;
+  padding: 0;
+}
+.node-acceptance-scheme,
+.node-acceptance-scope {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.node-acceptance-scheme {
+  gap: 8px;
+}
+.node-acceptance-select-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+}
+.node-acceptance-select-heading label {
+  font-weight: 600;
+}
+.node-acceptance .node-acceptance-select-heading > button {
+  padding: 0;
+  min-height: 24px;
+  color: var(--link, #3b82f6);
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+}
+.node-fixed-connection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+}
+.node-fixed-connection > svg,
+.node-fixed-connection > .acceptance-software-icon {
+  flex-shrink: 0;
+}
+.node-fixed-connection > span:nth-child(2) {
+  display: grid;
+  flex: 1;
+  min-width: 140px;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+.node-fixed-connection strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.node-fixed-connection small {
+  font-size: 12px;
+}
+.node-acceptance-inputs {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 14px 16px 0;
+  overflow: hidden;
+}
+.node-acceptance-inputs h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 15px;
+}
+.node-acceptance-inputs h3 > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.node-acceptance-inputs > p {
+  margin: 4px 0 12px;
+  font-size: 12px;
+}
+.node-acceptance-inputs .acceptance-reference-options {
+  display: block;
+  max-height: 250px;
+  margin: 0;
+  padding: 0;
+}
+.node-acceptance-inputs .acceptance-reference-row {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) minmax(100px, 130px);
+  gap: 8px 16px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  padding: 12px 0;
+}
+.node-acceptance-role {
+  grid-column: 1;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 550;
+}
+.node-acceptance-inputs .acceptance-reference-summary {
+  grid-column: 2;
+  grid-row: 1;
+}
+.node-acceptance-role > svg,
+.node-acceptance-inputs dt > svg {
+  flex-shrink: 0;
+}
+.node-acceptance-inputs .node-acceptance-source {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: 12px;
+  white-space: normal;
+  color: var(--muted);
+}
+.node-acceptance-inputs .acceptance-thumbnail {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+}
+.node-acceptance-inputs .acceptance-reference-copy strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.node-acceptance-inputs .acceptance-reference-copy small {
+  font-size: 11px;
+}
+.node-acceptance-inputs dl {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 0 16px;
+  margin: 0;
+}
+.node-acceptance-inputs dt {
+  display: flex;
+  align-items: start;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 550;
+}
+.node-acceptance-inputs dt > svg {
+  margin-top: 2px;
+}
+.node-acceptance-inputs dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.node-acceptance-inputs :is(dt, dd) {
+  min-width: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.node-acceptance-setup > .acceptance-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 14px 16px;
+  margin: 0;
+}
+.node-acceptance-setup > .acceptance-notice ul {
+  flex: 1 1 260px;
+  margin: 0;
+  padding-left: 18px;
+}
+.node-acceptance-setup > .acceptance-notice li + li {
+  margin-top: 4px;
+}
+.node-acceptance-setup > .acceptance-notice button {
+  flex-shrink: 0;
+}
+.node-check-scope,
+.node-return-scope {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  font-size: 13px;
+}
+.node-check-scope > strong,
+.node-return-scope > strong {
+  padding-top: 4px;
+}
+.node-check-scope .acceptance-scope-items {
+  gap: 8px;
+}
+.node-check-scope .acceptance-scope-items > span {
+  gap: 6px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--surface-soft);
+  font-size: 12px;
+  white-space: normal;
+}
+.node-check-scope .acceptance-scope-items svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.node-return-scope > span {
+  display: inline-flex;
+  align-items: start;
+  gap: 8px;
+  padding-top: 4px;
+  color: var(--muted);
+}
+.node-return-scope > span > svg {
+  flex-shrink: 0;
+}
+.node-acceptance .node-acceptance-info {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  color: var(--muted);
+  margin: 0;
+  font-size: 12px;
+}
+.node-acceptance-info > svg {
+  flex-shrink: 0;
+}
+.node-acceptance-footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.node-acceptance-footer small {
+  min-width: 0;
+  font-size: 12px;
+}
+.node-acceptance-footer > button {
+  min-height: 36px;
+  white-space: nowrap;
+}
+.node-acceptance .acceptance-primary {
+  min-height: 36px;
+  padding-inline: 16px;
+}
+.node-acceptance-latest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.node-acceptance-history {
+  display: grid;
+  gap: 8px;
+}
+.node-acceptance-history > button {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+}
+@container node-acceptance (max-width: 560px) {
+  .node-acceptance-inputs .acceptance-reference-row {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
+  .node-acceptance-inputs .node-acceptance-source {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .node-acceptance-footer {
+    grid-template-columns: 1fr auto;
+  }
+  .node-acceptance-footer > button:first-child {
+    justify-self: start;
+  }
+  .node-acceptance-footer > small {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+  .node-acceptance-footer > .acceptance-primary {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+@container node-acceptance (max-width: 380px) {
+  .node-acceptance h2 {
+    font-size: 18px;
+  }
+  .node-check-scope,
+  .node-return-scope {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .node-acceptance-inputs {
+    padding-inline: 12px;
+  }
+  .node-acceptance-inputs .acceptance-reference-row,
+  .node-acceptance-inputs dl {
+    grid-template-columns: 84px minmax(0, 1fr);
+    column-gap: 10px;
+  }
+}
+@media (max-width: 600px) {
+  .node-acceptance.acceptance-workspace {
+    padding: 14px;
+  }
+}

@@ -40,7 +40,7 @@ export function AcceptanceSchemePicker({
   return (
     <CustomSelect
       ariaLabel="选择验收方案"
-      className="acceptance-model-select"
+      className="acceptance-model-select acceptance-scheme-select"
       value={value ?? ""}
       disabled={disabled}
       onChange={(id) => onChange((id || null) as SchemeId | null)}
@@ -61,7 +61,7 @@ export function AcceptanceSchemePicker({
             </span>
             <span className="acceptance-model-copy">
               <strong>{scheme.title}</strong>
-              <code>{scheme.model_slug || scheme.connection_label}</code>
+              {scheme.model_slug && <code>{scheme.model_slug}</code>}
               <span className="acceptance-model-provider">
                 {scheme.message}
               </span>

@@ -122,7 +122,7 @@ export function EditorHeader({
           onClick={() => void exportNow()}
         >
           <Download size={16} />
-          <span>{busy ? "正在导出…" : "导出 PPTX"}</span>
+          <span>导出 PPTX</span>
         </button>
         <PresentationMenu
           label="导出选项"

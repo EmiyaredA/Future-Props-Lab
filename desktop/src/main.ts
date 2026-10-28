@@ -24,6 +24,7 @@ import {
 } from "./amadeus-window-geometry";
 import { PetWindowController } from "./pet-window";
 import { installStorageDirectoryPicker } from "./storage-directory-picker";
+import { installExportFiles } from "./export-files";
 const isDevelopment =
   !app.isPackaged &&
   process.env.FPL_DEV_SESSION === "1" &&
@@ -757,15 +758,6 @@ else {
           ),
         ),
     );
-    studio.on("will-download", (_event, item) => {
-      item.setSaveDialogOptions({
-        title: "保存导出文件",
-        defaultPath: path.join(
-          app.getPath("downloads"),
-          path.basename(item.getFilename()),
-        ),
-      });
-    });
     const actions: Record<string, (win: BrowserWindow) => unknown> = {
       status: () => state,
       retry: () => {
@@ -800,6 +792,7 @@ else {
       });
     petController.installIpc();
     installStorageDirectoryPicker(isTrustedStudioSender);
+    installExportFiles(isTrustedStudioSender, studio);
     installPresentationWindows({
       trusted: isTrustedStudioSender,
       create: () => makeWindow(true),

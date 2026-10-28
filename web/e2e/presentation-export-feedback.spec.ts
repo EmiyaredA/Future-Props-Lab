@@ -1,0 +1,138 @@
+import { expect, test, type Page } from "@playwright/test";
+import { newDeck } from "../src/features/presentation-workshop/templates";
+
+async function create(page: Page) {
+  await page.goto("/apps/presentation-workshop");
+  const csrf = (await page.context().cookies()).find(
+    (c) => c.name === "fpl_csrf",
+  )!.value;
+  const response = await page.request.post(
+    "/v1/presentation-workshop/projects",
+    {
+      headers: { "X-CSRF-Token": csrf, Origin: new URL(page.url()).origin },
+      data: { title: "导出反馈验收", document: newDeck() },
+    },
+  );
+  expect(response.ok()).toBeTruthy();
+  const project = await response.json();
+  await page.goto(`/apps/presentation-workshop/projects/${project.id}`);
+  await expect(page.getByRole("group", { name: "幻灯片画布" })).toBeVisible();
+  return project.id as string;
+}
+
+test("真实 PPTX 下载期间持续显示进度，完成后明确提示下载位置入口", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  const id = await create(page);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(
+    `**/v1/presentation-workshop/projects/${id}/export`,
+    async (route) => {
+      const response = await route.fetch();
+      await gate;
+      await route.fulfill({ response });
+    },
+  );
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出 PPTX", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "导出 PPTX", exact: true });
+  try {
+    await expect(dialog.getByText(/正在生成 PPTX/)).toBeVisible();
+    await expect(dialog.getByRole("progressbar")).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "关闭", exact: true }),
+    ).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeVisible();
+    await page.screenshot({ path: info.outputPath("export-generating.png") });
+  } finally {
+    release();
+  }
+  const file = await download;
+  expect(file.suggestedFilename()).toBe("导出反馈验收.pptx");
+  await file.saveAs(info.outputPath("导出反馈验收.pptx"));
+  await expect(dialog.getByText(/已发起下载/)).toBeVisible();
+  await expect(dialog.getByText(/浏览器下载列表/)).toBeVisible();
+  await expect(dialog.getByRole("progressbar")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "完成", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+});
+
+test("模拟桌面另存为取消与重选，显示完整保存路径并支持文件定位", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  const id = await create(page);
+  let exports = 0;
+  page.on("request", (request) => {
+    if (request.url().endsWith(`/projects/${id}/export`)) exports++;
+  });
+  await page.evaluate(() => {
+    let count = 0;
+    Object.assign(window, {
+      futurePropsDesktop: {
+        saveExportFile: async (filename: string, bytes: Uint8Array) => {
+          if (
+            filename !== "导出反馈验收.pptx" ||
+            bytes[0] !== 80 ||
+            bytes[1] !== 75
+          )
+            throw new Error("导出文件内容无效");
+          count++;
+          return count === 1
+            ? null
+            : {
+                id: "receipt",
+                path: "/Users/example/Desktop/导出反馈验收.pptx",
+              };
+        },
+        revealExportFile: async (id: string) => {
+          document.body.dataset.revealedExport = id;
+        },
+      },
+    });
+  });
+  await page.getByRole("button", { name: "导出选项" }).click();
+  await page
+    .getByRole("menuitem", { name: "导出 PPTX 文件", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "导出 PPTX", exact: true });
+  await expect(dialog.getByText("已取消保存，文件尚未保存。")).toBeVisible();
+  await dialog
+    .getByRole("button", { name: "选择保存位置", exact: true })
+    .click();
+  await expect(
+    dialog.getByText("导出文件已保存", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByText("/Users/example/Desktop/导出反馈验收.pptx"),
+  ).toBeVisible();
+  expect(exports).toBe(1);
+  await dialog
+    .getByRole("button", { name: "在文件夹中显示", exact: true })
+    .click();
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-revealed-export",
+    "receipt",
+  );
+  await page.screenshot({ path: info.outputPath("export-saved.png") });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    dialog.getByText("/Users/example/Desktop/导出反馈验收.pptx"),
+  ).toBeVisible();
+  const bounds = await dialog.boundingBox();
+  expect(bounds!.width).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: info.outputPath("export-saved-mobile.png") });
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "dark";
+  });
+  await page.screenshot({
+    path: info.outputPath("export-saved-mobile-dark.png"),
+  });
+  await dialog.getByRole("button", { name: "完成", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+});

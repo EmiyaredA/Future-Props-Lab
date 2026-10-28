@@ -71,7 +71,7 @@ test("home keeps the three destinations equal and links model shortcuts", async 
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /应用/ })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /工具导航/ })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /基模型/ })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /AI 能力/ })).toBeInTheDocument();
   expect(screen.queryByText("视觉创作工坊")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: /浏览应用/ }));
   expect(navigate).toHaveBeenCalledWith("/apps");

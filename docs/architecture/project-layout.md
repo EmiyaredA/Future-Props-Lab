@@ -114,6 +114,8 @@ Future-Props-Lab/
   `app/DesktopAgentHost.tsx` 负责授权通知、外部更新提示及受保护导航，账号设置拥有接入开关。
   `console/governance/desktop_setup.py` 复用账号开通用例；`runtime/desktop.py` 只负责桌面凭据和静态托管。
   `web/src/features/accounts/DesktopSetupGate.tsx` 拥有首用表单，`platform/desktop.ts` 只定义固定桥接。
+  `src/export-files.ts` 拥有文稿导出的原生另存为、临时文件原子替换及按窗口绑定的文件定位回执；
+  渲染层只能提供有界文件内容与文件名，写入路径必须由原生保存窗口选择。
   桌面版配置和数据规则见 [macOS 桌面构建](../operations/desktop-macos.md)。
 
 - `console/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、Agent/Plan 运行、持久提问、参数摘要审批与执行记录；
@@ -485,6 +487,9 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
 `master/` 拥有独立路由的聚焦模板设计器、文稿绑定与覆盖面板、共享配置控件及 Web 纯解析器；`canvas/` 拥有原生模板图层适配、对象属性、手势历史与紧凑画布样式，设计器复用 `SlideCanvas` 的几何与吸附；`nativeScenes.ts` 明确转换旧槽位、解析固定场景并为新页克隆默认正文，`studioPreview.ts` 保存五种真实布局，预览和创建共用这些数据。`LayoutApplicationPanel.tsx` 负责选页、显式映射及双版本预览／应用；普通文稿固定层仍受保护。`web/public/presentation-templates/` 保存内置生成插画，`bundledAssets.ts` 仅在显式保存／导入时上传被引用素材并重映射为当前 Workspace 的托管 ID；`SlideSurface` 接收文稿上下文并解析模板，画布正文选择与修改仍使用源页面。全局模板变更进入原历史队列，预览应用通过正式 API 后保留撤销历史；新增模板页登记响应式验收。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
+`exchange/ExportDialog.tsx` 统一 PPTX 主按钮与菜单入口，显示保存、预检、生成和文件保存阶段；
+`exchange/export.css` 拥有不定量进度与可复制路径样式。生成文件仅在弹窗内存中暂存，取消或写入失败可以重新保存；
+桌面通过固定导出桥接返回实际路径与定位回执，浏览器只报告下载交接，不声称文件已落盘。
 `presentation-dialog.css` 统一工坊弹窗尺寸、控件密度和固定标题／操作栏；内容区局部滚动，各编辑器继续独立拥有草稿与焦点生命周期。
 `presentationHistory.ts` 解析历史快照的页面与元素定位；`usePresentationDraft` 持有本次会话的 100 步历史与保存队列，`usePresentationHistory` 统一键盘、按钮、字段合并边界、输入法与未提交手势取消。历史定位和分组提示只存在内存，不进入文稿、HTTP 或 SDK 契约。
 `codeHighlight.ts` 将 lowlight 语法树解析为现有原生段落与显式 run 颜色；`CodeHighlightDialog`

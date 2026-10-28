@@ -17,10 +17,13 @@
   font-size: 13px;
 }
 .visual-project-board
-  :is(button, input, textarea):not(:where(.theme-toggle *)) {
+  :is(button, input, textarea):not(
+    :where(.theme-toggle *, .acceptance-workspace *)
+  ) {
   font: inherit;
 }
-.visual-project-board button:not(:where(.theme-toggle *)),
+.visual-project-board
+  button:not(:where(.theme-toggle *, .acceptance-workspace *)),
 .board-upload {
   border: 1px solid var(--board-border);
   border-radius: 8px;
@@ -37,12 +40,62 @@
     border-color 140ms,
     box-shadow 140ms;
 }
-.visual-project-board button:not(:where(.theme-toggle *)):hover:not(:disabled) {
+.visual-project-board
+  button:not(:where(.theme-toggle *, .acceptance-workspace *)):hover:not(
+    :disabled
+  ) {
   background: var(--board-soft);
 }
 .visual-project-board button:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.visual-project-board .canvas-node-inspector > .canvas-inspector-tabs {
+  min-height: 44px;
+  flex-shrink: 0;
+  gap: 24px;
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.visual-project-board .canvas-inspector-tabs > button {
+  position: relative;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--board-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.visual-project-board .canvas-inspector-tabs > button::after {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  left: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  content: "";
+}
+.visual-project-board .canvas-inspector-tabs > button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--board-text);
+}
+.visual-project-board .canvas-inspector-tabs > button.active {
+  color: var(--board-accent);
+}
+.visual-project-board .canvas-inspector-tabs > button.active::after {
+  background: currentColor;
+}
+.visual-project-board .canvas-inspector-tabs > button:focus-visible {
+  outline-offset: -4px;
+  border-radius: 6px;
 }
 
 .visual-project-board .board-material[draggable="true"] {
@@ -57,16 +110,16 @@
   outline: 2px solid var(--board-accent, #e36643);
   outline-offset: 2px;
 }
-.visual-project-board :is(h2, h3, p) {
+.visual-project-board :is(h2, h3, p):not(:where(.acceptance-workspace *)) {
   margin: 0;
 }
-.visual-project-board h2 {
+.visual-project-board h2:not(:where(.acceptance-workspace *)) {
   font-size: 15px;
 }
-.visual-project-board h3 {
+.visual-project-board h3:not(:where(.acceptance-workspace *)) {
   font-size: 13px;
 }
-.visual-project-board small,
+.visual-project-board small:not(:where(.acceptance-workspace *)),
 .board-muted {
   color: var(--board-muted);
   font-size: 12px;

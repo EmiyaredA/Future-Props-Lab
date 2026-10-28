@@ -28,9 +28,9 @@ const destinations = [
     icon: Compass,
   },
   {
-    title: "基模型",
-    description: "配置模型服务、测试效果并查看调用记录。",
-    action: "管理模型",
+    title: "AI 能力",
+    description: "管理模型服务与编程智能体，测试效果并查看调用记录。",
+    action: "管理 AI 能力",
     path: "/model-service",
     icon: Box,
   },

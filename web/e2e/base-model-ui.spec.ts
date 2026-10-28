@@ -35,7 +35,7 @@ test("sidebar chevron points inward when collapsed and custom select chevrons st
     "transform",
     "matrix(0, 1, -1, 0, 0, 0)",
   );
-  await page.getByRole("button", { name: "基模型" }).click();
+  await page.getByRole("button", { name: "AI 能力" }).click();
   await expect(page.locator(".nav-chevron")).toHaveCSS(
     "transform",
     "matrix(-1, 0, 0, -1, 0, 0)",

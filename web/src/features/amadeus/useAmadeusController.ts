@@ -331,7 +331,7 @@ export function useAmadeusController(session: AccountSessionContext) {
     const prompt = options?.prompt || draft.trim();
     if (!prompt || busy) return;
     if (!agents.find((a) => a.id === agentId)?.available) {
-      setError("请先在基模型 → 模型与智能体 → 编程智能体 配置并授权此 Agent");
+      setError("请先在 AI 能力 → 模型与智能体 → 编程智能体 配置并授权此 Agent");
       return;
     }
     if (detailRef.current?.conversation.executor_kind === "legacy-pi") {

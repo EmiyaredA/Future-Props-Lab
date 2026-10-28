@@ -8,7 +8,7 @@ import { editorCommands } from "./commands";
 import type { ExportFormat } from "../exchange/ExportDialog";
 import { usePresentationDraft } from "../usePresentationDraft";
 import { usePresentationHistory } from "../usePresentationHistory";
-import { download, exportProject, imageBlob } from "../api";
+import { download, imageBlob } from "../api";
 import { presentationKeys } from "../queryKeys";
 import { copySlide, newSlide, newId } from "../templates";
 import { effectiveDefinition } from "../master/model";
@@ -65,12 +65,12 @@ export function usePresentationSession({
     [zoom, setZoom] = useState<number | null>(null),
     [scale, setScale] = useState(0.5);
   const [error, setError] = useState(""),
-    [busy, setBusy] = useState(false),
     [previewId, setPreviewId] = useState<string | null>(null),
     [show, setShow] = useState<number | null>(null);
   const [themeSlide, setThemeSlide] = useState<string | null>(null);
   const [codeSlide, setCodeSlide] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<ExportFormat | null>(null);
+  const busy = exportFormat !== null;
   const [themeSource, setThemeSource] = useState<Slide | null>(null);
   const [layoutSource, setLayoutSource] = useState<Slide | null>(null);
   const [brush, setBrush] = useState<SlideElement | null>(null);
@@ -414,36 +414,7 @@ export function usePresentationSession({
     pageOperation((deck) => duplicatePages(deck, ids));
   const reorderPages = (ids: string[], index: number) =>
     pageOperation((deck) => movePages(deck, ids, index));
-  const exportNow = () =>
-    report(async () => {
-      if (busy) return;
-      setBusy(true);
-      try {
-        const saved = await draft.flush();
-        if (
-          saved.document.slides.some(
-            (s) =>
-              s.animations?.length ||
-              s.transition ||
-              s.annotations?.length ||
-              s.elements.some(
-                (e) =>
-                  !e.hidden &&
-                  (e.image_effects ||
-                    (["table", "chart"].includes(e.kind) && e.opacity !== 1) ||
-                    (e.chart?.type === "area" && e.chart.smooth)),
-              ),
-          )
-        ) {
-          setExportFormat("pptx");
-          return;
-        }
-        const blob = await exportProject(saved.id, saved.revision);
-        download(blob, saved.title + ".pptx");
-      } finally {
-        setBusy(false);
-      }
-    });
+  const exportNow = () => setExportFormat("pptx");
   const startShow = (index: number) => {
     if (editor?.view.composing) return;
     setEditing(null);

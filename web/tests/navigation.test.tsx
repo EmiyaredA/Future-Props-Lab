@@ -24,7 +24,9 @@ test.each(["model-service", "code-agents"] as const)(
   "%s shares the single model infrastructure sidebar entry",
   (page) => {
     render(<StudioSidebar page={page} navigate={vi.fn()} />);
-    const navigation = screen.getByRole("navigation", { name: "基模型子菜单" });
+    const navigation = screen.getByRole("navigation", {
+      name: "AI 能力子菜单",
+    });
     expect(
       within(navigation).getByRole("button", { name: "模型与智能体" }),
     ).toHaveAttribute("aria-current", "page");
@@ -66,7 +68,7 @@ test("renders integrations after tools and before the base model group", () => {
   expect(navigationButtons[3]).toHaveAccessibleName("文件管理");
   expect(navigationButtons[4]).toHaveAccessibleName("工具导航");
   expect(navigationButtons[5]).toHaveAccessibleName("集成中心");
-  expect(navigationButtons[6]).toHaveAccessibleName("基模型");
+  expect(navigationButtons[6]).toHaveAccessibleName("AI 能力");
   fireEvent.click(screen.getByRole("button", { name: "首页" }));
   expect(navigate).toHaveBeenCalledWith("home");
   fireEvent.click(screen.getByRole("button", { name: "应用" }));
@@ -80,7 +82,7 @@ test("renders integrations after tools and before the base model group", () => {
   fireEvent.click(screen.getByRole("button", { name: "集成中心" }));
   expect(navigate).toHaveBeenCalledWith("integrations-tool-apis");
   expect(
-    screen.getByRole("navigation", { name: "基模型子菜单" }),
+    screen.getByRole("navigation", { name: "AI 能力子菜单" }),
   ).toBeInTheDocument();
   expect(
     document.querySelector(".studio-sidebar.has-secondary .studio-secondary"),
@@ -94,7 +96,7 @@ test("renders integrations after tools and before the base model group", () => {
   expect(navigate).toHaveBeenCalledWith("model-call-logs");
   fireEvent.click(screen.getByRole("button", { name: "收起二级导航" }));
   expect(
-    screen.queryByRole("navigation", { name: "基模型子菜单" }),
+    screen.queryByRole("navigation", { name: "AI 能力子菜单" }),
   ).not.toBeInTheDocument();
 });
 
@@ -303,19 +305,23 @@ test("opens base-model flyout from the primary rail when secondary is hidden", (
   const navigate = vi.fn();
   render(<StudioSidebar page="home" navigate={navigate} />);
 
-  fireEvent.click(screen.getByRole("button", { name: "基模型，点击展开菜单" }));
-  const menu = screen.getByRole("menu", { name: "基模型" });
+  fireEvent.click(
+    screen.getByRole("button", { name: "AI 能力，点击展开菜单" }),
+  );
+  const menu = screen.getByRole("menu", { name: "AI 能力" });
   expect(menu).toBeInTheDocument();
   fireEvent.click(within(menu).getByRole("menuitem", { name: "模型与智能体" }));
   expect(navigate).toHaveBeenCalledWith("model-service");
   expect(
-    screen.queryByRole("menu", { name: "基模型" }),
+    screen.queryByRole("menu", { name: "AI 能力" }),
   ).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "基模型，点击展开菜单" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "AI 能力，点击展开菜单" }),
+  );
   fireEvent.keyDown(document, { key: "Escape" });
   expect(
-    screen.queryByRole("menu", { name: "基模型" }),
+    screen.queryByRole("menu", { name: "AI 能力" }),
   ).not.toBeInTheDocument();
   localStorage.removeItem("future-props-sidebar-studio-secondary-collapsed");
 });

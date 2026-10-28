@@ -57,6 +57,80 @@
 .acceptance-model-select .custom-select-menu button + button {
   border-top: 1px solid var(--border);
 }
+.acceptance-scheme-select {
+  flex: none;
+}
+.node-acceptance .acceptance-scheme-select .custom-select-trigger {
+  min-height: 40px;
+  padding: 5px 12px;
+}
+.acceptance-scheme-select .custom-select-trigger .acceptance-model-icon {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  border: 0;
+  border-radius: 6px;
+}
+.acceptance-scheme-select .custom-select-trigger .acceptance-model-card {
+  gap: 10px;
+}
+.acceptance-scheme-select .custom-select-trigger .acceptance-model-copy {
+  overflow: hidden;
+}
+.acceptance-scheme-select .custom-select-trigger strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acceptance-scheme-select
+  .custom-select-trigger
+  :is(code, .acceptance-model-provider) {
+  display: none;
+}
+.acceptance-scheme-select .custom-select-menu {
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+}
+.acceptance-scheme-select .custom-select-menu > button {
+  min-height: 36px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+  align-items: stretch;
+}
+.acceptance-scheme-select .custom-select-menu > button + button {
+  border-top: 0;
+}
+.acceptance-scheme-select .custom-select-menu > button:is(:hover, .selected) {
+  background: var(--surface-hover);
+}
+.acceptance-scheme-select .custom-select-menu .acceptance-model-icon {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+  border-radius: 7px;
+}
+.acceptance-scheme-select
+  .acceptance-model-icon
+  :is(svg, .acceptance-software-icon) {
+  width: 20px;
+  height: 20px;
+  flex-basis: 20px;
+}
+.acceptance-scheme-select .custom-select-menu .acceptance-model-card {
+  align-items: start;
+  gap: 10px;
+}
+.acceptance-scheme-select .custom-select-menu .acceptance-model-provider {
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: normal;
+}
 @media (max-width: 600px) {
   .acceptance-start-options > .acceptance-model-select {
     flex-basis: 100%;

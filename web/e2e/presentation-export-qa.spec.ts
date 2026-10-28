@@ -86,6 +86,10 @@ test("三页实际导出对照与百页负担记录", async ({ page }, testInfo)
   const downloaded = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出 PPTX", exact: true }).click();
   await (await downloaded).saveAs(join(directory!, "presentation-sample.pptx"));
+  await page
+    .getByRole("dialog", { name: "导出 PPTX", exact: true })
+    .getByRole("button", { name: "完成", exact: true })
+    .click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: join(directory!, "editor-mobile.png") });
   await page.setViewportSize({ width: 1600, height: 1000 });

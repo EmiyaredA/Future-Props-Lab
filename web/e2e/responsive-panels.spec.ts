@@ -12,8 +12,8 @@ test("icon rail keeps base-model flyout reachable on narrow screens", async ({
   await expect(
     page.getByRole("button", { name: "打开主导航", exact: true }),
   ).toHaveCount(0);
-  await rail.getByRole("button", { name: "基模型，点击展开菜单" }).click();
-  const menu = page.getByRole("menu", { name: "基模型", exact: true });
+  await rail.getByRole("button", { name: "AI 能力，点击展开菜单" }).click();
+  const menu = page.getByRole("menu", { name: "AI 能力", exact: true });
   await expect(menu).toBeVisible();
   await capture(page, info, "base-model-flyout");
   await menu.getByRole("menuitem", { name: "模型服务" }).click();

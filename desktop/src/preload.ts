@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld(
     minimize: () => ipcRenderer.invoke("desktop:minimize"),
     close: () => ipcRenderer.invoke("desktop:close"),
     openNewWindow: () => ipcRenderer.invoke("desktop:open-new-window"),
+    saveExportFile: (filename: string, bytes: Uint8Array) =>
+      ipcRenderer.invoke("desktop:export-save", filename, bytes),
+    revealExportFile: (receiptId: string) =>
+      ipcRenderer.invoke("desktop:export-reveal", receiptId),
     pickStorageDirectory:
       process.platform === "darwin"
         ? () => ipcRenderer.invoke("desktop:storage-pick-directory")
