@@ -246,7 +246,7 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
             async with SessionLocal() as session:
                 row = await session.get(VisualGenerationTask, task["id"])
                 row.status = "pending"
-                row.created_at = utc_now() - timedelta(hours=2)
+                row.submitted_at = utc_now() - timedelta(hours=2)
                 await session.commit()
             await runner._process_task(task["id"])
             expired = (

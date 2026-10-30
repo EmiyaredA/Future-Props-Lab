@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { uploadManagedFile } from "@features/files/api";
 import {
   createGenerationTask,
+  cancelGenerationTask,
   getGenerationTask,
   getVisualCanvas,
   putVisualCanvas,
@@ -48,6 +49,7 @@ vi.mock("@features/visual-workshop/api", async () => {
     ...actual,
     createVisualAssistantConversation: vi.fn(),
     createGenerationTask: vi.fn(),
+    cancelGenerationTask: vi.fn(),
     deleteVisualAssistantConversation: vi.fn(),
     getGenerationOptions: vi.fn(),
     getGenerationTask: vi.fn(),
@@ -250,6 +252,7 @@ test("creates video tasks with the selected canvas node link", async () => {
     progress: 0,
     error_message: null,
     result_asset_id: null,
+    can_cancel: true,
     can_retry_materialization: false,
     revision: 0,
     created_at: "2026-08-03T08:00:00Z",
@@ -272,12 +275,19 @@ test("creates video tasks with the selected canvas node link", async () => {
     progress: 0,
     error_message: null,
     result_asset_id: null,
+    can_cancel: true,
     can_retry_materialization: false,
     revision: 0,
     created_at: "2026-08-03T08:00:00Z",
     updated_at: "2026-08-03T08:00:00Z",
     completed_at: null,
   });
+  vi.mocked(cancelGenerationTask).mockImplementation(async () => ({
+    ...(await getGenerationTask("task-video-1")),
+    status: "cancelled",
+    can_cancel: false,
+    revision: 1,
+  }));
   const user = userEvent.setup();
   const { container } = renderCanvas();
 
@@ -306,6 +316,15 @@ test("creates video tasks with the selected canvas node link", async () => {
     expect.any(Array),
     0,
     expect.any(Array),
+  );
+  await user.click(
+    await screen.findByRole("button", { name: "取消排队 task-video-1" }),
+  );
+  await waitFor(() =>
+    expect(cancelGenerationTask).toHaveBeenCalledExactlyOnceWith(
+      "task-video-1",
+      0,
+    ),
   );
 });
 

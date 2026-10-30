@@ -39,6 +39,7 @@ from app.capabilities.asset_store.models import (
     VisualProjectAssetReference,
 )
 from app.capabilities.asset_store.storage import AssetStorage
+from app.llm.generation_runtime import GenerationTaskDriver
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
@@ -93,6 +94,10 @@ def generation_task_out(row: VisualGenerationTask) -> GenerationTaskOut:
         execution_info=row.execution_info,
         error_message=row.error_message,
         result_asset_id=row.result_asset_id,
+        can_cancel=row.status == "queued" and row.generation_kind in {"image", "video"},
+        queue_message="任务已排队，获得生成额度后将自动执行"
+        if row.status == "queued" and row.generation_kind in {"image", "video"}
+        else None,
         can_retry_materialization=row.status == "failed" and bool(row.result_url),
         revision=row.revision,
         created_at=iso_utc(row.created_at),
@@ -697,6 +702,23 @@ class VisualGeneration:
         row = await self.session.get(VisualGenerationTask, task_id)
         if row is None:
             raise GenerationError("生成任务不存在", code="not_found", status=404)
+        return generation_task_out(row)
+
+    async def cancel(self, task_id: str, expected_revision: int) -> GenerationTaskOut:
+        row = await self.session.get(VisualGenerationTask, task_id)
+        if row is None:
+            raise GenerationError("生成任务不存在", code="not_found", status=404)
+        if not await GenerationTaskDriver.cancel_queued(self.session, row, expected_revision):
+            await self.session.refresh(row)
+            current = generation_task_out(row).model_dump(mode="json")
+            raise GenerationError(
+                "任务已变化或已开始提交，请刷新后重试",
+                code="generation_cancel_conflict",
+                status=409,
+                current=current,
+            )
+        await self.session.commit()
+        await self.session.refresh(row)
         return generation_task_out(row)
 
     async def get_batch(self, batch_id: str) -> GenerationBatchOut:

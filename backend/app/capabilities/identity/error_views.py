@@ -8,6 +8,7 @@ from app.capabilities.identity.errors import AccountError
 MESSAGES = {
     "invalid_invite_name": "请输入邀请码名称",
     "demo_service_already_installed": "当前工作区已经接入此测试服务，请在模型或集成目录中查看",
+    "generation_queue_full": "当前账号的生成等待队列已满，请等待任务完成或取消排队后再提交",
     "runtime_quota_exceeded": "当前并发额度已用完，请等待已有任务完成后再提交",
     "developer_docs_required": "当前身份不能查看开发者文档",
     "registration_invite_unavailable": "邀请码无效、已过期或已用完",
@@ -51,7 +52,7 @@ def error_detail(exc: AccountError) -> tuple[int, dict]:
     code = exc.code
     status = (
         429
-        if code == "runtime_quota_exceeded"
+        if code in {"runtime_quota_exceeded", "generation_queue_full"}
         else 404
         if code.endswith("not_found")
         else 409

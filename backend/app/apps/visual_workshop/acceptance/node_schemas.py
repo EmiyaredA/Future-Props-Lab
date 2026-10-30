@@ -4,7 +4,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .schemas import AcceptanceCriterion, AcceptanceRunOut
 
-SchemeId = Literal["motion-transfer:api", "motion-transfer:codex", "motion-transfer:claude-code"]
+SchemeId = Literal[
+    "motion-transfer:api",
+    "motion-transfer:codex",
+    "motion-transfer:claude-code",
+    "motion-transfer:opencode",
+    "motion-transfer:dsh",
+    "motion-transfer:pi",
+]
 
 
 class AcceptanceSchemeOut(BaseModel):

@@ -17,7 +17,7 @@ macOS App 支持本地 CLI / Python SDK 接入：在「账号设置 → API 密�
 [本地 Agent 接入](docs/operations/desktop-agent.md)。
 
 桌面顶栏的「Amadeus」打开独立的助手窗口。它在当前授权 Workspace 内显示已打开的 FPL
-窗口和手动选取的控件，按账号保存本地会话；新对话使用管理员授权的 Codex 或 Claude Code。AI 能力菜单中的
+窗口和手动选取的控件，按账号保存本地会话；新对话使用管理员授权的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI。AI 能力菜单中的
 “AI 能力 → 模型与智能体”统一提供模型服务和编程智能体切换；编程智能体提供连接检测与按用途授权；CLI 路径和启用项由 TOML 部署配置管理。窗口可加载所选
 工具 API、MCP 和 Skills，写入需确认。旧对话只读保留；外部客户端可通过 `fpl mcp serve`
 连接已授权项目。详见 [编程智能体](docs/operations/code-agents.md)。
@@ -128,4 +128,4 @@ Apple Silicon Mac（macOS 15+）可在模型服务中按需安装 Qwen3-TTS Base
 各 Workspace 主动接入并在模型测试中使用。无需系统 Python/uv；详见
 [桌面运行说明](docs/operations/desktop-macos.md#可选本地-qwen-语音)。
 
-视觉工坊的视频节点提供固定动作迁移验收：模型 API、Codex、Claude Code 的接入仅由 `[visual_acceptance]` 配置，界面只读展示。默认未配置，不自动安装或登录 CLI；项目负责模板说明和节点汇总，质量记录不限制最终输出采用。配置、版本要求与执行边界见[节点验收](docs/operations/node-acceptance.md)。
+视觉工坊的视频节点提供固定动作迁移验收：模型 API 在 `[visual_acceptance]` 配置，Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi CLI 在 `[code_agents]` 配置并按当前空间账号授权。默认未配置，不自动安装或登录 CLI；项目负责模板说明和节点汇总，质量记录不限制最终输出采用。配置、版本要求与执行边界见[节点验收](docs/operations/node-acceptance.md)。

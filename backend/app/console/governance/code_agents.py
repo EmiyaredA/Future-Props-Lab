@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
-from app.capabilities.agents.cli.catalog import DEFINITIONS, connection, inspect_connection
+from app.capabilities.agents.cli.catalog import DEFINITIONS, AgentId, connection, inspect_connection
 from app.capabilities.identity.errors import AccountError
 from app.console.governance.governance_transactions import begin_governance, cas
 from app.console.governance.platform_policy import read_setting
@@ -16,7 +16,6 @@ from app.console.models.platform_governance import PlatformSetting
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
-AgentId = Literal["codex", "claude-code"]
 Purpose = Literal["amadeus", "visual_acceptance", "interview_preparation"]
 
 
@@ -31,7 +30,7 @@ class GrantUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     expected_revision: int = Field(ge=0)
     grants: list[Grant] = Field(max_length=1000)
-    managed: list[str] = Field(max_length=6)
+    managed: list[str] = Field(max_length=15)
 
 
 class ModelOption(BaseModel):

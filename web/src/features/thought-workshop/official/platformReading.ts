@@ -418,7 +418,7 @@ export const PLATFORM_READING: Record<
   },
   "visual-workshop/workflow": {
     summary:
-      "组织输入连线与参考素材，使用 Seedance 视频模型、查看生成状态，并完成裁剪与取帧。",
+      "组织输入连线与参考素材，使用视频模型、管理图片／视频等待队列，并完成裁剪与取帧。",
     related: [
       {
         libraryId: "visual-workshop",

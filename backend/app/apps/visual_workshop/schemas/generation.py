@@ -72,8 +72,9 @@ class GenerationBatchOut(BaseModel):
     grid_size: Literal[4, 9]
     grid_output: Literal["nodes", "composite"]
     child_task_ids: list[str]
-    status: Literal["queued", "processing", "completed", "failed"]
+    status: Literal["queued", "processing", "completed", "failed", "cancelled"]
     completed_count: int
+    cancelled_count: int = 0
     failed_count: int
     result_asset_id: str | None
     error_message: str | None
@@ -87,3 +88,7 @@ class GenerationBatchOut(BaseModel):
 class GenerationBatchListOut(BaseModel):
     items: list[GenerationBatchOut]
     total: int
+
+
+class GenerationCancelIn(BaseModel):
+    expected_revision: int = Field(ge=0)

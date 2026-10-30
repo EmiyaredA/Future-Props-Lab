@@ -6,10 +6,18 @@ from app.runtime.time import iso_utc
 
 
 class GenerationError(Exception):
-    def __init__(self, message: str, *, code: str = "generation_error", status: int = 422) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "generation_error",
+        status: int = 422,
+        current: dict | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.status = status
+        self.current = current
 
 
 def generation_batch_out(row: VisualGenerationBatch) -> GenerationBatchOut:
@@ -23,6 +31,7 @@ def generation_batch_out(row: VisualGenerationBatch) -> GenerationBatchOut:
         status=row.status,
         completed_count=row.completed_count,
         failed_count=row.failed_count,
+        cancelled_count=row.cancelled_count,
         result_asset_id=row.result_asset_id,
         error_message=row.error_message,
         generation_node_id=row.generation_node_id,

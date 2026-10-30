@@ -1582,6 +1582,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/visual-workshop/generation-tasks/{task_id}/cancel",
+    "sdk": "client.generation.cancel_generation_task",
+    "document": "/docs.html?page=sdk-reference-generation#cancel-generation-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization",
     "sdk": "client.generation.retry_materialization",
     "document": "/docs.html?page=sdk-reference-generation#retry-materialization",

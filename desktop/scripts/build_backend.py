@@ -244,6 +244,14 @@ def main() -> None:
                 f"{ROOT / 'backend/app/llm/local_models' / resource}:app/llm/local_models",
             ]
         )
+    for resource in ("pi_tools.mjs", "dsh_tools.mjs"):
+        args.extend(
+            [
+                "--add-data",
+                f"{ROOT / 'backend/app/capabilities/agents/cli' / resource}"
+                ":app/capabilities/agents/cli",
+            ]
+        )
     docs = [ROOT / "README.md", ROOT / "CONTRIBUTING.md", ROOT / "docs/assets/MANIFEST.md"]
     for folder in ("architecture", "operations", "reference"):
         docs.extend(sorted((ROOT / "docs" / folder).glob("*.md")))

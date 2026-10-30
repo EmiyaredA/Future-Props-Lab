@@ -5,7 +5,7 @@ import os
 from sqlalchemy import select
 
 from app.capabilities.agents.cli import probe
-from app.capabilities.agents.cli.catalog import connection
+from app.capabilities.agents.cli.catalog import DEFINITIONS, connection
 from app.console.governance.code_agents import authorized
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
@@ -18,6 +18,9 @@ SCHEMES = {
     "motion-transfer:api": ("模型 API 方案", "model_api"),
     "motion-transfer:codex": ("Codex 方案", "code_agent"),
     "motion-transfer:claude-code": ("Claude Code 方案", "code_agent"),
+    "motion-transfer:opencode": ("OpenCode 方案", "code_agent"),
+    "motion-transfer:dsh": ("DeepSeek Harness 方案", "code_agent"),
+    "motion-transfer:pi": ("Pi 方案", "code_agent"),
 }
 TEMPLATE_VERSION = 1
 INPUT_VERSION = 1
@@ -27,14 +30,11 @@ SCHEME_VERSION = 1
 
 
 def cli_configuration(settings, scheme_id):
-    codex = scheme_id == "motion-transfer:codex"
-
-    agent_id = "codex" if codex else "claude-code"
+    agent_id = scheme_id.removeprefix("motion-transfer:")
     _, path, _ = connection(settings, agent_id)
-    users = (
-        settings.fpl_acceptance_codex_user_ids if codex else settings.fpl_acceptance_claude_user_ids
-    )
-    return ("codex" if codex else "claude-code"), path, set(filter(None, users.split(os.pathsep)))
+    prefix = "claude" if agent_id == "claude-code" else agent_id
+    users = getattr(settings, f"fpl_acceptance_{prefix}_user_ids", "")
+    return agent_id, path, set(filter(None, users.split(os.pathsep)))
 
 
 async def fixed_model(session, workspace_id, settings):
@@ -75,7 +75,7 @@ async def scheme_status(session, workspace_id, user_id, identity, *, check_cli=T
             slug, provider_kind = pair[0].slug, pair[1].kind
     else:
         agent, path, users = cli_configuration(settings, identity)
-        label = "Codex" if agent == "codex" else "Claude Code"
+        label = DEFINITIONS[agent].name
 
         available = bool(
             path

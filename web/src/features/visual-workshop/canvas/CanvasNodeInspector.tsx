@@ -1,3 +1,7 @@
+import {
+  CancelQueuedTasks,
+  CancelQueuedBatch,
+} from "../generation/CancelQueuedTasks";
 import { NodeAcceptancePanel } from "../acceptance/NodeAcceptancePanel";
 import type { VisualNodeOutput } from "../api";
 import { executionDetails } from "@shared/ui/taskExecutionPresentation";
@@ -302,6 +306,17 @@ export function CanvasNodeInspector({
           )}
         </nav>
       ) : null}
+      {generationLayout !== "workbench" && (
+        <>
+          <CancelQueuedTasks
+            key={taskId}
+            tasks={task.data ? [task.data] : []}
+          />
+          <CancelQueuedBatch
+            batch={batch.data?.grid_output === "composite" ? batch.data : null}
+          />
+        </>
+      )}
       {tab === "acceptance" ? (
         <NodeAcceptancePanel
           projectId={projectId}

@@ -4,7 +4,8 @@ from fastapi import Depends, HTTPException, Request
 from pydantic import ValidationError
 
 from app.capabilities.identity.route_permissions import route_permission
-from app.console.governance.runtime_quotas import acquire, admit_spawned_tasks, attach, release
+from app.console.governance.generation_queue import admit_generation_tasks
+from app.console.governance.runtime_quotas import acquire, attach, release
 from app.deps import SessionDep, StudioAuth
 from app.llm.inference.tasks import InferenceTasks
 from app.llm.schemas.model_inference import InferenceTaskIn
@@ -24,6 +25,20 @@ async def model_capacity(request: Request, principal: StudioAuth, session: Sessi
     if route_permission(request.method, request.url.path) != "models.use" and not diagnostic:
         yield
         return
+    if request.method == "POST" and path.startswith("/v1/visual-workshop/projects/"):
+        body = await request.json()
+        if isinstance(body, dict) and (
+            path.endswith("/generation-batches")
+            or (path.endswith("/generation-tasks") and body.get("kind") in {"image", "video"})
+        ):
+            # Persist ownership with the tasks, under their creation writer transaction.
+            await session.commit()
+            request.state.visual_queue_principal = principal
+            try:
+                yield
+            finally:
+                await session.rollback()
+            return
     # A durable receipt does not submit another task or consume another quota slot.
     if request.method == "POST" and path == "/v1/model-inference/tasks":
         try:
@@ -55,7 +70,13 @@ async def model_capacity(request: Request, principal: StudioAuth, session: Sessi
 
 def task_admission(request: Request, session, kind: str):
     async def retain(task_ids: list[str]):
-        await attach(session, getattr(request.state, "model_admission_id", None), kind, task_ids)
+        principal = getattr(request.state, "visual_queue_principal", None)
+        if principal is not None:
+            await admit_generation_tasks(session, principal, kind, task_ids)
+        else:
+            await attach(
+                session, getattr(request.state, "model_admission_id", None), kind, task_ids
+            )
 
     return retain
 
@@ -65,6 +86,6 @@ ModelCapacity = Depends(model_capacity)
 
 def spawned_task_admission(principal, kind):
     async def admit(session, task_ids):
-        await admit_spawned_tasks(session, principal, kind, task_ids)
+        await admit_generation_tasks(session, principal, kind, task_ids)
 
     return admit

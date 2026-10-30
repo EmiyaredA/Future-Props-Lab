@@ -238,7 +238,7 @@ async def test_readonly_catalog_retired_writes_and_unconfigured_connections(clie
     _, base, *_ = await setup(client, video)
     catalog = (await client.get("/v1/visual-workshop/acceptance/catalog")).json()["items"]
     assert len(catalog) == 1 and catalog[0]["title"] == "动作迁移" and catalog[0]["readonly"]
-    assert len(catalog[0]["schemes"]) == 3 and not any(
+    assert len(catalog[0]["schemes"]) == 6 and not any(
         s["available"] for s in catalog[0]["schemes"]
     )
     document = {"title": "旧标准", "criteria": [], "node_ids": []}

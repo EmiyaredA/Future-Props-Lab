@@ -125,7 +125,7 @@ class AcceptanceSampleIn(WireModel):
 class AcceptanceSchemeOut(WireModel):
     available: bool = Field(default=..., alias='available')
     connection_label: str = Field(default=..., alias='connection_label')
-    id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code'] = Field(default=..., alias='id')
+    id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code', 'motion-transfer:opencode', 'motion-transfer:dsh', 'motion-transfer:pi'] = Field(default=..., alias='id')
     input_description: str = Field(default=..., alias='input_description')
     kind: Literal['model_api', 'code_agent'] = Field(default=..., alias='kind')
     message: str = Field(default=..., alias='message')
@@ -318,7 +318,7 @@ class AgentOut(WireModel):
     available: bool = Field(default=..., alias='available')
     enabled: bool = Field(default=..., alias='enabled')
     executable: str = Field(default=..., alias='executable')
-    id: Literal['codex', 'claude-code'] = Field(default=..., alias='id')
+    id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='id')
     message: str = Field(default=..., alias='message')
     models: list[ModelOption] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name')
@@ -2916,6 +2916,7 @@ class GenerationBatchListOut(WireModel):
 
 class GenerationBatchOut(WireModel):
     batch_kind: Literal['generation', 'composition'] = Field(default=..., alias='batch_kind')
+    cancelled_count: int = Field(default=0, alias='cancelled_count')
     child_task_ids: list[str] = Field(default=..., alias='child_task_ids')
     completed_at: str | None = Field(default=..., alias='completed_at')
     completed_count: int = Field(default=..., alias='completed_count')
@@ -2929,8 +2930,11 @@ class GenerationBatchOut(WireModel):
     project_id: str = Field(default=..., alias='project_id')
     result_asset_id: str | None = Field(default=..., alias='result_asset_id')
     revision: int = Field(default=..., alias='revision')
-    status: Literal['queued', 'processing', 'completed', 'failed'] = Field(default=..., alias='status')
+    status: Literal['queued', 'processing', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
     updated_at: str = Field(default=..., alias='updated_at')
+
+class GenerationCancelIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
 class GenerationModelOptionOut(WireModel):
     description: str = Field(default=..., alias='description')
@@ -2951,11 +2955,17 @@ class GenerationModelOptionOut(WireModel):
 class GenerationOptionsOut(WireModel):
     models: list[GenerationModelOptionOut] = Field(default=..., alias='models')
 
+class GenerationQueueLimits(WireModel):
+    admin: int = Field(default=20, alias='admin', ge=0.0, le=1024.0)
+    member: int = Field(default=20, alias='member', ge=0.0, le=1024.0)
+    super_admin: int = Field(default=20, alias='super_admin', ge=0.0, le=1024.0)
+
 class GenerationTaskListOut(WireModel):
     items: list[GenerationTaskOut] = Field(default=..., alias='items')
     total: int = Field(default=..., alias='total')
 
 class GenerationTaskOut(WireModel):
+    can_cancel: bool = Field(default=False, alias='can_cancel')
     can_retry_materialization: bool = Field(default=..., alias='can_retry_materialization')
     canvas_node_id: str | None = Field(default=..., alias='canvas_node_id')
     completed_at: str | None = Field(default=..., alias='completed_at')
@@ -2972,21 +2982,22 @@ class GenerationTaskOut(WireModel):
     provider_kind: Literal['volcengine_image', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     provider_task_id: str | None = Field(default=..., alias='provider_task_id')
+    queue_message: str | None = Field(default=None, alias='queue_message')
     request_payload: dict[str, Any] = Field(default=..., alias='request_payload')
     result_asset_id: str | None = Field(default=..., alias='result_asset_id')
     revision: int = Field(default=..., alias='revision')
-    status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed'] = Field(default=..., alias='status')
+    status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
     updated_at: str = Field(default=..., alias='updated_at')
 
 class Grant(WireModel):
-    agent_id: Literal['codex', 'claude-code'] = Field(default=..., alias='agent_id')
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
     purpose: Literal['amadeus', 'visual_acceptance', 'interview_preparation'] = Field(default=..., alias='purpose')
     user_id: str = Field(default=..., alias='user_id', min_length=1, max_length=36)
 
 class GrantUpdate(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     grants: list[Grant] = Field(default=..., alias='grants', max_length=1000)
-    managed: list[str] = Field(default=..., alias='managed', max_length=6)
+    managed: list[str] = Field(default=..., alias='managed', max_length=15)
 
 class GrantsOut(WireModel):
     accounts: list[dict[str, str]] = Field(default=..., alias='accounts')
@@ -4123,12 +4134,12 @@ class NodeAcceptanceOut(WireModel):
     prompt: str = Field(default='', alias='prompt')
     result_is_current: bool = Field(default=False, alias='result_is_current')
     revision: int = Field(default=0, alias='revision')
-    scheme_id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code'] | None = Field(default=None, alias='scheme_id')
+    scheme_id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code', 'motion-transfer:opencode', 'motion-transfer:dsh', 'motion-transfer:pi'] | None = Field(default=None, alias='scheme_id')
     specifications: dict[str, Any] | None = Field(default=None, alias='specifications')
 
 class NodeAcceptanceSelectIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    scheme_id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code'] | None = Field(default=..., alias='scheme_id')
+    scheme_id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code', 'motion-transfer:opencode', 'motion-transfer:dsh', 'motion-transfer:pi'] | None = Field(default=..., alias='scheme_id')
 
 class NodeAcceptanceStartIn(WireModel):
     context_fingerprint: str = Field(default=..., alias='context_fingerprint', min_length=64, max_length=64)
@@ -5114,7 +5125,7 @@ class RubricDimension(WireModel):
     question_ids: list[str] = Field(default=..., alias='question_ids')
 
 class RunCreateIn(WireModel):
-    agent_id: Literal['codex', 'claude-code'] = Field(default=..., alias='agent_id')
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
     agent_model: str = Field(default='', alias='agent_model', max_length=160)
     capabilities: list[str] | None = Field(default=None, alias='capabilities', max_length=100)
     context: list[dict[str, Any]] | None = Field(default=None, alias='context', max_length=32)
@@ -5167,6 +5178,7 @@ class RunOut(WireModel):
 
 class RuntimeQuotas(WireModel):
     admin: QuotaLimit = Field(default={'realtime_voice': 2, 'total': 4}, alias='admin')
+    generation_queue: GenerationQueueLimits | None = Field(default=None, alias='generation_queue')
     instance: QuotaLimit = Field(default={'realtime_voice': 8, 'total': 16}, alias='instance')
     member: QuotaLimit = Field(default={'realtime_voice': 1, 'total': 2}, alias='member')
     reserved_for_admins: int = Field(default=2, alias='reserved_for_admins', ge=0.0, le=1024.0)
@@ -7346,8 +7358,10 @@ GalgameWorkshopProjectOut.model_rebuild()
 GalgameWorkshopProjectPatchIn.model_rebuild()
 GenerationBatchListOut.model_rebuild()
 GenerationBatchOut.model_rebuild()
+GenerationCancelIn.model_rebuild()
 GenerationModelOptionOut.model_rebuild()
 GenerationOptionsOut.model_rebuild()
+GenerationQueueLimits.model_rebuild()
 GenerationTaskListOut.model_rebuild()
 GenerationTaskOut.model_rebuild()
 Grant.model_rebuild()

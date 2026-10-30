@@ -8063,6 +8063,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/generation-tasks/{task_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Generation Task */
+        post: operations["cancel_generation_task_v1_visual_workshop_generation_tasks__task_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/generation-tasks/{task_id}/retry-materialization": {
         parameters: {
             query?: never;
@@ -8978,7 +8995,7 @@ export interface components {
              * Id
              * @enum {string}
              */
-            id: "motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code";
+            id: "motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code" | "motion-transfer:opencode" | "motion-transfer:dsh" | "motion-transfer:pi";
             /** Input Description */
             input_description: string;
             /**
@@ -9452,7 +9469,7 @@ export interface components {
              * Id
              * @enum {string}
              */
-            id: "codex" | "claude-code";
+            id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
             /** Message */
             message: string;
             /** Models */
@@ -15758,6 +15775,11 @@ export interface components {
              * @enum {string}
              */
             batch_kind: "generation" | "composition";
+            /**
+             * Cancelled Count
+             * @default 0
+             */
+            cancelled_count: number;
             /** Child Task Ids */
             child_task_ids: string[];
             /** Completed At */
@@ -15794,9 +15816,14 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "queued" | "processing" | "completed" | "failed";
+            status: "queued" | "processing" | "completed" | "failed" | "cancelled";
             /** Updated At */
             updated_at: string;
+        };
+        /** GenerationCancelIn */
+        GenerationCancelIn: {
+            /** Expected Revision */
+            expected_revision: number;
         };
         /** GenerationModelOptionOut */
         GenerationModelOptionOut: {
@@ -15844,6 +15871,24 @@ export interface components {
             /** Models */
             models: components["schemas"]["GenerationModelOptionOut"][];
         };
+        /** GenerationQueueLimits */
+        GenerationQueueLimits: {
+            /**
+             * Admin
+             * @default 20
+             */
+            admin: number;
+            /**
+             * Member
+             * @default 20
+             */
+            member: number;
+            /**
+             * Super Admin
+             * @default 20
+             */
+            super_admin: number;
+        };
         /** GenerationTaskListOut */
         GenerationTaskListOut: {
             /** Items */
@@ -15853,6 +15898,11 @@ export interface components {
         };
         /** GenerationTaskOut */
         GenerationTaskOut: {
+            /**
+             * Can Cancel
+             * @default false
+             */
+            can_cancel: boolean;
             /** Can Retry Materialization */
             can_retry_materialization: boolean;
             /** Canvas Node Id */
@@ -15890,6 +15940,8 @@ export interface components {
             provider_name: string;
             /** Provider Task Id */
             provider_task_id: string | null;
+            /** Queue Message */
+            queue_message?: string | null;
             /** Request Payload */
             request_payload: {
                 [key: string]: unknown;
@@ -15902,7 +15954,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "queued" | "submitting" | "pending" | "processing" | "completed" | "failed";
+            status: "queued" | "submitting" | "pending" | "processing" | "completed" | "failed" | "cancelled";
             /** Updated At */
             updated_at: string;
         };
@@ -15912,7 +15964,7 @@ export interface components {
              * Agent Id
              * @enum {string}
              */
-            agent_id: "codex" | "claude-code";
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
             /**
              * Purpose
              * @enum {string}
@@ -18620,7 +18672,7 @@ export interface components {
              */
             revision: number;
             /** Scheme Id */
-            scheme_id?: ("motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code") | null;
+            scheme_id?: ("motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code" | "motion-transfer:opencode" | "motion-transfer:dsh" | "motion-transfer:pi") | null;
             /** Specifications */
             specifications?: {
                 [key: string]: unknown;
@@ -18631,7 +18683,7 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
             /** Scheme Id */
-            scheme_id: ("motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code") | null;
+            scheme_id: ("motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code" | "motion-transfer:opencode" | "motion-transfer:dsh" | "motion-transfer:pi") | null;
         };
         /** NodeAcceptanceStartIn */
         NodeAcceptanceStartIn: {
@@ -21074,7 +21126,7 @@ export interface components {
              * Agent Id
              * @enum {string}
              */
-            agent_id: "codex" | "claude-code";
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
             /**
              * Agent Model
              * @default
@@ -21221,6 +21273,7 @@ export interface components {
              *     }
              */
             admin: components["schemas"]["QuotaLimit"];
+            generation_queue?: components["schemas"]["GenerationQueueLimits"];
             /**
              * @default {
              *       "realtime_voice": 8,
@@ -44881,7 +44934,7 @@ export interface operations {
                 project_id?: string | null;
                 canvas_node_id?: string | null;
                 kind?: ("image" | "video" | "audio") | null;
-                status?: ("queued" | "submitting" | "pending" | "processing" | "completed" | "failed") | null;
+                status?: ("queued" | "submitting" | "pending" | "processing" | "completed" | "failed" | "cancelled") | null;
                 page?: number;
                 page_size?: number;
                 current_nodes?: boolean;
@@ -44922,6 +44975,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_generation_task_v1_visual_workshop_generation_tasks__task_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerationCancelIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

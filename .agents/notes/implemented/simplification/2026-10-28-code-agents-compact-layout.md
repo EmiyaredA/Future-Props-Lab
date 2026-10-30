@@ -12,6 +12,8 @@ Status: implemented
 
 列表同时展示所有智能体的名称和状态，选择只保存在页面内存中；目录刷新后保留有效选择，选项消失时回退到首项。切换智能体时重新挂载详情组件，复制反馈和详情展开状态归属于当前智能体。
 
+列表、连接标题与授权表通过同一个 `AgentLogo` 组件复用 `web/public/providers/` 已登记来源和许可证的 Codex、Claude Code、OpenCode、DeepSeek Harness 与 Pi 标识，以品牌色展示。重新检测放在智能体列表底部；目录为空或加载失败时仍在页头保留检测入口。
+
 授权矩阵继续展示全部智能体，并收紧单元格与区块间距。窄容器中设置面板改为上下布局，列表保持两列，授权表格保留局部横向滚动。
 
 ## Alternatives considered
@@ -29,3 +31,6 @@ Status: implemented
 - `npm test --workspace web -- tests/code-agents-ui.test.tsx`：20 项通过。
 - 定向 ESLint 和 Prettier 检查通过。
 - 桌面开发窗口检查连接列表、详情、授权矩阵与外部接入的布局，并确认选择 Claude Code 后显示对应登录说明。
+- 桌面实测三处品牌标识与左侧重新检测入口，截图保存在忽略的 `.local/code-agents/compact-layout.png`。
+
+- 390/768/1280/1600 宽度与明暗主题浏览器检查通过；登录行保持横排，宽屏账号选择器和底栏配置按钮右缘一致。底栏与详情共用水平内边距，按钮固定高度并垂直居中。

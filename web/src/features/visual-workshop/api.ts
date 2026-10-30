@@ -593,3 +593,15 @@ export async function uploadMaterialNode(
     { method: "POST", body: form },
   );
 }
+
+export async function cancelGenerationTask(
+  taskId: string,
+  expectedRevision: number,
+) {
+  return unwrap(
+    await api.POST("/v1/visual-workshop/generation-tasks/{task_id}/cancel", {
+      params: { path: { task_id: taskId } },
+      body: { expected_revision: expectedRevision },
+    }),
+  );
+}

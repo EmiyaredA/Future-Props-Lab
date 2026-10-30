@@ -10,7 +10,7 @@ async def reopen_batch_after_retry(session: AsyncSession, task: VisualGeneration
     if not batch_id:
         return
     batch = await session.get(VisualGenerationBatch, batch_id)
-    if batch is None or batch.status != "failed":
+    if batch is None or batch.status not in {"failed", "cancelled"}:
         return
     batch.status = "processing"
     batch.error_message = None

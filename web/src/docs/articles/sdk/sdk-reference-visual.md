@@ -963,7 +963,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `node_id` | path | string | 是 |
 | `body` | application/json | NodeAcceptanceSelectIn | 是 |
 | `body.expected_revision` | 请求体 | integer | 是 |
-| `body.scheme_id` | 请求体 | motion-transfer:api / motion-transfer:codex / motion-transfer:claude-code / null | 是 |
+| `body.scheme_id` | 请求体 | motion-transfer:api / motion-transfer:codex / motion-transfer:claude-code / motion-transfer:opencode / motion-transfer:dsh / motion-transfer:pi / null | 是 |
 
 **响应**：
 - `200` · `application/json` · `NodeAcceptanceOut`

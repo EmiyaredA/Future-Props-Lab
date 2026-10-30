@@ -60,6 +60,7 @@ const STATUS_LABELS: Record<GenerationTask["status"], string> = {
   processing: "生成中",
   completed: "已完成",
   failed: "失败",
+  cancelled: "已取消",
 };
 
 function formatBytes(value?: number) {

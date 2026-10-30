@@ -1,4 +1,5 @@
 import type { Agent } from "./api";
+import "./agent-logo.css";
 
 export function AgentLogo({
   id,
@@ -7,6 +8,17 @@ export function AgentLogo({
   id: Agent["id"];
   size?: number;
 }) {
+  if (id === "pi")
+    return (
+      <img
+        src="/providers/pi-logo.svg"
+        className="code-agent-logo"
+        width={size}
+        height={size}
+        alt=""
+        aria-hidden="true"
+      />
+    );
   return (
     <span
       className={`code-agent-logo is-${id}`}

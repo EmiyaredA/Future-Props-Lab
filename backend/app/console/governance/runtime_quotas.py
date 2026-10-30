@@ -17,24 +17,34 @@ TASK_MODELS = {
 ACTIVE = ("queued", "submitting", "pending", "processing", "running")
 
 
-async def _settle(session):
+async def settle_admissions(session):
     leases = list(await session.scalars(select(Admission).where(Admission.released_at.is_(None))))
+    # Queue admissions are per child task; read each task table once, not once per waiter.
+    active_by_kind = {}
+    for kind, model_type in TASK_MODELS.items():
+        ids = {
+            identity for lease in leases if lease.task_kind == kind for identity in lease.task_ids
+        }
+        if not ids:
+            continue
+        model = model_type.__table__.c
+        active_by_kind[kind] = set(
+            (
+                await session.execute(
+                    select(model.id, model.workspace_id).where(model.status.in_(ACTIVE))
+                )
+            ).all()
+        )
     for lease in leases:
         if lease.task_kind and lease.task_ids:
-            model = TASK_MODELS[lease.task_kind].__table__.c
-            active = list(
-                await session.scalars(
-                    select(model.id).where(
-                        model.workspace_id == lease.workspace_id,
-                        model.id.in_(lease.task_ids),
-                        model.status.in_(ACTIVE),
-                    )
-                )
+            active = sum(
+                (identity, lease.workspace_id) in active_by_kind.get(lease.task_kind, set())
+                for identity in lease.task_ids
             )
             if not active:
                 lease.released_at = utc_now()
             else:
-                lease.weight = len(active)
+                lease.weight = active
     await session.flush()
     return [lease for lease in leases if not lease.released_at]
 
@@ -45,7 +55,7 @@ async def check_capacity(
     policy = RuntimeQuotas.model_validate(
         (await read_setting(session, "runtime_quotas", RuntimeQuotas().model_dump()))["value"]
     )
-    leases = [lease for lease in await _settle(session) if lease.id != excluding]
+    leases = [lease for lease in await settle_admissions(session) if lease.id != excluding]
     known = {
         kind: {task for lease in leases if lease.task_kind == kind for task in lease.task_ids}
         for kind in TASK_MODELS
@@ -63,6 +73,8 @@ async def check_capacity(
             for row in rows
             if row.id not in known[kind] and row.id not in submitted_ids
         )
+    # Waiting tasks retain ownership, but do not consume execution capacity.
+    leases = [lease for lease in leases if not lease.waiting]
     limit = getattr(policy, role)
     total = sum(lease.weight for lease in leases) + len(legacy)
     workspace = sum(lease.weight for lease in leases if lease.workspace_id == workspace_id) + sum(
@@ -167,12 +179,12 @@ async def recover_admissions():
             .where(Admission.task_kind.is_(None), Admission.released_at.is_(None))
             .values(released_at=utc_now())
         )
-        await _settle(session)
+        await settle_admissions(session)
         await session.commit()
 
 
-async def admit_spawned_tasks(session, principal, kind, task_ids):
-    """A newly confirmed background task has its own lifetime after the parent stream."""
+async def validate_spawned_actor(session, principal):
+    """Validate current authorization inside the task creation transaction."""
     user = await session.get(User, principal.user_id, populate_existing=True)
     credential_model = AuthSession if principal.auth_kind == "session" else ManagementApiKey
     credential = await session.get(
@@ -207,6 +219,12 @@ async def admit_spawned_tasks(session, principal, kind, task_ids):
         raise AccountError("workspace_access_changed")
     if "studio:write" not in principal.scopes:
         raise AccountError("workspace_access_changed")
+    return user
+
+
+async def admit_spawned_tasks(session, principal, kind, task_ids):
+    """A newly confirmed background task has its own lifetime after the parent stream."""
+    user = await validate_spawned_actor(session, principal)
     await check_capacity(
         session,
         user_id=user.id,

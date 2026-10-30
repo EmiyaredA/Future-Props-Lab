@@ -260,6 +260,7 @@ export function GalgameWorkshopEditorView({
             {window.futurePropsDesktop?.openAmadeus && (
               <button
                 type="button"
+                className="galgame-editor-amadeus"
                 aria-label="打开 Amadeus"
                 onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
               >

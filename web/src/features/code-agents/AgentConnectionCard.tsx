@@ -28,7 +28,19 @@ export function AgentConnectionCard({ agent }: { agent: Agent }) {
   const [details, setDetails] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
-  const command = agent.id === "codex" ? "codex login" : "claude auth login";
+  const command = {
+    codex: "codex login",
+    "claude-code": "claude auth login",
+    opencode: "opencode auth login",
+    dsh: "dsh web",
+    pi: "pi",
+  }[agent.id];
+  const help =
+    agent.id === "pi"
+      ? "在 Pi 中使用 /login，完成后重新检测"
+      : agent.id === "dsh"
+        ? "在 Harness 中完成登录后重新检测"
+        : "安装或登录后重新检测";
   const copy = async () => {
     setError("");
     try {
@@ -69,7 +81,7 @@ export function AgentConnectionCard({ agent }: { agent: Agent }) {
             )}
           </button>
         </div>
-        <span className="code-agent-login-help">安装或登录后重新检测</span>
+        <span className="code-agent-login-help">{help}</span>
         {agent.executable && (
           <button
             type="button"

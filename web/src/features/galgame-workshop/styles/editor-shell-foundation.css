@@ -33,6 +33,41 @@
   gap: 9px;
 }
 
+.galgame-editor-amadeus {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 8px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gal-accent) 13%, var(--gal-surface)),
+    var(--gal-surface)
+  );
+  color: var(--gal-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.galgame-editor-amadeus:hover {
+  border-color: var(--gal-accent);
+  background: color-mix(in srgb, var(--gal-accent) 17%, var(--gal-surface));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--gal-accent) 15%, transparent);
+}
+
+.galgame-editor-amadeus:active {
+  background: color-mix(in srgb, var(--gal-accent) 23%, var(--gal-surface));
+}
+
 .galgame-editor-actions > .theme-toggle {
   width: auto;
   padding: 3px;

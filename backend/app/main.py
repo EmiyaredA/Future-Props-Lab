@@ -34,6 +34,7 @@ from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
 from app.console.governance.external_sync_access import external_sync_actor_allowed
+from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
 from app.console.governance.interview_executor_access import interview_actor_allowed
 from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
@@ -91,7 +92,9 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             InterviewPreparationRunner(interview_actor_allowed),
             ArticleSyncRunner(external_sync_actor_allowed),
             ModelTemplateSyncRunner(),
-            VisualGenerationRunner(),
+            VisualGenerationRunner(
+                claim_admission=claim_visual_capacity, queue_candidates=visual_queue_candidates
+            ),
             AcceptanceRunner(actor_allowed=acceptance_actor_allowed),
             ModelTestGenerationRunner(),
             InferenceRunner(local_runtime=local_runtime),

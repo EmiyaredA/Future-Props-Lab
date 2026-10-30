@@ -23,6 +23,7 @@ import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import "@features/visual-workshop/visual-workshop.css";
+import { CancelQueuedTasks } from "./CancelQueuedTasks";
 import { taskActivity } from "./generationActivityModel";
 import { GenerationActivity, GenerationSpinner } from "./GenerationActivity";
 
@@ -39,6 +40,7 @@ const STATUS_LABELS: Record<GenerationTaskStatus, string> = {
   processing: "生成中",
   completed: "已完成",
   failed: "失败",
+  cancelled: "已取消",
 };
 
 function TaskPreview({ task }: { task: GenerationTask }) {
@@ -187,6 +189,10 @@ export function VisualWorkshopTasksPage({
               </strong>
               <span>
                 {batch.completed_count}/{batch.grid_size}
+                {batch.cancelled_count
+                  ? ` · ${batch.cancelled_count} 个取消`
+                  : ""}
+                {batch.failed_count ? ` · ${batch.failed_count} 个失败` : ""}
                 {batch.grid_output === "composite"
                   ? " · 合成大图"
                   : " · 独立节点"}
@@ -196,7 +202,11 @@ export function VisualWorkshopTasksPage({
                   ? "已完成"
                   : batch.status === "failed"
                     ? "有失败"
-                    : "处理中"}
+                    : batch.status === "cancelled"
+                      ? "已取消"
+                      : batch.status === "queued"
+                        ? "排队中"
+                        : "处理中"}
               </em>
             </div>
           ))}
@@ -252,6 +262,7 @@ export function VisualWorkshopTasksPage({
                     {task.error_message}
                   </div>
                 ) : null}
+                <CancelQueuedTasks tasks={[task]} />
                 <footer>
                   <button onClick={() => onOpenProject(task.project_id)}>
                     打开画布

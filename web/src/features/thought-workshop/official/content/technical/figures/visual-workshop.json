@@ -32,7 +32,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "后台生成任务\n提交、轮询与恢复",
+      "text": "后台生成任务\n持久排队、提交与恢复",
       "fill": "#fff1dd",
       "stroke": "#365f62",
       "icon": "cloud"

@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     fpl_code_agents_codex_executable: str = ""
     fpl_code_agents_claude_enabled: bool | None = None
     fpl_code_agents_claude_executable: str = ""
+    fpl_code_agents_opencode_enabled: bool | None = None
+    fpl_code_agents_opencode_executable: str = ""
+    fpl_code_agents_dsh_enabled: bool | None = None
+    fpl_code_agents_dsh_executable: str = ""
+    fpl_code_agents_pi_enabled: bool | None = None
+    fpl_code_agents_pi_executable: str = ""
     fpl_interview_codex_enabled: bool = False
     fpl_interview_codex_executable: str = ""
     fpl_interview_codex_user_id: str = ""

@@ -1,3 +1,7 @@
+import {
+  CancelQueuedTasks,
+  CancelQueuedBatch,
+} from "../generation/CancelQueuedTasks";
 import { useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Check, Eye, Trash2, Upload, Circle, CircleDot } from "lucide-react";
@@ -162,7 +166,7 @@ export function OutputHistory({
         {activity && (
           <span className="board-state-badge is-running">
             <GenerationSpinner size={12} />
-            生成中
+            {activity.label}
           </span>
         )}
         {showing && showing.id !== node.final_output_id && (
@@ -209,6 +213,28 @@ export function OutputHistory({
         )}
       </div>
       {activity && <GenerationActivity activity={activity} />}
+      <CancelQueuedTasks
+        key={nodeId}
+        tasks={tasks.filter(
+          (task) =>
+            task.canvas_node_id === nodeId ||
+            (node.kind !== "text" && task.id === node.generation_task_id) ||
+            (node.kind === "image" &&
+              batches.some(
+                (batch) =>
+                  batch.generation_node_id === nodeId &&
+                  batch.child_task_ids.includes(task.id),
+              )),
+        )}
+      />
+      <CancelQueuedBatch
+        batch={batches.find(
+          (batch) =>
+            batch.generation_node_id === nodeId &&
+            batch.grid_output === "composite" &&
+            (batch.status === "queued" || batch.status === "processing"),
+        )}
+      />
       <div className="board-output-heading">
         <h3>
           输出版本 <small>{history.data?.pages[0].total ?? 0}</small>

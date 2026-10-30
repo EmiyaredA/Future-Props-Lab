@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 from app.capabilities.agents.cli.conversation import claude, codex
+from app.capabilities.agents.cli.native import converse
 from app.console.amadeus.files import work_root
 from app.console.amadeus.runs import Runs
 from app.console.amadeus.schemas import RunEventIn, RunOut
@@ -174,9 +175,21 @@ class CodeAgentRuns:
                 )
             else:
                 config = await bridge.start()
-                future = claude(
-                    path, root, run.agent_model, prompt, config, emit, watchdog=watchdog
-                )
+                if run.agent_id == "claude-code":
+                    future = claude(
+                        path, root, run.agent_model, prompt, config, emit, watchdog=watchdog
+                    )
+                else:
+                    future = converse(
+                        run.agent_id,
+                        path,
+                        root,
+                        run.agent_model,
+                        prompt,
+                        config,
+                        emit,
+                        watchdog=watchdog,
+                    )
             transport = asyncio.create_task(future)
             paused = asyncio.create_task(bridge.paused.wait())
             done, _ = await asyncio.wait(

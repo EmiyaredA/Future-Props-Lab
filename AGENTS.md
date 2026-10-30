@@ -84,7 +84,7 @@
   应用更新，不在热加载流程内执行正式迁移。更新不得绕过未保存保护或自动重试写入/模型提交。
   开发网关在同一窗口生命周期内保持来源稳定，只向固定 Vite/后端转发并校验私有凭据；Vite 不代理
   业务 API。正式打包不启用开发桥或开发网关，自动测试不得使用 live 数据。
-- Amadeus 新对话由官方 Codex / Claude Code CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，按 Workspace／账号／用途的授权归治理；固定业务任务共用连接注册表并保留自有任务边界。
+- Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，按 Workspace／账号／用途的授权归治理；固定业务任务共用连接注册表并保留自有任务边界。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
 - 桌面 CLI/SDK 接入默认关闭。`agent/` 保存无密钥的连接描述和 `0600` 客户端凭据，目录为
   `0700`；短路径 Unix Socket 由 Electron 持有，私有启动 token 不得交给 SDK。Agent 通道只开放
   `console/governance/desktop_agent_operations.json` 明确登记的业务操作，新 API 默认拒绝。配对与界面请求

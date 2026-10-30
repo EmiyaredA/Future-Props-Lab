@@ -73,6 +73,7 @@ const task: GenerationTask = {
   progress: 0,
   error_message: null,
   result_asset_id: null,
+  can_cancel: false,
   can_retry_materialization: false,
   revision: 1,
   created_at: "2026-10-17T04:00:00Z",

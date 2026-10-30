@@ -113,7 +113,7 @@ class ModelTurnIn(BaseModel):
 
 class RunCreateIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    agent_id: Literal["codex", "claude-code"]
+    agent_id: Literal["codex", "claude-code", "opencode", "dsh", "pi"]
     agent_model: str = Field(default="", max_length=160)
     model_id: str = Field(default="code-agent", max_length=160)
     mode: Literal["agent", "plan"] = "agent"

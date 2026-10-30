@@ -254,7 +254,10 @@ function QuotaEditor({
         <SlidersHorizontal size={22} />
         <div>
           <h2>并发配额</h2>
-          <p>额度不足时拒绝新请求，已接受的任务继续完成。</p>
+          <p>
+            图片和视频额度不足时自动排队；等待上限按账号跨工作区合计，0
+            表示关闭排队。其他调用额度不足时拒绝。
+          </p>
         </div>
       </header>
       <div className="governance-quota-grid">
@@ -286,6 +289,30 @@ function QuotaEditor({
                 />
               </label>
             ))}
+            {role !== "instance" && (
+              <label>
+                图片／视频等待上限
+                <input
+                  type="number"
+                  min={0}
+                  max={1024}
+                  required
+                  value={draft.generation_queue?.[role] ?? 20}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      generation_queue: {
+                        member: 20,
+                        admin: 20,
+                        super_admin: 20,
+                        ...draft.generation_queue,
+                        [role]: Number(e.target.value),
+                      },
+                    })
+                  }
+                />
+              </label>
+            )}
           </fieldset>
         ))}
         <label>

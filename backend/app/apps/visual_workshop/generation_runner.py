@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -19,6 +20,7 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.capabilities.media_rendering.image_grid import render_image_grid
 from app.llm.generation_runtime import (
+    ClaimAdmission,
     GenerationMaterializationError,
     GenerationTaskContext,
     GenerationTaskDriver,
@@ -60,8 +62,11 @@ class VisualGenerationRunner(PollingTaskRunner):
         settings: Settings | None = None,
         download_transport: httpx.AsyncBaseTransport | None = None,
         temporary_media_transport: httpx.AsyncBaseTransport | None = None,
+        claim_admission: ClaimAdmission | None = None,
+        queue_candidates: Callable[..., Awaitable[list[str]]] | None = None,
     ) -> None:
         super().__init__()
+        self.queue_candidates = queue_candidates
         self.zealman_monitor = ZealmanLiveMonitor()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
@@ -74,6 +79,7 @@ class VisualGenerationRunner(PollingTaskRunner):
             task_type=VisualGenerationTask,
             active_statuses=ACTIVE_TASK_STATUSES,
             task_subject="visual generation task",
+            claim_admission=claim_admission,
         )
         self.task_driver = GenerationTaskDriver(
             store=self.task_store,
@@ -97,8 +103,16 @@ class VisualGenerationRunner(PollingTaskRunner):
         await self._refresh_batches()
 
     async def process_once(self) -> None:
-        task_ids = await self.task_store.active_task_ids()
-        await self.run_concurrently(task_ids, self._process_task)
+        if self.queue_candidates is None:
+            task_ids = await self.task_store.active_task_ids()
+            await self.run_concurrently(task_ids, self._process_task)
+        else:
+            task_ids = await self.task_store.active_task_ids(
+                statuses=("submitting", "pending", "processing")
+            )
+            await self.run_concurrently(task_ids, self._process_task)
+            queued = await self.queue_candidates(self.session_factory)
+            await self.run_concurrently(queued, self._process_task)
         await self._refresh_batches()
 
     async def _fail(self, task_id: str, message: str, *, result_url: str = "") -> None:
@@ -122,7 +136,7 @@ class VisualGenerationRunner(PollingTaskRunner):
     async def _refresh_batch(self, batch_id: str) -> None:
         async with self.session_factory() as session:
             batch = await session.get(VisualGenerationBatch, batch_id)
-            if batch is None or batch.status == "completed":
+            if batch is None or batch.status in {"completed", "cancelled"}:
                 return
             if batch.batch_kind == "composition":
                 batch.status = "processing"
@@ -141,18 +155,22 @@ class VisualGenerationRunner(PollingTaskRunner):
                 )
                 completed = sum(task.status == "completed" for task in tasks)
                 failed = sum(task.status == "failed" for task in tasks)
+                cancelled = sum(task.status == "cancelled" for task in tasks)
                 batch.completed_count = completed
                 batch.failed_count = failed
+                batch.cancelled_count = cancelled
                 batch.updated_at = utc_now()
                 batch.revision += 1
-                if failed:
-                    batch.status = "failed"
-                    batch.error_message = f"{failed} 个子任务生成失败"
-                    batch.completed_at = batch.updated_at
+                if completed + failed + cancelled != batch.grid_size:
+                    batch.status = (
+                        "queued" if all(t.status == "queued" for t in tasks) else "processing"
+                    )
                     await session.commit()
                     return
-                if completed != batch.grid_size:
-                    batch.status = "processing"
+                if failed or cancelled:
+                    batch.status = "cancelled" if cancelled else "failed"
+                    batch.error_message = f"{failed} 个子任务失败，{cancelled} 个子任务取消"
+                    batch.completed_at = batch.updated_at
                     await session.commit()
                     return
                 if batch.grid_output == "nodes":
@@ -313,7 +331,9 @@ class VisualGenerationRunner(PollingTaskRunner):
         if task.provider_kind == "zealman_video":
             async with self.session_factory() as session:
                 row = await self._load_task(session, task.task_id)
-                if row is None or utc_now() - row.created_at > timedelta(hours=1):
+                if row is None or utc_now() - (row.submitted_at or row.created_at) > timedelta(
+                    hours=1
+                ):
                     raise ValueError("ZEALMAN 等待超过 60 分钟；请检查上游任务，系统不会自动重提")
             return await get_task(
                 base_url=task.base_url,

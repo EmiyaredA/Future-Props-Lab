@@ -15,6 +15,7 @@
 | [list_generation_tasks](#list-generation-tasks) | `GET /v1/visual-workshop/generation-tasks` |
 | [get_generation_task](#get-generation-task) | `GET /v1/visual-workshop/generation-tasks/{task_id}` |
 | [retry_image_composition](#retry-image-composition) | `POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition` |
+| [cancel_generation_task](#cancel-generation-task) | `POST /v1/visual-workshop/generation-tasks/{task_id}/cancel` |
 | [retry_materialization](#retry-materialization) | `POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization` |
 | [create_generation_batch](#create-generation-batch) | `POST /v1/visual-workshop/projects/{project_id}/generation-batches` |
 | [create_generation_task](#create-generation-task) | `POST /v1/visual-workshop/projects/{project_id}/generation-tasks` |
@@ -94,7 +95,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `project_id` | query | string / null | 否 |
 | `canvas_node_id` | query | string / null | 否 |
 | `kind` | query | image / video / audio / null | 否 |
-| `status` | query | queued / submitting / pending / processing / completed / failed / null | 否 |
+| `status` | query | queued / submitting / pending / processing / completed / failed / cancelled / null | 否 |
 | `page` | query | integer | 否 |
 | `page_size` | query | integer | 否 |
 | `current_nodes` | query | boolean | 否 |
@@ -139,6 +140,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `GenerationBatchOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## cancel_generation_task {#cancel-generation-task}
+
+`client.generation.cancel_generation_task(...)`
+
+**接口**：`POST /v1/visual-workshop/generation-tasks/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `task_id` | path | string | 是 |
+| `body` | application/json | GenerationCancelIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `GenerationTaskOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

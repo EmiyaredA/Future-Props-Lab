@@ -70,6 +70,7 @@ const task = (
   progress: 100,
   error_message: null,
   result_asset_id: `asset-${id}`,
+  can_cancel: false,
   can_retry_materialization: false,
   revision: 0,
   created_at: "2026-08-03T08:00:00Z",

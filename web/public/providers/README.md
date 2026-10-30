@@ -27,3 +27,10 @@ LobeHub Icons project (geometry unchanged, rendered as a theme-aware mask):
 
 Software trademarks remain with OpenAI and Anthropic respectively. These marks
 identify the selected software; they do not imply affiliation or endorsement.
+
+`opencode-logo.svg` and `pi-logo.svg` are unchanged copies from the user's
+code-strata reference application, whose agent identification artwork originates
+from OpenDesign. Its Apache 2.0 license is reproduced in `open-design-LICENSE.txt`.
+They identify the OpenCode and Pi CLI integrations; trademarks remain with their
+respective owners. DeepSeek Harness reuses the existing DeepSeek vendor mark.
+All five CLI marks are shared by the connection page and the node acceptance picker.

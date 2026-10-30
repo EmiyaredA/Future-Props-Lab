@@ -21,13 +21,16 @@ from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapsh
 from app.llm.schemas.generation_tasks import (
     AudioGenerationTaskCreateIn,
     GenerationTaskCreateIn,
-    GenerationTaskStatus,
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
 from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
 from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
 from app.llm.task_execution import TaskExecutionInfo
+
+GenerationTaskStatus = Literal[
+    "queued", "submitting", "pending", "processing", "completed", "failed", "cancelled"
+]
 
 __all__ = [
     "AudioGenerationTaskCreateIn",
@@ -618,6 +621,8 @@ class GenerationTaskOut(BaseModel):
     execution_info: TaskExecutionInfo | None = None
     error_message: str | None
     result_asset_id: str | None
+    can_cancel: bool = False
+    queue_message: str | None = None
     can_retry_materialization: bool
     revision: int
     created_at: str

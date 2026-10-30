@@ -69,6 +69,7 @@ beforeEach(() => {
     progress: 0,
     error_message: null,
     result_asset_id: null,
+    can_cancel: false,
     can_retry_materialization: false,
     revision: 0,
     created_at: "2026-10-09T00:00:00Z",

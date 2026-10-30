@@ -7,8 +7,12 @@ import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Literal
 
-from .process import _stop, environment
+from .transport import _stop, environment
+
+AgentId = Literal["codex", "claude-code", "opencode", "dsh", "pi"]
 
 
 @dataclass(frozen=True)
@@ -25,15 +29,18 @@ DEFINITIONS = {
     "claude-code": AgentDefinition(
         "claude-code", "Claude Code", "claude", (2, 1, 259), ("auth", "status")
     ),
+    "opencode": AgentDefinition("opencode", "OpenCode", "opencode", (1, 19, 4), ("auth", "list")),
+    "dsh": AgentDefinition("dsh", "DeepSeek Harness", "dsh", (0, 2, 1), ()),
+    "pi": AgentDefinition("pi", "Pi", "pi", (1, 4, 0), ("auth", "check", "--json", "--no-refresh")),
 }
 
 
 def connection(settings, agent_id):
     definition = DEFINITIONS[agent_id]
-    prefix = "codex" if agent_id == "codex" else "claude"
+    prefix = "claude" if agent_id == "claude-code" else agent_id
     enabled = getattr(settings, f"fpl_code_agents_{prefix}_enabled", None)
     configured = getattr(settings, f"fpl_code_agents_{prefix}_executable", "")
-    legacy = [getattr(settings, f"fpl_acceptance_{prefix}_executable")]
+    legacy = [getattr(settings, f"fpl_acceptance_{prefix}_executable", "")]
     if agent_id == "codex":
         legacy.append(settings.fpl_interview_codex_executable)
     if enabled is False:
@@ -111,7 +118,21 @@ async def inspect_executable(agent_id, path):
         if code or not version or tuple(map(int, version.groups())) < definition.minimum:
             return {**result, "status": "unsupported_version", "message": "CLI 版本不支持受限执行"}
         result["version"] = version[0].decode()
-        code, _ = await _probe_output(path, definition.auth_args)
+        if agent_id == "dsh":
+            home = Path(os.environ.get("DSH_HOME") or Path.home() / ".dsh")
+            credential = home / ".credentials.yaml"
+            code = 0 if credential.is_file() and credential.stat().st_size else 1
+        elif agent_id == "pi":
+            from .isolation import control_output, launch
+
+            with TemporaryDirectory(prefix="fpl-cli-probe-") as root:
+                async with launch(agent_id, path, Path(root), {}) as (_, env):
+                    code, _ = await control_output(path, list(definition.auth_args), env)
+        else:
+            code, output = await _probe_output(path, definition.auth_args)
+            if agent_id == "opencode":
+                clean = re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", output)
+                code = code or (0 if re.search(rb"\b[1-9]\d* credentials?\b", clean) else 1)
         if code:
             return {
                 **result,
@@ -119,7 +140,7 @@ async def inspect_executable(agent_id, path):
                 "message": "请在终端登录 CLI 后重新检测",
             }
         return {**result, "available": True, "status": "ready", "message": "已连接"}
-    except (OSError, TimeoutError):
+    except (OSError, TimeoutError, ValueError):
         return {**result, "status": "probe_failed", "message": "CLI 检测失败，请检查安装与登录状态"}
 
 

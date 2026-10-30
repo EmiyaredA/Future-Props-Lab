@@ -814,7 +814,10 @@
             "enum": [
               "motion-transfer:api",
               "motion-transfer:codex",
-              "motion-transfer:claude-code"
+              "motion-transfer:claude-code",
+              "motion-transfer:opencode",
+              "motion-transfer:dsh",
+              "motion-transfer:pi"
             ],
             "title": "Id",
             "type": "string"
@@ -1945,7 +1948,10 @@
           "id": {
             "enum": [
               "codex",
-              "claude-code"
+              "claude-code",
+              "opencode",
+              "dsh",
+              "pi"
             ],
             "title": "Id",
             "type": "string"
@@ -18817,6 +18823,11 @@
             "title": "Batch Kind",
             "type": "string"
           },
+          "cancelled_count": {
+            "default": 0,
+            "title": "Cancelled Count",
+            "type": "integer"
+          },
           "child_task_ids": {
             "items": {
               "type": "string"
@@ -18913,7 +18924,8 @@
               "queued",
               "processing",
               "completed",
-              "failed"
+              "failed",
+              "cancelled"
             ],
             "title": "Status",
             "type": "string"
@@ -18942,6 +18954,20 @@
           "completed_at"
         ],
         "title": "GenerationBatchOut",
+        "type": "object"
+      },
+      "GenerationCancelIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "GenerationCancelIn",
         "type": "object"
       },
       "GenerationModelOptionOut": {
@@ -19071,6 +19097,33 @@
         "title": "GenerationOptionsOut",
         "type": "object"
       },
+      "GenerationQueueLimits": {
+        "properties": {
+          "admin": {
+            "default": 20,
+            "maximum": 1024.0,
+            "minimum": 0.0,
+            "title": "Admin",
+            "type": "integer"
+          },
+          "member": {
+            "default": 20,
+            "maximum": 1024.0,
+            "minimum": 0.0,
+            "title": "Member",
+            "type": "integer"
+          },
+          "super_admin": {
+            "default": 20,
+            "maximum": 1024.0,
+            "minimum": 0.0,
+            "title": "Super Admin",
+            "type": "integer"
+          }
+        },
+        "title": "GenerationQueueLimits",
+        "type": "object"
+      },
       "GenerationTaskListOut": {
         "properties": {
           "items": {
@@ -19094,6 +19147,11 @@
       },
       "GenerationTaskOut": {
         "properties": {
+          "can_cancel": {
+            "default": false,
+            "title": "Can Cancel",
+            "type": "boolean"
+          },
           "can_retry_materialization": {
             "title": "Can Retry Materialization",
             "type": "boolean"
@@ -19221,6 +19279,17 @@
             ],
             "title": "Provider Task Id"
           },
+          "queue_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Message"
+          },
           "request_payload": {
             "additionalProperties": true,
             "title": "Request Payload",
@@ -19248,7 +19317,8 @@
               "pending",
               "processing",
               "completed",
-              "failed"
+              "failed",
+              "cancelled"
             ],
             "title": "Status",
             "type": "string"
@@ -19289,7 +19359,10 @@
           "agent_id": {
             "enum": [
               "codex",
-              "claude-code"
+              "claude-code",
+              "opencode",
+              "dsh",
+              "pi"
             ],
             "title": "Agent Id",
             "type": "string"
@@ -19338,7 +19411,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 6,
+            "maxItems": 15,
             "title": "Managed",
             "type": "array"
           }
@@ -26468,7 +26541,10 @@
                 "enum": [
                   "motion-transfer:api",
                   "motion-transfer:codex",
-                  "motion-transfer:claude-code"
+                  "motion-transfer:claude-code",
+                  "motion-transfer:opencode",
+                  "motion-transfer:dsh",
+                  "motion-transfer:pi"
                 ],
                 "type": "string"
               },
@@ -26507,7 +26583,10 @@
                 "enum": [
                   "motion-transfer:api",
                   "motion-transfer:codex",
-                  "motion-transfer:claude-code"
+                  "motion-transfer:claude-code",
+                  "motion-transfer:opencode",
+                  "motion-transfer:dsh",
+                  "motion-transfer:pi"
                 ],
                 "type": "string"
               },
@@ -32800,7 +32879,10 @@
           "agent_id": {
             "enum": [
               "codex",
-              "claude-code"
+              "claude-code",
+              "opencode",
+              "dsh",
+              "pi"
             ],
             "title": "Agent Id",
             "type": "string"
@@ -33154,6 +33236,9 @@
               "realtime_voice": 2,
               "total": 4
             }
+          },
+          "generation_queue": {
+            "$ref": "#/components/schemas/GenerationQueueLimits"
           },
           "instance": {
             "$ref": "#/components/schemas/QuotaLimit",
@@ -73892,7 +73977,8 @@
                     "pending",
                     "processing",
                     "completed",
-                    "failed"
+                    "failed",
+                    "cancelled"
                   ],
                   "type": "string"
                 },
@@ -74002,6 +74088,58 @@
           }
         },
         "summary": "Get Generation Task",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/generation-tasks/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_generation_task_v1_visual_workshop_generation_tasks__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerationCancelIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Generation Task",
         "tags": [
           "visual-generation"
         ]

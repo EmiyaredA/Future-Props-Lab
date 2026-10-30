@@ -18,5 +18,9 @@ class RuntimeAdmission(Base):
     weight: Mapped[int] = mapped_column(Integer, default=1)
     task_kind: Mapped[str | None] = mapped_column(String(40), nullable=True)
     task_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    waiting: Mapped[bool] = mapped_column(Boolean, default=False)
+    queue_task_id: Mapped[str | None] = mapped_column(
+        ForeignKey("visual_generation_tasks.id", ondelete="CASCADE"), nullable=True, unique=True
+    )
     released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

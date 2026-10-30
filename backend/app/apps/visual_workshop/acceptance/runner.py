@@ -345,7 +345,10 @@ class AcceptanceRunner(PollingTaskRunner):
                 # held across decoding or model I/O.
                 execution_result = {}
                 additional = []
-                if run.scheme_id in {"motion-transfer:codex", "motion-transfer:claude-code"}:
+                if (
+                    run.scheme_id.startswith("motion-transfer:")
+                    and run.scheme_id != "motion-transfer:api"
+                ):
 
                     async def cancelled():
                         return not await self.active(identity)

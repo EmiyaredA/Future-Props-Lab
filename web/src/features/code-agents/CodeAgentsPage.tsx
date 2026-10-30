@@ -59,7 +59,7 @@ export function CodeAgentsPage({
         <header className="code-agents-heading">
           <div>
             <h1>编程智能体</h1>
-            <p>连接 Codex 或 Claude Code，供 Amadeus 与工坊使用。</p>
+            <p>管理本机编程智能体，供 Amadeus 与工坊使用。</p>
           </div>
           {!selectedAgent && actions}
         </header>

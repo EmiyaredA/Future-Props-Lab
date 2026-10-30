@@ -1,3 +1,4 @@
+import { submitGenerationTasks } from "./generationSubmission";
 import { useVideoDefaults } from "./useVideoDefaults";
 import {
   videoRequestParameters,
@@ -16,7 +17,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ManagedFile } from "@features/files";
 import {
-  createGenerationTask,
   createGenerationBatch,
   getGenerationOptions,
   type GenerationTaskInput,
@@ -636,33 +636,16 @@ export function useGenerationDrawerController({
   }, [kind, persistDraft, selectedModel, size]);
 
   const createMutation = useMutation({
-    mutationFn: async ({
-      body,
-      count = 1,
-      followupBody,
-    }: {
+    mutationFn: (input: {
       body: GenerationTaskInput;
       count?: number;
       followupBody?: GenerationTaskInput;
-    }) => {
-      const tasks = [];
-      for (let index = 0; index < count; index += 1) {
-        let next = index === 0 ? body : (followupBody ?? body);
-        if (index > 0 && canvasNodeId && onBeforeSubmit) {
-          const revision = await onBeforeSubmit();
-          next = {
-            ...next,
-            canvas_node_id: canvasNodeId,
-            expected_canvas_revision:
-              typeof revision === "number" ? revision : undefined,
-          };
-        }
-        const task = await createGenerationTask(projectId, next);
-        tasks.push(task);
-        if (index < count - 1) await onTaskCreated?.(task);
-      }
-      return tasks;
-    },
+    }) =>
+      submitGenerationTasks(projectId, input, {
+        canvasNodeId,
+        onBeforeSubmit,
+        onTaskCreated,
+      }),
     onSuccess: async (tasks) => {
       const task = tasks.at(-1);
       if (!task) return;
@@ -676,12 +659,15 @@ export function useGenerationDrawerController({
         layout === "workbench"
           ? ""
           : tasks.length === 1
-            ? `任务已提交（${task.id.slice(0, 8)}），可在“生成任务”页查看进度。`
+            ? `任务已排队（${task.id.slice(0, 8)}），获得额度后自动执行，可在“生成任务”页查看进度。`
             : `已提交 ${tasks.length} 个生成任务，生成结果将保存为节点输出版本。`,
       );
       void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
     },
-    onError: (error) => setNotice(errorMessage(error)),
+    onError: (error) => {
+      setNotice(errorMessage(error));
+      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
+    },
   });
   const createBatchMutation = useMutation<
     Awaited<ReturnType<typeof createGenerationBatch>>,
@@ -708,7 +694,10 @@ export function useGenerationDrawerController({
       );
       void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
     },
-    onError: (error) => setNotice(errorMessage(error)),
+    onError: (error) => {
+      setNotice(errorMessage(error));
+      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
+    },
   });
   const submit = async (event: FormEvent) => {
     event.preventDefault();

@@ -31,6 +31,7 @@ test("an older composition still running keeps its node in generating despite a 
     generation_node_id: "root",
     status,
     completed_count: status === "completed" ? 4 : 1,
+    cancelled_count: 0,
     failed_count: 0,
     revision: 1,
     created_at: "2026-10-07T00:00:00Z",

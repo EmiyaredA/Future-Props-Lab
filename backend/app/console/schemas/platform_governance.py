@@ -45,7 +45,14 @@ class QuotaLimit(BaseModel):
         return self
 
 
+class GenerationQueueLimits(BaseModel):
+    member: int = Field(default=20, ge=0, le=1024)
+    admin: int = Field(default=20, ge=0, le=1024)
+    super_admin: int = Field(default=20, ge=0, le=1024)
+
+
 class RuntimeQuotas(BaseModel):
+    generation_queue: GenerationQueueLimits = Field(default_factory=GenerationQueueLimits)
     member: QuotaLimit = QuotaLimit(total=2, realtime_voice=1)
     admin: QuotaLimit = QuotaLimit(total=4, realtime_voice=2)
     super_admin: QuotaLimit = QuotaLimit(total=8, realtime_voice=4)

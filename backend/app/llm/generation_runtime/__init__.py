@@ -1,4 +1,5 @@
 from app.llm.generation_runtime.driver import (
+    ClaimAdmission,
     GenerationTaskContext,
     GenerationTaskDriver,
     GenerationTaskStore,
@@ -20,6 +21,7 @@ from app.llm.generation_runtime.provider_tasks import (
 )
 
 __all__ = [
+    "ClaimAdmission",
     "GenerationMaterializationError",
     "GenerationTaskContext",
     "GenerationTaskDriver",

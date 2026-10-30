@@ -8,6 +8,7 @@ from app.apps.visual_workshop.generation import GenerationError, VisualGeneratio
 from app.apps.visual_workshop.schemas.generation import (
     GenerationBatchListOut,
     GenerationBatchOut,
+    GenerationCancelIn,
     ImageCompositionCreateIn,
     ImageGenerationBatchCreateIn,
 )
@@ -24,7 +25,14 @@ router = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
 
 
 def _generation_error(exc: GenerationError) -> HTTPException:
-    return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+    return HTTPException(
+        exc.status,
+        {
+            "code": exc.code,
+            "message": str(exc),
+            **({"current": exc.current} if exc.current is not None else {}),
+        },
+    )
 
 
 @router.get("/generation-options", response_model=GenerationOptionsOut)
@@ -91,7 +99,9 @@ async def list_generation_tasks(
     project_id: str | None = None,
     canvas_node_id: str | None = Query(default=None, min_length=1, max_length=64),
     kind: Literal["image", "video", "audio"] | None = None,
-    status: Literal["queued", "submitting", "pending", "processing", "completed", "failed"]
+    status: Literal[
+        "queued", "submitting", "pending", "processing", "completed", "failed", "cancelled"
+    ]
     | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
@@ -161,5 +171,13 @@ async def list_generation_batches(
 async def retry_materialization(session: SessionDep, task_id: str) -> GenerationTaskOut:
     try:
         return await VisualGeneration(session).retry_materialization(task_id)
+    except GenerationError as exc:
+        raise _generation_error(exc) from None
+
+
+@router.post("/generation-tasks/{task_id}/cancel", response_model=GenerationTaskOut)
+async def cancel_generation_task(session: SessionDep, task_id: str, body: GenerationCancelIn):
+    try:
+        return await VisualGeneration(session).cancel(task_id, body.expected_revision)
     except GenerationError as exc:
         raise _generation_error(exc) from None

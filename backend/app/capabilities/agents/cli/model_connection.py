@@ -7,7 +7,7 @@ import tomllib
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .process import CliError, environment
+from .transport import CliError, environment
 
 
 def connection_overrides() -> tuple[dict, dict]:

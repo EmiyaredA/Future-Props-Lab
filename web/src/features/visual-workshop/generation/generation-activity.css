@@ -103,3 +103,18 @@
     animation: none;
   }
 }
+
+.generation-queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.generation-queue-actions p {
+  flex-basis: 100%;
+  color: var(--text-muted);
+}
+.generation-queue-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

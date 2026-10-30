@@ -18,7 +18,11 @@ claude_user_ids = []
 
 模型必须是指定 Workspace 内启用的 chat + vision 模型，供应商也必须启用；不会自动替换连接。两个 executable 必须是本机绝对路径，user_ids 是获准使用该本机 CLI 登录的 FPL 账号 ID。执行账号仍须具有目标 Workspace 的内容写入及模型使用权限。连接状态仅展示安装、版本和登录探测结果，不发起付费模型调用。
 
+新部署的五种 CLI 统一在 `[code_agents]` 设置 `codex`、`claude`、`opencode`、`dsh`、`pi` 的 `*_enabled` 与 `*_executable`，再在编程智能体页授予账号“视觉验收”用途；上面的旧 Codex/Claude 路径和账号列表仅作兼容。新增 OpenCode、DeepSeek Harness 与 Pi 均通过同一个任务专用 MCP 读取清单、证据和有界取样，返回同一份 AgentReport 并接受同样的证据与权限校验。
+
 Codex 要求 0.163.0 或更新版本，Claude Code 要求 2.1.259 或更新版本。安装和登录由部署管理员在应用外完成；配置示例不包含账户、令牌或实际路径。应用不会安装、登录、改写全局配置或自动选择另一连接。正式数据更新仍走桌面停机备份和迁移预检，不能在热加载中应用新增迁移。
+
+新增 CLI 最低版本为 OpenCode 1.19.4、DeepSeek Harness 0.2.1、Pi 1.4.0；执行隔离和模型连接配置边界见[编程智能体接入](code-agents.md)。
 
 ## 资料与执行边界
 

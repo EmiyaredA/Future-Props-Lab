@@ -5,9 +5,7 @@ import json
 from pathlib import Path
 
 from .model_connection import connection_overrides, toml_value
-from .process import CliError, _stop, environment
-
-MAX_BYTES = 16 * 1024 * 1024
+from .transport import MAX_BYTES, CliError, close_transport, environment, spawn_transport
 
 
 def recorded_result(result):
@@ -29,38 +27,6 @@ def recorded_result(result):
             "bytes": len(serialized.encode()),
         }
     return result
-
-
-async def close_transport(process):
-    async def drain():
-        if process.stdout:
-            while await process.stdout.read(65536):
-                pass
-
-    draining = asyncio.create_task(drain())
-    if process.stdin:
-        process.stdin.close()
-    await _stop(process)
-    if process.stdin:
-        try:
-            await process.stdin.wait_closed()
-        except (BrokenPipeError, ConnectionResetError):
-            pass
-    try:
-        await asyncio.wait_for(draining, 2)
-    except TimeoutError:
-        draining.cancel()
-        await asyncio.gather(draining, return_exceptions=True)
-
-
-async def spawn_transport(*args, **kwargs):
-    creating = asyncio.create_task(asyncio.create_subprocess_exec(*args, **kwargs))
-    try:
-        return await asyncio.shield(creating)
-    except asyncio.CancelledError:
-        process = await creating
-        await close_transport(process)
-        raise
 
 
 def codex_command(executable, root, model=""):

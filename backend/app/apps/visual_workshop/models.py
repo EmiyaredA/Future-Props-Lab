@@ -88,6 +88,7 @@ class VisualGenerationTask(Base):
     request_payload: Mapped[dict] = mapped_column(JSON, default=dict)
     canvas_node_id: Mapped[str | None] = mapped_column(String(64), index=False)
     provider_task_id: Mapped[str | None] = mapped_column(String(255))
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="queued")
     progress: Mapped[int] = mapped_column(Integer, default=0)
     execution_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)
@@ -122,6 +123,7 @@ class VisualGenerationBatch(Base):
     status: Mapped[str] = mapped_column(String(16), default="queued")
     completed_count: Mapped[int] = mapped_column(Integer, default=0)
     failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    cancelled_count: Mapped[int] = mapped_column(Integer, default=0)
     result_asset_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
     )

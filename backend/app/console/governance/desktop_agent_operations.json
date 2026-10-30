@@ -1033,6 +1033,10 @@
       "method": "retry_image_composition",
       "resource": "generation"
     },
+    "POST /v1/visual-workshop/generation-tasks/{task_id}/cancel": {
+      "method": "cancel_generation_task",
+      "resource": "generation"
+    },
     "POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization": {
       "method": "retry_materialization",
       "resource": "generation"

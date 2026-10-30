@@ -54,6 +54,21 @@ test("Code Agents navigation, scoped grants, keyboard and responsive themes", as
               message: "部署尚未启用此 Agent",
               models: [],
             },
+            ...[
+              ["opencode", "OpenCode"],
+              ["dsh", "DeepSeek Harness"],
+              ["pi", "Pi"],
+            ].map(([id, name]) => ({
+              id,
+              name,
+              executable: "",
+              version: "",
+              enabled: false,
+              available: false,
+              status: "disabled",
+              message: "部署尚未启用此 Agent",
+              models: [],
+            })),
           ],
         },
       });
@@ -80,6 +95,16 @@ test("Code Agents navigation, scoped grants, keyboard and responsive themes", as
   await page.goForward();
   await expect(agents).toHaveAttribute("aria-selected", "true");
   expect(detections).toBe(0);
+  await page
+    .getByRole("button", { name: "OpenCode 未启用", exact: true })
+    .click();
+  await expect(
+    page.getByRole("article", { name: "OpenCode 连接" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("opencode auth login", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Codex 已连接", exact: true }).click();
   await page.getByLabel("授权账号").focus();
   await page.keyboard.press("Space");
   await page.keyboard.press("Enter");
@@ -108,6 +133,27 @@ test("Code Agents navigation, scoped grants, keyboard and responsive themes", as
         () => document.documentElement.scrollWidth > window.innerWidth + 1,
       );
       expect(overflowing).toBe(false);
+      const command = page.locator(".code-agent-commands code");
+      const commandBox = await command.boundingBox();
+      expect(commandBox!.height).toBeLessThan(24);
+      expect(
+        await command.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      ).toBe(true);
+      if (width >= 1280) {
+        await expect
+          .poll(async () => {
+            const account = await page.getByLabel("授权账号").boundingBox();
+            const config = await page
+              .getByRole("button", { name: "展开配置", exact: true })
+              .boundingBox();
+            return Math.abs(
+              account!.x + account!.width - config!.x - config!.width,
+            );
+          })
+          .toBeLessThan(1);
+      }
       await page.screenshot({
         path: testInfo.outputPath(`code-agents-${theme}-${width}.png`),
         fullPage: true,

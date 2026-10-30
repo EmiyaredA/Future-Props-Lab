@@ -34,12 +34,18 @@ async def test_upgrade_preserves_tasks_and_execution_info_survives_store_reload(
             "generation_kind,provider_name,model_slug,status,provider_task_id) VALUES "
             "('t','p','zealman_video','video','Z','u17','pending','upstream')"
         )
-        old = db.execute("SELECT * FROM visual_generation_tasks").fetchone()
+        columns = ",".join(
+            row[1] for row in db.execute("PRAGMA table_info(visual_generation_tasks)")
+        )
+        old = db.execute(f"SELECT {columns} FROM visual_generation_tasks").fetchone()
         db.commit()
     apply_migrations(path)
     with connect_database(path) as db:
-        row = db.execute("SELECT * FROM visual_generation_tasks").fetchone()
-        assert row[:-1] == old and row[-1] is None
+        row = db.execute(f"SELECT {columns} FROM visual_generation_tasks").fetchone()
+        assert row == old
+        assert db.execute("SELECT execution_info FROM visual_generation_tasks").fetchone() == (
+            None,
+        )
         for table in ["model_test_generation_tasks", "model_inference_tasks"]:
             assert "execution_info" in [r[1] for r in db.execute(f"PRAGMA table_info({table})")]
         assert db.execute("PRAGMA foreign_key_check").fetchall() == []

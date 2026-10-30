@@ -191,6 +191,7 @@ const baseTask = {
   progress: 0,
   error_message: null,
   result_asset_id: null,
+  can_cancel: false,
   can_retry_materialization: false,
   revision: 0,
   created_at: "2026-08-03T08:00:00Z",
@@ -368,7 +369,7 @@ test("creates an image task with model-linked sizes and a project reference", as
       reference_asset_ids: ["asset-1"],
     }),
   );
-  expect(await screen.findByText(/任务已提交/)).toBeInTheDocument();
+  expect(await screen.findByText(/任务已排队/)).toBeInTheDocument();
 });
 
 test.each(["canvas", "workbench"] as const)(
@@ -1154,6 +1155,7 @@ test("renders task progress and retries only local materialization failures", as
         status: "failed",
         progress: 100,
         error_message: "结果下载超时",
+        can_cancel: false,
         can_retry_materialization: true,
       },
     ],

@@ -1,59 +1,11 @@
 import asyncio
 import json
 import os
-import signal
+
+from .native import converse
+from .transport import CliError, _stop, environment
 
 EXECUTION_TIMEOUT_SECONDS = 900
-
-
-class CliError(ValueError):
-    pass
-
-
-def environment():
-    names = {
-        "PATH",
-        "HOME",
-        "USER",
-        "LOGNAME",
-        "LANG",
-        "LC_ALL",
-        "TMPDIR",
-        "CODEX_HOME",
-        "CLAUDE_CONFIG_DIR",
-        "HTTPS_PROXY",
-        "HTTP_PROXY",
-        "ALL_PROXY",
-        "NO_PROXY",
-        "SSL_CERT_FILE",
-        "SSL_CERT_DIR",
-    }
-    return {name: value for name, value in os.environ.items() if name in names}
-
-
-async def _stop(process):
-    if process.returncode is not None:
-        return
-
-    def signal_tree(value):
-        try:
-            os.killpg(process.pid, value)
-        except PermissionError:
-            # Restricted hosts may forbid process-group signals after a fast child exit.
-            try:
-                process.send_signal(value)
-            except ProcessLookupError:
-                pass
-        except ProcessLookupError:
-            pass
-
-    signal_tree(signal.SIGTERM)
-    try:
-        # The watchdog has a three-second child-tree shutdown grace period.
-        await asyncio.wait_for(process.wait(), 5)
-    except TimeoutError:
-        signal_tree(signal.SIGKILL)
-        await process.wait()
 
 
 async def probe(kind: str, executable: str):
@@ -124,6 +76,8 @@ def command(kind, executable, root, schema, tool_command):
             + ',PYTHONDONTWRITEBYTECODE="1",PYTHONNOUSERSITE="1"}}',
         ]
         return [*args, "-"]
+    if kind != "claude-code":
+        raise CliError("未知的 CLI 连接类型")
     return [
         executable,
         "--restricted",
@@ -154,6 +108,44 @@ def command(kind, executable, root, schema, tool_command):
 
 async def execute(kind, executable, root, schema, tool_command, prompt, cancelled, watchdog=None):
     """Return a validated transport payload; no application/database state is held here."""
+    if kind in {"opencode", "dsh", "pi"}:
+
+        async def emit(_kind, _payload):
+            pass
+
+        config = {
+            "mcpServers": {
+                "acceptance_task": {
+                    "command": tool_command[0],
+                    "args": tool_command[1:],
+                    "env": {
+                        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                        "PYTHONDONTWRITEBYTECODE": "1",
+                        "PYTHONNOUSERSITE": "1",
+                    },
+                }
+            }
+        }
+        prompt += "\nReturn only a JSON object matching this schema:\n" + schema.read_text()
+        prefix = [*watchdog, "--run-agent", str(os.getpid())] if watchdog else []
+        task = asyncio.create_task(
+            converse(kind, executable, root, "", prompt, config, emit, watchdog=prefix)
+        )
+        try:
+            async with asyncio.timeout(EXECUTION_TIMEOUT_SECONDS):
+                while not task.done():
+                    if await cancelled():
+                        raise CliError("验收已取消或执行授权已失效")
+                    await asyncio.wait({task}, timeout=1)
+                value = json.loads(await task)
+                if not isinstance(value, dict):
+                    raise CliError("Agent 未返回结构化验收报告")
+                return value
+        except TimeoutError:
+            raise CliError("验收超过十五分钟，请手动重试") from None
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
     args = command(kind, executable, root, schema, tool_command)
     if watchdog:
         args = [*watchdog, "--run-agent", str(os.getpid()), *args]

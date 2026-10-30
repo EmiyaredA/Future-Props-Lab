@@ -2,17 +2,16 @@ import { Cpu } from "lucide-react";
 import type { ComponentProps } from "react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ProviderIcon } from "@shared/ui/ProviderIcon";
+import { AgentLogo, type Agent } from "@features/code-agents";
 import type { AcceptanceScheme, SchemeId } from "./nodeApi";
 import "./model-picker.css";
 
 export function SchemeIcon({ scheme }: { scheme: AcceptanceScheme }) {
   if (scheme.kind === "code_agent") {
-    const name = scheme.id === "motion-transfer:codex" ? "codex" : "claudecode";
     return (
-      <span
-        aria-hidden="true"
-        data-software={name}
-        className={`acceptance-software-icon ${name}`}
+      <AgentLogo
+        id={scheme.id.replace("motion-transfer:", "") as Agent["id"]}
+        size={24}
       />
     );
   }

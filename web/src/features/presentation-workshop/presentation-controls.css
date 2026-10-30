@@ -152,19 +152,44 @@
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
+.presentation-notes-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+}
 .presentation-notes-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 18px;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 2px;
   border: 0;
   background: transparent;
   color: var(--text);
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+}
+.presentation-notes-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--accent);
+}
+.presentation-notes-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
 }
 .presentation-notes-toggle small {
   color: var(--muted);
@@ -172,21 +197,71 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
+  font-weight: 400;
 }
-.presentation-notes.expanded .presentation-notes-toggle svg {
+.presentation-notes-chevron {
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform 160ms ease;
+}
+.presentation-notes.expanded .presentation-notes-chevron {
   transform: rotate(180deg);
 }
+.presentation-notes-rich {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.presentation-notes-rich:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.presentation-notes-toggle:focus-visible,
+.presentation-notes-rich:focus-visible,
+.presentation-notes textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.presentation-notes-content {
+  padding: 0 16px 14px;
+}
+.presentation-notes-content[hidden] {
+  display: none;
+}
+.presentation-notes-hint {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
 .presentation-notes textarea {
-  height: 76px;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 132px;
   min-height: 76px;
-  padding: 0 18px 12px;
-  resize: none;
-  border: 0;
-  background: transparent;
+  max-height: 35vh;
+  padding: 12px 14px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
   color: var(--text);
   font: inherit;
   font-size: 13px;
   line-height: 1.6;
+}
+.presentation-notes textarea::placeholder {
+  color: var(--muted);
 }
 .presentation-statusbar {
   display: flex;
@@ -330,10 +405,10 @@
   .presentation-notes {
     display: none;
   }
-  .presentation-notes-toggle {
+  .presentation-notes-header {
     padding-inline: 12px;
   }
-  .presentation-notes textarea {
+  .presentation-notes-content {
     padding-inline: 12px;
   }
   .presentation-topbar .presentation-save-state {

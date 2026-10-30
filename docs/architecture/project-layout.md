@@ -456,7 +456,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 - `backend/app/console/governance/platform_policy.py` 解析即时敏感策略；`platform_settings.py` 拥有平台配置 CAS；`registration.py` 拥有邀请码名额与注册事务。
 - `console/governance/model_templates.py`、`model_template_sync.py` 拥有角色目录模板、预览与逐空间持久同步；`demo_services.py` 拥有固定测试服务治理与工作区接入。
-- `console/governance/runtime_quotas.py` 拥有并发额度领取与恢复；`runtime/task_admission.py` 只定义任务创建事务的归属回调类型；各功能用例在提交任务前调用它。
+- `console/governance/runtime_quotas.py` 拥有并发额度领取与恢复，`generation_queue.py` 拥有视觉工坊图片／视频的账号等待容量、逐任务额度领取和调度候选；等待不占并发，领取与驱动器提交状态同事务更新；`runtime/task_admission.py` 只定义任务创建事务的归属回调类型；各功能用例在提交任务前调用它。
 - `console/governance/developer_docs.py`、`cross_workspace_logs.py`、`project_certification.py` 分别拥有受保护文档、显式跨空间概况、官方认证。`ModelTemplateSyncItem` 和 `RuntimeAdmission` 属于平台治理记录，跨空间访问由这些正式用例显式校验，不使用业务自动租户过滤。
 - `backend/app/demo_runtime/runtime.py` 只实现应用进程内的固定 Mock 文本与演示工具运行时，不启动子进程；模型适配器和工具集成将明确的本地测试连接交给它。
 - `llm/catalog/defaults.py` 校验并保存当前工作区默认模型，与目录共用 CAS 版本。
@@ -720,7 +720,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 `backend/app/apps/visual_workshop/acceptance/` 拥有只读动作迁移定义、节点方案 CAS 绑定、自动生成依据、不可变输出验收记录、人工结论、证据、返修和快照兼容。`execution/` 负责无凭据任务包、专用媒体 MCP 和 Agent 报告转换。`runner.py` 复用短事务及 RunnerSupervisor，模型 API 与 Agent 专属结果分别保存。生成快照与上传版本的节点设置明确区分，验收不参与生成、上传、画布保存及最终输出采用的门禁。
 
-`backend/app/capabilities/agents/cli/` 拥有 Codex、Claude Code 非交互执行参数、事件解析、环境过滤、取消、超时和父进程退出监督；不包含验收业务。`console/governance/visual_acceptance_access.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
+`backend/app/capabilities/agents/cli/` 拥有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 的非交互执行。`transport.py` 维护受控环境与进程生命周期，`conversation.py` 维护原有 Codex/Claude 对话协议，`native.py` 维护 OpenCode JSON 事件、Harness ACP 与 Pi RPC，`isolation.py` 只继承模型连接与认证配置并生成临时执行配置；旁置 `.mjs` 资源提供 Pi 的唯一任务工具桥与 Harness 的不可放宽工具 guard，桌面构建显式打包。不包含验收业务。`console/governance/visual_acceptance_access.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
 
 `web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
 

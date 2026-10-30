@@ -241,6 +241,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/video-editor/projects/{project_id}/timeline/operations"),
         ("POST", "/v1/visual-workshop/generation-batches/{batch_id}/retry-composition"),
         ("POST", "/v1/visual-workshop/generation-tasks/{task_id}/retry-materialization"),
+        ("POST", "/v1/visual-workshop/generation-tasks/{task_id}/cancel"),
         ("POST", "/v1/visual-workshop/projects"),
         ("POST", "/v1/visual-workshop/projects/snapshot-imports"),
         ("DELETE", "/v1/visual-workshop/projects/{project_id}"),

@@ -17,6 +17,12 @@ FIELDS = {
         "codex_executable": ("fpl_code_agents_codex_executable", str),
         "claude_enabled": ("fpl_code_agents_claude_enabled", bool),
         "claude_executable": ("fpl_code_agents_claude_executable", str),
+        "opencode_enabled": ("fpl_code_agents_opencode_enabled", bool),
+        "opencode_executable": ("fpl_code_agents_opencode_executable", str),
+        "dsh_enabled": ("fpl_code_agents_dsh_enabled", bool),
+        "dsh_executable": ("fpl_code_agents_dsh_executable", str),
+        "pi_enabled": ("fpl_code_agents_pi_enabled", bool),
+        "pi_executable": ("fpl_code_agents_pi_executable", str),
     },
     "visual_acceptance": {
         "model_workspace_id": ("fpl_acceptance_model_workspace_id", str),

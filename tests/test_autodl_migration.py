@@ -52,7 +52,14 @@ def test_autodl_upgrade_preserves_history_metadata_indexes_and_references(tmp_pa
             "('a', 't', 'reference_image', 0, 'ref.png', 'ref', 'image', 'image/png', "
             "123)"
         )
-        before = {table: db.execute(f"SELECT * FROM {table}").fetchall() for table in tables}
+        columns = {
+            table: ",".join(row[1] for row in db.execute(f"PRAGMA table_info({table})"))
+            for table in tables
+        }
+        before = {
+            table: db.execute(f"SELECT {columns[table]} FROM {table}").fetchall()
+            for table in tables
+        }
         indexes = db.execute(
             "SELECT name, sql FROM sqlite_master WHERE type='index' AND tbl_name IN "
             "('model_providers', 'model_test_generation_tasks', "
@@ -62,7 +69,8 @@ def test_autodl_upgrade_preserves_history_metadata_indexes_and_references(tmp_pa
     apply_migrations(database)
     with connect_database(database) as db:
         assert {
-            table: db.execute(f"SELECT * FROM {table}").fetchall() for table in tables
+            table: db.execute(f"SELECT {columns[table]} FROM {table}").fetchall()
+            for table in tables
         } == before
         assert (
             db.execute(

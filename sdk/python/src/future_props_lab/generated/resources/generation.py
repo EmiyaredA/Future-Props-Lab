@@ -27,13 +27,17 @@ class Generation:
         'Generation Options. GET /v1/visual-workshop/generation-options'
         return self._client._call('GET', '/v1/visual-workshop/generation-options', parameters=[], response_type=models.GenerationOptionsOut)
 
-    def list_generation_tasks(self, *, project_id: str | None | Unset = UNSET, canvas_node_id: str | None | Unset = UNSET, kind: Literal['image', 'video', 'audio'] | None | Unset = UNSET, status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed'] | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, current_nodes: bool | Unset = UNSET) -> models.GenerationTaskListOut:
+    def list_generation_tasks(self, *, project_id: str | None | Unset = UNSET, canvas_node_id: str | None | Unset = UNSET, kind: Literal['image', 'video', 'audio'] | None | Unset = UNSET, status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed', 'cancelled'] | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, current_nodes: bool | Unset = UNSET) -> models.GenerationTaskListOut:
         'List Generation Tasks. GET /v1/visual-workshop/generation-tasks'
         return self._client._call('GET', '/v1/visual-workshop/generation-tasks', parameters=[('project_id', 'query', project_id), ('canvas_node_id', 'query', canvas_node_id), ('kind', 'query', kind), ('status', 'query', status), ('page', 'query', page), ('page_size', 'query', page_size), ('current_nodes', 'query', current_nodes)], response_type=models.GenerationTaskListOut)
 
     def get_generation_task(self, *, task_id: str) -> models.GenerationTaskOut:
         'Get Generation Task. GET /v1/visual-workshop/generation-tasks/{task_id}'
         return self._client._call('GET', '/v1/visual-workshop/generation-tasks/{task_id}', parameters=[('task_id', 'path', task_id)], response_type=models.GenerationTaskOut)
+
+    def cancel_generation_task(self, *, task_id: str, body: models.GenerationCancelIn | dict) -> models.GenerationTaskOut:
+        'Cancel Generation Task. POST /v1/visual-workshop/generation-tasks/{task_id}/cancel'
+        return self._client._call('POST', '/v1/visual-workshop/generation-tasks/{task_id}/cancel', parameters=[('task_id', 'path', task_id)], body=body, media_type='application/json', response_type=models.GenerationTaskOut)
 
     def retry_materialization(self, *, task_id: str) -> models.GenerationTaskOut:
         'Retry Materialization. POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization'
@@ -71,13 +75,17 @@ class AsyncGeneration:
         'Generation Options. GET /v1/visual-workshop/generation-options'
         return await self._client._call('GET', '/v1/visual-workshop/generation-options', parameters=[], response_type=models.GenerationOptionsOut)
 
-    async def list_generation_tasks(self, *, project_id: str | None | Unset = UNSET, canvas_node_id: str | None | Unset = UNSET, kind: Literal['image', 'video', 'audio'] | None | Unset = UNSET, status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed'] | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, current_nodes: bool | Unset = UNSET) -> models.GenerationTaskListOut:
+    async def list_generation_tasks(self, *, project_id: str | None | Unset = UNSET, canvas_node_id: str | None | Unset = UNSET, kind: Literal['image', 'video', 'audio'] | None | Unset = UNSET, status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed', 'cancelled'] | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, current_nodes: bool | Unset = UNSET) -> models.GenerationTaskListOut:
         'List Generation Tasks. GET /v1/visual-workshop/generation-tasks'
         return await self._client._call('GET', '/v1/visual-workshop/generation-tasks', parameters=[('project_id', 'query', project_id), ('canvas_node_id', 'query', canvas_node_id), ('kind', 'query', kind), ('status', 'query', status), ('page', 'query', page), ('page_size', 'query', page_size), ('current_nodes', 'query', current_nodes)], response_type=models.GenerationTaskListOut)
 
     async def get_generation_task(self, *, task_id: str) -> models.GenerationTaskOut:
         'Get Generation Task. GET /v1/visual-workshop/generation-tasks/{task_id}'
         return await self._client._call('GET', '/v1/visual-workshop/generation-tasks/{task_id}', parameters=[('task_id', 'path', task_id)], response_type=models.GenerationTaskOut)
+
+    async def cancel_generation_task(self, *, task_id: str, body: models.GenerationCancelIn | dict) -> models.GenerationTaskOut:
+        'Cancel Generation Task. POST /v1/visual-workshop/generation-tasks/{task_id}/cancel'
+        return await self._client._call('POST', '/v1/visual-workshop/generation-tasks/{task_id}/cancel', parameters=[('task_id', 'path', task_id)], body=body, media_type='application/json', response_type=models.GenerationTaskOut)
 
     async def retry_materialization(self, *, task_id: str) -> models.GenerationTaskOut:
         'Retry Materialization. POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization'

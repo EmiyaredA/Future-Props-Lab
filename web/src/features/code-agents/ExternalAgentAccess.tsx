@@ -61,7 +61,7 @@ export function ExternalAgentAccess() {
             <Link2 size={22} aria-hidden />
             外部客户端接入
           </h2>
-          <p>让 Codex 或 Claude Code 连接已授权的 FPL 项目。</p>
+          <p>让本机 CLI 连接已授权的 FPL 项目。</p>
         </div>
         <div className="code-agent-external-actions">
           <span

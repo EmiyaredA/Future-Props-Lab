@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({
   fetchPolicy: vi.fn(),
   fetchQuotas: vi.fn(),
   savePolicy: vi.fn(),
+  saveQuotas: vi.fn(),
   fetchInviteCodes: vi.fn(),
   createInviteCode: vi.fn(),
 }));
@@ -125,4 +126,31 @@ test("官方标记同时要求平台能力和空间写权限", () => {
   expect(
     screen.queryByRole("button", { name: "标记官方作品" }),
   ).not.toBeInTheDocument();
+});
+
+test("按角色保存账号生成等待上限，并保留配额 CAS", async () => {
+  api.saveQuotas.mockImplementation(async (body) => ({
+    revision: 1,
+    value: body.value,
+  }));
+  const user = userEvent.setup();
+  mount(<PermissionPolicyPage />);
+  const group = await screen.findByRole("group", { name: "普通用户" });
+  const limit = within(group).getByRole("spinbutton", {
+    name: "图片／视频等待上限",
+  });
+  expect(limit).toHaveValue(20);
+  await user.clear(limit);
+  await user.type(limit, "5");
+  await user.click(screen.getByRole("button", { name: "保存并发配额" }));
+  await waitFor(() =>
+    expect(api.saveQuotas).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expected_revision: 0,
+        value: expect.objectContaining({
+          generation_queue: { member: 5, admin: 20, super_admin: 20 },
+        }),
+      }),
+    ),
+  );
 });
