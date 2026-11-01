@@ -367,7 +367,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `model_id` | path | string | 是 |
 | `body` | application/json | LocalModelActionIn | 是 |
-| `body.action` | 请求体 | install / cancel / enable / stop / uninstall | 是 |
+| `body.action` | 请求体 | install / cancel / enable / stop / uninstall / repair | 是 |
 | `body.expected_revision` | 请求体 | integer | 是 |
 | `body.request_id` | 请求体 | string | 是 |
 

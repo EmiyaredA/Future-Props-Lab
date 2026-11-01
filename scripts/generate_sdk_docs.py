@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 LABELS = {
     "code_agents": "编程智能体连接与授权",
     "interview": "面试资料准备",
-    "desktop": "桌面初始化与本地 Agent 接入",
-    "amadeus": "Amadeus 桌面助手",
+    "automation": "网站自动化接入与资源定位",
+    "amadeus": "Amadeus 网页助手",
     "motion_compositor": "特效制作工坊",
     "accounts": "登录与个人账号",
     "workspaces": "工作区与邀请",
@@ -53,23 +53,13 @@ def type_label(schema):
     return schema.get("type", "object")
 
 
-def auth_for(path, method="GET"):
+def auth_for(path, _method="GET"):
     if path.startswith("/v1/amadeus/"):
-        return "仅桌面模式；浏览器 Session；桌面私有传输校验；不接受 Management API Key"
+        return "浏览器 Session；不接受 Management API Key"
     if path.startswith("/v1/tool-navigation/codex-source"):
-        return "仅桌面模式；平台管理员 Session；不接受 Management API Key 或 Agent 通道"
-    if path == "/v1/desktop/setup":
-        return "仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化"
-    if path.startswith("/v1/desktop/"):
-        if (path == "/v1/desktop/agent/pairings" and method == "POST") or path.endswith("/claim"):
-            return "仅桌面模式；私有本地 Agent 通道；领取授权还需配对 claim token"
-        if (
-            path == "/v1/desktop/agent/pairings"
-            or path.endswith(("/decision", "/ack"))
-            or path == "/v1/desktop/ui/inbox"
-        ):
-            return "仅桌面模式；浏览器 Session；桌面私有传输校验"
-        return "仅桌面模式；已授权 Management API Key 或 Session；桌面私有传输校验"
+        return "仅本机网站入口；平台管理员 Session；不接受 Management API Key 或 Agent 通道"
+    if path.startswith("/v1/automation/access"):
+        return "仅本机网站入口；平台管理员 Session；公网拒绝访问"
     if path in {"/health", "/ready"}:
         return "无需登录"
     if path == "/v1/auth/login":

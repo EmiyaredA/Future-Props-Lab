@@ -12,7 +12,7 @@ export const GROUPS: DocsGroup[] = [
   { id: "files", title: "文件管理", section: "平台基础" },
   { id: "integrations", title: "集成中心", section: "平台基础" },
   { id: "creative", title: "创意工坊", section: "平台基础" },
-  { id: "desktop", title: "桌面与 Amadeus", section: "平台基础" },
+  { id: "desktop", title: "网站与 Amadeus", section: "平台基础" },
   { id: "models", title: "模型服务", section: "模型能力" },
   { id: "testing", title: "模型测试", section: "模型能力" },
   { id: "logs", title: "调用日志", section: "模型能力" },

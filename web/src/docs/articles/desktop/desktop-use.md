@@ -1,25 +1,36 @@
-<!-- docs: {"group":"desktop","order":0,"title":"桌面 App、多窗口与本地数据","lead":"在同一 Workspace 打开多个窗口，核对外部更新并管理本机数据。","evidence":["desktop/src","web/src/app/layout/DesktopAppChrome.tsx","docs/operations/desktop-macos.md"]} -->
+<!-- docs: {"group": "desktop", "order": 0, "title": "网站、Amadeus 与本地数据", "lead": "在浏览器中使用 Mac 后台服务、助手与本机管理。", "evidence": ["scripts/website/serve.py", "web/src/features/amadeus/PageProvider.tsx", "docs/operations/production-deployment.md"]} -->
 
-# 桌面 App、多窗口与本地数据
+# 网站、Amadeus 与本地 Agent
 
-macOS 桌面版把 Studio 与后端运行在本机。首次启动按界面创建首个账号并登录；后续账号与私人数据管理见[账号与私人数据](/docs.html?page=workspaces)。
+浏览器连接 Mac 上的后台网站服务。账号、作品、素材和任务保存在项目 `.runtime/`，关闭页面不会停止后台任务；云端仅托管程序并转发业务请求。
 
-## 多窗口工作
+## 使用 Amadeus
 
-使用桌面顶栏的窗口入口，或支持该操作的工坊「新建窗口」，打开当前 Workspace 的另一个窗口。窗口可查看不同项目，但不因此创建另一个部署实例。
+1. 在「模型与智能体 → 编程智能体」确认已安装、登录且获当前账号用途授权的 CLI；连接状态应显示可用。
+2. 从顶栏或工坊按钮打开 Amadeus 侧栏，新建对话并选择 Agent。窄屏中助手覆盖页面，可以关闭后继续编辑。
+3. 查看当前页面、项目和未保存状态；使用控件选择工具添加明确引用。发送前应能看到选中对象的名称。
+4. 按需加载 Skill、工具 API 和 MCP，描述目标与验收方式。提问和写入审批由用户明确处理。
+5. 完成后核对作品内容与保存状态。遇到版本冲突先处理草稿，不重复提交未知结果的写入。
 
-账号和空间切换需要处理未保存内容。其他窗口或 Agent 修改项目后，界面会收到外部变更提示；查看更新仍经过草稿保护。存在冲突时核对服务器版本，不把刷新当作自动合并。
+关闭侧栏或页面后重新打开，可恢复服务端会话和运行状态。模型提交中断后不会自动重提；先查看任务与日志，再决定后续动作。
 
-## 桌面专属入口
+## 外部 CLI、SDK 与 MCP
 
-- 顶栏「Amadeus」打开[桌面助手](/docs.html?page=amadeus-start)。
-- 文件管理可打开当前空间的本地文件库目录；整理、删除和引用管理仍应通过 App 完成。
-- 「工具导航 → Codex 模型源」只向桌面版平台管理员开放。
+1. 在「账号设置 → API 密钥」创建所需权限与期限的密钥。明文只展示一次，妥善保管。
+2. 在 Mac 运行 `fpl --profile codex connect --url http://127.0.0.1:9000`，按提示输入密钥。命令只输出账号和连接结果，不输出密钥。
+3. 使用 `fpl --profile codex operations` 核对已登记操作；在编程智能体页面复制 MCP 配置，使用 `fpl --profile codex mcp serve`。
+4. `fpl open director PROJECT_ID` 返回有权访问的作品链接。在浏览器打开并登录后应看到对应工程；该命令不强制切换已有编辑页面。
 
-这些能力依赖桌面桥，普通浏览器中的对应页面不具备相同本机操作能力。
+连接采用网站授权，不需要桌面配对。客户端配置必须保持私有，密钥撤销后后续调用立即按服务器权限拒绝。
 
-## 数据保存在哪里
+## 本机与公网
 
-正式桌面版数据根为 `~/Library/Application Support/Future Props Lab/`，项目与素材在其中的 `runtime/`，配置在 `backend/config.toml`。项目保存在部署机器，不是当前浏览器的临时存储。
+管理员从本机头像菜单打开「本地与公网访问」，检查并控制公网隧道。公网入口隐藏此菜单，后端也拒绝公网管理员调用控制接口。新增本机会话目录、Codex 配置和磁盘管理同样只能在 Mac 本机网站入口完成；公网仍可查看已绑定来源和使用已授权 Agent。
 
-不要直接修改数据库或手工移动被项目引用的素材。完整备份需停止应用并同时保留数据库与资源目录；部署人员参见[桌面运维](/docs.html?page=dev-desktop-macos)。导出单个项目适合创作交接，不能替代完整数据备份。
+网关配置由管理员按停机备份流程维护。Mac 离线时云端程序可能仍可加载，但业务调用显示离线，不能据此认为任务或数据已上传到云端。
+
+## 相关阅读
+
+- [工具 API、MCP 与 Skill](/apps/thought-workshop/official-knowledge-bases/general/documents/integrations)
+- [SDK/API 使用指南](/apps/thought-workshop/official-knowledge-bases/general/documents/automation)
+- [模型测试与后台任务](/apps/thought-workshop/official-knowledge-bases/general/documents/testing)

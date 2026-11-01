@@ -1,32 +1,31 @@
-<!-- docs: {"group":"desktop","order":1,"title":"连接本地 Agent、CLI 与 Python SDK","lead":"让获准的本机客户端通过正式操作访问当前 App。","evidence":["docs/operations/desktop-agent.md","sdk/python/src/future_props_lab","tests/test_desktop_agent.py"]} -->
+<!-- docs: {"group": "desktop", "order": 1, "title": "连接网站 CLI、SDK 与 MCP", "lead": "使用网站地址和账号 API 密钥授权外部客户端。", "evidence": ["sdk/python/src/future_props_lab/website.py", "tests/test_website.py"]} -->
 
-# 连接本地 Agent、CLI 与 Python SDK
+# Future Props Lab Python SDK
 
-本地 Agent 接入默认关闭。它用于本机正在运行的桌面 App，不提供远程桌面或额外 MCP 服务器。
+独立 SDK 不依赖后端运行时。仓库 `npm run setup` 同时安装 `fpl`；外部环境可运行 `uv pip install ./sdk/python`。
 
-## 首次配对
+## 连接网站
 
-1. 正常登录 App，在「账号设置 → API 密钥」开启「本地 Agent 接入」。
-2. 本机客户端运行随 App 打包的 `fpl connect --name "My Agent"`。CLI 不会自动加入系统 PATH，需使用 App 内完整路径或自己设置别名。
-3. 在 App 中核对客户端名称、核对码与目标 Workspace，再批准。
-4. 使用 `fpl status` 查看连接，使用 `fpl operations` 查询当前明确开放的方法。
-
-完整命令路径：
+网站使用地址和 Management API Key 接入：
 
 ```sh
-"/Applications/Future Props Lab.app/Contents/Resources/fpl/fpl" connect --name "My Agent"
+fpl --profile codex connect --url http://127.0.0.1:9000
+fpl --profile codex operations
+fpl --profile codex mcp serve
 ```
 
-不加 `--write` 申请只读权限。读写授权允许登记的写操作，包括删除、模型调用和集成校验，可能产生费用，而且不会逐次弹窗；这与 Amadeus 的逐项写入审批不同。
+connect 使用隐藏输入读取密钥；自动化可用 `--api-key-stdin` 从安全标准输入读取。不要把密钥写进命令参数或源码。配置目录默认 `~/.config/future-props-lab/`（0700），profile 文件为 0600；可通过 `--profile-dir` 显式指定。服务端撤销密钥后后续调用会重新校验授权。
 
-## 使用 CLI 和 SDK
+## Python 调用
 
-`fpl call resource.method --input parameters.json` 通过正式业务操作调用 App；参数格式先用 `fpl operations resource.method` 查询。下载必须明确给出 `--output`，已有文件默认不覆盖。
+```python
+from future_props_lab import Client, website_client
 
-Python 可使用 `desktop_client()` 或 `async_desktop_client()` 复用已配对授权；SDK 安装和常规 HTTP 连接见[自动化快速开始](/docs.html?page=sdk-quickstart)。本地通道只开放已登记业务方法，不开放账号治理、密钥管理或任意系统命令。
+# 使用已保存的客户端 profile，不需要桌面 App 或 Unix Socket。
+with website_client(profile="codex") as client:
+    projects = client.visual.list_projects()
+```
 
-## 授权和失败处理
+也可在进程环境中提供 `FPL_URL`、`FPL_API_KEY`，或向 `Client(base_url=..., api_key=...)` 显式传入凭据。CLI/MCP 只执行服务端登记的业务操作。`fpl open` 返回校验归属的网站链接，不控制浏览器标签页。写入不自动重试，CAS 冲突由调用者重新读取并处理。
 
-授权绑定配对时的账号和 Workspace，不随 App 后续切换空间；需要取消权限时在 App 的 API 密钥列表撤销对应授权。`fpl disconnect` 只清理本机客户端凭据，不能撤销别处持有的副本。
-
-关闭接入或退出 App 会断开连接。超时和断线不会自动取消全部后台任务，也不会重放写请求；先查询状态，再决定是否重试。不要复制或公开数据根下的 `agent/` 凭据目录。
+生成类型和具名方法来自 OpenAPI；修改后运行 `npm run contracts:generate`，使用 `npm run sdk:check` 检查漂移。业务工作流示例位于 `future_props_lab.workshop_examples`，版本化数据与素材契约以产品官方指南为准。
