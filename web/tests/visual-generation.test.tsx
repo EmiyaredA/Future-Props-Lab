@@ -1141,7 +1141,7 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
   );
 });
 
-test("renders task progress and retries only local materialization failures", async () => {
+test("renders task progress and uses the shared result recovery entry", async () => {
   vi.mocked(getGenerationTasks).mockResolvedValue({
     items: [
       {
@@ -1167,7 +1167,7 @@ test("renders task progress and retries only local materialization failures", as
   );
   expect(await screen.findByText("48%")).toBeInTheDocument();
   expect(screen.getByText("结果下载超时")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "重试保存" }));
+  await user.click(screen.getByRole("button", { name: "恢复结果" }));
   await waitFor(() =>
     expect(retryGenerationMaterialization).toHaveBeenCalled(),
   );

@@ -14,6 +14,14 @@ cors_origins = ["http://127.0.0.1:3000", "http://localhost:3000"]
 # HTTPS 部署必须为 true；桌面版固定使用本机同源 HTTP。
 auth_cookie_secure = false
 
+# 桌面版同进程的公网 Web 入口；仅监听 127.0.0.1，经受信反向隧道接入。
+[remote_web]
+enabled = false
+origin = ""
+port = 28081
+# 留空使用正式打包资源；开发模式须指向正式构建，不能指向 Vite。
+web_root = ""
+
 [limits]
 visual_asset_max_bytes = 209715200
 galgame_export_max_bytes = 8589934592

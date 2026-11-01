@@ -12,11 +12,10 @@ const configuredCacheDir = process.env.FPL_VITE_CACHE_DIR;
 export default defineConfig(({ mode }) => ({
   cacheDir:
     configuredCacheDir || resolve(__dirname, `node_modules/.vite-${mode}`),
-  envDir: mode === "desktop" ? false : undefined,
-  define:
-    mode === "desktop"
-      ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
-      : undefined,
+  envDir: ["desktop", "studio"].includes(mode) ? false : undefined,
+  define: ["desktop", "studio"].includes(mode)
+    ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
+    : undefined,
   plugins: [react(), tailwindcss(), mathFontData()],
   resolve: {
     dedupe: ["react", "react-dom"],
@@ -58,7 +57,7 @@ export default defineConfig(({ mode }) => ({
     ],
   },
   build: {
-    sourcemap: mode !== "desktop",
+    sourcemap: !["desktop", "studio"].includes(mode),
     rollupOptions: {
       input: {
         studio: resolve(__dirname, "index.html"),

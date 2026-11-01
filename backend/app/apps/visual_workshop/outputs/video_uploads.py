@@ -7,13 +7,14 @@ from tempfile import TemporaryDirectory
 
 from app.capabilities.asset_store import AssetError, IncomingFile
 from app.capabilities.asset_store.policy import looks_like
-from app.capabilities.media_rendering.animated_image import gif_to_mp4
+from app.capabilities.media_rendering.animated_image import gif_to_mp4, gif_to_webm
 
 
 class ConvertedVideo:
     content_type = "video/mp4"
 
-    def __init__(self, path: Path, filename: str):
+    def __init__(self, path: Path, filename: str, content_type: str = "video/mp4"):
+        self.content_type = content_type
         self.filename = filename
         self.file = path.open("rb")
 
@@ -28,7 +29,7 @@ class ConvertedVideo:
 async def prepare_output_upload(upload: IncomingFile, kind: str, *, max_bytes: int):
     filename = Path(upload.filename or "").name
     if kind != "video" or Path(filename).suffix.lower() != ".gif":
-        yield upload
+        yield upload, None
         return
     try:
         with TemporaryDirectory(prefix="visual-gif-upload-") as temporary:
@@ -49,8 +50,11 @@ async def prepare_output_upload(upload: IncomingFile, kind: str, *, max_bytes: i
             height = int.from_bytes(head[8:10], "little")
             if not width or not height or max(width, height) > 8192 or width * height > 16_777_216:
                 raise AssetError("GIF 画布尺寸超过转换限制", code="invalid_gif_dimensions")
+            inspection = Path(temporary) / "inspection.webm"
             try:
-                await gif_to_mp4(source, target, max_bytes=max_bytes)
+                async with asyncio.timeout(120):
+                    await gif_to_mp4(source, target, max_bytes=max_bytes)
+                    await gif_to_webm(source, inspection, max_bytes=max_bytes)
             except FileNotFoundError:
                 raise AssetError(
                     "GIF 转换工具不可用，请检查 FFmpeg",
@@ -66,9 +70,13 @@ async def prepare_output_upload(upload: IncomingFile, kind: str, *, max_bytes: i
             except ValueError as exc:
                 raise AssetError(str(exc), code="invalid_file_content") from None
             converted = ConvertedVideo(target, str(Path(filename).with_suffix(".mp4")))
+            transparent = ConvertedVideo(
+                inspection, str(Path(filename).with_suffix(".webm")), "video/webm"
+            )
             try:
-                yield converted
+                yield converted, transparent
             finally:
                 await converted.close()
+                await transparent.close()
     finally:
         await upload.close()

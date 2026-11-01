@@ -2422,6 +2422,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/files/{asset_id}/media-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Video Media Info */
+        get: operations["video_media_info_v1_files__asset_id__media_info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/galgame-workshop/projects": {
         parameters: {
             query?: never;
@@ -24399,6 +24416,21 @@ export interface components {
             watermark?: boolean | null;
             workflow_parameters?: components["schemas"]["WorkflowVideoParameters"] | null;
         };
+        /** VideoMediaInfoOut */
+        VideoMediaInfoOut: {
+            /**
+             * Alpha Channel
+             * @default unknown
+             * @enum {string}
+             */
+            alpha_channel: "present" | "absent" | "unknown";
+            /** Codec */
+            codec?: string | null;
+            /** Container */
+            container?: string | null;
+            /** Pixel Format */
+            pixel_format?: string | null;
+        };
         /** ViewConfig */
         ViewConfig: {
             /** Color Rules */
@@ -25240,6 +25272,8 @@ export interface components {
             input_snapshot: {
                 [key: string]: unknown;
             }[];
+            /** Inspection Asset Id */
+            inspection_asset_id?: string | null;
             /** Is Final */
             is_final: boolean;
             /**
@@ -31267,6 +31301,37 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    video_media_info_v1_files__asset_id__media_info_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoMediaInfoOut"];
                 };
             };
             /** @description Validation Error */

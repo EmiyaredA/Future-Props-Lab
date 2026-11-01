@@ -1,3 +1,4 @@
+import "./output-preview.css";
 import { FileText, Image, Music, Video } from "lucide-react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { visualAssetDownloadPath } from "../api";

@@ -30,28 +30,50 @@ async def upload_version(
         extension for extension, (kind, _) in ALLOWED_FILES.items() if kind == node["kind"]
     }
     library = AssetLibrary(outputs.session, settings)
-    asset = None
+    assets = []
+    committed = False
+    # Release the read transaction before conversion and large file I/O.
+    kind = node["kind"]
+    await outputs.session.rollback()
     try:
         async with prepare_output_upload(
-            upload, node["kind"], max_bytes=settings.fpl_visual_asset_max_bytes
-        ) as prepared:
+            upload, kind, max_bytes=settings.fpl_visual_asset_max_bytes
+        ) as (prepared, inspection):
             asset = await library.store_upload(
                 prepared,
                 workspace_id=outputs.workspace_id,
                 visual_project_id=project_id,
                 allowed_extensions=extensions,
                 commit=False,
+                defer_persistence=True,
             )
+            assets.append(asset)
+            inspection_asset = None
+            if inspection:
+                inspection_asset = await library.store_upload(
+                    inspection,
+                    workspace_id=outputs.workspace_id,
+                    visual_project_id=project_id,
+                    allowed_extensions={".webm"},
+                    commit=False,
+                    defer_persistence=True,
+                )
+                assets.append(inspection_asset)
+            outputs.session.add_all(assets)
+            await outputs.session.flush()
             await outputs.add(
                 project_id,
                 node_id,
                 VisualNodeOutputCreateIn(expected_revision=expected_revision, asset_id=asset.id),
+                inspection_asset_id=inspection_asset.id if inspection_asset else None,
             )
+            committed = True
     except BaseException:
-        path = library.storage.path_for(asset) if asset else None
-        await outputs.session.rollback()
-        if path:
-            path.unlink(missing_ok=True)
+        if not committed:
+            paths = [library.storage.path_for(asset) for asset in assets]
+            await outputs.session.rollback()
+            for path in paths:
+                path.unlink(missing_ok=True)
         raise
 
 

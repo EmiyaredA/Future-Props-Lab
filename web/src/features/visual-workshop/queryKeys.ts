@@ -1,4 +1,6 @@
 export const visualWorkshopQueryKeys = {
+  videoMediaInfo: (assetId: string) =>
+    ["visual-video-media-info", assetId] as const,
   acceptanceCatalog: () => ["visual-acceptance-catalog"] as const,
   acceptanceSummary: (project: string) =>
     ["visual-acceptance-summary", project] as const,

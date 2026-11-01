@@ -14,12 +14,20 @@ DESKTOP_HEADER = "x-fpl-desktop-token"
 
 
 class DesktopTransport:
-    def __init__(self, app, *, token: str, agent_policy=None):
+    def __init__(self, app, *, token: str, agent_policy=None, remote_web=None):
         self.app = app
         self.token = token
         self.agent_policy = agent_policy
+        self.remote_web = remote_web
 
     async def __call__(self, scope, receive, send):
+        if (
+            scope["type"] in {"http", "websocket"}
+            and self.remote_web is not None
+            and self.remote_web.accepts(scope)
+        ):
+            await self.remote_web(self.app, scope, receive, send)
+            return
         if scope["type"] in {"http", "websocket"}:
             headers = Headers(scope=scope)
             supplied = headers.get(DESKTOP_HEADER, "")
@@ -97,12 +105,16 @@ class DesktopStaticFiles(StaticFiles):
             raise
 
 
-def attach_desktop(app, *, token: str, web_root: Path | None, agent_policy=None) -> None:
+def attach_desktop(
+    app, *, token: str, web_root: Path | None, agent_policy=None, remote_web=None
+) -> None:
     if len(token) < 32:
         raise ValueError("桌面启动凭据无效")
     if web_root is not None and not (web_root / "index.html").is_file():
         raise ValueError("应用页面资源缺失，请重新安装")
     app.state.desktop_enabled = True
-    app.add_middleware(DesktopTransport, token=token, agent_policy=agent_policy)
+    app.add_middleware(
+        DesktopTransport, token=token, agent_policy=agent_policy, remote_web=remote_web
+    )
     if web_root is not None:
         app.mount("/", DesktopStaticFiles(directory=web_root, html=True), name="desktop-web")

@@ -8,6 +8,11 @@ from app.runtime.orm_base import Base
 
 
 async def protect_document_references(session: AsyncSession, asset_ids: list[str]) -> None:
+    outputs = Base.metadata.tables.get("visual_node_outputs")
+    if outputs is not None and await session.scalar(
+        select(outputs.c.id).where(outputs.c.inspection_asset_id.in_(asset_ids)).limit(1)
+    ):
+        raise AssetError("文件被输出版本的透明检查引用", code="asset_in_use", status=409)
     acceptance_refs = Base.metadata.tables.get("visual_acceptance_asset_references")
     if acceptance_refs is not None and await session.scalar(
         select(acceptance_refs.c.owner_id).where(acceptance_refs.c.asset_id.in_(asset_ids)).limit(1)

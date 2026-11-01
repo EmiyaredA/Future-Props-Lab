@@ -25,6 +25,9 @@ class VisualNodeOutput(Base):
     asset_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
     )
+    inspection_asset_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
+    )
     text: Mapped[str | None] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(16))
     source_key: Mapped[str] = mapped_column(String(160))

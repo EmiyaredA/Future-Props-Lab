@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const dist = path.resolve("dist/assets");
+const dist = path.resolve(process.env.FPL_WEB_DIST_DIR || "dist", "assets");
 const jsLimit = 500 * 1024;
 // ELK ships its GWT layout engine as one precompiled worker. Keep a bounded,
 // separately fetched worker budget; application and other vendor JS stay at 500 KiB.

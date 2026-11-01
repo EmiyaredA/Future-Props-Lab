@@ -341,6 +341,8 @@ class VisualWorkshopProjectSnapshots:
         acceptance, acceptance_assets = await export_acceptance(self.session, project_id)
         used_ids = _canvas_asset_ids(nodes) | acceptance_assets
         for output in outputs:
+            if output.get("inspection_asset_id"):
+                used_ids.add(output["inspection_asset_id"])
             if output.get("asset_id"):
                 used_ids.add(output["asset_id"])
             used_ids.update(
@@ -480,8 +482,18 @@ class VisualWorkshopProjectSnapshots:
                 payload.get("outputs", []), nodes, edges, asset_ids, project.id
             )
             asset_kinds = {asset_ids[item["id"]]: item["media_kind"] for item in assets}
+            asset_mimes = {asset_ids[item["id"]]: item["mime_type"] for item in assets}
             if any(row.asset_id and asset_kinds[row.asset_id] != row.kind for row in outputs):
                 raise ProjectSnapshotError("历史版本与素材类型不匹配")
+            if any(
+                row.inspection_asset_id
+                and (
+                    asset_kinds[row.inspection_asset_id] != "video"
+                    or asset_mimes[row.inspection_asset_id] != "video/webm"
+                )
+                for row in outputs
+            ):
+                raise ProjectSnapshotError("检查视频与素材类型不匹配")
             self.session.add(project)
             await self.session.flush()
             async with importing_project_layout(

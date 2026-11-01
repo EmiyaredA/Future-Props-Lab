@@ -27,6 +27,9 @@ Future Props Lab 的受支持生产形态是单台主机、单个后端进程和
 
 ## 备份
 
+桌面版提供可选的同进程 Studio Web 入口，详见下文；公网网关不能直接转发
+Electron 的随机私有端口或 Vite 开发端口。
+
 备份前停止应用。数据库文件和数据库同级的以下目录必须作为同一快照复制：
 
 - `workspaces/`、`profiles/`、`library/assets/`、`applications/`
@@ -49,3 +52,22 @@ Future Props Lab 的受支持生产形态是单台主机、单个后端进程和
 `FPL_MANAGEMENT_API_KEY` 是管理员在产品内创建、只展示一次的短期调用凭证。需要运行正式 API
 客户端脚本时，通过该进程的环境变量临时传入，完成后立即清除或吊销。它不是后端启动配置，严禁
 写入 `backend/config.toml`、Shell 历史、日志或文档示例。
+
+## 桌面同进程 Studio Web 入口
+
+在桌面数据目录的 `backend/config.toml` 中增加 `[remote_web]`：`enabled = true`、
+精确 HTTPS `origin`、`port = 28081`，以及绝对 `web_root`。默认关闭，只监听
+127.0.0.1；不是另一个 worker，不复制数据库或重新启动后台 Runner。
+
+开发桌面可运行 `npm run build:studio`，将 `web_root` 指向仓库的
+`.local/studio-web`。该构建忽略 Web `.env`、使用同源 API、关闭源码映射和
+公网邀请码注册入口。打包版可留空 `web_root` 以复用随包静态页；公网仍关闭
+注册 API。原本的桌面账号与项目由同一进程提供，退出应用即停止公网入口。
+
+反向代理保持 `Host` 为所配置来源、保留原始浏览器 `Origin`，不要注入桌面
+token 或 Agent 通道头。公网接入按实际绑定 socket 分流，强制浏览器 Session，
+保留原权限／CSRF／限速；桌面初始化、配对、私有 UI 与原始 API 文档不可访问。
+公网响应中的认证 Cookie 增加 Secure，仍是 host-only；桌面 HTTP Cookie 行为不变。
+
+配置应用遵守桌面已有停机备份与未保存编辑保护。仅使用一个 SSH 反向隧道，
+公网数据库、业务监听端口不开放；云端 HTTPS 终止仍属于在线流量信任边界。

@@ -116,6 +116,7 @@ from db.migrations.versions import (
     r0112_presentation_native_templates,
     r0113_autodl_video,
     r0114_visual_generation_queue,
+    r0115_visual_output_inspection,
 )
 
 
@@ -537,6 +538,10 @@ MIGRATIONS += (
         r0114_visual_generation_queue.SQL,
         foreign_keys_off=True,
     ),
+)
+
+MIGRATIONS += (
+    Migration(r0115_visual_output_inspection.MIGRATION_ID, r0115_visual_output_inspection.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

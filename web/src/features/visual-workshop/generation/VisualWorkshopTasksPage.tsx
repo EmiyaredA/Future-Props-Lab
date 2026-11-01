@@ -277,7 +277,7 @@ export function VisualWorkshopTasksPage({
                       disabled={retry.isPending}
                       onClick={() => retry.mutate(task.id)}
                     >
-                      <RotateCcw aria-hidden /> 重试保存
+                      <RotateCcw aria-hidden /> 恢复结果
                     </button>
                   ) : null}
                 </footer>

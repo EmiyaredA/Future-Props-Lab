@@ -1218,3 +1218,9 @@ SDK 的 `client.tools.get_storage_usage`、`client.tools.analyze_storage_directo
 项目路径 `/v1/video-editor/projects/{project_id}/clip-merges` 支持 POST 创建、GET 列表；`/{task_id}` 支持 GET 详情，`/{task_id}/cancel` 支持 POST 取消。创建提交 `expectedRevision`、`requestId`、`clipIds`（2～100 个唯一视频片段 ID）和 `name`。相同请求幂等返回任务，不同载荷复用 requestId 返回 422。版本冲突返回 409；Workspace 或项目不匹配按不存在处理。
 
 返回 `VideoEditorTaskOut`，kind 为 `clip_merge`。完成状态表示透明 MOV 和代理均就绪，`outputAssetId` 指向项目素材；后台不会修改时间线。时间线 operations 接受 `{type: "applyClipMerge" | "undoClipMerge", taskId, newClipId}`，仍需 `expectedRevision` 和 `requestId`；服务端校验任务、原片段快照及素材状态，再原子替换或恢复。桌面 Agent 通道默认不开放这些新增端点。
+
+## 视频格式与透明检查
+
+`GET /v1/files/{asset_id}/media-info` 按当前 Workspace 校验素材，返回 `container`、`codec`、`pixel_format`（可空）以及 `alpha_channel`（`present` / `absent` / `unknown`）。WebM 的 `alpha_mode=1` 优先于普通 YUV 像素格式；通道存在不代表抠图质量已通过。文件不存在或跨空间返回 404，非视频或探测失败返回 422；只读探测最长 30 秒，不改变项目或素材 revision。
+
+视频节点的 GIF 上传仍通过 `/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads` 提交文件及 `expected_revision`，原输出 `asset_id` 为黑底 MP4，输出历史的可空 `inspection_asset_id` 指向透明 WebM。两份素材与版本原子保存；下载、引用、取帧和自动验收沿用 `asset_id`。检查素材参与引用保护与项目快照，旧历史／快照缺少该字段时按空值处理。前端衬底颜色仅属于预览，不改变媒体内容。

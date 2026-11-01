@@ -54,6 +54,9 @@ class FakeStore:
         if self.task is not None:
             self.task = replace(self.task, status="processing", result_url=result_url)
 
+    async def mark_poll_error(self, _task_id: str, message: str) -> None:
+        self.poll_message = message
+
     async def mark_progress(
         self, _task_id: str, status: str, _progress: int, execution_info=None
     ) -> None:
@@ -191,3 +194,96 @@ async def test_materialization_failure_is_safely_settled_and_not_retried() -> No
     assert store.task is not None
     assert store.task.status == "failed"
     assert store.task.result_url == result_url
+
+
+@pytest.mark.asyncio
+async def test_poll_transport_failure_backs_off_and_never_resubmits(monkeypatch) -> None:
+    import httpx
+
+    clock = [0.0]
+    monkeypatch.setattr("app.llm.generation_runtime.driver.monotonic", lambda: clock[0])
+    store = FakeStore(_task("pending"))
+    polls = 0
+    saved = []
+
+    async def submit(_task):
+        raise AssertionError("An accepted provider task must never be submitted again")
+
+    async def poll(task):
+        nonlocal polls
+        assert task.provider_task_id == "provider-1"
+        polls += 1
+        if polls <= 6:
+            raise httpx.ConnectError("private provider URL must not appear in UI")
+        return ProviderTaskStatus(status="completed", result_url="https://example.com/done.mp4")
+
+    async def materialize(task_id, url):
+        saved.append((task_id, url))
+
+    driver = _driver(store, submit=submit, poll=poll, materialize=materialize)
+    for index, delay in enumerate([5, 10, 20, 40, 60, 60], 1):
+        await driver.process("task-1")
+        assert polls == index
+        assert store.failures == 0
+        assert store.task.status == "pending"
+        assert "private provider" not in store.poll_message
+        await driver.process("task-1")
+        assert polls == index
+        clock[0] += delay
+    await driver.process("task-1")
+    assert saved == [("task-1", "https://example.com/done.mp4")]
+    assert not driver._poll_retries
+
+
+@pytest.mark.asyncio
+async def test_restart_continues_polling_the_original_provider_id() -> None:
+    import httpx
+
+    store = FakeStore(_task("pending"))
+    saved = []
+
+    async def submit(_task):
+        raise AssertionError("Restart must not regenerate")
+
+    async def disconnected(_task):
+        raise httpx.ReadTimeout("temporary")
+
+    async def completed(task):
+        assert task.provider_task_id == "provider-1"
+        return ProviderTaskStatus(status="completed", result_url="https://example.com/done.mp4")
+
+    async def materialize(task_id, url):
+        saved.append((task_id, url))
+
+    before = _driver(store, submit=submit, poll=disconnected, materialize=materialize)
+    await before.process("task-1")
+    after = _driver(store, submit=submit, poll=completed, materialize=materialize)
+    await after.recover()
+    await after.process("task-1")
+    assert len(saved) == 1
+    assert store.failures == 0
+
+
+@pytest.mark.asyncio
+async def test_submission_transport_error_still_fails_without_retry() -> None:
+    import httpx
+
+    store = FakeStore(_task("queued"))
+    submits = 0
+
+    async def submit(_task):
+        nonlocal submits
+        submits += 1
+        raise httpx.ConnectError("unknown submission outcome")
+
+    async def poll(_task):
+        raise AssertionError("No known provider ID")
+
+    async def materialize(_task_id, _url):
+        raise AssertionError("No known result")
+
+    driver = _driver(store, submit=submit, poll=poll, materialize=materialize)
+    await driver.process("task-1")
+    await driver.process("task-1")
+    assert submits == 1
+    assert store.failures == 1

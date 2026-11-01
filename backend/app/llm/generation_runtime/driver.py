@@ -3,11 +3,13 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable, Collection
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any, Protocol
 
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.llm.generation_runtime.poll_recovery import POLL_RETRY_PREFIX, is_transient_poll_error
 from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
@@ -198,10 +200,23 @@ class GenerationTaskStore:
             task.status = "processing"
             task.progress = 100
             task.result_url = result_url
+            task.error_message = None
             if task.execution_info is not None:
                 task.execution_info = TaskExecutionInfo(
                     phase="finalizing", updated_at=utc_now()
                 ).model_dump(mode="json")
+            task.revision += 1
+            task.updated_at = utc_now()
+            await session.commit()
+
+    async def mark_poll_error(self, task_id: str, message: str) -> None:
+        async with self.session_factory() as session:
+            task = await self.load(session, task_id)
+            if task is None or task.status not in {"pending", "processing"}:
+                return
+            if not task.provider_task_id or task.result_url:
+                return
+            task.error_message = message
             task.revision += 1
             task.updated_at = utc_now()
             await session.commit()
@@ -219,6 +234,7 @@ class GenerationTaskStore:
                 return
             task.status = "processing" if status == "processing" else "pending"
             task.progress = progress
+            task.error_message = None
             if execution_info is not None:
                 task.execution_info = execution_info.model_dump(mode="json")
             task.revision += 1
@@ -300,6 +316,7 @@ class GenerationTaskDriver:
         self.map_error = map_error
         self.provider_failure_message = provider_failure_message
         self.missing_result_message = missing_result_message
+        self._poll_retries: dict[str, tuple[float, int]] = {}
 
     @staticmethod
     async def cancel_queued(session: AsyncSession, task: Any, revision: int) -> bool:
@@ -326,9 +343,13 @@ class GenerationTaskDriver:
         await self.store.recover_submitting()
 
     async def process(self, task_id: str) -> None:
+        retry = self._poll_retries.get(task_id)
+        if retry is not None and monotonic() < retry[0]:
+            return
         try:
             task = await self.store.claim(task_id)
             if task is None or task.status == "submitting":
+                self._poll_retries.pop(task_id, None)
                 return
             if task.status == "processing" and task.result_url:
                 await self.materialize(task.task_id, task.result_url)
@@ -344,7 +365,18 @@ class GenerationTaskDriver:
             if not task.provider_task_id:
                 raise ValueError("供应商任务编号缺失")
 
-            provider_status = await self.poll(task)
+            try:
+                provider_status = await self.poll(task)
+            except Exception as exc:
+                if not is_transient_poll_error(exc):
+                    raise
+                failures = retry[1] + 1 if retry else 1
+                delay = min(5 * 2 ** min(failures - 1, 4), 60)
+                message = f"{POLL_RETRY_PREFIX}（{type(exc).__name__}）；将重查原任务"
+                await self.store.mark_poll_error(task_id, message)
+                self._poll_retries[task_id] = (monotonic() + delay, failures)
+                return
+            self._poll_retries.pop(task_id, None)
             if provider_status.status == "failed":
                 message = (
                     self.map_error(ValueError(provider_status.error_message))
@@ -369,4 +401,5 @@ class GenerationTaskDriver:
         except asyncio.CancelledError:
             raise
         except Exception as exc:
+            self._poll_retries.pop(task_id, None)
             await self.store.fail(task_id, self.map_error(exc))

@@ -25,6 +25,7 @@ import {
 import { visualWorkshopQueryKeys } from "../queryKeys";
 import { getNodeAcceptance, acceptanceStateNames } from "../acceptance/nodeApi";
 import { AcceptanceThumbnail } from "../acceptance/ReferenceMaterialRow";
+import { VideoOutputPreview } from "./VideoOutputPreview";
 import { OutputPreview } from "./OutputPreview";
 import type { BoardController } from "./boardTypes";
 
@@ -50,6 +51,7 @@ export function OutputHistory({
   const node = controller.nodes.find((node) => node.id === nodeId)!;
   const activity = nodeGenerationActivity(node, tasks, batches);
   const uploadInput = useRef<HTMLInputElement>(null);
+  const [previewBackground, setPreviewBackground] = useState("#000000");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<VisualNodeOutput>();
@@ -192,26 +194,36 @@ export function OutputHistory({
           已有结果使用了旧的输入版本；下次生成将使用当前绑定的输入。
         </p>
       )}
-      <div className="board-large-preview">
-        {activity && !showing && node.kind !== "text" && !node.asset_id ? (
-          <div
-            className="board-generating-placeholder"
-            aria-label="等待生成画面"
-          >
-            <GenerationSpinner size={24} />
-            <span>等待生成画面</span>
-          </div>
-        ) : (
-          <OutputPreview
-            kind={node.kind}
-            assetId={
-              showing?.asset_id ??
-              (node.kind !== "text" ? node.asset_id : undefined)
-            }
-            text={showing?.text}
-          />
-        )}
-      </div>
+      {node.kind === "video" && !(activity && !showing && !node.asset_id) ? (
+        <VideoOutputPreview
+          key={`${nodeId}:${showing?.id ?? node.asset_id ?? "empty"}`}
+          assetId={showing?.asset_id ?? node.asset_id}
+          inspectionAssetId={showing?.inspection_asset_id}
+          background={previewBackground}
+          onBackgroundChange={setPreviewBackground}
+        />
+      ) : (
+        <div className="board-large-preview">
+          {activity && !showing && node.kind !== "text" && !node.asset_id ? (
+            <div
+              className="board-generating-placeholder"
+              aria-label="等待生成画面"
+            >
+              <GenerationSpinner size={24} />
+              <span>等待生成画面</span>
+            </div>
+          ) : (
+            <OutputPreview
+              kind={node.kind}
+              assetId={
+                showing?.asset_id ??
+                (node.kind !== "text" ? node.asset_id : undefined)
+              }
+              text={showing?.text}
+            />
+          )}
+        </div>
+      )}
       {activity && <GenerationActivity activity={activity} />}
       <CancelQueuedTasks
         key={nodeId}
@@ -278,7 +290,7 @@ export function OutputHistory({
       </div>
       {node.kind === "video" && (
         <p className="board-muted">
-          支持视频和 GIF；GIF 转为无声 MP4，透明区域使用黑底。
+          支持视频和 GIF；GIF 转为无声 MP4，并另存透明检查视频用于背景预览。
         </p>
       )}
       {error && !deleteTarget && <p role="alert">{error}</p>}

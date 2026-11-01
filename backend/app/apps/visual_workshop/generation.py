@@ -39,7 +39,7 @@ from app.capabilities.asset_store.models import (
     VisualProjectAssetReference,
 )
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.generation_runtime import GenerationTaskDriver
+from app.llm.generation_runtime import GenerationTaskDriver, can_recover_generation_result
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
@@ -98,7 +98,7 @@ def generation_task_out(row: VisualGenerationTask) -> GenerationTaskOut:
         queue_message="任务已排队，获得生成额度后将自动执行"
         if row.status == "queued" and row.generation_kind in {"image", "video"}
         else None,
-        can_retry_materialization=row.status == "failed" and bool(row.result_url),
+        can_retry_materialization=can_recover_generation_result(row),
         revision=row.revision,
         created_at=iso_utc(row.created_at),
         updated_at=iso_utc(row.updated_at),
@@ -842,12 +842,32 @@ class VisualGeneration:
         row = await self.session.get(VisualGenerationTask, task_id)
         if row is None:
             raise GenerationError("生成任务不存在", code="not_found", status=404)
-        if row.status != "failed" or not row.result_url:
-            raise GenerationError("当前任务没有可重新保存的生成结果", code="retry_unavailable")
-        row.status = "processing"
-        row.error_message = None
-        row.revision += 1
-        row.updated_at = utc_now()
+        if row.status in {"pending", "processing"} and row.provider_task_id:
+            return generation_task_out(row)
+        if not can_recover_generation_result(row):
+            raise GenerationError("当前任务没有可恢复查询或保存的结果", code="retry_unavailable")
+        revision = row.revision
+        changed = await self.session.execute(
+            update(VisualGenerationTask)
+            .where(
+                VisualGenerationTask.id == task_id,
+                VisualGenerationTask.revision == revision,
+                VisualGenerationTask.status == "failed",
+            )
+            .values(
+                status="processing" if row.result_url else "pending",
+                error_message=None,
+                revision=revision + 1,
+                updated_at=utc_now(),
+            )
+        )
+        if changed.rowcount != 1:
+            await self.session.rollback()
+            current = await self.session.get(VisualGenerationTask, task_id)
+            if current is not None and current.status in {"pending", "processing", "completed"}:
+                return generation_task_out(current)
+            raise GenerationError("任务状态已变更，请刷新后重试", code="conflict", status=409)
+        await self.session.refresh(row)
         await reopen_batch_after_retry(self.session, row)
         await self.session.commit()
         return generation_task_out(row)

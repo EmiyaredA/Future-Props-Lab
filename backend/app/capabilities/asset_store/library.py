@@ -57,7 +57,13 @@ class AssetLibrary:
         folder_id: str | None = None,
         allowed_extensions: set[str] | None = None,
         commit: bool = True,
+        defer_persistence: bool = False,
     ) -> VisualAsset:
+        """Validate and stage a managed upload.
+
+        With defer_persistence, the caller owns adding the row, committing and
+        removing its file on failure after staging all related uploads.
+        """
         filename = Path(filename_override or upload.filename or "").name
         extension = Path(filename).suffix.lower()
         config = ALLOWED_FILES.get(extension)
@@ -135,14 +141,15 @@ class AssetLibrary:
                 mime_type=(content_type if content_type in mime_types else sorted(mime_types)[0]),
                 byte_size=size,
             )
-            self.session.add(row)
-            if commit:
-                await self.session.commit()
-                await self.session.refresh(row)
-            else:
-                await self.session.flush()
+            if not defer_persistence:
+                self.session.add(row)
+                if commit:
+                    await self.session.commit()
+                    await self.session.refresh(row)
+                else:
+                    await self.session.flush()
             return row
-        except Exception:
+        except BaseException:
             temp_path.unlink(missing_ok=True)
             final_path.unlink(missing_ok=True)
             raise

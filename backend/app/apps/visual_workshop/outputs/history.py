@@ -31,6 +31,7 @@ def output_out(row: VisualNodeOutput) -> VisualNodeOutputOut:
         version=row.version,
         kind=row.kind,
         asset_id=row.asset_id,
+        inspection_asset_id=row.inspection_asset_id,
         text=row.text,
         source=row.source,
         generation_task_id=row.generation_task_id,
@@ -48,6 +49,7 @@ async def register_output(
     source: str,
     source_key: str,
     asset_id: str | None = None,
+    inspection_asset_id: str | None = None,
     text: str | None = None,
     task_id: str | None = None,
     input_snapshot: list[dict] | None = None,
@@ -79,6 +81,7 @@ async def register_output(
         version=max(version, (node.get("output_sequence") or 0)) + 1,
         kind=node["kind"],
         asset_id=asset_id,
+        inspection_asset_id=inspection_asset_id,
         text=text,
         source=source,
         source_key=source_key,
@@ -215,7 +218,9 @@ class NodeOutputs:
         )
         return VisualNodeOutputListOut(items=[output_out(row) for row in rows], total=total or 0)
 
-    async def add(self, project_id: str, node_id: str, body):
+    async def add(
+        self, project_id: str, node_id: str, body, *, inspection_asset_id: str | None = None
+    ):
         canvas, _ = await self.document(project_id, node_id)
         nodes = deepcopy(canvas.nodes)
         node = next(n for n in nodes if n["id"] == node_id)
@@ -238,6 +243,16 @@ class NodeOutputs:
                 raise OutputError("素材不属于当前项目", code="not_found", status=404)
             if asset.media_kind != node["kind"] or body.text is not None:
                 raise OutputError("输出版本与节点类型不匹配")
+        if inspection_asset_id:
+            inspection = await self.session.get(VisualAsset, inspection_asset_id)
+            if (
+                node["kind"] != "video"
+                or not inspection
+                or inspection.workspace_id != self.workspace_id
+                or inspection.project_id != project_id
+                or inspection.mime_type != "video/webm"
+            ):
+                raise OutputError("检查视频不属于当前项目", code="not_found", status=404)
         await self.claim(canvas, body.expected_revision)
         output = await register_output(
             self.session,
@@ -246,6 +261,7 @@ class NodeOutputs:
             source="text" if node["kind"] == "text" else "uploaded",
             source_key=new_id(),
             asset_id=body.asset_id,
+            inspection_asset_id=inspection_asset_id,
             text=body.text,
         )
         if node["kind"] == "text" and output.is_final:

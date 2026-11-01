@@ -600,53 +600,6 @@
   color: var(--board-success);
   background: color-mix(in srgb, var(--board-success) 12%, transparent);
 }
-.board-large-preview {
-  min-height: 300px;
-  height: clamp(300px, 43vh, 520px);
-  background: radial-gradient(
-    ellipse at center,
-    color-mix(in srgb, var(--board-stage) 75%, var(--board-panel)),
-    var(--board-stage)
-  );
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.board-large-preview :is(img, video) {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.board-large-preview audio {
-  width: min(90%, 480px);
-}
-.board-preview-placeholder {
-  display: flex;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 10px;
-  color: var(--board-muted);
-}
-.board-preview-placeholder svg {
-  max-width: 22px;
-}
-.board-preview-placeholder span {
-  font-size: 12px;
-}
-.board-text-preview {
-  margin: 0;
-  white-space: pre-wrap;
-  padding: 20px;
-  align-self: stretch;
-  width: 100%;
-  overflow: auto;
-  font: inherit;
-  line-height: 1.8;
-}
 .board-version-list {
   display: flex;
   gap: 8px;

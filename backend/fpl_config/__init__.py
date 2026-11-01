@@ -43,6 +43,12 @@ FIELDS = {
         "cors_origins": ("cors_origins", list),
         "auth_cookie_secure": ("fpl_auth_cookie_secure", bool),
     },
+    "remote_web": {
+        "enabled": ("fpl_remote_web_enabled", bool),
+        "origin": ("fpl_remote_web_origin", str),
+        "port": ("fpl_remote_web_port", int),
+        "web_root": ("fpl_remote_web_root", str),
+    },
     "limits": {
         name: (f"fpl_{name}", int)
         for name in (

@@ -54,7 +54,8 @@
     "archive-agent-note": "npx tsx scripts/archive-agent-note.ts",
     "check-anchors": "npx tsx scripts/check-note-anchors.ts",
     "check-docs-center-protected": "node scripts/check-docs-center-protected.mjs",
-    "test:sdk": "uv run pytest -q tests/test_python_sdk.py tests/test_workshop_operations.py tests/test_model_inference.py tests/test_automation_exports.py tests/test_sdk_workflows.py"
+    "test:sdk": "uv run pytest -q tests/test_python_sdk.py tests/test_workshop_operations.py tests/test_model_inference.py tests/test_automation_exports.py tests/test_sdk_workflows.py",
+    "build:studio": "python3 scripts/check_lfs_assets.py --web && npm run build:studio --workspace web"
   },
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20260120.1",

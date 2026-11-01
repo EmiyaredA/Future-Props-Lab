@@ -41234,6 +41234,55 @@
         "title": "VideoGenerationTaskCreateIn",
         "type": "object"
       },
+      "VideoMediaInfoOut": {
+        "properties": {
+          "alpha_channel": {
+            "default": "unknown",
+            "enum": [
+              "present",
+              "absent",
+              "unknown"
+            ],
+            "title": "Alpha Channel",
+            "type": "string"
+          },
+          "codec": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codec"
+          },
+          "container": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Container"
+          },
+          "pixel_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pixel Format"
+          }
+        },
+        "title": "VideoMediaInfoOut",
+        "type": "object"
+      },
       "ViewConfig": {
         "additionalProperties": false,
         "properties": {
@@ -43884,6 +43933,17 @@
             },
             "title": "Input Snapshot",
             "type": "array"
+          },
+          "inspection_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inspection Asset Id"
           },
           "is_final": {
             "title": "Is Final",
@@ -53326,6 +53386,48 @@
           }
         },
         "summary": "Extract Video Frames",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files/{asset_id}/media-info": {
+      "get": {
+        "operationId": "video_media_info_v1_files__asset_id__media_info_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoMediaInfoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Video Media Info",
         "tags": [
           "file-management"
         ]

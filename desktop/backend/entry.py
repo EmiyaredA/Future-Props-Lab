@@ -16,6 +16,25 @@ from pathlib import Path
 from cryptography.fernet import Fernet
 
 
+async def authenticate_remote_browser(scope, receive):
+    """Compose the existing account validator without a second application/runtime."""
+    from fastapi import HTTPException
+    from starlette.requests import Request
+
+    from app.deps import authenticate_studio_request
+    from app.runtime.db import SessionLocal
+
+    async with SessionLocal() as session:
+        principal = await authenticate_studio_request(
+            Request(scope, receive),
+            session,
+            required_scope="studio:read",
+            allow_forced_password_change=True,
+        )
+        if principal.auth_kind != "session":
+            raise HTTPException(403, detail={"code": "browser_session_required"})
+
+
 def prepare_configuration(data_root: Path, loaded: dict | None = None):
     from app.runtime.config import Settings
     from fpl_config import read_config
@@ -77,18 +96,37 @@ def launch() -> None:
     from app.runtime.config import configure_desktop
 
     loaded = {} if inherited is not None else None
-    configure_desktop(prepare_configuration(args.data_dir, loaded))
+    settings = prepare_configuration(args.data_dir, loaded)
+    configure_desktop(settings)
     import uvicorn
 
     from app.console.routes.desktop_agent import configure_agent
     from app.main import app
-    from app.runtime.desktop import attach_desktop
+    from app.runtime.desktop import DesktopStaticFiles, attach_desktop
+
+    remote_web = None
+    remote_sock = None
+    if settings.fpl_remote_web_enabled:
+        from app.runtime.remote_web import RemoteWeb
+
+        remote_root = Path(settings.fpl_remote_web_root or args.web_dir).resolve()
+        if not (remote_root / "index.html").is_file():
+            raise ValueError("远程 Web 正式构建缺失；不会公开开发服务器")
+        remote_sock = socket.socket()
+        remote_sock.bind(("127.0.0.1", settings.fpl_remote_web_port))
+        remote_web = RemoteWeb(
+            origin=settings.fpl_remote_web_origin,
+            port=remote_sock.getsockname()[1],
+            static=DesktopStaticFiles(directory=remote_root, html=True),
+            authenticate=authenticate_remote_browser,
+        )
 
     attach_desktop(
         app,
         token=token,
         web_root=None if inherited is not None else args.web_dir.resolve(),
         agent_policy=configure_agent(app),
+        remote_web=remote_web,
     )
     if getattr(sys, "frozen", False):
         binaries = Path(sys._MEIPASS) / "bin"
@@ -102,6 +140,7 @@ def launch() -> None:
             port=0,
             workers=1,
             access_log=False,
+            proxy_headers=False,
             timeout_graceful_shutdown=10,
             log_level="warning",
         )
@@ -121,7 +160,9 @@ def launch() -> None:
 
     threading.Thread(target=watch_parent, daemon=True).start()
     print(json.dumps({"port": sock.getsockname()[1], **(loaded or {})}), flush=True)
-    asyncio.run(server.serve(sockets=[sock]))
+    asyncio.run(server.serve(sockets=[sock, remote_sock] if remote_sock else [sock]))
+    if remote_sock:
+        remote_sock.close()
     sock.close()
     lock.close()
 

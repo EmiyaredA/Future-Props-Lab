@@ -9,6 +9,7 @@ class VisualNodeOutputOut(BaseModel):
     version: int
     kind: Literal["text", "image", "video", "audio"]
     asset_id: str | None
+    inspection_asset_id: str | None = None
     text: str | None
     source: Literal["generated", "uploaded", "text", "legacy"]
     generation_task_id: str | None

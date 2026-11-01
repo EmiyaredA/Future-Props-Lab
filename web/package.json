@@ -15,7 +15,8 @@
     "format:check": "prettier --check src tests e2e *.html *.ts *.json",
     "contracts:generate": "openapi-typescript src/generated/openapi.json -o src/generated/api.ts",
     "contracts:check": "openapi-typescript src/generated/openapi.json | diff - src/generated/api.ts",
-    "voice-vad:sync": "node scripts/sync-voice-vad-assets.mjs"
+    "voice-vad:sync": "node scripts/sync-voice-vad-assets.mjs",
+    "build:studio": "node scripts/sync-voice-vad-assets.mjs --check && tsc -b && vite build --mode studio --outDir ../.local/studio-web && FPL_WEB_DIST_DIR=../.local/studio-web node scripts/check-bundle-budgets.mjs"
   },
   "dependencies": {
     "@antv/infographic": "0.2.20",

@@ -32,6 +32,7 @@ import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realt
 import { useResourceBroadcastSync } from "@app/useResourceBroadcastSync";
 
 type Status = "checking" | "signed-out" | "signed-in";
+const registrationAllowed = import.meta.env.MODE !== "studio";
 
 export function StudioAuthGate({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -241,7 +242,9 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
             <p>
               {registration
                 ? "使用邀请码创建个人账号与工作区。"
-                : "使用已有账号登录，或通过邀请码注册。"}
+                : registrationAllowed
+                  ? "使用已有账号登录，或通过邀请码注册。"
+                  : "使用已有 Future Props Lab 账号登录。"}
             </p>
           </div>
           <label>
@@ -292,19 +295,21 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
           >
             {busy ? "正在处理…" : registration ? "注册并登录" : "登录"}
           </button>
-          <button
-            type="button"
-            className="btn"
-            disabled={busy}
-            onClick={() => {
-              setRegistration(!registration);
-              setPassword("");
-              setInviteCode("");
-              setError("");
-            }}
-          >
-            {registration ? "已有账号，返回登录" : "使用邀请码注册"}
-          </button>
+          {registrationAllowed && (
+            <button
+              type="button"
+              className="btn"
+              disabled={busy}
+              onClick={() => {
+                setRegistration(!registration);
+                setPassword("");
+                setInviteCode("");
+                setError("");
+              }}
+            >
+              {registration ? "已有账号，返回登录" : "使用邀请码注册"}
+            </button>
+          )}
         </form>
       </main>
     );

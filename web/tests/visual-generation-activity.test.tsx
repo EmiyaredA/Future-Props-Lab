@@ -35,6 +35,11 @@ vi.mock("@features/files/api", async () => ({
   getFiles: vi.fn().mockResolvedValue({ items: [] }),
   getFolders: vi.fn().mockResolvedValue({ items: [] }),
 }));
+vi.mock("@features/visual-workshop/board/VideoOutputPreview", () => ({
+  VideoOutputPreview: ({ assetId }: { assetId?: string }) => (
+    <div data-testid="output-preview">{assetId}</div>
+  ),
+}));
 vi.mock("@features/visual-workshop/board/OutputPreview", () => ({
   OutputPreview: ({ assetId }: { assetId?: string }) => (
     <div data-testid="output-preview">{assetId ?? "暂无输出"}</div>

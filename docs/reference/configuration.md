@@ -10,6 +10,10 @@
 | `security.secrets_key` | `FPL_SECRETS_KEY` |
 | `http.cors_origins`（字符串数组） | `CORS_ORIGINS`（逗号分隔） |
 | `http.auth_cookie_secure`（布尔值） | `FPL_AUTH_COOKIE_SECURE` |
+| `remote_web.enabled`（布尔值，默认 false） | `FPL_REMOTE_WEB_ENABLED` |
+| `remote_web.origin`（精确 HTTPS 来源） | `FPL_REMOTE_WEB_ORIGIN` |
+| `remote_web.port`（1024–65535，默认 28081） | `FPL_REMOTE_WEB_PORT` |
+| `remote_web.web_root`（正式构建绝对路径） | `FPL_REMOTE_WEB_ROOT` |
 | `limits.<名称>`（正整数） | 下文各容量/文件数变量去掉 `FPL_` 并小写 |
 | `integrations.temp_media_upload_url` | `FPL_TEMP_MEDIA_UPLOAD_URL` |
 | `integrations.mcp_stdio_allowed_commands`（字符串数组） | `FPL_MCP_STDIO_ALLOWED_COMMANDS`（系统路径分隔符） |

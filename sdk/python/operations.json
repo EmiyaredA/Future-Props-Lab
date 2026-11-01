@@ -471,6 +471,10 @@
     "method": "download_file",
     "resource": "files"
   },
+  "GET /v1/files/{asset_id}/media-info": {
+    "method": "video_media_info",
+    "resource": "files"
+  },
   "GET /v1/galgame-workshop/projects": {
     "method": "list_projects",
     "resource": "galgame"

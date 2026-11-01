@@ -3,6 +3,10 @@
 这是 Future Props Lab 目录职责的唯一完整索引。新增、删除目录或改变目录职责时更新本文件；
 各模块文档只补充局部使用方法，不另行定义一套架构。
 
+## 桌面同进程公网 Web
+
+`runtime/remote_web.py` 只负责独立回环 socket 的 Host／Origin、私有路径隔离、正式静态页和安全 Cookie；账号校验由桌面入口注入既有鉴权用例，不在网络层另建身份或访问数据库。`desktop/backend/entry.py` 在同一 Uvicorn Server 中监听私有与公网两个 socket，只有一个生命周期和 Runner。`[remote_web]` 格式由 `backend/fpl_config/` 登记；`build:studio` 输出正式同源页面到忽略目录 `.local/studio-web/`。公网关闭邀请码注册，Electron 的原有注册与私有凭据边界保持不变。
+
 ## 思绪工坊官方知识库
 
 `web/src/features/thought-workshop/official/` 保留现有指南的导入来源：稳定清单、Markdown、简介、相关阅读和 CanvasScene。它不参与运行期社区列表、搜索或阅读。`scripts/official_seed_source.ts` 提取受控来源，`scripts/build_official_seed.py` 转换为普通 version 7 备份包，生成 `backend/app/apps/thought_workshop/publication/seed.json`；`knowledge:seed:check` 验证来源与包一致，桌面后端打包携带该 JSON。
@@ -725,3 +729,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 `web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
 
 - `console/governance/code_agents.py` 拥有按 Workspace、账号和用途的授权 CAS 及旧授权接管，配置路径由 `fpl_config` 解析。`console/routes/code_agents.py` 只做协议适配。`capabilities/agents/cli/` 统一 CLI 发现、模型连接白名单、官方对话与固定任务传输；`web/src/features/code-agents/` 拥有管理页和查询键。独立 SDK 的 `mcp.py` 拥有外部 stdio MCP 与内部短期 Socket 中继，不导入后端。
+
+### 视频透明检查与格式信息
+
+`capabilities/media_rendering/media_info.py` 拥有有界只读媒体探测，`animated_image.py` 拥有 GIF 的黑底 MP4 与透明 WebM 转换。`capabilities/asset_store/media_info.py` 及对应 routes/schemas 拥有 Workspace 校验与格式接口；`visual_workshop/outputs/` 拥有检查素材关联、原子上传与快照。Web `visual-workshop/board/VideoOutputPreview.tsx` 拥有视频格式、纯色衬底及全屏检查，`output-preview.css` 保存共用输出画面样式；预览状态不进入画布。迁移 `0115_visual_output_inspection` 仅追加检查素材引用。

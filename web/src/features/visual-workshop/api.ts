@@ -605,3 +605,11 @@ export async function cancelGenerationTask(
     }),
   );
 }
+
+export async function getVideoMediaInfo(assetId: string) {
+  return unwrap(
+    await api.GET("/v1/files/{asset_id}/media-info", {
+      params: { path: { asset_id: assetId } },
+    }),
+  );
+}

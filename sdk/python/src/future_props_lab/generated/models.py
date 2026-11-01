@@ -6406,6 +6406,12 @@ class VideoGenerationTaskCreateIn(WireModel):
     watermark: bool | None = Field(default=None, alias='watermark')
     workflow_parameters: WorkflowVideoParameters | None = Field(default=None, alias='workflow_parameters')
 
+class VideoMediaInfoOut(WireModel):
+    alpha_channel: Literal['present', 'absent', 'unknown'] = Field(default='unknown', alias='alpha_channel')
+    codec: str | None = Field(default=None, alias='codec')
+    container: str | None = Field(default=None, alias='container')
+    pixel_format: str | None = Field(default=None, alias='pixel_format')
+
 class ViewConfig(WireModel):
     color_rules: list[ColorRule] | None = Field(default=None, alias='color_rules', max_length=20)
     column_order: list[str] | None = Field(default=None, alias='column_order', max_length=50)
@@ -6767,6 +6773,7 @@ class VisualNodeOutputOut(WireModel):
     generation_task_id: str | None = Field(default=..., alias='generation_task_id')
     id: str = Field(default=..., alias='id')
     input_snapshot: list[dict[str, Any]] = Field(default=..., alias='input_snapshot')
+    inspection_asset_id: str | None = Field(default=None, alias='inspection_asset_id')
     is_final: bool = Field(default=..., alias='is_final')
     kind: Literal['text', 'image', 'video', 'audio'] = Field(default=..., alias='kind')
     node_id: str = Field(default=..., alias='node_id')
@@ -7836,6 +7843,7 @@ VideoEditorTransform.model_rebuild()
 VideoEditorTransition.model_rebuild()
 VideoFramesIn.model_rebuild()
 VideoGenerationTaskCreateIn.model_rebuild()
+VideoMediaInfoOut.model_rebuild()
 ViewConfig.model_rebuild()
 ViewSpec.model_rebuild()
 VisualAssetFolderCreateIn.model_rebuild()

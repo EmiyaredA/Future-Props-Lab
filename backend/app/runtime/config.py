@@ -75,6 +75,10 @@ class Settings(BaseSettings):
         default="", validation_alias="FPL_STUDIO_TOKEN", exclude=True
     )
     fpl_auth_cookie_secure: bool = False
+    fpl_remote_web_enabled: bool = False
+    fpl_remote_web_origin: str = ""
+    fpl_remote_web_port: int = 28081
+    fpl_remote_web_root: str = ""
     fpl_visual_asset_max_bytes: int = 200 * 1024 * 1024
     fpl_galgame_export_max_bytes: int = 8 * 1024 * 1024 * 1024
     fpl_temp_media_upload_url: str = ""
@@ -87,6 +91,21 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_security(self) -> Settings:
+        if not 1024 <= self.fpl_remote_web_port <= 65535:
+            raise ValueError("远程 Web 端口必须位于 1024–65535")
+        if self.fpl_remote_web_enabled:
+            remote = urlsplit(self.fpl_remote_web_origin)
+            if (
+                remote.scheme != "https"
+                or not remote.hostname
+                or remote.username
+                or remote.password
+                or self.fpl_remote_web_origin != f"https://{remote.netloc}"
+                or any(char.isspace() for char in remote.netloc)
+            ):
+                raise ValueError("远程 Web 必须配置精确 HTTPS 来源")
+        if self.fpl_remote_web_root and not Path(self.fpl_remote_web_root).is_absolute():
+            raise ValueError("远程 Web 构建目录必须为绝对路径")
         try:
             Fernet(self.fpl_secrets_key.encode("ascii"))
         except Exception as exc:

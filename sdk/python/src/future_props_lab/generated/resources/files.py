@@ -91,6 +91,10 @@ class Files:
         'Extract Video Frames. POST /v1/files/{asset_id}/frames'
         return self._client._call('POST', '/v1/files/{asset_id}/frames', parameters=[('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=Any)
 
+    def video_media_info(self, *, asset_id: str) -> models.VideoMediaInfoOut:
+        'Video Media Info. GET /v1/files/{asset_id}/media-info'
+        return self._client._call('GET', '/v1/files/{asset_id}/media-info', parameters=[('asset_id', 'path', asset_id)], response_type=models.VideoMediaInfoOut)
+
 class AsyncFiles:
     def __init__(self, client):
         self._client = client
@@ -174,3 +178,7 @@ class AsyncFiles:
     async def extract_video_frames(self, *, asset_id: str, body: models.VideoFramesIn | dict) -> AsyncDownload:
         'Extract Video Frames. POST /v1/files/{asset_id}/frames'
         return await self._client._call('POST', '/v1/files/{asset_id}/frames', parameters=[('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=Any)
+
+    async def video_media_info(self, *, asset_id: str) -> models.VideoMediaInfoOut:
+        'Video Media Info. GET /v1/files/{asset_id}/media-info'
+        return await self._client._call('GET', '/v1/files/{asset_id}/media-info', parameters=[('asset_id', 'path', asset_id)], response_type=models.VideoMediaInfoOut)

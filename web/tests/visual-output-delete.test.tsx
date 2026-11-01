@@ -25,6 +25,11 @@ vi.mock("@features/visual-workshop/api", async (original) => ({
   getNodeOutput: vi.fn(),
   deleteNodeOutput: vi.fn(),
 }));
+vi.mock("@features/visual-workshop/board/VideoOutputPreview", () => ({
+  VideoOutputPreview: ({ assetId }: { assetId?: string }) => (
+    <div data-testid="output-preview">{assetId ?? "暂无输出"}</div>
+  ),
+}));
 vi.mock("@features/visual-workshop/board/OutputPreview", () => ({
   OutputPreview: ({ assetId }: { assetId?: string }) => (
     <div data-testid="output-preview">{assetId ?? "暂无输出"}</div>

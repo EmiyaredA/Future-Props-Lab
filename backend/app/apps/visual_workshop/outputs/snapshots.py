@@ -46,6 +46,10 @@ def import_outputs(value, nodes, edges, asset_ids, project_id):
                     raise ValueError("无效文本版本")
             elif not record.asset_id or record.asset_id not in asset_ids:
                 raise ValueError("历史素材未包含在快照中")
+            if record.inspection_asset_id and (
+                record.kind != "video" or record.inspection_asset_id not in asset_ids
+            ):
+                raise ValueError("检查素材未包含在快照中")
             datetime.fromisoformat(record.created_at.replace("Z", "+00:00"))
             versions.add((record.node_id, record.version))
             output_ids[record.id] = new_id()
@@ -72,6 +76,7 @@ def import_outputs(value, nodes, edges, asset_ids, project_id):
                 version=record.version,
                 kind=record.kind,
                 asset_id=asset_ids.get(record.asset_id),
+                inspection_asset_id=asset_ids.get(record.inspection_asset_id),
                 text=record.text,
                 source=record.source,
                 source_key=f"snapshot:{output_ids[record.id]}",
