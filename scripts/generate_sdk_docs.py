@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LABELS = {
+    "code_agents": "编程智能体连接与授权",
     "interview": "面试资料准备",
     "desktop": "桌面初始化与本地 Agent 接入",
     "amadeus": "Amadeus 桌面助手",
@@ -70,7 +71,7 @@ def auth_for(path, method="GET"):
             or path == "/v1/desktop/ui/inbox"
         ):
             return "仅桌面模式；浏览器 Session；桌面私有传输校验"
-        return "仅桌面模式；已授权 Workspace API Key 或 Session；桌面私有传输校验"
+        return "仅桌面模式；已授权 Management API Key 或 Session；桌面私有传输校验"
     if path in {"/health", "/ready"}:
         return "无需登录"
     if path == "/v1/auth/login":
@@ -78,10 +79,12 @@ def auth_for(path, method="GET"):
     if path == "/v1/auth/register":
         return "有效注册邀请码；无需已有 Session"
     if path.startswith("/v1/public-workspace"):
-        return "Session 或具有 studio:read 的 Workspace API Key；仅公开只读投影"
+        return "Session 或具有 studio:read 的 Management API Key；仅公开只读投影"
     if path.startswith(("/v1/auth", "/v1/account", "/v1/platform")):
         return "Session；敏感操作需要二次验证"
-    return "Workspace API Key 或 Session"
+    if path.startswith("/v1/code-agents"):
+        return "浏览器 Session；连接授权管理须平台管理员并满足近期密码验证要求"
+    return "Management API Key 或 Session；按当前账号固定权限校验"
 
 
 def permission_map():

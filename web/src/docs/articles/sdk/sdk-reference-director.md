@@ -32,7 +32,7 @@
 
 `client.director.delete_motion(...)`
 
-**接口**：`DELETE /v1/director-desk/motions/{motion_key}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/director-desk/motions/{motion_key}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -51,7 +51,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.delete_project(...)`
 
-**接口**：`DELETE /v1/director-desk/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/director-desk/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -71,7 +71,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.release_agent_session(...)`
 
-**接口**：`DELETE /v1/director-desk/projects/{project_id}/agent-session`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/director-desk/projects/{project_id}/agent-session`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -91,7 +91,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.download_library_file(...)`
 
-**接口**：`GET /v1/director-desk/library/files/{key}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/director-desk/library/files/{key}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -110,7 +110,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.list_motions(...)`
 
-**接口**：`GET /v1/director-desk/motions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/director-desk/motions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -129,7 +129,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.get_motion(...)`
 
-**接口**：`GET /v1/director-desk/motions/{motion_key}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/director-desk/motions/{motion_key}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -148,7 +148,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.list_projects(...)`
 
-**接口**：`GET /v1/director-desk/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/director-desk/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -169,7 +169,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.get_project(...)`
 
-**接口**：`GET /v1/director-desk/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/director-desk/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -188,7 +188,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.poll_agent_session(...)`
 
-**接口**：`GET /v1/director-desk/projects/{project_id}/agent-session/calls`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/director-desk/projects/{project_id}/agent-session/calls`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -209,7 +209,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.download_project_file(...)`
 
-**接口**：`GET /v1/director-desk/projects/{project_id}/files/{key}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/director-desk/projects/{project_id}/files/{key}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -229,7 +229,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.patch_project(...)`
 
-**接口**：`PATCH /v1/director-desk/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/director-desk/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -252,7 +252,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.upload_library_file(...)`
 
-**接口**：`POST /v1/director-desk/library/files`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/director-desk/library/files`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -274,7 +274,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.create_project(...)`
 
-**接口**：`POST /v1/director-desk/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/director-desk/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -294,7 +294,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.claim_agent_session(...)`
 
-**接口**：`POST /v1/director-desk/projects/{project_id}/agent-session`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/director-desk/projects/{project_id}/agent-session`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -313,7 +313,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.complete_agent_call(...)`
 
-**接口**：`POST /v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -337,7 +337,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.upload_project_file(...)`
 
-**接口**：`POST /v1/director-desk/projects/{project_id}/files`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/director-desk/projects/{project_id}/files`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -360,7 +360,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.call_tool(...)`
 
-**接口**：`POST /v1/director-desk/projects/{project_id}/tools`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/director-desk/projects/{project_id}/tools`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -383,7 +383,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.director.save_motion(...)`
 
-**接口**：`PUT /v1/director-desk/motions/{motion_key}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/director-desk/motions/{motion_key}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

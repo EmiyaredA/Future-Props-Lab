@@ -17,6 +17,8 @@
 | [list_files](#list-files) | `GET /v1/files` |
 | [preview_file](#preview-file) | `GET /v1/files/{asset_id}/content` |
 | [download_file](#download-file) | `GET /v1/files/{asset_id}/download` |
+| [video_media_info](#video-media-info) | `GET /v1/files/{asset_id}/media-info` |
+| [preview_thumbnail](#preview-thumbnail) | `GET /v1/files/{asset_id}/thumbnail` |
 | [patch_file_folder](#patch-file-folder) | `PATCH /v1/file-folders/{folder_id}` |
 | [patch_file](#patch-file) | `PATCH /v1/files/{asset_id}` |
 | [create_file_folder](#create-file-folder) | `POST /v1/file-folders` |
@@ -34,7 +36,7 @@
 
 `client.files.delete_file_folder(...)`
 
-**接口**：`DELETE /v1/file-folders/{folder_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/file-folders/{folder_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -54,7 +56,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.delete_file(...)`
 
-**接口**：`DELETE /v1/files/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/files/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -74,7 +76,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.list_file_folders(...)`
 
-**接口**：`GET /v1/file-folders`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/file-folders`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -93,7 +95,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.export_library_folder_archive(...)`
 
-**接口**：`GET /v1/file-library/folder-exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/file-library/folder-exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -112,7 +114,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.storage_layout_status(...)`
 
-**接口**：`GET /v1/file-storage/layout`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/file-storage/layout`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -130,7 +132,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.list_files(...)`
 
-**接口**：`GET /v1/files`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/files`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -155,7 +157,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.preview_file(...)`
 
-**接口**：`GET /v1/files/{asset_id}/content`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/files/{asset_id}/content`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -174,7 +176,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.download_file(...)`
 
-**接口**：`GET /v1/files/{asset_id}/download`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/files/{asset_id}/download`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -190,11 +192,50 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## video_media_info {#video-media-info}
+
+`client.files.video_media_info(...)`
+
+**接口**：`GET /v1/files/{asset_id}/media-info`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `asset_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoMediaInfoOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## preview_thumbnail {#preview-thumbnail}
+
+`client.files.preview_thumbnail(...)`
+
+**接口**：`GET /v1/files/{asset_id}/thumbnail`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `asset_id` | path | string | 是 |
+| `size` | query | 320 / 640 | 否 |
+
+**响应**：
+- `200` · `image/webp` · `string`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## patch_file_folder {#patch-file-folder}
 
 `client.files.patch_file_folder(...)`
 
-**接口**：`PATCH /v1/file-folders/{folder_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/file-folders/{folder_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -218,7 +259,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.patch_file(...)`
 
-**接口**：`PATCH /v1/files/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/files/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -242,7 +283,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.create_file_folder(...)`
 
-**接口**：`POST /v1/file-folders`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/file-folders`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -265,7 +306,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.import_project_assets_to_library(...)`
 
-**接口**：`POST /v1/file-library/asset-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/file-library/asset-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -288,7 +329,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.import_library_folder_archive(...)`
 
-**接口**：`POST /v1/file-library/folder-archive-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/file-library/folder-archive-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -311,7 +352,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.import_library_folder_entries(...)`
 
-**接口**：`POST /v1/file-library/folder-entry-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/file-library/folder-entry-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -335,7 +376,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.migrate_storage_layout(...)`
 
-**接口**：`POST /v1/file-storage/layout/migrate`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/file-storage/layout/migrate`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -354,7 +395,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.reveal_library_folder(...)`
 
-**接口**：`POST /v1/file-storage/open-folder`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/file-storage/open-folder`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -372,7 +413,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.upload_file(...)`
 
-**接口**：`POST /v1/files`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/files`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -397,7 +438,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.preview_svg(...)`
 
-**接口**：`POST /v1/files/svg/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/files/svg/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -417,7 +458,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.crop_file_image(...)`
 
-**接口**：`POST /v1/files/{asset_id}/crop`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/files/{asset_id}/crop`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -441,7 +482,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.files.extract_video_frames(...)`
 
-**接口**：`POST /v1/files/{asset_id}/frames`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/files/{asset_id}/frames`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

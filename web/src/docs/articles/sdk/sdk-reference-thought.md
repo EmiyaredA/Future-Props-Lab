@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 28, "title": "思绪工坊方法参考", "lead": "client.thought 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 27, "title": "思绪工坊方法参考", "lead": "client.thought 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 思绪工坊方法参考
 
@@ -81,7 +81,7 @@
 
 `client.thought.trash_knowledge_base(...)`
 
-**接口**：`DELETE /v1/thought-workshop/knowledge-bases/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/thought-workshop/knowledge-bases/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -101,7 +101,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.delete_note(...)`
 
-**接口**：`DELETE /v1/thought-workshop/notes/{note_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/thought-workshop/notes/{note_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -124,7 +124,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.delete_checkpoint(...)`
 
-**接口**：`DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -145,7 +145,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.unbind(...)`
 
-**接口**：`DELETE /v1/thought-workshop/notes/{note_id}/external-sync/binding`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/thought-workshop/notes/{note_id}/external-sync/binding`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -165,7 +165,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.delete_filter(...)`
 
-**接口**：`DELETE /v1/thought-workshop/preferences/filters/{filter_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/thought-workshop/preferences/filters/{filter_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -185,7 +185,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.delete_template(...)`
 
-**接口**：`DELETE /v1/thought-workshop/templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/thought-workshop/templates/{template_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -205,7 +205,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.backup(...)`
 
-**接口**：`GET /v1/thought-workshop/backup`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/backup`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -224,7 +224,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.knowledge_bases(...)`
 
-**接口**：`GET /v1/thought-workshop/knowledge-bases`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/knowledge-bases`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -244,7 +244,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.knowledge_base(...)`
 
-**接口**：`GET /v1/thought-workshop/knowledge-bases/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/knowledge-bases/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -263,7 +263,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.directory(...)`
 
-**接口**：`GET /v1/thought-workshop/knowledge-bases/{project_id}/directory`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/knowledge-bases/{project_id}/directory`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -282,7 +282,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.library_export_snapshot(...)`
 
-**接口**：`GET /v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -301,7 +301,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.link_preview(...)`
 
-**接口**：`GET /v1/thought-workshop/link-preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/link-preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -320,7 +320,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.writing_models(...)`
 
-**接口**：`GET /v1/thought-workshop/models`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/models`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -338,7 +338,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.list_notes(...)`
 
-**接口**：`GET /v1/thought-workshop/notes`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -364,7 +364,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.get_note(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -383,7 +383,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.note_backlinks(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/backlinks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/backlinks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -404,7 +404,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.checkpoints(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/checkpoints`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/checkpoints`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -423,7 +423,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.copy_snapshot(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/copy-snapshot`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/copy-snapshot`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -443,7 +443,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.export_note_content(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/export`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/export`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -464,7 +464,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.state(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/external-sync`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/external-sync`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -483,7 +483,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.task(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -503,7 +503,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.note_history(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/history`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/history`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -524,7 +524,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.note_history_detail(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/history/{history_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/history/{history_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -544,7 +544,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.get_multitable(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -563,7 +563,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.list_multitable_history(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable/history`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable/history`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -583,7 +583,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.get_multitable_history(...)`
 
-**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -603,7 +603,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.saved_filters(...)`
 
-**接口**：`GET /v1/thought-workshop/preferences/filters`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/preferences/filters`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -621,7 +621,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.reading_position(...)`
 
-**接口**：`GET /v1/thought-workshop/preferences/reading`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/preferences/reading`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -640,7 +640,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.recently_visited(...)`
 
-**接口**：`GET /v1/thought-workshop/preferences/recent`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/preferences/recent`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -658,7 +658,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.global_search(...)`
 
-**接口**：`GET /v1/thought-workshop/search`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/search`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -683,7 +683,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.templates(...)`
 
-**接口**：`GET /v1/thought-workshop/templates`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/thought-workshop/templates`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -701,7 +701,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.attachments(...)`
 
-**接口**：`POST /v1/thought-workshop/attachments`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/attachments`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -723,7 +723,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.upload_image(...)`
 
-**接口**：`POST /v1/thought-workshop/images`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/images`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -745,7 +745,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.imports(...)`
 
-**接口**：`POST /v1/thought-workshop/imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -769,7 +769,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.create_knowledge_base(...)`
 
-**接口**：`POST /v1/thought-workshop/knowledge-bases`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/knowledge-bases`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -791,7 +791,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.create_document(...)`
 
-**接口**：`POST /v1/thought-workshop/knowledge-bases/{project_id}/documents`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/knowledge-bases/{project_id}/documents`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -815,7 +815,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.move_entry(...)`
 
-**接口**：`POST /v1/thought-workshop/knowledge-bases/{project_id}/move`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/knowledge-bases/{project_id}/move`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -839,7 +839,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.restore_knowledge_base(...)`
 
-**接口**：`POST /v1/thought-workshop/knowledge-bases/{project_id}/restore`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/knowledge-bases/{project_id}/restore`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -860,7 +860,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.convert_markdown(...)`
 
-**接口**：`POST /v1/thought-workshop/markdown/convert`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/markdown/convert`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -881,7 +881,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.create_note(...)`
 
-**接口**：`POST /v1/thought-workshop/notes`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -910,7 +910,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.assistant(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/assistant`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/assistant`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -936,7 +936,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.create_checkpoint(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/checkpoints`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/checkpoints`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -959,7 +959,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.duplicate_document(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/duplicate`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/duplicate`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -985,7 +985,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.preview(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1007,7 +1007,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.submit(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1030,7 +1030,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.reconcile(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1052,7 +1052,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.restore_note_history(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1074,7 +1074,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.preview_multitable_conversion(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/conversion-preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1095,7 +1095,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.preview_multitable_csv(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/csv-preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1119,7 +1119,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.restore_multitable_history(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1141,7 +1141,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.apply_multitable_operations(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/operations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1163,7 +1163,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.export_multitable_csv(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1188,7 +1188,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.import_multitable_csv(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1214,7 +1214,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.query_multitable_records(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1239,7 +1239,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.apply_note_operations(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/operations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1262,7 +1262,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.restore_note(...)`
 
-**接口**：`POST /v1/thought-workshop/notes/{note_id}/restore`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/notes/{note_id}/restore`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1284,7 +1284,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.save_filter(...)`
 
-**接口**：`POST /v1/thought-workshop/preferences/filters`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/preferences/filters`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1305,7 +1305,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.record_reading(...)`
 
-**接口**：`POST /v1/thought-workshop/preferences/reading`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/preferences/reading`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1327,7 +1327,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.resolve_references(...)`
 
-**接口**：`POST /v1/thought-workshop/references/resolve`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/references/resolve`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1347,7 +1347,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.create_template(...)`
 
-**接口**：`POST /v1/thought-workshop/templates`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/templates`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1373,7 +1373,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.apply_template(...)`
 
-**接口**：`POST /v1/thought-workshop/templates/{template_id}/apply`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/thought-workshop/templates/{template_id}/apply`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1398,7 +1398,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.update_knowledge_base(...)`
 
-**接口**：`PUT /v1/thought-workshop/knowledge-bases/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/thought-workshop/knowledge-bases/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1422,7 +1422,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.put_note(...)`
 
-**接口**：`PUT /v1/thought-workshop/notes/{note_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/thought-workshop/notes/{note_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1452,7 +1452,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.rename_checkpoint(...)`
 
-**接口**：`PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1475,7 +1475,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.bind(...)`
 
-**接口**：`PUT /v1/thought-workshop/notes/{note_id}/external-sync/binding`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/thought-workshop/notes/{note_id}/external-sync/binding`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1498,7 +1498,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.put_filter(...)`
 
-**接口**：`PUT /v1/thought-workshop/preferences/filters/{filter_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/thought-workshop/preferences/filters/{filter_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1521,7 +1521,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.thought.put_template(...)`
 
-**接口**：`PUT /v1/thought-workshop/templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/thought-workshop/templates/{template_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

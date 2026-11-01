@@ -1,6 +1,6 @@
 # 文档中心覆盖清单
 
-按当前工作区正文自动生成，共 132 篇使用文章。页面与章节、内部链接、旧链接映射、图片和 JSON 示例由 `web/tests/docs-content.test.ts` 校验。
+按当前工作区正文自动生成，共 134 篇使用文章。页面与章节、内部链接、旧链接映射、图片和 JSON 示例由 `web/tests/docs-content.test.ts` 校验。
 
 ## 核验口径
 
@@ -150,3 +150,10 @@
 ## 维护
 
 修改正文或配图后运行 `node web/scripts/documentation-coverage.mjs --write`；不带参数检查清单是否过期。文档内容只维护于原 Markdown，导航、搜索与复制不保存第二份正文。开发者/API 分类从仓库原文件加载。
+
+## 当前账号布局及新增应用补齐
+
+账号文章保留旧页面 ID 以兼容历史链接，正文按账号归属与两种平台角色维护。旧空间截图仅作为历史资产保留，不作为当前界面的操作证据。
+
+| Agent 工作台 | [Agent 工作台使用指南](../../web/src/docs/articles/agent-workbench/agent-workbench-overview.md) · `agent-workbench-overview` | [web/src/features/agent-workbench/AgentWorkbenchPage.tsx](../../web/src/features/agent-workbench/AgentWorkbenchPage.tsx) | 无新增截图 |
+| 面试助手 | [面试助手使用指南](../../web/src/docs/articles/interview-assistant/interview-assistant-overview.md) · `interview-assistant-overview` | [web/src/features/interview-assistant/InterviewAssistantPage.tsx](../../web/src/features/interview-assistant/InterviewAssistantPage.tsx) | 无新增截图 |

@@ -1,6 +1,6 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 4, "title": "code_agents方法参考", "lead": "client.code_agents 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 4, "title": "编程智能体连接与授权方法参考", "lead": "client.code_agents 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
-# code_agents方法参考
+# 编程智能体连接与授权方法参考
 
 通过 `client.code_agents` 访问这些业务操作。同步与异步方法名称和参数一致；异步调用增加 `await`。
 所有方法均来自当前 OpenAPI 与稳定映射表。下表验证的是接口契约覆盖，完整业务流程另见工坊教程。
@@ -18,7 +18,7 @@
 
 `client.code_agents.list_code_agents(...)`
 
-**接口**：`GET /v1/code-agents`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/code-agents`。**鉴权**：浏览器 Session；连接授权管理须平台管理员并满足近期密码验证要求。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -36,7 +36,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.code_agents.get_code_agent_grants(...)`
 
-**接口**：`GET /v1/code-agents/grants`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/code-agents/grants`。**鉴权**：浏览器 Session；连接授权管理须平台管理员并满足近期密码验证要求。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -54,7 +54,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.code_agents.detect_code_agents(...)`
 
-**接口**：`POST /v1/code-agents/detect`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/code-agents/detect`。**鉴权**：浏览器 Session；连接授权管理须平台管理员并满足近期密码验证要求。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -72,7 +72,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.code_agents.put_code_agent_grants(...)`
 
-**接口**：`PUT /v1/code-agents/grants`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/code-agents/grants`。**鉴权**：浏览器 Session；连接授权管理须平台管理员并满足近期密码验证要求。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

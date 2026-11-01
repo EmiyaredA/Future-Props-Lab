@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 30, "title": "视频剪辑方法参考", "lead": "client.video 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 29, "title": "视频剪辑方法参考", "lead": "client.video 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 视频剪辑方法参考
 
@@ -52,7 +52,7 @@
 
 `client.video.delete_project(...)`
 
-**接口**：`DELETE /v1/video-editor/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/video-editor/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -72,7 +72,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.delete_asset(...)`
 
-**接口**：`DELETE /v1/video-editor/projects/{project_id}/assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/video-editor/projects/{project_id}/assets/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -92,7 +92,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.delete_render(...)`
 
-**接口**：`DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -113,7 +113,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.import_sources(...)`
 
-**接口**：`GET /v1/video-editor/import-sources`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/import-sources`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -131,7 +131,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.list_projects(...)`
 
-**接口**：`GET /v1/video-editor/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -149,7 +149,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.get_project(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -168,7 +168,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.get_asset_bake(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/asset-bakes/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -188,7 +188,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.list_assets(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -207,7 +207,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.asset_variant(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -228,7 +228,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.list_clip_merges(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/clip-merges`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/clip-merges`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -247,7 +247,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.get_clip_merge(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/clip-merges/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/clip-merges/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -267,7 +267,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.exact_frame(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/preview/frame`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/preview/frame`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -290,7 +290,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.list_renders(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/renders`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/renders`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -309,7 +309,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.get_render(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/renders/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/renders/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -329,7 +329,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.list_segment_exports(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/segment-exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/segment-exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -348,7 +348,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.get_segment_export(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -368,7 +368,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.download_segment_export(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -388,7 +388,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.export_project_snapshot(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/snapshot`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/snapshot`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -407,7 +407,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.text_clip_layer(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -428,7 +428,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.get_timeline(...)`
 
-**接口**：`GET /v1/video-editor/projects/{project_id}/timeline`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/video-editor/projects/{project_id}/timeline`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -447,7 +447,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.patch_project(...)`
 
-**接口**：`PATCH /v1/video-editor/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/video-editor/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -470,7 +470,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.patch_asset(...)`
 
-**接口**：`PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/video-editor/projects/{project_id}/assets/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -494,7 +494,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.create_project(...)`
 
-**接口**：`POST /v1/video-editor/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -514,7 +514,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.import_project_snapshot(...)`
 
-**接口**：`POST /v1/video-editor/projects/snapshot-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/snapshot-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -536,7 +536,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.upload_asset(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -559,7 +559,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.import_assets(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/assets/import`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/assets/import`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -580,7 +580,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.create_asset_bake(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -604,7 +604,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.retry_proxy(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -624,7 +624,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.audio_seam_candidates(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/audio-seams/candidates`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/audio-seams/candidates`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -647,7 +647,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.create_clip_merge(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/clip-merges`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/clip-merges`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -671,7 +671,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.cancel_clip_merge(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -691,7 +691,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.reveal_project_folder(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/open-folder`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/open-folder`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -710,7 +710,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.create_render(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/renders`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/renders`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -736,7 +736,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.render_preflight(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/renders/preflight`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/renders/preflight`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -760,7 +760,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.cancel_render(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/renders/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/renders/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -780,7 +780,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.create_segment_export(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/segment-exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/segment-exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -804,7 +804,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.cancel_segment_export(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -824,7 +824,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.video.apply_timeline_operations(...)`
 
-**接口**：`POST /v1/video-editor/projects/{project_id}/timeline/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/video-editor/projects/{project_id}/timeline/operations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

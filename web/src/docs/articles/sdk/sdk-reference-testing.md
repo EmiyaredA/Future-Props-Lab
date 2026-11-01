@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 27, "title": "模型测试方法参考", "lead": "client.testing 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 26, "title": "模型测试方法参考", "lead": "client.testing 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 模型测试方法参考
 
@@ -44,7 +44,7 @@
 
 `client.testing.delete_conversation(...)`
 
-**接口**：`DELETE /v1/model-test/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-test/conversations/{conversation_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -64,7 +64,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.delete_attachment(...)`
 
-**接口**：`DELETE /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -84,7 +84,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.delete_generation_asset(...)`
 
-**接口**：`DELETE /v1/model-test/generation-assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-test/generation-assets/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -103,7 +103,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.delete_generation_task(...)`
 
-**接口**：`DELETE /v1/model-test/generation-tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-test/generation-tasks/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -123,7 +123,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.delete_transcription_task(...)`
 
-**接口**：`DELETE /v1/model-test/transcription-tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-test/transcription-tasks/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -143,7 +143,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.list_conversations(...)`
 
-**接口**：`GET /v1/model-test/conversations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/conversations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -161,7 +161,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.get_conversation(...)`
 
-**接口**：`GET /v1/model-test/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/conversations/{conversation_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -180,7 +180,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.attachment_content(...)`
 
-**接口**：`GET /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -200,7 +200,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.generation_asset_backfill_status(...)`
 
-**接口**：`GET /v1/model-test/generation-assets/backfill-status`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/generation-assets/backfill-status`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -218,7 +218,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.generation_options(...)`
 
-**接口**：`GET /v1/model-test/generation-options`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/generation-options`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -236,7 +236,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.list_generation_tasks(...)`
 
-**接口**：`GET /v1/model-test/generation-tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/generation-tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -257,7 +257,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.get_generation_task(...)`
 
-**接口**：`GET /v1/model-test/generation-tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/generation-tasks/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -276,7 +276,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.generation_content(...)`
 
-**接口**：`GET /v1/model-test/generation-tasks/{task_id}/content`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/generation-tasks/{task_id}/content`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -295,7 +295,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.realtime_options(...)`
 
-**接口**：`GET /v1/model-test/realtime-options`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/realtime-options`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -313,7 +313,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.transcription_options(...)`
 
-**接口**：`GET /v1/model-test/transcription-options`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/transcription-options`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -331,7 +331,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.list_transcription_tasks(...)`
 
-**接口**：`GET /v1/model-test/transcription-tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/transcription-tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -352,7 +352,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.get_transcription_task(...)`
 
-**接口**：`GET /v1/model-test/transcription-tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/transcription-tasks/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -371,7 +371,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.transcription_input_content(...)`
 
-**接口**：`GET /v1/model-test/transcription-tasks/{task_id}/input-content`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-test/transcription-tasks/{task_id}/input-content`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -390,7 +390,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.patch_conversation(...)`
 
-**接口**：`PATCH /v1/model-test/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/model-test/conversations/{conversation_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -417,7 +417,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.create_conversation(...)`
 
-**接口**：`POST /v1/model-test/conversations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/conversations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -437,7 +437,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.upload_attachments(...)`
 
-**接口**：`POST /v1/model-test/conversations/{conversation_id}/attachments`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/conversations/{conversation_id}/attachments`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -460,7 +460,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.stream_message(...)`
 
-**接口**：`POST /v1/model-test/conversations/{conversation_id}/messages/stream`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/conversations/{conversation_id}/messages/stream`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -483,7 +483,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.regenerate_message(...)`
 
-**接口**：`POST /v1/model-test/conversations/{conversation_id}/regenerate/stream`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/conversations/{conversation_id}/regenerate/stream`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -504,7 +504,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.upload_generation_assets(...)`
 
-**接口**：`POST /v1/model-test/generation-assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/generation-assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -526,7 +526,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.backfill_generation_assets(...)`
 
-**接口**：`POST /v1/model-test/generation-assets/backfill`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/generation-assets/backfill`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -545,7 +545,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.cleanup_generation_assets(...)`
 
-**接口**：`POST /v1/model-test/generation-assets/cleanup`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/generation-assets/cleanup`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -563,7 +563,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.create_generation_task(...)`
 
-**接口**：`POST /v1/model-test/generation-tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/generation-tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -582,7 +582,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.retry_materialization(...)`
 
-**接口**：`POST /v1/model-test/generation-tasks/{task_id}/retry-materialization`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/generation-tasks/{task_id}/retry-materialization`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -601,7 +601,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.create_transcription_task(...)`
 
-**接口**：`POST /v1/model-test/transcription-tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/transcription-tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -631,7 +631,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.testing.upload_transcription_task(...)`
 
-**接口**：`POST /v1/model-test/transcription-tasks/upload`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-test/transcription-tasks/upload`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

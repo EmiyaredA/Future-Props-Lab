@@ -29,7 +29,7 @@
 
 `client.creative_workshop.list_items(...)`
 
-**接口**：`GET /v1/creative-workshop/items`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/creative-workshop/items`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -52,7 +52,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.get_item(...)`
 
-**接口**：`GET /v1/creative-workshop/items/{item_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/creative-workshop/items/{item_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -72,7 +72,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.item_cover(...)`
 
-**接口**：`GET /v1/creative-workshop/items/{item_id}/cover`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/creative-workshop/items/{item_id}/cover`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -92,7 +92,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.get_release(...)`
 
-**接口**：`GET /v1/creative-workshop/releases/{release_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/creative-workshop/releases/{release_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -111,7 +111,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.release_cover(...)`
 
-**接口**：`GET /v1/creative-workshop/releases/{release_id}/cover`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/creative-workshop/releases/{release_id}/cover`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -130,7 +130,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.update_item(...)`
 
-**接口**：`PATCH /v1/creative-workshop/items/{item_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/creative-workshop/items/{item_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -159,7 +159,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.install(...)`
 
-**接口**：`POST /v1/creative-workshop/installations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/installations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -180,7 +180,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.preview_install(...)`
 
-**接口**：`POST /v1/creative-workshop/installations/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/installations/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -201,7 +201,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.configure_stdio(...)`
 
-**接口**：`POST /v1/creative-workshop/installations/{installation_id}/stdio`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/installations/{installation_id}/stdio`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -225,7 +225,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.create_item(...)`
 
-**接口**：`POST /v1/creative-workshop/items`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/items`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -252,7 +252,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.import_item(...)`
 
-**接口**：`POST /v1/creative-workshop/items/from-integration`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/items/from-integration`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -273,7 +273,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.upload_cover(...)`
 
-**接口**：`POST /v1/creative-workshop/items/{item_id}/cover`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/items/{item_id}/cover`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -297,7 +297,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.publish_item(...)`
 
-**接口**：`POST /v1/creative-workshop/items/{item_id}/publish`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/items/{item_id}/publish`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -318,7 +318,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.upload_skill(...)`
 
-**接口**：`POST /v1/creative-workshop/items/{item_id}/skill-archive`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/items/{item_id}/skill-archive`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -342,7 +342,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.creative_workshop.withdraw_item(...)`
 
-**接口**：`POST /v1/creative-workshop/items/{item_id}/withdraw`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/creative-workshop/items/{item_id}/withdraw`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

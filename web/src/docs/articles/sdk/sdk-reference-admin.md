@@ -9,40 +9,11 @@
 
 | SDK 方法 | HTTP 操作 |
 | --- | --- |
-| [audit](#audit) | `GET /v1/account/workspaces/current/audit-events` |
 | [accounts](#accounts) | `GET /v1/platform/accounts` |
 | [audit_v1_platform_security_events](#audit-v1-platform-security-events) | `GET /v1/platform/security-events` |
-| [workspaces](#workspaces) | `GET /v1/platform/workspaces` |
 | [patch_account](#patch-account) | `PATCH /v1/platform/accounts/{user_id}` |
 | [add_account](#add-account) | `POST /v1/platform/accounts` |
 | [reset_password](#reset-password) | `POST /v1/platform/accounts/{user_id}/reset-password` |
-| [add_workspace](#add-workspace) | `POST /v1/platform/workspaces` |
-
-## audit {#audit}
-
-`client.admin.audit(...)`
-
-**接口**：`GET /v1/account/workspaces/current/audit-events`。**鉴权**：Session；敏感操作需要二次验证。
-**权限**：`账号治理或公开接口的专用鉴权`。
-
-写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
-SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
-
-| 参数 | 位置 | 类型 | 必填 |
-| --- | --- | --- | --- |
-| `page` | query | integer | 否 |
-| `page_size` | query | integer | 否 |
-| `event_type` | query | string | 否 |
-| `outcome` | query | string | 否 |
-| `actor_query` | query | string | 否 |
-| `target_query` | query | string | 否 |
-| `from_date` | query | string / null | 否 |
-| `to_date` | query | string / null | 否 |
-
-**响应**：
-- `200` · `application/json` · `SecurityAuditListOut`
-
-上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
 ## accounts {#accounts}
 
@@ -94,28 +65,6 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
-## workspaces {#workspaces}
-
-`client.admin.workspaces(...)`
-
-**接口**：`GET /v1/platform/workspaces`。**鉴权**：Session；敏感操作需要二次验证。
-**权限**：`账号治理或公开接口的专用鉴权`。
-
-写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
-SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
-
-| 参数 | 位置 | 类型 | 必填 |
-| --- | --- | --- | --- |
-| `q` | query | string | 否 |
-| `visibility` | query | string | 否 |
-| `page` | query | integer | 否 |
-| `page_size` | query | integer | 否 |
-
-**响应**：
-- `200` · `application/json` · `WorkspaceListOut`
-
-上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
-
 ## patch_account {#patch-account}
 
 `client.admin.patch_account(...)`
@@ -132,7 +81,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body` | application/json | AccountPatchIn | 是 |
 | `body.expected_revision` | 请求体 | integer | 是 |
 | `body.is_platform_admin` | 请求体 | boolean / null | 否 |
-| `body.platform_role` | 请求体 | super_admin / admin / member / null | 否 |
+| `body.platform_role` | 请求体 | admin / user / null | 否 |
 | `body.status` | 请求体 | active / disabled / null | 否 |
 
 **响应**：
@@ -156,7 +105,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.display_name` | 请求体 | string | 否 |
 | `body.email` | 请求体 | string / null | 否 |
 | `body.is_platform_admin` | 请求体 | boolean | 否 |
-| `body.platform_role` | 请求体 | super_admin / admin / member / null | 否 |
+| `body.platform_role` | 请求体 | admin / user / null | 否 |
 | `body.username` | 请求体 | string | 是 |
 
 **响应**：
@@ -182,27 +131,5 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ResetPasswordOut`
-
-上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
-
-## add_workspace {#add-workspace}
-
-`client.admin.add_workspace(...)`
-
-**接口**：`POST /v1/platform/workspaces`。**鉴权**：Session；敏感操作需要二次验证。
-**权限**：`账号治理或公开接口的专用鉴权`。
-
-写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
-SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
-
-| 参数 | 位置 | 类型 | 必填 |
-| --- | --- | --- | --- |
-| `body` | application/json | WorkspaceCreateIn | 是 |
-| `body.name` | 请求体 | string | 是 |
-| `body.owner_user_id` | 请求体 | string | 是 |
-| `body.visibility` | 请求体 | private / public | 否 |
-
-**响应**：
-- `201` · `application/json` · `WorkspaceOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。

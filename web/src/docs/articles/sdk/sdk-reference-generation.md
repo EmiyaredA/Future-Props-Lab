@@ -25,7 +25,7 @@
 
 `client.generation.list_generation_batches(...)`
 
-**接口**：`GET /v1/visual-workshop/generation-batches`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/generation-batches`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -47,7 +47,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.get_generation_batch(...)`
 
-**接口**：`GET /v1/visual-workshop/generation-batches/{batch_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/generation-batches/{batch_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -66,7 +66,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.generation_options(...)`
 
-**接口**：`GET /v1/visual-workshop/generation-options`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/generation-options`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -84,7 +84,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.list_generation_tasks(...)`
 
-**接口**：`GET /v1/visual-workshop/generation-tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/generation-tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -109,7 +109,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.get_generation_task(...)`
 
-**接口**：`GET /v1/visual-workshop/generation-tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/generation-tasks/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -128,7 +128,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.retry_image_composition(...)`
 
-**接口**：`POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -147,7 +147,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.cancel_generation_task(...)`
 
-**接口**：`POST /v1/visual-workshop/generation-tasks/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/generation-tasks/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -168,7 +168,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.retry_materialization(...)`
 
-**接口**：`POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -187,7 +187,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.create_generation_batch(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/generation-batches`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/generation-batches`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -217,7 +217,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.create_generation_task(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/generation-tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/generation-tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -237,7 +237,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.generation.create_image_composition(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/image-compositions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/image-compositions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

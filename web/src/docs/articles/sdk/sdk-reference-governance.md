@@ -9,70 +9,17 @@
 
 | SDK 方法 | HTTP 操作 |
 | --- | --- |
-| [cross_logs](#cross-logs) | `GET /v1/account/cross-workspace-call-logs` |
-| [cross_log_stats](#cross-log-stats) | `GET /v1/account/cross-workspace-call-logs/stats` |
 | [developer_docs](#developer-docs) | `GET /v1/account/developer-documents` |
-| [log_spaces](#log-spaces) | `GET /v1/account/log-workspaces` |
-| [get_policy](#get-policy) | `GET /v1/platform/permission-policy` |
 | [invites](#invites) | `GET /v1/platform/registration-invite-codes` |
 | [redemptions](#redemptions) | `GET /v1/platform/registration-invite-codes/{invite_id}/redemptions` |
 | [get_quotas](#get-quotas) | `GET /v1/platform/runtime-quotas` |
 | [certification](#certification) | `PATCH /v1/account/project-certification/{kind}/{project_id}` |
-| [patch_policy](#patch-policy) | `PATCH /v1/platform/permission-policy` |
 | [patch_invite](#patch-invite) | `PATCH /v1/platform/registration-invite-codes/{invite_id}` |
 | [patch_quotas](#patch-quotas) | `PATCH /v1/platform/runtime-quotas` |
 | [registration](#registration) | `POST /v1/auth/register` |
 | [add_invite](#add-invite) | `POST /v1/platform/registration-invite-codes` |
 | [invite_action](#invite-action) | `POST /v1/platform/registration-invite-codes/{invite_id}/actions` |
 | [invite_secret](#invite-secret) | `POST /v1/platform/registration-invite-codes/{invite_id}/secret` |
-
-## cross_logs {#cross-logs}
-
-`client.governance.cross_logs(...)`
-
-**接口**：`GET /v1/account/cross-workspace-call-logs`。**鉴权**：Session；敏感操作需要二次验证。
-**权限**：`logs.cross_workspace`。
-
-写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
-SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
-
-| 参数 | 位置 | 类型 | 必填 |
-| --- | --- | --- | --- |
-| `q` | query | string | 否 |
-| `call_source` | query | string | 否 |
-| `provider_kind` | query | string | 否 |
-| `model` | query | string | 否 |
-| `api_key_id` | query | string | 否 |
-| `status` | query | string | 否 |
-| `from` | query | string / null | 否 |
-| `to` | query | string / null | 否 |
-| `page` | query | integer | 否 |
-| `page_size` | query | integer | 否 |
-| `workspace_ids` | query | array | 否 |
-
-**响应**：
-- `200` · `application/json` · `CrossWorkspaceLogPage`
-
-上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
-
-## cross_log_stats {#cross-log-stats}
-
-`client.governance.cross_log_stats(...)`
-
-**接口**：`GET /v1/account/cross-workspace-call-logs/stats`。**鉴权**：Session；敏感操作需要二次验证。
-**权限**：`logs.cross_workspace`。
-
-写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
-SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
-
-| 参数 | 位置 | 类型 | 必填 |
-| --- | --- | --- | --- |
-| `workspace_ids` | query | array | 否 |
-
-**响应**：
-- `200` · `application/json` · `CallLogStatsOut`
-
-上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
 ## developer_docs {#developer-docs}
 
@@ -89,42 +36,6 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `DeveloperDocumentsOut`
-
-上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
-
-## log_spaces {#log-spaces}
-
-`client.governance.log_spaces(...)`
-
-**接口**：`GET /v1/account/log-workspaces`。**鉴权**：Session；敏感操作需要二次验证。
-**权限**：`logs.cross_workspace`。
-
-写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
-SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
-
-| 参数 | 位置 | 类型 | 必填 |
-| --- | --- | --- | --- |
-
-**响应**：
-- `200` · `application/json` · `array`
-
-上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
-
-## get_policy {#get-policy}
-
-`client.governance.get_policy(...)`
-
-**接口**：`GET /v1/platform/permission-policy`。**鉴权**：Session；敏感操作需要二次验证。
-**权限**：`账号治理或公开接口的专用鉴权`。
-
-写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
-SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
-
-| 参数 | 位置 | 类型 | 必填 |
-| --- | --- | --- | --- |
-
-**响应**：
-- `200` · `application/json` · `PermissionPolicyOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -209,27 +120,6 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `CertificationOut`
-
-上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
-
-## patch_policy {#patch-policy}
-
-`client.governance.patch_policy(...)`
-
-**接口**：`PATCH /v1/platform/permission-policy`。**鉴权**：Session；敏感操作需要二次验证。
-**权限**：`账号治理或公开接口的专用鉴权`。
-
-写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
-SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
-
-| 参数 | 位置 | 类型 | 必填 |
-| --- | --- | --- | --- |
-| `body` | application/json | PermissionPolicyIn | 是 |
-| `body.expected_revision` | 请求体 | integer | 是 |
-| `body.value` | 请求体 | PermissionPolicy | 是 |
-
-**响应**：
-- `200` · `application/json` · `PermissionPolicyOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

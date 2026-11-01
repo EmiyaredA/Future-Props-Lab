@@ -13,6 +13,7 @@
 | [remove_avatar](#remove-avatar) | `DELETE /v1/account/profile/avatar` |
 | [delete_session](#delete-session) | `DELETE /v1/account/sessions/{session_id}` |
 | [api_keys](#api-keys) | `GET /v1/account/api-keys` |
+| [directory](#directory) | `GET /v1/account/directory` |
 | [get_profile](#get-profile) | `GET /v1/account/profile` |
 | [get_avatar](#get-avatar) | `GET /v1/account/profile/avatar` |
 | [own_audit](#own-audit) | `GET /v1/account/security-events` |
@@ -104,6 +105,26 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## directory {#directory}
+
+`client.accounts.directory(...)`
+
+**接口**：`GET /v1/account/directory`。**鉴权**：Session；敏感操作需要二次验证。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `q` | query | string | 否 |
+| `limit` | query | integer | 否 |
+
+**响应**：
+- `200` · `application/json` · `AccountDirectoryOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

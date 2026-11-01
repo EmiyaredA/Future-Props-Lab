@@ -31,7 +31,8 @@
       transparent 72%
     ),
     linear-gradient(180deg, var(--surface-raised), var(--surface));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-strong) 8%, transparent);
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--text-strong) 8%, transparent);
   display: flex;
   align-items: center;
   gap: 14px;

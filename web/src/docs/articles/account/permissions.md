@@ -1,26 +1,13 @@
-<!-- docs: {"group":"account","order":4,"title":"角色与操作权限","lead":"区分空间成员关系与平台管理权限。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
+<!-- docs: {"group": "account", "order": 4, "title": "角色与操作权限", "lead": "角色与操作权限的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/app/capabilities/identity/principal.py", "tests/test_account_owned_data.py"]} -->
 
 # 角色与操作权限
 
-<!-- prerequisites -->
+## 两种平台角色
 
-面向登录用户。开始前确认当前账号和工作空间；成员管理与空间设置需要拥有者、工作区管理员或平台管理员权限，账号治理仅限平台管理员。
-
-区分空间成员关系与平台管理权限。
-
-## 访问身份
-
-| 身份         | 含义                                             |
-| ------------ | ------------------------------------------------ |
-| 空间所有者   | 管理所属空间及成员，配置受所有者权限保护的能力   |
-| 成员         | 使用被授予的空间业务能力，不等于拥有空间治理权限 |
-| 平台管理员   | 管理平台账号，并按后台规则访问空间               |
-| 公开只读访问 | 浏览公开作品，不获得私有业务资源及写入能力       |
+管理员维护平台账号、模板分配和授权，普通用户使用当前账号获准的业务能力。业务资源归属和角色权限分别校验：管理员也没有读取其他账号私人项目、素材、模型凭证或会话的权限。不存在空间所有者、工作区管理员或成员角色。
 
 ## 判断能否操作
 
-以当前空间及具体页面的权限提示为准。集成中心会明确显示只读模式；公开展台与完整 Studio 的可见内容不同。隐藏的按钮通常表示当前身份不具备该操作权限。
+以当前账号的有效权限和页面反馈为准。读写请求仍验证资源归属，跨账号 ID 按不存在处理。界面隐藏按钮不代替服务端权限检查；资料或账号状态被修改后，旧 Session 和 Management API Key 可能被撤销。
 
-## 不要混淆密钥
-
-模型供应商 API Key 用于调用外部模型；[Management API Key](/docs.html?page=management-keys)用于访问本平台且绑定单一空间。平台管理员身份与供应商凭证没有对应关系。
+模型供应商 API Key 用于调用外部模型，Management API Key 用于调用本部署登记的业务 API。前者不提供平台管理权限，后者也不能调用仅限浏览器 Session 或桌面私有宿主的操作。知识社区的文章角色独立验证，不开放源账号其他资源。

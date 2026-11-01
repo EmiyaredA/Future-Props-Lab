@@ -30,7 +30,7 @@
 
 `client.annotation.delete_project(...)`
 
-**接口**：`DELETE /v1/audio-annotation/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/audio-annotation/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -50,7 +50,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.list_projects(...)`
 
-**接口**：`GET /v1/audio-annotation/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/audio-annotation/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -69,7 +69,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.get_project(...)`
 
-**接口**：`GET /v1/audio-annotation/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/audio-annotation/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -88,7 +88,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.get_document(...)`
 
-**接口**：`GET /v1/audio-annotation/projects/{project_id}/document`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/audio-annotation/projects/{project_id}/document`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -107,7 +107,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.export_annotation(...)`
 
-**接口**：`GET /v1/audio-annotation/projects/{project_id}/export`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/audio-annotation/projects/{project_id}/export`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -128,7 +128,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.download_segment_audio(...)`
 
-**接口**：`GET /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -149,7 +149,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.get_waveform(...)`
 
-**接口**：`GET /v1/audio-annotation/projects/{project_id}/waveform`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/audio-annotation/projects/{project_id}/waveform`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -168,7 +168,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.patch_project(...)`
 
-**接口**：`PATCH /v1/audio-annotation/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/audio-annotation/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -190,7 +190,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.import_project(...)`
 
-**接口**：`POST /v1/audio-annotation/imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/audio-annotation/imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -215,7 +215,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.create_project(...)`
 
-**接口**：`POST /v1/audio-annotation/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/audio-annotation/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -236,7 +236,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.apply_annotation_operations(...)`
 
-**接口**：`POST /v1/audio-annotation/projects/{project_id}/document/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/audio-annotation/projects/{project_id}/document/operations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -259,7 +259,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.transcribe_segment(...)`
 
-**接口**：`POST /v1/audio-annotation/projects/{project_id}/segment-transcriptions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/audio-annotation/projects/{project_id}/segment-transcriptions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -288,7 +288,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.transcribe_saved_segment(...)`
 
-**接口**：`POST /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/transcribe-saved`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/transcribe-saved`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -313,7 +313,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.import_transcription(...)`
 
-**接口**：`POST /v1/audio-annotation/transcription-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/audio-annotation/transcription-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -332,7 +332,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.put_document(...)`
 
-**接口**：`PUT /v1/audio-annotation/projects/{project_id}/document`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/audio-annotation/projects/{project_id}/document`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -357,7 +357,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.annotation.put_waveform(...)`
 
-**接口**：`PUT /v1/audio-annotation/projects/{project_id}/waveform`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/audio-annotation/projects/{project_id}/waveform`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

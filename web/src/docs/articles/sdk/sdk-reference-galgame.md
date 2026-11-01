@@ -66,7 +66,7 @@
 
 `client.galgame.delete_project(...)`
 
-**接口**：`DELETE /v1/galgame-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/galgame-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -86,7 +86,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.delete_project_asset(...)`
 
-**接口**：`DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -107,7 +107,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.list_projects(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -125,7 +125,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_project(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -144,7 +144,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_annotation_import(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -164,7 +164,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.list_project_assets(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -184,7 +184,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_asr_settings(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets/asr/settings`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets/asr/settings`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -203,7 +203,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.list_transcriptions(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -222,7 +222,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_project_asset_overview(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets/overview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets/overview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -241,7 +241,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_project_package_manifest(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets/package-manifest`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/assets/package-manifest`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -260,7 +260,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.export_project_snapshot(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/snapshot`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/snapshot`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -279,7 +279,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_story(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/story`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/story`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -298,7 +298,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.preview_portrait_upgrade(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -317,7 +317,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_story_report(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/story/report`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/story/report`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -336,7 +336,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.list_story_snapshots(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/story/snapshots`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/story/snapshots`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -355,7 +355,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.list_handoffs(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -374,7 +374,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_handoff(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -394,7 +394,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.list_video_exports(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -413,7 +413,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_video_export(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -433,7 +433,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.download_video_export(...)`
 
-**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -453,7 +453,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.get_story_migration_status(...)`
 
-**接口**：`GET /v1/galgame-workshop/story-migrations/status`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/galgame-workshop/story-migrations/status`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -471,7 +471,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.patch_project(...)`
 
-**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -494,7 +494,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.patch_asr_settings(...)`
 
-**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/assets/asr/settings`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/assets/asr/settings`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -518,7 +518,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.patch_project_asset(...)`
 
-**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -544,7 +544,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.patch_asset_transcript(...)`
 
-**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -568,7 +568,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.patch_story_dialogue(...)`
 
-**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/story/dialogue`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/story/dialogue`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -594,7 +594,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.patch_story_edits(...)`
 
-**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/story/edits`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/story/edits`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -616,7 +616,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.patch_story_stage_expression(...)`
 
-**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/story/stage-expression`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/galgame-workshop/projects/{project_id}/story/stage-expression`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -641,7 +641,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.create_project(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -661,7 +661,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.import_project_snapshot(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/snapshot-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/snapshot-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -683,7 +683,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.create_annotation_import(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/annotation-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/annotation-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -714,7 +714,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.preview_annotation_import(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/annotation-imports/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/annotation-imports/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -745,7 +745,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.upload_project_asset(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -769,7 +769,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.match_voice_to_dialogue(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -793,7 +793,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.create_transcriptions(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -816,7 +816,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.batch_upload_project_assets(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/batch`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/batch`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -840,7 +840,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.preview_project_asset_import(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -862,7 +862,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.scan_project_asset_metadata(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/metadata-scan`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/metadata-scan`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -881,7 +881,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.repair_project_asset(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/repair`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/assets/repair`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -904,7 +904,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.reveal_project_folder(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/open-folder`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/open-folder`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -923,7 +923,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.import_legacy_story(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/story/import`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/story/import`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -947,7 +947,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.apply_story_operations(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/story/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/story/operations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -971,7 +971,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.apply_portrait_upgrade(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -992,7 +992,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.restore_story_snapshot(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/story/snapshots/{snapshot_id}/restore`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/story/snapshots/{snapshot_id}/restore`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1014,7 +1014,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.create_handoff(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1045,7 +1045,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.cancel_handoff(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1065,7 +1065,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.create_video_export(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1095,7 +1095,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.exact_video_export_frame(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-exports/frame`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-exports/frame`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1125,7 +1125,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.preview_video_export(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-exports/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-exports/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1153,7 +1153,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.cancel_video_export(...)`
 
-**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1173,7 +1173,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.run_story_migrations(...)`
 
-**接口**：`POST /v1/galgame-workshop/story-migrations/run`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/galgame-workshop/story-migrations/run`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -1193,7 +1193,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.galgame.put_story(...)`
 
-**接口**：`PUT /v1/galgame-workshop/projects/{project_id}/story`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/galgame-workshop/projects/{project_id}/story`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

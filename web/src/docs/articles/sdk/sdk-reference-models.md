@@ -31,7 +31,7 @@
 
 `client.models.delete_model(...)`
 
-**接口**：`DELETE /v1/model-entries/{model_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-entries/{model_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -51,7 +51,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.delete_provider(...)`
 
-**接口**：`DELETE /v1/model-providers/{provider_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-providers/{provider_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -71,7 +71,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.delete_supplier(...)`
 
-**接口**：`DELETE /v1/model-suppliers/{supplier_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-suppliers/{supplier_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -91,7 +91,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.list_local_models(...)`
 
-**接口**：`GET /v1/local-models`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/local-models`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -109,7 +109,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.list_model_categories(...)`
 
-**接口**：`GET /v1/model-categories`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-categories`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -127,7 +127,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.list_providers(...)`
 
-**接口**：`GET /v1/model-providers`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-providers`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -145,7 +145,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.update_model(...)`
 
-**接口**：`PATCH /v1/model-entries/{model_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/model-entries/{model_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -172,7 +172,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.update_provider(...)`
 
-**接口**：`PATCH /v1/model-providers/{provider_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/model-providers/{provider_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -199,7 +199,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.update_supplier(...)`
 
-**接口**：`PATCH /v1/model-suppliers/{supplier_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/model-suppliers/{supplier_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -221,7 +221,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.attach_local_model(...)`
 
-**接口**：`POST /v1/local-models/attach`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/local-models/attach`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -242,7 +242,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.run_model_test(...)`
 
-**接口**：`POST /v1/model-entries/{model_id}/test`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-entries/{model_id}/test`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -261,7 +261,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.create_provider(...)`
 
-**接口**：`POST /v1/model-providers`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-providers`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -287,7 +287,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.set_provider_enabled(...)`
 
-**接口**：`POST /v1/model-providers/{provider_id}/enabled`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-providers/{provider_id}/enabled`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -309,7 +309,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.add_model(...)`
 
-**接口**：`POST /v1/model-providers/{provider_id}/models`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-providers/{provider_id}/models`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -336,7 +336,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.create_supplier(...)`
 
-**接口**：`POST /v1/model-suppliers`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-suppliers`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -380,7 +380,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.models.defaults(...)`
 
-**接口**：`PUT /v1/model-catalog/defaults`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/model-catalog/defaults`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

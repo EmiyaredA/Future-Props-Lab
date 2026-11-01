@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 31, "title": "视觉工坊方法参考", "lead": "client.visual 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 30, "title": "视觉工坊方法参考", "lead": "client.visual 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 视觉工坊方法参考
 
@@ -57,7 +57,7 @@
 
 `client.visual.delete_acceptance_template(...)`
 
-**接口**：`DELETE /v1/visual-workshop/acceptance-templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/visual-workshop/acceptance-templates/{template_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -77,7 +77,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.delete_project(...)`
 
-**接口**：`DELETE /v1/visual-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/visual-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -97,7 +97,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.delete_asset_reference(...)`
 
-**接口**：`DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -118,7 +118,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.delete_node_output(...)`
 
-**接口**：`DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -140,7 +140,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.list_acceptance_templates(...)`
 
-**接口**：`GET /v1/visual-workshop/acceptance-templates`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/acceptance-templates`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -158,7 +158,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.acceptance_catalog(...)`
 
-**接口**：`GET /v1/visual-workshop/acceptance/catalog`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/acceptance/catalog`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -176,7 +176,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.list_projects(...)`
 
-**接口**：`GET /v1/visual-workshop/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -194,7 +194,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.get_project(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -213,7 +213,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.list_acceptance_models(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/models`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/models`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -232,7 +232,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.get_acceptance_repair(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -252,7 +252,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.list_acceptance_runs(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/runs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/runs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -273,7 +273,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.get_acceptance_run(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -293,7 +293,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.get_acceptance_standard(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/standard`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/standard`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -312,7 +312,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.acceptance_summary(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/summary`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/acceptance/summary`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -331,7 +331,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.get_canvas(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/canvas`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/canvas`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -350,7 +350,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.get_node_acceptance(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -371,7 +371,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.list_node_outputs(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -393,7 +393,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.get_node_output(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -414,7 +414,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.export_project_snapshot(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/snapshot`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/snapshot`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -433,7 +433,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.patch_project(...)`
 
-**接口**：`PATCH /v1/visual-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/visual-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -457,7 +457,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.patch_asset_reference(...)`
 
-**接口**：`PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -482,7 +482,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.create_acceptance_template(...)`
 
-**接口**：`POST /v1/visual-workshop/acceptance-templates`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/acceptance-templates`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -503,7 +503,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.create_project(...)`
 
-**接口**：`POST /v1/visual-workshop/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -524,7 +524,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.import_project_snapshot(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/snapshot-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/snapshot-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -546,7 +546,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.start_acceptance_runs(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -571,7 +571,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.cancel_acceptance_run(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -592,7 +592,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.decide_acceptance_run(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -621,7 +621,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.create_acceptance_repair(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -641,7 +641,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.sample_acceptance_video(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -665,7 +665,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.import_assets(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/asset-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/asset-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -688,7 +688,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.create_asset_reference(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/asset-references`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/asset-references`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -710,7 +710,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.apply_canvas_operations(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/canvas/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/canvas/operations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -733,7 +733,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.upload_material_node(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/node-uploads`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/node-uploads`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -761,7 +761,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.start_node_acceptance(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -788,7 +788,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.upload_node_output(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -813,7 +813,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.add_node_output(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -837,7 +837,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.reveal_project_folder(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/open-folder`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/open-folder`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -856,7 +856,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.update_acceptance_template(...)`
 
-**接口**：`PUT /v1/visual-workshop/acceptance-templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/visual-workshop/acceptance-templates/{template_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -878,7 +878,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.save_acceptance_repair(...)`
 
-**接口**：`PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -903,7 +903,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.save_acceptance_standard(...)`
 
-**接口**：`PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -927,7 +927,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.put_canvas(...)`
 
-**接口**：`PUT /v1/visual-workshop/projects/{project_id}/canvas`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/canvas`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -951,7 +951,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.select_node_acceptance(...)`
 
-**接口**：`PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -974,7 +974,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual.set_node_final_output(...)`
 
-**接口**：`PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

@@ -26,7 +26,7 @@
 
 `client.interview.delete_interview_room(...)`
 
-**接口**：`DELETE /v1/interview-assistant/rooms/{room_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/interview-assistant/rooms/{room_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -46,7 +46,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.get_interview_executor(...)`
 
-**接口**：`GET /v1/interview-assistant/executor`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/interview-assistant/executor`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -64,7 +64,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.list_interview_rooms(...)`
 
-**接口**：`GET /v1/interview-assistant/rooms`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/interview-assistant/rooms`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -82,7 +82,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.get_interview_room(...)`
 
-**接口**：`GET /v1/interview-assistant/rooms/{room_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/interview-assistant/rooms/{room_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -101,7 +101,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.download_interview_material(...)`
 
-**接口**：`GET /v1/interview-assistant/rooms/{room_id}/materials/{material_id}/download`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/interview-assistant/rooms/{room_id}/materials/{material_id}/download`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -121,7 +121,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.get_interview_bundle(...)`
 
-**接口**：`GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/bundle`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/bundle`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -141,7 +141,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.get_interview_progress(...)`
 
-**接口**：`GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/events`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/events`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -161,7 +161,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.export_interview_bundle(...)`
 
-**接口**：`GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/export`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/export`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -182,7 +182,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.create_interview_room(...)`
 
-**接口**：`POST /v1/interview-assistant/rooms`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/interview-assistant/rooms`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -203,7 +203,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.upload_interview_material(...)`
 
-**接口**：`POST /v1/interview-assistant/rooms/{room_id}/materials`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/interview-assistant/rooms/{room_id}/materials`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -227,7 +227,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.prepare_interview(...)`
 
-**接口**：`POST /v1/interview-assistant/rooms/{room_id}/preparations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/interview-assistant/rooms/{room_id}/preparations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -254,7 +254,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.interview.cancel_interview_preparation(...)`
 
-**接口**：`POST /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

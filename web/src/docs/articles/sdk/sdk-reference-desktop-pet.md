@@ -31,7 +31,7 @@
 
 `client.desktop_pet.delete_project(...)`
 
-**接口**：`DELETE /v1/desktop-pet/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/desktop-pet/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -51,7 +51,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.clear_chat(...)`
 
-**接口**：`DELETE /v1/desktop-pet/projects/{project_id}/chat/messages`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/desktop-pet/projects/{project_id}/chat/messages`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -72,7 +72,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.list_projects(...)`
 
-**接口**：`GET /v1/desktop-pet/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/desktop-pet/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -90,7 +90,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.get_project(...)`
 
-**接口**：`GET /v1/desktop-pet/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/desktop-pet/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -109,7 +109,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.asset_file(...)`
 
-**接口**：`GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -129,7 +129,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.get_chat(...)`
 
-**接口**：`GET /v1/desktop-pet/projects/{project_id}/chat`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/desktop-pet/projects/{project_id}/chat`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -148,7 +148,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.chat_messages(...)`
 
-**接口**：`GET /v1/desktop-pet/projects/{project_id}/chat/messages`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/desktop-pet/projects/{project_id}/chat/messages`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -169,7 +169,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.get_document(...)`
 
-**接口**：`GET /v1/desktop-pet/projects/{project_id}/document`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/desktop-pet/projects/{project_id}/document`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -188,7 +188,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.patch_project(...)`
 
-**接口**：`PATCH /v1/desktop-pet/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/desktop-pet/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -210,7 +210,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.update_chat(...)`
 
-**接口**：`PATCH /v1/desktop-pet/projects/{project_id}/chat`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/desktop-pet/projects/{project_id}/chat`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -234,7 +234,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.create_project(...)`
 
-**接口**：`POST /v1/desktop-pet/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/desktop-pet/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -256,7 +256,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.import_whale(...)`
 
-**接口**：`POST /v1/desktop-pet/projects/import-whale`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/desktop-pet/projects/import-whale`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -278,7 +278,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.send_chat_message(...)`
 
-**接口**：`POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -302,7 +302,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.replace_package(...)`
 
-**接口**：`POST /v1/desktop-pet/projects/{project_id}/replace-package`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/desktop-pet/projects/{project_id}/replace-package`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -326,7 +326,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.sync_source(...)`
 
-**接口**：`POST /v1/desktop-pet/projects/{project_id}/sync-source`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/desktop-pet/projects/{project_id}/sync-source`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -348,7 +348,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.save_document(...)`
 
-**接口**：`PUT /v1/desktop-pet/projects/{project_id}/document`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/desktop-pet/projects/{project_id}/document`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -370,7 +370,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop_pet.upload_skin_replacement(...)`
 
-**接口**：`PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

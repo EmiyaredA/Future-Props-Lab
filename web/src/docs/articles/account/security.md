@@ -1,10 +1,10 @@
-<!-- docs: {"group":"account","order":6,"title":"密码与会话管理","lead":"修改密码，撤销其他设备，并检查本人安全事件。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
+<!-- docs: {"group":"account","order":6,"title":"密码与会话管理","lead":"修改密码，撤销其他设备，并检查本人安全事件。","evidence":["web/src/features/accounts/AccountPanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
 
 # 密码与会话管理
 
 <!-- prerequisites -->
 
-面向登录用户。开始前确认当前账号和工作空间；成员管理与空间设置需要拥有者、工作区管理员或平台管理员权限，账号治理仅限平台管理员。
+面向当前登录账号。个人资料和凭据归本人管理，平台账号治理仅限管理员；任何角色都不授予其他账号的私人资源读取权。
 
 修改密码，撤销其他设备，并检查本人安全事件。
 

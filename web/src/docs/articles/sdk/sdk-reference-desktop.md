@@ -25,7 +25,7 @@
 
 `client.desktop.capabilities(...)`
 
-**接口**：`GET /v1/desktop/agent/capabilities`。**鉴权**：仅桌面模式；已授权 Workspace API Key 或 Session；桌面私有传输校验。
+**接口**：`GET /v1/desktop/agent/capabilities`。**鉴权**：仅桌面模式；已授权 Management API Key 或 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -97,7 +97,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.open_status(...)`
 
-**接口**：`GET /v1/desktop/ui/requests/{request_id}`。**鉴权**：仅桌面模式；已授权 Workspace API Key 或 Session；桌面私有传输校验。
+**接口**：`GET /v1/desktop/ui/requests/{request_id}`。**鉴权**：仅桌面模式；已授权 Management API Key 或 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -170,7 +170,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body` | application/json | AgentDecisionIn | 是 |
 | `body.approve` | 请求体 | boolean | 是 |
 | `body.code` | 请求体 | string | 是 |
-| `body.expected_workspace_id` | 请求体 | string | 是 |
+| `body.expected_owner_user_id` | 请求体 | string | 是 |
 
 **响应**：
 - `200` · `application/json` · `AgentPairOut`
@@ -203,7 +203,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.desktop.open_in_app(...)`
 
-**接口**：`POST /v1/desktop/ui/open`。**鉴权**：仅桌面模式；已授权 Workspace API Key 或 Session；桌面私有传输校验。
+**接口**：`POST /v1/desktop/ui/open`。**鉴权**：仅桌面模式；已授权 Management API Key 或 Session；桌面私有传输校验。
 **权限**：`desktop.bootstrap`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

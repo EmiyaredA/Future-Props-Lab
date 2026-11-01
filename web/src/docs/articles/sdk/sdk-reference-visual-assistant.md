@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 32, "title": "视觉助手方法参考", "lead": "client.visual_assistant 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 31, "title": "视觉助手方法参考", "lead": "client.visual_assistant 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 视觉助手方法参考
 
@@ -22,7 +22,7 @@
 
 `client.visual_assistant.delete_conversation(...)`
 
-**接口**：`DELETE /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -43,7 +43,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual_assistant.list_conversations(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/conversations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/conversations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -62,7 +62,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual_assistant.list_models(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/conversations/models`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/conversations/models`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -81,7 +81,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual_assistant.get_conversation(...)`
 
-**接口**：`GET /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -101,7 +101,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual_assistant.patch_conversation(...)`
 
-**接口**：`PATCH /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -127,7 +127,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual_assistant.create_conversation(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/conversations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/conversations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -146,7 +146,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual_assistant.stream_message(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -172,7 +172,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.visual_assistant.resolve_approval(...)`
 
-**接口**：`POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

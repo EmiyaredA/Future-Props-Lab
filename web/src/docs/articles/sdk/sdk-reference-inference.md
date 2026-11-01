@@ -27,7 +27,7 @@
 
 `client.inference.delete_asset(...)`
 
-**接口**：`DELETE /v1/model-inference/assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-inference/assets/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -46,7 +46,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.delete_task(...)`
 
-**接口**：`DELETE /v1/model-inference/tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/model-inference/tasks/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -66,7 +66,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.model_options(...)`
 
-**接口**：`GET /v1/model-inference/options`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-inference/options`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -84,7 +84,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.list_tasks(...)`
 
-**接口**：`GET /v1/model-inference/tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-inference/tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -104,7 +104,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.get_task(...)`
 
-**接口**：`GET /v1/model-inference/tasks/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-inference/tasks/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -123,7 +123,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.download_result(...)`
 
-**接口**：`GET /v1/model-inference/tasks/{task_id}/content`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/model-inference/tasks/{task_id}/content`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -142,7 +142,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.upload_asset(...)`
 
-**接口**：`POST /v1/model-inference/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-inference/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -164,7 +164,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.import_asset(...)`
 
-**接口**：`POST /v1/model-inference/assets/import`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-inference/assets/import`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -184,7 +184,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.create_task(...)`
 
-**接口**：`POST /v1/model-inference/tasks`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-inference/tasks`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -208,7 +208,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.retry_materialization(...)`
 
-**接口**：`POST /v1/model-inference/tasks/{task_id}/retry-materialization`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-inference/tasks/{task_id}/retry-materialization`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -229,7 +229,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.save_result(...)`
 
-**接口**：`POST /v1/model-inference/tasks/{task_id}/save-to-library`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-inference/tasks/{task_id}/save-to-library`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -248,7 +248,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.generate_text(...)`
 
-**接口**：`POST /v1/model-inference/text`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-inference/text`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -272,7 +272,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.inference.stream_text(...)`
 
-**接口**：`POST /v1/model-inference/text/stream`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/model-inference/text/stream`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

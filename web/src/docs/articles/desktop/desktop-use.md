@@ -2,7 +2,7 @@
 
 # 桌面 App、多窗口与本地数据
 
-macOS 桌面版把 Studio 与后端运行在本机。首次启动按界面创建首个账号并登录；后续账号和 Workspace 的管理见[工作空间与账号](/docs.html?page=workspaces)。
+macOS 桌面版把 Studio 与后端运行在本机。首次启动按界面创建首个账号并登录；后续账号与私人数据管理见[账号与私人数据](/docs.html?page=workspaces)。
 
 ## 多窗口工作
 

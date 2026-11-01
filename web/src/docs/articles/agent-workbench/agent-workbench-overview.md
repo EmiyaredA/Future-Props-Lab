@@ -1,0 +1,36 @@
+<!-- docs: {"group": "agent-workbench", "order": 0, "title": "Agent 工作台使用指南", "lead": "阅读与同步本机编程会话，核对来源和私人数据边界。", "evidence": ["web/src/features/agent-workbench/AgentWorkbenchPage.tsx", "docs/reference/agent-workbench.md"]} -->
+
+# Agent 工作台：阅读现有会话
+
+本篇说明Agent 工作台的实际操作、可验证结果和数据边界，帮助你在当前账号中完成操作后确认保存状态。
+
+## 操作与核验
+
+在桌面打开「应用 → 开发辅助 → Agent 工作台」。先查看来源，再阅读会话；这里展示已有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 记录。
+
+完成后核对页面显示的账号、对象名称和最新状态；若状态仍为进行中或有错误提示，先保留当前内容并查看原因，不能把按钮点击本身视为操作成功。
+
+## 保存与能力边界
+
+来源只有经原生标记核验才显示 APP 或 CLI；没有可靠证据显示来源待确认。工作台不是云端 ChatGPT 聊天列表，也不要求历史来源具备 CLI 执行授权。
+
+> [!NOTE]
+> 本机应用与公网浏览器访问同一部署时使用相同账号隔离规则。来源绑定等桌面私有能力只能在已验证的桌面传输中执行；公开地址不会扩大账号权限。
+
+## 相关阅读
+
+- [Agent 工作台：绑定与持续同步](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/workflow)
+- [Agent 工作台：原生记录与阅读副本](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/storage)
+
+## 主要流程
+
+打开「来源」，选择已检测目录或通过原生目录选择器指定位置。核对工具和路径，确认当前账号保存阅读副本，点击绑定并开始同步。返回会话并在原工具产生一条完整新记录，应看到最后同步时间与正文更新。
+
+完成后核对页面显示的账号、对象名称和最新状态；若状态仍为进行中或有错误提示，先保留当前内容并查看原因，不能把按钮点击本身视为操作成功。
+
+## 保存与能力边界
+
+上翻会保留阅读位置，出现新内容后使用「有新内容」回到底部。Pi 分支分别选择；暂停跟随仅影响当前阅读视图，后台和原 Agent 继续运行。输入区目前禁用，不能在工作台续聊或提交提示词。
+
+> [!NOTE]
+> 本机应用与公网浏览器访问同一部署时使用相同账号隔离规则。来源绑定等桌面私有能力只能在已验证的桌面传输中执行；公开地址不会扩大账号权限。

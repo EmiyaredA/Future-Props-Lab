@@ -35,7 +35,7 @@
 
 `client.motion_compositor.delete_project(...)`
 
-**接口**：`DELETE /v1/motion-compositor/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/motion-compositor/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -55,7 +55,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.import_sources(...)`
 
-**接口**：`GET /v1/motion-compositor/import-sources`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/import-sources`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -73,7 +73,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.list_projects(...)`
 
-**接口**：`GET /v1/motion-compositor/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -91,7 +91,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.get_project(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -110,7 +110,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.list_assets(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -129,7 +129,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.asset_file(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}/assets/{asset_id}/file`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}/assets/{asset_id}/file`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -149,7 +149,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.get_document(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}/document`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}/document`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -168,7 +168,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.list_exports(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}/exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}/exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -187,7 +187,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.get_export(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}/exports/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}/exports/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -207,7 +207,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.download_export(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}/exports/{task_id}/download/{format_name}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}/exports/{task_id}/download/{format_name}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -228,7 +228,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.exact_frame(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}/preview/frame`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}/preview/frame`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -250,7 +250,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.export_snapshot(...)`
 
-**接口**：`GET /v1/motion-compositor/projects/{project_id}/snapshot`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/motion-compositor/projects/{project_id}/snapshot`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -270,7 +270,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.patch_project(...)`
 
-**接口**：`PATCH /v1/motion-compositor/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/motion-compositor/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -292,7 +292,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.create_project(...)`
 
-**接口**：`POST /v1/motion-compositor/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/motion-compositor/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -315,7 +315,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.import_snapshot(...)`
 
-**接口**：`POST /v1/motion-compositor/projects/snapshot-imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/motion-compositor/projects/snapshot-imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -337,7 +337,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.upload_asset(...)`
 
-**接口**：`POST /v1/motion-compositor/projects/{project_id}/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/motion-compositor/projects/{project_id}/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -360,7 +360,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.import_assets(...)`
 
-**接口**：`POST /v1/motion-compositor/projects/{project_id}/assets/import`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/motion-compositor/projects/{project_id}/assets/import`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -381,7 +381,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.edit_document(...)`
 
-**接口**：`POST /v1/motion-compositor/projects/{project_id}/document/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/motion-compositor/projects/{project_id}/document/operations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -404,7 +404,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.create_export(...)`
 
-**接口**：`POST /v1/motion-compositor/projects/{project_id}/exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/motion-compositor/projects/{project_id}/exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -429,7 +429,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.cancel_export(...)`
 
-**接口**：`POST /v1/motion-compositor/projects/{project_id}/exports/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/motion-compositor/projects/{project_id}/exports/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -449,7 +449,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.motion_compositor.send_to_video_editor(...)`
 
-**接口**：`POST /v1/motion-compositor/projects/{project_id}/exports/{task_id}/video-editor-handoffs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/motion-compositor/projects/{project_id}/exports/{task_id}/video-editor-handoffs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

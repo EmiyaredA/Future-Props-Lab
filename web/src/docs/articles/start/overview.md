@@ -23,7 +23,7 @@
 
 ## 常用模块
 
-- [工作空间与账号](/docs.html?page=workspaces)：切换空间、邀请成员、管理个人资料和会话。
+- [账号与私人数据](/docs.html?page=workspaces)：核对当前账号、私人资源归属以及个人资料和会话。
 - [文件管理](/docs.html?page=files-overview)：上传、预览和整理共享文件。
 - [集成中心](/docs.html?page=integrations-overview)：管理工具 API、MCP 与 Skill。
 - [创意工坊](/docs.html?page=creative-overview)：发现公开能力，安装到自己的空间或发布可复用方案。

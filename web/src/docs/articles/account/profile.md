@@ -1,10 +1,10 @@
-<!-- docs: {"group":"account","order":5,"title":"个人资料","lead":"更新显示名称、邮箱和头像。","evidence":["web/src/features/accounts/AccountWorkspacePanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
+<!-- docs: {"group":"account","order":5,"title":"个人资料","lead":"更新显示名称、邮箱和头像。","evidence":["web/src/features/accounts/AccountPanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
 
 # 个人资料
 
 <!-- prerequisites -->
 
-面向登录用户。开始前确认当前账号和工作空间；成员管理与空间设置需要拥有者、工作区管理员或平台管理员权限，账号治理仅限平台管理员。
+面向当前登录账号。个人资料和凭据归本人管理，平台账号治理仅限管理员；任何角色都不授予其他账号的私人资源读取权。
 
 更新显示名称、邮箱和头像。
 
@@ -14,7 +14,7 @@
 2. 修改“显示名称”和“邮箱”。
 3. 点击“保存资料”，确认成功提示。
 
-用户名字段只读。显示名称用于界面展示，修改它不会更改用于登录和邀请的用户名。
+用户名字段只读。显示名称用于界面展示，修改它不会更改用于登录的用户名。
 
 ![个人资料设置](/docs/account-profile.jpg "真实界面 · 隔离演示数据；合成素材或本机确定性响应，不代表外部模型效果。")
 

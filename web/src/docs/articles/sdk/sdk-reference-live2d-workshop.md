@@ -42,7 +42,7 @@
 
 `client.live2d_workshop.delete_project(...)`
 
-**接口**：`DELETE /v1/live2d-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/live2d-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -62,7 +62,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.retire_asset(...)`
 
-**接口**：`DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -83,7 +83,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.remove_cubism(...)`
 
-**接口**：`DELETE /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -103,7 +103,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.list_projects(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -121,7 +121,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.get_project(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -140,7 +140,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.list_assets(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -159,7 +159,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.asset_file(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -179,7 +179,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.get_cubism(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -198,7 +198,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.download_cubism(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/cubism/package`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/cubism/package`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -217,7 +217,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.get_document(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/document`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/document`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -236,7 +236,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.list_exports(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -255,7 +255,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.get_export(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -275,7 +275,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.download_export(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/download`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/download`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -295,7 +295,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.export_package(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/package`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/package`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -314,7 +314,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.preview(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -343,7 +343,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.thumbnail(...)`
 
-**接口**：`GET /v1/live2d-workshop/projects/{project_id}/thumbnail`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/live2d-workshop/projects/{project_id}/thumbnail`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -362,7 +362,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.patch_project(...)`
 
-**接口**：`PATCH /v1/live2d-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/live2d-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -384,7 +384,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.create_project(...)`
 
-**接口**：`POST /v1/live2d-workshop/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/live2d-workshop/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -406,7 +406,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.import_project(...)`
 
-**接口**：`POST /v1/live2d-workshop/projects/import`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/live2d-workshop/projects/import`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -428,7 +428,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.upload_asset(...)`
 
-**接口**：`POST /v1/live2d-workshop/projects/{project_id}/assets`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/live2d-workshop/projects/{project_id}/assets`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -451,7 +451,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.convert_cubism(...)`
 
-**接口**：`POST /v1/live2d-workshop/projects/{project_id}/cubism/convert`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/live2d-workshop/projects/{project_id}/cubism/convert`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -477,7 +477,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.preflight_cubism(...)`
 
-**接口**：`POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -500,7 +500,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.create_export(...)`
 
-**接口**：`POST /v1/live2d-workshop/projects/{project_id}/exports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/live2d-workshop/projects/{project_id}/exports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -529,7 +529,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.preflight(...)`
 
-**接口**：`POST /v1/live2d-workshop/projects/{project_id}/exports/preflight`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/live2d-workshop/projects/{project_id}/exports/preflight`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -558,7 +558,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.cancel_export(...)`
 
-**接口**：`POST /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -578,7 +578,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.attach_cubism(...)`
 
-**接口**：`PUT /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/live2d-workshop/projects/{project_id}/cubism`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -602,7 +602,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.save_cubism_bindings(...)`
 
-**接口**：`PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -624,7 +624,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.live2d_workshop.save_document(...)`
 
-**接口**：`PUT /v1/live2d-workshop/projects/{project_id}/document`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/live2d-workshop/projects/{project_id}/document`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

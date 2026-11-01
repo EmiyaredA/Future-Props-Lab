@@ -40,7 +40,7 @@
 
 `client.presentation.delete_example(...)`
 
-**接口**：`DELETE /v1/presentation-workshop/examples/{example_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/presentation-workshop/examples/{example_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -60,7 +60,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.delete_project(...)`
 
-**接口**：`DELETE /v1/presentation-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/presentation-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -80,7 +80,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.delete_template(...)`
 
-**接口**：`DELETE /v1/presentation-workshop/templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/presentation-workshop/templates/{template_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -100,7 +100,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.list_examples(...)`
 
-**接口**：`GET /v1/presentation-workshop/examples`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/presentation-workshop/examples`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -121,7 +121,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.get_example(...)`
 
-**接口**：`GET /v1/presentation-workshop/examples/{example_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/presentation-workshop/examples/{example_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -140,7 +140,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.list_projects(...)`
 
-**接口**：`GET /v1/presentation-workshop/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/presentation-workshop/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -161,7 +161,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.get_project(...)`
 
-**接口**：`GET /v1/presentation-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/presentation-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -180,7 +180,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.list_templates(...)`
 
-**接口**：`GET /v1/presentation-workshop/templates`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/presentation-workshop/templates`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -201,7 +201,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.get_template(...)`
 
-**接口**：`GET /v1/presentation-workshop/templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/presentation-workshop/templates/{template_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -220,7 +220,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.create_example(...)`
 
-**接口**：`POST /v1/presentation-workshop/examples`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/examples`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -242,7 +242,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.create_from_example(...)`
 
-**接口**：`POST /v1/presentation-workshop/examples/{example_id}/documents`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/examples/{example_id}/documents`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -264,7 +264,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.import_project(...)`
 
-**接口**：`POST /v1/presentation-workshop/imports`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/imports`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -287,7 +287,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.preview_import(...)`
 
-**接口**：`POST /v1/presentation-workshop/imports/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/imports/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -309,7 +309,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.import_template_bundle(...)`
 
-**接口**：`POST /v1/presentation-workshop/library/import`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/library/import`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -330,7 +330,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.create_project(...)`
 
-**接口**：`POST /v1/presentation-workshop/projects`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/projects`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -351,7 +351,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.export_pptx(...)`
 
-**接口**：`POST /v1/presentation-workshop/projects/{project_id}/export`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/projects/{project_id}/export`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -372,7 +372,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.preview_export(...)`
 
-**接口**：`POST /v1/presentation-workshop/projects/{project_id}/export/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/projects/{project_id}/export/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -393,7 +393,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.export_file(...)`
 
-**接口**：`POST /v1/presentation-workshop/projects/{project_id}/export/{format}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/projects/{project_id}/export/{format}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -416,7 +416,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.apply_presentation_operations(...)`
 
-**接口**：`POST /v1/presentation-workshop/projects/{project_id}/operations`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/projects/{project_id}/operations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -439,7 +439,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.apply_template_change(...)`
 
-**接口**：`POST /v1/presentation-workshop/projects/{project_id}/template/apply`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/projects/{project_id}/template/apply`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -468,7 +468,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.preview_template_change(...)`
 
-**接口**：`POST /v1/presentation-workshop/projects/{project_id}/template/preview`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/projects/{project_id}/template/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -496,7 +496,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.create_template(...)`
 
-**接口**：`POST /v1/presentation-workshop/templates`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/templates`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -518,7 +518,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.create_from_template(...)`
 
-**接口**：`POST /v1/presentation-workshop/templates/{template_id}/documents`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/presentation-workshop/templates/{template_id}/documents`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -540,7 +540,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.put_example(...)`
 
-**接口**：`PUT /v1/presentation-workshop/examples/{example_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/presentation-workshop/examples/{example_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -564,7 +564,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.put_project(...)`
 
-**接口**：`PUT /v1/presentation-workshop/projects/{project_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/presentation-workshop/projects/{project_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -587,7 +587,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.presentation.put_template(...)`
 
-**接口**：`PUT /v1/presentation-workshop/templates/{template_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PUT /v1/presentation-workshop/templates/{template_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.write`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

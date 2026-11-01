@@ -19,7 +19,7 @@ with Client(base_url="http://127.0.0.1:9000", api_key=os.environ["FPL_MANAGEMENT
     print(updated.id, updated.revision)
 ```
 
-`base_url` 指向服务端根地址，不包含 `/v1`。密钥绑定单一 Workspace，不在业务请求中传入 workspace_id。
+`base_url` 指向服务端根地址，不包含 `/v1`。密钥绑定当前账号，业务归属来自验证后的身份，不接受客户端指定其他账号。
 
 ## 使用异步客户端
 

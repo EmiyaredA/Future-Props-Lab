@@ -1085,6 +1085,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/files/{asset_id}/thumbnail",
+    "sdk": "client.files.preview_thumbnail",
+    "document": "/docs.html?page=sdk-reference-files#preview-thumbnail",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PATCH /v1/file-folders/{folder_id}",
     "sdk": "client.files.patch_file_folder",
     "document": "/docs.html?page=sdk-reference-files#patch-file-folder",

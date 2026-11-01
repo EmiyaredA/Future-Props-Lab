@@ -16,7 +16,7 @@
 
 `client.demo_calls.example_tool(...)`
 
-**接口**：`GET /v1/demo-services/tools/{tool}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/demo-services/tools/{tool}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -38,7 +38,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.demo_calls.mock_completion(...)`
 
-**接口**：`POST /v1/demo-services/model/chat/completions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/demo-services/model/chat/completions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`models.use`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

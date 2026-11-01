@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 25, "title": "模型模板方法参考", "lead": "client.templates 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 24, "title": "模型模板方法参考", "lead": "client.templates 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 模型模板方法参考
 
@@ -47,7 +47,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
-| `role` | path | super_admin / admin / member | 是 |
+| `role` | path | admin / user | 是 |
 
 **响应**：
 - `200` · `application/json` · `RoleModelTemplateOut`
@@ -66,7 +66,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
-| `role` | path | super_admin / admin / member | 是 |
+| `role` | path | admin / user | 是 |
 
 **响应**：
 - `200` · `application/json` · `array`
@@ -106,8 +106,9 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
-| `role` | path | super_admin / admin / member | 是 |
+| `role` | path | admin / user | 是 |
 | `body` | application/json | TemplatePreviewIn | 是 |
+| `body.account_ids` | 请求体 | array / null | 否 |
 | `body.expected_template_revision` | 请求体 | integer | 是 |
 
 **响应**：
@@ -127,7 +128,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
-| `role` | path | super_admin / admin / member | 是 |
+| `role` | path | admin / user | 是 |
 | `body` | application/json | RoleModelTemplateIn | 是 |
 | `body.expected_revision` | 请求体 | integer | 是 |
 | `body.value` | 请求体 | RoleModelTemplate-Input | 是 |

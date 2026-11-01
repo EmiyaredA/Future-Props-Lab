@@ -44,7 +44,7 @@
 
 `client.integrations.delete_mcp(...)`
 
-**接口**：`DELETE /v1/integrations/mcp/{integration_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/integrations/mcp/{integration_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -64,7 +64,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.delete_skill(...)`
 
-**接口**：`DELETE /v1/integrations/skills/{skill_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/integrations/skills/{skill_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -84,7 +84,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.delete_tool_api(...)`
 
-**接口**：`DELETE /v1/integrations/tool-apis/{integration_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/integrations/tool-apis/{integration_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -104,7 +104,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.list_connections(...)`
 
-**接口**：`GET /v1/integrations/external-connections`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/external-connections`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -122,7 +122,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.mcp_servers(...)`
 
-**接口**：`GET /v1/integrations/mcp`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/mcp`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -140,7 +140,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.mcp_server(...)`
 
-**接口**：`GET /v1/integrations/mcp/{integration_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/mcp/{integration_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -159,7 +159,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.mcp_tools(...)`
 
-**接口**：`GET /v1/integrations/mcp/{integration_id}/tools`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/mcp/{integration_id}/tools`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -178,7 +178,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.skills(...)`
 
-**接口**：`GET /v1/integrations/skills`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/skills`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -196,7 +196,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.skill(...)`
 
-**接口**：`GET /v1/integrations/skills/{skill_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/skills/{skill_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -215,7 +215,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.skill_versions(...)`
 
-**接口**：`GET /v1/integrations/skills/{skill_id}/versions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -234,7 +234,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.skill_version_content(...)`
 
-**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/content`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/content`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -254,7 +254,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.skill_version_files(...)`
 
-**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -274,7 +274,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.skill_version_file_content(...)`
 
-**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files/content`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files/content`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -295,7 +295,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.skill_version_file_media(...)`
 
-**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files/media`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/files/media`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -316,7 +316,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.skill_version_markdown(...)`
 
-**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -336,7 +336,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.tool_apis(...)`
 
-**接口**：`GET /v1/integrations/tool-apis`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/tool-apis`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -354,7 +354,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.tool_api(...)`
 
-**接口**：`GET /v1/integrations/tool-apis/{integration_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/integrations/tool-apis/{integration_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`content.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -373,7 +373,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.update_connection(...)`
 
-**接口**：`PATCH /v1/integrations/external-connections/{connection_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/integrations/external-connections/{connection_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -399,7 +399,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.update_mcp(...)`
 
-**接口**：`PATCH /v1/integrations/mcp/{integration_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/integrations/mcp/{integration_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -433,7 +433,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.update_skill(...)`
 
-**接口**：`PATCH /v1/integrations/skills/{skill_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/integrations/skills/{skill_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -457,7 +457,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.update_tool_api(...)`
 
-**接口**：`PATCH /v1/integrations/tool-apis/{integration_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`PATCH /v1/integrations/tool-apis/{integration_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -492,7 +492,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.create_connection(...)`
 
-**接口**：`POST /v1/integrations/external-connections`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/external-connections`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -516,7 +516,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.check_connection(...)`
 
-**接口**：`POST /v1/integrations/external-connections/{connection_id}/check`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/external-connections/{connection_id}/check`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -535,7 +535,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.check_target(...)`
 
-**接口**：`POST /v1/integrations/external-connections/{connection_id}/target-check`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/external-connections/{connection_id}/target-check`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`账号治理或公开接口的专用鉴权`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -556,7 +556,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.create_mcp(...)`
 
-**接口**：`POST /v1/integrations/mcp`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/mcp`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -588,7 +588,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.validate_mcp(...)`
 
-**接口**：`POST /v1/integrations/mcp/{integration_id}/validate`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/mcp/{integration_id}/validate`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -607,7 +607,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.create_skill(...)`
 
-**接口**：`POST /v1/integrations/skills`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/skills`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -631,7 +631,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.add_skill_version(...)`
 
-**接口**：`POST /v1/integrations/skills/{skill_id}/versions`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/skills/{skill_id}/versions`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -655,7 +655,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.create_tool_api(...)`
 
-**接口**：`POST /v1/integrations/tool-apis`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/tool-apis`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -688,7 +688,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.integrations.validate_tool_api(...)`
 
-**接口**：`POST /v1/integrations/tool-apis/{integration_id}/validate`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/integrations/tool-apis/{integration_id}/validate`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。

@@ -20,7 +20,7 @@
 
 `client.logs.delete_one(...)`
 
-**接口**：`DELETE /v1/llm-call-logs/{log_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`DELETE /v1/llm-call-logs/{log_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -39,7 +39,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.logs.list_logs(...)`
 
-**接口**：`GET /v1/llm-call-logs`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/llm-call-logs`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`logs.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -67,7 +67,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.logs.stats(...)`
 
-**接口**：`GET /v1/llm-call-logs/stats`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/llm-call-logs/stats`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`logs.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -85,7 +85,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.logs.detail(...)`
 
-**接口**：`GET /v1/llm-call-logs/{log_id}`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/llm-call-logs/{log_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`logs.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -104,7 +104,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.logs.reproduction_bundle(...)`
 
-**接口**：`GET /v1/llm-call-logs/{log_id}/reproduction-bundle`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`GET /v1/llm-call-logs/{log_id}/reproduction-bundle`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`logs.read`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
@@ -123,7 +123,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 `client.logs.batch_delete(...)`
 
-**接口**：`POST /v1/llm-call-logs/batch-delete`。**鉴权**：Workspace API Key 或 Session。
+**接口**：`POST /v1/llm-call-logs/batch-delete`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
 **权限**：`configuration.manage`。
 
 写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
