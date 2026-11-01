@@ -162,7 +162,11 @@ async def health() -> dict[str, str]:
 async def ready() -> dict[str, str]:
     if getattr(app.state, "storage_upgrade_required", False):
         raise StarletteHTTPException(
-            status_code=503, detail="account storage upgrade requires restart"
+            status_code=503,
+            detail={
+                "code": "account_storage_upgrade_required",
+                "message": "account storage upgrade requires restart",
+            },
         )
     async with SessionLocal() as session:
         await session.execute(text("SELECT 1 FROM schema_migrations LIMIT 1"))

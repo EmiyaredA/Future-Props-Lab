@@ -20,6 +20,16 @@ pytestmark = pytest.mark.real_auth
 PASSWORD = "Account-Owned-Test-Password-2026!"
 
 
+async def test_readiness_identifies_account_maintenance_for_the_desktop_shell(monkeypatch):
+    monkeypatch.setattr(app.state, "storage_upgrade_required", True, raising=False)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app), base_url="http://test"
+    ) as client:
+        response = await client.get("/ready")
+    assert response.status_code == 503
+    assert response.json()["code"] == "account_storage_upgrade_required"
+
+
 async def account_client(*, admin=False):
     username = "owned-" + uuid4().hex[:12]
     async with SessionLocal() as session:

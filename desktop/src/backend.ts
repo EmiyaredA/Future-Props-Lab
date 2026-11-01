@@ -133,8 +133,27 @@ export class Backend {
         `${this.origin}/ready`,
         { headers: { [credentialHeader]: this.token }, timeout: 1500 },
         (res) => {
-          res.resume();
-          resolve(res.statusCode === 200);
+          if (res.statusCode !== 503) {
+            res.resume();
+            resolve(res.statusCode === 200);
+            return;
+          }
+          let body = "";
+          res.setEncoding("utf8");
+          res.on("data", (chunk: string) => {
+            body += chunk;
+            if (body.length > 4096) req.destroy();
+          });
+          res.on("error", () => resolve(false));
+          res.on("end", () => {
+            try {
+              resolve(
+                JSON.parse(body).code === "account_storage_upgrade_required",
+              );
+            } catch {
+              resolve(false);
+            }
+          });
         },
       );
       req.on("error", () => resolve(false));

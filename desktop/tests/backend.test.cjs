@@ -6,6 +6,7 @@ const { mkdtempSync, rmSync } = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const childProcess = require("node:child_process");
+const { createServer } = require("node:http");
 const { Backend } = require("../dist/backend.js");
 
 function fixture(t) {
@@ -51,4 +52,29 @@ test("missing child executable reports a safe Chinese error", async (t) => {
   const rejection = assert.rejects(backend.start(), /无法启动本地服务/);
   child.emit("error", new Error("Sensitive implementation details"));
   await rejection;
+});
+
+test("maintenance opens the authenticated upgrade UI without accepting other readiness failures", async (t) => {
+  const { backend } = fixture(t);
+  let status = 503;
+  let body = JSON.stringify({ code: "account_storage_upgrade_required" });
+  const server = createServer((request, response) => {
+    assert.equal(request.url, "/ready");
+    assert.equal(request.headers["x-fpl-desktop-token"], backend.token);
+    response.writeHead(status, { "Content-Type": "application/json" });
+    response.end(body);
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  backend.origin = `http://127.0.0.1:${server.address().port}`;
+  assert.equal(await backend.ready(), true);
+  body = JSON.stringify({ code: "storage_unavailable" });
+  assert.equal(await backend.ready(), false);
+  body = "not json";
+  assert.equal(await backend.ready(), false);
+  status = 403;
+  body = JSON.stringify({ code: "account_storage_upgrade_required" });
+  assert.equal(await backend.ready(), false);
+  status = 200;
+  assert.equal(await backend.ready(), true);
 });
