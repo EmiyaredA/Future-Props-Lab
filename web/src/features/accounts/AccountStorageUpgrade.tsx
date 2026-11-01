@@ -2,20 +2,23 @@ import { useState } from "react";
 import { api, unwrap } from "@platform/api/client";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { reauthenticate, logout, type AuthMe } from "./api";
+import "./account-upgrade.css";
 
 export function AccountStorageUpgrade({ me }: { me: AuthMe }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [complete, setComplete] = useState(false);
   return (
     <main className="auth-screen">
-      <section className="auth-card" aria-busy={busy}>
+      <section className="auth-card account-upgrade-card" aria-busy={busy}>
         <BrandMark size={52} />
         <h1>升级账号文件布局</h1>
         <p>项目已改为账号归属。完成文件核验前，业务任务暂停运行。</p>
-        {me.user.platform_role === "admin" ? (
+        {!complete && me.user.platform_role === "admin" && (
           <form
+            className="account-upgrade-form"
             onSubmit={(event) => {
               event.preventDefault();
               setBusy(true);
@@ -27,6 +30,7 @@ export function AccountStorageUpgrade({ me }: { me: AuthMe }) {
                 const result = await unwrap(
                   await api.POST("/v1/file-storage/layout/migrate"),
                 );
+                setComplete(result.complete);
                 setMessage(
                   result.complete
                     ? "文件核验完成。请关闭并重新启动应用，以恢复业务任务。"
@@ -47,6 +51,7 @@ export function AccountStorageUpgrade({ me }: { me: AuthMe }) {
                 type="password"
                 autoComplete="current-password"
                 required
+                disabled={busy}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -55,7 +60,8 @@ export function AccountStorageUpgrade({ me }: { me: AuthMe }) {
               {busy ? "正在迁移并核验…" : "迁移并核验文件"}
             </button>
           </form>
-        ) : (
+        )}
+        {!complete && me.user.platform_role !== "admin" && (
           <p>请联系管理员完成升级并重启应用。</p>
         )}
         {error && (
@@ -63,7 +69,11 @@ export function AccountStorageUpgrade({ me }: { me: AuthMe }) {
             {error}
           </p>
         )}
-        {message && <p role="status">{message}</p>}
+        {message && (
+          <p className="account-upgrade-status" role="status">
+            {message}
+          </p>
+        )}
         <button
           className="btn"
           disabled={busy}

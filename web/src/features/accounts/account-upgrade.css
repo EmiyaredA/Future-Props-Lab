@@ -1,0 +1,32 @@
+.account-upgrade-card {
+  width: min(480px, 100%);
+  gap: 20px;
+  padding: 28px;
+}
+
+.account-upgrade-form {
+  display: grid;
+  gap: 20px;
+}
+
+.account-upgrade-form label {
+  gap: 8px;
+}
+
+.account-upgrade-form > .btn {
+  width: 100%;
+}
+
+.account-upgrade-card .account-upgrade-status {
+  padding: 14px 16px;
+  border: 1px solid var(--accent-line);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+@media (max-width: 480px) {
+  .account-upgrade-card {
+    padding: 22px;
+  }
+}
