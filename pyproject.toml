@@ -26,6 +26,8 @@ dependencies = [
   "resvg-py>=0.3,<1",
   "defusedxml>=0.7,<1",
   "mistune>=3.1,<4",
+  "zstandard>=0.25,<1",
+  "watchfiles>=1.1,<2",
 ]
 
 [dependency-groups]

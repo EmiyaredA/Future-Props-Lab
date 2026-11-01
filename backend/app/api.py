@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 
+from app.apps.agent_workbench.routes import router as agent_workbench_router
 from app.apps.audio_annotation.routes import router as audio_annotation_router
 from app.apps.desktop_pet.routes import router as desktop_pet_router
 from app.apps.director_desk.routes import router as director_desk_router
@@ -60,6 +61,7 @@ from app.tool_navigation.video_download_routes import router as video_download_r
 register_video_executor(apply_assistant_timeline_batch)
 
 api_router = APIRouter(prefix="/v1")
+api_router.include_router(agent_workbench_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(local_models_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(interview_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])

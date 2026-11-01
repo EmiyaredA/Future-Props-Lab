@@ -5,6 +5,12 @@ from __future__ import annotations
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
+from app.apps.agent_workbench.models import (
+    WorkbenchChange,
+    WorkbenchOperation,
+    WorkbenchSession,
+    WorkbenchSource,
+)
 from app.apps.audio_annotation.models import (
     AudioAnnotationDocument,
     AudioAnnotationProject,
@@ -262,6 +268,10 @@ _ = (
 )
 
 TENANT_MODELS = (
+    WorkbenchSource,
+    WorkbenchSession,
+    WorkbenchOperation,
+    WorkbenchChange,
     NodeAcceptanceBinding,
     InterviewRoom,
     InterviewPreparation,

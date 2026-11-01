@@ -57,6 +57,8 @@ class DesktopTransport:
                     await PlainTextResponse("Forbidden", status_code=403)(scope, receive, send)
                 return
 
+            scope.setdefault("state", {})["desktop_private"] = not is_agent
+
         async def observe(message):
             if (
                 scope["type"] == "http"

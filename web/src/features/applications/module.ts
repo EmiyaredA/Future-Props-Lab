@@ -11,6 +11,7 @@ export type ApplicationModule = {
   definition: ApplicationDefinition;
   supportsProjects: boolean;
   shell:
+    | "agent-workbench"
     | "visual-workshop"
     | "galgame-workshop"
     | "video-editor"

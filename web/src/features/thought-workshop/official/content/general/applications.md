@@ -6,6 +6,7 @@
 
 | 你要得到的结果                    | 应用                                                                                                 | 建议先完成的小任务       |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------ |
+| 本机 APP / CLI 编程会话记录与同步 | Agent 工作台 | 绑定一个来源并查看已有会话 |
 | 幻灯片、放映、可编辑 PPTX         | [演示工坊](/apps/thought-workshop/official-knowledge-bases/presentation-workshop/documents/overview) | 三页产品介绍             |
 | 文档、附件、历史、UML 与信息图    | [思绪工坊](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/overview)      | 一篇带标题和画板的说明   |
 | 图片或视频生成、素材节点关系      | [视觉创作工坊](/apps/thought-workshop/official-knowledge-bases/visual-workshop/documents/overview)   | 一张参考图的一次生成     |
@@ -16,6 +17,17 @@
 | 桌宠皮肤、事件台词、桌面运行      | [桌宠工坊](/apps/thought-workshop/official-knowledge-bases/desktop-pet/documents/overview)           | 一组可模拟的事件反应     |
 | 录音分段、说话人、情绪与字幕      | [录音标注工坊](/apps/thought-workshop/official-knowledge-bases/audio-annotation/documents/overview)  | 一段已校对的短录音       |
 | 三维布景、走位、摄影机预演        | [导演台](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/overview)           | 一个镜头的可复核预演     |
+
+## 查看已有编程会话
+
+1. 在 FPL 桌面窗口打开「应用 → 开发辅助 → Agent 工作台 → 来源」。
+2. 选择 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi，选择实际会话目录，确认允许当前账号保存阅读副本，再绑定来源。
+3. 返回「会话」，选择已有 APP 或 CLI 记录，核对项目路径、来源依据和最后同步时间。没有可靠标记时显示「来源待确认」。
+4. 在原 APP 或 CLI 中产生新记录，观察工作台更新。上翻后使用「有新内容」回到底部；「暂停跟随」只影响当前视图，原 Agent 继续运行。
+
+**完成标志：** 已有消息可阅读，原端新增的完整记录能自动出现。日志跟随不保证逐 token 更新；Pi 无默认目录时需选择实际宿主目录。只读历史不要求 CLI 已登录。本批输入区禁用，继续对话尚未接入；普通云端聊天不属于来源。
+
+来源和阅读副本归当前账号，管理员不能读取他人的会话。停用或解绑只停止采集，保留原生日志；清除 FPL 阅读副本需先停用相关来源。附件只可下载已引用且位于绑定来源根内的文件。
 
 ## 一条可以逐步验收的创作链
 

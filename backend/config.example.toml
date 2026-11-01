@@ -68,3 +68,9 @@ dsh_enabled = false
 dsh_executable = ""
 pi_enabled = false
 pi_executable = ""
+
+[agent_workbench]
+# 只读历史与同步独立于 CLI 执行开关；只有当前账号明确绑定来源后才采集。
+enabled = true
+poll_seconds = 1
+files_per_pass = 100

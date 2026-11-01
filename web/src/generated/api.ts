@@ -280,6 +280,229 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/agent-workbench/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Candidates */
+        get: operations["list_candidates_v1_agent_workbench_candidates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Events */
+        get: operations["events_v1_agent_workbench_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/operations/{operation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Operation */
+        get: operations["get_operation_v1_agent_workbench_operations__operation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sessions */
+        get: operations["list_sessions_v1_agent_workbench_sessions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session */
+        get: operations["get_session_v1_agent_workbench_sessions__session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/sessions/{session_id}/attachments/{attachment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Attachment */
+        get: operations["get_attachment_v1_agent_workbench_sessions__session_id__attachments__attachment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/sessions/{session_id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Clear Copy */
+        delete: operations["clear_copy_v1_agent_workbench_sessions__session_id__copy_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/sessions/{session_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Session Events */
+        get: operations["session_events_v1_agent_workbench_sessions__session_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/sessions/{session_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** History */
+        get: operations["history_v1_agent_workbench_sessions__session_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/sessions/{session_id}/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Preferences */
+        patch: operations["patch_preferences_v1_agent_workbench_sessions__session_id__preferences_patch"];
+        trace?: never;
+    };
+    "/v1/agent-workbench/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sources */
+        get: operations["list_sources_v1_agent_workbench_sources_get"];
+        put?: never;
+        /** Create Source */
+        post: operations["create_source_v1_agent_workbench_sources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unbind Source */
+        delete: operations["unbind_source_v1_agent_workbench_sources__source_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Source */
+        patch: operations["patch_source_v1_agent_workbench_sources__source_id__patch"];
+        trace?: never;
+    };
+    "/v1/agent-workbench/sources/{source_id}/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Scan Source */
+        post: operations["scan_source_v1_agent_workbench_sources__source_id__scan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/amadeus/conversations": {
         parameters: {
             query?: never;
@@ -24910,6 +25133,200 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** WorkbenchCandidate */
+        WorkbenchCandidate: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            /** Exists */
+            exists: boolean;
+            /** Label */
+            label: string;
+            /** Root */
+            root: string;
+        };
+        /** WorkbenchEntryOut */
+        WorkbenchEntryOut: {
+            /** Attachments */
+            attachments: {
+                [key: string]: unknown;
+            }[];
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Native Id */
+            native_id: string;
+            /** Ordinal */
+            ordinal: number;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Role */
+            role: string;
+            /** Text */
+            text: string;
+            /** Timestamp */
+            timestamp: string;
+            /** Tool Name */
+            tool_name: string;
+        };
+        /** WorkbenchHistory */
+        WorkbenchHistory: {
+            /** Branches */
+            branches?: string[];
+            /** Change Cursor */
+            change_cursor: number;
+            /** Items */
+            items: components["schemas"]["WorkbenchEntryOut"][];
+            /** Next Cursor */
+            next_cursor: number | null;
+            /** Selected Branch */
+            selected_branch?: string | null;
+        };
+        /** WorkbenchOperationOut */
+        WorkbenchOperationOut: {
+            /** Id */
+            id: string;
+            /** Message */
+            message: string;
+            /** Source Id */
+            source_id: string;
+            /** Status */
+            status: string;
+        };
+        /** WorkbenchPreferences */
+        WorkbenchPreferences: {
+            /** Alias */
+            alias?: string | null;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Favorite */
+            favorite?: boolean | null;
+        };
+        /** WorkbenchSessionOut */
+        WorkbenchSessionOut: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            /** Alias */
+            alias: string;
+            /** Archived */
+            archived: boolean;
+            /**
+             * Can Send
+             * @default false
+             * @constant
+             */
+            can_send: false;
+            /**
+             * Continuation Reason
+             * @default 当前支持查看与同步，继续对话待接入
+             */
+            continuation_reason: string;
+            /** Cwd */
+            cwd: string;
+            /** Evidence */
+            evidence: string[];
+            /** Favorite */
+            favorite: boolean;
+            /** Id */
+            id: string;
+            /**
+             * Last Synced At
+             * Format: date-time
+             */
+            last_synced_at: string;
+            /** Native Id */
+            native_id: string;
+            /** Native Model */
+            native_model: string;
+            /** Origins */
+            origins: string[];
+            /** Parent Native Id */
+            parent_native_id: string | null;
+            /** Revision */
+            revision: number;
+            /** Source Ids */
+            source_ids?: string[];
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** WorkbenchSessionPage */
+        WorkbenchSessionPage: {
+            /** Change Cursor */
+            change_cursor: number;
+            /** Items */
+            items: components["schemas"]["WorkbenchSessionOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** WorkbenchSourceCreate */
+        WorkbenchSourceCreate: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            /**
+             * Endpoint
+             * @default
+             */
+            endpoint: string;
+            /** Label */
+            label: string;
+            /**
+             * Root
+             * @default
+             */
+            root: string;
+        };
+        /** WorkbenchSourceOut */
+        WorkbenchSourceOut: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            /** Enabled */
+            enabled: boolean;
+            /** Endpoint */
+            endpoint: string;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Last Synced At */
+            last_synced_at: string | null;
+            /** Message */
+            message: string;
+            /** Revision */
+            revision: number;
+            /** Root */
+            root: string;
+            /** Status */
+            status: string;
+            /**
+             * Sync Mode
+             * @default log_follow
+             * @enum {string}
+             */
+            sync_mode: "log_follow" | "native_events" | "api_poll";
+        };
+        /** WorkbenchSourcePatch */
+        WorkbenchSourcePatch: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Label */
+            label?: string | null;
+        };
         /** WorkflowNumericParameterOut */
         WorkflowNumericParameterOut: {
             /** Default */
@@ -25515,6 +25932,493 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_candidates_v1_agent_workbench_candidates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchCandidate"][];
+                };
+            };
+        };
+    };
+    events_v1_agent_workbench_events_get: {
+        parameters: {
+            query?: {
+                after?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": {
+                        /**
+                         * Kind
+                         * @enum {string}
+                         */
+                        kind: "source" | "session" | "reset" | "ready" | "auth_expired";
+                        /** Sequence */
+                        sequence: number;
+                        /** Session Id */
+                        session_id?: string | null;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_operation_v1_agent_workbench_operations__operation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchOperationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sessions_v1_agent_workbench_sessions_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                agent_id?: string | null;
+                origin?: string | null;
+                project?: string | null;
+                archived?: boolean | null;
+                favorite?: boolean;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchSessionPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_v1_agent_workbench_sessions__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_attachment_v1_agent_workbench_sessions__session_id__attachments__attachment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_copy_v1_agent_workbench_sessions__session_id__copy_delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    session_events_v1_agent_workbench_sessions__session_id__events_get: {
+        parameters: {
+            query?: {
+                after?: number;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": {
+                        /**
+                         * Kind
+                         * @enum {string}
+                         */
+                        kind: "source" | "session" | "reset" | "ready" | "auth_expired";
+                        /** Sequence */
+                        sequence: number;
+                        /** Session Id */
+                        session_id?: string | null;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_v1_agent_workbench_sessions__session_id__history_get: {
+        parameters: {
+            query?: {
+                before?: number | null;
+                limit?: number;
+                branch?: string | null;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_preferences_v1_agent_workbench_sessions__session_id__preferences_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkbenchPreferences"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sources_v1_agent_workbench_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchSourceOut"][];
+                };
+            };
+        };
+    };
+    create_source_v1_agent_workbench_sources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkbenchSourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchSourceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unbind_source_v1_agent_workbench_sources__source_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_source_v1_agent_workbench_sources__source_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkbenchSourcePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchSourceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scan_source_v1_agent_workbench_sources__source_id__scan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchOperationOut"];
+                };
             };
             /** @description Validation Error */
             422: {

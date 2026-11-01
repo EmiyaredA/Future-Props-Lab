@@ -28,6 +28,7 @@ RESTRUCTURED_ROOTS = (
     BACKEND_APP / "capabilities",
 )
 WEB_APP_UNITS = (
+    "agent-workbench",
     "audio-annotation",
     "galgame-workshop",
     "presentation-workshop",

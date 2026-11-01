@@ -6751,6 +6751,91 @@ class VisualWorkshopProjectPatchIn(WireModel):
     status: Literal['draft', 'completed'] | None = Field(default=None, alias='status')
     title: str | None = Field(default=None, alias='title')
 
+class WorkbenchCandidate(WireModel):
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
+    exists: bool = Field(default=..., alias='exists')
+    label: str = Field(default=..., alias='label')
+    root: str = Field(default=..., alias='root')
+
+class WorkbenchEntryOut(WireModel):
+    attachments: list[dict[str, Any]] = Field(default=..., alias='attachments')
+    id: str = Field(default=..., alias='id')
+    kind: str = Field(default=..., alias='kind')
+    native_id: str = Field(default=..., alias='native_id')
+    ordinal: int = Field(default=..., alias='ordinal')
+    parent_id: str | None = Field(default=..., alias='parent_id')
+    role: str = Field(default=..., alias='role')
+    text: str = Field(default=..., alias='text')
+    timestamp: str = Field(default=..., alias='timestamp')
+    tool_name: str = Field(default=..., alias='tool_name')
+
+class WorkbenchHistory(WireModel):
+    branches: list[str] | None = Field(default=None, alias='branches')
+    change_cursor: int = Field(default=..., alias='change_cursor')
+    items: list[WorkbenchEntryOut] = Field(default=..., alias='items')
+    next_cursor: int | None = Field(default=..., alias='next_cursor')
+    selected_branch: str | None = Field(default=None, alias='selected_branch')
+
+class WorkbenchOperationOut(WireModel):
+    id: str = Field(default=..., alias='id')
+    message: str = Field(default=..., alias='message')
+    source_id: str = Field(default=..., alias='source_id')
+    status: str = Field(default=..., alias='status')
+
+class WorkbenchPreferences(WireModel):
+    alias: str | None = Field(default=None, alias='alias')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    favorite: bool | None = Field(default=None, alias='favorite')
+
+class WorkbenchSessionOut(WireModel):
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
+    alias: str = Field(default=..., alias='alias')
+    archived: bool = Field(default=..., alias='archived')
+    can_send: Literal[False] = Field(default=False, alias='can_send')
+    continuation_reason: str = Field(default='当前支持查看与同步，继续对话待接入', alias='continuation_reason')
+    cwd: str = Field(default=..., alias='cwd')
+    evidence: list[str] = Field(default=..., alias='evidence')
+    favorite: bool = Field(default=..., alias='favorite')
+    id: str = Field(default=..., alias='id')
+    last_synced_at: datetime = Field(default=..., alias='last_synced_at')
+    native_id: str = Field(default=..., alias='native_id')
+    native_model: str = Field(default=..., alias='native_model')
+    origins: list[str] = Field(default=..., alias='origins')
+    parent_native_id: str | None = Field(default=..., alias='parent_native_id')
+    revision: int = Field(default=..., alias='revision')
+    source_ids: list[str] | None = Field(default=None, alias='source_ids')
+    title: str = Field(default=..., alias='title')
+    updated_at: str = Field(default=..., alias='updated_at')
+
+class WorkbenchSessionPage(WireModel):
+    change_cursor: int = Field(default=..., alias='change_cursor')
+    items: list[WorkbenchSessionOut] = Field(default=..., alias='items')
+    next_cursor: str | None = Field(default=..., alias='next_cursor')
+
+class WorkbenchSourceCreate(WireModel):
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
+    endpoint: str = Field(default='', alias='endpoint', max_length=255)
+    label: str = Field(default=..., alias='label', min_length=1, max_length=120)
+    root: str = Field(default='', alias='root', max_length=4096)
+
+class WorkbenchSourceOut(WireModel):
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
+    enabled: bool = Field(default=..., alias='enabled')
+    endpoint: str = Field(default=..., alias='endpoint')
+    id: str = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label')
+    last_synced_at: datetime | None = Field(default=..., alias='last_synced_at')
+    message: str = Field(default=..., alias='message')
+    revision: int = Field(default=..., alias='revision')
+    root: str = Field(default=..., alias='root')
+    status: str = Field(default=..., alias='status')
+    sync_mode: Literal['log_follow', 'native_events', 'api_poll'] = Field(default='log_follow', alias='sync_mode')
+
+class WorkbenchSourcePatch(WireModel):
+    enabled: bool | None = Field(default=None, alias='enabled')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    label: str | None = Field(default=None, alias='label')
+
 class WorkflowNumericParameterOut(WireModel):
     default: int | float | None = Field(default=None, alias='default')
     maximum: int | float = Field(default=..., alias='maximum')
@@ -7727,6 +7812,16 @@ VisualWorkshopProjectCreateIn.model_rebuild()
 VisualWorkshopProjectListOut.model_rebuild()
 VisualWorkshopProjectOut.model_rebuild()
 VisualWorkshopProjectPatchIn.model_rebuild()
+WorkbenchCandidate.model_rebuild()
+WorkbenchEntryOut.model_rebuild()
+WorkbenchHistory.model_rebuild()
+WorkbenchOperationOut.model_rebuild()
+WorkbenchPreferences.model_rebuild()
+WorkbenchSessionOut.model_rebuild()
+WorkbenchSessionPage.model_rebuild()
+WorkbenchSourceCreate.model_rebuild()
+WorkbenchSourceOut.model_rebuild()
+WorkbenchSourcePatch.model_rebuild()
 WorkflowNumericParameterOut.model_rebuild()
 WorkflowVideoCapabilitiesOut.model_rebuild()
 WorkflowVideoParameters.model_rebuild()

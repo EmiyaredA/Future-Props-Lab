@@ -12,6 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.orm  # noqa: F401 — register tenant listeners
 from app.api import api_router
+from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
 from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
@@ -97,6 +98,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await local_models.recover()
     supervisor = RunnerSupervisor(
         (
+            WorkbenchSyncRunner(),
             InterviewPreparationRunner(interview_actor_allowed),
             ArticleSyncRunner(external_sync_actor_allowed),
             ModelTemplateSyncRunner(),

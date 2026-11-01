@@ -32,6 +32,8 @@ export type StudioPage =
   | "model-call-logs";
 
 export type WorkshopPage =
+  | "agent-workbench-session"
+  | "agent-workbench-sources"
   | "interview-assistant-session"
   | "presentation-workshop-projects"
   | "presentation-workshop-templates"
@@ -88,6 +90,7 @@ export type AppRoute = {
 
 export function isWorkshopPage(page: AppPage): page is WorkshopPage {
   return (
+    page.startsWith("agent-workbench-") ||
     page.startsWith("interview-assistant-") ||
     page.startsWith("presentation-workshop-") ||
     page.startsWith("thought-workshop-") ||
@@ -233,6 +236,8 @@ export function pathFor(
   const applicationPath = applicationPathFor(page, projectId, documentId);
   if (applicationPath) return applicationPath;
   const paths: Record<AppPage, string> = {
+    "agent-workbench-session": "/apps/agent-workbench",
+    "agent-workbench-sources": "/apps/agent-workbench/sources",
     "interview-assistant-session": "/apps/interview-assistant",
     "presentation-workshop-projects": "/apps/presentation-workshop",
     "presentation-workshop-templates": "/apps/presentation-workshop/templates",

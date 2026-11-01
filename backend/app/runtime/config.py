@@ -50,6 +50,9 @@ class Settings(BaseSettings):
             raise ConfigurationError("配置校验失败，请检查加密密钥、地址和容量限制") from None
 
     fpl_database_path: str = ".runtime/future-props.db"
+    fpl_agent_workbench_enabled: bool = True
+    fpl_agent_workbench_poll_seconds: int = Field(default=1, ge=1, le=30)
+    fpl_agent_workbench_files_per_pass: int = Field(default=100, ge=1, le=1000)
     fpl_code_agents_codex_enabled: bool | None = None
     fpl_code_agents_codex_executable: str = ""
     fpl_code_agents_claude_enabled: bool | None = None

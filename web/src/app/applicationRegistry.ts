@@ -9,8 +9,10 @@ import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
 import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
 import { MOTION_COMPOSITOR_MODULE } from "@features/motion-compositor/module";
 import { INTERVIEW_ASSISTANT_MODULE } from "@features/interview-assistant/module";
+import { AGENT_WORKBENCH_MODULE } from "@features/agent-workbench/module";
 
 export const APPLICATION_MODULES = [
+  AGENT_WORKBENCH_MODULE,
   PRESENTATION_WORKSHOP_MODULE,
   THOUGHT_WORKSHOP_MODULE,
   INTERVIEW_ASSISTANT_MODULE,
@@ -65,3 +67,4 @@ export { THOUGHT_WORKSHOP_MODULE };
 export { PRESENTATION_WORKSHOP_MODULE };
 export { DIRECTOR_DESK_MODULE };
 export { INTERVIEW_ASSISTANT_MODULE };
+export { AGENT_WORKBENCH_MODULE };

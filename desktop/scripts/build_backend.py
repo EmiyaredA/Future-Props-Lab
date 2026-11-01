@@ -208,6 +208,8 @@ def main() -> None:
         "--collect-all",
         "resvg_py",
         "--collect-all",
+        "zstandard",
+        "--collect-all",
         "aiosqlite",
         "--hidden-import",
         "sqlalchemy.dialects.sqlite.aiosqlite",

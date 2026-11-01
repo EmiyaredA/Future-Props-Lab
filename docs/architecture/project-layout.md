@@ -3,6 +3,10 @@
 这是 Future Props Lab 目录职责的唯一完整索引。新增、删除目录或改变目录职责时更新本文件；
 各模块文档只补充局部使用方法，不另行定义一套架构。
 
+## Agent 工作台
+
+`backend/app/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/app/capabilities/agents/sessions/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。Electron 复用目录选择，私有传输标记用于新绑定校验。来源授权不复用 Amadeus 的任务执行授权，首批不包含续聊。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
+
 ## 桌面同进程公网 Web
 
 `runtime/remote_web.py` 只负责独立回环 socket 的 Host／Origin、私有路径隔离、正式静态页和安全 Cookie；账号校验由桌面入口注入既有鉴权用例，不在网络层另建身份或访问数据库。`desktop/backend/entry.py` 在同一 Uvicorn Server 中监听私有与公网两个 socket，只有一个生命周期和 Runner。`[remote_web]` 格式由 `backend/fpl_config/` 登记；`build:studio` 输出正式同源页面到忽略目录 `.local/studio-web/`。公网关闭邀请码注册，Electron 的原有注册与私有凭据边界保持不变。

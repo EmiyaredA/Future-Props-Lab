@@ -11,6 +11,14 @@
     "method": "delete_session",
     "resource": "accounts"
   },
+  "DELETE /v1/agent-workbench/sessions/{session_id}/copy": {
+    "method": "clear_copy",
+    "resource": "agent_workbench"
+  },
+  "DELETE /v1/agent-workbench/sources/{source_id}": {
+    "method": "unbind_source",
+    "resource": "agent_workbench"
+  },
   "DELETE /v1/amadeus/conversations/{conversation_id}": {
     "method": "delete_conversation",
     "resource": "amadeus"
@@ -238,6 +246,42 @@
   "GET /v1/account/sessions": {
     "method": "sessions",
     "resource": "accounts"
+  },
+  "GET /v1/agent-workbench/candidates": {
+    "method": "list_candidates",
+    "resource": "agent_workbench"
+  },
+  "GET /v1/agent-workbench/events": {
+    "method": "events",
+    "resource": "agent_workbench"
+  },
+  "GET /v1/agent-workbench/operations/{operation_id}": {
+    "method": "get_operation",
+    "resource": "agent_workbench"
+  },
+  "GET /v1/agent-workbench/sessions": {
+    "method": "list_sessions",
+    "resource": "agent_workbench"
+  },
+  "GET /v1/agent-workbench/sessions/{session_id}": {
+    "method": "get_session",
+    "resource": "agent_workbench"
+  },
+  "GET /v1/agent-workbench/sessions/{session_id}/attachments/{attachment_id}": {
+    "method": "get_attachment",
+    "resource": "agent_workbench"
+  },
+  "GET /v1/agent-workbench/sessions/{session_id}/events": {
+    "method": "session_events",
+    "resource": "agent_workbench"
+  },
+  "GET /v1/agent-workbench/sessions/{session_id}/history": {
+    "method": "history",
+    "resource": "agent_workbench"
+  },
+  "GET /v1/agent-workbench/sources": {
+    "method": "list_sources",
+    "resource": "agent_workbench"
   },
   "GET /v1/amadeus/conversations": {
     "method": "list_conversations",
@@ -1151,6 +1195,14 @@
     "method": "certification",
     "resource": "governance"
   },
+  "PATCH /v1/agent-workbench/sessions/{session_id}/preferences": {
+    "method": "patch_preferences",
+    "resource": "agent_workbench"
+  },
+  "PATCH /v1/agent-workbench/sources/{source_id}": {
+    "method": "patch_source",
+    "resource": "agent_workbench"
+  },
   "PATCH /v1/amadeus/conversations/{conversation_id}": {
     "method": "patch_conversation",
     "resource": "amadeus"
@@ -1310,6 +1362,14 @@
   "POST /v1/account/sessions/revoke-others": {
     "method": "delete_other_sessions",
     "resource": "accounts"
+  },
+  "POST /v1/agent-workbench/sources": {
+    "method": "create_source",
+    "resource": "agent_workbench"
+  },
+  "POST /v1/agent-workbench/sources/{source_id}/scan": {
+    "method": "scan_source",
+    "resource": "agent_workbench"
   },
   "POST /v1/amadeus/conversations": {
     "method": "create_conversation",
