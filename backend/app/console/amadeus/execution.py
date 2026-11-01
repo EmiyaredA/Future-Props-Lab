@@ -170,7 +170,7 @@ class CodeAgentRuns:
             else:
                 watchdog = [
                     sys.executable,
-                    str(REPO_ROOT / "desktop/backend/acceptance_tools_entry.py"),
+                    str(REPO_ROOT / "scripts/website/acceptance_tools.py"),
                     "--run-agent",
                     str(os.getpid()),
                 ]

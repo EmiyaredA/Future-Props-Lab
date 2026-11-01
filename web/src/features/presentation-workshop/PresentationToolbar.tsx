@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import {
   BoxSelect,
   ChevronDown,
@@ -75,14 +76,11 @@ export function PresentationToolbar({
       role="toolbar"
       aria-label="幻灯片工具栏"
     >
-      {window.futurePropsDesktop?.openAmadeus && (
-        <button
-          className="btn"
-          onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
-        >
+      {
+        <button className="btn" onClick={() => void openAmadeus()}>
           ✦ Amadeus
         </button>
-      )}
+      }
       <div className="presentation-toolbar-group presentation-split-button">
         <button
           className="btn"

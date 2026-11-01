@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
-const apiPort = process.env.FPL_E2E_API_PORT || "9000";
+const apiPort = process.env.FPL_E2E_API_PORT || "9001";
 const webPort = Number(process.env.FPL_E2E_WEB_PORT || "3000");
 const apiTarget = `http://127.0.0.1:${apiPort}`;
 const configuredCacheDir = process.env.FPL_VITE_CACHE_DIR;
@@ -15,10 +15,11 @@ export default defineConfig(({ mode }) => {
   return {
     cacheDir:
       configuredCacheDir || resolve(__dirname, `node_modules/.vite-${mode}`),
-    envDir: ["desktop", "studio"].includes(mode) ? false : undefined,
-    define: ["desktop", "studio"].includes(mode)
-      ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
-      : undefined,
+    envDir: mode === "studio" ? false : undefined,
+    define:
+      mode === "studio"
+        ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
+        : undefined,
     plugins: [react(), tailwindcss(), mathFontData()],
     resolve: {
       dedupe: ["react", "react-dom"],
@@ -61,12 +62,11 @@ export default defineConfig(({ mode }) => {
     build: {
       manifest: true,
       emptyOutDir: true,
-      sourcemap: !["desktop", "studio"].includes(mode),
+      sourcemap: mode !== "studio",
       rollupOptions: {
         input: {
           studio: resolve(__dirname, "index.html"),
           docs: resolve(__dirname, "docs.html"),
-          amadeus: resolve(__dirname, "amadeus.html"),
         },
         output: {
           onlyExplicitManualChunks: true,
@@ -149,14 +149,11 @@ export default defineConfig(({ mode }) => {
           ...(configuredCacheDir ? [configuredCacheDir] : []),
         ],
       },
-      proxy:
-        mode === "desktop"
-          ? undefined
-          : {
-              "/v1": { target: apiTarget, ws: true },
-              "/health": apiTarget,
-              "/ready": apiTarget,
-            },
+      proxy: {
+        "/v1": { target: apiTarget, ws: true },
+        "/health": apiTarget,
+        "/ready": apiTarget,
+      },
     },
   };
 });

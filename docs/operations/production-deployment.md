@@ -1,73 +1,30 @@
-# 单机生产部署
+# Mac 单机网站部署
 
-Future Props Lab 的受支持生产形态是单台主机、单个后端进程和单个 SQLite 数据库。不要把后端启动为
-多个 worker，也不要让多台主机共享 `.runtime/future-props.db`。
+Future Props Lab 使用单台 Mac、一个后端进程和 SQLite；浏览器为唯一客户端。正式数据库与素材位于项目 `.runtime/`，配置固定在 `backend/config.toml`，两者均不提交 Git。
 
-## 构建与启动
+## 构建与运行
 
-1. 安装 Node.js 24、npm 11、Python 3.11 或更高版本、Git LFS，以及系统级 FFmpeg/FFprobe。
-2. 运行 `git lfs install` 和 `git lfs pull`，再执行 `npm ci`、`uv sync --frozen --all-groups` 与
-   `npm run lfs:check`。生产字体或 VAD 对象缺失/损坏时不得继续构建。
-3. 新安装从 `backend/config.example.toml` 创建 `backend/config.toml`，生成并离线备份 `security.secrets_key`。
-   旧安装运行 `npm run config:migrate -- --check` / `--apply`，保留原密钥。
-4. 执行 `npm run db:migrate:check`，确认迁移状态有效。
-5. 根据反向代理路径设置 Web 构建变量 `VITE_API_BASE`，然后运行 `npm run build`。同源部署应留空，
-   跨源部署应填写 API 的 HTTPS 根地址。它不是后端 `.env` 变量。
-6. 使用 `npm run start:backend` 启动单 worker 后端。用 systemd、launchd 或等价进程管理器负责重启
-   和标准输出收集，不要在生产环境使用 `--reload`。
-7. 由 Nginx、Caddy 或等价服务器直接托管 `web/dist/`，未知前端路由回退到 `index.html`。
+1. 安装 Node.js 24、npm 11、Python 3.11+、uv、Git LFS 与支持 H.264/AAC 的 FFmpeg/FFprobe，运行 `npm run setup`。验收结果为依赖安装与 LFS 资产检查成功。
+2. 新安装按 README 创建配置与管理员；已有桌面数据必须使用原配置和原密钥，不能生成替代密钥。正式数据迁移工具是 `scripts/website/data_transfer.py`，要求显式提供源、项目和报告目录；在原实例正常停机、释放锁及迁移状态定稿后使用。迁移保留完整恢复快照，核验 SHA256、SQLite 与原数据，不执行 SQL 写入。
+3. 运行 `npm run build:studio`；产物在 `.local/studio-release/`，附构建标识、清单和预压缩文件。运行 `npm start`，本机通过 `http://127.0.0.1:9000` 登录。
+4. 运行 `npm run website:service -- install` 安装用户级 LaunchAgent。用 `status` 查看，`stop` 卸载本次运行，`start` 重新加载；`uninstall` 移除自动启动。服务状态和 `/ready` 均成功才算启动完成。
 
-## 反向代理
+正式入口在导入数据库前读取配置并持有 `.runtime/website.lock`。迁入后还持有原桌面目录的数据锁，阻止旧客户端误启动。存在待执行或漂移迁移时拒绝启动；迁移必须先在隔离数据验证，再按停机备份流程执行。服务不自动执行尚未核准的正式迁移。
 
-- 将 `/v1/`、`/health`、`/ready` 和 `/docs` 转发到 `127.0.0.1:9000`。
-- `/v1/model-test/realtime` 必须允许 WebSocket upgrade，并保留 `Origin`、`Host` 和 Cookie。
-- HTTPS 环境将 `FPL_AUTH_COOKIE_SECURE=true`，并把实际 Studio 来源加入 `CORS_ORIGINS`。
-- 不要在代理日志中记录 Authorization、Cookie、CSRF、上传正文或供应商响应正文。
-- 存活探针使用 `/health`；只有数据库和全部后台 Runner 就绪时 `/ready` 才返回成功。
+开发使用 `npm run dev`、`.local/dev-runtime/` 与 9001 端口；首次启动生成独立的 `.local/dev-runtime/backend/config.toml` 与加密密钥，不读取正式配置；不要让开发或自动测试连接正式库。后端更新需要显式重启服务，不重新提交未知结果的模型任务。
 
-## 备份
+## 公网
 
-桌面版提供可选的同进程 Studio Web 入口，详见下文；公网网关不能直接转发
-Electron 的随机私有端口或 Vite 开发端口。
+`[website]` 配置本机 `port`、正式 `web_root` 和 `public_enabled`。`[remote_web]` 保留精确 HTTPS origin、回环 28081、SSH 专用连接及导入凭据标识；`enabled` 为旧兼容字段，自动公网启动由 `website.public_enabled` 控制。
 
-备份前停止应用。数据库文件和数据库同级的以下目录必须作为同一快照复制：
+公网监听器关闭 lifespan，复用同一个 ASGI 应用、数据库和 Runner；云端只终止 HTTPS 并托管匹配的程序资源。先发布相同构建，再启用公网；版本不匹配时本机可用、公网拒绝启动。专用凭据在 `backend/web-access/credentials/`，目录 0700、文件 0600。不要启用旧自动隧道。
 
-- `workspaces/`、`profiles/`、`library/assets/`、`applications/`
-- `model-test/attachments/`、`model-test/references/`、`model-test/generated/`
+本机与公网根据实际监听 socket 分流。浏览器使用 Session 并保留 Cookie、Origin、CSRF 和账号归属校验；CLI／SDK／MCP 使用 Management API Key，仅能调用明确登记的业务白名单和自动化发现／资源链接接口。公网管理员也不能管理主机目录、Codex 配置、磁盘或隧道设置。转发头不能授予本机权限。
 
-默认位置是 `.runtime/`。同时安全备份 `backend/config.toml` 中的 `security.secrets_key`，但不要把它放入代码
-仓库或普通构建产物。仅复制 SQLite 主文件而遗漏素材目录不构成可恢复备份。
+`/v1`、私人媒体和 SSE 不进入共享缓存。Hash 程序资源长期缓存，HTML 和清单重新验证。Mac 离线时云端页面可读取，业务操作显示离线。WebSocket、SSE、上传、Range 和无缓存策略均需验证。
 
-## 升级与回滚
+## 备份与恢复
 
-升级时先停止应用并完成全量快照，再更新代码、拉取所需 LFS 对象、执行冻结依赖安装、
-`npm run db:migrate:check` 和 `npm run build`，最后启动并验证 `/health`、`/ready` 及登录。应用启动
-会自动应用已登记迁移。
+正常停止服务和隧道，确认数据锁与数据库句柄释放，再完整备份 `.runtime/`、`backend/config.toml` 与 `backend/web-access/`；本地模型、账号素材、历史、回收站及旧文件一并保留。不得只复制 SQLite 主文件。
 
-若启动前失败，可直接恢复旧代码。若新版本已经写入数据库或执行迁移，回滚必须在停机状态下同时
-恢复升级前的数据库和所有运行期目录；不得手工修改 schema、`schema_migrations` 或迁移 checksum。
-
-## 运维凭证
-
-`FPL_MANAGEMENT_API_KEY` 是管理员在产品内创建、只展示一次的短期调用凭证。需要运行正式 API
-客户端脚本时，通过该进程的环境变量临时传入，完成后立即清除或吊销。它不是后端启动配置，严禁
-写入 `backend/config.toml`、Shell 历史、日志或文档示例。
-
-## 桌面同进程 Studio Web 入口
-
-在桌面数据目录的 `backend/config.toml` 中增加 `[remote_web]`：`enabled = true`、
-精确 HTTPS `origin`、`port = 28081`，以及绝对 `web_root`。默认关闭，只监听
-127.0.0.1；不是另一个 worker，不复制数据库或重新启动后台 Runner。
-
-开发桌面可运行 `npm run build:studio`，将 `web_root` 指向仓库的
-`.local/studio-web`。该构建忽略 Web `.env`、使用同源 API、关闭源码映射和
-公网邀请码注册入口。打包版可留空 `web_root` 以复用随包静态页；公网仍关闭
-注册 API。原本的桌面账号与项目由同一进程提供，退出应用即停止公网入口。
-
-反向代理保持 `Host` 为所配置来源、保留原始浏览器 `Origin`，不要注入桌面
-token 或 Agent 通道头。公网接入按实际绑定 socket 分流，强制浏览器 Session，
-保留原权限／CSRF／限速；桌面初始化、配对、私有 UI 与原始 API 文档不可访问。
-公网响应中的认证 Cookie 增加 Secure，仍是 host-only；桌面 HTTP Cookie 行为不变。
-
-配置应用遵守桌面已有停机备份与未保存编辑保护。仅使用一个 SSH 反向隧道，
-公网数据库、业务监听端口不开放；云端 HTTPS 终止仍属于在线流量信任边界。
+升级先备份并核验，再更新代码、冻结依赖和构建资源。回滚必须恢复同版本的代码、配置及整个数据快照，不能手工修改迁移记录。旧桌面目录和网站化迁移快照在完成浏览器验收、验证回滚之前保留。

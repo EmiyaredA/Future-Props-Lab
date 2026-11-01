@@ -16,6 +16,11 @@ import {
   workbenchSource,
 } from "../e2e/fixtures/agent-workbench";
 import * as api from "@features/agent-workbench/api";
+import { useRuntimeAccess } from "@features/accounts/useRuntimeAccess";
+
+vi.mock("@features/accounts/useRuntimeAccess", () => ({
+  useRuntimeAccess: vi.fn(() => true),
+}));
 
 vi.mock("@features/agent-workbench/api", async (original) => ({
   ...(await original<typeof api>()),
@@ -76,6 +81,7 @@ function mount(sourcesPage = false) {
 }
 
 beforeEach(() => {
+  vi.mocked(useRuntimeAccess).mockReturnValue(true);
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.mocked(api.getSources).mockResolvedValue([workbenchSource]);
   vi.mocked(api.getSessions).mockImplementation(async (filters) => ({
@@ -111,6 +117,44 @@ afterEach(() => {
 });
 
 describe("Agent 工作台", () => {
+  it("keeps bound history readable but disables new source binding outside the local browser", async () => {
+    vi.mocked(useRuntimeAccess).mockReturnValue(false);
+    const { unmount } = mount(true);
+    expect(
+      await screen.findByText(/请在 Mac 的本机网站入口绑定来源/),
+    ).toBeVisible();
+    expect(screen.getByRole("group", { name: "绑定来源" })).toBeDisabled();
+    expect(api.getCandidates).not.toHaveBeenCalled();
+    expect(await screen.findByText(workbenchSource.message)).toBeVisible();
+    unmount();
+  });
+
+  it("labels native execution errors separately from an assistant reply", async () => {
+    vi.mocked(api.getHistory).mockResolvedValue({
+      items: [
+        {
+          ...workbenchEntries()[0],
+          role: "system",
+          kind: "error",
+          text: "MISSING_CREDENTIAL: credential unavailable",
+        },
+      ],
+      next_cursor: null,
+      change_cursor: 1,
+      branches: [],
+      selected_branch: null,
+    });
+    const { unmount } = mount();
+    expect(await screen.findByText("原端错误")).toBeVisible();
+    expect(
+      screen.getByText("MISSING_CREDENTIAL: credential unavailable"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "发送（待接入）" }),
+    ).toBeDisabled();
+    unmount();
+  });
+
   it("renders native history, filters APP/CLI and never enables send", async () => {
     const { open, unmount } = mount();
     expect(

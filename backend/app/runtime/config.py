@@ -13,7 +13,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from fpl_config import CONFIG_FILE, ConfigurationError, read_config
 
 REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
-_desktop_settings: Settings | None = None
 
 
 class Settings(BaseSettings):
@@ -37,7 +36,7 @@ class Settings(BaseSettings):
 
     @classmethod
     def settings_customise_sources(cls, _settings_cls, init_settings, **_unused):
-        # Sources are assembled once above, allowing desktop to opt out of ALL shell state.
+        # Sources are assembled once above, allowing tests to opt out of shell state.
         return (init_settings,)
 
     @classmethod
@@ -49,6 +48,10 @@ class Settings(BaseSettings):
         except ValidationError:
             raise ConfigurationError("配置校验失败，请检查加密密钥、地址和容量限制") from None
 
+    fpl_website_port: int = Field(default=9000, ge=1024, le=65535)
+    fpl_website_web_root: str = ".local/studio-release"
+    fpl_website_public_enabled: bool = False
+    fpl_website_legacy_data_root: str = ""
     fpl_database_path: str = ".runtime/future-props.db"
     fpl_agent_workbench_enabled: bool = True
     fpl_agent_workbench_poll_seconds: int = Field(default=1, ge=1, le=30)
@@ -217,11 +220,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return _desktop_settings or Settings()
-
-
-def configure_desktop(settings: Settings) -> None:
-    """Install explicit launch settings before importing database/application modules."""
-    global _desktop_settings
-    _desktop_settings = settings
-    get_settings.cache_clear()
+    return Settings()

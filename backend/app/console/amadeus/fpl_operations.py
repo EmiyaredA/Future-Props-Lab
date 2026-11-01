@@ -7,9 +7,10 @@ from typing import Any
 from urllib.parse import quote
 
 import httpx
+from fastapi.middleware.asyncexitstack import AsyncExitStackMiddleware
+from starlette.middleware.exceptions import ExceptionMiddleware
 
-from app.console.governance.desktop_agent import MANIFEST
-from app.runtime.desktop import DESKTOP_HEADER
+from app.console.governance.automation_access import MANIFEST
 from app.runtime.operation_receipts import OperationError
 
 PARAMETER = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
@@ -123,12 +124,19 @@ async def call_operation(
     for header in ("cookie", "x-csrf-token"):
         if request_headers.get(header):
             headers[header] = request_headers[header]
-    # The nested ASGI request remains inside the server. Preserve the desktop
-    # transport credential from the already-authenticated parent request.
-    if request_headers.get(DESKTOP_HEADER):
-        headers[DESKTOP_HEADER] = request_headers[DESKTOP_HEADER]
+    # Re-enter the registered routes with the authenticated browser credentials.
+    # This in-process adapter is never exposed as a network listener and does not
+    # acquire host-management privileges from either public or local ingress.
+    routes = AsyncExitStackMiddleware(
+        ExceptionMiddleware(app.router, handlers=app.exception_handlers)
+    )
+
+    async def internal(scope, receive, send):
+        scope["app"] = app
+        await routes(scope, receive, send)
+
     async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app),
+        transport=httpx.ASGITransport(app=internal),
         base_url="http://fpl-internal",
         follow_redirects=False,
         timeout=120.0,

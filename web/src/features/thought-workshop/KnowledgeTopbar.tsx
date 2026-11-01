@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import { Fragment, type Ref } from "react";
 import {
   BookOpen,
@@ -287,16 +288,16 @@ export function KnowledgeTopbar({
           </button>
         )}
         <div className="knowledge-document-tools" ref={documentToolsRef} />
-        {window.futurePropsDesktop?.openAmadeus && (
+        {
           <button
             type="button"
             className="btn"
             aria-label="打开 Amadeus"
-            onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+            onClick={() => void openAmadeus()}
           >
             <Sparkles size={16} aria-hidden="true" /> Amadeus
           </button>
-        )}
+        }
         {onToggleReading && (
           <button className="btn" onClick={onToggleReading}>
             {reading ? "编辑文档" : "返回阅读"}

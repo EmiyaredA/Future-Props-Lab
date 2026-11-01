@@ -177,7 +177,7 @@ CATALOG_MODELS: dict[str, type] = {
 }
 
 # App-owned roots registered at assembly time so console must not import apps/.
-DESKTOP_UI_ROOTS: dict[str, type] = {
+AUTOMATION_ROOTS: dict[str, type] = {
     "annotation": AudioAnnotationProject,
     "director": DirectorDeskProject,
     "galgame": GalgameWorkshopProject,
@@ -391,7 +391,7 @@ __all__ = [
     "Base",
     "CATALOG_MODELS",
     "CERTIFIABLE_PROJECT_ROOTS",
-    "DESKTOP_UI_ROOTS",
+    "AUTOMATION_ROOTS",
     "LAYOUT_PROJECT_MODELS",
     "RUNTIME_QUOTA_TASK_MODELS",
     "TENANT_MODELS",

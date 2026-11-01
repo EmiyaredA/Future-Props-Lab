@@ -50,6 +50,7 @@ from app.console.amadeus.skills import load_skill, read_skill_file
 from app.deps import SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.runtime.operation_receipts import OperationError
+from app.runtime.website import require_local_browser
 
 router = APIRouter(prefix="/amadeus", tags=["amadeus"])
 
@@ -507,8 +508,9 @@ async def script_capability() -> dict[str, bool]:
 
 @router.post("/conversations/{conversation_id}/files/open-folder")
 async def files_open_folder(
-    session: SessionDep, principal: StudioAuth, conversation_id: str
+    request: Request, session: SessionDep, principal: StudioAuth, conversation_id: str
 ) -> dict[str, bool]:
+    require_local_browser(request, principal)
     try:
         await Conversations(session, principal)._get(conversation_id)
         open_work_folder(principal.owner_user_id, conversation_id)

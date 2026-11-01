@@ -28,7 +28,7 @@ const chapters = [
   ["agent-workbench", "Agent 工作台：原生会话、检查点与账号投影", "各应用实现"],
   ["interview-assistant", "面试助手：材料、准备任务与文字练习", "各应用实现"],
   ["director-desk", "导演台：场景图、动作与摄影机", "各应用实现"],
-  ["desktop", "桌面启动、更新与打包", "工程验证与设计取舍"],
+  ["desktop", "网站进程、访问入口与数据", "工程验证与设计取舍"],
   ["contracts", "OpenAPI、Web 与 SDK 契约", "工程验证与设计取舍"],
   ["engineering", "测试与交付证据", "工程验证与设计取舍"],
   ["decisions", "关键设计决策与当前限制", "工程验证与设计取舍"],

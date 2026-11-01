@@ -1231,8 +1231,6 @@
         "properties": {
           "action": {
             "enum": [
-              "local_start",
-              "local_stop",
               "public_start",
               "public_stop",
               "check"
@@ -1245,57 +1243,6 @@
           "action"
         ],
         "title": "AccessAction",
-        "type": "object"
-      },
-      "AccessConfigIn": {
-        "properties": {
-          "expected_revision": {
-            "maxLength": 64,
-            "minLength": 64,
-            "title": "Expected Revision",
-            "type": "string"
-          },
-          "profile": {
-            "$ref": "#/components/schemas/GatewayProfile"
-          }
-        },
-        "required": [
-          "expected_revision",
-          "profile"
-        ],
-        "title": "AccessConfigIn",
-        "type": "object"
-      },
-      "AccessConfigOut": {
-        "properties": {
-          "identity_fingerprint": {
-            "default": "",
-            "title": "Identity Fingerprint",
-            "type": "string"
-          },
-          "known_hosts_fingerprint": {
-            "default": "",
-            "title": "Known Hosts Fingerprint",
-            "type": "string"
-          },
-          "legacy_available": {
-            "default": false,
-            "title": "Legacy Available",
-            "type": "boolean"
-          },
-          "profile": {
-            "$ref": "#/components/schemas/GatewayProfile"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "string"
-          }
-        },
-        "required": [
-          "revision",
-          "profile"
-        ],
-        "title": "AccessConfigOut",
         "type": "object"
       },
       "AccessStatus": {
@@ -1932,148 +1879,6 @@
         "title": "AddTransitionOperation",
         "type": "object"
       },
-      "AgentCapabilities": {
-        "properties": {
-          "operations": {
-            "additionalProperties": true,
-            "title": "Operations",
-            "type": "object"
-          },
-          "owner_user_id": {
-            "title": "Owner User Id",
-            "type": "string"
-          },
-          "schemas": {
-            "additionalProperties": true,
-            "title": "Schemas",
-            "type": "object"
-          },
-          "scopes": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Scopes",
-            "type": "array"
-          },
-          "user_id": {
-            "title": "User Id",
-            "type": "string"
-          },
-          "version": {
-            "default": 1,
-            "title": "Version",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "user_id",
-          "owner_user_id",
-          "scopes",
-          "operations",
-          "schemas"
-        ],
-        "title": "AgentCapabilities",
-        "type": "object"
-      },
-      "AgentClaimIn": {
-        "properties": {
-          "claim_token": {
-            "maxLength": 128,
-            "minLength": 32,
-            "title": "Claim Token",
-            "type": "string"
-          }
-        },
-        "required": [
-          "claim_token"
-        ],
-        "title": "AgentClaimIn",
-        "type": "object"
-      },
-      "AgentClaimOut": {
-        "properties": {
-          "api_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Api Key"
-          },
-          "key_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Key Id"
-          },
-          "owner_user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Owner User Id"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          },
-          "user_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Id"
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "title": "AgentClaimOut",
-        "type": "object"
-      },
-      "AgentDecisionIn": {
-        "properties": {
-          "approve": {
-            "title": "Approve",
-            "type": "boolean"
-          },
-          "code": {
-            "maxLength": 6,
-            "minLength": 6,
-            "title": "Code",
-            "type": "string"
-          },
-          "expected_owner_user_id": {
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Expected Owner User Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "approve",
-          "code",
-          "expected_owner_user_id"
-        ],
-        "title": "AgentDecisionIn",
-        "type": "object"
-      },
       "AgentOut": {
         "properties": {
           "available": {
@@ -2134,102 +1939,6 @@
           "message"
         ],
         "title": "AgentOut",
-        "type": "object"
-      },
-      "AgentPairIn": {
-        "properties": {
-          "name": {
-            "maxLength": 80,
-            "minLength": 1,
-            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
-            "title": "Name",
-            "type": "string"
-          },
-          "scope": {
-            "default": "studio:read",
-            "enum": [
-              "studio:read",
-              "studio:write"
-            ],
-            "title": "Scope",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "title": "AgentPairIn",
-        "type": "object"
-      },
-      "AgentPairOut": {
-        "properties": {
-          "code": {
-            "title": "Code",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "scope": {
-            "title": "Scope",
-            "type": "string"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "name",
-          "scope",
-          "status"
-        ],
-        "title": "AgentPairOut",
-        "type": "object"
-      },
-      "AgentPairStarted": {
-        "properties": {
-          "claim_token": {
-            "title": "Claim Token",
-            "type": "string"
-          },
-          "code": {
-            "title": "Code",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "scope": {
-            "title": "Scope",
-            "type": "string"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "name",
-          "scope",
-          "status",
-          "claim_token"
-        ],
-        "title": "AgentPairStarted",
         "type": "object"
       },
       "AlignAudioSeamOperation": {
@@ -4032,6 +3741,176 @@
           "session_expires_at"
         ],
         "title": "AuthMeOut",
+        "type": "object"
+      },
+      "AutomationCapabilities": {
+        "properties": {
+          "operations": {
+            "additionalProperties": true,
+            "title": "Operations",
+            "type": "object"
+          },
+          "owner_user_id": {
+            "title": "Owner User Id",
+            "type": "string"
+          },
+          "schemas": {
+            "additionalProperties": true,
+            "title": "Schemas",
+            "type": "object"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "owner_user_id",
+          "scopes",
+          "operations",
+          "schemas"
+        ],
+        "title": "AutomationCapabilities",
+        "type": "object"
+      },
+      "AutomationOpenIn": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "visual",
+              "galgame",
+              "video",
+              "presentation",
+              "annotation",
+              "director",
+              "note",
+              "knowledge",
+              "skill",
+              "tool-api",
+              "mcp"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "view": {
+            "anyOf": [
+              {
+                "enum": [
+                  "list",
+                  "details",
+                  "upload",
+                  "versions",
+                  "tags",
+                  "edit",
+                  "validate",
+                  "tools"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "AutomationOpenIn",
+        "type": "object"
+      },
+      "AutomationOpenOut": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "visual",
+              "galgame",
+              "video",
+              "presentation",
+              "annotation",
+              "director",
+              "note",
+              "knowledge",
+              "skill",
+              "tool-api",
+              "mcp"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "view": {
+            "anyOf": [
+              {
+                "enum": [
+                  "list",
+                  "details",
+                  "upload",
+                  "versions",
+                  "tags",
+                  "edit",
+                  "validate",
+                  "tools"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View"
+          }
+        },
+        "required": [
+          "kind",
+          "path"
+        ],
+        "title": "AutomationOpenOut",
         "type": "object"
       },
       "BatchDeleteIn": {
@@ -6180,24 +6059,6 @@
         "title": "CommunitySnapshot",
         "type": "object"
       },
-      "ConfigPrepared": {
-        "properties": {
-          "apply_receipt": {
-            "title": "Apply Receipt",
-            "type": "string"
-          },
-          "restart_required": {
-            "default": true,
-            "title": "Restart Required",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "apply_receipt"
-        ],
-        "title": "ConfigPrepared",
-        "type": "object"
-      },
       "ConversationDetailOut": {
         "properties": {
           "actions": {
@@ -7114,76 +6975,6 @@
         "title": "CreativeStdioSetupIn",
         "type": "object"
       },
-      "CredentialImportIn": {
-        "properties": {
-          "path": {
-            "maxLength": 4096,
-            "minLength": 1,
-            "title": "Path",
-            "type": "string"
-          },
-          "ticket": {
-            "maxLength": 128,
-            "minLength": 32,
-            "title": "Ticket",
-            "type": "string"
-          }
-        },
-        "required": [
-          "ticket",
-          "path"
-        ],
-        "title": "CredentialImportIn",
-        "type": "object"
-      },
-      "CredentialOut": {
-        "properties": {
-          "fingerprint": {
-            "title": "Fingerprint",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "fingerprint"
-        ],
-        "title": "CredentialOut",
-        "type": "object"
-      },
-      "CredentialTicketIn": {
-        "properties": {
-          "kind": {
-            "enum": [
-              "identity",
-              "known_hosts"
-            ],
-            "title": "Kind",
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind"
-        ],
-        "title": "CredentialTicketIn",
-        "type": "object"
-      },
-      "CredentialTicketOut": {
-        "properties": {
-          "ticket": {
-            "title": "Ticket",
-            "type": "string"
-          }
-        },
-        "required": [
-          "ticket"
-        ],
-        "title": "CredentialTicketOut",
-        "type": "object"
-      },
       "CsvIn": {
         "additionalProperties": false,
         "properties": {
@@ -7608,238 +7399,6 @@
           "value"
         ],
         "title": "DemoServiceOut",
-        "type": "object"
-      },
-      "DesktopInbox": {
-        "properties": {
-          "change_revision": {
-            "title": "Change Revision",
-            "type": "integer"
-          },
-          "content_change_revision": {
-            "default": 0,
-            "title": "Content Change Revision",
-            "type": "integer"
-          },
-          "integration_revisions": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "title": "Integration Revisions",
-            "type": "object"
-          },
-          "requests": {
-            "items": {
-              "$ref": "#/components/schemas/DesktopOpenOut"
-            },
-            "title": "Requests",
-            "type": "array"
-          }
-        },
-        "required": [
-          "requests",
-          "change_revision"
-        ],
-        "title": "DesktopInbox",
-        "type": "object"
-      },
-      "DesktopOpenAck": {
-        "properties": {
-          "status": {
-            "enum": [
-              "waiting_confirmation",
-              "opened",
-              "cancelled",
-              "unavailable"
-            ],
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "title": "DesktopOpenAck",
-        "type": "object"
-      },
-      "DesktopOpenIn": {
-        "properties": {
-          "kind": {
-            "enum": [
-              "visual",
-              "galgame",
-              "video",
-              "presentation",
-              "annotation",
-              "director",
-              "note",
-              "knowledge",
-              "skill",
-              "tool-api",
-              "mcp"
-            ],
-            "title": "Kind",
-            "type": "string"
-          },
-          "resource_id": {
-            "anyOf": [
-              {
-                "maxLength": 128,
-                "minLength": 1,
-                "pattern": "^[a-zA-Z0-9_-]+$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Resource Id"
-          },
-          "view": {
-            "anyOf": [
-              {
-                "enum": [
-                  "list",
-                  "details",
-                  "upload",
-                  "versions",
-                  "tags",
-                  "edit",
-                  "validate",
-                  "tools"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "View"
-          }
-        },
-        "required": [
-          "kind"
-        ],
-        "title": "DesktopOpenIn",
-        "type": "object"
-      },
-      "DesktopOpenOut": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "kind": {
-            "enum": [
-              "visual",
-              "galgame",
-              "video",
-              "presentation",
-              "annotation",
-              "director",
-              "note",
-              "knowledge",
-              "skill",
-              "tool-api",
-              "mcp"
-            ],
-            "title": "Kind",
-            "type": "string"
-          },
-          "resource_id": {
-            "anyOf": [
-              {
-                "maxLength": 128,
-                "minLength": 1,
-                "pattern": "^[a-zA-Z0-9_-]+$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Resource Id"
-          },
-          "status": {
-            "enum": [
-              "pending",
-              "waiting_confirmation",
-              "opened",
-              "cancelled",
-              "unavailable"
-            ],
-            "title": "Status",
-            "type": "string"
-          },
-          "view": {
-            "anyOf": [
-              {
-                "enum": [
-                  "list",
-                  "details",
-                  "upload",
-                  "versions",
-                  "tags",
-                  "edit",
-                  "validate",
-                  "tools"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "View"
-          }
-        },
-        "required": [
-          "kind",
-          "id",
-          "status"
-        ],
-        "title": "DesktopOpenOut",
-        "type": "object"
-      },
-      "DesktopSetupIn": {
-        "properties": {
-          "display_name": {
-            "default": "",
-            "maxLength": 128,
-            "title": "Display Name",
-            "type": "string"
-          },
-          "password": {
-            "maxLength": 128,
-            "minLength": 10,
-            "title": "Password",
-            "type": "string"
-          },
-          "username": {
-            "maxLength": 64,
-            "minLength": 3,
-            "title": "Username",
-            "type": "string"
-          }
-        },
-        "required": [
-          "username",
-          "password"
-        ],
-        "title": "DesktopSetupIn",
-        "type": "object"
-      },
-      "DesktopSetupOut": {
-        "properties": {
-          "setup_required": {
-            "title": "Setup Required",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "setup_required"
-        ],
-        "title": "DesktopSetupOut",
         "type": "object"
       },
       "DeveloperDocumentOut": {
@@ -17956,63 +17515,6 @@
         "title": "GalgameWorkshopProjectPatchIn",
         "type": "object"
       },
-      "GatewayProfile": {
-        "additionalProperties": false,
-        "properties": {
-          "host": {
-            "default": "",
-            "maxLength": 253,
-            "title": "Host",
-            "type": "string"
-          },
-          "identity_id": {
-            "default": "",
-            "pattern": "^(?:[a-f0-9]{32})?$",
-            "title": "Identity Id",
-            "type": "string"
-          },
-          "known_hosts_id": {
-            "default": "",
-            "pattern": "^(?:[a-f0-9]{32})?$",
-            "title": "Known Hosts Id",
-            "type": "string"
-          },
-          "local_port": {
-            "default": 28081,
-            "maximum": 65535.0,
-            "minimum": 1024.0,
-            "title": "Local Port",
-            "type": "integer"
-          },
-          "origin": {
-            "default": "",
-            "title": "Origin",
-            "type": "string"
-          },
-          "remote_port": {
-            "default": 28080,
-            "maximum": 65535.0,
-            "minimum": 1024.0,
-            "title": "Remote Port",
-            "type": "integer"
-          },
-          "ssh_port": {
-            "default": 22,
-            "maximum": 65535.0,
-            "minimum": 1.0,
-            "title": "Ssh Port",
-            "type": "integer"
-          },
-          "user": {
-            "default": "",
-            "maxLength": 64,
-            "title": "User",
-            "type": "string"
-          }
-        },
-        "title": "GatewayProfile",
-        "type": "object"
-      },
       "GenerationBatchListOut": {
         "properties": {
           "items": {
@@ -20760,7 +20262,8 @@
               "cancel",
               "enable",
               "stop",
-              "uninstall"
+              "uninstall",
+              "repair"
             ],
             "title": "Action",
             "type": "string"
@@ -29438,21 +28941,6 @@
           "password"
         ],
         "title": "ReauthIn",
-        "type": "object"
-      },
-      "ReceiptIn": {
-        "properties": {
-          "receipt": {
-            "maxLength": 128,
-            "minLength": 32,
-            "title": "Receipt",
-            "type": "string"
-          }
-        },
-        "required": [
-          "receipt"
-        ],
-        "title": "ReceiptIn",
         "type": "object"
       },
       "RecordPage": {
@@ -46834,6 +46322,180 @@
         ]
       }
     },
+    "/v1/automation/access": {
+      "get": {
+        "operationId": "access_status_v1_automation_access_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Access Status",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
+    "/v1/automation/access/actions": {
+      "post": {
+        "operationId": "access_action_v1_automation_access_actions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Access Action",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
+    "/v1/automation/capabilities": {
+      "get": {
+        "operationId": "capabilities_v1_automation_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationCapabilities"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Capabilities",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
+    "/v1/automation/changes": {
+      "get": {
+        "operationId": "changes_v1_automation_changes_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Changes V1 Automation Changes Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Changes",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
+    "/v1/automation/open": {
+      "post": {
+        "operationId": "open_resource_v1_automation_open_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutomationOpenIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationOpenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Resource",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
+    "/v1/automation/runtime": {
+      "get": {
+        "operationId": "runtime_v1_automation_runtime_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Runtime V1 Automation Runtime Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Runtime",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
     "/v1/code-agents": {
       "get": {
         "operationId": "list_code_agents_v1_code_agents_get",
@@ -47791,675 +47453,6 @@
         "summary": "Example Tool",
         "tags": [
           "demo-calls"
-        ]
-      }
-    },
-    "/v1/desktop/agent/capabilities": {
-      "get": {
-        "operationId": "capabilities_v1_desktop_agent_capabilities_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentCapabilities"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Capabilities",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/agent/pairings": {
-      "get": {
-        "operationId": "pending_pairings_v1_desktop_agent_pairings_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AgentPairOut"
-                  },
-                  "title": "Response Pending Pairings V1 Desktop Agent Pairings Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Pending Pairings",
-        "tags": [
-          "desktop"
-        ]
-      },
-      "post": {
-        "operationId": "begin_pairing_v1_desktop_agent_pairings_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AgentPairIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentPairStarted"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Begin Pairing",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/agent/pairings/{pair_id}/claim": {
-      "post": {
-        "operationId": "claim_pairing_v1_desktop_agent_pairings__pair_id__claim_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "pair_id",
-            "required": true,
-            "schema": {
-              "title": "Pair Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AgentClaimIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentClaimOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Claim Pairing",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/agent/pairings/{pair_id}/decision": {
-      "post": {
-        "operationId": "decide_pairing_v1_desktop_agent_pairings__pair_id__decision_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "pair_id",
-            "required": true,
-            "schema": {
-              "title": "Pair Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AgentDecisionIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentPairOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Decide Pairing",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/setup": {
-      "get": {
-        "operationId": "get_setup_v1_desktop_setup_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DesktopSetupOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Get Setup",
-        "tags": [
-          "desktop"
-        ]
-      },
-      "post": {
-        "operationId": "create_first_account_v1_desktop_setup_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DesktopSetupIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DesktopSetupOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create First Account",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/ui/inbox": {
-      "get": {
-        "operationId": "inbox_v1_desktop_ui_inbox_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DesktopInbox"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Inbox",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/ui/open": {
-      "post": {
-        "operationId": "open_in_app_v1_desktop_ui_open_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DesktopOpenIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "202": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DesktopOpenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Open In App",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/ui/requests/{request_id}": {
-      "get": {
-        "operationId": "open_status_v1_desktop_ui_requests__request_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "request_id",
-            "required": true,
-            "schema": {
-              "title": "Request Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DesktopOpenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Open Status",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/ui/requests/{request_id}/ack": {
-      "post": {
-        "operationId": "acknowledge_v1_desktop_ui_requests__request_id__ack_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "request_id",
-            "required": true,
-            "schema": {
-              "title": "Request Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DesktopOpenAck"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DesktopOpenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Acknowledge",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/web-access": {
-      "get": {
-        "operationId": "status_v1_desktop_web_access_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessStatus"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Status",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/web-access/actions": {
-      "post": {
-        "operationId": "action_v1_desktop_web_access_actions_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AccessAction"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessStatus"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Action",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/web-access/config": {
-      "get": {
-        "operationId": "config_v1_desktop_web_access_config_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessConfigOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Config",
-        "tags": [
-          "desktop"
-        ]
-      },
-      "put": {
-        "operationId": "prepare_config_v1_desktop_web_access_config_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AccessConfigIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConfigPrepared"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Prepare Config",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/web-access/config/adopt-legacy": {
-      "post": {
-        "operationId": "adopt_v1_desktop_web_access_config_adopt_legacy_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConfigPrepared"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Adopt",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/web-access/config/claim": {
-      "post": {
-        "operationId": "claim_config_v1_desktop_web_access_config_claim_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReceiptIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Claim Config",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/web-access/credentials/import": {
-      "post": {
-        "operationId": "import_credential_v1_desktop_web_access_credentials_import_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CredentialImportIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Import Credential",
-        "tags": [
-          "desktop"
-        ]
-      }
-    },
-    "/v1/desktop/web-access/credentials/tickets": {
-      "post": {
-        "operationId": "credential_ticket_v1_desktop_web_access_credentials_tickets_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CredentialTicketIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialTicketOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Credential Ticket",
-        "tags": [
-          "desktop"
         ]
       }
     },

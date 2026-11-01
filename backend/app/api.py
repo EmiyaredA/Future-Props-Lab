@@ -25,14 +25,11 @@ from app.console.routes.account_management import router as management_router
 from app.console.routes.accounts import router as accounts_router
 from app.console.routes.amadeus import require_amadeus_session
 from app.console.routes.amadeus import router as amadeus_router
+from app.console.routes.automation import router as automation_router
 from app.console.routes.code_agents import router as code_agents_router
 from app.console.routes.creative_workshop import router as creative_workshop_router
-from app.console.routes.desktop import require_desktop
-from app.console.routes.desktop import router as desktop_router
-from app.console.routes.desktop_agent import router as desktop_agent_router
 from app.console.routes.file_management import router as file_management_router
 from app.console.routes.platform_governance import router as platform_governance_router
-from app.console.routes.web_access import router as web_access_router
 from app.demo_runtime.routes import call_router as demo_call_router
 from app.demo_runtime.routes import router as demo_runtime_router
 from app.deps import require_studio_auth
@@ -65,12 +62,8 @@ api_router.include_router(local_models_router, dependencies=[Depends(require_stu
 api_router.include_router(interview_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(article_sync_router, dependencies=[Depends(require_studio_auth)])
-api_router.include_router(
-    amadeus_router, dependencies=[Depends(require_desktop), Depends(require_amadeus_session)]
-)
-api_router.include_router(desktop_router)
-api_router.include_router(desktop_agent_router)
-api_router.include_router(web_access_router)
+api_router.include_router(amadeus_router, dependencies=[Depends(require_amadeus_session)])
+api_router.include_router(automation_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(accounts_router)
 api_router.include_router(demo_runtime_router)
 api_router.include_router(demo_call_router)

@@ -29,7 +29,7 @@ def tools_command(root):
             / "fpl-acceptance-tools"
         )
         return [str(binary), str(root)], [str(binary)]
-    entry = str(REPO_ROOT / "desktop/backend/acceptance_tools_entry.py")
+    entry = str(REPO_ROOT / "scripts/website/acceptance_tools.py")
     return [sys.executable, entry, str(root)], [sys.executable, entry]
 
 

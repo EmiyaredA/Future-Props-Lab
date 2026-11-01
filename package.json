@@ -7,25 +7,16 @@
     "npm": ">=11"
   },
   "workspaces": [
-    "web",
-    "desktop"
+    "web"
   ],
   "scripts": {
     "knowledge:seed:generate": "uv run python scripts/build_official_seed.py",
     "knowledge:seed:check": "uv run python scripts/build_official_seed.py --check",
     "config:migrate": "uv run python scripts/migrate_config.py",
-    "dev:desktop": "uv run python desktop/scripts/dev.py --live",
-    "dev:desktop:live": "uv run python desktop/scripts/dev.py --live",
-    "dev:desktop:isolated": "uv run python desktop/scripts/dev.py",
-    "build:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run build --workspace desktop",
-    "package:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run package --workspace desktop",
-    "test:desktop": "npm run compile --workspace desktop && uv run pytest -q tests/test_configuration.py tests/test_desktop.py tests/test_desktop_agent.py tests/test_desktop_development.py && npm run test --workspace desktop",
-    "test:desktop:dev": "node desktop/scripts/smoke-development.cjs",
-    "test:desktop:amadeus": "node desktop/scripts/smoke-amadeus.cjs",
     "setup": "python3 scripts/check_lfs_assets.py --tool && uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web && python3 scripts/check_lfs_assets.py --all",
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev:backend\" \"npm run dev:web\"",
-    "dev:backend": "uv run uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 9000 --timeout-graceful-shutdown 10",
-    "start:backend": "uv run uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 9000 --workers 1",
+    "dev:backend": "uv run python scripts/website/development.py",
+    "start:backend": "npm start",
     "dev:web": "npm run dev --workspace web",
     "db:migrate": "uv run python -m db.migrations --apply",
     "db:migrate:check": "uv run python -m db.migrations --check",
@@ -35,9 +26,9 @@
     "contracts:check": "uv run python scripts/export_openapi.py --check && uv run python scripts/generate_avatar_contract.py --check && npm run contracts:check --workspace web && npm run sdk:check",
     "test": "uv run pytest -q && npm run test --workspace web",
     "test:e2e": "npm run test:e2e --workspace web",
-    "lint": "uv run ruff check backend db scripts tests sdk/python/src desktop/backend desktop/scripts && npm run lint --workspace web && npm run lint --workspace desktop",
-    "format": "uv run ruff format backend db scripts tests sdk/python/src desktop/backend desktop/scripts && npm run format --workspace web && npm run format --workspace desktop",
-    "format:check": "uv run ruff format --check backend db scripts tests sdk/python/src desktop/backend desktop/scripts && npm run format:check --workspace web && npm run format:check --workspace desktop",
+    "lint": "uv run ruff check backend db scripts tests sdk/python/src && npm run lint --workspace web",
+    "format": "uv run ruff format backend db scripts tests sdk/python/src && npm run format --workspace web",
+    "format:check": "uv run ruff format --check backend db scripts tests sdk/python/src && npm run format:check --workspace web",
     "build": "python3 scripts/check_lfs_assets.py --web && npm run build --workspace web",
     "lfs:check": "python3 scripts/check_lfs_assets.py --all",
     "lfs:check:pointers": "python3 scripts/check_lfs_assets.py --pointers",
@@ -54,7 +45,9 @@
     "check-anchors": "npx tsx scripts/check-note-anchors.ts",
     "check-docs-center-protected": "node scripts/check-docs-center-protected.mjs",
     "test:sdk": "uv run pytest -q tests/test_python_sdk.py tests/test_workshop_operations.py tests/test_model_inference.py tests/test_automation_exports.py tests/test_sdk_workflows.py",
-    "build:studio": "python3 scripts/check_lfs_assets.py --web && npm run build:studio --workspace web"
+    "build:studio": "python3 scripts/check_lfs_assets.py --web && npm run build:studio --workspace web",
+    "start": "uv run python scripts/website/serve.py",
+    "website:service": "uv run python scripts/website/service.py"
   },
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20260120.1",

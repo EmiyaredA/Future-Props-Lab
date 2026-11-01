@@ -120,10 +120,18 @@ def test_codex_source_does_not_expose_unmanaged_endpoint_credentials(tmp_path, m
 @pytest.mark.asyncio
 async def test_codex_source_api_only_runs_in_desktop(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEX_HOME", str(tmp_path))
+    from app.tool_navigation import codex_source_routes as routes
+
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        assert (await client.get("/v1/tool-navigation/codex-source")).status_code == 404
-        monkeypatch.setattr(app.state, "desktop_enabled", True, raising=False)
+        assert (await client.get("/v1/tool-navigation/codex-source")).status_code == 403
+        from fastapi import HTTPException
+
+        def local_session(_request, principal):
+            if principal.auth_kind != "session":
+                raise HTTPException(403)
+
+        monkeypatch.setattr(routes, "require_local_browser", local_session)
         current = await client.get("/v1/tool-navigation/codex-source")
         assert current.status_code == 200
         assert current.json()["revision"] == "missing"

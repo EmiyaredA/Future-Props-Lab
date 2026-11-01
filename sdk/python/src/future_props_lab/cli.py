@@ -1,6 +1,7 @@
 """Stable machine-readable CLI over the same generated SDK used by Python callers."""
 
 import argparse
+import getpass
 import inspect
 import json
 import mimetypes
@@ -14,9 +15,9 @@ from pathlib import Path
 import httpx
 from pydantic import BaseModel
 
-from .desktop import DesktopConnectionError, desktop_client, disconnect_desktop, pair_desktop
 from .errors import ApiError, TaskFailed, TaskTimeout
 from .streams import Download, EventStream
+from .website import WebsiteConnectionError, connect_website, disconnect_website, website_client
 
 
 def emit(value, *, stream=sys.stdout):
@@ -29,17 +30,14 @@ def emit(value, *, stream=sys.stdout):
 
 
 def parser():
-    cli = argparse.ArgumentParser(prog="fpl", description="Future Props Lab 本地 App 接入")
-    cli.add_argument("--data-dir", type=Path, help="显式数据根目录（测试或独立实例）")
-    cli.add_argument("--development", action="store_true")
+    cli = argparse.ArgumentParser(prog="fpl", description="Future Props Lab 网站接入")
+    cli.add_argument("--profile-dir", type=Path, help="受保护的客户端配置目录")
     cli.add_argument("--profile", default="default")
     commands = cli.add_subparsers(dest="command", required=True)
-    connect = commands.add_parser("connect", help="在 App 中批准一次授权")
-    connect.add_argument("--name", required=True)
-    connect.add_argument(
-        "--write", action="store_true", help="申请含集成管理、校验、删除和付费模型调用的读写权限"
-    )
-    commands.add_parser("disconnect", help="清除本机凭据；撤销授权请在 App 内操作")
+    connect = commands.add_parser("connect", help="保存网站地址和已有 Management API Key")
+    connect.add_argument("--url", required=True)
+    connect.add_argument("--api-key-stdin", action="store_true", help="从标准输入读取密钥")
+    commands.add_parser("disconnect", help="清除本机凭据；撤销授权请在网站内操作")
     commands.add_parser("status")
     mcp = commands.add_parser("mcp", help="Serve FPL tools over stdio MCP")
     mcp.add_argument("mcp_action", choices=["serve", "relay"])
@@ -56,7 +54,7 @@ def parser():
         else:
             invoke.add_argument("--timeout", type=float, default=300)
             invoke.add_argument("--interval", type=float, default=2)
-    opening = commands.add_parser("open", help="在 App 中打开资源，保留未保存保护")
+    opening = commands.add_parser("open", help="在 App 中获取经过归属校验的网站资源链接")
     opening.add_argument(
         "kind",
         choices=[
@@ -95,7 +93,7 @@ def inputs(value):
 
 
 def capability(client):
-    return client._call("GET", "/v1/desktop/agent/capabilities")
+    return client._call("GET", "/v1/automation/capabilities")
 
 
 def operation(client, name, capabilities):
@@ -192,7 +190,7 @@ def invoke(client, args, capabilities):
 
 def main(argv=None):
     args = parser().parse_args(argv)
-    options = dict(data_dir=args.data_dir, development=args.development, profile=args.profile)
+    options = dict(profile_dir=args.profile_dir, profile=args.profile)
     try:
         if args.command == "mcp":
             from .mcp import run_external, run_relay
@@ -203,22 +201,20 @@ def main(argv=None):
                 run_external(**options)
             return 0
         if args.command == "connect":
-            emit(
-                pair_desktop(
-                    name=args.name,
-                    write=args.write,
-                    **options,
-                    on_pending=lambda value: emit({"approve_in_app": value}, stream=sys.stderr),
-                )
+            key = (
+                sys.stdin.readline().strip()
+                if args.api_key_stdin
+                else getpass.getpass("Management API Key: ")
             )
+            emit(connect_website(url=args.url, api_key=key, **options))
             return 0
         if args.command == "disconnect":
-            disconnect_desktop(**options)
+            disconnect_website(**options)
             emit(
-                {"disconnected": True, "note": "已清除本机凭据；服务端授权可在 App API 密钥页撤销"}
+                {"disconnected": True, "note": "已清除本机凭据；服务端授权可在 网站 API 密钥页撤销"}
             )
             return 0
-        with desktop_client(**options) as client:
+        with website_client(**options) as client:
             capabilities = capability(client)
             if args.command == "status":
                 emit({key: capabilities[key] for key in ("version", "user_id", "scopes")})
@@ -242,19 +238,12 @@ def main(argv=None):
             elif args.command == "open":
                 result = client._call(
                     "POST",
-                    "/v1/desktop/ui/open",
+                    "/v1/automation/open",
                     body={"kind": args.kind, "resource_id": args.resource_id, "view": args.view},
                     media_type="application/json",
                 )
-                deadline = time.monotonic() + args.timeout
-                while (
-                    result["status"] in {"pending", "waiting_confirmation"}
-                    and time.monotonic() < deadline
-                ):
-                    time.sleep(1)
-                    result = client._call("GET", f"/v1/desktop/ui/requests/{result['id']}")
+                result["url"] = client.base_url + result["path"]
                 emit(result)
-                return 0 if result["status"] == "opened" else 6
             else:
                 return invoke(client, args, capabilities) or 0
         return 0
@@ -267,11 +256,11 @@ def main(argv=None):
         return 5
     except httpx.TransportError:
         emit(
-            {"error": "connection_lost", "message": "App 连接中断；写操作未自动重试，请查询结果"},
+            {"error": "connection_lost", "message": "网站连接中断；写操作未自动重试，请查询结果"},
             stream=sys.stderr,
         )
         return 7
-    except (OSError, ValueError, TypeError, DesktopConnectionError) as exc:
+    except (OSError, ValueError, TypeError, WebsiteConnectionError) as exc:
         emit({"error": "invalid_input_or_connection", "message": str(exc)}, stream=sys.stderr)
         return 2
     except KeyboardInterrupt:

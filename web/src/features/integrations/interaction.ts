@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef } from "react";
 import type { components } from "@generated/api";
-export type IntegrationOpen = components["schemas"]["DesktopOpenOut"];
+export type IntegrationOpen = components["schemas"]["AutomationOpenIn"] & {
+  id: string;
+};
 export type OpenDetail = {
   request: IntegrationOpen;
   active: () => boolean;
@@ -57,6 +59,39 @@ export function useIntegrationOpen(
         });
     };
     window.addEventListener("future-props:integration-open", handle);
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get("view");
+    const resource = params.get("resource");
+    const views = [
+      "list",
+      "details",
+      "upload",
+      "versions",
+      "tags",
+      "edit",
+      "validate",
+      "tools",
+    ];
+    if (
+      ["skill", "tool-api", "mcp"].includes(kind) &&
+      view &&
+      views.includes(view)
+    ) {
+      handle(
+        new CustomEvent("future-props:integration-open", {
+          detail: {
+            request: {
+              id: `${window.location.pathname}${window.location.search}`,
+              kind,
+              resource_id: resource,
+              view,
+            },
+            active: () => mounted,
+            complete: () => {},
+          },
+        }),
+      );
+    }
     return () => {
       mounted = false;
       window.removeEventListener("future-props:integration-open", handle);

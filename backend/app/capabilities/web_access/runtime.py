@@ -13,14 +13,14 @@ from starlette.responses import PlainTextResponse
 
 from app.capabilities.web_access.contracts import AccessStatus, EndpointStatus
 from app.capabilities.web_access.profiles import AccessError, ProfileStore
-from app.runtime.desktop import DesktopStaticFiles
 from app.runtime.remote_web import RemoteWeb
+from app.runtime.website import WebsiteStaticFiles
 
 
 class BrowserServer(uvicorn.Server):
     @contextlib.contextmanager
     def capture_signals(self):
-        # Only the original desktop server owns process signal handling.
+        # Only the main website server owns process signal handling.
         yield
 
 
@@ -73,23 +73,20 @@ class WebAccess:
         )
 
     async def __call__(self, app, scope, receive, send):
-        from starlette.datastructures import Headers
-
-        is_local = Headers(scope=scope).get("host") == f"127.0.0.1:{self.profile.local_port}"
-        if self.local.phase != "ready" or (not is_local and not self.public_enabled):
+        if self.local.phase != "ready" or not self.public_enabled:
             if scope["type"] == "websocket":
                 await send({"type": "websocket.close", "code": 1008})
             else:
-                await PlainTextResponse("Web access is disabled", status_code=503)(
+                await PlainTextResponse("Public access is disabled", status_code=503)(
                     scope, receive, send
                 )
             return
         ingress = RemoteWeb(
-            origin=self.local.url if is_local else self.profile.origin,
+            origin=self.profile.origin,
             port=self.profile.local_port,
-            static=DesktopStaticFiles(directory=self.static_root, html=True),
+            static=WebsiteStaticFiles(directory=self.static_root, html=True),
             authenticate=self.authenticate,
-            secure_cookies=not is_local,
+            secure_cookies=True,
         )
         self.requests += 1
 
@@ -128,6 +125,9 @@ class WebAccess:
         self.manifest()
         self.local.phase, self.local.error = "starting", ""
         sock = socket.socket()
+        # A normal restart must not wait for recently closed tunnel connections
+        # to leave TIME_WAIT. This does not allow two listening instances.
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             sock.bind(("127.0.0.1", self.profile.local_port))
             self.sock = sock

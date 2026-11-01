@@ -41,10 +41,8 @@
 - 安装后端与 Web 依赖：`npm run setup`。
 - 一键启动后端与 Web：`npm run dev`；单独启动使用 `npm run dev:backend`、
   `npm run dev:web`。
-- 桌面热加载：`npm run dev:desktop` 使用正式 App 数据；需要隔离时使用
-  `npm run dev:desktop:isolated`，`npm run dev:desktop:live` 保留为同一正式数据入口的兼容别名。
-  源码检查后手动应用后端/Electron 更新；
-  热加载烟测使用 `npm run test:desktop:dev`，始终在临时目录运行。
+- 网站正式启动：`npm start`；构建资源：`npm run build:studio`；用户级后台服务：`npm run website:service -- install|start|stop|status|uninstall`。
+- 开发使用 `.local/dev-runtime/` 和后端 9001，正式数据位于 `.runtime/`，自动测试不得读取正式数据。
 - 数据库迁移：`npm run db:migrate`；只检查迁移状态：`npm run db:migrate:check`。
 - OpenAPI 生成与 stale-check：`npm run contracts:generate`、`npm run contracts:check`。
 - 测试：`npm test`；浏览器端到端测试：`npm run test:e2e`。
@@ -70,26 +68,13 @@
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
   在所属能力内按具体职责命名文件或子包，例如 `llm/catalog/`、`capabilities/asset_store/`。
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。
-- `desktop/` 只拥有 Electron 壳、私有启动协议和打包。桌面数据根为
-  `~/Library/Application Support/Future Props Lab/`，隔离开发版为 `Future Props Lab Development/`；
-  `runtime/` 保存数据库与素材，`backend/config.toml` 保存配置与加密密钥，禁止复制仓库运行数据。
-  桌面配置必须在数据库模块导入前初始化。仅桌面入口托管 Web 静态页，HTML 回退仅用于页面导航，
-  未知 `/v1` API 与缺失资源仍为 404；首次账号接口仅在桌面私有凭据边界内启用。
-- 桌面 Web 入口由 `capabilities/web_access/` 复用同一 ASGI 应用并关闭附加监听器 lifespan；本地与公网开关只在内存，每次启动默认关闭。网关配置经私有管理员 Session、近期验证、原生宿主交接和持锁停机备份后发布；公网与 Agent 不得调用控制接口。云端只托管带校验清单的程序资源，私人 API/素材不得进入共享缓存。
-- 默认桌面开发使用正式数据是受控流程，不复制或合并仓库数据；隔离开发仍通过
-  `dev:desktop:isolated` 使用独立目录。启动器持有数据锁，覆盖
-  后端/Electron 更新交接；首次正式数据入口运行停机备份完整 `runtime/` 与配置并核验 SHA256 和 SQLite
-  完整性。备份在同级 `Future Props Lab Development Backup …/`，最近成功配置在
-  `development/last-success-config.toml`（0600）。配置变更前保留停机快照；新增/漂移迁移阻止启动和
-  应用更新，不在热加载流程内执行正式迁移。更新不得绕过未保存保护或自动重试写入/模型提交。
-  开发网关在同一窗口生命周期内保持来源稳定，只向固定 Vite/后端转发并校验私有凭据；Vite 不代理
-  业务 API。正式打包不启用开发桥或开发网关，自动测试不得使用 live 数据。
+- 浏览器是唯一客户端。`runtime/website.py` 拥有可信监听入口和静态页面，`scripts/website/serve.py` 在数据库导入前加载 TOML、核验迁移并持有正式数据锁；存在待处理迁移时拒绝启动，不在重启时执行未核准迁移。原桌面代码仅保留于归档分支。
+- 正式网站数据保存在项目 `.runtime/`，本地模型位于 `.runtime/local-models/`，配置仅在 `backend/config.toml`。从桌面迁入时唯一源为当时正在使用的 Application Support/Future Props Lab；完整停机、备份、核验后迁入，不与项目旧开发库合并，不更换加密密钥。原目录和恢复快照在验收前保留。
+- 本机 9000 与公网回环 28081 共用一个 ASGI 应用和 Runner 生命周期。`capabilities/web_access/` 拥有附加监听器与专用 SSH 生命周期；附加 lifespan 关闭。本机管理权限依据实际 socket，不信任客户端 hostname 或转发头。公网管理员也不得管理主机目录、Codex、磁盘或访问配置；相关菜单只在本机入口显示。
+- 网站静态资源通过 `build:studio` 构建清单、哈希与压缩文件；云端仅托管程序。`/v1`、私人素材、SSE 不进入共享缓存，HTML 回退不覆盖未知 API 和缺失资源。公网启动要求构建匹配。
 - Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，按账号／用途的授权归治理；固定业务任务共用连接注册表并保留自有任务边界。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
-- 桌面 CLI/SDK 接入默认关闭。`agent/` 保存无密钥的连接描述和 `0600` 客户端凭据，目录为
-  `0700`；短路径 Unix Socket 由 Electron 持有，私有启动 token 不得交给 SDK。Agent 通道只开放
-  `console/governance/desktop_agent_operations.json` 明确登记的业务操作，新 API 默认拒绝。配对与界面请求
-  只保存在内存，授权复用 Management API Key；不得通过 Agent 通道开放账号治理、密钥管理或系统命令。
-  `fpl` 随 App 打包，独立 Python SDK 不依赖后端；自动化验收必须使用临时数据目录。
+- CLI/SDK/MCP 使用网站地址和 Management API Key。`console/governance/automation_operations.json` 维护业务白名单，`/v1/automation` 提供能力发现与有归属校验的资源链接；不控制浏览器标签页，不开放账号治理、密钥管理或任意系统命令。客户端凭据目录 0700、文件 0600，不通过参数或日志传递密钥。
+- Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证
   基础设施，`generated/` 只保存生成契约。
@@ -203,4 +188,4 @@
   历史迁移不改写，旧 Session 与 Management API Key 全部撤销。角色 `super_admin/admin` 合并为 `admin`，`member` 变为 `user`。
 - 文件归属清单由 `capabilities/asset_store/account_upgrade.py` 和正式布局 API 执行，路径为 `accounts/<user-id>/`。
   迁移期间仅允许身份与管理员布局升级接口，后台任务不启动；逐文件校验后落盘，拒绝链接和异内容覆盖，保留原文件作恢复副本。
-  完成后必须重启应用；开发测试只使用隔离数据库，禁止自动升级或重启正式桌面实例。
+  完成后必须重启应用；开发测试只使用隔离数据库，禁止自动升级或重启未核准的正式实例。

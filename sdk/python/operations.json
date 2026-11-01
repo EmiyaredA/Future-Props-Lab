@@ -287,6 +287,14 @@
     "method": "me",
     "resource": "accounts"
   },
+  "GET /v1/automation/capabilities": {
+    "method": "capabilities",
+    "resource": "automation"
+  },
+  "GET /v1/automation/changes": {
+    "method": "changes",
+    "resource": "automation"
+  },
   "GET /v1/code-agents": {
     "method": "list_code_agents",
     "resource": "code_agents"
@@ -318,26 +326,6 @@
   "GET /v1/demo-services/tools/{tool}": {
     "method": "example_tool",
     "resource": "demo_calls"
-  },
-  "GET /v1/desktop/agent/capabilities": {
-    "method": "capabilities",
-    "resource": "desktop"
-  },
-  "GET /v1/desktop/agent/pairings": {
-    "method": "pending_pairings",
-    "resource": "desktop"
-  },
-  "GET /v1/desktop/setup": {
-    "method": "get_setup",
-    "resource": "desktop"
-  },
-  "GET /v1/desktop/ui/inbox": {
-    "method": "inbox",
-    "resource": "desktop"
-  },
-  "GET /v1/desktop/ui/requests/{request_id}": {
-    "method": "open_status",
-    "resource": "desktop"
   },
   "GET /v1/director-desk/library/files/{key}": {
     "method": "download_library_file",
@@ -1335,6 +1323,10 @@
     "method": "registration",
     "resource": "governance"
   },
+  "POST /v1/automation/open": {
+    "method": "open_resource",
+    "resource": "automation"
+  },
   "POST /v1/code-agents/detect": {
     "method": "detect_code_agents",
     "resource": "code_agents"
@@ -1378,30 +1370,6 @@
   "POST /v1/demo-services/model/chat/completions": {
     "method": "mock_completion",
     "resource": "demo_calls"
-  },
-  "POST /v1/desktop/agent/pairings": {
-    "method": "begin_pairing",
-    "resource": "desktop"
-  },
-  "POST /v1/desktop/agent/pairings/{pair_id}/claim": {
-    "method": "claim_pairing",
-    "resource": "desktop"
-  },
-  "POST /v1/desktop/agent/pairings/{pair_id}/decision": {
-    "method": "decide_pairing",
-    "resource": "desktop"
-  },
-  "POST /v1/desktop/setup": {
-    "method": "create_first_account",
-    "resource": "desktop"
-  },
-  "POST /v1/desktop/ui/open": {
-    "method": "open_in_app",
-    "resource": "desktop"
-  },
-  "POST /v1/desktop/ui/requests/{request_id}/ack": {
-    "method": "acknowledge",
-    "resource": "desktop"
   },
   "POST /v1/director-desk/library/files": {
     "method": "upload_library_file",

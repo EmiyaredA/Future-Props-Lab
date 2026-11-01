@@ -20,6 +20,7 @@ export type LocalModelAction =
   Parameters<typeof localModelAction>[1] | "attach";
 const actionMessages: Record<LocalModelAction, string> = {
   install: "已开始安装，完成后会自动启用服务。",
+  repair: "已开始修复运行环境，保留模型权重；期间暂停本地推理。",
   cancel: "已取消安装，可主动重试。",
   enable: "已启用本机服务，首次调用时加载模型。",
   stop: "已停止本机服务，各空间暂时无法调用此模型。",

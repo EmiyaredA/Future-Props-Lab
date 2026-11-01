@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 from cryptography.fernet import Fernet
-from desktop.backend.entry import prepare_configuration
 
 from app.runtime.config import Settings
 from fpl_config import ConfigurationError, read_config
@@ -126,36 +125,13 @@ def test_precedence_and_desktop_isolation(tmp_path, monkeypatch):
     assert Settings(_config_file=path).fpl_skill_max_files == 5
     assert Settings(_config_file=path, fpl_skill_max_files=6).fpl_skill_max_files == 6
     assert Settings(_config_file=path, _read_environment=False).fpl_skill_max_files == 4
-    desktop_path = legacy(tmp_path / "desktop/backend", "FPL_DATABASE_PATH=/wrong/path.db\n")
-    monkeypatch.setenv("FPL_SECRETS_KEY", "invalid-shell-secret")
-    desktop = prepare_configuration(tmp_path / "desktop")
-    assert desktop.fpl_secrets_key == KEY
-    assert desktop.fpl_skill_max_files == 500
-    assert desktop.database_path == tmp_path / "desktop/runtime/future-props.db"
-    assert desktop.cors_origins == ""
-    assert desktop.auth_cookie_secure is False
-    assert desktop_path.exists()
 
 
-def test_missing_desktop_key_never_regenerates(tmp_path):
-    root = tmp_path / "data"
-    (root / "runtime").mkdir(parents=True)
-    (root / "runtime/future-props.db").touch()
-    with pytest.raises(ValueError, match="密钥缺失"):
-        prepare_configuration(root)
-    assert not (root / "backend/config.toml").exists()
-
-
-def test_missing_legacy_key_and_invalid_toml_do_not_bootstrap(tmp_path):
-    config = tmp_path / "backend/config.toml"
-    config.parent.mkdir()
-    config.with_name(".env").write_text("APP_PORT=9000\n")
-    with pytest.raises(ConfigurationError, match="缺失"):
-        prepare_configuration(tmp_path)
-    assert not config.exists()
+def test_invalid_config_never_regenerates_key(tmp_path):
+    config = tmp_path / "config.toml"
     config.write_text("[security]\nsecrets_key = 'invalid-secret'\n")
     with pytest.raises(ConfigurationError) as error:
-        prepare_configuration(tmp_path)
+        Settings.validate_file_values(read_config(config))
     assert "invalid-secret" not in str(error.value)
     assert "invalid-secret" in config.read_text()
 

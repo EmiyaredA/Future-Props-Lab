@@ -30,18 +30,12 @@ from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
 
 
-@pytest.fixture(autouse=True)
-def desktop_amadeus(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(app.state, "desktop_enabled", True, raising=False)
-
-
 @pytest.mark.asyncio
-async def test_amadeus_routes_are_desktop_only(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(app.state, "desktop_enabled", False)
+async def test_amadeus_routes_work_without_native_shell():
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
-        assert (await client.get("/v1/amadeus/conversations")).status_code == 404
+        assert (await client.get("/v1/amadeus/conversations")).status_code == 200
 
 
 @pytest.mark.asyncio

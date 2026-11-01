@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import { useState } from "react";
 import {
   useInfiniteQuery,
@@ -153,15 +154,15 @@ export function CommunityPage({
             <p>发现文档，分享知识，让想法继续生长。</p>
           </div>
           <div className="knowledge-top-actions">
-            {window.futurePropsDesktop?.openAmadeus && (
+            {
               <button
                 className="btn"
                 aria-label="打开 Amadeus"
-                onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+                onClick={() => void openAmadeus()}
               >
                 <Sparkles size={16} aria-hidden /> Amadeus
               </button>
-            )}
+            }
             {seed.data && (
               <button className="btn" onClick={() => setImporting(true)}>
                 导入现有官方文档

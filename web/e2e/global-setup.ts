@@ -1,7 +1,7 @@
 import { request } from "@playwright/test";
 
 export default async function globalSetup() {
-  const port = process.env.FPL_E2E_API_PORT || "9000";
+  const port = process.env.FPL_E2E_API_PORT || "19001";
   const context = await request.newContext({
     baseURL: `http://127.0.0.1:${port}`,
   });

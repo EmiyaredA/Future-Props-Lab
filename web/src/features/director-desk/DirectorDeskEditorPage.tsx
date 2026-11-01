@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
@@ -69,7 +70,7 @@ export function DirectorDeskEditorPage({
             }
           },
         });
-        if (window.futurePropsDesktop?.openAmadeus) {
+        {
           const actions = document.querySelector<HTMLElement>(
             ".director-desk-root .header-actions",
           );
@@ -79,10 +80,7 @@ export function DirectorDeskEditorPage({
             trigger.className = "subtle";
             trigger.setAttribute("aria-label", "打开 Amadeus");
             trigger.textContent = "✦ Amadeus";
-            trigger.addEventListener(
-              "click",
-              () => void window.futurePropsDesktop?.openAmadeus?.(),
-            );
+            trigger.addEventListener("click", () => void openAmadeus());
             actions.prepend(trigger);
           }
         }

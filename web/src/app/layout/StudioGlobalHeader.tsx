@@ -1,10 +1,10 @@
 import "./studio-global-header.css";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { useOptionalStudioSession } from "@app/StudioSession";
 import { AccountMenu } from "@features/accounts/AccountMenu";
 import { AccountPanel } from "@features/accounts";
-import { DesktopAppChrome } from "@app/layout/DesktopAppChrome";
+import { openAmadeus } from "@platform/assistant";
 
 export function StudioGlobalHeader() {
   const session = useOptionalStudioSession();
@@ -17,7 +17,15 @@ export function StudioGlobalHeader() {
         </div>
       </div>
       <div className="studio-header-actions">
-        <DesktopAppChrome />
+        <button
+          type="button"
+          className="studio-header-chip"
+          aria-label="打开 Amadeus"
+          onClick={() => void openAmadeus()}
+        >
+          <Sparkles size={16} aria-hidden />
+          <span>Amadeus</span>
+        </button>
         <a
           className="studio-docs-link"
           href="/docs.html"

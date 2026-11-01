@@ -12,10 +12,12 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .contracts import ReadBatch, SessionInfo
+from .inline_images import compact_image_record
 
 MAX_CHUNK = 4 * 1024 * 1024
 MAX_RECORD = 64 * 1024 * 1024
-MAX_EXPANDED = 256 * 1024 * 1024
+MAX_EXPANDED = 512 * 1024 * 1024
+NORMALIZATION_VERSION = 1
 SKIP_DIRS = {"node_modules", ".git", "skills", "plugins", "cache", "Cache", "attachments"}
 
 
@@ -159,12 +161,21 @@ def read_records(root: str, locator: str, checkpoint: dict):
         while consumed < MAX_CHUNK and len(records) < 2000:
             start = offset
             line = stream.readline(MAX_RECORD + 1)
+            wire_size = len(line)
             if len(line) > MAX_RECORD:
-                raise ValueError("来源单条记录超过 64 MiB")
+                line, wire_size = compact_image_record(
+                    stream,
+                    line,
+                    limit=MAX_RECORD,
+                    wire_limit=MAX_EXPANDED - offset if compressed else MAX_EXPANDED,
+                    chunk_size=MAX_CHUNK,
+                )
             if not line or not line.endswith(b"\n"):
                 break
-            offset += len(line)
-            consumed += len(line)
+            offset += wire_size
+            consumed += wire_size
+            if compressed and offset > MAX_EXPANDED:
+                raise ValueError("压缩来源记录展开体积超过限制")
             try:
                 value = json.loads(line)
             except (ValueError, UnicodeError) as exc:
@@ -201,8 +212,15 @@ class JsonlAdapter:
         )
 
     def read_history(self, root, locator, checkpoint):
-        records, updated, reset, complete = read_records(root, locator, checkpoint)
-        info = SessionInfo(**deepcopy({} if reset else checkpoint.get("info", {})))
+        # Only DSH's projected event semantics changed. Other formats retain
+        # their existing offsets instead of reindexing large, unchanged archives.
+        normalization_version = NORMALIZATION_VERSION if self.agent_id == "dsh" else 0
+        reindex = (
+            bool(checkpoint) and checkpoint.get("normalization_version", 0) != normalization_version
+        )
+        reading_state = {**checkpoint, "offset": 0, "complete": False} if reindex else checkpoint
+        records, updated, reset, complete = read_records(root, locator, reading_state)
+        info = SessionInfo(**deepcopy({} if reset or reindex else checkpoint.get("info", {})))
         entries = []
         for ordinal, record in records:
             entries.extend(self.parser(record, ordinal, info, locator))
@@ -213,7 +231,7 @@ class JsonlAdapter:
         info.archived = info.archived or (
             self.agent_id == "codex" and "archived_sessions" in (Path(root) / locator).parts
         )
-        updated = {**updated, "info": asdict(info)}
+        updated = {**updated, "info": asdict(info), "normalization_version": normalization_version}
         return ReadBatch(info, entries, updated, reset, complete)
 
     def watch(self, root, locator, checkpoint):

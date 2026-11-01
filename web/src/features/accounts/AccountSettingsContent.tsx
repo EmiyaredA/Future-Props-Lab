@@ -6,7 +6,6 @@ import { auditLabels } from "./auditLabels";
 import { useRef } from "react";
 import { Upload } from "lucide-react";
 import { ApiKeysSettings } from "./ApiKeysSettings";
-import { DesktopAgentSettings } from "./DesktopAgentSettings";
 import "./account-profile.css";
 export function AccountSettingsContent({
   state,
@@ -231,7 +230,6 @@ export function AccountSettingsContent({
       ) : null}
       {tab === "keys" ? (
         <>
-          <DesktopAgentSettings />
           <ApiKeysSettings state={state} />
         </>
       ) : null}

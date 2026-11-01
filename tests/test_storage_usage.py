@@ -152,8 +152,14 @@ async def test_api_desktop_mac_session_and_admin_guards(tmp_path, monkeypatch):
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
-        assert (await client.get(base)).status_code == 404
-        monkeypatch.setattr(app.state, "desktop_enabled", True, raising=False)
+        assert (await client.get(base)).status_code == 403
+        from fastapi import HTTPException
+
+        def local_session(_request, principal):
+            if principal.auth_kind != "session":
+                raise HTTPException(403)
+
+        monkeypatch.setattr(routes, "require_local_browser", local_session)
         assert (await client.get(base)).json()["analyzer"]["version"] == "3.8.1"
         for suffix in ("/analyze", "/open-directory"):
             response = await client.post(base + suffix, json={"directory": str(tmp_path)})
@@ -202,8 +208,7 @@ def test_storage_operations_are_not_agent_allowlisted():
 
     allowlist = json.loads(
         (
-            Path(__file__).parents[1]
-            / "backend/app/console/governance/desktop_agent_operations.json"
+            Path(__file__).parents[1] / "backend/app/console/governance/automation_operations.json"
         ).read_text()
     )
     assert not any("/tool-navigation/storage-usage" in key for key in allowlist["operations"])

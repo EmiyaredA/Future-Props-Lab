@@ -115,7 +115,13 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
   let source = { ...workbenchSource };
   let historyCount = 4;
   let historyRequests = 0;
+  let historyFailure = false;
   let bound = false;
+  // This fixture exercises the local source form; transport trust is covered by
+  // website API tests rather than inferred from Vite's test proxy.
+  await page.route("**/v1/automation/runtime", (route) =>
+    route.fulfill({ json: { local_browser: true } }),
+  );
   await page.route("**/v1/agent-workbench/**", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace("/v1/agent-workbench", "");
@@ -160,6 +166,11 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
     }
     if (path.endsWith("/history")) {
       historyRequests++;
+      if (historyFailure)
+        return route.fulfill({
+          status: 503,
+          json: { detail: "验收：来源暂时不可达，已保留阅读副本" },
+        });
       return route.fulfill({
         json: {
           items: workbenchEntries(historyCount),
@@ -292,6 +303,9 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
           page.getByRole("dialog", { name: "已有会话" }),
         ).toBeVisible();
         await expectMenuPalette(page);
+        await page.screenshot({
+          path: resolve(qa, `workbench-drawer-${width}-${theme}.png`),
+        });
         await page.keyboard.press("Escape");
       } else {
         await expectMenuPalette(
@@ -301,6 +315,9 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
             : undefined,
         );
       }
+      await page.screenshot({
+        path: resolve(qa, `workbench-${width}-${theme}.png`),
+      });
       if (width === 390 && theme === "dark")
         await page.screenshot({
           path: resolve(qa, "workbench-mobile-dark.png"),
@@ -311,6 +328,63 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
         });
     }
   }
+  historyFailure = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  const failure = page.locator(".aw-conversation [role='alert']");
+  await expect(failure).toBeVisible();
+  for (const theme of ["light", "dark"]) {
+    await page
+      .getByRole("button", {
+        name: theme === "dark" ? "深色" : "浅色",
+        exact: true,
+      })
+      .click();
+    const palette = await failure.evaluate((node) => {
+      const probe = document.createElement("span");
+      probe.style.color = "color-mix(in srgb, var(--danger) 85%, var(--text))";
+      probe.style.backgroundColor = "var(--danger-soft)";
+      document.body.append(probe);
+      const expected = getComputedStyle(probe);
+      const actual = getComputedStyle(node);
+      const context = document.createElement("canvas").getContext("2d")!;
+      const luminance = (color: string) => {
+        context.fillStyle = color;
+        context.fillRect(0, 0, 1, 1);
+        const [r, g, b] = Array.from(context.getImageData(0, 0, 1, 1).data)
+          .slice(0, 3)
+          .map((v) => {
+            const s = v / 255;
+            return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+          });
+        return r * 0.2126 + g * 0.7152 + b * 0.0722;
+      };
+      const foreground = luminance(actual.color);
+      const background = luminance(actual.backgroundColor);
+      const value = {
+        foreground: actual.color,
+        background: actual.backgroundColor,
+        expectedForeground: expected.color,
+        expectedBackground: expected.backgroundColor,
+        contrast:
+          (Math.max(foreground, background) + 0.05) /
+          (Math.min(foreground, background) + 0.05),
+      };
+      probe.remove();
+      return value;
+    });
+    expect(palette.foreground).toBe(palette.expectedForeground);
+    expect(palette.background).toBe(palette.expectedBackground);
+    expect(palette.contrast).toBeGreaterThanOrEqual(4.5);
+    await page.locator(".aw-messages").evaluate((node) => {
+      node.scrollTop = 0;
+    });
+    await page.screenshot({
+      path: resolve(qa, `workbench-error-${theme}.png`),
+    });
+  }
+  historyFailure = false;
+  await page.getByRole("button", { name: "重新读取", exact: true }).click();
+  await expect(failure).toHaveCount(0);
   await page
     .getByRole("navigation", { name: "工作台导航" })
     .getByRole("button", { name: "来源" })

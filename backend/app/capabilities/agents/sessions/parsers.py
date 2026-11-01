@@ -287,6 +287,27 @@ def dsh(record, ordinal, info, _locator):
     if kind in {"request/context", "model/selection"}:
         info.model = data.get("model") or info.model
     key = str(record.get("seq", ordinal))
+    reason = data.get("reason")
+    if kind == "turn/end" and isinstance(reason, dict) and reason.get("kind") == "error":
+        failure = reason.get("error")
+        if isinstance(failure, dict):
+            code = str(failure.get("code") or "")
+            message = text(failure.get("message"))
+        else:
+            code, message = "", text(failure)
+        return [
+            update(
+                info,
+                Entry(
+                    key,
+                    ordinal,
+                    "system",
+                    "error",
+                    ": ".join(filter(None, [code, message])) or "原端执行失败",
+                    at,
+                ),
+            )
+        ]
     if kind == "tool/call":
         return [
             update(

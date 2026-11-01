@@ -1,4 +1,5 @@
 export const accountQueryKeys = {
+  runtime: () => ["accounts", "runtime"] as const,
   syncHistory: (role: string) =>
     ["accounts", "platform", "sync-history", role] as const,
   invites: (filters: object) =>

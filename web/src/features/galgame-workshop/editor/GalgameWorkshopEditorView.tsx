@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import "../styles/compact-workspaces.css";
 import { Suspense, useEffect, useState } from "react";
@@ -257,16 +258,16 @@ export function GalgameWorkshopEditorView({
             <kbd>{navigator.platform.includes("Mac") ? "⌘K" : "Ctrl K"}</kbd>
           </button>
           <div className="galgame-editor-actions">
-            {window.futurePropsDesktop?.openAmadeus && (
+            {
               <button
                 type="button"
                 className="galgame-editor-amadeus"
                 aria-label="打开 Amadeus"
-                onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+                onClick={() => void openAmadeus()}
               >
                 <Sparkles aria-hidden /> Amadeus
               </button>
-            )}
+            }
             <ThemeToggle compact />
             <button
               type="button"

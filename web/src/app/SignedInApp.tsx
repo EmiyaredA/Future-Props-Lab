@@ -1,17 +1,17 @@
-import { lazy, Suspense } from "react";
+import { RuntimeAccessProvider } from "@features/accounts";
+import { AutomationChanges } from "./AutomationChanges";
 import App from "./App";
-
-const DesktopRuntimeHosts = lazy(() => import("./DesktopRuntimeHosts"));
+import { useStudioSession } from "./StudioSession";
+import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
 
 export default function SignedInApp() {
+  const session = useStudioSession();
   return (
-    <>
-      <App />
-      {window.futurePropsDesktop && (
-        <Suspense fallback={null}>
-          <DesktopRuntimeHosts />
-        </Suspense>
-      )}
-    </>
+    <RuntimeAccessProvider>
+      <AmadeusPageProvider key={session.me.user.id} session={session}>
+        <App />
+        <AutomationChanges userId={session.me.user.id} />
+      </AmadeusPageProvider>
+    </RuntimeAccessProvider>
   );
 }

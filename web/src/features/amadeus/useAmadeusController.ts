@@ -1,7 +1,7 @@
 import { getAgents, type Agent as AgentOption } from "@features/code-agents";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchApiJson } from "@platform/api/client";
-import type { DesktopBridge } from "@platform/desktop";
+import { useAmadeusBridge } from "./PageContext";
 import type { AccountSessionContext } from "@features/accounts";
 import { decideAmadeusApproval } from "./approval";
 import { submitAmadeusAnswer } from "./answerQuestion";
@@ -28,7 +28,7 @@ import {
 } from "./protocol";
 
 export function useAmadeusController(session: AccountSessionContext) {
-  const bridge = window.futurePropsDesktop as Required<DesktopBridge>;
+  const bridge = useAmadeusBridge();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [historyOpen, setHistoryOpen] = useState(true);
@@ -76,7 +76,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     null,
   );
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
-  const [alwaysOnTop, setAlwaysOnTop] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const activeActionRef = useRef<{
     conversationId: string;
@@ -126,7 +125,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     setModels,
     setModelId,
     setContexts,
-    setAlwaysOnTop,
     setAvatarState,
     setLoaded,
     setLoadedConversationId,
@@ -604,8 +602,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     previewReference,
     setPreviewReference,
     avatarState,
-    alwaysOnTop,
-    setAlwaysOnTop,
     fileInputRef,
     showAvatarState,
     open,

@@ -280,6 +280,15 @@ export function LocalModelDetails({
           />
         </div>
       )}
+      {canManage && installed && (
+        <button
+          className="btn"
+          disabled={!manageable || pending || model.busy}
+          onClick={() => void act(model, "repair")}
+        >
+          修复运行环境
+        </button>
+      )}
       <footer className="lm-source">
         <a
           href={`https://huggingface.co/${model.repository}`}

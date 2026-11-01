@@ -21,10 +21,9 @@ export function StorageUsagePage({
   onBack: () => void;
   allowed: boolean;
 }) {
-  const picker = window.futurePropsDesktop?.pickStorageDirectory;
-  const available = allowed && Boolean(picker);
+  const available = allowed;
+  const [pathInput, setPathInput] = useState("");
   const [directory, setDirectory] = useState<string>();
-  const [picking, setPicking] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const query = useQuery({
@@ -54,27 +53,16 @@ export function StorageUsagePage({
       ),
   });
   const data = query.data;
-  const busy = picking || mutation.isPending || query.isFetching;
+  const busy = mutation.isPending || query.isFetching;
   const select = (path: string) => {
     setNotice("");
     setError("");
     if (path === directory) void query.refetch();
     else setDirectory(path);
   };
-  const pick = async () => {
-    if (!picker || busy) return;
-    setPicking(true);
-    setError("");
-    try {
-      const selected = await picker();
-      if (selected) select(selected);
-    } catch (failure) {
-      setError(
-        failure instanceof Error ? failure.message : "无法选择目录，请重试。",
-      );
-    } finally {
-      setPicking(false);
-    }
+  const pick = () => {
+    if (!pathInput.trim() || busy) return;
+    select(pathInput.trim());
   };
   const open = (analyze: boolean) => {
     if (!data || busy) return;
@@ -110,8 +98,7 @@ export function StorageUsagePage({
       </header>
       {!available ? (
         <div className="storage-panel" role="status">
-          此工具仅供 macOS
-          桌面版的平台超级管理员使用。请使用支持目录选择的桌面版本。
+          此工具仅供 macOS 本机网站入口的平台管理员使用。
         </div>
       ) : (
         <>
@@ -165,9 +152,17 @@ export function StorageUsagePage({
                   {shortcut.label}
                 </button>
               ))}
+              <label>
+                Mac 目录绝对路径
+                <input
+                  value={pathInput}
+                  onChange={(event) => setPathInput(event.target.value)}
+                  placeholder="/Users/your-name/Downloads"
+                />
+              </label>
               <button type="button" disabled={busy} onClick={() => void pick()}>
                 <FolderOpen aria-hidden />
-                {picking ? "正在选择…" : "选择其他目录"}
+                查看目录
               </button>
             </div>
             <p className="storage-path">

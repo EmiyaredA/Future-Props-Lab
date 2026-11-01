@@ -28,6 +28,7 @@ export function useAudience({
     id: string;
   } | null>(null);
   const [error, setError] = useState("");
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const close = () => {
     const active = session.current;
     if (!active) return;
@@ -76,6 +77,7 @@ export function useAudience({
   );
   return {
     error,
+    fallbackUrl,
     open: () => {
       if (typeof BroadcastChannel === "undefined") {
         setError("当前环境不支持独立演示窗口");
@@ -83,6 +85,7 @@ export function useAudience({
       }
       close();
       setError("");
+      setFallbackUrl(null);
       const id = crypto.randomUUID(),
         channel = new BroadcastChannel(`fpl-presentation-${id}`);
       session.current = { id, channel, window: null };
@@ -94,28 +97,20 @@ export function useAudience({
             ...latest.current,
           });
       };
-      const desktop = window.futurePropsDesktop?.openPresentationAudience;
-      if (desktop)
-        void desktop(projectId, id).catch(() => {
-          close();
-          setError("无法打开观众窗口");
-        });
-      else {
-        const url = new URL(
-          `/apps/presentation-workshop/projects/${encodeURIComponent(projectId)}`,
-          location.origin,
-        );
-        url.searchParams.set("presentationAudience", id);
-        const audience = window.open(
-          url.href,
-          `fpl-audience-${id}`,
-          "popup=yes,width=1280,height=800",
-        );
-        if (!audience) {
-          close();
-          setError("观众窗口未打开，请允许弹出窗口后重试");
-        } else session.current!.window = audience;
-      }
+      const url = new URL(
+        `/apps/presentation-workshop/projects/${encodeURIComponent(projectId)}`,
+        location.origin,
+      );
+      url.searchParams.set("presentationAudience", id);
+      const audience = window.open(
+        url.href,
+        `fpl-audience-${id}`,
+        "popup=yes,width=1280,height=800",
+      );
+      if (!audience) {
+        setFallbackUrl(url.href);
+        setError("浏览器拦截了观众窗口，可使用下方链接打开");
+      } else session.current!.window = audience;
     },
   };
 }

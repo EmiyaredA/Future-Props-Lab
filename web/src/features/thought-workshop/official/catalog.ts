@@ -83,7 +83,7 @@ const generalChapters = [
   ["files", "文件管理与引用", "平台基础"],
   ["integrations", "工具 API、MCP 与 Skill", "平台基础"],
   ["creative", "创意工坊与固定版本安装", "平台基础"],
-  ["desktop", "桌面、Amadeus 与本地 Agent", "桌面与自动化"],
+  ["desktop", "网站、Amadeus 与本地 Agent", "网站与自动化"],
   ["tools", "工具导航与视频帧导出", "平台基础"],
   ["automation", "SDK/API 使用指南", "桌面与自动化"],
   ["applications", "应用总览与选用", "开始使用"],

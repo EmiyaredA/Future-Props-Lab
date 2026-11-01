@@ -42,7 +42,6 @@ export function renderCanvas() {
 export function primeCanvasMocks() {
   vi.clearAllMocks();
   window.localStorage.clear();
-  delete window.futurePropsDesktop;
   Object.defineProperty(window, "PointerEvent", {
     configurable: true,
     value: MouseEvent,

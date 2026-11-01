@@ -7,7 +7,7 @@ import {
   type SetStateAction,
 } from "react";
 import { fetchApiJson } from "@platform/api/client";
-import type { DesktopBridge } from "@platform/desktop";
+import type { AmadeusPageBridge } from "./PageContext";
 import type { AccountSessionContext } from "@features/accounts";
 import type {
   AvatarState,
@@ -34,7 +34,7 @@ function clearAvatarTimer(ref: RefObject<number | undefined>) {
 
 type Options = {
   session: AccountSessionContext;
-  bridge: Required<DesktopBridge>;
+  bridge: AmadeusPageBridge;
   detail: Detail | null;
   detailRef: RefObject<Detail | null>;
   contextRef: RefObject<Context[]>;
@@ -56,7 +56,6 @@ type Options = {
   setModels: Dispatch<SetStateAction<ModelOption[]>>;
   setModelId: Dispatch<SetStateAction<string>>;
   setContexts: Dispatch<SetStateAction<Context[]>>;
-  setAlwaysOnTop: Dispatch<SetStateAction<boolean>>;
   setAvatarState: Dispatch<SetStateAction<AvatarState>>;
   setLoaded: Dispatch<SetStateAction<string[]>>;
   setLoadedConversationId: Dispatch<SetStateAction<string | null>>;
@@ -86,7 +85,6 @@ export function useAmadeusData(options: Options) {
     setModels,
     setModelId,
     setContexts,
-    setAlwaysOnTop,
     setAvatarState,
     setLoaded,
     setLoadedConversationId,
@@ -218,9 +216,6 @@ export function useAmadeusData(options: Options) {
     void bridge.amadeusContexts().then((value) => {
       if (alive) setContexts(value as Context[]);
     });
-    void bridge.amadeusAlwaysOnTop().then((value) => {
-      if (alive && typeof value === "boolean") setAlwaysOnTop(value);
-    });
     const offContexts = bridge.onAmadeusContexts((value) => {
       if (alive) setContexts(value as Context[]);
     });
@@ -272,7 +267,6 @@ export function useAmadeusData(options: Options) {
     setModels,
     setModelId,
     setContexts,
-    setAlwaysOnTop,
     setAvatarState,
   ]);
 

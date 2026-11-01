@@ -3,8 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
-const apiPort = process.env.FPL_E2E_API_PORT || "9000";
+const apiPort = process.env.FPL_E2E_API_PORT || "19001";
 const webPort = process.env.FPL_E2E_WEB_PORT || "3000";
+const isolatedConfig =
+  process.env.FPL_E2E_CONFIG_FILE ||
+  join(tmpdir(), `fpl-e2e-config-${process.pid}.toml`);
 const databasePath =
   process.env.FPL_E2E_DATABASE_PATH ||
   `/tmp/future-props-lab-e2e-${process.pid}.db`;
@@ -44,12 +47,13 @@ export default defineConfig({
   webServer: [
     {
       command:
-        "PYTHONPATH=.. " +
+        `FPL_CONFIG_FILE=${isolatedConfig} PYTHONPATH=.. ` +
         "FPL_SECRETS_KEY=Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys= " +
         `FPL_DATABASE_PATH=${databasePath} ` +
         `CORS_ORIGINS=http://127.0.0.1:${webPort} ` +
         "FPL_E2E_PASSWORD=E2E-Password-2026! " +
         "../.venv/bin/python ../scripts/e2e_account.py && " +
+        `FPL_CONFIG_FILE=${isolatedConfig} ` +
         "PYTHONPATH=.. FPL_SECRETS_KEY=Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys= " +
         `FPL_DATABASE_PATH=${databasePath} ` +
         `CORS_ORIGINS=http://127.0.0.1:${webPort} ` +
@@ -60,6 +64,7 @@ export default defineConfig({
     {
       command: process.env.FPL_E2E_WEB_COMMAND || "npm run dev",
       env: {
+        FPL_VITE_API_TARGET: `http://127.0.0.1:${apiPort}`,
         FPL_VITE_CACHE_DIR: join(
           mkdtempSync(join(tmpdir(), "fpl-e2e-vite-")),
           "node_modules/.vite",

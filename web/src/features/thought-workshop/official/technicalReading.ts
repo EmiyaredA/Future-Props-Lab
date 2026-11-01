@@ -219,7 +219,7 @@ export const TECHNICAL_READING: Record<
     ],
   },
   desktop: {
-    summary: "解释桌面启动、共享运行时的按需访问、程序发布与持锁备份更新边界。",
+    summary: "解释网站服务、可信本机与公网入口、程序发布及持锁备份和恢复边界。",
     related: [
       {
         libraryId: "technical",

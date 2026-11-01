@@ -5,5 +5,5 @@ export { ProjectCertification } from "./ProjectCertification";
 
 export { accountQueryKeys } from "./queryKeys";
 
-export { DesktopAgentSettings } from "./DesktopAgentSettings";
-export { useDesktopAgentAccess } from "./useDesktopAgentAccess";
+export { useRuntimeAccess } from "./useRuntimeAccess";
+export { RuntimeAccessProvider } from "./RuntimeAccessProvider";

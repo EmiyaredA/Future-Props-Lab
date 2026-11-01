@@ -288,40 +288,12 @@ test("keeps ordinary panel scrolling but captures panel pinch zoom", async () =>
   expect(screen.getByRole("button", { name: "111%" })).toBeInTheDocument();
 });
 
-test("desktop canvas chrome opens a new window via the bridge", async () => {
+test("canvas chrome opens the current website in a browser window", async () => {
   const user = userEvent.setup();
-  const openNewWindow = vi.fn();
-  window.futurePropsDesktop = {
-    version: 1,
-    status: vi.fn(),
-    retry: vi.fn(),
-    openLogs: vi.fn(),
-    minimize: vi.fn(),
-    close: vi.fn(),
-    openNewWindow,
-    agentStatus: vi.fn(),
-    enableAgent: vi.fn(),
-    disableAgent: vi.fn(),
-    onQuitRequested: vi.fn(() => vi.fn()),
-  };
   const open = vi.spyOn(window, "open").mockReturnValue(null);
-
   renderCanvas();
   expect(await screen.findByText("未命名项目")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "新建窗口" }));
-
-  expect(openNewWindow).toHaveBeenCalledOnce();
-  expect(open).not.toHaveBeenCalled();
-});
-
-test("browser canvas chrome opens the current page in a new tab", async () => {
-  const user = userEvent.setup();
-  const open = vi.spyOn(window, "open").mockReturnValue(null);
-
-  renderCanvas();
-  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "新建窗口" }));
-
   expect(open).toHaveBeenCalledWith(
     window.location.href,
     "_blank",

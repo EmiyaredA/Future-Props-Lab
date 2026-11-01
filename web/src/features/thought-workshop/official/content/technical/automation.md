@@ -2,19 +2,19 @@
 
 让 Agent 把架构图写进知识库，最关键的不是生成 JSON，而是明确写到哪一个库、使用哪个版本，以及失败后是否已经创建成功。
 
-本文以创建一篇可编辑画板笔记为例。SDK 和桌面 Agent 都调用正式业务能力：它们不会获得绕过权限、直接修改 SQLite 的特殊通道。外部工具、MCP 和 Skill 提供的是另一类集成能力，也不能代替本项目写入所需的身份与版本。
+本文以创建一篇可编辑画板笔记为例。SDK 和网站 CLI/MCP 都调用正式业务能力：它们不会获得绕过权限、直接修改 SQLite 的特殊通道。外部工具、MCP 和 Skill 提供的是另一类集成能力，也不能代替本项目写入所需的身份与版本。
 
 ## 两种客户端共用正式业务边界
 
-HTTP SDK 与桌面 Agent 都能操作项目，为什么还要区分两条入口？
+HTTP SDK 与 CLI/MCP 都能操作项目，为什么还要区分两条入口？
 
 ```fpl-canvas
 automation
 ```
 
-图例：两个客户端入口共用业务规则，但凭证与传输方式不同。桌面通道额外按操作登记表放行，普通 HTTP SDK 仍遵循路由权限；均不能直接修改数据库文件。
+图例：两个客户端入口共用业务规则，但凭证与传输方式不同。CLI/MCP 额外按操作登记表放行，普通 HTTP SDK 仍遵循路由权限；均不能直接修改数据库文件。
 
-普通 SDK 根据配置连接正式 API，授权范围由凭证决定。桌面 Agent 先经过配对与私有通道，并额外限制可调用的操作集合。两者最终进入相同的业务校验；桌面启动器的私有 token 不应交给普通脚本。
+普通 SDK 根据配置连接正式 API，授权范围由凭证决定。CLI/MCP 使用网站地址和 Management API Key，并额外限制可调用的操作集合。两者最终进入相同的业务校验；客户端密钥只通过受保护配置或进程环境提供。
 
 ## 授权请求到业务结果
 
@@ -88,7 +88,7 @@ def create_diagram_note(client: Client, knowledge_base_id: str):
 
 ## 认证、操作白名单与业务前提分别检查
 
-独立 SDK 只消费正式 HTTP 契约，不导入后端 ORM。桌面 Agent 连接使用专用凭据和 Unix Socket，白名单操作是额外入口限制；私有启动 token 不交给 SDK。请求仍需要当前权限、目标归属与 expected_revision，不能因由本机脚本发起就自动获得全局权限。
+独立 SDK 只消费正式 HTTP 契约，不导入后端 ORM。CLI/MCP 连接使用专用凭据和 Unix Socket，白名单操作是额外入口限制；私有启动 token 不交给 SDK。请求仍需要当前权限、目标归属与 expected_revision，不能因由本机脚本发起就自动获得全局权限。
 
 创建笔记确认目标知识库与目录前提，修改笔记先读取当前快照；调用成功后重新获取或检查返回版本。请求结果不明时先确认目标是否已生成，避免把重试解释成无条件重复创建。
 
@@ -107,4 +107,4 @@ def create_diagram_note(client: Client, knowledge_base_id: str):
 
 1. `sdk/python/src/future_props_lab/canvas_example.py`
 2. `sdk/python/src/future_props_lab/generated/resources/thought.py`
-3. `backend/app/console/governance/desktop_agent_operations.json`
+3. `backend/app/console/governance/automation_operations.json`

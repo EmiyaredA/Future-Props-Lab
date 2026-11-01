@@ -199,18 +199,7 @@ class AcceptanceTemplateWriteIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
 class AccessAction(WireModel):
-    action: Literal['local_start', 'local_stop', 'public_start', 'public_stop', 'check'] = Field(default=..., alias='action')
-
-class AccessConfigIn(WireModel):
-    expected_revision: str = Field(default=..., alias='expected_revision', min_length=64, max_length=64)
-    profile: GatewayProfile = Field(default=..., alias='profile')
-
-class AccessConfigOut(WireModel):
-    identity_fingerprint: str = Field(default='', alias='identity_fingerprint')
-    known_hosts_fingerprint: str = Field(default='', alias='known_hosts_fingerprint')
-    legacy_available: bool = Field(default=False, alias='legacy_available')
-    profile: GatewayProfile = Field(default=..., alias='profile')
-    revision: str = Field(default=..., alias='revision')
+    action: Literal['public_start', 'public_stop', 'check'] = Field(default=..., alias='action')
 
 class AccessStatus(WireModel):
     build_id: str = Field(default='', alias='build_id')
@@ -321,29 +310,6 @@ class AddTransitionOperation(WireModel):
     transition: VideoEditorTimelineTransition = Field(default=..., alias='transition')
     type: Literal['addTransition'] = Field(default=..., alias='type')
 
-class AgentCapabilities(WireModel):
-    operations: dict[str, Any] = Field(default=..., alias='operations')
-    owner_user_id: str = Field(default=..., alias='owner_user_id')
-    schemas: dict[str, Any] = Field(default=..., alias='schemas')
-    scopes: list[str] = Field(default=..., alias='scopes')
-    user_id: str = Field(default=..., alias='user_id')
-    version: int = Field(default=1, alias='version')
-
-class AgentClaimIn(WireModel):
-    claim_token: str = Field(default=..., alias='claim_token', repr=False, min_length=32, max_length=128)
-
-class AgentClaimOut(WireModel):
-    api_key: str | None = Field(default=None, alias='api_key', repr=False)
-    key_id: str | None = Field(default=None, alias='key_id')
-    owner_user_id: str | None = Field(default=None, alias='owner_user_id')
-    status: str = Field(default=..., alias='status')
-    user_id: str | None = Field(default=None, alias='user_id')
-
-class AgentDecisionIn(WireModel):
-    approve: bool = Field(default=..., alias='approve')
-    code: str = Field(default=..., alias='code', min_length=6, max_length=6)
-    expected_owner_user_id: str = Field(default=..., alias='expected_owner_user_id', min_length=1, max_length=128)
-
 class AgentOut(WireModel):
     available: bool = Field(default=..., alias='available')
     enabled: bool = Field(default=..., alias='enabled')
@@ -354,25 +320,6 @@ class AgentOut(WireModel):
     name: str = Field(default=..., alias='name')
     status: str = Field(default=..., alias='status')
     version: str = Field(default=..., alias='version')
-
-class AgentPairIn(WireModel):
-    name: str = Field(default=..., alias='name', min_length=1, max_length=80)
-    scope: Literal['studio:read', 'studio:write'] = Field(default='studio:read', alias='scope')
-
-class AgentPairOut(WireModel):
-    code: str = Field(default=..., alias='code')
-    id: str = Field(default=..., alias='id')
-    name: str = Field(default=..., alias='name')
-    scope: str = Field(default=..., alias='scope')
-    status: str = Field(default=..., alias='status')
-
-class AgentPairStarted(WireModel):
-    claim_token: str = Field(default=..., alias='claim_token', repr=False)
-    code: str = Field(default=..., alias='code')
-    id: str = Field(default=..., alias='id')
-    name: str = Field(default=..., alias='name')
-    scope: str = Field(default=..., alias='scope')
-    status: str = Field(default=..., alias='status')
 
 class AlignAudioSeamOperation(WireModel):
     fade_duration_us: int = Field(default=..., alias='fadeDurationUs', ge=50000.0, le=1000000.0)
@@ -668,6 +615,25 @@ class AuthMeOut(WireModel):
     session_expires_at: datetime | None = Field(default=..., alias='session_expires_at')
     storage_upgrade_required: bool = Field(default=False, alias='storage_upgrade_required')
     user: CurrentUserOut = Field(default=..., alias='user')
+
+class AutomationCapabilities(WireModel):
+    operations: dict[str, Any] = Field(default=..., alias='operations')
+    owner_user_id: str = Field(default=..., alias='owner_user_id')
+    schemas: dict[str, Any] = Field(default=..., alias='schemas')
+    scopes: list[str] = Field(default=..., alias='scopes')
+    user_id: str = Field(default=..., alias='user_id')
+    version: int = Field(default=1, alias='version')
+
+class AutomationOpenIn(WireModel):
+    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
+    resource_id: str | None = Field(default=None, alias='resource_id')
+    view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
+
+class AutomationOpenOut(WireModel):
+    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
+    path: str = Field(default=..., alias='path')
+    resource_id: str | None = Field(default=None, alias='resource_id')
+    view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
 
 class BatchDeleteIn(WireModel):
     ids: list[str] | None = Field(default=None, alias='ids', max_length=200)
@@ -1020,10 +986,6 @@ class CommunitySnapshot(WireModel):
     documents: list[ThoughtNoteOut] = Field(default=..., alias='documents')
     knowledge_base: PublicationOut = Field(default=..., alias='knowledge_base')
 
-class ConfigPrepared(WireModel):
-    apply_receipt: str = Field(default=..., alias='apply_receipt')
-    restart_required: bool = Field(default=True, alias='restart_required')
-
 class ConversationDetailOut(WireModel):
     actions: list[ActionOut] | None = Field(default=None, alias='actions')
     conversation: ConversationOut = Field(default=..., alias='conversation')
@@ -1175,20 +1137,6 @@ class CreativeStdioSetupIn(WireModel):
     environment: dict[str, str] | None = Field(default=None, alias='environment')
     release_id: str = Field(default=..., alias='release_id')
 
-class CredentialImportIn(WireModel):
-    path: str = Field(default=..., alias='path', min_length=1, max_length=4096)
-    ticket: str = Field(default=..., alias='ticket', min_length=32, max_length=128)
-
-class CredentialOut(WireModel):
-    fingerprint: str = Field(default=..., alias='fingerprint')
-    id: str = Field(default=..., alias='id')
-
-class CredentialTicketIn(WireModel):
-    kind: Literal['identity', 'known_hosts'] = Field(default=..., alias='kind')
-
-class CredentialTicketOut(WireModel):
-    ticket: str = Field(default=..., alias='ticket')
-
 class CsvIn(WireModel):
     csv: str = Field(default=..., alias='csv', max_length=8388608)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -1261,35 +1209,6 @@ class DemoServiceOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     state: str = Field(default=..., alias='state')
     value: DemoConfig = Field(default=..., alias='value')
-
-class DesktopInbox(WireModel):
-    change_revision: int = Field(default=..., alias='change_revision')
-    content_change_revision: int = Field(default=0, alias='content_change_revision')
-    integration_revisions: dict[str, int] | None = Field(default=None, alias='integration_revisions')
-    requests: list[DesktopOpenOut] = Field(default=..., alias='requests')
-
-class DesktopOpenAck(WireModel):
-    status: Literal['waiting_confirmation', 'opened', 'cancelled', 'unavailable'] = Field(default=..., alias='status')
-
-class DesktopOpenIn(WireModel):
-    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
-    resource_id: str | None = Field(default=None, alias='resource_id')
-    view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
-
-class DesktopOpenOut(WireModel):
-    id: str = Field(default=..., alias='id')
-    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
-    resource_id: str | None = Field(default=None, alias='resource_id')
-    status: Literal['pending', 'waiting_confirmation', 'opened', 'cancelled', 'unavailable'] = Field(default=..., alias='status')
-    view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
-
-class DesktopSetupIn(WireModel):
-    display_name: str = Field(default='', alias='display_name', max_length=128)
-    password: str = Field(default=..., alias='password', repr=False, min_length=10, max_length=128)
-    username: str = Field(default=..., alias='username', min_length=3, max_length=64)
-
-class DesktopSetupOut(WireModel):
-    setup_required: bool = Field(default=..., alias='setup_required')
 
 class DeveloperDocumentOut(WireModel):
     group: str = Field(default=..., alias='group')
@@ -2799,16 +2718,6 @@ class GalgameWorkshopProjectPatchIn(WireModel):
     status: Literal['draft', 'completed'] | None = Field(default=None, alias='status')
     title: str | None = Field(default=None, alias='title')
 
-class GatewayProfile(WireModel):
-    host: str = Field(default='', alias='host', max_length=253)
-    identity_id: str = Field(default='', alias='identity_id')
-    known_hosts_id: str = Field(default='', alias='known_hosts_id')
-    local_port: int = Field(default=28081, alias='local_port', ge=1024.0, le=65535.0)
-    origin: str = Field(default='', alias='origin')
-    remote_port: int = Field(default=28080, alias='remote_port', ge=1024.0, le=65535.0)
-    ssh_port: int = Field(default=22, alias='ssh_port', ge=1.0, le=65535.0)
-    user: str = Field(default='', alias='user', max_length=64)
-
 class GenerationBatchListOut(WireModel):
     items: list[GenerationBatchOut] = Field(default=..., alias='items')
     total: int = Field(default=..., alias='total')
@@ -3236,7 +3145,7 @@ class LinkClipsOperation(WireModel):
     type: Literal['linkClips'] = Field(default=..., alias='type')
 
 class LocalModelActionIn(WireModel):
-    action: Literal['install', 'cancel', 'enable', 'stop', 'uninstall'] = Field(default=..., alias='action')
+    action: Literal['install', 'cancel', 'enable', 'stop', 'uninstall', 'repair'] = Field(default=..., alias='action')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
 
@@ -4585,9 +4494,6 @@ class RealtimeVoiceVadOut(WireModel):
 
 class ReauthIn(WireModel):
     password: str = Field(default=..., alias='password', repr=False)
-
-class ReceiptIn(WireModel):
-    receipt: str = Field(default=..., alias='receipt', min_length=32, max_length=128)
 
 class RecordPage(WireModel):
     groups: dict[str, int] | None = Field(default=None, alias='groups')
@@ -6579,8 +6485,6 @@ AcceptanceTemplateListOut.model_rebuild()
 AcceptanceTemplateOut.model_rebuild()
 AcceptanceTemplateWriteIn.model_rebuild()
 AccessAction.model_rebuild()
-AccessConfigIn.model_rebuild()
-AccessConfigOut.model_rebuild()
 AccessStatus.model_rebuild()
 AccountAvatarDeleteIn.model_rebuild()
 AccountCreateIn.model_rebuild()
@@ -6600,14 +6504,7 @@ ActionOut.model_rebuild()
 AddClipOperation.model_rebuild()
 AddTrackOperation.model_rebuild()
 AddTransitionOperation.model_rebuild()
-AgentCapabilities.model_rebuild()
-AgentClaimIn.model_rebuild()
-AgentClaimOut.model_rebuild()
-AgentDecisionIn.model_rebuild()
 AgentOut.model_rebuild()
-AgentPairIn.model_rebuild()
-AgentPairOut.model_rebuild()
-AgentPairStarted.model_rebuild()
 AlignAudioSeamOperation.model_rebuild()
 AnnotationEntityOperation.model_rebuild()
 AnnotationMergeOperation.model_rebuild()
@@ -6653,6 +6550,9 @@ AudioSeamCandidateOut.model_rebuild()
 AudioSeamCandidatesIn.model_rebuild()
 AudioSeamCandidatesOut.model_rebuild()
 AuthMeOut.model_rebuild()
+AutomationCapabilities.model_rebuild()
+AutomationOpenIn.model_rebuild()
+AutomationOpenOut.model_rebuild()
 BatchDeleteIn.model_rebuild()
 BatchIn.model_rebuild()
 BatchOut.model_rebuild()
@@ -6717,7 +6617,6 @@ CommunityNote.model_rebuild()
 CommunityNotePut.model_rebuild()
 CommunityReferenceTarget.model_rebuild()
 CommunitySnapshot.model_rebuild()
-ConfigPrepared.model_rebuild()
 ConversationDetailOut.model_rebuild()
 ConversationListOut.model_rebuild()
 ConversationOut.model_rebuild()
@@ -6738,10 +6637,6 @@ CreativePageOut.model_rebuild()
 CreativeReleaseOut.model_rebuild()
 CreativeRevisionIn.model_rebuild()
 CreativeStdioSetupIn.model_rebuild()
-CredentialImportIn.model_rebuild()
-CredentialOut.model_rebuild()
-CredentialTicketIn.model_rebuild()
-CredentialTicketOut.model_rebuild()
 CsvIn.model_rebuild()
 CsvPreview.model_rebuild()
 CsvSource.model_rebuild()
@@ -6756,12 +6651,6 @@ DemoInstallIn.model_rebuild()
 DemoInstallOut.model_rebuild()
 DemoLog.model_rebuild()
 DemoServiceOut.model_rebuild()
-DesktopInbox.model_rebuild()
-DesktopOpenAck.model_rebuild()
-DesktopOpenIn.model_rebuild()
-DesktopOpenOut.model_rebuild()
-DesktopSetupIn.model_rebuild()
-DesktopSetupOut.model_rebuild()
 DeveloperDocumentOut.model_rebuild()
 DeveloperDocumentsOut.model_rebuild()
 DirectorAgentCallComplete.model_rebuild()
@@ -6977,7 +6866,6 @@ GalgameWorkshopProjectCreateIn.model_rebuild()
 GalgameWorkshopProjectListOut.model_rebuild()
 GalgameWorkshopProjectOut.model_rebuild()
 GalgameWorkshopProjectPatchIn.model_rebuild()
-GatewayProfile.model_rebuild()
 GenerationBatchListOut.model_rebuild()
 GenerationBatchOut.model_rebuild()
 GenerationCancelIn.model_rebuild()
@@ -7210,7 +7098,6 @@ RealtimeVoiceOptionsOut.model_rebuild()
 RealtimeVoicePlaybackOut.model_rebuild()
 RealtimeVoiceVadOut.model_rebuild()
 ReauthIn.model_rebuild()
-ReceiptIn.model_rebuild()
 RecordPage.model_rebuild()
 RecordSpec.model_rebuild()
 RecordsDelete.model_rebuild()

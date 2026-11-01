@@ -42,6 +42,12 @@ FIELDS = {
         "executable": ("fpl_interview_codex_executable", str),
         "user_id": ("fpl_interview_codex_user_id", str),
     },
+    "website": {
+        "port": ("fpl_website_port", int),
+        "web_root": ("fpl_website_web_root", str),
+        "public_enabled": ("fpl_website_public_enabled", bool),
+        "legacy_data_root": ("fpl_website_legacy_data_root", str),
+    },
     "storage": {"database_path": ("fpl_database_path", str)},
     "security": {"secrets_key": ("fpl_secrets_key", str)},
     "http": {

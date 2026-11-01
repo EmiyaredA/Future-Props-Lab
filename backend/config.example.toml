@@ -2,7 +2,7 @@
 # 旧安装使用 npm run config:migrate -- --check / --apply 转换，勿生成替代密钥。
 
 [storage]
-# 相对路径以仓库根目录为准；桌面版由启动入口固定，忽略此项。
+# 相对路径以仓库根目录为准；正式数据与开发数据必须隔离。
 database_path = ".runtime/future-props.db"
 
 [security]
@@ -11,22 +11,29 @@ secrets_key = "replace-with-a-valid-fernet-key"
 
 [http]
 cors_origins = ["http://127.0.0.1:3000", "http://localhost:3000"]
-# HTTPS 部署必须为 true；桌面版固定使用本机同源 HTTP。
+# 本机使用 HTTP；受控公网入口为 HTTPS 响应追加 Secure Cookie。
 auth_cookie_secure = false
 
-# 桌面连接资料；运行开关仅在内存，每次启动均关闭，由管理员头像菜单开启。
+[website]
+port = 9000
+web_root = ".local/studio-release"
+public_enabled = false
+# 迁移工具写入原桌面数据根，服务持锁防止旧客户端误启动。
+legacy_data_root = ""
+
+# 公网连接资料；自动启动由 website.public_enabled 控制。
 [remote_web]
-# 兼容旧配置字段，不再控制自动启动。
+# 兼容旧配置字段，自动启动由 website.public_enabled 控制。
 enabled = false
 origin = ""
 port = 28081
-# 留空使用正式打包资源；开发模式须指向正式构建，不能指向 Vite。
+# 使用正式构建，不能指向 Vite。
 web_root = ""
 ssh_host = ""
 ssh_port = 22
 ssh_user = ""
 remote_port = 28080
-# 经原生选择器导入的文件标识；不填写私钥正文或管理员密码。
+# 已导入的专用凭据标识；不填写私钥正文或管理员密码。
 identity_id = ""
 known_hosts_id = ""
 

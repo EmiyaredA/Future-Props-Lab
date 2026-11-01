@@ -1,16 +1,10 @@
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useRuntimeAccess } from "./useRuntimeAccess";
+import { lazy, Suspense } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronDown,
   Globe,
+  ChevronDown,
   LogOut,
   Settings,
   ShieldCheck,
@@ -18,7 +12,8 @@ import {
 import type { AccountSessionContext } from "./api";
 import { avatarSrc } from "./avatarSrc";
 import "./account-navigation.css";
-const WebAccessDialog = lazy(() => import("./WebAccessDialog"));
+
+const WebsiteAccessDialog = lazy(() => import("./WebsiteAccessDialog"));
 
 export function AccountActionMenu({
   label,
@@ -165,8 +160,9 @@ export function AccountActionMenu({
 export function AccountMenu({ session }: { session: AccountSessionContext }) {
   const { me } = session;
   const [error, setError] = useState("");
+  const localBrowser = useRuntimeAccess();
+  const [accessOpen, setAccessOpen] = useState(false);
   const [pending, setPending] = useState(false);
-  const [webAccessOpen, setWebAccessOpen] = useState(false);
   const avatar = (
     <span className="account-identity-avatar">
       {me.user.avatar_url ? (
@@ -197,12 +193,12 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
           </>
         }
         items={[
-          ...(window.futurePropsDesktop && me.user.is_platform_admin
+          ...(localBrowser && me.user.is_platform_admin
             ? [
                 {
                   label: "本地与公网访问",
                   icon: <Globe size={18} />,
-                  action: () => setWebAccessOpen(true),
+                  action: () => setAccessOpen(true),
                 },
               ]
             : []),
@@ -242,9 +238,9 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
           },
         ]}
       />
-      {webAccessOpen && (
-        <Suspense fallback={<p role="status">正在加载访问面板…</p>}>
-          <WebAccessDialog onClose={() => setWebAccessOpen(false)} />
+      {accessOpen && (
+        <Suspense fallback={null}>
+          <WebsiteAccessDialog onClose={() => setAccessOpen(false)} />
         </Suspense>
       )}
       {error ? (

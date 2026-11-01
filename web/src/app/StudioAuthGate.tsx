@@ -30,8 +30,7 @@ import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realt
 import { useResourceBroadcastSync } from "@app/useResourceBroadcastSync";
 
 type Status = "checking" | "signed-out" | "signed-in";
-const registrationAllowed =
-  Boolean(window.futurePropsDesktop) || import.meta.env.MODE !== "studio";
+const registrationAllowed = import.meta.env.MODE !== "studio";
 
 export function StudioAuthGate({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -80,9 +79,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       if (request !== identityRequest.current) return;
       if (!identityRef.current) {
         if (cause instanceof ApiError && cause.status !== 401)
-          setError(
-            "本地服务未开启或暂时离线。请在 Mac 应用的“本地与公网访问”中检查连接，再重试。",
-          );
+          setError("网站服务暂时离线，请检查 Mac 网站服务状态后重试。");
         setMe(null);
         setStatus("signed-out");
       }

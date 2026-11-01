@@ -1,10 +1,11 @@
+import { useRuntimeAccess } from "@features/accounts";
 import "./sources.css";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Cable,
-  Check,
   FolderOpen,
+  Check,
   Plus,
   RefreshCw,
   Unplug,
@@ -36,6 +37,7 @@ export function SourceManager({
   sources: Source[];
   mutate: (action: () => Promise<unknown>) => Promise<boolean>;
 }) {
+  const localBrowser = useRuntimeAccess();
   const [agent, setAgent] = useState<AgentId>("codex");
   const [root, setRoot] = useState("");
   const [label, setLabel] = useState("");
@@ -49,6 +51,7 @@ export function SourceManager({
     queryKey: workbenchKeys.candidates(owner),
     queryFn: ({ signal }) => getCandidates(signal),
     retry: false,
+    enabled: localBrowser,
   });
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
@@ -95,11 +98,20 @@ export function SourceManager({
           </button>
         ))}
       </div>
-      <section className="aw-source-form" aria-label="绑定来源">
+      {!localBrowser && (
+        <p className="aw-note">
+          请在 Mac 的本机网站入口绑定来源；已绑定会话可继续查看。
+        </p>
+      )}
+      <fieldset
+        className="aw-source-form"
+        aria-label="绑定来源"
+        disabled={!localBrowser}
+      >
         <h3>选择 {agents.find((a) => a.id === agent)?.name} 来源</h3>
         {candidates.error && (
           <p className="aw-note">
-            请在 FPL 桌面窗口中绑定新的本机来源。已绑定会话仍可继续查看。
+            请在 Mac 的本机网站入口绑定新的会话来源。已绑定会话仍可继续查看。
           </p>
         )}
         <div className="aw-candidates">
@@ -183,22 +195,8 @@ export function SourceManager({
               <input
                 value={root}
                 onChange={(event) => setRoot(event.target.value)}
-                placeholder="选择或填写实际会话目录的绝对路径"
+                placeholder="填写 Mac 会话目录的绝对路径"
               />
-              {window.futurePropsDesktop?.pickStorageDirectory && (
-                <button
-                  type="button"
-                  className="aw-button"
-                  onClick={async () => {
-                    const directory =
-                      await window.futurePropsDesktop?.pickStorageDirectory?.();
-                    if (directory) setRoot(directory);
-                  }}
-                >
-                  <FolderOpen size={16} />
-                  选择
-                </button>
-              )}
             </div>
             <small>仅扫描所选范围，不修改原生日志、数据库或配置。</small>
           </label>
@@ -235,7 +233,7 @@ export function SourceManager({
           <Plus size={16} />
           {selected ? "此来源已绑定" : busy ? "正在绑定…" : "绑定并开始同步"}
         </button>
-      </section>
+      </fieldset>
       <section className="aw-bound-sources">
         <h3>
           当前账号的来源 <span className="aw-badge">{sources.length}</span>

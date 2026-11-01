@@ -4,9 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host 127.0.0.1",
     "build": "node scripts/sync-voice-vad-assets.mjs --check && tsc -b && vite build && node scripts/check-bundle-budgets.mjs",
-    "build:desktop": "node scripts/sync-voice-vad-assets.mjs --check && tsc -b && vite build --mode studio && node scripts/check-bundle-budgets.mjs && node scripts/prepare-studio-release.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",

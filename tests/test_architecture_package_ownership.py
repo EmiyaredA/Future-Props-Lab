@@ -156,14 +156,12 @@ def test_console_owns_routes_and_schemas() -> None:
         "accounts.py",
         "account_management.py",
         "platform_governance.py",
-        "desktop.py",
-        "desktop_agent.py",
+        "automation.py",
         "file_management.py",
     )
     console_schemas = (
         "accounts.py",
-        "desktop.py",
-        "desktop_agent.py",
+        "automation.py",
         "platform_governance.py",
     )
     for name in console_routes:

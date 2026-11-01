@@ -8,7 +8,6 @@ import type { Project } from "../types";
 import { exportFile, previewExport } from "./api";
 import "../objects/objects.css";
 import "./export.css";
-import type {} from "@platform/desktop";
 
 export type ExportFormat = "pptx" | "json" | "fplppt" | "png" | "jpeg" | "pdf";
 export default function ExportDialog({
@@ -37,30 +36,15 @@ export default function ExportDialog({
   const [result, setResult] = useState<{
     message: string;
     complete: boolean;
-    receipt?: { id: string; path: string };
   } | null>(null);
   const running = useRef(false);
   const saveFile = useCallback(
     async (file: { blob: Blob; filename: string }) => {
-      const desktop = window.futurePropsDesktop;
-      if (desktop?.saveExportFile) {
-        setStage("请选择保存位置，确认后写入文件…");
-        const receipt = await desktop.saveExportFile(
-          file.filename,
-          new Uint8Array(await file.blob.arrayBuffer()),
-        );
-        setResult({
-          message: receipt ? "导出文件已保存" : "已取消保存，文件尚未保存。",
-          complete: !!receipt,
-          receipt: receipt ?? undefined,
-        });
-      } else {
-        download(file.blob, file.filename);
-        setResult({
-          message: `已发起下载：${file.filename}。请在${desktop ? "桌面保存窗口" : "浏览器下载列表"}中查看；保存位置由下载设置或保存窗口决定。`,
-          complete: true,
-        });
-      }
+      download(file.blob, file.filename);
+      setResult({
+        message: `已发起下载：${file.filename}。请在浏览器下载列表中查看。`,
+        complete: true,
+      });
     },
     [],
   );
@@ -168,9 +152,7 @@ export default function ExportDialog({
             </Dialog.Description>
             {["pptx", "json", "fplppt"].includes(format) && (
               <p className="muted">
-                {window.futurePropsDesktop?.saveExportFile
-                  ? "文件生成后弹出“另存为”，可选择保存目录和文件名。"
-                  : "文件生成后交给下载窗口；请在下载列表或保存窗口中查看位置。"}
+                文件生成后交给浏览器下载；保存位置由下载设置决定。
               </p>
             )}
             {["png", "jpeg", "pdf"].includes(format) && (
@@ -219,30 +201,6 @@ export default function ExportDialog({
             {result && (
               <div className="presentation-export-result" role="status">
                 <p>{result.message}</p>
-                {result.receipt && (
-                  <>
-                    <p className="presentation-export-path">
-                      {result.receipt.path}
-                    </p>
-                    {window.futurePropsDesktop?.revealExportFile && (
-                      <button
-                        className="btn"
-                        onClick={() => {
-                          setError("");
-                          void window.futurePropsDesktop!.revealExportFile!(
-                            result.receipt!.id,
-                          ).catch((e: unknown) =>
-                            setError(
-                              e instanceof Error ? e.message : "无法打开文件夹",
-                            ),
-                          );
-                        }}
-                      >
-                        在文件夹中显示
-                      </button>
-                    )}
-                  </>
-                )}
               </div>
             )}
             {error && <p role="alert">{error}</p>}
@@ -258,9 +216,7 @@ export default function ExportDialog({
                 : result?.complete
                   ? "完成"
                   : readyFile
-                    ? window.futurePropsDesktop?.saveExportFile
-                      ? "选择保存位置"
-                      : "再次下载"
+                    ? "再次下载"
                     : format === "pdf"
                       ? "打印 / 保存 PDF"
                       : "导出文件"}

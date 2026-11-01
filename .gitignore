@@ -151,6 +151,8 @@ activemq-data/
 .env
 .env.backup-*
 backend/config.toml
+backend/web-access/
+backend/.website-config.tmp
 **/backend/config.toml.backup-*
 .config-*.tmp
 .config-migration.lock

@@ -385,6 +385,11 @@ export function PresentationShow({
             </span>
           </div>
           {audience.error && <p role="alert">{audience.error}</p>}
+          {audience.fallbackUrl && (
+            <a href={audience.fallbackUrl} target="_blank" rel="noreferrer">
+              打开观众页面
+            </a>
+          )}
         </>
       )}
     </div>

@@ -3,27 +3,6 @@
 import re
 
 OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
-    "desktop.bootstrap": (
-        ("GET", "/v1/desktop/web-access"),
-        ("POST", "/v1/desktop/web-access/actions"),
-        ("GET", "/v1/desktop/web-access/config"),
-        ("PUT", "/v1/desktop/web-access/config"),
-        ("POST", "/v1/desktop/web-access/config/adopt-legacy"),
-        ("POST", "/v1/desktop/web-access/credentials/tickets"),
-        ("POST", "/v1/desktop/web-access/credentials/import"),
-        ("POST", "/v1/desktop/web-access/config/claim"),
-        ("POST", "/v1/desktop/agent/pairings"),
-        ("POST", "/v1/desktop/agent/pairings/{pair_id}/claim"),
-        ("GET", "/v1/desktop/agent/pairings"),
-        ("POST", "/v1/desktop/agent/pairings/{pair_id}/decision"),
-        ("GET", "/v1/desktop/agent/capabilities"),
-        ("POST", "/v1/desktop/ui/open"),
-        ("GET", "/v1/desktop/ui/inbox"),
-        ("GET", "/v1/desktop/ui/requests/{request_id}"),
-        ("POST", "/v1/desktop/ui/requests/{request_id}/ack"),
-        ("GET", "/v1/desktop/setup"),
-        ("POST", "/v1/desktop/setup"),
-    ),
     "content.write": (
         ("POST", "/v1/agent-workbench/sources"),
         ("PATCH", "/v1/agent-workbench/sources/{source_id}"),
@@ -252,6 +231,10 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/open-folder"),
     ),
     "content.read": (
+        ("GET", "/v1/automation/capabilities"),
+        ("GET", "/v1/automation/runtime"),
+        ("GET", "/v1/automation/changes"),
+        ("POST", "/v1/automation/open"),
         ("GET", "/v1/agent-workbench/candidates"),
         ("GET", "/v1/agent-workbench/sources"),
         ("GET", "/v1/agent-workbench/operations/{operation_id}"),
@@ -497,6 +480,8 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/generation-tasks"),
     ),
     "configuration.manage": (
+        ("GET", "/v1/automation/access"),
+        ("POST", "/v1/automation/access/actions"),
         ("POST", "/v1/platform/local-models/{model_id}/actions"),
         ("POST", "/v1/local-models/attach"),
         ("GET", "/v1/tool-navigation/codex-source"),

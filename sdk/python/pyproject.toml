@@ -3,7 +3,7 @@ name = "future-props-lab-sdk"
 version = "0.1.0"
 description = "Typed Python automation client for Future Props Lab"
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.28,<1", "pydantic>=2.10,<3", "websockets>=15,<16"]
+dependencies = ["httpx>=0.28,<1", "pydantic>=2.10,<3", "websockets>=15,<17"]
 readme = "README.md"
 
 [project.scripts]

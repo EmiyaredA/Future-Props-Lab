@@ -1,3 +1,4 @@
+import { useRuntimeAccess } from "@features/accounts";
 import { PresentationWorkshopRoute } from "@app/layout/PresentationWorkshopRoute";
 import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
 import { ModelServiceRoute } from "@app/layout/ModelServiceRoute";
@@ -171,6 +172,7 @@ function PageBoundary({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  const localBrowser = useRuntimeAccess();
   const session = useStudioSession();
   const { me } = session;
   const [route, setRoute] = useState<AppRoute>(parseRoute);
@@ -785,13 +787,8 @@ export default function App() {
         ) : page === "tools" ? (
           <ToolNavigationPage
             onOpenInternal={navigatePath}
-            canManageCodex={
-              Boolean(window.futurePropsDesktop) && me.user.is_platform_admin
-            }
-            canManageStorage={
-              Boolean(window.futurePropsDesktop?.pickStorageDirectory) &&
-              me.user.is_platform_admin
-            }
+            canManageCodex={localBrowser && me.user.is_platform_admin}
+            canManageStorage={localBrowser && me.user.is_platform_admin}
           />
         ) : page.startsWith("integrations-") ? (
           <IntegrationCenterPage

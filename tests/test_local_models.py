@@ -461,3 +461,79 @@ async def test_worker_switch_idle_and_inference_serialization(manager, monkeypat
     assert len(workers) == 2 and workers[0].returncode == 0
     await asyncio.sleep(0.1)
     assert workers[1].returncode == 0 and runtime.process is None and not runtime.busy
+
+
+async def test_repair_keeps_weights_and_disabled_state_and_blocks_concurrent_inference(
+    manager, monkeypatch
+):
+    async def install(model, report):
+        directory = manager.installer.model_path(model["id"])
+        directory.mkdir(parents=True)
+        (directory / "config.json").write_text("{}")
+        (directory / "weights").write_bytes(b"keep these weights")
+        await report(95)
+
+    monkeypatch.setattr(manager.installer, "install", install)
+    await manager.action(MODEL, action("install"))
+    await manager.jobs[MODEL]
+    current = next(item for item in (await manager.list()).items if item.id == MODEL)
+    stopped = await manager.action(MODEL, action("stop", current.revision))
+    entered, finish = asyncio.Event(), asyncio.Event()
+
+    async def repair(_model, report, *, repair):
+        assert repair is True
+        entered.set()
+        await finish.wait()
+        await report(100)
+
+    monkeypatch.setattr(manager.installer, "install", repair)
+    await manager.action(MODEL, action("repair", stopped.revision))
+    await entered.wait()
+
+    async def validate():
+        raise AssertionError("inference must not enter validation during repair")
+
+    with pytest.raises(ValueError, match="正在修复"):
+        await manager.runtime.synthesize(MODEL, {}, validate)
+    finish.set()
+    await manager.jobs[MODEL]
+    restored = next(item for item in (await manager.list()).items if item.id == MODEL)
+    assert restored.status == "installed" and not restored.enabled
+    assert not manager.runtime.maintenance
+    assert (manager.installer.model_path(MODEL) / "weights").read_bytes() == b"keep these weights"
+
+
+async def test_environment_repair_failure_restores_previous_environment(tmp_path, monkeypatch):
+    from contextlib import asynccontextmanager
+
+    from app.llm.local_models import installer as module
+
+    installer = Installer(tmp_path)
+    environment = tmp_path / "environments/v1"
+    environment.mkdir(parents=True)
+    (environment / "old-ready").write_bytes(b"old environment")
+
+    @asynccontextmanager
+    async def client():
+        yield object()
+
+    async def fetch(_client, _item, _target, *_args):
+        pass
+
+    def extract(_archive, destination):
+        destination.mkdir(parents=True)
+
+    async def fail(*_args, **_kwargs):
+        raise ValueError("dependency setup failed")
+
+    monkeypatch.setattr(module.downloads, "client", client)
+    monkeypatch.setattr(module.downloads, "fetch_file", fetch)
+    monkeypatch.setattr(module, "extract", extract)
+    monkeypatch.setattr(module, "command", fail)
+
+    async def report(_progress):
+        pass
+
+    with pytest.raises(ValueError, match="dependency setup failed"):
+        await installer.install({"id": MODEL, "files": []}, report, repair=True)
+    assert (environment / "old-ready").read_bytes() == b"old environment"

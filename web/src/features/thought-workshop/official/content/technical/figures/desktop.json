@@ -1,6 +1,6 @@
 {
   "sceneVersion": 1,
-  "title": "桌面进程、页面与数据的职责",
+  "title": "网站进程、访问入口与数据",
   "elements": [
     {
       "id": "electron",
@@ -9,7 +9,7 @@
       "y": 180,
       "width": 220,
       "height": 110,
-      "text": "Electron 主进程\n启动、窗口与私有凭据",
+      "text": "用户级服务管理器\n持锁启动唯一后端",
       "fill": "#eef5f3",
       "stroke": "#365f62",
       "icon": "cpu"
@@ -45,7 +45,7 @@
       "y": 50,
       "width": 220,
       "height": 110,
-      "text": "打包静态资源\n脚本与可选导入包",
+      "text": "网站静态资源\n程序与可选导入包",
       "fill": "#f2edf8",
       "stroke": "#365f62",
       "icon": "file"
@@ -57,7 +57,7 @@
       "y": 310,
       "width": 220,
       "height": 110,
-      "text": "用户数据目录\nruntime 与配置",
+      "text": "项目 .runtime\nruntime 与配置",
       "fill": "#fff1dd",
       "stroke": "#365f62",
       "icon": "database"

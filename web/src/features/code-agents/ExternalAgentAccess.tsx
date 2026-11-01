@@ -1,6 +1,5 @@
 import { useId, useState } from "react";
 import { Check, ChevronDown, Copy, Link2 } from "lucide-react";
-import { useDesktopAgentAccess } from "@features/accounts";
 
 const clients = [
   {
@@ -27,20 +26,10 @@ const clients = [
 ];
 
 export function ExternalAgentAccess() {
-  const { supported, enabled, busy, error, toggle } = useDesktopAgentAccess();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState("");
   const [copyError, setCopyError] = useState("");
   const id = useId();
-  const status = !supported
-    ? "需要桌面版"
-    : error && enabled === null
-      ? "状态读取失败"
-      : enabled === null
-        ? "正在读取状态…"
-        : enabled
-          ? "已开启"
-          : "未开启";
   const copy = async (key: string, text: string) => {
     setCopyError("");
     try {
@@ -64,12 +53,6 @@ export function ExternalAgentAccess() {
           <p>让本机 CLI 连接已授权的 FPL 项目。</p>
         </div>
         <div className="code-agent-external-actions">
-          <span
-            className={`code-agent-status ${supported && enabled ? "is-ok" : "is-muted"}`}
-          >
-            <span aria-hidden />
-            {status}
-          </span>
           <button
             type="button"
             className="btn"
@@ -86,47 +69,19 @@ export function ExternalAgentAccess() {
           </button>
         </div>
       </div>
-      {error && (
-        <p className="code-agent-error" role="alert">
-          {error}
-        </p>
-      )}
       {open && (
         <div id={`${id}-config`} className="code-agent-external-body">
-          {supported ? (
-            <div className="code-agent-access-control">
-              <p>
-                仅向本机开放，每个客户端首次连接都需要你批准。关闭接入会断开客户端，但不会撤销已有密钥。
-              </p>
-              <button
-                type="button"
-                className={`btn${enabled ? "" : " primary"}`}
-                disabled={busy || enabled === null}
-                aria-pressed={enabled ?? false}
-                onClick={() => void toggle()}
-              >
-                {busy
-                  ? "正在设置…"
-                  : enabled === null
-                    ? "正在读取状态…"
-                    : enabled
-                      ? "关闭本地接入"
-                      : "开启本地接入"}
-              </button>
-            </div>
-          ) : (
-            <p className="code-agent-empty">
-              本地客户端接入需要使用 FPL 桌面版。浏览器中可查看和复制配置。
-            </p>
-          )}
+          <p>在网站账号设置中创建 API 密钥，再为各客户端保存独立连接配置。</p>
           <ol>
             <li>
-              开启本地接入后，在终端运行{" "}
-              <code>fpl --profile codex connect --name Codex</code>；Claude Code
-              使用独立 profile。
+              在 Mac 终端运行{" "}
+              <code>
+                fpl --profile codex connect --url http://127.0.0.1:9000
+              </code>
+              ；Claude Code 使用独立 profile。
             </li>
             <li>
-              在 FPL 核对配对码和空间，批准只读连接。编辑需要另行申请读写授权。
+              按提示安全输入密钥；只读或读写能力由密钥和账号权限共同决定。
             </li>
             <li>
               将对应配置加入客户端，再调用 operations 核对操作和资源版本。

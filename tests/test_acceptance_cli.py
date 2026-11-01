@@ -250,7 +250,7 @@ async def test_independent_media_entry_exposes_only_scoped_mcp_tools(tmp_path):
             }
         )
     )
-    entry = Path(__file__).resolve().parents[1] / "desktop/backend/acceptance_tools_entry.py"
+    entry = Path(__file__).resolve().parents[1] / "scripts/website/acceptance_tools.py"
     parameters = StdioServerParameters(
         command=sys.executable,
         args=[str(entry), str(tmp_path)],

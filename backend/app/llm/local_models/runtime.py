@@ -16,6 +16,7 @@ class LocalRuntime:
         self.process = None
         self.model_id = None
         self.busy = False
+        self.maintenance = False
         self.idle = None
         self.stderr_task = None
 
@@ -51,6 +52,8 @@ class LocalRuntime:
     async def synthesize(self, model_id, payload, validate):
         async with self.serial:
             async with self.control:
+                if self.maintenance:
+                    raise ValueError("本地运行环境正在修复，请完成后重试")
                 await validate()
                 self.busy = True
                 if self.idle:

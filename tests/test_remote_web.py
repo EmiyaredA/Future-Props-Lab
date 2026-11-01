@@ -1,111 +1,12 @@
-"""Public and Electron sockets share one isolated runtime, never desktop credentials."""
+"""Public ingress validates transport and never retries a disconnected stream."""
 
-from __future__ import annotations
-
-import io
-import socket
-
-import httpx
 import pytest
 from cryptography.fernet import Fernet
-from PIL import Image
 
 from app.runtime.config import Settings
 from fpl_config import ConfigurationError, read_config
-from test_desktop import ROOT, DesktopServer, initialize, login
 
-pytestmark = pytest.mark.real_auth
 ORIGIN = "https://studio.example.test"
-
-
-@pytest.fixture
-def studio(tmp_path):
-    with socket.socket() as reservation:
-        reservation.bind(("127.0.0.1", 0))
-        port = reservation.getsockname()[1]
-    config = tmp_path / "data/backend/config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        f'[security]\nsecrets_key = "{Fernet.generate_key().decode()}"\n'
-        f'[remote_web]\nenabled = true\norigin = "{ORIGIN}"\nport = {port}\n'
-    )
-    launcher = tmp_path / "launcher.py"
-    imports = [str(ROOT / "backend"), str(ROOT), str(ROOT / "desktop/backend")]
-    launcher.write_text(
-        f"import sys\nsys.path[:0] = {imports!r}\n"
-        "import asyncio\nfrom app.capabilities.web_access.runtime import WebAccess\n"
-        "async def check(self): pass\nasync def tunnel(self): await asyncio.Event().wait()\n"
-        "WebAccess.check_build=check\nWebAccess.follow_tunnel=tunnel\n"
-        "WebAccess.validate_credentials=lambda self: None\nimport entry\nentry.launch()\n"
-    )
-    server = DesktopServer(tmp_path, launcher=launcher)
-    (tmp_path / "web/build.json").write_text('{"build_id":"integration-test"}')
-    assert initialize(server).status_code == 200
-    login(server)
-    before = server.client.get("/v1/desktop/web-access").json()
-    assert before["local"]["phase"] == before["public"]["phase"] == "off"
-    result = server.client.post("/v1/desktop/web-access/actions", json={"action": "public_start"})
-    assert result.status_code == 200, result.text
-    client = httpx.Client(
-        base_url=f"http://127.0.0.1:{port}",
-        headers={"Host": "studio.example.test", "Origin": ORIGIN},
-        timeout=20,
-        trust_env=False,
-    )
-    try:
-        yield server, client
-    finally:
-        client.close()
-        server.close()
-
-
-def public_login(client, username="desktop-admin", password="Local-test-49017!"):
-    result = client.post(
-        "/v1/auth/login",
-        json={"username": username, "password": password},
-    )
-    assert result.status_code == 200, result.text
-    apply_remote_cookies(client, result)
-
-
-def apply_remote_cookies(client, result):
-    cookies = result.headers.get_list("set-cookie")
-    assert len(cookies) == 2 and all("; Secure" in value for value in cookies)
-    assert "HttpOnly" in next(value for value in cookies if value.startswith("fpl_session="))
-    assert all("Domain=" not in value for value in cookies)
-    # Physical transport is HTTP on loopback; emulate the TLS proxy/browser cookie.
-    client.headers["Cookie"] = "; ".join(value.split(";", 1)[0] for value in cookies)
-    client.headers["X-CSRF-Token"] = client.cookies["fpl_csrf"]
-
-
-def test_other_account_cannot_read_project_or_asset(studio):
-    server, client = studio
-    public_login(client)
-    project = client.post(
-        "/v1/visual-workshop/projects", json={"title": "私人项目", "kind": "image"}
-    ).json()
-    image = io.BytesIO()
-    Image.new("RGB", (16, 16), "blue").save(image, format="PNG")
-    asset = client.post(
-        "/v1/files", files={"upload": ("private.png", image.getvalue(), "image/png")}
-    ).json()
-    created = client.post(
-        "/v1/platform/accounts",
-        json={"username": "separate-user", "display_name": "隔离测试", "platform_role": "user"},
-    )
-    assert created.status_code == 201, created.text
-    temporary = created.json()["temporary_password"]
-    public_login(client, "separate-user", temporary)
-    changed = client.post(
-        "/v1/auth/change-password",
-        json={"current_password": temporary, "new_password": "Separate-test-6831!"},
-    )
-    assert changed.status_code == 204, changed.text
-    apply_remote_cookies(client, changed)
-    assert client.get(f"/v1/visual-workshop/projects/{project['id']}").status_code == 404
-    assert client.get(f"/v1/files/{asset['id']}/content").status_code == 404
-    assert client.get(f"/v1/files/{asset['id']}/thumbnail?size=320").status_code == 404
-    assert client.get("/v1/platform/accounts").status_code == 403
 
 
 @pytest.mark.asyncio
@@ -177,79 +78,6 @@ async def test_websocket_forwarding_and_stream_disconnect_never_retry():
     assert sum(message.get("body") == b"data: once\n\n" for message in messages) == 1
 
 
-def test_same_accounts_projects_uploads_and_range_without_private_token(studio):
-    server, client = studio
-    assert client.get("/", headers={"Accept": "text/html"}).status_code == 200
-    assert (
-        client.get("/apps/visual-workshop/example", headers={"Accept": "text/html"}).status_code
-        == 200
-    )
-    assert client.get("/assets/missing.js", headers={"Accept": "text/html"}).status_code == 404
-    assert client.get("/v1/auth/me").status_code == 401
-    public_login(client)
-    assert client.get("/v1/auth/me").json()["user"]["username"] == "desktop-admin"
-    project = client.post(
-        "/v1/visual-workshop/projects", json={"title": "公网同库测试", "kind": "image"}
-    )
-    assert project.status_code in {200, 201}, project.text
-    login(server)
-    assert (
-        server.client.get(f"/v1/visual-workshop/projects/{project.json()['id']}").status_code == 200
-    )
-    image = io.BytesIO()
-    Image.new("RGB", (32, 32), "green").save(image, format="PNG")
-    upload = client.post("/v1/files", files={"upload": ("test.png", image.getvalue(), "image/png")})
-    assert upload.status_code == 200, upload.text
-    url = f"/v1/files/{upload.json()['id']}/content"
-    ranged = client.get(url, headers={"Range": "bytes=0-15"})
-    assert ranged.status_code == 206 and ranged.content == image.getvalue()[:16]
-    assert ranged.headers["cache-control"] == "no-store"
-    assert client.post("/v1/auth/logout").status_code == 204
-    assert client.get(url).status_code == 401
-
-
-def test_public_transport_rejects_desktop_spoofing_host_origin_csrf_and_bearer(studio):
-    server, client = studio
-    for path in (
-        "/v1/desktop/setup",
-        "/v1/desktop/web-access",
-        "/v1/desktop/web-access/config",
-        "/v1/desktop/agent/pairings",
-        "/v1/desktop/ui/inbox",
-        "/docs",
-        "/openapi.json",
-        "/v1/auth/register",
-    ):
-        result = client.get(
-            path, headers={"x-fpl-desktop-token": server.client.headers["x-fpl-desktop-token"]}
-        )
-        assert result.status_code == 404, path
-    assert client.get("/", headers={"Host": "evil.invalid"}).status_code == 403
-    assert (
-        client.post(
-            "/v1/auth/login", headers={"Origin": "https://evil.invalid"}, json={}
-        ).status_code
-        == 403
-    )
-    assert (
-        client.get(
-            "/v1/files", headers={"Authorization": "Bearer fpm_forged", "x-fpl-agent-channel": "1"}
-        ).status_code
-        == 401
-    )
-    public_login(client)
-    assert (
-        client.post(
-            "/v1/visual-workshop/projects",
-            headers={"X-CSRF-Token": "wrong"},
-            json={"title": "deny", "kind": "image"},
-        ).status_code
-        == 403
-    )
-    assert client.get("/ready").status_code == 200
-    assert httpx.get(server.origin + "/ready").status_code == 403
-
-
 def test_remote_web_default_closed_and_configuration_validated(tmp_path):
     assert not Settings(_config_file=None).fpl_remote_web_enabled
     for origin in (
@@ -264,3 +92,41 @@ def test_remote_web_default_closed_and_configuration_validated(tmp_path):
         values["fpl_secrets_key"] = Fernet.generate_key().decode()
         with pytest.raises(ConfigurationError):
             Settings.validate_file_values(values)
+
+
+@pytest.mark.asyncio
+async def test_public_listener_restarts_after_a_real_http_connection(tmp_path):
+    import json
+    import socket
+
+    import httpx
+    from fastapi import FastAPI
+
+    from app.capabilities.web_access.runtime import WebAccess
+
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    (tmp_path / "build.json").write_text(json.dumps({"build_id": "restart-test"}))
+    app = FastAPI()
+
+    @app.get("/ready")
+    async def ready():
+        return {"status": "ready"}
+
+    access = WebAccess(
+        app,
+        Settings(_config_file=None, fpl_remote_web_port=port),
+        tmp_path,
+        tmp_path,
+        None,
+    )
+    try:
+        for _ in range(2):
+            await access.start_local()
+            async with httpx.AsyncClient(trust_env=False) as client:
+                response = await client.get(f"http://127.0.0.1:{port}/ready")
+                assert response.status_code == 200
+            await access.stop_local()
+    finally:
+        await access.close()

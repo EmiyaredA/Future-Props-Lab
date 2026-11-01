@@ -7,13 +7,11 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { ModelInfrastructureHeader } from "@app/layout/ModelInfrastructureHeader";
 import { CodeAgentsPage } from "@features/code-agents/CodeAgentsPage";
 import { AgentConnectionCard } from "@features/code-agents/AgentConnectionCard";
 import { ApiError } from "@platform/api/errors";
-import type { DesktopBridge } from "@platform/desktop";
 import {
   detectAgents,
   getAgents,
@@ -29,11 +27,6 @@ vi.mock("@features/code-agents/api", async (importOriginal) => ({
   getGrants: vi.fn(),
   putGrants: vi.fn(),
   detectAgents: vi.fn(),
-}));
-vi.mock("@features/accounts", async () => ({
-  useDesktopAgentAccess: (
-    await import("@features/accounts/useDesktopAgentAccess")
-  ).useDesktopAgentAccess,
 }));
 
 const codex: Agent = {
@@ -59,7 +52,6 @@ let writeText: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  delete window.futurePropsDesktop;
   state = {
     revision: 3,
     grants: [],
@@ -300,52 +292,12 @@ test("catalog failures can be retried and detection is explicit", async () => {
   expect(detectAgents).toHaveBeenCalledOnce();
 });
 
-test("browser access explains desktop requirement and preserves multiline MCP configuration", async () => {
+test("website access offers key-based CLI and multiline MCP configuration", async () => {
   setup(false);
-  expect(screen.getByText("需要桌面版")).toBeVisible();
-  expect(screen.queryByText("未开启")).not.toBeInTheDocument();
-  expect(screen.queryByText("Codex · TOML")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "展开配置" }));
-  expect(screen.getByText(/本地客户端接入需要使用 FPL 桌面版/)).toBeVisible();
+  expect(screen.getByText(/在网站账号设置中创建 API 密钥/)).toBeVisible();
+  expect(screen.getByText(/connect --url http/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "复制 codex MCP 配置" }));
   await screen.findByText("Codex 配置已复制");
   expect(writeText.mock.calls[0][0]).toContain('\ncommand = "fpl"\n');
-  fireEvent.click(screen.getByRole("button", { name: "收起配置" }));
-  expect(screen.queryByText("Codex · TOML")).not.toBeInTheDocument();
-});
-
-test("desktop status is read without enabling access and changes only on explicit action", async () => {
-  const agentStatus = vi
-    .fn()
-    .mockResolvedValue({ enabled: false, connected: false });
-  const enableAgent = vi
-    .fn()
-    .mockResolvedValue({ enabled: true, connected: true });
-  const disableAgent = vi
-    .fn()
-    .mockResolvedValue({ enabled: false, connected: false });
-  window.futurePropsDesktop = {
-    agentStatus,
-    enableAgent,
-    disableAgent,
-  } as unknown as DesktopBridge;
-  setup(false);
-  await screen.findByText("未开启");
-  expect(enableAgent).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "展开配置" }));
-  await userEvent.click(screen.getByRole("button", { name: "开启本地接入" }));
-  await screen.findByText("已开启");
-  expect(enableAgent).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByRole("button", { name: "关闭本地接入" }));
-  await screen.findByText("未开启");
-  expect(disableAgent).toHaveBeenCalledOnce();
-});
-
-test("failed desktop status is never presented as disabled", async () => {
-  window.futurePropsDesktop = {
-    agentStatus: vi.fn().mockRejectedValue(new Error("bridge failed")),
-  } as unknown as DesktopBridge;
-  setup(false);
-  await screen.findByText("状态读取失败");
-  expect(screen.queryByText("未开启")).not.toBeInTheDocument();
 });

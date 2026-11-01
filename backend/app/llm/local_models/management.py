@@ -105,14 +105,24 @@ class LocalModels:
                     )
                     session.add(row)
                     await session.flush()
-                if body.action == "install":
+                previous_enabled = row.enabled
+                if body.action in {"install", "repair"}:
                     if not compatible():
                         raise OperationError(
                             "本地语音需要 macOS 15 或更新版本的 Apple Silicon Mac",
                             "unsupported_platform",
                             409,
                         )
-                    if row.status in {"installing", "installed"}:
+                    if body.action == "repair" and (
+                        self.runtime.busy
+                        or getattr(self.runtime, "maintenance", False)
+                        or any(not job.done() for job in self.jobs.values())
+                        or not (self.installer.model_path(model_id) / "config.json").is_file()
+                    ):
+                        raise OperationError("请等待任务结束并确认模型权重完整", "model_busy", 409)
+                    if row.status == "installing" or (
+                        body.action == "install" and row.status == "installed"
+                    ):
                         raise OperationError("模型正在安装或已安装", "model_busy", 409)
                     row.status, row.enabled, row.progress = "installing", False, 0
                 elif body.action == "cancel":
@@ -170,8 +180,15 @@ class LocalModels:
                     )
                 )
                 await session.commit()
-            if body.action == "install":
-                job = asyncio.create_task(self.install(model))
+            if body.action in {"install", "repair"}:
+                if body.action == "repair":
+                    await self.runtime.close()
+                    self.runtime.maintenance = True
+                job = asyncio.create_task(
+                    self.install(
+                        model, repair=body.action == "repair", restore_enabled=previous_enabled
+                    )
+                )
                 self.jobs[model_id] = job
             elif body.action == "cancel":
                 job = self.jobs.get(model_id)
@@ -216,47 +233,59 @@ class LocalModels:
                         raise OperationError(message, "cleanup_failed", 409) from None
             return result
 
-    async def install(self, model):
-        async def report(progress):
+    async def install(self, model, *, repair=False, restore_enabled=True):
+        try:
+
+            async def report(progress):
+                async with self.sessions() as session:
+                    await session.execute(
+                        update(LocalModelInstallation)
+                        .where(
+                            LocalModelInstallation.id == model["id"],
+                            LocalModelInstallation.status == "installing",
+                            LocalModelInstallation.progress < progress,
+                        )
+                        .values(progress=progress)
+                    )
+                    await session.commit()
+
+            try:
+                if repair:
+                    await self.installer.install(model, report, repair=True)
+                else:
+                    await self.installer.install(model, report)
+                status, message = "installed", None
+            except asyncio.CancelledError:
+                return
+            except Exception as exc:
+                status, message = (
+                    "failed",
+                    (
+                        str(exc)
+                        if isinstance(exc, ValueError)
+                        else "下载或安装失败，请检查网络后重试"
+                    ),
+                )
             async with self.sessions() as session:
                 await session.execute(
                     update(LocalModelInstallation)
                     .where(
                         LocalModelInstallation.id == model["id"],
                         LocalModelInstallation.status == "installing",
-                        LocalModelInstallation.progress < progress,
                     )
-                    .values(progress=progress)
+                    .values(
+                        status=status,
+                        error_message=message,
+                        enabled=status == "installed" and (restore_enabled if repair else True),
+                        progress=100 if status == "installed" else 0,
+                        revision=LocalModelInstallation.revision + 1,
+                        updated_at=utc_now(),
+                    )
                 )
                 await session.commit()
-
-        try:
-            await self.installer.install(model, report)
-            status, message = "installed", None
-        except asyncio.CancelledError:
-            return
-        except Exception as exc:
-            status, message = (
-                "failed",
-                (str(exc) if isinstance(exc, ValueError) else "下载或安装失败，请检查网络后重试"),
-            )
-        async with self.sessions() as session:
-            await session.execute(
-                update(LocalModelInstallation)
-                .where(
-                    LocalModelInstallation.id == model["id"],
-                    LocalModelInstallation.status == "installing",
-                )
-                .values(
-                    status=status,
-                    error_message=message,
-                    enabled=status == "installed",
-                    progress=100 if status == "installed" else 0,
-                    revision=LocalModelInstallation.revision + 1,
-                    updated_at=utc_now(),
-                )
-            )
-            await session.commit()
+        finally:
+            if repair:
+                self.runtime.maintenance = False
 
     async def close(self):
         for job in self.jobs.values():

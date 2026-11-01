@@ -1,3 +1,4 @@
+import { subscribeAmadeusMutation, openAmadeus } from "@platform/assistant";
 import { VideoEditorProjectTitle } from "./VideoEditorProjectTitle";
 import { VideoEditorClipMergeDialog } from "./VideoEditorClipMergeDialog";
 import { VideoEditorGapPanel } from "./VideoEditorGapPanel";
@@ -156,7 +157,7 @@ export function VideoEditorPage({
   }, [projectId, timelineData, editorSelectedClipIds, editorSaving]);
   useEffect(
     () =>
-      window.futurePropsDesktop?.onAmadeusMutation?.((value) => {
+      subscribeAmadeusMutation((value) => {
         const changed = value as { application?: string; projectId?: string };
         if (
           changed.application !== "video-editor" ||
@@ -490,14 +491,11 @@ export function VideoEditorPage({
             />
           </div>
           <div className="ve-top-actions">
-            {window.futurePropsDesktop?.openAmadeus && (
-              <button
-                type="button"
-                onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
-              >
+            {
+              <button type="button" onClick={() => void openAmadeus()}>
                 ✦ Amadeus
               </button>
-            )}
+            }
             <VideoEditorFitActions
               tracks={tracks}
               saving={editor.saving}

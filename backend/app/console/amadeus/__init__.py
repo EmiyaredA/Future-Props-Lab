@@ -1,1 +1,1 @@
-"""account-scoped desktop assistant."""
+"""Account-scoped website assistant."""

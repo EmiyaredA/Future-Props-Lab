@@ -1,6 +1,6 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { fetchApiJson, requestApi } from "@platform/api/client";
-import type { DesktopBridge } from "@platform/desktop";
+import type { AmadeusPageBridge } from "./PageContext";
 import type { AccountSessionContext } from "@features/accounts";
 import type { Approval, Context, Detail } from "./protocol";
 
@@ -9,7 +9,7 @@ type ApprovalOptions = {
   current: Approval | null;
   contexts: Context[];
   session: AccountSessionContext;
-  bridge: Required<DesktopBridge>;
+  bridge: AmadeusPageBridge;
   detailRef: MutableRefObject<Detail | null>;
   activeActionRef: MutableRefObject<{
     conversationId: string;

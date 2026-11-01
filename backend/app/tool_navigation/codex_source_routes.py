@@ -1,8 +1,9 @@
-"""Desktop-only adapter for the local Codex configuration tool."""
+"""Local website adapter for the local Codex configuration tool."""
 
 from fastapi import APIRouter, HTTPException, Request
 
 from app.deps import StudioAuth
+from app.runtime.website import require_local_browser
 from app.tool_navigation.codex_source import (
     CodexSourceConflict,
     CodexSourceError,
@@ -18,10 +19,9 @@ router = APIRouter(prefix="/tool-navigation/codex-source", tags=["tool-navigatio
 
 
 def _require_local_admin(request: Request, principal: StudioAuth) -> None:
-    if not getattr(request.app.state, "desktop_enabled", False):
-        raise HTTPException(404, detail="仅桌面版支持本机 Codex 配置")
+    require_local_browser(request, principal)
     if principal.auth_kind != "session" or not principal.is_platform_admin:
-        raise HTTPException(403, detail="仅桌面版平台管理员可管理本机 Codex 配置")
+        raise HTTPException(403, detail="仅本机网站平台管理员可管理本机 Codex 配置")
 
 
 @router.get("", response_model=CodexSourceState)

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import "./source.css";
+import { useAmadeusBridge } from "./PageContext";
 
 type SourceContext = {
   path: string;
@@ -58,19 +59,13 @@ function description(element: HTMLElement) {
 }
 
 export function AmadeusSourceHost() {
+  const bridge = useAmadeusBridge();
   const current = useRef<SourceContext>({
     path: location.pathname,
     title: document.title,
     application: "应用首页",
   });
   useEffect(() => {
-    const bridge = window.futurePropsDesktop;
-    if (
-      !bridge?.publishAmadeusContext ||
-      !bridge.onAmadeusPickCommand ||
-      !bridge.addAmadeusReference
-    )
-      return;
     let picking = false;
     let pickIndex = 1;
     let target: HTMLElement | null = null;
@@ -192,7 +187,12 @@ export function AmadeusSourceHost() {
       draw();
     };
     const click = (event: MouseEvent) => {
-      if (!picking) return;
+      if (
+        !picking ||
+        (event.target instanceof Element &&
+          event.target.closest(".website-assistant"))
+      )
+        return;
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -216,7 +216,12 @@ export function AmadeusSourceHost() {
       stop();
     };
     const block = (event: Event) => {
-      if (!picking) return;
+      if (
+        !picking ||
+        (event.target instanceof Element &&
+          event.target.closest(".website-assistant"))
+      )
+        return;
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -263,6 +268,6 @@ export function AmadeusSourceHost() {
         document.removeEventListener(type, block, true);
       document.removeEventListener("keydown", key, true);
     };
-  }, []);
+  }, [bridge]);
   return null;
 }

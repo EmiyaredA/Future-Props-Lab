@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Organize workspace library root files into folders by consuming projects.
 
-Uses the formal /v1 API via desktop Agent (default) or Management API Key.
+Uses the formal /v1 API via a website profile (default) or Management API Key.
 Default mode is dry-run; pass --apply to create folders and move files.
 """
 
@@ -19,9 +19,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "sdk" / "python" / "src"))
 
 from future_props_lab.client import Client  # noqa: E402
-from future_props_lab.desktop import desktop_client  # noqa: E402
 from future_props_lab.encoding import UNSET  # noqa: E402
 from future_props_lab.errors import RevisionConflict  # noqa: E402
+from future_props_lab.website import website_client  # noqa: E402
 
 SHARED_FOLDER = "共享素材"
 UNREFERENCED_FOLDER = "未引用"
@@ -88,7 +88,7 @@ def open_client(*, development: bool) -> Client:
         if not api_key.startswith("fpm_"):
             raise SystemExit("FPL_MANAGEMENT_API_KEY 必须以 fpm_ 开头")
         return Client(base_url=base_url or "http://127.0.0.1:9000", api_key=api_key)
-    return desktop_client(development=development)
+    return website_client(profile="development" if development else "default")
 
 
 def list_all_scoped_files(client: Client, *, project_id: str | None = None) -> list:

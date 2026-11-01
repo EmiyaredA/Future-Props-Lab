@@ -30,7 +30,7 @@ def _runner() -> tuple[Path, list[str], Path]:
         )
         return executable, [], executable.parent
     executable = Path(sys.executable).resolve()
-    entry = REPO_ROOT / "desktop" / "backend" / "script_entry.py"
+    entry = REPO_ROOT / "scripts" / "website" / "script_runner.py"
     return executable, [str(entry)], executable.parent
 
 

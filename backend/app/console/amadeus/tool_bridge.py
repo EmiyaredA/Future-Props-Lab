@@ -338,7 +338,7 @@ class ToolBridge:
             args = ["mcp", "relay"]
         else:
             command = sys.executable
-            args = [str(REPO_ROOT / "desktop/backend/cli_entry.py"), "mcp", "relay"]
+            args = [str(REPO_ROOT / "scripts/website/cli.py"), "mcp", "relay"]
         return {
             "mcpServers": {
                 "fpl": {

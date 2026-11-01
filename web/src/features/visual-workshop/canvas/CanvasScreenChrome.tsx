@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import type { ComponentProps } from "react";
 import {
   AppWindow,
@@ -10,15 +11,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { CanvasViewControls } from "@features/visual-workshop/canvas/CanvasViewControls";
-import "@platform/desktop";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 
 function openCurrentPageInNewWindow() {
-  const bridge = window.futurePropsDesktop;
-  if (bridge) {
-    void bridge.openNewWindow();
-    return;
-  }
   window.open(window.location.href, "_blank", "noopener,noreferrer");
 }
 
@@ -122,15 +117,15 @@ export function CanvasScreenChrome({
               </button>
             </div>
           )}
-          {window.futurePropsDesktop?.openAmadeus && (
+          {
             <button
               type="button"
               aria-label="打开 Amadeus"
-              onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+              onClick={() => void openAmadeus()}
             >
               <Sparkles aria-hidden /> Amadeus
             </button>
-          )}
+          }
           <button
             type="button"
             aria-label="新建窗口"

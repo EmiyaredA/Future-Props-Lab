@@ -1,3 +1,5 @@
+"""Website gateway configuration and runtime status contracts."""
+
 import re
 from typing import Literal
 from urllib.parse import urlsplit
@@ -36,28 +38,6 @@ class GatewayProfile(BaseModel):
         return self
 
 
-class AccessConfigOut(BaseModel):
-    revision: str
-    profile: GatewayProfile
-    identity_fingerprint: str = ""
-    known_hosts_fingerprint: str = ""
-    legacy_available: bool = False
-
-
-class AccessConfigIn(BaseModel):
-    expected_revision: str = Field(min_length=64, max_length=64)
-    profile: GatewayProfile
-
-
-class ConfigPrepared(BaseModel):
-    apply_receipt: str
-    restart_required: bool = True
-
-
-class AccessAction(BaseModel):
-    action: Literal["local_start", "local_stop", "public_start", "public_stop", "check"]
-
-
 class EndpointStatus(BaseModel):
     phase: Literal["off", "starting", "ready", "connecting", "reconnecting", "failed"] = "off"
     url: str = ""
@@ -72,25 +52,3 @@ class AccessStatus(BaseModel):
     bytes_received: int = 0
     bytes_sent: int = 0
     requests: int = 0
-
-
-class CredentialTicketIn(BaseModel):
-    kind: Literal["identity", "known_hosts"]
-
-
-class CredentialTicketOut(BaseModel):
-    ticket: str
-
-
-class CredentialImportIn(BaseModel):
-    ticket: str = Field(min_length=32, max_length=128)
-    path: str = Field(min_length=1, max_length=4096)
-
-
-class CredentialOut(BaseModel):
-    id: str
-    fingerprint: str
-
-
-class ReceiptIn(BaseModel):
-    receipt: str = Field(min_length=32, max_length=128)

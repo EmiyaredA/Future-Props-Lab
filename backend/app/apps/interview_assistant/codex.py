@@ -117,7 +117,7 @@ def invocation(root: Path):
         tool_env = {"HOME": str(root / "work"), "PATH": "/usr/bin:/bin"}
     else:
         tool_command = sys.executable
-        tool_args = [str(REPO_ROOT / "desktop/backend/interview_tools_entry.py"), str(root)]
+        tool_args = [str(REPO_ROOT / "scripts/website/interview_tools.py"), str(root)]
         tool_env = {
             "PYTHONPATH": str(REPO_ROOT / "backend"),
             "PYTHONDONTWRITEBYTECODE": "1",
@@ -257,7 +257,7 @@ class CodexExecutor:
         else:
             command = [
                 sys.executable,
-                str(REPO_ROOT / "desktop/backend/interview_tools_entry.py"),
+                str(REPO_ROOT / "scripts/website/interview_tools.py"),
                 "--run-codex",
                 str(os.getpid()),
                 *command,

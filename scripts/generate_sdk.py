@@ -15,7 +15,7 @@ TARGET = SDK / "src/future_props_lab/generated"
 MAPPING = SDK / "operations.json"
 SCHEMA = ROOT / "web/src/generated/openapi.json"
 TAGS = {
-    "desktop": "desktop",
+    "automation": "automation",
     "accounts": "accounts",
     "account-workspaces": "workspaces",
     "account-management": "admin",
@@ -156,7 +156,12 @@ def inventory(schema, existing):
         # Browser Session gateways are not SDK or Agent resources. Their HTTP
         # schemas remain generated for typed Web consumers.
         if path.startswith(
-            ("/v1/thought-workshop/community/", "/v1/agent-workbench/", "/v1/desktop/web-access")
+            (
+                "/v1/thought-workshop/community/",
+                "/v1/agent-workbench/",
+                "/v1/automation/runtime",
+                "/v1/automation/access",
+            )
         ):
             continue
         for method, operation in item.items():
@@ -294,11 +299,11 @@ def main():
     existing = json.loads(MAPPING.read_text()) if MAPPING.exists() else {}
     mapping = inventory(schema, existing)
     agent = json.loads(
-        (ROOT / "backend/app/console/governance/desktop_agent_operations.json").read_text()
+        (ROOT / "backend/app/console/governance/automation_operations.json").read_text()
     )
     for key, operation in agent["operations"].items():
         if mapping.get(key) != operation:
-            raise SystemExit(f"Desktop agent allowlist is stale: {key}")
+            raise SystemExit(f"Automation allowlist is stale: {key}")
     files = generate(schema, mapping)
     stale = []
     obsolete = sorted(set((TARGET / "resources").glob("*.py")) - set(files))

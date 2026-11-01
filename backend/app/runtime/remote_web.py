@@ -29,6 +29,9 @@ class RemoteWeb:
         path = scope["path"]
         websocket = scope["type"] == "websocket"
         unsafe = scope.get("method", "GET") not in {"GET", "HEAD", "OPTIONS"}
+        api_key = not headers.get("cookie") and headers.get("authorization", "").lower().startswith(
+            "bearer "
+        )
 
         async def reject(status, message):
             if websocket:
@@ -37,7 +40,7 @@ class RemoteWeb:
                 await PlainTextResponse(message, status_code=status)(scope, receive, send)
 
         if headers.get("host") != self.host or (
-            (unsafe or websocket) and headers.get("origin") != self.origin
+            (websocket or (unsafe and not api_key)) and headers.get("origin") != self.origin
         ):
             await reject(403, "Forbidden")
             return

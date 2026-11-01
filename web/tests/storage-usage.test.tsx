@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, vi } from "vitest";
+import { beforeEach, vi } from "vitest";
 import { StorageUsagePage } from "@features/tools/StorageUsagePage";
 import {
   getStorageUsage,
@@ -32,7 +32,6 @@ const state: StorageUsageState = {
     },
   ],
 };
-const pick = vi.fn();
 beforeEach(() => {
   vi.mocked(getStorageUsage)
     .mockReset()
@@ -43,13 +42,6 @@ beforeEach(() => {
   vi.mocked(openStorageDirectory)
     .mockReset()
     .mockImplementation(async (directory) => ({ directory, submitted: true }));
-  pick.mockReset().mockResolvedValue(null);
-  window.futurePropsDesktop = {
-    pickStorageDirectory: pick,
-  } as unknown as NonNullable<Window["futurePropsDesktop"]>;
-});
-afterEach(() => {
-  delete window.futurePropsDesktop;
 });
 function show(allowed = true) {
   const client = new QueryClient({
@@ -93,15 +85,15 @@ test("reads capacity, switches directories, and hands analysis and Finder action
   await waitFor(() => expect(getStorageUsage).toHaveBeenCalledTimes(3));
 });
 
-test("picker cancellation keeps selection and external-volume selection changes capacity query", async () => {
+test("explicit Mac paths change the capacity query", async () => {
   const user = userEvent.setup();
   show();
   await screen.findByText("已安装 · 3.8.1");
-  await user.click(screen.getByRole("button", { name: "选择其他目录" }));
-  expect(screen.getByText("/Users/example")).toBeInTheDocument();
-  expect(getStorageUsage).toHaveBeenCalledTimes(1);
-  pick.mockResolvedValueOnce("/Volumes/外接盘/素材");
-  await user.click(screen.getByRole("button", { name: "选择其他目录" }));
+  await user.type(
+    screen.getByRole("textbox", { name: "Mac 目录绝对路径" }),
+    "/Volumes/外接盘/素材",
+  );
+  await user.click(screen.getByRole("button", { name: "查看目录" }));
   expect(await screen.findByText("/Volumes/外接盘/素材")).toBeInTheDocument();
   expect(getStorageUsage).toHaveBeenLastCalledWith("/Volumes/外接盘/素材");
 });
@@ -121,15 +113,11 @@ test("missing installation offers download and re-detection while Finder remains
   ).toBeEnabled();
 });
 
-test.each([false, true])(
-  "denied environment does not request local paths (allowed=%s)",
-  async (allowed) => {
-    if (allowed) delete window.futurePropsDesktop;
-    show(allowed);
-    expect(screen.getByText(/此工具仅供 macOS/)).toBeInTheDocument();
-    expect(getStorageUsage).not.toHaveBeenCalled();
-  },
-);
+test("denied environment never requests local paths", () => {
+  show(false);
+  expect(screen.getByText(/此工具仅供 macOS/)).toBeInTheDocument();
+  expect(getStorageUsage).not.toHaveBeenCalled();
+});
 
 test("open failures do not retry and pending actions prevent duplicate submission", async () => {
   const user = userEvent.setup();
@@ -145,7 +133,7 @@ test("open failures do not retry and pending actions prevent duplicate submissio
   const button = screen.getByRole("button", { name: /可视化分析/ });
   await user.click(button);
   expect(button).toBeDisabled();
-  expect(screen.getByRole("button", { name: "选择其他目录" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "查看目录" })).toBeDisabled();
   fail(new Error("打开请求超时"));
   expect(await screen.findByRole("alert")).toHaveTextContent("打开请求超时");
   expect(openStorageDirectory).toHaveBeenCalledTimes(1);

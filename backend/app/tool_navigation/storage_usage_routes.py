@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.deps import StudioAuth
+from app.runtime.website import require_local_browser
 from app.tool_navigation.storage_usage import (
     StorageUsageError,
     open_storage_directory,
@@ -19,10 +20,11 @@ router = APIRouter(prefix="/tool-navigation/storage-usage", tags=["tool-navigati
 
 
 def require_storage_access(request: Request, principal: StudioAuth) -> None:
-    if sys.platform != "darwin" or not getattr(request.app.state, "desktop_enabled", False):
-        raise HTTPException(404, detail="空间占用工具仅支持 macOS 桌面版")
+    require_local_browser(request, principal)
+    if sys.platform != "darwin":
+        raise HTTPException(404, detail="空间占用工具仅支持 macOS")
     if principal.auth_kind != "session" or not principal.is_platform_admin:
-        raise HTTPException(403, detail="仅桌面版平台超级管理员可使用空间占用工具")
+        raise HTTPException(403, detail="仅本机网站平台管理员可使用空间占用工具")
 
 
 @router.get("", response_model=StorageUsageState)

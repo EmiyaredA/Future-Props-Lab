@@ -140,7 +140,7 @@ async def store(tmp_path):
 
     @application.middleware("http")
     async def private_fixture(request, call_next):
-        request.state.desktop_private = request.headers.get("x-private") == "yes"
+        request.state.website_local = request.headers.get("x-private") == "yes"
         return await call_next(request)
 
     application.dependency_overrides[db_session] = session_dependency
@@ -350,9 +350,8 @@ def test_plain_history_uses_bounded_batches_without_compressed_expansion_limit(
         batch = adapter.watch(str(tmp_path), "plain.jsonl", batch.checkpoint)
         entries.extend(batch.entries)
     assert len(entries) == 2
-    compressed = adapter.read_history(str(tmp_path), "compressed.jsonl", {})
     with pytest.raises(ValueError, match="展开体积超过限制"):
-        adapter.watch(str(tmp_path), "compressed.jsonl", compressed.checkpoint)
+        adapter.read_history(str(tmp_path), "compressed.jsonl", {})
 
 
 def test_codex_large_image_record_keeps_text_without_copying_embedded_image(tmp_path):
@@ -368,6 +367,18 @@ def test_codex_large_image_record_keeps_text_without_copying_embedded_image(tmp_
     assert all(len(entry.text) < 100 for entry in first.entries)
     second = adapter.watch(str(tmp_path), path.name, first.checkpoint)
     assert second.complete and len(second.entries) == 1
+
+
+def test_legacy_codex_checkpoint_does_not_reindex_for_dsh_parser_upgrade(tmp_path):
+    path = tmp_path / "record.jsonl"
+    path.write_bytes(zstandard.ZstdCompressor().compress(encode(*codex_records())))
+    adapter = get_adapter("codex")
+    first = adapter.read_history(str(tmp_path), path.name, {})
+    assert first.complete and len(first.entries) == 2
+    legacy_state = {k: v for k, v in first.checkpoint.items() if k != "normalization_version"}
+    updated = adapter.watch(str(tmp_path), path.name, legacy_state)
+    assert updated.complete and not updated.reset and updated.entries == []
+    assert updated.checkpoint["offset"] == first.checkpoint["offset"]
 
 
 def test_codex_compressed_jsonl_archive_and_incremental_follow(tmp_path):
@@ -413,6 +424,62 @@ def test_dsh_compressed_frames_and_incremental_follow(tmp_path):
     second = adapter.watch(str(tmp_path), path.name, first.checkpoint)
     assert len(second.entries) == 1 and second.entries[0].text == "world"
     assert not second.reset
+
+
+async def test_dsh_normalization_upgrade_backfills_error_without_clearing_history(
+    store, tmp_path, monkeypatch
+):
+    from app.capabilities.agents.sessions import files, parsers
+
+    sessions, client = store
+    records = [
+        {"type": "session", "version": 4, "id": "dsh-upgrade", "cwd": "/fixture"},
+        {"type": "user/message", "seq": 1, "data": {"content": "hello"}},
+        {"type": "assistant/message", "seq": 2, "data": {"content": "previous reply"}},
+        {
+            "type": "turn/end",
+            "seq": 3,
+            "data": {
+                "reason": {
+                    "kind": "error",
+                    "error": {
+                        "code": "MISSING_CREDENTIAL",
+                        "message": "credential unavailable",
+                        "headers": {"Authorization": "must-not-be-projected"},
+                    },
+                }
+            },
+        },
+    ]
+    path = tmp_path / "session.jsonl.zstd"
+    path.write_bytes(zstandard.ZstdCompressor().compress(encode(*records)))
+    original = path.read_bytes()
+    await bind(client, tmp_path, "dsh")
+    original_parser = parsers.dsh
+
+    def legacy_parser(record, *args):
+        return [] if record.get("type") == "turn/end" else original_parser(record, *args)
+
+    with monkeypatch.context() as old:
+        old.setattr(files, "NORMALIZATION_VERSION", 0)
+        old.setattr(parsers, "dsh", legacy_parser)
+        await scan(WorkbenchSyncRunner(sessions))
+    item = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
+    url = f"/v1/agent-workbench/sessions/{item['id']}/history"
+    assert len((await client.get(url)).json()["items"]) == 2
+    monkeypatch.setattr(files, "MAX_CHUNK", 1)
+    await scan(WorkbenchSyncRunner(sessions))
+    assert len((await client.get(url)).json()["items"]) == 2
+    for _ in range(5):
+        await scan(WorkbenchSyncRunner(sessions))
+    history = (await client.get(url)).json()["items"]
+    assert [entry["text"] for entry in history] == [
+        "hello",
+        "previous reply",
+        "MISSING_CREDENTIAL: credential unavailable",
+    ]
+    assert history[-1]["kind"] == "error"
+    assert path.read_bytes() == original
 
 
 def test_opencode_sqlite_readonly_snapshot_and_in_place_updates(tmp_path):
@@ -699,7 +766,7 @@ def test_workbench_does_not_expand_agent_or_sdk_operation_surface():
     root = Path(__file__).resolve().parents[1]
     mapping = json.loads((root / "sdk/python/operations.json").read_text())
     operations = json.loads(
-        (root / "backend/app/console/governance/desktop_agent_operations.json").read_text()
+        (root / "backend/app/console/governance/automation_operations.json").read_text()
     )["operations"]
     assert not any("/agent-workbench/" in key for key in mapping)
     assert not any("/agent-workbench/" in key for key in operations)

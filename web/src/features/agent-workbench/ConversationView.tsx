@@ -47,13 +47,15 @@ function Message({
       <div className="aw-message-content">
         <div className="aw-message-byline">
           <strong>
-            {entry.role === "user"
-              ? "我"
-              : entry.role === "tool"
-                ? "工具结果"
-                : entry.role === "system"
-                  ? "会话记录"
-                  : agentName(agent)}
+            {entry.kind === "error"
+              ? "原端错误"
+              : entry.role === "user"
+                ? "我"
+                : entry.role === "tool"
+                  ? "工具结果"
+                  : entry.role === "system"
+                    ? "会话记录"
+                    : agentName(agent)}
           </strong>
           <time>{displayTime(entry.timestamp)}</time>
         </div>

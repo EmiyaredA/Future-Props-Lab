@@ -48,6 +48,6 @@ test("every route and independent HTML entry has a responsive scenario", () => {
   const html = [
     ...build.matchAll(/resolve\(__dirname, "([^"]+\.html)"\)/g),
   ].map((match) => match[1]);
-  expect(html.sort()).toEqual(["amadeus.html", "docs.html", "index.html"]);
+  expect(html.sort()).toEqual(["docs.html", "index.html"]);
   expect(publicSurfaces).toEqual(["login", "account-settings", "docs"]);
 });

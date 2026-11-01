@@ -983,10 +983,7 @@ def test_source_files_stay_under_the_review_soft_limit() -> None:
     for root in (
         BACKEND_APP,
         WEB_SRC,
-        REPO_ROOT / "desktop/src",
-        REPO_ROOT / "desktop/backend",
-        REPO_ROOT / "desktop/scripts",
-        REPO_ROOT / "desktop/ui",
+        REPO_ROOT / "scripts/website",
     ):
         for path in sorted(root.rglob("*")):
             if (

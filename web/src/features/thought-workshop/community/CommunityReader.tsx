@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -353,17 +354,15 @@ export function CommunityReader({
                 className="knowledge-document-tools"
                 ref={documentUI.toolsRef}
               />
-              {window.futurePropsDesktop?.openAmadeus && (
+              {
                 <button
                   className="btn"
                   aria-label="打开 Amadeus"
-                  onClick={() =>
-                    void window.futurePropsDesktop?.openAmadeus?.()
-                  }
+                  onClick={() => void openAmadeus()}
                 >
                   <Sparkles size={16} aria-hidden /> Amadeus
                 </button>
-              )}
+              }
               {directory.data?.publication.is_official && (
                 <span className="official-badge">官方</span>
               )}

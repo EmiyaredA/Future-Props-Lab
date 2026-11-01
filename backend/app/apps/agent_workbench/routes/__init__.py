@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from app.deps import OwnerDep, SessionDep, StudioAuth
+from app.runtime.website import require_local_browser
 
 from .. import reading, sources
 from ..attachments import attachment
@@ -29,9 +30,8 @@ async def require_workbench_session(principal: StudioAuth, session: SessionDep):
     return principal
 
 
-def require_private_desktop(request: Request):
-    if not getattr(request.state, "desktop_private", False):
-        raise HTTPException(403, "请在已登录的 FPL 桌面窗口中选择并绑定本机来源")
+def require_local_source_access(request: Request, principal: StudioAuth):
+    require_local_browser(request, principal)
 
 
 WorkbenchAuth = Annotated[object, Depends(require_workbench_session)]
@@ -45,7 +45,7 @@ router = APIRouter(
 @router.get(
     "/candidates",
     response_model=list[WorkbenchCandidate],
-    dependencies=[Depends(require_private_desktop)],
+    dependencies=[Depends(require_local_source_access)],
 )
 def list_candidates():
     return sources.source_candidates()
@@ -60,7 +60,7 @@ async def list_sources(session: SessionDep, owner: OwnerDep):
     "/sources",
     response_model=WorkbenchSourceOut,
     status_code=201,
-    dependencies=[Depends(require_private_desktop)],
+    dependencies=[Depends(require_local_source_access)],
 )
 async def create_source(body: WorkbenchSourceCreate, session: SessionDep, owner: OwnerDep):
     return await sources.create_source(session, owner, body)

@@ -1295,6 +1295,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/automation/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Access Status */
+        get: operations["access_status_v1_automation_access_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/automation/access/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Access Action */
+        post: operations["access_action_v1_automation_access_actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/automation/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capabilities */
+        get: operations["capabilities_v1_automation_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/automation/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Changes */
+        get: operations["changes_v1_automation_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/automation/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open Resource */
+        post: operations["open_resource_v1_automation_open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/automation/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Runtime */
+        get: operations["runtime_v1_automation_runtime_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/code-agents": {
         parameters: {
             query?: never;
@@ -1582,281 +1684,6 @@ export interface paths {
         get: operations["example_tool_v1_demo_services_tools__tool__get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/agent/capabilities": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Capabilities */
-        get: operations["capabilities_v1_desktop_agent_capabilities_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/agent/pairings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Pending Pairings */
-        get: operations["pending_pairings_v1_desktop_agent_pairings_get"];
-        put?: never;
-        /** Begin Pairing */
-        post: operations["begin_pairing_v1_desktop_agent_pairings_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/agent/pairings/{pair_id}/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Claim Pairing */
-        post: operations["claim_pairing_v1_desktop_agent_pairings__pair_id__claim_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/agent/pairings/{pair_id}/decision": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Decide Pairing */
-        post: operations["decide_pairing_v1_desktop_agent_pairings__pair_id__decision_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/setup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Setup */
-        get: operations["get_setup_v1_desktop_setup_get"];
-        put?: never;
-        /** Create First Account */
-        post: operations["create_first_account_v1_desktop_setup_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/ui/inbox": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Inbox */
-        get: operations["inbox_v1_desktop_ui_inbox_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/ui/open": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Open In App */
-        post: operations["open_in_app_v1_desktop_ui_open_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/ui/requests/{request_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Open Status */
-        get: operations["open_status_v1_desktop_ui_requests__request_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/ui/requests/{request_id}/ack": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Acknowledge */
-        post: operations["acknowledge_v1_desktop_ui_requests__request_id__ack_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/web-access": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Status */
-        get: operations["status_v1_desktop_web_access_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/web-access/actions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Action */
-        post: operations["action_v1_desktop_web_access_actions_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/web-access/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Config */
-        get: operations["config_v1_desktop_web_access_config_get"];
-        /** Prepare Config */
-        put: operations["prepare_config_v1_desktop_web_access_config_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/web-access/config/adopt-legacy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Adopt */
-        post: operations["adopt_v1_desktop_web_access_config_adopt_legacy_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/web-access/config/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Claim Config */
-        post: operations["claim_config_v1_desktop_web_access_config_claim_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/web-access/credentials/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Import Credential */
-        post: operations["import_credential_v1_desktop_web_access_credentials_import_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop/web-access/credentials/tickets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Credential Ticket */
-        post: operations["credential_ticket_v1_desktop_web_access_credentials_tickets_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8719,34 +8546,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "local_start" | "local_stop" | "public_start" | "public_stop" | "check";
-        };
-        /** AccessConfigIn */
-        AccessConfigIn: {
-            /** Expected Revision */
-            expected_revision: string;
-            profile: components["schemas"]["GatewayProfile"];
-        };
-        /** AccessConfigOut */
-        AccessConfigOut: {
-            /**
-             * Identity Fingerprint
-             * @default
-             */
-            identity_fingerprint: string;
-            /**
-             * Known Hosts Fingerprint
-             * @default
-             */
-            known_hosts_fingerprint: string;
-            /**
-             * Legacy Available
-             * @default false
-             */
-            legacy_available: boolean;
-            profile: components["schemas"]["GatewayProfile"];
-            /** Revision */
-            revision: string;
+            action: "public_start" | "public_stop" | "check";
         };
         /** AccessStatus */
         AccessStatus: {
@@ -9008,55 +8808,6 @@ export interface components {
              */
             type: "addTransition";
         };
-        /** AgentCapabilities */
-        AgentCapabilities: {
-            /** Operations */
-            operations: {
-                [key: string]: unknown;
-            };
-            /** Owner User Id */
-            owner_user_id: string;
-            /** Schemas */
-            schemas: {
-                [key: string]: unknown;
-            };
-            /** Scopes */
-            scopes: string[];
-            /** User Id */
-            user_id: string;
-            /**
-             * Version
-             * @default 1
-             */
-            version: number;
-        };
-        /** AgentClaimIn */
-        AgentClaimIn: {
-            /** Claim Token */
-            claim_token: string;
-        };
-        /** AgentClaimOut */
-        AgentClaimOut: {
-            /** Api Key */
-            api_key?: string | null;
-            /** Key Id */
-            key_id?: string | null;
-            /** Owner User Id */
-            owner_user_id?: string | null;
-            /** Status */
-            status: string;
-            /** User Id */
-            user_id?: string | null;
-        };
-        /** AgentDecisionIn */
-        AgentDecisionIn: {
-            /** Approve */
-            approve: boolean;
-            /** Code */
-            code: string;
-            /** Expected Owner User Id */
-            expected_owner_user_id: string;
-        };
         /** AgentOut */
         AgentOut: {
             /** Available */
@@ -9080,45 +8831,6 @@ export interface components {
             status: string;
             /** Version */
             version: string;
-        };
-        /** AgentPairIn */
-        AgentPairIn: {
-            /** Name */
-            name: string;
-            /**
-             * Scope
-             * @default studio:read
-             * @enum {string}
-             */
-            scope: "studio:read" | "studio:write";
-        };
-        /** AgentPairOut */
-        AgentPairOut: {
-            /** Code */
-            code: string;
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /** Scope */
-            scope: string;
-            /** Status */
-            status: string;
-        };
-        /** AgentPairStarted */
-        AgentPairStarted: {
-            /** Claim Token */
-            claim_token: string;
-            /** Code */
-            code: string;
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /** Scope */
-            scope: string;
-            /** Status */
-            status: string;
         };
         /** AlignAudioSeamOperation */
         AlignAudioSeamOperation: {
@@ -9769,6 +9481,54 @@ export interface components {
              */
             storage_upgrade_required: boolean;
             user: components["schemas"]["CurrentUserOut"];
+        };
+        /** AutomationCapabilities */
+        AutomationCapabilities: {
+            /** Operations */
+            operations: {
+                [key: string]: unknown;
+            };
+            /** Owner User Id */
+            owner_user_id: string;
+            /** Schemas */
+            schemas: {
+                [key: string]: unknown;
+            };
+            /** Scopes */
+            scopes: string[];
+            /** User Id */
+            user_id: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /** AutomationOpenIn */
+        AutomationOpenIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
+            /** Resource Id */
+            resource_id?: string | null;
+            /** View */
+            view?: ("list" | "details" | "upload" | "versions" | "tags" | "edit" | "validate" | "tools") | null;
+        };
+        /** AutomationOpenOut */
+        AutomationOpenOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
+            /** Path */
+            path: string;
+            /** Resource Id */
+            resource_id?: string | null;
+            /** View */
+            view?: ("list" | "details" | "upload" | "versions" | "tags" | "edit" | "validate" | "tools") | null;
         };
         /** BatchDeleteIn */
         BatchDeleteIn: {
@@ -10489,16 +10249,6 @@ export interface components {
             documents: components["schemas"]["ThoughtNoteOut"][];
             knowledge_base: components["schemas"]["PublicationOut"];
         };
-        /** ConfigPrepared */
-        ConfigPrepared: {
-            /** Apply Receipt */
-            apply_receipt: string;
-            /**
-             * Restart Required
-             * @default true
-             */
-            restart_required: boolean;
-        };
         /** ConversationDetailOut */
         ConversationDetailOut: {
             /** Actions */
@@ -10864,33 +10614,6 @@ export interface components {
             /** Release Id */
             release_id: string;
         };
-        /** CredentialImportIn */
-        CredentialImportIn: {
-            /** Path */
-            path: string;
-            /** Ticket */
-            ticket: string;
-        };
-        /** CredentialOut */
-        CredentialOut: {
-            /** Fingerprint */
-            fingerprint: string;
-            /** Id */
-            id: string;
-        };
-        /** CredentialTicketIn */
-        CredentialTicketIn: {
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "identity" | "known_hosts";
-        };
-        /** CredentialTicketOut */
-        CredentialTicketOut: {
-            /** Ticket */
-            ticket: string;
-        };
         /** CsvIn */
         CsvIn: {
             /** Csv */
@@ -11051,78 +10774,6 @@ export interface components {
             /** State */
             state: string;
             value: components["schemas"]["DemoConfig"];
-        };
-        /** DesktopInbox */
-        DesktopInbox: {
-            /** Change Revision */
-            change_revision: number;
-            /**
-             * Content Change Revision
-             * @default 0
-             */
-            content_change_revision: number;
-            /** Integration Revisions */
-            integration_revisions?: {
-                [key: string]: number;
-            };
-            /** Requests */
-            requests: components["schemas"]["DesktopOpenOut"][];
-        };
-        /** DesktopOpenAck */
-        DesktopOpenAck: {
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "waiting_confirmation" | "opened" | "cancelled" | "unavailable";
-        };
-        /** DesktopOpenIn */
-        DesktopOpenIn: {
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
-            /** Resource Id */
-            resource_id?: string | null;
-            /** View */
-            view?: ("list" | "details" | "upload" | "versions" | "tags" | "edit" | "validate" | "tools") | null;
-        };
-        /** DesktopOpenOut */
-        DesktopOpenOut: {
-            /** Id */
-            id: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
-            /** Resource Id */
-            resource_id?: string | null;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "waiting_confirmation" | "opened" | "cancelled" | "unavailable";
-            /** View */
-            view?: ("list" | "details" | "upload" | "versions" | "tags" | "edit" | "validate" | "tools") | null;
-        };
-        /** DesktopSetupIn */
-        DesktopSetupIn: {
-            /**
-             * Display Name
-             * @default
-             */
-            display_name: string;
-            /** Password */
-            password: string;
-            /** Username */
-            username: string;
-        };
-        /** DesktopSetupOut */
-        DesktopSetupOut: {
-            /** Setup Required */
-            setup_required: boolean;
         };
         /** DeveloperDocumentOut */
         DeveloperDocumentOut: {
@@ -14995,49 +14646,6 @@ export interface components {
             /** Title */
             title?: string | null;
         };
-        /** GatewayProfile */
-        GatewayProfile: {
-            /**
-             * Host
-             * @default
-             */
-            host: string;
-            /**
-             * Identity Id
-             * @default
-             */
-            identity_id: string;
-            /**
-             * Known Hosts Id
-             * @default
-             */
-            known_hosts_id: string;
-            /**
-             * Local Port
-             * @default 28081
-             */
-            local_port: number;
-            /**
-             * Origin
-             * @default
-             */
-            origin: string;
-            /**
-             * Remote Port
-             * @default 28080
-             */
-            remote_port: number;
-            /**
-             * Ssh Port
-             * @default 22
-             */
-            ssh_port: number;
-            /**
-             * User
-             * @default
-             */
-            user: string;
-        };
         /** GenerationBatchListOut */
         GenerationBatchListOut: {
             /** Items */
@@ -16021,7 +15629,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "install" | "cancel" | "enable" | "stop" | "uninstall";
+            action: "install" | "cancel" | "enable" | "stop" | "uninstall" | "repair";
             /** Expected Revision */
             expected_revision: number;
             /** Request Id */
@@ -19396,11 +19004,6 @@ export interface components {
         ReauthIn: {
             /** Password */
             password: string;
-        };
-        /** ReceiptIn */
-        ReceiptIn: {
-            /** Receipt */
-            receipt: string;
         };
         /** RecordPage */
         RecordPage: {
@@ -27136,6 +26739,156 @@ export interface operations {
             };
         };
     };
+    access_status_v1_automation_access_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessStatus"];
+                };
+            };
+        };
+    };
+    access_action_v1_automation_access_actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capabilities_v1_automation_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationCapabilities"];
+                };
+            };
+        };
+    };
+    changes_v1_automation_changes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+    };
+    open_resource_v1_automation_open_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutomationOpenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    runtime_v1_automation_runtime_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+        };
+    };
     list_code_agents_v1_code_agents_get: {
         parameters: {
             query?: never;
@@ -27789,546 +27542,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    capabilities_v1_desktop_agent_capabilities_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentCapabilities"];
-                };
-            };
-        };
-    };
-    pending_pairings_v1_desktop_agent_pairings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentPairOut"][];
-                };
-            };
-        };
-    };
-    begin_pairing_v1_desktop_agent_pairings_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AgentPairIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentPairStarted"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    claim_pairing_v1_desktop_agent_pairings__pair_id__claim_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pair_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AgentClaimIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentClaimOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    decide_pairing_v1_desktop_agent_pairings__pair_id__decision_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pair_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AgentDecisionIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentPairOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_setup_v1_desktop_setup_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DesktopSetupOut"];
-                };
-            };
-        };
-    };
-    create_first_account_v1_desktop_setup_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DesktopSetupIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DesktopSetupOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    inbox_v1_desktop_ui_inbox_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DesktopInbox"];
-                };
-            };
-        };
-    };
-    open_in_app_v1_desktop_ui_open_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DesktopOpenIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DesktopOpenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    open_status_v1_desktop_ui_requests__request_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                request_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DesktopOpenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    acknowledge_v1_desktop_ui_requests__request_id__ack_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                request_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DesktopOpenAck"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DesktopOpenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    status_v1_desktop_web_access_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccessStatus"];
-                };
-            };
-        };
-    };
-    action_v1_desktop_web_access_actions_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AccessAction"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccessStatus"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    config_v1_desktop_web_access_config_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccessConfigOut"];
-                };
-            };
-        };
-    };
-    prepare_config_v1_desktop_web_access_config_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AccessConfigIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConfigPrepared"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    adopt_v1_desktop_web_access_config_adopt_legacy_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConfigPrepared"];
-                };
-            };
-        };
-    };
-    claim_config_v1_desktop_web_access_config_claim_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReceiptIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_credential_v1_desktop_web_access_credentials_import_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CredentialImportIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    credential_ticket_v1_desktop_web_access_credentials_tickets_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CredentialTicketIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CredentialTicketOut"];
                 };
             };
             /** @description Validation Error */

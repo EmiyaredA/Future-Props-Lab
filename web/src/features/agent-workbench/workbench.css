@@ -541,7 +541,7 @@
 }
 .aw-error {
   background: var(--danger-soft);
-  color: var(--danger);
+  color: color-mix(in srgb, var(--danger) 85%, var(--text));
   border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
   border-radius: 7px;
   padding: 10px 12px;

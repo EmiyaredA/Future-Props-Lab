@@ -5,17 +5,21 @@
 
 ## Agent 工作台
 
-`backend/app/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/app/capabilities/agents/sessions/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。Electron 复用目录选择，私有传输标记用于新绑定校验。来源授权不复用 Amadeus 的任务执行授权，首批不包含续聊。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
+`backend/app/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/app/capabilities/agents/sessions/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权不复用 Amadeus 的任务执行授权，首批不包含续聊。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
 
-## 桌面同进程公网 Web
+## 网站运行与自动化
 
-`runtime/remote_web.py` 负责 Host／Origin、私有路径隔离、静态缓存及本机 HTTP／公网 HTTPS Cookie 边界。`capabilities/web_access/` 持有可启停回环监听器、SSH 生命周期、状态和配置票据；附加 Uvicorn 的 lifespan 关闭，复用桌面 ASGI 应用，不重复初始化数据库或 Runner。`console/routes/web_access.py` 只编排私有管理员协议；原生文件导入和配置领取额外校验宿主凭据。`desktop/src/web-access.ts` 管理选择器、跨窗口未保存保护与配置更新交接，`desktop/backend/web_config.py` 在启动持锁阶段完成离线备份及原子配置发布。`amadeus-window-preferences.ts` 独立拥有可选窗口偏好持久化。
+`runtime/website.py` 拥有可信本机 socket、SPA 静态托管和来源校验；`runtime/remote_web.py` 拥有公网 Host／Origin、浏览器 Session／受控 API Key 和缓存边界。`capabilities/web_access/` 拥有公网回环监听器、专用 SSH 重连和状态；附加 lifespan 关闭，不重复初始化数据库或 Runner。
 
-运行开关只在内存且每次启动默认关闭；`[remote_web]` TOML 保存一个连接资料。`web/scripts/prepare-studio-release.mjs` 生成构建标识、清单及预压缩程序资源，并检查登录压缩预算；`build:studio` 输出 `.local/studio-release/`，桌面构建使用相同 Studio 模式。云端发布和 Caddy 模板归相邻 `remote-control` 项目。`app/SignedInApp.tsx` 是登录后的动态业务入口，桌面宿主仅原生加载；`features/accounts/WebAccessDialog.tsx` 拥有管理员访问面板。`capabilities/asset_store/thumbnails.py` 拥有账号鉴权后的有界缩略派生，`platform/api/useVisibleApiBlobUrl.ts` 只编排可见性与既有 Blob 生命周期。
+`scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`service.py` 管理用户级 LaunchAgent，`development.py` 隔离开发配置、密钥与数据库，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。
+
+`console/governance/automation.py` 校验资源归属并返回网站路径；`automation_operations.json` 维护 SDK／MCP 白名单，`automation_access.py` 将其编译为本机／公网共用的入口策略；`console/routes/automation.py` 负责发现和本机管理员访问控制。`sdk/python/src/future_props_lab/website.py` 保存受保护客户端连接，`cli.py` 提供 fpl。
+
+`features/amadeus/PageProvider.tsx` 持有当前账号的页面侧栏，`PageContext.tsx` 和 `pageBridge.ts` 明确传递页面、选中引用和审批后变更；`platform/assistant.ts` 仅提供无状态的打开请求。`features/accounts/WebsiteAccessDialog.tsx` 只在后端确认的本机入口向管理员展示。`web/scripts/prepare-studio-release.mjs` 生成构建清单及预压缩资源；云端发布工具归 remote-control。
 
 ## 思绪工坊官方知识库
 
-`web/src/features/thought-workshop/official/` 保留现有指南的导入来源：稳定清单、Markdown、简介、相关阅读和 CanvasScene。它不参与运行期社区列表、搜索或阅读。`scripts/official_seed_source.ts` 提取受控来源，`scripts/build_official_seed.py` 转换为普通 version 7 备份包，生成 `backend/app/apps/thought_workshop/publication/seed.json`；`knowledge:seed:check` 验证来源与包一致，桌面后端打包携带该 JSON。
+`web/src/features/thought-workshop/official/` 保留现有指南的导入来源：稳定清单、Markdown、简介、相关阅读和 CanvasScene。它不参与运行期社区列表、搜索或阅读。`scripts/official_seed_source.ts` 提取受控来源，`scripts/build_official_seed.py` 转换为普通 version 7 备份包，生成 `backend/app/apps/thought_workshop/publication/seed.json`；`knowledge:seed:check` 验证来源与包一致，网站后端提供该 JSON。
 
 `publication/imports.py` 复用普通备份导入用例，平台管理员在当前账号明确确认数量后创建 12 个私人库、93 篇文章及 12 篇首页。导入正文、目录和跨库 ID 引用与来源映射、请求回执在同一事务提交；回执按账号、操作者、请求 ID 隔离。再次主动导入创建独立副本，不自动发布或覆盖。`OfficialSource` 只定位旧来源，`OfficialImportReceipt` 只记录成功结果。
 
@@ -64,19 +68,12 @@ Future-Props-Lab/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
 │   └── runner.py      # checksum、连续前缀检查和事务应用
-├── desktop/
-│   ├── assets/       # 从项目品牌原图确定性生成的 macOS 主图标与 ICNS
-│   ├── src/          # Electron 主进程、受限 preload、私有后端启动、稳定开发网关与生命周期
-│   ├── ui/           # 本地启动/故障恢复窗口，不加载业务或用户数据
-│   ├── backend/      # PyInstaller 入口；开发只读迁移检查、离线备份与继承数据锁
-│   │   └── script_entry.py # Amadeus 独立无密钥脚本运行器入口
-│   ├── scripts/      # 热加载监督器、源码检查、白名单打包、arm64/许可校验及 Electron 烟测
-│   └── tests/        # 桌面来源与固定能力边界的确定性测试
+├── scripts/website/   # 网站启动、LaunchAgent、数据迁移、临时清理与独立任务工具入口
 ├── web/src/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
 │   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
 │   ├── features/      # 账号治理、首页、应用、文件管理、工坊、工具导航、集成中心与模型功能
-│   │   ├── amadeus/   # 独立窗口 UI、后端运行重连、控件选取与原生动态头像源画
+│   │   ├── amadeus/   # 页面侧栏 UI、后端运行重连、控件选取与原生动态头像源画
 │   │   └── creative-workshop/ # 广场、创作、版本详情、能力选择与安装引导
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
@@ -107,30 +104,11 @@ Future-Props-Lab/
 
 - `fpl_config/` 只拥有配置格式与文件转换。`runtime/config.py` 将 TOML 和进程环境映射到 Settings；
   `db/migrations/runner.py` 使用同一格式解析数据库路径，不依赖运行时 `app`。
-  `scripts/migrate_config.py` 仅转换配置，不访问数据库；桌面入口在数据锁内执行旧配置一次性转换。
-
-- `desktop/` 是现有应用的 macOS 壳，不拥有业务 API 或数据库 schema。
-  Amadeus 使用无父窗口的单例 `BrowserWindow`；窗口位置保存于桌面数据目录，关闭仅隐藏。
-  Electron 只转发可信 FPL 窗口上下文、控件引用、定位与截图，不持有模型凭据或业务操作。
-  `scripts/dev.py` 持有跨进程更新的数据租约，`scripts/dev.cjs` 监督 Vite、源码检查与 Electron；
-  `src/development-gateway.ts` 维护带凭据校验的固定开发入口，`src/development.ts` 只广播开发更新状态。
-  `backend/development_data.py` 只做配置/迁移预检、停机快照与清单核验，不执行业务数据或 schema 写入。
-  `app/DesktopDevelopmentHost.tsx` 只处理热加载查询刷新与未保存保护；应用更新与新建窗口入口在
-  App 顶栏（`layout/DesktopAppChrome.tsx`），系统菜单栏不放这些自定义项；窗口标题仍可显示开发状态摘要。
-  `src/agent.ts` 拥有本地 Unix Socket 转发及连接描述，`backend/cli_entry.py` 仅启动独立 SDK CLI。
-  `console/governance/desktop_agent.py` 拥有短期配对，`desktop_ui.py` 校验打开资源的归属，Agent 操作白名单
-  在 `console/governance/desktop_agent_operations.json`；`console/routes/desktop_agent.py` 只承担 `/v1/desktop` 协议边界。
-  `sdk/python/src/future_props_lab/desktop.py` 负责发现和配对，`cli.py` 提供 `fpl` 命令。
-  `app/DesktopAgentHost.tsx` 负责授权通知、外部更新提示及受保护导航，账号设置拥有接入开关。
-  `console/governance/desktop_setup.py` 复用账号开通用例；`runtime/desktop.py` 只负责桌面凭据和静态托管。
-  `web/src/features/accounts/DesktopSetupGate.tsx` 拥有首用表单，`platform/desktop.ts` 只定义固定桥接。
-  `src/export-files.ts` 拥有文稿导出的原生另存为、临时文件原子替换及按窗口绑定的文件定位回执；
-  渲染层只能提供有界文件内容与文件名，写入路径必须由原生保存窗口选择。
-  桌面版配置和数据规则见 [macOS 桌面构建](../operations/desktop-macos.md)。
+  `scripts/migrate_config.py` 仅转换配置，不访问数据库；网站启动器在数据库初始化前读取 TOML，历史 .env 转换须由运维显式执行。
 
 - `console/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、Agent/Plan 运行、持久提问、参数摘要审批与执行记录；
   视频时间线执行由 `apps/video_editor/assistant_operations.py` 提供公共入口，在 `app/api.py` 装配，
-  避免 Console 反向依赖工坊实现。`fpl_operations.py` 只允许调用桌面 Agent 明确登记的业务 HTTP 操作，
+  避免 Console 反向依赖工坊实现。`fpl_operations.py` 只允许调用自动化白名单明确登记的业务 HTTP 操作，
   由原路由重新校验账号、权限和资源版本。
   `console/routes/amadeus.py` 只暴露协议。会话文件存于
   `accounts/<user-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号
@@ -186,7 +164,7 @@ Future-Props-Lab/
   `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
   空间占用用例仅向 macOS 桌面端平台管理员 Session 提供本机容量读取、GrandPerspective
   目录分析与 Finder 打开；不递归扫描、不保存目录或扫描结果，不开放 Agent 通道。
-  Electron 仅负责可信主窗口的目录选择，Web 工具页通过正式 API 调用本机用例。
+  本机网页登录后显式输入 Mac 目录路径，Web 工具页通过正式 API 调用本机用例；公网入口不得调用。
 - `integrations/` 拥有独立于工具导航的账号集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
@@ -212,7 +190,7 @@ Future-Props-Lab/
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
   `web/src/features/interview-assistant/` 拥有面试助手，入口为 `/apps/interview-assistant`，复用应用壳。`api.ts` 与 `queryKeys.ts` 消费生成契约并按账号／账号区分缓存；`usePreparation.ts` 管理场次恢复、原件提交和真实进度；`PreparationPanel.tsx` 与 `BundleView.tsx` 展示资料版本、来源和问题依据。`Practice.tsx`、`session.ts`、`useInterviewSession.ts` 管理仅本页内存中的文字练习与规则复盘，固定使用已验收资料的首轮问题；不采集音视频。`assets/` 中的候选人为生成的虚构示意图，使用 Git LFS。
-  `backend/app/apps/interview_assistant/` 拥有私有场次、材料、输入快照、Codex 准备任务和交付契约；`routes/` 只适配 HTTP，`rooms.py` 执行权限、回执和 CAS，`runner.py` 通过现有 Runner 生命周期串行执行准备、处理中断并拒绝过期结果。`codex.py` 白名单读取模型连接、冻结上下文并消费 JSONL；`task_tools.py` 是不依赖运行时配置、ORM 或 HTTP 的文档／草稿 MCP，`process_watchdog.py` 负责父进程退出和超时终止。二者经 `desktop/backend/interview_tools_entry.py` 独立打包为 `fpl-interview-tools`，不复用服务进程凭据。`console/governance/interview_executor_access.py` 提供后台账号／成员权限重验，在主入口注入执行器。
+  `backend/app/apps/interview_assistant/` 拥有私有场次、材料、输入快照、Codex 准备任务和交付契约；`routes/` 只适配 HTTP，`rooms.py` 执行权限、回执和 CAS，`runner.py` 通过现有 Runner 生命周期串行执行准备、处理中断并拒绝过期结果。`codex.py` 白名单读取模型连接、冻结上下文并消费 JSONL；`task_tools.py` 是不依赖运行时配置、ORM 或 HTTP 的文档／草稿 MCP，`process_watchdog.py` 负责父进程退出和超时终止。二者经 `scripts/website/interview_tools.py` 独立打包为 `fpl-interview-tools`，不复用服务进程凭据。`console/governance/interview_executor_access.py` 提供后台账号／成员权限重验，在主入口注入执行器。
   后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
   `apps/visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
@@ -307,7 +285,7 @@ Future-Props-Lab/
   `web/scripts/documentation-coverage.mjs` 从正文与来源清单生成文章覆盖表；文档结构回归在
   `web/tests/docs-content.test.ts`，浏览器阅读旅程在 `web/e2e/docs.spec.ts`。
   使用指南同时覆盖 Live2D、桌宠、导演台与特效制作；`articles/creative/` 拥有创意发布与安装，
-  `articles/desktop/` 拥有多窗口、本地 Agent 和 Amadeus 操作说明。覆盖脚本发现全部使用正文，
+  `articles/desktop/` 保留稳定文章路径，正文拥有网站运行、CLI 接入和 Amadeus 页面侧栏操作说明。覆盖脚本发现全部使用正文，
   未登记入口或缺少核验依据时失败；组件测试比对实际应用注册表，防止新增应用遗漏指南。
   `rendering/` 移植 Sayflow 的静态文档树、受控组件与阅读样式，支持步骤、卡片、参数、输入输出、
   高亮代码、公式和 Mermaid；通过研究所主题、URL 与 API 操作适配器集成，不执行文章中的 JavaScript。
@@ -347,7 +325,7 @@ Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共
 不属于内容版本；文件存储显式使用已鉴权账号。
 集成中心前端的 `features/integrations/queryKeys.ts` 统一管理目录、详情、版本与工具列表缓存；
 `IntegrationInteractions.tsx` 和 `interaction.ts` 拥有草稿保护、外部更新与页面定位回执。
-桌面操作登记表逐项开放现有集成 API；目标校验归属 `console/governance/desktop_ui.py`，不开放任意 URL
+自动化操作登记表逐项开放现有集成 API；目标校验归属 `console/governance/automation.py`，不开放任意 URL
 或系统命令。工具 API、MCP 和校验记录用例显式接收已鉴权账号。
 
 Skill 不可变版本保存在 `accounts/<user-id>/integrations/skills/<skill-id>/<version>/`。
@@ -527,7 +505,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 演示工坊 v3 扩展按职责组织：`schemas/appearance.py`、`objects.py`、`paths.py`、`annotations.py` 与 `playback.py` 拥有专属结构；`asset_references.py` 收集背景、填充、封面和媒体等实际引用。迁移 `0101_presentation_editor_v3` 保留内容、身份、revision 与更新时间，仅升级版本并补元素元数据；已有新能力的文稿拒绝旧格式降级覆盖。
 `exchange/` 拥有有界 ZIP 文稿包、无写入预检、PPTX 解析、转换报告、素材准备与重映射；`routes/exchange.py` 只适配 HTTP。`pptx_objects.py`、`pptx_paths.py`、`pptx_playback.py` 与 `pptx_appearance.py` 分别映射原生表格图表、路径、媒体与样式；`visible_scene.py` 统一排除隐藏对象及关联连接。
-Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替换、图层与面板；`objects/` 拥有原生元素内容编辑与 ECharts SVG；`objects/formula/` 拥有公式模板弹窗、异步预览和自然尺寸计算，通过现有 `formulaSvg.ts` 共用本地 MathJax 矢量生成；`exchange/` 拥有预检和静态图片／打印输出；`playback/` 拥有动画步骤、标注与同源观众同步。`web/mathFontData.ts` 在构建前将第三方字形轮廓发布为本地 JSON 数据资源，不改写构建产物或提高代码预算。`desktop/src/presentation-windows.ts` 校验并管理受控观众窗口，退出与父窗口关闭时终止会话。
+Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替换、图层与面板；`objects/` 拥有原生元素内容编辑与 ECharts SVG；`objects/formula/` 拥有公式模板弹窗、异步预览和自然尺寸计算，通过现有 `formulaSvg.ts` 共用本地 MathJax 矢量生成；`exchange/` 拥有预检和静态图片／打印输出；`playback/` 拥有动画步骤、标注与同源观众同步。`web/mathFontData.ts` 在构建前将第三方字形轮廓发布为本地 JSON 数据资源，不改写构建产物或提高代码预算。`playback/useAudience.ts` 通过浏览器窗口与同源 BroadcastChannel 管理观众会话，弹窗被拦截时提供直接链接。
 
 ## 导演台
 

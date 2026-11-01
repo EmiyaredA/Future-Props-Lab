@@ -3,15 +3,13 @@ from uuid import uuid4
 
 import httpx
 import pytest
-from starlette.responses import PlainTextResponse
 from tests.account_fixtures import account_record
 
 from app.capabilities.identity.principal import StudioPrincipal
-from app.console.governance.desktop_agent import allows_agent
+from app.console.governance.automation_access import MANIFEST
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
 from app.orm import bind_owner
-from app.runtime.desktop import DesktopTransport
 
 ROOT = "/v1/director-desk/projects"
 TOKEN = "director-agent-test-token"
@@ -150,49 +148,8 @@ async def test_read_only_principal_cannot_mutate_scene():
         assert denied.json()["code"] == "insufficient_permission"
 
 
-@pytest.mark.asyncio
-async def test_agent_channel_hides_editor_session_and_allows_tool_call():
-    seen: list[int] = []
-
-    async def ok(scope, receive, send):
-        await PlainTextResponse("ok")(scope, receive, send)
-
-    transport = DesktopTransport(ok, token=TOKEN, agent_policy=allows_agent)
-
-    async def once(method: str, path: str) -> int:
-        messages: list[dict] = []
-
-        async def send(message):
-            messages.append(message)
-
-        async def receive():
-            return {"type": "http.request", "body": b"", "more_body": False}
-
-        scope = {
-            "type": "http",
-            "http_version": "1.1",
-            "method": method,
-            "path": path,
-            "raw_path": path.encode(),
-            "query_string": b"",
-            "headers": [
-                (b"x-fpl-desktop-token", TOKEN.encode()),
-                (b"x-fpl-agent-channel", b"1"),
-                (b"host", b"127.0.0.1:80"),
-            ],
-            "server": ("127.0.0.1", 80),
-            "scheme": "http",
-            "client": ("127.0.0.1", 50000),
-        }
-        await transport(scope, receive, send)
-        status = next(
-            message["status"] for message in messages if message["type"] == "http.response.start"
-        )
-        return status
-
-    seen.append(await once("GET", "/v1/director-desk/projects/project-1/agent-session/calls"))
-    seen.append(await once("POST", "/v1/director-desk/projects/project-1/tools"))
-    assert seen == [403, 200]
-    assert not allows_agent("POST", "/v1/director-desk/projects/project-1/agent-session")
-    assert allows_agent("POST", "/v1/director-desk/projects/project-1/tools")
-    assert allows_agent("GET", "/v1/director-desk/projects")
+def test_automation_allowlist_hides_editor_session_and_allows_tool_call():
+    operations = MANIFEST["operations"]
+    assert "POST /v1/director-desk/projects/{project_id}/agent-session" not in operations
+    assert "POST /v1/director-desk/projects/{project_id}/tools" in operations
+    assert "GET /v1/director-desk/projects" in operations

@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import { useEffect, useState } from "react";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import {
@@ -220,15 +221,15 @@ export function AudioAnnotationEditorPage({
           </div>
         </div>
         <div className="annotation-editor-actions">
-          {window.futurePropsDesktop?.openAmadeus && (
+          {
             <button
               type="button"
               className="btn"
-              onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+              onClick={() => void openAmadeus()}
             >
               ✦ Amadeus
             </button>
-          )}
+          }
           <button
             type="button"
             className="btn"

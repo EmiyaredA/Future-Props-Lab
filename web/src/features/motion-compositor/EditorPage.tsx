@@ -1,3 +1,4 @@
+import { openAmadeus } from "@platform/assistant";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -520,7 +521,7 @@ export function EditorPage({
         </button>
         <button
           className="mc-toolbar-button"
-          onClick={() => void window.futurePropsDesktop?.openAmadeus?.()}
+          onClick={() => void openAmadeus()}
           title="打开 Amadeus"
         >
           <Sparkles size={16} />

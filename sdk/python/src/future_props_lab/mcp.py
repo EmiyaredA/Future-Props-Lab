@@ -1,4 +1,4 @@
-"""Small stdio MCP surface over the paired desktop SDK, with no backend imports."""
+"""Small stdio MCP surface over the website SDK, with no backend imports."""
 
 import base64
 import json
@@ -9,8 +9,8 @@ import sys
 from contextlib import ExitStack
 from pathlib import Path
 
-from .desktop import desktop_client
 from .encoding import encode
+from .website import website_client
 
 
 def tool(name, description, properties=None, required=()):
@@ -55,7 +55,7 @@ def external_tools():
         ),
         tool(
             "open",
-            "Open an authorized FPL resource, preserving unsaved changes",
+            "Get an authorized website resource link",
             {"kind": {"type": "string"}, "resource_id": {"type": "string"}},
             ("kind",),
         ),
@@ -127,7 +127,7 @@ def serve(handler, tools, *, input_stream=None, output_stream=None, content_bloc
 def run_external(**options):
     from .cli import capability, operation
 
-    with desktop_client(**options) as client:
+    with website_client(**options) as client:
 
         def call(name, arguments):
             # Fetch fresh authority for every tool call; never cache a revoked key's capabilities.
@@ -143,7 +143,7 @@ def run_external(**options):
                 return {"operations": catalog["operations"]}
             if name == "open":
                 return client._call(
-                    "POST", "/v1/desktop/ui/open", body=arguments, media_type="application/json"
+                    "POST", "/v1/automation/open", body=arguments, media_type="application/json"
                 )
             parameters = arguments.get("parameters", {})
             if not isinstance(parameters, dict):

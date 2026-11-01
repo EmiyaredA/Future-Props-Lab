@@ -9,7 +9,7 @@ class LocalModelActionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     request_id: str = Field(min_length=1, max_length=64)
     expected_revision: int = Field(ge=0)
-    action: Literal["install", "cancel", "enable", "stop", "uninstall"]
+    action: Literal["install", "cancel", "enable", "stop", "uninstall", "repair"]
 
 
 class LocalModelOut(BaseModel):

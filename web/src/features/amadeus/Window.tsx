@@ -1,8 +1,14 @@
+import { useRuntimeAccess } from "@features/accounts";
+import "./window.css";
+import "./window-theme.css";
+import "./context-panel.css";
+import "./side-rail.css";
+import "./activity-feed.css";
+import "./conversation-layout.css";
+import "./capability-dialog.css";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   History,
-  Pin,
-  PinOff,
   Plus,
   Search,
   X,
@@ -35,6 +41,7 @@ import { useAppearance } from "./useAppearance";
 import { useAmadeusController } from "./useAmadeusController";
 
 export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
+  const localBrowser = useRuntimeAccess();
   const [stageOpen, setStageOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(() => window.innerWidth >= 700);
   const [inspectorOpen, setInspectorOpen] = useState(
@@ -109,8 +116,6 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     previewReference,
     setPreviewReference,
     avatarState,
-    alwaysOnTop,
-    setAlwaysOnTop,
     fileInputRef,
     showAvatarState,
     open,
@@ -219,24 +224,9 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
               const next = !stageOpen;
               setStageOpen(next);
               if (next) setInspectorOpen(false);
-              void bridge
-                .setAmadeusStageOpen?.(next)
-                .catch(() => setStageOpen(!next));
             }}
           >
             <UserRound size={17} />
-          </button>
-          <button
-            title={alwaysOnTop ? "取消悬浮置顶" : "保持悬浮在应用上方"}
-            aria-label={alwaysOnTop ? "取消悬浮置顶" : "保持悬浮在应用上方"}
-            aria-pressed={alwaysOnTop}
-            onClick={() => {
-              void bridge
-                .setAmadeusAlwaysOnTop(!alwaysOnTop)
-                .then((value) => setAlwaysOnTop(value));
-            }}
-          >
-            {alwaysOnTop ? <Pin size={17} /> : <PinOff size={17} />}
           </button>
           <button
             title="历史对话"
@@ -257,8 +247,8 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             <Plus size={18} />
           </button>
           <button
-            title="关闭窗口"
-            aria-label="关闭窗口"
+            title="关闭 Amadeus"
+            aria-label="关闭 Amadeus"
             onClick={() => void bridge.hideAmadeus()}
           >
             <X size={18} />
@@ -472,7 +462,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                   </button>
                 </div>
                 {!detail && <p>新建对话后可导入文件。</p>}
-                {detail && (
+                {detail && localBrowser && (
                   <button
                     onClick={() =>
                       void fetchApiJson(
